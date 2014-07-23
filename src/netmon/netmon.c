@@ -13,9 +13,9 @@
  *
  */
 
-#include<stdlib.h>
-#include<stdio.h>
-#include<string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -33,9 +33,7 @@
 #include <linux/if_ether.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
-#include<linux/netdevice.h>
-
-//#include "log.h"
+#include <linux/netdevice.h>
 
 // include/utils.h
 #define SPRINT_BSIZE 64
@@ -64,8 +62,8 @@ static int preferred_family = 0;
 // include/utils.h
 struct dn_naddr
 {
-        unsigned short          a_len;
-        unsigned char a_addr[DN_MAXADDL];
+    unsigned short          a_len;
+    unsigned char a_addr[DN_MAXADDL];
 };
 
 // ip/ipaddress.c
@@ -142,17 +140,6 @@ const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen
 	case AF_INET:
 	case AF_INET6:
 		return inet_ntop(af, addr, buf, buflen);
-/*
- *MVY: stripped obscure protocols
-	case AF_IPX:
-		return ipx_ntop(af, addr, buf, buflen);
-	case AF_DECnet:
-	{
-		struct dn_naddr dna = { 2, { 0, 0, }};
-		memcpy(dna.a_addr, addr, 2);
-		return dnet_ntop(af, &dna, buf, buflen);
-	}
-*/
 	default:
 		return "???";
 	}
@@ -162,36 +149,6 @@ const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen
 const char *format_host(int af, int len, const void *addr,
 			char *buf, int buflen)
 {
-#ifdef RESOLVE_HOSTNAMES
-	if (resolve_hosts) {
-		const char *n;
-
-		if (len <= 0) {
-			switch (af) {
-			case AF_INET:
-				len = 4;
-				break;
-			case AF_INET6:
-				len = 16;
-				break;
-			case AF_IPX:
-				len = 10;
-				break;
-#ifdef AF_DECnet
-			/* I see no reasons why gethostbyname
-			   may not work for DECnet */
-			case AF_DECnet:
-				len = 2;
-				break;
-#endif
-			default: ;
-			}
-		}
-		if (len > 0 &&
-		    (n = resolve_address(addr, len, af)) != NULL)
-			return n;
-	}
-#endif
 	return rt_addr_n2a(af, len, addr, buf, buflen);
 }
 
@@ -220,6 +177,13 @@ const char *qd_mac(const char* ethname) {
     }
 
     r = read(fd, mac, MAX_ADDR_LEN);
+    if (r < 1) {
+        //TODO: logging
+        fprintf(stderr, "BUG: read on %s failed\n", path);
+        free(path);
+        close(fd);
+        return NULL;
+    }
     mac[r-1] = '\0'; // kill \n
     free(path);
     close(fd);
@@ -239,8 +203,6 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 	char abuf[256];
 	SPRINT_BUF(b1);
 
-    //MVY: what we want to have
-    //MVY: I now it, however not sure why it happens, ll_name_to_index does return const char*
     const char *ethname = ll_index_to_name(ifa->ifa_index);
     const char* ipfamily = NULL;
     const char *ipaddress = NULL;
@@ -281,23 +243,6 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 	if (!rta_tb[IFA_ADDRESS])
 		rta_tb[IFA_ADDRESS] = rta_tb[IFA_LOCAL];
 	
-    /*if (n->nlmsg_type == RTM_DELADDR)
-		fprintf(fp, "Deleted ");*/
-		
-    //fprintf(fp, "%u: %s", ifa->ifa_index, ll_index_to_name(ifa->ifa_index));
-
-	/*if (ifa->ifa_family == AF_INET)
-		fprintf(fp, "    inet ");
-	else if (ifa->ifa_family == AF_INET6)
-		fprintf(fp, "    inet6 ");
-	else if (ifa->ifa_family == AF_DECnet)
-		fprintf(fp, "    dnet ");
-	else if (ifa->ifa_family == AF_IPX)
-		fprintf(fp, "     ipx ");
-	else
-		fprintf(fp, "    family %d ", ifa->ifa_family);
-    */
-
 	if (rta_tb[IFA_LOCAL]) {
 		ipaddress = format_host(ifa->ifa_family,
 					      RTA_PAYLOAD(rta_tb[IFA_LOCAL]),
@@ -308,21 +253,11 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 		if (rta_tb[IFA_ADDRESS] == NULL ||
 		    memcmp(RTA_DATA(rta_tb[IFA_ADDRESS]), RTA_DATA(rta_tb[IFA_LOCAL]),
 			   ifa->ifa_family == AF_INET ? 4 : 16) == 0) {
-			//fprintf(fp, "/%d ", ifa->ifa_prefixlen);
             prefixlen = ifa->ifa_prefixlen;
         }
-        /*
-		} else {
-			fprintf(fp, " peer %s/%d ",
-				format_host(ifa->ifa_family,
-					    RTA_PAYLOAD(rta_tb[IFA_ADDRESS]),
-					    RTA_DATA(rta_tb[IFA_ADDRESS]),
-					    abuf, sizeof(abuf)),
-				ifa->ifa_prefixlen);
-		}*/
 	}
 		
-    /* XXX: following code does not work! The problem is in ifa/ifi above ...
+    /* XXX: following code does not work! The problem is in ifa/ifi above, so we have qd_mac function!
     if (rta_tb[IFLA_ADDRESS]) {
 			mac = ll_addr_n2a(RTA_DATA(rta_tb[IFLA_ADDRESS]),
 						      RTA_PAYLOAD(rta_tb[IFLA_ADDRESS]),
@@ -389,32 +324,6 @@ static void ipaddr_filter(struct nlmsg_chain *linfo, struct nlmsg_chain *ainfo)
 			parse_rtattr(tb, IFA_MAX, IFA_RTA(ifa), IFA_PAYLOAD(n));
 			ifa_flags = get_ifa_flags(ifa, tb[IFA_FLAGS]);
 
-			/*if ((filter.flags ^ ifa_flags) & filter.flagmask)
-				continue;
-			if (filter.pfx.family || filter.label) {
-				if (!tb[IFA_LOCAL])
-					tb[IFA_LOCAL] = tb[IFA_ADDRESS];
-
-				if (filter.pfx.family && tb[IFA_LOCAL]) {
-					inet_prefix dst;
-					memset(&dst, 0, sizeof(dst));
-					dst.family = ifa->ifa_family;
-					memcpy(&dst.data, RTA_DATA(tb[IFA_LOCAL]), RTA_PAYLOAD(tb[IFA_LOCAL]));
-					if (inet_addr_match(&dst, &filter.pfx, filter.pfx.bitlen))
-						continue;
-				}
-				if (filter.label) {
-					SPRINT_BUF(b1);
-					const char *label;
-					if (tb[IFA_LABEL])
-						label = RTA_DATA(tb[IFA_LABEL]);
-					else
-						label = ll_idx_n2a(ifa->ifa_index, b1);
-					if (fnmatch(filter.label, label, 0) != 0)
-						continue;
-				}
-			}*/
-
 			ok = 1;
 			break;
 		}
@@ -478,99 +387,6 @@ static int ipaddr_list()
 	char *filter_dev = NULL;
 	int no_link = 0;
 
-	//ipaddr_reset_filter(oneline);
-	//filter.showqueue = 1;
-
-	/*if (filter.family == AF_UNSPEC)
-		filter.family = preferred_family;
-
-	filter.group = -1;
-    */
-
-    /*
-	while (argc > 0) {
-		if (strcmp(*argv, "to") == 0) {
-			NEXT_ARG();
-			get_prefix(&filter.pfx, *argv, filter.family);
-			if (filter.family == AF_UNSPEC)
-				filter.family = filter.pfx.family;
-		} else if (strcmp(*argv, "scope") == 0) {
-			unsigned scope = 0;
-			NEXT_ARG();
-			filter.scopemask = -1;
-			if (rtnl_rtscope_a2n(&scope, *argv)) {
-				if (strcmp(*argv, "all") != 0)
-					invarg("invalid \"scope\"\n", *argv);
-				scope = RT_SCOPE_NOWHERE;
-				filter.scopemask = 0;
-			}
-			filter.scope = scope;
-		} else if (strcmp(*argv, "up") == 0) {
-			filter.up = 1;
-		} else if (strcmp(*argv, "dynamic") == 0) {
-			filter.flags &= ~IFA_F_PERMANENT;
-			filter.flagmask |= IFA_F_PERMANENT;
-		} else if (strcmp(*argv, "permanent") == 0) {
-			filter.flags |= IFA_F_PERMANENT;
-			filter.flagmask |= IFA_F_PERMANENT;
-		} else if (strcmp(*argv, "secondary") == 0 ||
-			   strcmp(*argv, "temporary") == 0) {
-			filter.flags |= IFA_F_SECONDARY;
-			filter.flagmask |= IFA_F_SECONDARY;
-		} else if (strcmp(*argv, "primary") == 0) {
-			filter.flags &= ~IFA_F_SECONDARY;
-			filter.flagmask |= IFA_F_SECONDARY;
-		} else if (strcmp(*argv, "tentative") == 0) {
-			filter.flags |= IFA_F_TENTATIVE;
-			filter.flagmask |= IFA_F_TENTATIVE;
-		} else if (strcmp(*argv, "deprecated") == 0) {
-			filter.flags |= IFA_F_DEPRECATED;
-			filter.flagmask |= IFA_F_DEPRECATED;
-		} else if (strcmp(*argv, "home") == 0) {
-			filter.flags |= IFA_F_HOMEADDRESS;
-			filter.flagmask |= IFA_F_HOMEADDRESS;
-		} else if (strcmp(*argv, "nodad") == 0) {
-			filter.flags |= IFA_F_NODAD;
-			filter.flagmask |= IFA_F_NODAD;
-		} else if (strcmp(*argv, "mngtmpaddr") == 0) {
-			filter.flags |= IFA_F_MANAGETEMPADDR;
-			filter.flagmask |= IFA_F_MANAGETEMPADDR;
-		} else if (strcmp(*argv, "noprefixroute") == 0) {
-			filter.flags |= IFA_F_NOPREFIXROUTE;
-			filter.flagmask |= IFA_F_NOPREFIXROUTE;
-		} else if (strcmp(*argv, "dadfailed") == 0) {
-			filter.flags |= IFA_F_DADFAILED;
-			filter.flagmask |= IFA_F_DADFAILED;
-		} else if (strcmp(*argv, "label") == 0) {
-			NEXT_ARG();
-			filter.label = *argv;
-		} else if (strcmp(*argv, "group") == 0) {
-			NEXT_ARG();
-			if (rtnl_group_a2n(&filter.group, *argv))
-				invarg("Invalid \"group\" value\n", *argv);
-		} else {
-			if (strcmp(*argv, "dev") == 0) {
-				NEXT_ARG();
-			}
-			if (matches(*argv, "help") == 0)
-				usage();
-			if (filter_dev)
-				duparg2("dev", *argv);
-			filter_dev = *argv;
-		}
-		argv++; argc--;
-	}
-    */
-
-	/*if (filter_dev) {
-		filter.ifindex = ll_name_to_index(filter_dev);
-		if (filter.ifindex <= 0) {
-			fprintf(stderr, "Device \"%s\" does not exist.\n", filter_dev);
-			return -1;
-		}
-	}*/
-
-
 	if (rtnl_wilddump_request(&rth, preferred_family, RTM_GETLINK) < 0) {
 		perror("Cannot send dump request");
 		exit(1);
@@ -582,8 +398,6 @@ static int ipaddr_list()
 	}
 
 	if (filter_family != AF_PACKET) {
-		/*if (filter.oneline)
-			no_link = 1;*/
 
 		if (rtnl_wilddump_request(&rth, filter_family, RTM_GETADDR) < 0) {
 			perror("Cannot send dump request");
@@ -599,12 +413,10 @@ static int ipaddr_list()
 	}
 
 	for (l = linfo.head; l; l = l->next) {
-		//if (no_link || print_linkinfo(NULL, &l->h, stdout) == 0) {
-			struct ifinfomsg *ifi = NLMSG_DATA(&l->h);
-			if (filter_family != AF_PACKET)
-				print_selected_addrinfo(ifi->ifi_index,
-							ainfo.head, stdout);
-		//}
+        struct ifinfomsg *ifi = NLMSG_DATA(&l->h);
+        if (filter_family != AF_PACKET)
+            print_selected_addrinfo(ifi->ifi_index,
+                        ainfo.head, stdout);
 	}
 	free_nlmsg_chain(&ainfo);
 	free_nlmsg_chain(&linfo);
@@ -671,12 +483,6 @@ int main(int argc, char **argv) {
     int preferred_family=0;
 
 	rtnl_close(&rth);
-    /*
-	ipaddr_reset_filter(1);
-	iproute_reset_filter();
-	ipmroute_reset_filter();
-	ipneigh_reset_filter();
-    */
 	const char *prog = *argv;
     argc--;	argv++;
 
