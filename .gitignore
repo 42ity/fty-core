@@ -1,0 +1,14 @@
+.*.swp
+
+aclocal.m4
+autom4te.cache
+config
+configure
+.deps
+Makefile.in
+Makefile
+config.log
+config.status
+
+netmon
+*.o
