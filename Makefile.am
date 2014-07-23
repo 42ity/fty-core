@@ -1,4 +1,4 @@
-AM_CLAGS="-Wall -O2"
+AM_CFLAGS="-Wall -Werror -O2 -fstack-protector -D_FORTIFY_SOURCE=2"
 
 bin_PROGRAMS = netmon
 netmon_LDADD = -lnetlink
