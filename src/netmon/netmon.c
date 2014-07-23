@@ -165,7 +165,7 @@ const char *qd_mac(const char* ethname) {
     if (!r) {
         //TODO logging
         fprintf(stderr, "BUG: can't allocate string");
-        return NULL;
+        return "";
     }
 
     fd = open(path, O_RDONLY);
@@ -173,7 +173,7 @@ const char *qd_mac(const char* ethname) {
         //TODO logging
         fprintf(stderr, "BUG: can't open /sys/class/net/%s/address", ethname);
         free(path);
-        return NULL;
+        return "";
     }
 
     r = read(fd, mac, MAX_ADDR_LEN);
@@ -182,7 +182,7 @@ const char *qd_mac(const char* ethname) {
         fprintf(stderr, "BUG: read on %s failed\n", path);
         free(path);
         close(fd);
-        return NULL;
+        return "";
     }
     mac[r-1] = '\0'; // kill \n
     free(path);
