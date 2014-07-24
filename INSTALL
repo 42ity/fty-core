@@ -1,0 +1,11 @@
+Build dependencies installation
+ 1 Install iproute-dev development files, version "20120521", using
+   apt-get install iproute-dev
+
+no configure
+-1 Run autoreconf -fiv
+
+else
+ 1 Type ./configure
+ 2 type make
+ 3 type make DESTDIR=/some/path install
