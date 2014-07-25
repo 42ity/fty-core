@@ -469,18 +469,8 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
-    char *file = NULL;
 	unsigned groups = ~RTMGRP_TC;
-	int llink=0;
-	int laddr=0;
-	int lroute=0;
-	int lmroute=0;
-	int lprefix=0;
-	int lneigh=0;
-	int lnetconf=0;
 
-    int prefix_banner=0;
-    int preferred_family=0;
 
 	rtnl_close(&rth);
 	const char *prog = *argv;
