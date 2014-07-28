@@ -20,6 +20,7 @@ SafeString& SafeString::operator=(const std::string& other) {
     return *this;
 }
 
+// FIXME: Possible deadlock - for example self-ssignement
 SafeString& SafeString::operator=(const SafeString& other) {
     std::lock_guard<std::mutex> lg(*lock_data);
     std::lock_guard<std::mutex> ot_lg(*other.lock_data);

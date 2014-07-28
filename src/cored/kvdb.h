@@ -4,9 +4,11 @@
 #include <string>
 #include <iostream>
 
+// TODO: Follow coding conventions
 class SafeString {
     private:
         std::string data;
+        // TODO: Find a better way how to lock const references
         std::mutex* lock_data;
     public:
         SafeString() { lock_data = new std::mutex; }
