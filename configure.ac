@@ -8,10 +8,14 @@ AM_INIT_AUTOMAKE(1.11)
 dnl toolchain
 AC_PROG_CC
 AM_PROG_CC_C_O
+AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_RANLIB
 
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADERS([jsoncpp/json/json.h], [], AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
+AC_LANG_POP([C++])
 
 AC_OUTPUT(Makefile)

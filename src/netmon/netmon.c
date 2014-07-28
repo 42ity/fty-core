@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -34,6 +36,10 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <linux/netdevice.h>
+
+#include <zmq.h>
+
+#include "jsonf.h"
 
 // include/utils.h
 #define SPRINT_BSIZE 64
@@ -58,6 +64,8 @@ static int filter_scope = 253;
 static int filter_scopemask = -1;
 static int preferred_family = 0;
 
+// wheter to use zmq or print to stdout
+static bool use_zmq = false;
 
 // include/utils.h
 struct dn_naddr
@@ -191,9 +199,11 @@ const char *qd_mac(const char* ethname) {
 }
 
 static int print_addrinfo(const struct sockaddr_nl *who,
-		      struct nlmsghdr *n, void *arg) {
-	FILE *fp = (FILE*)arg;
-	struct ifaddrmsg *ifa = NLMSG_DATA(n);
+		      struct nlmsghdr *n, void *requester) {
+	
+    int ret;
+
+    struct ifaddrmsg *ifa = NLMSG_DATA(n);
 	//struct ifinfomsg *ifi = NLMSG_DATA(n);
 	int len = n->nlmsg_len;
 	int deprecated = 0;
@@ -206,7 +216,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     const char *ethname = ll_index_to_name(ifa->ifa_index);
     const char* ipfamily = NULL;
     const char *ipaddress = NULL;
-    int prefixlen = 0;
+    uint8_t prefixlen = 0;
     const char *mac = qd_mac(ethname);
 	
     // sanity check
@@ -266,9 +276,23 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     }
     */
 
-    fprintf(fp, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
+    //fputs(json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac), fp);
+    if (use_zmq) {
+        const char *msg = json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac);
+        ret = zmq_send(requester, msg, strlen(msg), 0);
+        if (ret != strlen(msg)) {
+            fprintf(stderr, "BUG: failed to send all data to zmq socket: %m\n");
+            exit(EXIT_FAILURE);
+        }
+        char buf[1];
+        ret = zmq_recv(requester, buf, 1, 0);
+        //skipped error handling
 
-	fflush(fp);
+    }
+    else {
+        fprintf(stdout, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
+    }
+
 	return 0;
 }
 
@@ -348,7 +372,7 @@ static void free_nlmsg_chain(struct nlmsg_chain *info)
 	}
 }
 
-static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, FILE *fp)
+static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *requester)
 {
 	for ( ;ainfo ;  ainfo = ainfo->next) {
 		struct nlmsghdr *n = &ainfo->h;
@@ -365,7 +389,7 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, FILE *
 			continue;
         }
 
-		print_addrinfo(NULL, n, fp);
+		print_addrinfo(NULL, n, requester);
 	}
 	return 0;
 }
@@ -379,7 +403,7 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, FILE *
  *
  * BTW: the printing is done in callback print_selected_addrinfo/print_addrinfo
  */
-static int ipaddr_list()
+static int ipaddr_list(void* requester)
 {
 	struct nlmsg_chain linfo = { NULL, NULL};
 	struct nlmsg_chain ainfo = { NULL, NULL};
@@ -416,7 +440,7 @@ static int ipaddr_list()
         struct ifinfomsg *ifi = NLMSG_DATA(&l->h);
         if (filter_family != AF_PACKET)
             print_selected_addrinfo(ifi->ifi_index,
-                        ainfo.head, stdout);
+                        ainfo.head, requester);
 	}
 	free_nlmsg_chain(&ainfo);
 	free_nlmsg_chain(&linfo);
@@ -425,15 +449,13 @@ static int ipaddr_list()
 }
 
 static int accept_msg(const struct sockaddr_nl *who,
-		      struct nlmsghdr *n, void *arg)
+		      struct nlmsghdr *n, void *requester)
 {
-	FILE *fp = (FILE*)arg;
-
     switch (n->nlmsg_type) {
 
         case RTM_NEWADDR:
         case RTM_DELADDR:
-            print_addrinfo(who, n, arg);
+            print_addrinfo(who, n, requester);
             break;
 
         case RTM_NEWROUTE:
@@ -461,7 +483,7 @@ static int accept_msg(const struct sockaddr_nl *who,
             break;
         default:
             //TODO: error
-            fprintf(fp, "n->nlmsg_type = <default>\n");
+            fprintf(stderr, "n->nlmsg_type = <default>\n");
             break;
     }
     return 0;
@@ -469,21 +491,39 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
-    char *file = NULL;
+    int ret;
+
 	unsigned groups = ~RTMGRP_TC;
-	int llink=0;
-	int laddr=0;
-	int lroute=0;
-	int lmroute=0;
-	int lprefix=0;
-	int lneigh=0;
-	int lnetconf=0;
-
-    int prefix_banner=0;
-    int preferred_family=0;
-
-	rtnl_close(&rth);
 	const char *prog = *argv;
+
+    void *context = NULL;
+    void *requester = NULL;
+
+    const char *ZMQ_BUS = getenv("ZMQ_BUS");
+
+    if (ZMQ_BUS == NULL) {
+        fprintf(stderr, "INFO: ZMQ_BUS not defined, printing to stdout\n");
+    }
+    else {
+        use_zmq = true;
+        context = zmq_ctx_new();
+        if (!context) {
+            fprintf(stderr, "BUG: can't initialize zmq context: %m\n");
+            exit(EXIT_FAILURE);
+        }
+        requester = zmq_socket(context, ZMQ_REQ);
+        if (!requester) {
+            fprintf(stderr, "BUG: can't initialize zmq socket: %m\n");
+            exit(EXIT_FAILURE);
+        }
+        ret = zmq_connect(requester, ZMQ_BUS);
+        if (ret == -1) {
+            fprintf(stderr, "BUG: can't connect to %s: %m\n", ZMQ_BUS);
+            exit(EXIT_FAILURE);
+        }
+    }
+	
+    rtnl_close(&rth);
     argc--;	argv++;
 
     groups |= nl_mgrp(RTNLGRP_IPV4_IFADDR);
@@ -492,10 +532,14 @@ int main(int argc, char **argv) {
 	if (rtnl_open(&rth, groups) < 0)
 		exit(1);
 
-    ipaddr_list();
-	if (rtnl_listen(&rth, accept_msg, stdout) < 0)
+    ipaddr_list(requester);
+	if (rtnl_listen(&rth, accept_msg, requester) < 0)
 		exit(2);
     
+    if (use_zmq) {
+        zmq_close(requester);
+        zmq_ctx_destroy (context);
+    }
 	return 0;
 
 }
