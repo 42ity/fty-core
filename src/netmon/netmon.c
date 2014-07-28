@@ -35,6 +35,8 @@
 #include <linux/rtnetlink.h>
 #include <linux/netdevice.h>
 
+#include "jsonf.h"
+
 // include/utils.h
 #define SPRINT_BSIZE 64
 #define SPRINT_BUF(x)	char x[SPRINT_BSIZE]
@@ -266,7 +268,8 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     }
     */
 
-    fprintf(fp, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
+    //fprintf(fp, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
+    fputs(json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac), fp);
 
 	fflush(fp);
 	return 0;
