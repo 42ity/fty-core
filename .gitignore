@@ -10,5 +10,5 @@ Makefile
 config.log
 config.status
 
-netmon
+./netmon
 *.o
