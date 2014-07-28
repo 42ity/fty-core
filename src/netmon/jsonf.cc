@@ -14,32 +14,25 @@ GNU General Public License for more details.
  
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
- 
+*/
+
+/*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
  
 Description: packages netmon's messages to JSON format for controller
 References: BIOS-247, BIOS-244
 */
 
-#include <iostream>
-#include <sstream>
-#include <cstdio>
-
 #include "jsoncpp/json/json.h"
 
 #include "jsonf.h"
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 const char *json_pack(
        const char *event,
        const char *name,
        const char *ipver,
        const char *ipaddr,
-       int prefixlen,
+       uint8_t prefixlen,
        const char *mac) {
 
      //TODO: check why Json::FastWriter() does not work!
@@ -56,30 +49,6 @@ const char *json_pack(
 
      arr.append(entry);
 
-     /*
-     std::basic_ostringstream<char> os;
-     os << arr;
-     return os.str().c_str();
-     */
-     
      return wr.write(arr).c_str();
 
 }
-#ifdef __cplusplus
-}
-#endif
-
-
-/*TODO: move to test ...
-int main() {
-
-    puts(json_pack(
-        "ADDRADD",
-        "enp0s25",
-        "IPv4",
-        "10.130.38.147/24",
-        "a0:1d:48:b7:e2:4e"
-        ));
-
-}
-*/

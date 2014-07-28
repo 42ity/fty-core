@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -215,7 +216,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     const char *ethname = ll_index_to_name(ifa->ifa_index);
     const char* ipfamily = NULL;
     const char *ipaddress = NULL;
-    int prefixlen = 0;
+    uint8_t prefixlen = 0;
     const char *mac = qd_mac(ethname);
 	
     // sanity check

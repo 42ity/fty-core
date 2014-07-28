@@ -1,4 +1,4 @@
-/* zmq.c: json backend for netmon
+/* zmq.h: json backend for netmon
  
 Copyright (C) 2014 Eaton
  
@@ -14,8 +14,9 @@ GNU General Public License for more details.
  
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
- 
- 
+*/
+
+/*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
  
 Description: packages netmon's messages to JSON format for controller
@@ -23,6 +24,8 @@ References: BIOS-247, BIOS-244
 */
 
 #pragma once
+
+#include <stdint.h>
 
 /**
  * Pack the netmon's message format to JSON and return the string
@@ -36,7 +39,7 @@ const char *json_pack(
        const char *name,
        const char *ipver,
        const char *ipaddr,
-       int prefixlen,
+       uint8_t prefixlen,
        const char *mac);
 #ifdef __cplusplus
 }
