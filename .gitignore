@@ -2,7 +2,8 @@
 
 aclocal.m4
 autom4te.cache
-config
+build-aux
+config.h
 configure
 .deps
 Makefile.in
