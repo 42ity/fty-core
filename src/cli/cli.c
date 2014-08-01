@@ -181,18 +181,8 @@ int main (int argc, char **argv) {
 
 }
 
-//TODO: move to tests
 void test() {
 
-	/* test streq */
-	/*{
-		assert(streq(NULL, NULL));
-		assert(!streq("a", NULL));
-		assert(!streq(NULL, "b"));
-		assert(!streq("a", "b"));
-		assert(streq("a", "a"));
-		return 0;
-	}*/
     /* unit tests */
     
     /* test invariants: argc > 0 */
