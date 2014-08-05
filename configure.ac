@@ -13,6 +13,10 @@ LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
 
+# this is gcc specific
+: ${CFLAGS="-std=c11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
+: ${CXXFLAGS="-std=c++11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
+
 # toolchain
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -24,5 +28,6 @@ AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header l
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([jsoncpp/json/json.h], [], AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
 AC_LANG_POP([C++])
+
 
 AC_OUTPUT(Makefile)
