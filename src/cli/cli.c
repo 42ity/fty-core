@@ -72,83 +72,6 @@ static void do_help() {
 	}
 }
 
-/*! \brief Parse global options
- *         ie those up first string without initial '-'
- *
- *  \param argc argument count
- *  \param argv and array of strings with arguments
- *  \param gopts pointer to structure containing the global options - things will be handled there
- *
- *  \return negative, zero or positive. Where negative is an index to first
- *   unknown argument, zero means bad input arguments or --help
- *   (gopts->show_help will be true) and positive is an index to first command
- *   in argv.
- */
-
-static int handle_global_options(const int argc, const char **argv, struct global_opts *gopts) {
-    int i = 1;
-    const char *cmd = NULL;
-
-    if (argc < 1 || argv == NULL || gopts == NULL || argv[argc] != NULL) {
-        return 0;
-    }
-
-    while (i != argc) {
-        cmd = argv[i];
-        if (cmd[0] != '-') {
-            break;
-        }
-
-        if (streq("--help", cmd)) {
-            gopts->show_help =true;
-            return 0;
-        }
-        else if (streq("--verbose", cmd)) {
-            gopts->verbosity = 1;
-        }
-        else if (streq("-v", cmd)) {
-            gopts->verbosity = 1;
-        }
-        else if (streq("-vv", cmd)) {
-            gopts->verbosity = 2;
-        }
-        else if (streq("-vvv", cmd)) {
-            gopts->verbosity = 3;
-        }
-        else if (streq("--no-pager", cmd)) {
-            fprintf(stderr, "WARNING: use_pager is not implemented!\n");
-            gopts->use_pager = false;
-        }
-        else {
-            return -i;
-        }
-
-        i += 1;
-    }
-    return i;
-}
-
-/*! Get builtin command
- * 
- * \param name name of command to find in global builtin_commands array
- * \return pointer to struct command or NULL
- */
-static const struct command* get_builtin_command(const char *name) {
- 
-    struct command *p;
-
-	if (!name) {
-		return NULL;
-	}
-
-    for(p = (struct command*) builtin_commands; p->command != NULL; p++) {
-        if (streq(p->command, name)) {
-            return (const struct command*) p;
-        }
-    }
-	return NULL;
-}
-
 int main (int argc, char **argv) {
     int optind;
 	
@@ -167,7 +90,7 @@ int main (int argc, char **argv) {
 		exit(EXIT_FAILURE);
 	}
 	else {
-		const struct command *cmd = get_builtin_command(argv[optind]);
+		const struct command *cmd = get_builtin_command(builtin_commands, argv[optind]);
 
 		if (cmd == NULL) {
 				fprintf(stderr, "ERROR: unknown command '%s'\n", argv[optind]);
@@ -179,75 +102,4 @@ int main (int argc, char **argv) {
 	fprintf(stderr, "ERROR: Can't reach here!\n");
 	exit(EXIT_FAILURE);
 
-}
-
-void test() {
-
-    /* unit tests */
-    
-    /* test invariants: argc > 0 */
-    optind = handle_global_options(0, NULL, &gopts);
-    assert(optind == 0);
-    optind = handle_global_options(-42, NULL, &gopts);
-    assert(optind == 0);
-    
-    /* test invariants: argv != NULL */
-    optind = handle_global_options(5, NULL, &gopts);
-    assert(optind == 0);
-    
-    /* test invariants: gopts != NULL */
-    const char *argv1[] = {"cli", "--foo", "--bar", NULL};
-    optind = handle_global_options(3, argv1, NULL);
-    assert(optind == 0);
-    
-    /* test invariants: argv[argc] == NULL */
-    const char *argv2[] = {"cli", "--foo", "--bar"};
-    optind = handle_global_options(3, argv2, &gopts);
-    assert(optind == 0);
-
-    /* test no arguments */
-    const char *argv3[] = {"cli", NULL};
-    optind = handle_global_options(1, argv3, &gopts);
-    assert(optind == 1);
-    assert(gopts.verbosity == 0);
-    assert(gopts.use_pager == true);
-    
-    /* test one cmd */
-    const char *argv4[] = {"cli", "cmd", NULL};
-    optind = handle_global_options(2, argv4, &gopts);
-    assert(optind == 1);
-    assert(gopts.verbosity == 0);
-    assert(gopts.use_pager == true);
-    
-    /* test --verbosity cmd */
-    const char *argv5[] = {"cli", "--verbose", NULL};
-    optind = handle_global_options(2, argv5, &gopts);
-    assert(optind == 2);
-    assert(gopts.verbosity == 1);
-    assert(gopts.use_pager == true);
-    
-    /* test -vv cmd */
-    const char *argv6[] = {"cli", "-vv", NULL};
-    optind = handle_global_options(2, argv6, &gopts);
-    assert(optind == 2);
-    assert(gopts.verbosity == 2);
-    assert(gopts.use_pager == true);
-    
-    /* test -vv --no-pager cmd */
-    const char *argv7[] = {"cli", "-vvv", "--no-pager", NULL};
-    optind = handle_global_options(3, argv7, &gopts);
-    assert(optind == 3);
-    assert(gopts.verbosity == 3);
-    assert(gopts.use_pager == false);
-
-    /* test unknown global argument */
-    const char *argv8[] = {"cli", "--unknown", NULL};
-    optind = handle_global_options(2, argv8, &gopts);
-    assert(optind == -1);
-    fprintf(stderr, "ERROR: unknown option %s\n", argv8[-optind]);
-    assert(gopts.verbosity == 3); /* this is just shared state between tests, lets handle that in a framework*/
-    assert(gopts.use_pager == false); /* ditto */
-
-
-    exit (0);
 }

@@ -20,15 +20,33 @@ libpriv_utils_la_SOURCES = \
 					src/utils/utils.c \
 					src/utils/utils.h
 
+noinst_LTLIBRARIES += \
+					  libpriv-cli.la
+
+libpriv_cli_la_SOURCES = \
+						 src/utils/utils.h \
+						 src/utils/cli.h \
+						 src/cli/cli-shared.c
+
+libpriv_cli_la_LIBADD = libpriv-utils.la
+
+#----------------------------------------------------------------------
+TESTS += \
+		 test-utils
 test_utils_SOURCES = \
 					src/utils/utils.h \
 					tests/utils/test_utils1.c
 test_utils_LDADD = libpriv-utils.la
 
 TESTS += \
-		 test-utils
+		 test-cli
+test_cli_SOURCES = \
+				   src/cli/cli.h \
+				   tests/cli/test-cli.c
+test_cli_LDADD = libpriv-cli.la
+test_cli_CPPFLAGS = -I $(top_srcdir)/src/cli
 
-noinst_PROGRAMS = test-utils
+noinst_PROGRAMS = $(TESTS)
 
 bin_PROGRAMS = netmon cli
 netmon_LDFLAGS = -lnetlink -ljsoncpp -lzmq
@@ -36,5 +54,5 @@ netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
 
 cli_LDFLAGS = -ljsoncpp
-cli_LDADD = libpriv-utils.la
+cli_LDADD = libpriv-utils.la libpriv-cli.la
 cli_SOURCES = src/cli/cli.c src/cli/cli-network.cc

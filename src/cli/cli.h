@@ -43,6 +43,28 @@ struct command {
     int (*do_command) (const int, const char **, const struct global_opts *);
 };
 
+/*! \brief Parse global options
+ *         ie those up first string without initial '-'
+ *
+ *  \param argc argument count
+ *  \param argv and array of strings with arguments
+ *  \param gopts pointer to structure containing the global options - things will be handled there
+ *
+ *  \return negative, zero or positive. Where negative is an index to first
+ *   unknown argument, zero means bad input arguments or --help
+ *   (gopts->show_help will be true) and positive is an index to first command
+ *   in argv.
+ */
+int handle_global_options(const int argc, const char **argv, struct global_opts *gopts);
+
+/*! Get builtin command
+ * 
+ * \param commands a list of commands to search
+ * \param name name of command to find in global builtin_commands array
+ * \return pointer to struct command or NULL
+ */
+const struct command* get_builtin_command(const struct command *commands, const char *name);
+
 /*! \bried 'network' command  */
 int do_network(const int argc, const char **argv, const struct global_opts *opts);
 
