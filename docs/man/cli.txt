@@ -1,0 +1,59 @@
+CLI(8)
+======
+
+
+NAME
+----
+cli - command line interface to $BIOS rack controller
+
+SYNOPSIS
+--------
+*cli* [-h|--help] 'command' ['<args>']
+
+DESCRIPTION
+-----------
+
+*cli* is provided as a quick and easy way to interact with $BIOS rack
+controllers. It provides all options to supervise and manage the various
+operations related to $BIOS rack controllers. 
+
+OPTIONS
+-------
+*-h*::
+*--help*::
+
+  Display the usage help.
+
+'command'::
+
+  'command' is the main argument, and can be one of the following:
+    - *network*
+    - *to be completed*
+
+*network* '<args>'::
+
+  Interact with network, to get, add or remove network entries.
+  '<args>' can be:
+  - *list*::
+  - *add*::
+  - *remove*::
+  - *details*::
+
+EXAMPLES
+--------
+To list the networks discovered or configured:
+
+    $ cli network list
+
+
+AUTHORS
+-------
+
+This program was developed by Michal Vyskocil, and is sponsored by
+Eaton <http://www.eaton.com>
+
+
+SEE ALSO
+--------
+
+BIOS project home page: http://$BIOS.noname.org

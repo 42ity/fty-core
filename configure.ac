@@ -18,4 +18,16 @@ AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([jsoncpp/json/json.h], [], AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
 AC_LANG_POP([C++])
 
-AC_OUTPUT(Makefile)
+dnl Documentation generation
+AC_MSG_CHECKING([for asciiDoc])
+AC_PATH_PROGS([ASCIIDOC], [asciidoc])
+AC_PATH_PROGS([A2X], [a2x])
+if test -z "${A2X}"; then
+	AC_MSG_RESULT(asciiDoc found)
+fi
+AM_CONDITIONAL(HAVE_ASCIIDOC, test -n "${A2X}")
+
+AC_OUTPUT([
+ Makefile
+ docs/man/Makefile
+])

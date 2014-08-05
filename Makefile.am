@@ -6,3 +6,4 @@ netmon_LDADD = -lnetlink -ljsoncpp -lzmq
 netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
 netmon_CFLAGS = -Isrc/netmon
 
+SUBDIRS = docs/man
