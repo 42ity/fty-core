@@ -1,9 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
 
-AM_CFLAGS=-std=c11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2
-AM_CXXFLAGS=-std=c++11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2
-
 noinst_LTLIBRARIES =
 TESTS =
 manual_tests =
