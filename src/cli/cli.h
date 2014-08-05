@@ -44,7 +44,12 @@ struct command {
 };
 
 /*! \brief Parse global options
- *         ie those up first string without initial '-'
+ *          everything until first string without initial '-'
+ *
+ * Example:
+ *
+ *   const char *argv8[] = {"cli", "--unknown", NULL};
+ *   optind = handle_global_options(2, argv8, &gopts);
  *
  *  \param argc argument count
  *  \param argv and array of strings with arguments
