@@ -1,8 +1,11 @@
 .*.swp
+.*.swo
 
 aclocal.m4
 autom4te.cache
-config
+build-aux
+config.h
+config.h.in~
 configure
 .deps
 Makefile.in
@@ -12,3 +15,9 @@ config.status
 
 ./netmon
 *.o
+*.lo
+
+.dirstamp
+stamp-h1
+
+docs/man/*.8

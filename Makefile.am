@@ -1,9 +1,57 @@
-AM_CFLAGS=-std=c11 -Wall -Werror -O2 -fstack-protector -D_FORTIFY_SOURCE=2
-AM_CXXFLAGS=-std=c++11 -Wall -Werror -O2 -fstack-protector -D_FORTIFY_SOURCE=2
+ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
+AUTOMAKE_OPTIONS = color-tests parallel-tests
 
-bin_PROGRAMS = netmon
-netmon_LDADD = -lnetlink -ljsoncpp -lzmq
+noinst_LTLIBRARIES =
+TESTS =
+manual_tests =
+
+AM_CPPFLAGS = \
+			  -include $(top_builddir)/config.h \
+			  -I $(top_srcdir)/src/utils
+
+#----------------------------------------------------------------------
+noinst_LTLIBRARIES += \
+					libpriv-utils.la
+
+libpriv_utils_la_SOURCES = \
+					src/utils/utils.c \
+					src/utils/utils.h
+
+noinst_LTLIBRARIES += \
+					  libpriv-cli.la
+
+libpriv_cli_la_SOURCES = \
+						 src/utils/utils.h \
+						 src/utils/cli.h \
+						 src/cli/cli-shared.c
+
+libpriv_cli_la_LIBADD = libpriv-utils.la
+
+#----------------------------------------------------------------------
+TESTS += \
+		 test-utils
+test_utils_SOURCES = \
+					src/utils/utils.h \
+					tests/utils/test_utils1.c
+test_utils_LDADD = libpriv-utils.la
+
+TESTS += \
+		 test-cli
+test_cli_SOURCES = \
+				   src/cli/cli.h \
+				   tests/cli/test-cli.c
+test_cli_LDADD = libpriv-cli.la
+test_cli_CPPFLAGS = -I $(top_srcdir)/src/cli
+
+noinst_PROGRAMS = $(TESTS)
+
+bin_PROGRAMS = netmon cli
+netmon_LDFLAGS = -lnetlink -ljsoncpp -lzmq
 netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
-netmon_CFLAGS = -Isrc/netmon
+netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
 
 SUBDIRS = docs/man
+
+cli_LDFLAGS = -ljsoncpp
+cli_LDADD = libpriv-utils.la libpriv-cli.la
+cli_SOURCES = src/cli/cli.c src/cli/cli-network.cc
