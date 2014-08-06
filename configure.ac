@@ -15,7 +15,7 @@ AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not s
 
 # this is gcc specific
 : ${CFLAGS="-std=c11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
-: ${CXXFLAGS="-std=c++11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
+: ${CXXFLAGS="-std=c++11 -Wall -Wextra -Wunused-function -Wshadow -Wpedantic -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
 
 # toolchain
 AC_PROG_CC
