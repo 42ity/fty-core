@@ -50,6 +50,8 @@ netmon_LDFLAGS = -lnetlink -ljsoncpp -lzmq
 netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
 
+SUBDIRS = docs/man
+
 cli_LDFLAGS = -ljsoncpp
 cli_LDADD = libpriv-utils.la libpriv-cli.la
 cli_SOURCES = src/cli/cli.c src/cli/cli-network.cc
