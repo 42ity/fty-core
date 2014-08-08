@@ -39,7 +39,7 @@ noinst_LTLIBRARIES += \
 
 libpriv_cli_la_SOURCES = \
 						 src/utils/utils.h \
-						 src/utils/cli.h \
+						 src/cli/cli.h \
 						 src/cli/cli-shared.c
 
 libpriv_cli_la_LIBADD = libpriv-utils.la
@@ -86,12 +86,15 @@ SUBDIRS = docs/man
 
 bin_PROGRAMS += \
 			  cli
+cli_SOURCES = \
+			  src/cli/cli.c \
+			  src/cli/cli-network.cc
+
 cli_LDFLAGS = -ljsoncpp
 cli_LDADD = libpriv-utils.la libpriv-cli.la
-cli_SOURCES = src/cli/cli.c src/cli/cli-network.cc
 
 bin_PROGRAMS += \
 				cored
+cored_SOURCES = src/cored/main.cc
 cored_LDFLAGS = -lzmq -ljsoncpp -pthread
 cored_LDADD = libpriv-cored.la
-cored_SOURCES = src/cored/main.cc
