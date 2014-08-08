@@ -48,6 +48,7 @@ noinst_LTLIBRARIES += \
   libpriv-cored.la
 
 libpriv_cored_la_SOURCES = \
+  src/utils/zmq.hpp \
   src/cored/mock_db.h \
   src/cored/mock_db.cc \
   src/cored/mock_netmon.h \
@@ -79,7 +80,11 @@ noinst_PROGRAMS = $(TESTS)
 bin_PROGRAMS += \
 				netmon
 netmon_LDFLAGS = -lnetlink -ljsoncpp $(LIBZMQ_LIBS)
-netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
+netmon_SOURCES = \
+				 src/netmon/linux \
+				 src/netmon/netmon.c \
+				 src/netmon/jsonf.h \
+				 src/netmon/jsonf.cc
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
 
 SUBDIRS = docs/man
@@ -95,6 +100,8 @@ cli_LDADD = libpriv-utils.la libpriv-cli.la
 
 bin_PROGRAMS += \
 				cored
-cored_SOURCES = src/cored/main.cc
+cored_SOURCES = \
+				src/cored/main.h \
+				src/cored/main.cc
 cored_LDFLAGS = -lzmq -ljsoncpp -pthread
 cored_LDADD = libpriv-cored.la
