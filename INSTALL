@@ -1,6 +1,8 @@
 Build dependencies installation
  1 Install iproute-dev development files, version "20120521", using
    apt-get install iproute-dev
+   OR
+   zypper install libnetlink-devel 
 
 no configure
 -1 Run autoreconf -fiv
