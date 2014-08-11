@@ -13,21 +13,20 @@ LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
 
-# this is gcc specific
-: ${CFLAGS="-std=c11 -Wall -Wextra -Wunused-function -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
-: ${CXXFLAGS="-std=c++11 -Wall -Wextra -Wunused-function -Wshadow -Wpedantic -O2 -fstack-protector -D_FORTIFY_SOURCE=2"}
-
 # toolchain
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_PROG_LN_S
+PKG_PROG_PKG_CONFIG
 
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([jsoncpp/json/json.h], [], AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
 AC_LANG_POP([C++])
+
+PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 4.0], [], [AC_MSG_ERROR([cannot find libzmq version 4])])
 
 dnl Documentation generation
 AC_MSG_CHECKING([for asciiDoc])
@@ -42,3 +41,47 @@ AC_OUTPUT([
  Makefile
  docs/man/Makefile
 ])
+
+my_CFLAGS="\
+-std=c11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all\
+"
+AC_SUBST([my_CFLAGS])
+
+my_CXXFLAGS="\
+-std=c++11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all\
+"
+AC_SUBST([my_CXXFLAGS])
+
+AC_OUTPUT
+AC_MSG_RESULT([
+        configure summary
+
+        $PACKAGE_NAME $VERSION
+
+
+        prefix:                  ${prefix}
+        sysconf dir:             ${sysconfdir}
+        datarootdir:             ${datarootdir}
+        includedir:              ${includedir}
+        lib dir:                 ${libdir}
+
+        asciidoc:                ${A2X}
+
+        CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
+        CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
+        CPPFLAGS:                ${OUR_CPPFLAGS} ${CPPFLAGS}
+        LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
+        LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
+        LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
+])
+
