@@ -21,3 +21,8 @@ config.status
 stamp-h1
 
 docs/man/*.8
+
+.test.log
+.test.trs
+
+build/
