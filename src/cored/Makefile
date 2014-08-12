@@ -1,16 +1,33 @@
-CXXFLAGS=-std=c++11 -pthread -Wall -Werror -g
+# TODO KHR 1.8 Migrate flgas to Makefile.am
+CFLAGS=-Wall -Wextra -Wunused-variable -Wshadow -Wpedantic -Wcast-qual -std=c++11
+LDFLAGS=
 
-all: gtest_kvdb
+TARGETS=main
 
-kvdb.o: kvdb.cc kvdb.h
-test_kvdb.o: test_kvdb.cc kvdb.h
-gtest_kvdb.o: gtest_kvdb.cc kvdb.h
+.PHONY: all clean runtests
 
-gtest_kvdb: gtest_kvdb.o kvdb.o
-	${CXX} ${CXXFLAGS} ${LDFLAGS} -lgtest -lgtest_main -o $@ $^
+all: $(TARGETS)
+
+$(TARGETS): main.o mock_netmon.o utilities.o utilities_zeromq.o mock_db.o
+	$(CC) $(CFLAGS) -lstdc++ -lzmq -pthread -ljsoncpp -o $@ $^
+
+main.o: main.cc
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+mock_netmon.o: mock_netmon.cc mock_netmon.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+utilities.o: utilities.cc utilities.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+utilities_zeromq.o: utilities_zeromq.cc utilities_zeromq.h
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+mock_db.o: mock_db.cc mock_db.h
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 clean:
-	${RM} *.o gtest_kvdb
+	rm -f $(TARGETS) *.o
 
-test: gtest_kvdb
-	for i in `seq 1 200`; do echo -e "\nRun $$i...\n"; ./gtest_kvdb || exit 1; done
+# template  file.o: dependecies .cc .h ...
+#  -c -o $@ $<

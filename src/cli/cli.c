@@ -72,12 +72,21 @@ static void do_help() {
 	}
 }
 
-int main (int argc, char **argv) {
-    int optind;
-	
-    optind = handle_global_options(argc, (const char**) argv, &gopts);
+int main(int argc, char **argv) {
 
-	if (optind == 0 || !argv[optind]) {
+  int index = 0,
+      i = 0;
+  index = handle_global_options(argc, (const char**) argv, &gopts);
+#ifndef NDEBUG
+  fprintf(stderr, "####\tDEBUG - main()\t####\n");
+  fprintf(stderr, "# argc: '%d'\n# optind: '%d'\n", argc, optind);
+  fprintf(stderr, "# **argv:\n");
+  for (i = 0; i < argc; i++) {
+    fprintf(stderr, "#\t[ %d ]\t%s\n", i, argv[i]);
+  }
+  fprintf(stderr, "\n");
+#endif
+	if (optind == HANDLE_GLOBAL_OPTIONS_BAD_INPUT || !argv[optind]) {
 		if (!gopts.show_help) {
 			do_usage();
 			exit(EXIT_FAILURE);
@@ -96,10 +105,14 @@ int main (int argc, char **argv) {
 				fprintf(stderr, "ERROR: unknown command '%s'\n", argv[optind]);
 				exit(EXIT_FAILURE);
 		}
-		return cmd->do_command((const int)(argc - optind), (const char**) argv+optind, &gopts);
+		int ret = cmd->do_command((const int)(argc - optind),
+                              (const char**) argv+optind,
+                               &gopts);
+    exit(ret);
 	}
-
+#ifndef NDEBUG
 	fprintf(stderr, "ERROR: Can't reach here!\n");
+#endif
 	exit(EXIT_FAILURE);
 
 }

@@ -1,3 +1,27 @@
+/* 
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+Author: Karol Hrdina <karolhrdina@eaton.com>
+ 
+Description: netmon module mock implementation
+References: BIOS-248
+*/
+
 /*
 WARNING:
 This code uses the following "shortcut" to format std::strings:
@@ -35,19 +59,31 @@ static bool json_pack(
     const char *ipaddress, uint8_t prefixlen, const char *macaddress,
     std::string& string) {
   Json::FastWriter wr{};
-  Json::Value arr(Json::arrayValue);
-  Json::Value entry(Json::objectValue);
+  Json::Value command(Json::arrayValue);
+  Json::Value json(Json::objectValue);
 
-  entry["event"] = event;
-  entry["name"]  = interface;
-  entry["ipver"] = ipversion;
-  entry["ipaddr"] = ipaddress;
-  entry["prefixlen"] = prefixlen;
-  entry["mac"] = macaddress;
+  json["module"] = "netmon";
 
-  arr.append(entry);
+  command.append("network");
+  if (strcmp(event, "add") == 0) {
+    command.append("add");
+  } else {
+    command.append("del");
+  }  
+  json["command"] = command;
 
-  string.assign(wr.write(arr));
+  Json::Value data(Json::objectValue);
+
+  data["name"]  = interface;
+  data["ipver"] = ipversion;
+  data["ipaddr"] = ipaddress;
+  data["prefixlen"] = prefixlen;
+  data["mac"] = macaddress;
+
+  json["data"] = data;
+
+
+  string.assign(wr.write(json));
   return true;
 }
 
@@ -59,6 +95,9 @@ static void gen_macaddr(std::string& mac) {
                        "%02x:%02x:%02x:%02x:%02x:%02x",
                        rand() % 256, rand() % 256, rand() % 256,
                        rand() % 256, rand() % 256, rand() % 256);
+  if (bytes >= MACADDR_LENGTH) {
+    fprintf(stderr, "gen_macaddr(): WARNING: output was truncated\n");
+  }
 }
 
 //! generate a pseudo-random IP address string
@@ -69,6 +108,9 @@ static void gen_ipaddr(std::string& ip) {
                        "%d.%d.%d.%d",
                        rand() % 256, rand() % 256,
                        rand() % 256, rand() % 256);
+  if (bytes >= IPADDR_LENGTH) {
+    fprintf(stderr, "gen_macaddr(): WARNING: output was truncated\n");
+  }
 }
 
 // CS-LANG:
@@ -83,7 +125,12 @@ void mocks::netmon(short min, short max, const char *connection) {
 
   std::map<std::tuple<std::string, std::string, std::string>, bool> stored;
   unsigned short sleep_duration = 0;
-  
+  const char *ifnames[IFCOUNT] =
+  {
+    "eth0", "eth1", "enp25s", "br01"
+  }; // names of the interfaces to generate
+
+ 
   // zeromq initialization
   zmq::context_t context(ZMQ_IO_THREADS_NUM);
   zmq::socket_t sock_dealer(context, ZMQ_DEALER);
@@ -106,12 +153,12 @@ void mocks::netmon(short min, short max, const char *connection) {
       gen_ipaddr(ipaddr);
       int ifnumber = rand() % (IFCOUNT);
       std::tuple<std::string, std::string, std::string>
-        insertion(std::string(IFNAMES[ifnumber]), ipaddr, macaddr);
+        insertion(std::string(ifnames[ifnumber]), ipaddr, macaddr);
 
       auto ret = stored.insert(std::make_pair(insertion, true));
       if (ret.second == true) {
         str_tmp.clear();
-        json_pack(EVENT_NETWORK_ADD_STR, IFNAMES[ifnumber], IPVERSION_IPV4_STR,
+        json_pack(EVENT_NETWORK_ADD_STR, ifnames[ifnumber], IPVERSION_IPV4_STR,
                   ipaddr.c_str(), 24, macaddr.c_str(), str_tmp);
         utils::zeromq::str_send(sock_dealer, str_tmp);
       } // else do nothing 

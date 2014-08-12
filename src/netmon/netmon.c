@@ -223,7 +223,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     if (n->nlmsg_type != RTM_NEWADDR && n->nlmsg_type != RTM_DELADDR)
 		return 0;
 
-    const char *type = n->nlmsg_type == RTM_NEWADDR ? "NEWADDR" : "DELLADDR";
+    const char *type = n->nlmsg_type == RTM_NEWADDR ? "add" : "del";
 	
     len -= NLMSG_LENGTH(sizeof(*ifa));
 	if (len < 0) {
@@ -234,10 +234,10 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 
     switch (ifa->ifa_family) {
         case AF_INET:
-            ipfamily = "inet";
+            ipfamily = "IPV4"; // inet
             break;
         case AF_INET6:
-            ipfamily = "inet6";
+            ipfamily = "IPV6"; //inet6
             break;
         default:
             fprintf(stderr, "WARNING: unsupported family\n");
@@ -489,39 +489,93 @@ static int accept_msg(const struct sockaddr_nl *who,
     return 0;
 }
 
+int netmon_func(const char *connection) {
+  if (connection == NULL || strlen(connection) == 0) {
+	// TODO
+	return EXIT_FAILURE;
+  }
+  void *context = NULL;
+  context = zmq_ctx_new();
+  if (context == NULL) {
+    // TODO
+    return EXIT_FAILURE;
+  }
+  void *socket = NULL;
+  socket = zmq_socket(context, ZMQ_DEALER);
+  if (socket == NULL) {
+    // TODO
+    return EXIT_FAILURE;
+  }
+  int rc = zmq_connect(socket, connection);
+  if (rc != 0) {
+    // TODO
+    return EXIT_FAILURE;
+  }
+
+  rtnl_close(&rth);
+
+  unsigned groups = ~RTMGRP_TC;
+  groups |= nl_mgrp(RTNLGRP_IPV4_IFADDR);
+  groups |= nl_mgrp(RTNLGRP_IPV6_IFADDR);
+
+  // TODO KHR (?): magic constant; enum, define 
+  if (rtnl_open(&rth, groups) < 0) {
+    exit(1);
+  }
+
+  ipaddr_list(socket);
+  if (rtnl_listen(&rth, accept_msg, socket) < 0) {
+    exit(2);
+  }
+
+  // TODO KHR(?): check return values    
+  zmq_close(socket); // 0 - succ; -1 && set errno to ENOTSOCK
+  zmq_ctx_destroy(context); // 0 - succ; -1 && EFAULT EINTR
+
+  return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv) {
 
-    int ret;
+  int ret;
 
 	unsigned groups = ~RTMGRP_TC;
-	const char *prog = *argv;
+	const char *prog = *argv; // TODO MVY(?): unused variable?
 
-    void *context = NULL;
-    void *requester = NULL;
+  void *context = NULL;
+  void *requester = NULL;
+	
+  const char *ZMQ_BUS = getenv("ZMQ_BUS");
 
-    const char *ZMQ_BUS = getenv("ZMQ_BUS");
-
-    if (ZMQ_BUS == NULL) {
-        fprintf(stderr, "INFO: ZMQ_BUS not defined, printing to stdout\n");
+  if (ZMQ_BUS == NULL || strlen(ZMQ_BUS) == 0) {
+    use_zmq = false;
+    fprintf(stderr, "INFO: environment variable ZMQ_BUS not defined. Printing to stdout.\n");
+  } else {
+    use_zmq = true;
+    context = zmq_ctx_new();
+    if (!context) {
+      fprintf(stderr, "BUG: can't initialize zmq context: %m\n");
+      exit(EXIT_FAILURE);
     }
-    else {
-        use_zmq = true;
-        context = zmq_ctx_new();
-        if (!context) {
-            fprintf(stderr, "BUG: can't initialize zmq context: %m\n");
-            exit(EXIT_FAILURE);
-        }
-        requester = zmq_socket(context, ZMQ_REQ);
-        if (!requester) {
-            fprintf(stderr, "BUG: can't initialize zmq socket: %m\n");
-            exit(EXIT_FAILURE);
-        }
-        ret = zmq_connect(requester, ZMQ_BUS);
-        if (ret == -1) {
-            fprintf(stderr, "BUG: can't connect to %s: %m\n", ZMQ_BUS);
-            exit(EXIT_FAILURE);
-        }
+    requester = zmq_socket(context, ZMQ_DEALER);
+    if (!requester) {
+      fprintf(stderr, "BUG: can't initialize zmq socket: %m\n");
+      exit(EXIT_FAILURE);
     }
+    // setsockopt
+    zmq_setsockopt(socket, ZMQ_IDENTITY, "netmon", strlen("netmon")); // TODO for now ok, rework later
+/*
+    if (ret == -1) {
+      fprintf(stderr, "zmq_setsockopt failed\n");
+      exit(EXIT_FAILURE);
+    }
+*/
+    ret = zmq_connect(requester, ZMQ_BUS);
+    if (ret == -1) {
+      fprintf(stderr, "BUG: can't connect to %s: %m\n", ZMQ_BUS);
+      exit(EXIT_FAILURE);
+    }
+  }
 	
     rtnl_close(&rth);
     argc--;	argv++;

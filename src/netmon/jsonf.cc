@@ -23,22 +23,44 @@ Description: packages netmon's messages to JSON format for controller
 References: BIOS-247, BIOS-244
 */
 
+#include <string.h>
 #include "jsoncpp/json/json.h"
 
 #include "jsonf.h"
 
-const char *json_pack(
-       const char *event,
-       const char *name,
-       const char *ipver,
-       const char *ipaddr,
-       uint8_t prefixlen,
-       const char *mac) {
+const char *json_pack(const char *event, const char *name, const char *ipver,
+                      const char *ipaddr, uint8_t prefixlen, const char *mac) {
+  Json::FastWriter wr;
+  Json::Value command(Json::arrayValue);
+  Json::Value json(Json::objectValue);
 
-     //TODO: check why Json::FastWriter() does not work!
-     Json::FastWriter wr{};
-     Json::Value arr(Json::arrayValue);
-     Json::Value entry(Json::objectValue);
+  json["module"] = "netmon";
+
+  command.append("network");
+  if (strcmp(event, "add") == 0) {
+    command.append("add");
+  } else {
+    command.append("del");
+  }
+  json["command"] = command;
+
+  Json::Value data(Json::objectValue);
+
+  data["name"]  = name;
+  data["ipver"] = ipver;
+  data["ipaddr"] = ipaddr;
+  data["prefixlen"] = prefixlen;
+  data["mac"] = mac;
+
+  json["data"] = data;
+
+
+  return wr.write(json).c_str();
+
+/*
+  Json::FastWriter wr;
+  Json::Value arr(Json::arrayValue);
+  Json::Value entry(Json::objectValue);
 
      entry["event"] = event;
      entry["name"]  = name;
@@ -50,5 +72,5 @@ const char *json_pack(
      arr.append(entry);
 
      return wr.write(arr).c_str();
-
+*/
 }
