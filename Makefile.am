@@ -40,6 +40,7 @@ libpriv_cored_la_SOURCES = \
   src/cored/utilities_zeromq.h \
   src/cored/utilities_zeromq.cc
 
+
 #----------------------------------------------------------------------
 TESTS += \
 		 test-utils
@@ -62,13 +63,17 @@ bin_PROGRAMS = netmon cli cored
 netmon_LDFLAGS = -lnetlink -ljsoncpp -lzmq
 netmon_SOURCES = src/netmon/netmon.c src/netmon/jsonf.cc
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
+netmon_LDADD = libpriv-utils.la
 
 SUBDIRS = docs/man
 
-cli_LDFLAGS = -ljsoncpp
+cli_LDFLAGS = -ljsoncpp -lzmq
 cli_LDADD = libpriv-utils.la libpriv-cli.la
 cli_SOURCES = src/cli/cli.c src/cli/cli-network.cc
 
+
 cored_LDFLAGS = -lzmq -ljsoncpp -pthread
-cored_LDADD = libpriv-cored.la
+cored_LDADD = libpriv-cored.la libpriv-utils.la
 cored_SOURCES = src/cored/main.cc
+cored_CPPFLAGS = -std=c++11
+
