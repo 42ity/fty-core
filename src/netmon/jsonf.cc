@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
+           Karol Hrdina <karolhrdina@eaton.com>
  
 Description: packages netmon's messages to JSON format for controller
 References: BIOS-247, BIOS-244
@@ -56,21 +57,4 @@ const char *json_pack(const char *event, const char *name, const char *ipver,
 
 
   return wr.write(json).c_str();
-
-/*
-  Json::FastWriter wr;
-  Json::Value arr(Json::arrayValue);
-  Json::Value entry(Json::objectValue);
-
-     entry["event"] = event;
-     entry["name"]  = name;
-     entry["ipver"] = ipver;
-     entry["ipaddr"] = ipaddr;
-     entry["prefixlen"] = prefixlen;
-     entry["mac"] = mac;
-
-     arr.append(entry);
-
-     return wr.write(arr).c_str();
-*/
 }

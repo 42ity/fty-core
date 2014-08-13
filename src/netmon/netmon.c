@@ -9,7 +9,8 @@
  * Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru>
  *
  * Retrieved from: https://github.com/infoburp/iproute2.git
- * Adapted for BIOS-247, MichalVyskocil, <michalvyskocil@eaton.com>
+ * Adapted for BIOS-247, Michal Vyskocil <michalvyskocil@eaton.com>,
+ *                       Karol Hrdina <karolhrdina@eaton.com>
  *
  */
 

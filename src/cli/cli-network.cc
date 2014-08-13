@@ -17,7 +17,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
+Author(s): Michal Vyskocil <michalvyskocil@eaton.com>,
+           Karol Hrdina <karolhrdina@eaton.com>
  
 Description: network CLI command
 References: BIOS-245, BIOS-126
@@ -193,7 +194,7 @@ FILE *stream, const char* message, const struct global_opts *gopts) {
   if (res == false) {
       fprintf(stderr, "Error parsing json message:\n%s\n",
               rd.getFormattedErrorMessages().c_str());
-      exit(EXIT_FAILURE);
+      return EXIT_FAILURE;
   }
 
   assert(root.isObject());
@@ -260,7 +261,7 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
 
   if (optind >= argc) {
     fprintf(stderr, "[NOT-YET-IMPLEMENTED]: do_network_help();\n");
-    exit(EXIT_FAILURE);
+    return EXIT_FAILURE;
   }
 
   // TODO ? (?) : think of a more robust way of doing this
@@ -305,6 +306,9 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
 #endif
   ret = zmq_send(socket, message.c_str(), message.size(), 0); //(int) ZMQ_DONTWAIT);  
 /* Unfortunatelly, i wasn't able to finish this successfully
+The idea is to have cli know if cored is not boud; there is a possibility
+to stage the message for sending without blocking and read number of bytes and
+return define/enum... however in the time given, i wasn't able to make it work... TBD
   fprintf(stderr, "ret = %d\n", ret);
   if (ret == -1) {
     if (zmq_errno() == EAGAIN) {
