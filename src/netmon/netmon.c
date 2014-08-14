@@ -490,52 +490,6 @@ static int accept_msg(const struct sockaddr_nl *who,
     return 0;
 }
 
-int netmon_func(const char *connection) {
-  if (connection == NULL || strlen(connection) == 0) {
-	// TODO
-	return EXIT_FAILURE;
-  }
-  void *context = NULL;
-  context = zmq_ctx_new();
-  if (context == NULL) {
-    // TODO
-    return EXIT_FAILURE;
-  }
-  void *socket = NULL;
-  socket = zmq_socket(context, ZMQ_DEALER);
-  if (socket == NULL) {
-    // TODO
-    return EXIT_FAILURE;
-  }
-  int rc = zmq_connect(socket, connection);
-  if (rc != 0) {
-    // TODO
-    return EXIT_FAILURE;
-  }
-
-  rtnl_close(&rth);
-
-  unsigned groups = ~RTMGRP_TC;
-  groups |= nl_mgrp(RTNLGRP_IPV4_IFADDR);
-  groups |= nl_mgrp(RTNLGRP_IPV6_IFADDR);
-
-  // TODO KHR (?): magic constant; enum, define 
-  if (rtnl_open(&rth, groups) < 0) {
-    exit(1);
-  }
-
-  ipaddr_list(socket);
-  if (rtnl_listen(&rth, accept_msg, socket) < 0) {
-    exit(2);
-  }
-
-  // TODO KHR(?): check return values    
-  zmq_close(socket); // 0 - succ; -1 && set errno to ENOTSOCK
-  zmq_ctx_destroy(context); // 0 - succ; -1 && EFAULT EINTR
-
-  return EXIT_SUCCESS;
-}
-
 int main(int argc, char **argv) {
 
   int ret;

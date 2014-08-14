@@ -51,9 +51,7 @@ libpriv_cored_la_SOURCES = \
   src/utils/zmq.hpp \
   src/cored/mock_db.h \
   src/cored/mock_db.cc \
-  src/cored/mock_netmon.h \
-  src/cored/mock_netmon.cc \
-  src/cored/utilities.h \
+ src/cored/utilities.h \
   src/cored/utilities.cc \
   src/cored/utilities_zeromq.h \
   src/cored/utilities_zeromq.cc

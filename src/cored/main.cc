@@ -35,7 +35,6 @@ References: BIOS-248
 #include <jsoncpp/json/json.h>
 
 #include "main.h"
-#include "mock_netmon.h"
 #include "mock_db.h"
 #include "utilities.h"
 #include "utilities_zeromq.h"

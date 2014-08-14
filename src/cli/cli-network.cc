@@ -37,6 +37,7 @@ References: BIOS-245, BIOS-126
 #include "cli.h"
 
 #define ZMQ_RECV_BUFFER_SIZE  1024
+#define ZMQ_BUS_DEFAULT   "tcp://localhost:5559"
 
 /* IMPLEMENTATION SPECIFICS
 
@@ -266,11 +267,15 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
 
   // TODO ? (?) : think of a more robust way of doing this
   // For now I am just passing the smelly turd along ;)
-  const char *ZMQ_BUS = getenv("ZMQ_BUS");
-  if (ZMQ_BUS == NULL || strlen(ZMQ_BUS) == 0) {    
+  std::string ZMQ_BUS;
+  const char *zmq_bus_env = getenv("ZMQ_BUS");
+  if (zmq_bus_env == NULL || strlen(zmq_bus_env) == 0) {    
+    ZMQ_BUS.assign(ZMQ_BUS_DEFAULT);
     fprintf(stderr,
-            "ERROR: environmental variable ZMQ_BUS is not set.\n");
-    return EXIT_FAILURE;
+            "WARNING: environmental variable ZMQ_BUS not set. Defaulting to '%s'\n",
+            ZMQ_BUS.c_str());    
+  } else {
+    ZMQ_BUS.assign(zmq_bus_env);
   }
 
   void *context = NULL;
@@ -290,7 +295,7 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
     fprintf(stderr, "zmq_setsockopt() failed. errno ='%d'\n", zmq_errno());
     return EXIT_FAILURE;
   }  
-  ret =  zmq_connect(socket, ZMQ_BUS);
+  ret =  zmq_connect(socket, ZMQ_BUS.c_str());
   if (ret == -1) {
     fprintf(stderr, "zmq_connect() failed.\n");
     return EXIT_FAILURE;

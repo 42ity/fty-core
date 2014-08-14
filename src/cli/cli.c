@@ -27,7 +27,6 @@ References: BIOS-245
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <getopt.h>
 #include <assert.h>
 
 #include "utils.h"
@@ -79,14 +78,14 @@ int main(int argc, char **argv) {
   index = handle_global_options(argc, (const char**) argv, &gopts);
 #ifndef NDEBUG
   fprintf(stderr, "####\tDEBUG - main()\t####\n");
-  fprintf(stderr, "# argc: '%d'\n# optind: '%d'\n", argc, optind);
+  fprintf(stderr, "# argc: '%d'\n# index: '%d'\n", argc, index);
   fprintf(stderr, "# **argv:\n");
   for (i = 0; i < argc; i++) {
     fprintf(stderr, "#\t[ %d ]\t%s\n", i, argv[i]);
   }
   fprintf(stderr, "\n");
 #endif
-	if (optind == HANDLE_GLOBAL_OPTIONS_BAD_INPUT || !argv[optind]) {
+	if (index == HANDLE_GLOBAL_OPTIONS_BAD_INPUT || !argv[index]) {
 		if (!gopts.show_help) {
 			do_usage();
 			exit(EXIT_FAILURE);
@@ -94,19 +93,19 @@ int main(int argc, char **argv) {
 		do_help();
 		exit(EXIT_SUCCESS);
 	}
-	else if (optind < 0) {
-		fprintf(stderr, "ERROR: unknown global argument '%s'\n", argv[-optind]);
+	else if (index < 0) {
+		fprintf(stderr, "ERROR: unknown global argument '%s'\n", argv[-index]);
 		exit(EXIT_FAILURE);
 	}
 	else {
-		const struct command *cmd = get_builtin_command(builtin_commands, argv[optind]);
+		const struct command *cmd = get_builtin_command(builtin_commands, argv[index]);
 
 		if (cmd == NULL) {
-				fprintf(stderr, "ERROR: unknown command '%s'\n", argv[optind]);
+				fprintf(stderr, "ERROR: unknown command '%s'\n", argv[index]);
 				exit(EXIT_FAILURE);
 		}
-		int ret = cmd->do_command((const int)(argc - optind),
-                              (const char**) argv+optind,
+		int ret = cmd->do_command((const int)(argc - index),
+                              (const char**) argv+index,
                                &gopts);
     exit(ret);
 	}

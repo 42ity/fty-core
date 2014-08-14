@@ -65,6 +65,8 @@ get_builtin_command(const struct command *commands, const char *name) {
     fprintf(stderr,
             "ERROR: argument 'name' is NULL. func:'%s', file:'%s', line:'%d'.\n",
             __func__, __FILE__, __LINE__);
+    // TODO MVY (?): From code review upon request:
+    //               Maybe it's better to fail than to return NULL
 		return NULL;
 	}
   assert(commands != NULL);
