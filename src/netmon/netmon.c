@@ -285,10 +285,9 @@ static int print_addrinfo(const struct sockaddr_nl *who,
             fprintf(stderr, "BUG: failed to send all data to zmq socket: %m\n");
             exit(EXIT_FAILURE);
         }
+        free(msg);
         char buf[1];
-        ret = zmq_recv(requester, buf, 1, 0);
         //skipped error handling
-
     }
     else {
         fprintf(stdout, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
