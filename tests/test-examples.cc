@@ -4,6 +4,7 @@
 //#include <stdlib.h>
 
 #include "cli.h"
+/* Examples where taken from https://github.com/philsquared/Catch */
 
 //BE SURE YOU DON'T HAVE HERE(or in any included file) ANY main FUNCTION
 
