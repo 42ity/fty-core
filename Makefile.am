@@ -1,10 +1,15 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
 
+EXTRA_DIST =
+
 bin_PROGRAMS =
+check_PROGRAMS =
+check_LTLIBRARIES =
 noinst_LTLIBRARIES =
+check_SCRIPTS =
+noinst_SCRIPTS =
 TESTS =
-manual_tests =
 
 AM_CPPFLAGS = \
 			  -include $(top_builddir)/config.h \
@@ -58,23 +63,41 @@ libpriv_cored_la_SOURCES = \
 
 
 #----------------------------------------------------------------------
-TESTS += \
+
+check_SCRIPTS += tools/run-test.sh
+EXTRA_DIST += tools/run-test.sh
+LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
+
+check_LTLIBRARIES += \
+					  libpriv-test-run.la
+
+libpriv_test_run_la_SOURCES = \
+							  tests/include/catch.hpp \
+							  tests/test-run.cpp
+libpriv_test_run_la_CPPFLAGS =$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+
+check_PROGRAMS += \
 		 test-utils
 test_utils_SOURCES = \
 					src/utils/utils.h \
-					tests/utils/test_utils1.c
-test_utils_LDADD = libpriv-utils.la
+					tests/utils/test-utils.cpp
+test_utils_LDADD = \
+				   libpriv-utils.la \
+				   libpriv-test-run.la
+test_utils_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
-# TODO: fails on make distcheck - convert to Catch first to see better debugging info and fix it later
-#TESTS += \
-#		 test-cli
-#test_cli_SOURCES = \
-#				   src/cli/cli.h \
-#				   tests/cli/test-cli.c
-#test_cli_LDADD = libpriv-cli.la
-#test_cli_CPPFLAGS = -I $(top_srcdir)/src/cli
+check_PROGRAMS += \
+		 test-cli
+test_cli_SOURCES = \
+				   src/cli/cli.h \
+				   tests/cli/test-cli.cpp
+test_cli_LDADD = \
+				 libpriv-utils.la \
+				 libpriv-cli.la \
+				 libpriv-test-run.la
+test_cli_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include -I $(top_srcdir)/src/cli
 
-noinst_PROGRAMS = $(TESTS)
+TESTS += $(check_PROGRAMS)
 
 #----------------------------------------------------------------------
 bin_PROGRAMS += \
@@ -104,4 +127,8 @@ cored_SOURCES = \
 				src/cored/main.h \
 				src/cored/main.cc
 cored_LDFLAGS = -lzmq -ljsoncpp -pthread
-cored_LDADD = libpriv-cored.la libpriv-utils.la
+cored_LDADD = libpriv-cored.la
+
+#----------------------------------------------------------------------
+clean-local:
+	rm -rf $(top_builddir)/tests/junit
