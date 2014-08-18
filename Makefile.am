@@ -56,7 +56,7 @@ libpriv_cored_la_SOURCES = \
   src/utils/zmq.hpp \
   src/cored/mock_db.h \
   src/cored/mock_db.cc \
- src/cored/utilities.h \
+  src/cored/utilities.h \
   src/cored/utilities.cc \
   src/cored/utilities_zeromq.h \
   src/cored/utilities_zeromq.cc
@@ -73,14 +73,14 @@ check_LTLIBRARIES += \
 
 libpriv_test_run_la_SOURCES = \
 							  tests/include/catch.hpp \
-							  tests/test-run.cpp
+							  tests/test-run.cc
 libpriv_test_run_la_CPPFLAGS =$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
 check_PROGRAMS += \
 		 test-utils
 test_utils_SOURCES = \
 					src/utils/utils.h \
-					tests/utils/test-utils.cpp
+					tests/utils/test-utils.cc
 test_utils_LDADD = \
 				   libpriv-utils.la \
 				   libpriv-test-run.la
@@ -90,7 +90,7 @@ check_PROGRAMS += \
 		 test-cli
 test_cli_SOURCES = \
 				   src/cli/cli.h \
-				   tests/cli/test-cli.cpp
+				   tests/cli/test-cli.cc
 test_cli_LDADD = \
 				 libpriv-utils.la \
 				 libpriv-cli.la \
@@ -132,3 +132,11 @@ cored_LDADD = libpriv-cored.la
 #----------------------------------------------------------------------
 clean-local:
 	rm -rf $(top_builddir)/tests/junit
+if HAVE_ASTYLE
+EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
+	$(top_srcdir)/tools/astyle-bios
+checkstyle:
+	$(top_srcdir)/tools/astyle-bios -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+style:
+	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src	
+endif
