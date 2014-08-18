@@ -56,5 +56,5 @@ const char *json_pack(const char *event, const char *name, const char *ipver,
   json["data"] = data;
 
 
-  return wr.write(json).c_str();
+  return strdup(wr.write(json).c_str());
 }
