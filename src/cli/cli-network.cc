@@ -17,30 +17,70 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
+Author(s): Michal Vyskocil <michalvyskocil@eaton.com>,
+           Karol Hrdina <karolhrdina@eaton.com>
  
 Description: network CLI command
 References: BIOS-245, BIOS-126
 */
 
+#include <getopt.h>
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
-#include <getopt.h>
+#include <string>
 
 #include <jsoncpp/json/json.h>
+#include <zmq.h>
+
 #include "utils.h"
 #include "cli.h"
+
+#define ZMQ_RECV_BUFFER_SIZE  1024
+#define ZMQ_BUS_DEFAULT   "tcp://localhost:5559"
+
+/* IMPLEMENTATION SPECIFICS
+
+`network list` expected json:
+{
+  "RD-ID"     : rc-identifier,
+  "networks"  :
+    [{
+      "type"      :   type-value,
+      "name"      :   name-value,
+      "ipver"     :   ipver-value,
+      "ipaddr"    :   ipaddr-value,
+      "prefixlen" :   prefixlen,
+      "mac"       :   mac-value
+     },...]
+}
+
+`network add` json sent:
+{
+  "module"  : module-value,
+  "command" : [ "network", "add" ],
+  "data"    : {
+    "ipver"     :   ipver-value,
+    "ipaddr"    :   ipaddr-value,
+    "prefixlen" :   prefixlen
+  }
+}
+
+`network remove` json sent:
+{
+  "module"  : module-value,
+  "command" : [ "network", "del" ],
+  "data"    : {
+    "ipver"     :   ipver-value,
+    "ipaddr"    :   ipaddr-value,
+    "prefixlen" :   prefixlen
+  }
+}
+*/
 
 struct network_opts {
     bool show_details;
 };
-
-const char *msg = 
-    "{\"<FAKE-RC-ID>\" : ["
-    "{\"type\":\"AUTOMATIC\",\"ipaddr\":\"10.130.38.0\",\"mac\":\"a0:1d:48:b7:e2:4e\",\"name\":\"enp0s25\",\"prefixlen\":24},"
-    "{\"type\":\"MANUAL\",\"ipaddr\":\"10.0.0.0\",\"mac\":\"---\",\"name\":\"---\",\"prefixlen\":8},"
-    "{\"type\":\"DELETED\",\"ipaddr\":\"fe80::a21d:48ff:feb7:e24e\",\"mac\":\"de:ad:be:ef:e2:42\",\"name\":\"wlo1\",\"prefixlen\":64}]}";
 
 static struct network_opts opts = {
     .show_details = false
@@ -87,101 +127,217 @@ static char char_type(Json::Value &v) {
     return '?';
 }
 
-static int do_network_list(FILE *out, const char* json_msg, const struct global_opts *gopts) {
-	assert(out);
+static bool json_pack(const char **gargv, int argc,  std::string& result) {
 
-    bool res;
-    Json::Reader rd{};
-    Json::Value  root{Json::ValueType::arrayValue};
+  char *const *argv = (char *const*) gargv;
+  Json::FastWriter wr;
+  Json::Value command(Json::arrayValue);
+  Json::Value json(Json::objectValue);
 
-    res = rd.parse(json_msg, root, false);
-    if (!res) {
-        fprintf(stderr, "ERROR: invalid JSON message!\n%s\n\n", msg);
-        exit(EXIT_FAILURE);
+  // TODO KHR (?) : All of these magical constants
+  json["module"] = "cli";
+  command.append("network");
+
+  ////  LIST  ////
+  if (streq(argv[optind], "list")) {
+    command.append("list");
+    json["data"] = Json::Value(Json::objectValue);
+  ////  ADD, REMOVE   ////
+  } else if(streq(argv[optind], "add") ||
+            streq(argv[optind], "remove")) {
+    Json::Value data(Json::objectValue);
+    if (optind + 1 == argc) {
+      fprintf(stderr,
+              "Too few arguments.\n");
+      return false;
     }
-
-    assert(rd.getFormattedErrorMessages().length() == 0); // no error messages during parsing
-    assert(root.isObject());
-
-    for (auto rcid : root.getMemberNames()) {
-
-        fputs(rcid.c_str(), stdout);
-        fputs("\n", stdout);
-
-        for (auto entry : root[rcid]) {
-
-            assert(entry.isObject());
-
-            fprintf(stdout, "    %c %s/%d %s %s\n",
-                    char_type(entry["type"]),
-                    entry["ipaddr"].asCString(),
-                    entry["prefixlen"].asInt(),
-                    entry["name"].asCString(),
-                    entry["mac"].asCString()
-            );
-        }
+    std::string argument(argv[optind+1]);
+    std::size_t index = argument.find('/');
+    if (index == std::string::npos) {
+      fprintf(stderr,
+              "ERROR: unknown command line argument '%s'. CIDR format expected.\n",
+              argv[optind+1]);
+      return false;
     }
-    return 0;
+    data["ipver"] = "IPV4";
+    data["ipaddr"] = argument.substr(0, index);
+    data["prefixlen"] = argument.substr(index + 1, argument.length());
+    json["data"] = data;
+    if (streq(argv[optind], "add")) {  
+      command.append("add");
+    } else {
+      command.append("del");
+    }
+  ////  ERROR - UNKNOWN SUB-COMMAND  ////
+  } else {
+    fprintf(stderr,
+            "ERROR: unknown sub-command '%s'\n",
+            argv[optind]);
+    return false;
+  }
+  json["command"] = command;
+  result.assign(wr.write(json));
+  return true;
 }
 
+static int
+do_network_list(
+FILE *stream, const char* message, const struct global_opts *gopts) {
+	assert(stream);
+  if (stream == NULL) {
+    fprintf(stderr, "stream empty\n");
+    return EXIT_FAILURE;
+  }
 
-int do_network(const int argc, const char **gargv, const struct global_opts *gopts) {
-    int option_index = 0;
-    int c = 0;
-    char *const *argv = (char *const*) gargv;
-	
-    fprintf(stderr, "DEBUG: running command '%s', argc = %d\n", argv[0], argc);
+  Json::Reader rd;
+  Json::Value root{Json::ValueType::arrayValue};
+  bool res = rd.parse(message, root, false);
+  if (res == false) {
+      fprintf(stderr, "Error parsing json message:\n%s\n",
+              rd.getFormattedErrorMessages().c_str());
+      return EXIT_FAILURE;
+  }
 
-    if (argc == 1) {
-        do_network_list(stdout, msg, gopts);
-        return 0;
-    }
+  assert(root.isObject());
 
-    // command line argument parsing
-    while(c != -1) {
+  for (auto rcid : root.getMemberNames()) {    
+    fputs(rcid.c_str(), stdout);
+    fputs("\n", stdout);
 
-        c = getopt_long(argc, argv, "d", long_options, &option_index);
-        switch(c) {
-            case -1:
-                continue;
-                break;
-            case 'd':
-                opts.show_details = true;
-                break;
-            case '?':
-               /* getopt_long already printed an error message. */
-               break;
-             default:
-               return -1;
-        }
-    }
+    for (auto entry : root[rcid]) {
+      assert(entry.isObject());
+      fprintf(stdout,
+              "\t%c %s/%d %s %s\n",
+              char_type(entry["type"]),
+              entry["ipaddr"].asCString(),
+              entry["prefixlen"].asInt(),
+              entry["name"].asCString(),
+              entry["mac"].asCString());
+      }
+  }
+  return EXIT_SUCCESS;
+}
 
-    if (optind >= argc) {
-        fprintf(stderr, "[NOT-YET-IMPLEMENTED]: do_network_help();\n");
-        exit(EXIT_FAILURE);
-    }
+int
+do_network(
+const int argc, const char **gargv, const struct global_opts *gopts) {
 
-    if (streq(argv[optind], "list")) {
-        return do_network_list(stdout, msg, gopts);
+  char *const *argv = (char *const*) gargv;
+  int option_index = 0;
+  int c = 0;
+  // command line argument parsing
+  while (c != -1) {
+    c = getopt_long(argc, argv, "d", long_options, &option_index);
+    switch (c) {
+      case -1:
+        continue;
+        break;
+      case 'd':
+        opts.show_details = true;
+        break;
+      case '?':
+        /* getopt_long already printed an error message. */
+        break;
+      default:
+        return -1;
     }
-    else if (streq(argv[optind], "add")) {
-        fprintf(stderr, "[NOT-YET-IMPLEMENTED]: add;\n");
-        exit(EXIT_FAILURE);
+  }
+
+#ifndef NDEBUG
+  fprintf(stderr, "####\tDEBUG - do_network()\t####\n");
+  fprintf(stderr, "# argc: '%d'\n# optind: '%d'\n", argc, optind);
+  fprintf(stderr, "# **argv:\n");  
+  for (int i = 0; i < argc; i++) {
+    fprintf(stderr, "#\t[ %d ]\t%s\n", i, argv[i]);
+  }
+  fprintf(stderr, "# non-option ARGV-elements:\n");
+  {
+    int i = optind;
+    while (i < argc) {
+    fprintf (stderr, "#\t%s\n", argv[i++]);
     }
-    else if (streq(argv[optind], "remove")) {
-        fprintf(stderr, "[NOT-YET-IMPLEMENTED]: add;\n");
-        exit(EXIT_FAILURE);
+  }
+  fprintf(stderr,"\n");
+#endif
+
+  if (optind >= argc) {
+    fprintf(stderr, "[NOT-YET-IMPLEMENTED]: do_network_help();\n");
+    return EXIT_FAILURE;
+  }
+
+  // TODO ? (?) : think of a more robust way of doing this
+  // For now I am just passing the smelly turd along ;)
+  std::string ZMQ_BUS;
+  const char *zmq_bus_env = getenv("ZMQ_BUS");
+  if (zmq_bus_env == NULL || strlen(zmq_bus_env) == 0) {    
+    ZMQ_BUS.assign(ZMQ_BUS_DEFAULT);
+    fprintf(stderr,
+            "WARNING: environmental variable ZMQ_BUS not set. Defaulting to '%s'\n",
+            ZMQ_BUS.c_str());    
+  } else {
+    ZMQ_BUS.assign(zmq_bus_env);
+  }
+
+  void *context = NULL;
+  context = zmq_ctx_new();
+  if (context == NULL) {
+    fprintf(stderr, "zmq_ctx_new() failed.\n");
+    return EXIT_FAILURE; // TODO KHR (?) : maybe create defines for various errors?
+  }
+  void *socket = NULL;
+  socket = zmq_socket(context, ZMQ_DEALER);
+  if (socket == NULL) {
+    fprintf(stderr, "zmq_socket() failed.\n");
+    return EXIT_FAILURE;
+  }
+  int ret = zmq_setsockopt(socket, ZMQ_IDENTITY, "cli", strlen("cli")); // hmmptf  
+  if (ret == -1) {
+    fprintf(stderr, "zmq_setsockopt() failed. errno ='%d'\n", zmq_errno());
+    return EXIT_FAILURE;
+  }  
+  ret =  zmq_connect(socket, ZMQ_BUS.c_str());
+  if (ret == -1) {
+    fprintf(stderr, "zmq_connect() failed.\n");
+    return EXIT_FAILURE;
+  }
+
+  std::string message;
+  if (!json_pack(gargv, argc, message)) {
+    return EXIT_FAILURE;    
+  }
+#ifndef NDEBUG
+  fprintf(stderr, "\n####\tDEBUG - do_network()\t####\n");
+  fprintf(stderr, "# Sending json:\n# %s\n", message.c_str());
+#endif
+  ret = zmq_send(socket, message.c_str(), message.size(), 0); //(int) ZMQ_DONTWAIT);  
+/* Unfortunatelly, i wasn't able to finish this successfully
+The idea is to have cli know if cored is not boud; there is a possibility
+to stage the message for sending without blocking and read number of bytes and
+return define/enum... however in the time given, i wasn't able to make it work... TBD
+  fprintf(stderr, "ret = %d\n", ret);
+  if (ret == -1) {
+    if (zmq_errno() == EAGAIN) {
+      printf("cored is not running on the specified connection.\n");
+      return EXIT_SUCCESS;
     }
-    else {
-        fprintf(stderr, "ERROR: unknown sub-command '%s'\n", argv[optind]);
-        exit(EXIT_FAILURE);
+    fprintf(stderr, "zmq_send() failed.\n");
+    return EXIT_FAILURE;
+  }
+*/
+  if (streq(argv[optind], "list")) {
+    char buffer[ZMQ_RECV_BUFFER_SIZE+1];
+    ret = zmq_recv(socket, buffer, ZMQ_RECV_BUFFER_SIZE, 0);
+    buffer[ZMQ_RECV_BUFFER_SIZE] = '\0';
+    if (ret > ZMQ_RECV_BUFFER_SIZE) {
+      fprintf(stderr,
+              "WARNING: buffer too small and the message was truncated.\n");
+    } else if (ret == -1) {    
+      fprintf(stderr, "ERROR: zmq_recv failed.\n");
+      return EXIT_FAILURE;
     }
-    /*
-         {
-           fprintf (stderr, "non-option ARGV-elements: ");
-           while (optind < argc)
-             fprintf (stderr, "%s ", argv[optind++]);
-           fputc ('\n', stderr);
-         }
-   */
+    return do_network_list(stdout, buffer, gopts);
+  }
+  zmq_close(socket);
+  zmq_ctx_destroy(context);
+  return EXIT_SUCCESS;
 }

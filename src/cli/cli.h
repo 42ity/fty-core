@@ -24,6 +24,10 @@ References: BIOS-245
 */
 #pragma once
 
+#define HANDLE_GLOBAL_OPTIONS_BAD_INPUT 0
+#define MSG_E_USER_PAGE_NOT_IMPLEMENTED \
+  "WARNING: use_pager is not implemented!"
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -70,7 +74,7 @@ int handle_global_options(const int argc, const char **argv, struct global_opts 
  */
 const struct command* get_builtin_command(const struct command *commands, const char *name);
 
-/*! \bried 'network' command  */
+//! 'network' command
 int do_network(const int argc, const char **argv, const struct global_opts *opts);
 
 #ifdef __cplusplus

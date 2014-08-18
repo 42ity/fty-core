@@ -18,37 +18,43 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
+           Karol Hrdina <karolhrdina@eaton.com>
  
 Description: packages netmon's messages to JSON format for controller
 References: BIOS-247, BIOS-244
 */
 
+#include <string.h>
 #include "jsoncpp/json/json.h"
 
 #include "jsonf.h"
 
-const char *json_pack(
-       const char *event,
-       const char *name,
-       const char *ipver,
-       const char *ipaddr,
-       uint8_t prefixlen,
-       const char *mac) {
+const char *json_pack(const char *event, const char *name, const char *ipver,
+                      const char *ipaddr, uint8_t prefixlen, const char *mac) {
+  Json::FastWriter wr;
+  Json::Value command(Json::arrayValue);
+  Json::Value json(Json::objectValue);
 
-     //TODO: check why Json::FastWriter() does not work!
-     Json::FastWriter wr{};
-     Json::Value arr(Json::arrayValue);
-     Json::Value entry(Json::objectValue);
+  json["module"] = "netmon";
 
-     entry["event"] = event;
-     entry["name"]  = name;
-     entry["ipver"] = ipver;
-     entry["ipaddr"] = ipaddr;
-     entry["prefixlen"] = prefixlen;
-     entry["mac"] = mac;
+  command.append("network");
+  if (strcmp(event, "add") == 0) {
+    command.append("add");
+  } else {
+    command.append("del");
+  }
+  json["command"] = command;
 
-     arr.append(entry);
+  Json::Value data(Json::objectValue);
 
-     return wr.write(arr).c_str();
+  data["name"]  = name;
+  data["ipver"] = ipver;
+  data["ipaddr"] = ipaddr;
+  data["prefixlen"] = prefixlen;
+  data["mac"] = mac;
 
+  json["data"] = data;
+
+
+  return strdup(wr.write(json).c_str());
 }
