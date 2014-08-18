@@ -277,7 +277,6 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     }
     */
 
-    //fputs(json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac), fp);
     if (use_zmq) {
         const char *msg = json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac);
         ret = zmq_send(requester, msg, strlen(msg), 0);
@@ -285,9 +284,10 @@ static int print_addrinfo(const struct sockaddr_nl *who,
             fprintf(stderr, "BUG: failed to send all data to zmq socket: %m\n");
             exit(EXIT_FAILURE);
         }
-        free(msg);
-        char buf[1];
-        //skipped error handling
+        if (msg != NULL) {
+          free(msg);
+          msg = NULL;
+        }
     }
     else {
         fprintf(stdout, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
