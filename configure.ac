@@ -28,6 +28,14 @@ AC_LANG_POP([C++])
 
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 4.0], [], [AC_MSG_ERROR([cannot find libzmq version 4])])
 
+# astyle
+AC_MSG_CHECKING([for astyle])
+AC_PATH_PROGS([ASTYLE], [astyle])
+if test -z "${ASTYLE}"; then
+	AC_MSG_RESULT(astyle found)
+fi
+AM_CONDITIONAL(HAVE_ASTYLE, test -n "${ASTYLE}")
+
 dnl Documentation generation
 AC_MSG_CHECKING([for asciiDoc])
 AC_PATH_PROGS([ASCIIDOC], [asciidoc])
