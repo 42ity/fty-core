@@ -56,12 +56,11 @@ libpriv_cored_la_SOURCES = \
   src/utils/zmq.hpp \
   src/cored/mock_db.h \
   src/cored/mock_db.cc \
-  src/cored/mock_netmon.h \
-  src/cored/mock_netmon.cc \
-  src/cored/utilities.h \
+ src/cored/utilities.h \
   src/cored/utilities.cc \
   src/cored/utilities_zeromq.h \
   src/cored/utilities_zeromq.cc
+
 
 #----------------------------------------------------------------------
 
@@ -110,16 +109,16 @@ netmon_SOURCES = \
 				 src/netmon/jsonf.h \
 				 src/netmon/jsonf.cc
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
+netmon_LDADD = libpriv-utils.la
 
 SUBDIRS = docs/man
 
+cli_LDFLAGS = -ljsoncpp -lzmq
 bin_PROGRAMS += \
 			  cli
 cli_SOURCES = \
 			  src/cli/cli.c \
 			  src/cli/cli-network.cc
-
-cli_LDFLAGS = -ljsoncpp
 cli_LDADD = libpriv-utils.la libpriv-cli.la
 
 bin_PROGRAMS += \
