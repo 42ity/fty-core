@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# EXCLUDES are handled on line 100
+
+# Command line options have precedence over config/options file 
+declare -r BIOS_INDENT=2     # number of spaces in one indentation step
+declare -r BIOS_MAXCOLS=120  # max line length, does not break comments, 
+                             # quotes, arrays
+
+declare -r ASTYLE_MASK=( "c" "h" "cc" "hh" "cpp" "hpp" "cx" "cxx" "hxx" )
+declare -r ASTYLE_CMD=astyle
+declare -r ASTYLE_CONF_FILE="astyle.conf"
+declare -r ASTYLE_TMP_DIR=$( mktemp -d ".astyle.XXXX" )
+if [[ -z "$ASTYLE_TMP_DIR" ]]; then
+  echo "ERROR: executing mktemp failed"
+  exit 1
+fi
+
+declare -r ASTYLE_EXP_EMPTY_STDOUT="No file to process" # expected stdout for empty astyle
+                                                        # target and return of 1
+
+declare -r SCRIPTNAME=`basename $0`
+declare -r LOCKFILE="./.astyle.lock"
+declare -i MAKE_CHECK=0
+declare -i BE_QUIET=0
+declare -r MSG_DOING_ASTYLE="Performing a(rtistic) style formatting of "
+declare -r MSG_DOING_PRETEND="Performing check whether the following is formatted "
+declare -r MSG_LIST_TYPE="File types: "
+declare -r MSG_TMP_FILES_NOT_DELETED="Temporary copy './$ASTYLE_TMP_DIR' not deleted. Please perform a manual cleanup."
+declare -r MSG_LOCKFILE_PRESENT="Previous $SCRIPTNAME didn't finish successfully or still running. Please make sure another instance of $SCRIPTNAME is not running before deleting $LOCKFILE"
+
+function print_usage () {
+cat << EOF
+$SCRIPTNAME [-cq] <options_file> <target_directory>
+
+DESCRIPTION:
+  astyle (http://astyle.sourceforge.net/) wrapper for use with GNU Autotools 
+
+OPTIONS:
+  -c  check 
+      Perform "pretend-like" check whether files in <target_irectory> are formatted.          
+
+  -q  quiet
+      Be quiet.
+EOF
+}
+
+function cleanup() {
+  rm -f "$LOCKFILE"
+
+  if [[ "$MAKE_CHECK" -ne 0 ]]; then
+    error_message=$( find "./$ASTYLE_TMP_DIR" -name "*" -delete 2>&1 )
+    if [[ "$?" -ne 0 ]]; then
+      # TODO QUESTION, if quiet do we want to inform the user if temporary files
+      #                were not deleted?
+      #echo "$error_message"
+      echo "$MSG_TMP_FILES_NOT_DELETED"
+    fi
+  fi
+}
+
+OPTIND=1
+while getopts ":cqh" option ; do
+  case "$option" in
+    c)
+       MAKE_CHECK=1
+       ;;
+    q)
+       BE_QUIET=1
+       ;;
+    h)
+       # print usage
+       print_usage
+       exit 0
+       ;;
+    ?)
+       # print err/usage
+       echo "Bad usage"
+       exit 1
+       ;;
+  esac
+done
+shift $(($OPTIND - 1))
+# $1 is now the first non-option argument, $2 the second, etc
+# $# number of arguments#!/bin/bash
+if [[ -z "$1" || -z "$2" ]]; then
+  echo "Bad usage"
+  exit 1
+fi
+
+if [[ -f "$LOCKFILE" ]]; then
+  [[ "$BE_QUIET" -eq 0 ]] && echo "$MSG_LOCKFILE_PRESENT"   
+  exit 1
+fi
+
+trap cleanup EXIT
+touch "$LOCKFILE"
+
+declare -r SRC_PATH="$2"  # NOTE: Make sure it doesn't end with /
+# TODO ? (?): solve indirection to enable excludes
+#declare -a EXCLUDES=(
+#  "$SRC_PATH/utils/zmq.hpp"
+#)
+
+declare -a OPTS=(
+  "--options=${1}"   
+  "--max-code-length=${BIOS_MAXCOLS}"
+  "--indent=spaces=${BIOS_INDENT}"
+  "--recursive"
+  "--preserve-date"
+)
+# TODO ? (?): when indirection above is solved, solve the weird astyle behaviour
+#  "--exclude=\"${EXCLUDES[@]}\""
+
+# I found out empirically that astyle returns
+#  0 - "Formatted" "Unchanged"
+#  1 - when error or "No file to process"
+
+declare -a tmp_arr
+declare error_message=""
+if [[ "$MAKE_CHECK" -eq 0 ]]; then
+  # Actual in place astyle formatting  ###
+  if [[ "$BE_QUIET" -eq 0 ]]; then
+    echo -n "$MSG_DOING_ASTYLE"
+    echo "$SRC_PATH"
+    echo -n "$MSG_LIST_TYPE"
+    for wc in "${ASTYLE_MASK[@]}"; do
+      echo -n " $wc" 
+    done
+    echo ""
+  fi  
+  for wc in "${ASTYLE_MASK[@]}"; do
+    tmp_arr=( "$ASTYLE_CMD" "${OPTS[@]}" "$SRC_PATH/*.$wc" )
+    error_message=$( "${tmp_arr[@]}" 2>&1 )
+    if [[ "$?" -ne 0 && ! "$error_message" =~ "$ASTYLE_EXP_EMPTY_STDOUT" ]]; then
+      [[ "$BE_QUIET" -eq 0 ]] && echo "$error_message"      
+      exit 1      
+    fi    
+  done
+  tmp_arr=( )
+  exit 0
+
+else
+  # Simulates "--pretend". Creates a copy on side, tries astyle,
+  # reports return value, cleans up 
+  declare -i ERROR=0
+
+  # Copy on side
+#  error_message=$( mkdir "$ASTYLE_TMP_DIR" )
+#  if [[ "$?" -ne 0 ]]; then
+#    [[ "$BE_QUIET" -eq 0 ]] && echo "$error_message"   
+#    exit 1
+#  fi
+  error_message=$( cp -r "$SRC_PATH" "./$ASTYLE_TMP_DIR" )  
+  if [[ "$?" -ne 0 ]]; then
+    [[ "$BE_QUIET" -eq 0 ]] && echo "$error_message"
+    exit 1
+  fi
+
+  # try astyle  
+  for wc in "${ASTYLE_MASK[@]}"; do
+    tmp_arr=( "$ASTYLE_CMD" "${OPTS[@]}" "./$ASTYLE_TMP_DIR/*.$wc" )
+    error_message=$( "${tmp_arr[@]}" 2>&1 )
+    if [[ "$?" -ne 0 && !  "$error_message"  =~ "$ASTYLE_EXP_EMPTY_STDOUT" ]]; then
+      [[ "$BE_QUIET" -eq 0 ]] && echo "$error_message"      
+      exit 1    
+    else
+      if [[ "$error_message" =~ "Formatted" ]]; then
+        [[ "$BE_QUIET" -eq 0 ]] && echo "Found UNSTYLED files."        
+        ERROR=1
+        break     
+      fi
+    fi
+  done
+
+  if [[ "$ERROR" -eq 0 ]]; then
+    echo "Check OK"        
+    exit 0
+  else
+    echo "Check FAILED"
+    exit 1
+  fi
+fi
+
