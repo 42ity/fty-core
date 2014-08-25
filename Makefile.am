@@ -1,6 +1,5 @@
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
-
 EXTRA_DIST =
 
 bin_PROGRAMS =
@@ -64,8 +63,8 @@ libpriv_cored_la_SOURCES = \
 
 #----------------------------------------------------------------------
 
-check_SCRIPTS += tools/run-test.sh
-EXTRA_DIST += tools/run-test.sh
+check_SCRIPTS += tools/run-test-doc.sh
+#EXTRA_DIST += tools/run-test.sh
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 
 check_LTLIBRARIES += \
@@ -98,7 +97,7 @@ test_cli_LDADD = \
 test_cli_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include -I $(top_srcdir)/src/cli
 
 TESTS += $(check_PROGRAMS)
-
+TESTS += $(check_SCRIPTS)
 #----------------------------------------------------------------------
 bin_PROGRAMS += \
 				netmon
@@ -130,8 +129,24 @@ cored_LDFLAGS = -lzmq -ljsoncpp -pthread
 cored_LDADD = libpriv-cored.la
 
 #----------------------------------------------------------------------
+
+if HAVE_DOXYGEN
+#SUBDIRS += ${myDOXDIR}
+EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
+
+html check: clean-html
+	$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
+
+clean-html:
+	rm -rf  $(top_srcdir)/${myDOXDIR}/html
+
+.PHONY: clean-html
+ 
+endif
+
 clean-local:
 	rm -rf $(top_builddir)/tests/junit
+
 if HAVE_ASTYLE
 EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
 	$(top_srcdir)/tools/astyle-bios
