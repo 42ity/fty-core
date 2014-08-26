@@ -26,7 +26,7 @@ const int argc, const char **argv, struct global_opts *gopts) {
       break;
     }
     
-    if (streq("--help", cmd)) {
+    if (streq("--help", cmd) || streq("-h", cmd)) {
       gopts->show_help =true;
       return 0;
     }
