@@ -64,7 +64,8 @@ libpriv_cored_la_SOURCES = \
 #----------------------------------------------------------------------
 
 check_SCRIPTS += tools/run-test-doc.sh
-#EXTRA_DIST += tools/run-test.sh
+# I am not sure whether we need this. TODO MVY Please look at this. I think that run-test.sh doesn;t belong to distribution package.
+# EXTRA_DIST += tools/run-test.sh
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 
 check_LTLIBRARIES += \
@@ -131,7 +132,6 @@ cored_LDADD = libpriv-cored.la
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
-#SUBDIRS += ${myDOXDIR}
 EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
 
 html check: clean-html

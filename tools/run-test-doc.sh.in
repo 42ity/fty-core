@@ -1,0 +1,11 @@
+#!/bin/bash
+
+DOXYLOG="@myDOXDIR@/@mydoxylog@"
+
+declare -r ERR_S=98
+
+if [[ -e "${DOXYLOG}" ]]; then
+	echo "There are undocumented entities:"
+	cat "${DOXYLOG}"
+	exit "${ERR_S}"
+fi
