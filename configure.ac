@@ -31,7 +31,7 @@ AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 4])])
 
 dnl ------ it was suggested by autoscan
-
+dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
 dnl Checks for libraries.
 dnl FIXME: Replace `main' with a function in `-ljsoncpp':
 dnl AC_CHECK_LIB([jsoncpp], [main])
@@ -72,9 +72,15 @@ if test -z "$DOXYGEN"; then
   ])
 fi
 myDOXDIR="docs/doxygen"
+mydoxylog="doxylog.txt"
+mysrcDIR="src" 
+dnl the directory to search source file that must be included in documentation
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
 AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile tools/run-test-doc.sh])])
 AC_SUBST([myDOXDIR])
+AC_SUBST([mydoxylog])
+AC_SUBST([mysrcDIR])
+
 
 # astyle
 dnl ASTYLE would have the absolute path, use AC_CHECK_PROGS for relative
@@ -87,7 +93,7 @@ AC_PATH_PROGS([ASCIIDOC], [asciidoc])
 
 # a2x
 AC_PATH_PROGS([A2X], [a2x])
-dnl is it ok?
+dnl TODO  MVY is it ok?
 AM_CONDITIONAL([HAVE_ASCIIDOC], [test -n "${A2X}"])
 
 # set flags CFLAGS
