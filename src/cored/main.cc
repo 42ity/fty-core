@@ -255,9 +255,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "####\tDEBUG - main()\t####\n");
         fprintf(stderr, "# Starting ./netmon module\n");
         fprintf(stderr, "\n");
+        std::string path = getenv("PATH");
+        setenv("PATH", ".", 1);
 #endif
-        int ret = std::system("./netmon");
+        int ret = std::system("netmon");
 #ifndef NDEBUG
+        setenv("PATH", path.c_str(), 1);
         fprintf(stderr, "####\tDEBUG - main()\t####\n");
         fprintf(stderr, "# Module ./netmon finished with return value '%d'\n", ret);
         fprintf(stderr, "\n");
