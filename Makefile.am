@@ -60,6 +60,13 @@ libpriv_cored_la_SOURCES = \
   src/cored/utilities_zeromq.h \
   src/cored/utilities_zeromq.cc
 
+noinst_LTLIBRARIES += \
+					  libpriv-log.la
+
+libpriv_log_la_SOURCES = \
+						 src/utils/log.h \
+						 src/utils/log.c
+libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 #----------------------------------------------------------------------
 
