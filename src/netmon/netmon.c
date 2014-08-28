@@ -41,6 +41,7 @@
 #include <zmq.h>
 
 #include "jsonf.h"
+#include "log.h"
 
 // include/utils.h
 #define SPRINT_BSIZE 64
@@ -172,23 +173,20 @@ const char *qd_mac(const char* ethname) {
     
     r = asprintf(&path, "/sys/class/net/%s/address", ethname);
     if (!r) {
-        //TODO logging
-        fprintf(stderr, "BUG: can't allocate string");
+        log_error("can't allocate path string: %m\n");
         return "";
     }
 
     fd = open(path, O_RDONLY);
     if (!fd) {
-        //TODO logging
-        fprintf(stderr, "BUG: can't open /sys/class/net/%s/address", ethname);
+        log_error("can't open /sys/class/net/%s/address: %m\n", ethname);
         free(path);
         return "";
     }
 
     r = read(fd, mac, MAX_ADDR_LEN);
     if (r < 1) {
-        //TODO: logging
-        fprintf(stderr, "BUG: read on %s failed\n", path);
+        log_error("read on %s failed: %m\n", path);
         free(path);
         close(fd);
         return "";
@@ -228,8 +226,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 	
     len -= NLMSG_LENGTH(sizeof(*ifa));
 	if (len < 0) {
-        //TODO change to logging interface!
-		fprintf(stderr, "BUG: wrong nlmsg len %d\n", len);
+		log_error("wrong nlmsg len %d\n", len);
 		return -1;
 	}
 
@@ -241,7 +238,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
             ipfamily = "IPV6"; //inet6
             break;
         default:
-            fprintf(stderr, "WARNING: unsupported family\n");
+            log_warning("unsupported family: %d\n", ifa->ifa_family);
             return 0;
     }
     
@@ -281,7 +278,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
         const char *msg = json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac);
         ret = zmq_send(requester, msg, strlen(msg), 0);
         if (ret != strlen(msg)) {
-            fprintf(stderr, "BUG: failed to send all data to zmq socket: %m\n");
+            log_critical("failed to send all data to zmq socket: %m\n");
             exit(EXIT_FAILURE);
         }
         if (msg != NULL) {
@@ -482,8 +479,7 @@ static int accept_msg(const struct sockaddr_nl *who,
         case NLMSG_DONE:
             break;
         default:
-            //TODO: error
-            fprintf(stderr, "n->nlmsg_type = <default>\n");
+            log_error("n->nlmsg_type = <default>\n");
             break;
     }
     return 0;
@@ -503,17 +499,17 @@ int main(int argc, char **argv) {
 
   if (ZMQ_BUS == NULL || strlen(ZMQ_BUS) == 0) {
     use_zmq = false;
-    fprintf(stderr, "INFO: environment variable ZMQ_BUS not defined. Printing to stdout.\n");
+    log_info("environment variable ZMQ_BUS not defined. Printing to stdout.\n");
   } else {
     use_zmq = true;
     context = zmq_ctx_new();
     if (!context) {
-      fprintf(stderr, "BUG: can't initialize zmq context: %m\n");
+      log_critical("can't initialize zmq context: %m\n");
       exit(EXIT_FAILURE);
     }
     requester = zmq_socket(context, ZMQ_DEALER);
     if (!requester) {
-      fprintf(stderr, "BUG: can't initialize zmq socket: %m\n");
+      log_critical("can't initialize zmq socket: %m\n");
       exit(EXIT_FAILURE);
     }
     // setsockopt
@@ -526,7 +522,7 @@ int main(int argc, char **argv) {
 */
     ret = zmq_connect(requester, ZMQ_BUS);
     if (ret == -1) {
-      fprintf(stderr, "BUG: can't connect to %s: %m\n", ZMQ_BUS);
+      log_critical("can't connect to %s: %m\n", ZMQ_BUS);
       exit(EXIT_FAILURE);
     }
   }
