@@ -15,6 +15,13 @@ LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
 
+# debuging
+AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],
+                                     [debugging environment (default no)])])
+AS_IF([test "x$enable_debug" != "xyes"], [
+    AC_DEFINE(NDEBUG, [1], [Define disabling debugging])
+])
+
 # toolchain
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -121,19 +128,19 @@ my_CXXFLAGS="\
 AC_SUBST([my_CXXFLAGS])
 
 AC_MSG_NOTICE([
-        summary
+Summary:
 
         $PACKAGE_NAME $VERSION
-
 
         prefix:                  ${prefix}
         sysconf dir:             ${sysconfdir}
         datarootdir:             ${datarootdir}
         includedir:              ${includedir}
         lib dir:                 ${libdir}
-	
-        astyle:     			 ${ASTYLE:-NONE}
-        asciidoc:                ${A2X:-NONE}
+
+        astyle:                  ${ASTYLE:-none}
+        asciidoc:                ${A2X:-none}
+        doxygen:                 ${DOXYGEN:-none}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
@@ -141,7 +148,8 @@ AC_MSG_NOTICE([
         LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
         LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
-    	DOXYGEN:        		 ${DOXYGEN:-NONE}
+
+        debug mode:              ${enable_debug:-no}
 ])
 
 AC_OUTPUT
