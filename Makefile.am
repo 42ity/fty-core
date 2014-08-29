@@ -115,7 +115,7 @@ netmon_SOURCES = \
 				 src/netmon/netmon.c \
 				 src/netmon/jsonf.h \
 				 src/netmon/jsonf.cc
-netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon
+netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE
 netmon_LDADD = libpriv-utils.la libpriv-log.la
 
 SUBDIRS = docs/man
