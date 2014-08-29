@@ -24,30 +24,55 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 
-static int log_level = LOG_ERR;
+#define LOG_NOOP LOG_DEBUG + 42
+
+static int log_syslog_level = LOG_ERR;
+static int log_stderr_level = LOG_ERR;
 static int log_facility = LOG_DAEMON;
 
 extern int errno;
 
-void log_set_level(int level) {
-
+#define ASSERT_LEVEL \
     assert(level == LOG_DEBUG   || \
            level == LOG_INFO    || \
            level == LOG_WARNING || \
            level == LOG_ERR     || \
-           level == LOG_CRIT);
+           level == LOG_CRIT)
 
-    LOG_UPTO(level);
-    log_level = level;
+void log_set_level(int level) {
+
+    ASSERT_LEVEL;
+
+    log_set_syslog_level(level);
+    log_set_stderr_level(level);
 }
 
-int log_get_level() {
-    return log_level;
+void log_set_syslog_level(int level) {
+
+    ASSERT_LEVEL;
+
+    LOG_UPTO(level);
+    log_syslog_level = level;
+}
+
+void log_set_stderr_level(int level) {
+
+    ASSERT_LEVEL;
+
+    log_stderr_level = level;
+}
+
+int log_get_syslog_level() {
+    return log_syslog_level;
+}
+
+int log_get_stderr_level() {
+    return log_stderr_level;
 }
 
 void log_open() {
     openlog(NULL, LOG_PID, log_facility);
-    LOG_UPTO(log_level);
+    LOG_UPTO(log_get_syslog_level());
 }
 
 void log_close() {
@@ -68,6 +93,11 @@ static int do_logv(
     char *buffer;
 
     int r;
+
+    if (level > log_get_syslog_level() && level > log_get_stderr_level()) {
+        //no-op if logging disabled
+        return 0;
+    }
 
     switch (level) {
         case LOG_DEBUG:
@@ -105,10 +135,12 @@ static int do_logv(
         return r;
     }
 
-
-    // return value check omited
-    fputs(buffer, stderr);
-    syslog(level, buffer);
+    if (log_get_stderr_level() <= log_stderr_level) {
+        fputs(buffer, stderr);
+    }
+    if (log_get_syslog_level() <= log_syslog_level) {
+        syslog(level, buffer);
+    }
 
     free(buffer);
 

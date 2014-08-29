@@ -70,8 +70,17 @@ void log_close();
  * */
 void log_set_level(int level);
 
-/*! \brief get the maximum log level */
-int log_get_level();
+/*! \brief set the maximum syslog level */
+void log_set_syslog_level(int level);
+
+/*! \brief get the maximum syslog level */
+int log_get_syslog_level();
+
+/*! \brief set the maximum stderr level */
+void log_set_stderr_level(int level);
+
+/*! \brief get the maximum stderr level */
+int log_get_stderr_level();
 
 /*! \brief do logging
     An internal logging function, use specific log_error, log_debug  macros!
@@ -91,9 +100,7 @@ int do_log(
 
 #define log_macro(level, ...) \
     do { \
-        if (log_get_level() >= (level)) { \
-            do_log((level), __FILE__, __LINE__, __func__, __VA_ARGS__); \
-        }\
+        do_log((level), __FILE__, __LINE__, __func__, __VA_ARGS__); \
     } while(0)
 
 /*! \def log_debug(format, ...)
