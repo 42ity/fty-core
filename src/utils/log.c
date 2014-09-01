@@ -24,13 +24,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 
-#define LOG_NOOP LOG_DEBUG + 42
 
 static int log_syslog_level = LOG_ERR;
 static int log_stderr_level = LOG_ERR;
+static FILE* log_file = NULL;
 static int log_facility = LOG_DAEMON;
 
 extern int errno;
+
+/*XXX: gcc-specific!, see http://stackoverflow.com/questions/7623735/error-initializer-element-is-not-constant */
+static void init_log_file(void) __attribute__((constructor));
+static void init_log_file(void) {
+    log_file = stderr;
+}
 
 #define ASSERT_LEVEL \
     assert(level == LOG_DEBUG   || \
@@ -68,6 +74,14 @@ int log_get_syslog_level() {
 
 int log_get_stderr_level() {
     return log_stderr_level;
+}
+
+FILE* log_get_file() {
+    return log_file;
+}
+
+void log_set_file(FILE* file) {
+    log_file = file;
 }
 
 void log_open() {
@@ -111,34 +125,34 @@ static int do_logv(
         case LOG_CRIT:
             prefix = "CRITICAL"; break;
         default:
-            fprintf(stderr, "[ERROR]: %s:%d (%s) invalid log level %d\n", __FILE__, __LINE__, __func__, level);
+            fprintf(log_file, "[ERROR]: %s:%d (%s) invalid log level %d\n", __FILE__, __LINE__, __func__, level);
             return -1;
     };
 
     r = asprintf(&header, "[%s]: %s:%d (%s)", prefix, file, line, func);
     if (r == -1) {
-        fprintf(stderr, "[ERROR]: %s:%d (%s) can't allocate enough memory for header string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for header string: %m\n", __FILE__, __LINE__, __func__);
         return r;
     }
 
     r = asprintf(&fmt, "%s %s", header, format);
     free(header);   // we don't need it in any case
     if (r == -1) {
-        fprintf(stderr, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m\n", __FILE__, __LINE__, __func__);
         return r;
     }
     
     r = vasprintf(&buffer, fmt, args);
     free(fmt);   // we don't need it in any case
     if (r == -1) {
-        fprintf(stderr, "[ERROR]: %s:%d (%s) can't allocate enough memory for message string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for message string: %m\n", __FILE__, __LINE__, __func__);
         return r;
     }
 
-    if (log_get_stderr_level() <= log_stderr_level) {
-        fputs(buffer, stderr);
+    if (level <= log_stderr_level) {
+        fputs(buffer, log_file);
     }
-    if (log_get_syslog_level() <= log_syslog_level) {
+    if (level <= log_syslog_level) {
         syslog(level, buffer);
     }
 

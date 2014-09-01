@@ -52,6 +52,8 @@ Example:
 extern "C" {
 #endif
 
+#define LOG_NOOP LOG_EMERG -1
+
 /*! \brief open log */
 void log_open();
 /*! \brief close log */
@@ -81,6 +83,12 @@ void log_set_stderr_level(int level);
 
 /*! \brief get the maximum stderr level */
 int log_get_stderr_level();
+
+/*! \brief get the stderr FILE* */
+FILE *log_get_file();
+
+/*! \brief set the stderr FILE* */
+void log_set_file(FILE* file);
 
 /*! \brief do logging
     An internal logging function, use specific log_error, log_debug  macros!
