@@ -54,7 +54,6 @@ TEST_CASE("log-do_log", "[log][do_log]") {
     char temp_name[128];
     sprintf(temp_name, "test-log.XXXXXX");
     FILE *tempf = mksftemp(temp_name);
-    fprintf(stderr, "log-file: %s<%p>\n", temp_name, tempf);
 
     //XXX: all get/set modify global state of log.lo
     //thus sanitize manually
@@ -76,7 +75,7 @@ TEST_CASE("log-do_log", "[log][do_log]") {
     int ret = fflush(tempf);
     if (ret != 0) {
         fprintf(stderr, "[ERROR]: fail to sync '%s': %m\n", temp_name);
-        exit(0);
+        exit(1);
     }
     rewind(tempf);
 
