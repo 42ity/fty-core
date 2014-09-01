@@ -104,6 +104,18 @@ test_cli_LDADD = \
 				 libpriv-test-run.la
 test_cli_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include -I $(top_srcdir)/src/cli
 
+check_PROGRAMS += \
+		 test-log
+test_log_SOURCES = \
+					src/utils/log.h \
+					src/utils/utils.h \
+					tests/utils/test-log.cc
+test_log_LDADD = \
+				   libpriv-log.la \
+				   libpriv-utils.la \
+				   libpriv-test-run.la
+test_log_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 #----------------------------------------------------------------------
