@@ -1,5 +1,4 @@
 /*
- 
 Copyright (C) 2014 Eaton
  
 This program is free software: you can redistribute it and/or modify
@@ -24,8 +23,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 
+#define ASSERT_LEVEL \
+    assert(level == LOG_DEBUG   || \
+           level == LOG_INFO    || \
+           level == LOG_WARNING || \
+           level == LOG_ERR     || \
+           level == LOG_CRIT)
 
-static int log_syslog_level = LOG_ERR;
+#define LOG_SYSLOG_NA LOG_NOOP -1
+
+static int log_syslog_level = LOG_SYSLOG_NA;
 static int log_stderr_level = LOG_ERR;
 static FILE* log_file = NULL;
 static int log_facility = LOG_DAEMON;
@@ -37,13 +44,6 @@ static void init_log_file(void) __attribute__((constructor));
 static void init_log_file(void) {
     log_file = stderr;
 }
-
-#define ASSERT_LEVEL \
-    assert(level == LOG_DEBUG   || \
-           level == LOG_INFO    || \
-           level == LOG_WARNING || \
-           level == LOG_ERR     || \
-           level == LOG_CRIT)
 
 void log_set_level(int level) {
 
@@ -86,7 +86,10 @@ void log_set_file(FILE* file) {
 
 void log_open() {
     openlog(NULL, LOG_PID, log_facility);
-    LOG_UPTO(log_get_syslog_level());
+    if (log_syslog_level == LOG_SYSLOG_NA) {
+        log_syslog_level = LOG_ERR;
+    }
+    log_set_syslog_level(log_syslog_level);
 }
 
 void log_close() {

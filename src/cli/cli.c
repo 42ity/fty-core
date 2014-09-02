@@ -29,6 +29,7 @@ References: BIOS-245
 #include <string.h>
 #include <assert.h>
 
+#include "log.h"
 #include "utils.h"
 #include "cli.h"
 
@@ -77,13 +78,13 @@ int main(int argc, char **argv) {
       i = 0;
   index = handle_global_options(argc, (const char**) argv, &gopts);
 #ifndef NDEBUG
-  fprintf(stderr, "####\tDEBUG - main()\t####\n");
-  fprintf(stderr, "# argc: '%d'\n# index: '%d'\n", argc, index);
-  fprintf(stderr, "# **argv:\n");
+  log_debug("####main()\t####\n");
+  log_debug("# argc: '%d'\n# index: '%d'\n", argc, index);
+  log_debug("# **argv:\n");
   for (i = 0; i < argc; i++) {
-    fprintf(stderr, "#\t[ %d ]\t%s\n", i, argv[i]);
+    log_debug("#\t[ %d ]\t%s\n", i, argv[i]);
   }
-  fprintf(stderr, "\n");
+  log_debug("\n");
 #endif
 	if (index == HANDLE_GLOBAL_OPTIONS_BAD_INPUT || !argv[index]) {
 		if (!gopts.show_help) {
@@ -94,14 +95,14 @@ int main(int argc, char **argv) {
 		exit(EXIT_SUCCESS);
 	}
 	else if (index < 0) {
-		fprintf(stderr, "ERROR: unknown global argument '%s'\n", argv[-index]);
+		log_error("ERROR: unknown global argument '%s'\n", argv[-index]);
 		exit(EXIT_FAILURE);
 	}
 	else {
 		const struct command *cmd = get_builtin_command(builtin_commands, argv[index]);
 
 		if (cmd == NULL) {
-				fprintf(stderr, "ERROR: unknown command '%s'\n", argv[index]);
+				log_error("unknown command '%s'\n", argv[index]);
 				exit(EXIT_FAILURE);
 		}
 		int ret = cmd->do_command((const int)(argc - index),
@@ -110,7 +111,7 @@ int main(int argc, char **argv) {
     exit(ret);
 	}
 #ifndef NDEBUG
-	fprintf(stderr, "ERROR: Can't reach here!\n");
+	log_critical("Can't reach here!\n");
 #endif
 	exit(EXIT_FAILURE);
 

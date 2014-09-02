@@ -33,6 +33,7 @@ References: BIOS-245, BIOS-126
 #include <jsoncpp/json/json.h>
 #include <zmq.h>
 
+#include "log.h"
 #include "utils.h"
 #include "cli.h"
 
@@ -92,6 +93,14 @@ static struct option long_options[] = {
     {0, 0, 0, 0}
 };
 
+static void do_network_help() {
+    fputs("cli network {list|add|remove} command-arguments\n", stderr);
+    fputs("\n", stderr);
+    fputs("            list - list of networks to monitor\n", stderr);
+    fputs("            add ip-address/prefixlen - add new network range to monitor\n", stderr);
+    fputs("            remove ip-address/prefixlen - remove network range from monitoring\n", stderr);
+}
+
 static const char* str_enum_ValueType(Json::ValueType vt) {
     switch (vt) {
         case Json::ValueType::nullValue:
@@ -147,15 +156,13 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
             streq(argv[optind], "remove")) {
     Json::Value data(Json::objectValue);
     if (optind + 1 == argc) {
-      fprintf(stderr,
-              "Too few arguments.\n");
+      fprintf(stderr, "Too few arguments.\n");
       return false;
     }
     std::string argument(argv[optind+1]);
     std::size_t index = argument.find('/');
     if (index == std::string::npos) {
-      fprintf(stderr,
-              "ERROR: unknown command line argument '%s'. CIDR format expected.\n",
+      fprintf(stderr, "unknown command line argument '%s'. CIDR format expected.\n",
               argv[optind+1]);
       return false;
     }
@@ -170,8 +177,7 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
     }
   ////  ERROR - UNKNOWN SUB-COMMAND  ////
   } else {
-    fprintf(stderr,
-            "ERROR: unknown sub-command '%s'\n",
+    fprintf(stderr, "unknown sub-command '%s'\n",
             argv[optind]);
     return false;
   }
@@ -185,7 +191,7 @@ do_network_list(
 FILE *stream, const char* message, const struct global_opts *gopts) {
 	assert(stream);
   if (stream == NULL) {
-    fprintf(stderr, "stream empty\n");
+    log_error("stream empty\n");
     return EXIT_FAILURE;
   }
 
@@ -193,7 +199,7 @@ FILE *stream, const char* message, const struct global_opts *gopts) {
   Json::Value root{Json::ValueType::arrayValue};
   bool res = rd.parse(message, root, false);
   if (res == false) {
-      fprintf(stderr, "Error parsing json message:\n%s\n",
+      log_error("Error parsing json message:\n%s\n",
               rd.getFormattedErrorMessages().c_str());
       return EXIT_FAILURE;
   }
@@ -244,24 +250,24 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   }
 
 #ifndef NDEBUG
-  fprintf(stderr, "####\tDEBUG - do_network()\t####\n");
-  fprintf(stderr, "# argc: '%d'\n# optind: '%d'\n", argc, optind);
-  fprintf(stderr, "# **argv:\n");  
+  log_debug("####\tdo_network()\t####\n");
+  log_debug("# argc: '%d'\n# optind: '%d'\n", argc, optind);
+  log_debug("# **argv:\n");  
   for (int i = 0; i < argc; i++) {
-    fprintf(stderr, "#\t[ %d ]\t%s\n", i, argv[i]);
+    log_debug("#\t[ %d ]\t%s\n", i, argv[i]);
   }
-  fprintf(stderr, "# non-option ARGV-elements:\n");
+  log_debug("# non-option ARGV-elements:\n");
   {
     int i = optind;
     while (i < argc) {
-    fprintf (stderr, "#\t%s\n", argv[i++]);
+      log_debug("#\t%s\n", argv[i++]);
     }
   }
-  fprintf(stderr,"\n");
+  log_debug("\n");
 #endif
 
   if (optind >= argc) {
-    fprintf(stderr, "[NOT-YET-IMPLEMENTED]: do_network_help();\n");
+    do_network_help();
     return EXIT_FAILURE;
   }
 
@@ -271,8 +277,7 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   const char *zmq_bus_env = getenv("ZMQ_BUS");
   if (zmq_bus_env == NULL || strlen(zmq_bus_env) == 0) {    
     ZMQ_BUS.assign(ZMQ_BUS_DEFAULT);
-    fprintf(stderr,
-            "WARNING: environmental variable ZMQ_BUS not set. Defaulting to '%s'\n",
+    log_info("environmental variable ZMQ_BUS not set. Defaulting to '%s'\n",
             ZMQ_BUS.c_str());    
   } else {
     ZMQ_BUS.assign(zmq_bus_env);
@@ -281,23 +286,23 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   void *context = NULL;
   context = zmq_ctx_new();
   if (context == NULL) {
-    fprintf(stderr, "zmq_ctx_new() failed.\n");
+    log_error("zmq_ctx_new() failed: %m.\n");
     return EXIT_FAILURE; // TODO KHR (?) : maybe create defines for various errors?
   }
   void *socket = NULL;
   socket = zmq_socket(context, ZMQ_DEALER);
   if (socket == NULL) {
-    fprintf(stderr, "zmq_socket() failed.\n");
+    log_error("zmq_socket() failed: %m.\n");
     return EXIT_FAILURE;
   }
   int ret = zmq_setsockopt(socket, ZMQ_IDENTITY, "cli", strlen("cli")); // hmmptf  
   if (ret == -1) {
-    fprintf(stderr, "zmq_setsockopt() failed. errno ='%d'\n", zmq_errno());
+    log_error("zmq_setsockopt() failed, errno ='%d': %m\n", zmq_errno());
     return EXIT_FAILURE;
   }  
   ret =  zmq_connect(socket, ZMQ_BUS.c_str());
   if (ret == -1) {
-    fprintf(stderr, "zmq_connect() failed.\n");
+    log_error("zmq_connect() failed: %m.\n");
     return EXIT_FAILURE;
   }
 
@@ -306,8 +311,8 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
     return EXIT_FAILURE;    
   }
 #ifndef NDEBUG
-  fprintf(stderr, "\n####\tDEBUG - do_network()\t####\n");
-  fprintf(stderr, "# Sending json:\n# %s\n", message.c_str());
+  log_debug("\n####do_network()\t####\n");
+  log_debug("# Sending json:\n# %s\n", message.c_str());
 #endif
   ret = zmq_send(socket, message.c_str(), message.size(), 0); //(int) ZMQ_DONTWAIT);  
 /* Unfortunatelly, i wasn't able to finish this successfully
@@ -329,10 +334,9 @@ return define/enum... however in the time given, i wasn't able to make it work..
     ret = zmq_recv(socket, buffer, ZMQ_RECV_BUFFER_SIZE, 0);
     buffer[ZMQ_RECV_BUFFER_SIZE] = '\0';
     if (ret > ZMQ_RECV_BUFFER_SIZE) {
-      fprintf(stderr,
-              "WARNING: buffer too small and the message was truncated.\n");
+      log_warning("buffer too small and the message was truncated.\n");
     } else if (ret == -1) {    
-      fprintf(stderr, "ERROR: zmq_recv failed.\n");
+      log_error("zmq_recv failed: %m.\n");
       return EXIT_FAILURE;
     }
     return do_network_list(stdout, buffer, gopts);
