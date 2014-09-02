@@ -54,7 +54,10 @@ extern "C" {
 
 #define LOG_NOOP LOG_EMERG -1
 
-/*! \brief open log */
+/*! \brief open log
+ *
+ * This function does open a connection to syslog and set the level according value from log_get_syslog_level(). You can omit it if you don't want to log to syslog (for example for cli).
+ * */
 void log_open();
 /*! \brief close log */
 void log_close();
