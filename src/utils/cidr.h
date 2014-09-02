@@ -75,6 +75,7 @@ private:
    */
   void setCidrPtr(CIDR *newcidr);
 public:
+
   /**
    * \brief Creates new CIDRAddress without any specific ip address.
    *
@@ -83,6 +84,7 @@ public:
    * real value to this object before continuing.
    */
   CIDRAddress();
+
   /**
    * \brief Creates new object with specified network.
    * \param string representing ip address
@@ -94,6 +96,7 @@ public:
    *   - "::1"
    */
   CIDRAddress(const std::string address);
+
   /**
    * \brief Creates new object with specified network.
    * \param reference to other CIDRAddress object.
@@ -113,21 +116,25 @@ public:
    * Operator does nothing with IPv6 addresses.
    */
   CIDRAddress& operator++(); //prefix++
+
   /**
    * \brief decreases IPv4 address of 1.
    * \see operator++()
    */
   CIDRAddress& operator--();
+
   /**
    * \brief increases IPv4 address of 1.
    * \see operator++()
    */
   CIDRAddress  operator++(int); //suffix++
+
   /**
    * \brief decreases IPv4 address of 1.
    * \see operator++()
    */
   CIDRAddress  operator--(int);
+
   /**
    * \brief set CIDRAddress from string.
    * \see set(const std::string text)
@@ -139,6 +146,7 @@ public:
    *
    */
   CIDRAddress& operator=(const std::string address);
+
   /**
    * \brief set CIDRAddress from another CIDRAddress.
    * \see set(const CIDRAddress& address)
@@ -150,6 +158,7 @@ public:
    *
    */
   CIDRAddress& operator=(const CIDRAddress& address);
+
   /**
    * \brief compare two CIDRAddress.
    * \see   cmp(const CIDRAddress& address)
@@ -162,16 +171,19 @@ public:
    * returns false because here they are equal).
    */
   bool operator>(const CIDRAddress &a2);
+
   /**
    * \brief compare two CIDRAddress.
    * \see   operator>(const CIDRAddress& a2);
    */
   bool operator<(const CIDRAddress &a2);
+
   /**
    * \brief compare two CIDRAddress.
    * \see   operator>(const CIDRAddress& a2);
    */
   bool operator==(const CIDRAddress &a2);
+
   /**
    * \brief compare CIDRAddress with string.
    * \see   operator>(const CIDRAddress& a2);
@@ -182,15 +194,18 @@ public:
    * \brief prefix of CIDRAddress.
    */
   int  prefix();
+
   /**
    * \brief set IP address to invalid (You can imagine this address as 0.0.0.0 or ::)
    */
   void invalidate();
+
   /**
    * \brief check itselfs for validity.
    * \return true for valid address
    */
   bool valid() const;
+
   /**
    * \brief checks if network fully contains the other.
    * \return true if address is in block.
@@ -201,11 +216,13 @@ public:
    *     CIDRAddress("10.0.0.0/25").contains( CIDRAddress("10.0.0.0/24"); // false
    */
   bool contains(const CIDRAddress& address);
+
   /**
    * \brief checks if the network or host is fully contained in the other.
    * \see valid();
    */
   bool in(const CIDRAddress& address);
+
   /**
    * \brief checks if networks or hosts are the same
    * \see operator==();
@@ -214,6 +231,7 @@ public:
    * operator 10.0.0.0/8 is not equal to 10.0.0.0/24.
    */
   bool equals(const CIDRAddress& address);
+
   /**
    * \brief returns the minimal host address from network
    *
@@ -225,6 +243,7 @@ public:
    * - 10.0.0.0/31 => 10.0.0.0
    */
   CIDRAddress hostMin();
+
   /**
    * \brief returns the maximal host address from network
    * \see hostMin()
@@ -233,6 +252,7 @@ public:
    * In case of long prefix there is not a broadcast. The reason is described in hostMin()
    */
   CIDRAddress hostMax();
+
   /**
    * \brief returns network address as a host
    *
@@ -241,6 +261,7 @@ public:
    * - fe80::/64 => fe80::/128
    */
   CIDRAddress host();
+
   /**
    * \brief returns a broadcast address
    *
@@ -256,11 +277,13 @@ public:
    * \return true on success (string is valid IP, we have enough memory, ...)
    */
   bool set(const std::string text);
+
   /**
    * \brief set address according parameter
    * \return true when from.valid()
    */
   bool set(const CIDRAddress& from);
+
   /**
    * \brief convert address to string
    * \return string with IP address
@@ -271,12 +294,14 @@ public:
    *     A.networkToString(); // return "10.1.2.0/24"
    */
   std::string addressToString();
+
   /**
    * \brief convert network to string (prefix included)
    * \return string with IP address
    * \see addressToString();
    */
   std::string networkToString();
+
   /**
    * \brief converts address to string
    * \return string with IP address with or without prefix
@@ -284,6 +309,7 @@ public:
    * Returned string contains prefix, only if it isn't a host. Prefix 32 (or 128 for IPv6) is suppressed.
    */
   std::string toString();
+
   /**
    * \brief compare two ip addresses
    * \return int
@@ -341,26 +367,31 @@ private:
   // simple increment address of 1 eventually go at the beginning
   bool nextSimple(CIDRAddress& address);
 public:
+
   /**
    * \brief Creates new CIDRList object
    */
   CIDRList();
   ~CIDRList();
+
   /**
    * \brief Add new network to includes
    * \param string representing network address
    */
   bool add(const std::string net);
+
   /**
    * \brief Add new network to includes
    * \param valid CIDRAddress object
    */
   bool add(const CIDRAddress& net);
+
   /**
    * \brief Add new exclude network
    * \param string representing network address
    */
   bool exclude(const std::string net);
+
   /**
    * \brief Add new exclude network
    * \param valid CIDRAddress object
@@ -396,34 +427,42 @@ public:
    * in the future we need some clever mechanism for IPv6.
    */
   bool next(CIDRAddress& address);
+
   /**
    * \brief find lowest address in list
    */
   CIDRAddress firstAddress();
+
   /**
    * \brief Find highest address in list (broadcast excluded).
    */
   CIDRAddress lastAddress();
+
   /**
    * \brief Find the network with largest prefix, where requested address is included.
    */
   CIDRAddress bestNetworkFor(CIDRAddress& address);
+
   /**
    * \brief Find prefix len for inclusion (-1 = not in list).
    */
   int         bestNetworkPrefixFor(CIDRAddress& address);
+
   /**
    * \brief find the network with largest prefix, where requested address is excluded.
    */
   CIDRAddress bestExcludeFor(CIDRAddress& address);
+
   /**
    * \brief Find prefix len for exclusion (-1 = not in list).
    */
   int         bestExcludePrefixFor(CIDRAddress& address);
+
   /**
    * \brief Simple evaluation if address is in included networks.
    */
   bool includes(const CIDRAddress& address);
+
   /**
    * \brief Simple evaluation if address is in excluded networks.
    */
