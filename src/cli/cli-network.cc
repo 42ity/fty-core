@@ -92,6 +92,14 @@ static struct option long_options[] = {
     {0, 0, 0, 0}
 };
 
+static void do_network_help() {
+    fputs("cli network {list|add|remove} command-arguments\n", stderr);
+    fputs("\n", stderr);
+    fputs("            list - list of networks to monitor\n", stderr);
+    fputs("            add ip-address/prefixlen - add new network range to monitor\n", stderr);
+    fputs("            remove ip-address/prefixlen - remove network range from monitoring\n", stderr);
+}
+
 static const char* str_enum_ValueType(Json::ValueType vt) {
     switch (vt) {
         case Json::ValueType::nullValue:
@@ -261,7 +269,7 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
 #endif
 
   if (optind >= argc) {
-    fprintf(stderr, "[NOT-YET-IMPLEMENTED]: do_network_help();\n");
+    do_network_help();
     return EXIT_FAILURE;
   }
 
