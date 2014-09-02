@@ -156,13 +156,13 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
             streq(argv[optind], "remove")) {
     Json::Value data(Json::objectValue);
     if (optind + 1 == argc) {
-      log_error("Too few arguments.\n");
+      fprintf(stderr, "Too few arguments.\n");
       return false;
     }
     std::string argument(argv[optind+1]);
     std::size_t index = argument.find('/');
     if (index == std::string::npos) {
-      log_error("unknown command line argument '%s'. CIDR format expected.\n",
+      fprintf(stderr, "unknown command line argument '%s'. CIDR format expected.\n",
               argv[optind+1]);
       return false;
     }
@@ -177,7 +177,7 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
     }
   ////  ERROR - UNKNOWN SUB-COMMAND  ////
   } else {
-    log_error("unknown sub-command '%s'\n",
+    fprintf(stderr, "unknown sub-command '%s'\n",
             argv[optind]);
     return false;
   }
