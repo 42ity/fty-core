@@ -136,9 +136,10 @@ cli_LDFLAGS = -ljsoncpp -lzmq
 bin_PROGRAMS += \
 			  cli
 cli_SOURCES = \
+			  src/cli/cli.h \
 			  src/cli/cli.c \
 			  src/cli/cli-network.cc
-cli_LDADD = libpriv-utils.la libpriv-cli.la
+cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
 
 bin_PROGRAMS += \
 				cored
