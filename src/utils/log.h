@@ -1,0 +1,141 @@
+/*
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*! \file log.h
+    \brief logging API
+    \author Michal Vyskocil <michalvyskocil@eaton.com>
+ 
+Example:
+ 
+   #include "log.h"
+
+   int main() {
+
+       log_open();
+
+       log_debug("debug level is invisible\n");
+        
+       log_set_level(LOG_DEBUG);
+        
+       log_debug("%s", "debug level is visible\n");
+
+       log_critical("%s", "critical level\n");
+       log_error("%s", "error level\n");
+       log_warning("%s", "warning level\n");
+       log_info("%s", "info level\n");
+       log_debug("%s", "debug level\n");
+
+       log_close();
+    }
+ */
+
+#pragma once
+
+#include <syslog.h>
+#include <stdarg.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define LOG_NOOP LOG_EMERG -1
+
+/*! \brief open log */
+void log_open();
+/*! \brief close log */
+void log_close();
+
+/*! \brief set the maximum log level
+ *
+ * the default value is LOG_ERR, possible values (in order of decreasing importance):
+ *  LOG_CRIT    Unrecoverable errors like process managers dies, no MQ, ...
+ *  LOG_ERR     Error cases system can recover from (some process segfaults, ...)
+ *  LOG_WARNING Cases where some optional functionality can't be used
+ *  LOG_INFO    Do we need it?
+ *  LOG_DEBUG   Tracing purposes, a lot of details!
+ *
+ *  Setting LOG_DEBUG means LOG_DEBUG + levels above are printed
+ * */
+void log_set_level(int level);
+
+/*! \brief set the maximum syslog level */
+void log_set_syslog_level(int level);
+
+/*! \brief get the maximum syslog level */
+int log_get_syslog_level();
+
+/*! \brief set the maximum stderr level */
+void log_set_stderr_level(int level);
+
+/*! \brief get the maximum stderr level */
+int log_get_stderr_level();
+
+/*! \brief get the stderr FILE* */
+FILE *log_get_file();
+
+/*! \brief set the stderr FILE* */
+void log_set_file(FILE* file);
+
+/*! \brief do logging
+    An internal logging function, use specific log_error, log_debug  macros!
+    \param level - level for message, see \ref log_get_level for legal values
+    \param file - name of file issued print, usually content of __FILE__ macro
+    \param line - number of line, usually content of __LINE__ macro
+    \param func - name of function issued log, usually content of __func__ macro
+    \param format - printf-like format string
+ */
+int do_log(
+        int level,
+        const char* file,
+        int line,
+        const char* func,
+        const char* format,
+        ...) __attribute__ ((format (printf, 5, 6))); 
+
+#define log_macro(level, ...) \
+    do { \
+        do_log((level), __FILE__, __LINE__, __func__, __VA_ARGS__); \
+    } while(0)
+
+/*! \def log_debug(format, ...)
+    Prints message with LOG_DEBUG level */
+#define log_debug(...) \
+        log_macro(LOG_DEBUG, __VA_ARGS__)
+
+/*! \def log_info(format, ...)
+    Prints message with LOG_INFO level */
+#define log_info(...) \
+        log_macro(LOG_INFO, __VA_ARGS__)
+
+/*! \def log_warning(format, ...)
+    Prints message with LOG_WARNING level */
+#define log_warning(...) \
+        log_macro(LOG_WARNING, __VA_ARGS__)
+
+/*! \def log_error(format, ...)
+    Prints message with LOG_ERR level */
+#define log_error(...) \
+        log_macro(LOG_ERR, __VA_ARGS__)
+
+/*! \def log_critical(format, ...)
+    Prints message with LOG_CRIT level */
+#define log_critical(...) \
+        log_macro(LOG_CRIT, __VA_ARGS__)
+
+#ifdef __cplusplus
+}
+#endif
