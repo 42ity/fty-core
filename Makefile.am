@@ -70,7 +70,12 @@ libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 #----------------------------------------------------------------------
 
+if HAVE_DOXYGEN
 check_SCRIPTS += tools/run-test-doc.sh
+#else !HAVE_DOXYGEN
+# AQU note: this would need a target to work...
+#@echo "Source code documentation check not available since 'doxygen' was not found."
+endif
 # I am not sure whether we need this. TODO MVY Please look at this. I think that run-test.sh doesn;t belong to distribution package.
 # EXTRA_DIST += tools/run-test.sh
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
