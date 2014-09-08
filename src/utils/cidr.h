@@ -42,8 +42,8 @@ Example:
 */  
     
     
-#ifndef __CIDR_H
-#define __CIDR_H
+#ifndef UTILS_CIDR_H_
+#define UTILS_CIDR_H_
 
 #include <libcidr.h>
 #include <vector>
@@ -51,6 +51,16 @@ Example:
 #include <iostream>
 
 namespace utils {
+
+/**
+ * \enum CIDROptions
+ * \brief Formating options for CIDRAddress
+ */   
+enum CIDROptions {
+   CIDR_AUTO_PREFIX,
+   CIDR_WITH_PREFIX,
+   CIDR_WITHOUT_PREFIX
+};
 
 /**
  * \class CIDRAddress
@@ -65,17 +75,7 @@ namespace utils {
  *
  */
 class CIDRAddress {
-private:
-  // private pointer to libcidr structure 
-  CIDR *cidr;
-
-  /**
-   * \brief set cidr pointer to new value, free old one.
-   * \param newcidr (CIDR *) pointer to newly allocated CIDR structure;
-   */
-  void setCidrPtr(CIDR *newcidr);
 public:
-
   /**
    * \brief Creates new CIDRAddress without any specific ip address.
    *
@@ -113,7 +113,7 @@ public:
    * - 10.0.3.0/24 => 10.0.3.1
    * - 10.0.3.255 => 10.0.4.0
    * - 255.255.255.255 => 0.0.0.0
-   * Operator does nothing with IPv6 addresses.
+   * - ::1 => ::2
    */
   CIDRAddress& operator++(); //prefix++
 
@@ -161,11 +161,10 @@ public:
 
   /**
    * \brief compare two CIDRAddress.
-   * \see   cmp(const CIDRAddress& address)
+   * \see   compare(const CIDRAddress& address)
    *
-   * Overloaded operator > allows to compare two IPv4 addresses
-   * Comparing two IPv6 addresses or IPv4 with IPv6 addresses
-   * always return false.
+   * Overloaded operator > allows to compare two IP addresses.
+   * For comparing IPv6 with IPv4, see compare().
    *
    * Addresses are compared without prefix consideration (i.e. 10.0.0.0/8 > 10.0.0.0/32
    * returns false because here they are equal).
@@ -285,24 +284,6 @@ public:
   bool set(const CIDRAddress& from);
 
   /**
-   * \brief convert address to string
-   * \return string with IP address
-   *
-   * Returned string contains the address without prefix
-   *     CIDRAddress A("10.1.2.0/24");
-   *     A.addressToString(); // return "10.1.2.0"
-   *     A.networkToString(); // return "10.1.2.0/24"
-   */
-  std::string addressToString();
-
-  /**
-   * \brief convert network to string (prefix included)
-   * \return string with IP address
-   * \see addressToString();
-   */
-  std::string networkToString();
-
-  /**
    * \brief converts address to string
    * \return string with IP address with or without prefix
    *
@@ -311,20 +292,41 @@ public:
   std::string toString();
 
   /**
+   * \brief converts address to string
+   * \param Formating option (CIDR_AUTO_PREFIX, CIDR_WITHOUT_PREFIX, CIDR_WITH_PREFIX)
+   * \return string with IP address with or without prefix
+   *
+   * Returned string is network address. You can enforce or suppress network mask using predefined constants.
+   */
+  std::string toString(CIDROptions option);
+
+  /**
    * \brief compare two ip addresses
    * \return int
    * \see operator>
    * \see operator<
    * \see operator==;
    *
-   * Compares two ip addresses. Comparing IPv6 is not implemented (does it make sense?).
+   * Compares two ip addresses.
    * - +1 if *this is bigger
    * - -1 if *this is smaller
    * - 0 if *this is equal
-   * - -2 some error (comparing IPv6)
+   * 
+   * Please consider those special cases:
+   * - when comparing IPv6 with IPv4, algorithm says that IPv6 is bigger (i. e. ::1 > 192.168.0.1).
+   * - when comparing invalid address, valid > invalid, invalid == invalid
    */
   int compare(const CIDRAddress& a2);
   ~CIDRAddress();
+private:
+  // private pointer to libcidr structure 
+  CIDR *_cidr;
+
+  /**
+   * \brief set cidr pointer to new value, free old one.
+   * \param newcidr (CIDR *) pointer to newly allocated CIDR structure;
+   */
+  void setCidrPtr(CIDR *newcidr);
 };
 
 // cout << CIDRAddress operator
@@ -351,21 +353,6 @@ std::ostream& operator<<(std::ostream& os, CIDRAddress& address);
  *     list.exclude("1.2.3.0/24"); //this will hide everything
  */
 class CIDRList {
-private:
-  // list of includes
-  std::vector<CIDRAddress *> networks;
-  // list of excludes
-  std::vector<CIDRAddress *> excludedNetworks;
-  // highest address from list
-  CIDRAddress last;
-  //unsigned int currentNetwork;
-
-  // skipping gaps between networks
-  void skipToNextPool(CIDRAddress& address);
-  // skipping to the end of exclude or to beginning of next include
-  void skipToExcludeEnd(CIDRAddress& address);
-  // simple increment address of 1 eventually go at the beginning
-  bool nextSimple(CIDRAddress& address);
 public:
 
   /**
@@ -467,9 +454,24 @@ public:
    * \brief Simple evaluation if address is in excluded networks.
    */
   bool excludes(const CIDRAddress& address);
+private:
+  // list of includes
+  std::vector<CIDRAddress *> _networks;
+  // list of excludes
+  std::vector<CIDRAddress *> _excludedNetworks;
+  // highest address from list
+  CIDRAddress _last;
+
+  // skipping gaps between networks
+  void _skipToNextPool(CIDRAddress& address);
+  // skipping to the end of exclude or to beginning of next include
+  void _skipToExcludeEnd(CIDRAddress& address);
+  // simple increment address of 1 eventually go at the beginning
+  bool _nextSimple(CIDRAddress& address);
 };
 
 
 } // namespace utils
 
-#endif
+#endif // UTILS_CIDR_H_
+
