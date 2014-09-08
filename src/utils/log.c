@@ -30,8 +30,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
            level == LOG_ERR     || \
            level == LOG_CRIT)
 
-#define LOG_SYSLOG_NA LOG_NOOP -1
-
 static int log_syslog_level = LOG_SYSLOG_NA;
 static int log_stderr_level = LOG_ERR;
 static FILE* log_file = NULL;
