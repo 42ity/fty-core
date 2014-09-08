@@ -53,6 +53,7 @@ extern "C" {
 #endif
 
 #define LOG_NOOP LOG_EMERG -1
+#define LOG_SYSLOG_NA LOG_NOOP -1
 
 /*! \brief open log
  *
