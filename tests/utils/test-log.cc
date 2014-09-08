@@ -26,7 +26,8 @@ end:
 }
 
 TEST_CASE("log-getset-level", "[log][level]") {
-    CHECK(log_get_syslog_level() == LOG_ERR);
+    // log_level is initially set to LOG_SYSLOG_NA
+    CHECK(log_get_syslog_level() == LOG_SYSLOG_NA);
     CHECK(log_get_stderr_level() == LOG_ERR);
 
     log_set_syslog_level(LOG_DEBUG);
