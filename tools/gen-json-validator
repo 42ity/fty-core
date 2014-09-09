@@ -1,0 +1,336 @@
+#!/bin/bash
+
+# TODO Add boilerplate
+# TODO Add doxygen to the generated code 
+# TODO Implement cleanup/trap !!! 
+
+# CHALLENGE (Reward = Beer):
+# If you know about a better way of combining declare and heredoc in 
+# bash, please let me know. I'll buy you a beer. However please be aware
+# that using a bash external (i.e. cat) instead of bash builtin (i.e. 
+# read) is not considered a better way :)
+
+# IMPORTANT NOTE:
+# Looking back at the script i must confess that it had grown quite a bit.
+# In the beginning this task seemed very simple, but as i dived into it
+# certain interresting features(*) kept presenting themselves and i couldn't 
+# resist. Thus making this bash script more complex and longer then it ever
+# should have been. Without doubt, this script is eligible for a python
+# rewrite. If i knew this from the beginning i would have written it as so.
+# However, not all is lost and this might be a nice excercise for an aspiring
+# pythonist and/or a good lecture from a python guru like MVY & co about how
+# to do these things.
+# (*): There is one more feaure not implement at the moment (pb-compliant class
+# generation) but i'll wait for the python rewrite with this :)
+
+# check that we are in the correct place and that certain directories exist
+declare -r SRC_DIR="${1}"
+if [[ ! -d "$SRC_DIR/src/utils/messages" ||
+      ! -d "$SRC_DIR/src/utils/messages/json_schema" ]]; then
+  echo "ERROR: Directories don't exits."
+  exit 1
+fi
+
+pushd "$SRC_DIR/src/utils/messages"
+if [[ $? -ne 0 ]]; then
+  echo "ERROR: Cannot change to ../src/utils/messages"  
+  exit 1
+fi
+
+declare -r OUTPUT_FILENAME="json_schemas"
+declare -r OUTPUT_FILENAME_EXT="h"
+declare -r OUTPUT="${OUTPUT_FILENAME}.${OUTPUT_FILENAME_EXT}"
+
+function fwrite() {
+  echo -e "${1}" >> "${OUTPUT}"
+}
+
+rm -f ./"${OUTPUT}"
+
+#######################################
+###    FUNCTION WRAPPER TEMPLATE    ###
+#######################################
+read -r -d '' tmp <<EOF
+inline const std::string& ##NAME##() {
+  static std::string ret = {
+##ARRAY##
+  };
+  return ret; 
+}
+EOF
+declare -r FUNC_WRAPPER_TMPL="$tmp"
+
+#######################################
+###          HEADER GUARD           ###
+#######################################
+# TODO PROJECT_PATH_FILE_H Podla toho kde sa byproduct.h bude generovat ... 
+declare -r HEADER_GUARD_TERM="${OUTPUT_FILENAME}_H__"
+read -r -d '' tmp <<EOF
+#ifndef ${HEADER_GUARD_TERM}
+#define ${HEADER_GUARD_TERM}
+
+#include <string>
+#include <map>
+
+#include <Variant/Variant.h>
+#include <Variant/Schema.h>
+
+namespace utils {
+\tnamespace json {
+EOF
+declare -r HEADER_GUARD_BEGIN="$tmp"
+
+read -r -d '' tmp<<EOF
+\t} // namespace json
+} // namespace utils
+#endif // ${HEADER_GUARD_TERM}
+EOF
+declare -r HEADER_GUARD_END="$tmp"
+
+#######################################
+###             ENUM                ###
+#######################################
+ENUM_SECTION=
+declare -r ENUM_NAME="MessageTypesEnum"
+declare -r ENUM_TMPL_PREFIX="enum class ${ENUM_NAME} {"
+declare -r ENUM_TMPL_POSTFIX="UNKNOWN };"
+
+
+#######################################
+###           MAP_GETTER            ###
+#######################################
+declare MAP_GETTER_SECTION
+read -r -d '' tmp<<EOF
+const std::map<int, libvariant::Variant>& get_map() {
+\tstatic std::map<int, libvariant::Variant> map = {
+EOF
+declare -r MAP_GETTER_TMPL_PREFIX="$tmp"
+
+read -r -d '' tmp<<EOF
+\t\tstd::pair<int, libvariant::Variant>(
+\t\t\tstatic_cast<int>(${ENUM_NAME}::##ENUM##),
+\t\t\tlibvariant::DeserializeJSON(utils::json::##NAME##().c_str())
+\t\t),
+EOF
+declare -r MAP_GETTER_TMPL_ITEM="$tmp"
+
+read -r -d '' tmp<<EOF
+\t};
+\treturn map;
+}
+EOF
+declare -r MAP_GETTER_TMPL_POSTFIX="$tmp"
+
+#######################################
+###       CODETABLE SECTION         ###
+#######################################
+
+read -r -d '' tmp<<EOF
+\tcase ##NUMBER##:
+\t{
+\t\treturn ${ENUM_NAME}::##ENUM_NAME##;
+\t\tbreak;
+\t}  
+EOF
+declare -r CODETABLE_CASE_TMPL="$tmp"
+
+read -r -d '' tmp<<EOF
+${ENUM_NAME} codetable(unsigned int code) {
+\tswitch(code) {
+
+EOF
+declare -r CODETABLE_FNC_TMPL_PREFIX="$tmp"
+
+read -r -d '' tmp<<EOF
+\tdefault:
+\t\treturn ${ENUM_NAME}::UNKNOWN;
+\t\tbreak;
+\t}
+}
+EOF
+declare -r CODETABLE_FNC_TMPL_POSTFIX="$tmp"
+
+#######################################
+###       ENUMTABLE SECTION         ###
+#######################################
+read -r -d '' tmp<<EOF
+\tcase ${ENUM_NAME}::##ENUM_NAME##:
+\t{
+\t\treturn ##NUMBER##;
+\t\tbreak;
+\t}  
+EOF
+declare -r ENUMTABLE_CASE_TMPL="$tmp"
+
+read -r -d '' tmp<<EOF
+unsigned int enumtable(${ENUM_NAME} message_type) {
+\tswitch(message_type) {
+
+EOF
+declare -r ENUMTABLE_FNC_TMPL_PREFIX="$tmp"
+
+read -r -d '' tmp<<EOF
+\tdefault:
+\t\treturn 0;
+\t\tbreak;
+\t}
+}
+EOF
+declare -r ENUMTABLE_FNC_TMPL_POSTFIX="$tmp"
+
+
+#######################################
+###       VALIDATOR SECTION         ###
+#######################################
+declare -r VALIDATOR_FNC_RET_TYPE_NAME="ValidateResultEnum"
+read -r -d '' tmp<<EOF
+enum class ${VALIDATOR_FNC_RET_TYPE_NAME} {
+\tValid,
+\tInvalid,
+\tSchemaError
+};
+EOF
+declare -r VALIDATOR_FNC_RET_TYPE_DECL="$tmp"
+
+read -r -d '' tmp<<EOF
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate_parse(
+const char *json,
+${ENUM_NAME} message_type,
+libvariant::VariantRef root,
+std::string *strerr) {
+\tif (json != NULL) {
+\t\troot = libvariant::DeserializeJSON(json);
+\t}
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\troot);
+\tif(sr.SchemaErrors()) {
+\t\tif (strerr != NULL) {
+\t\t\tstrerr->assign(sr.PrettyPrintMessage());
+\t\t}
+\t\treturn ValidateResultEnum::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\tif (strerr != NULL) {
+\t\t\tstrerr->assign(sr.PrettyPrintMessage());
+\t\t}
+\t\treturn ValidateResultEnum::Invalid;
+\t}
+\treturn ValidateResultEnum::Valid;
+}
+
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate_parse(
+const char *json,
+${ENUM_NAME} message_type,
+libvariant::VariantRef root) {
+\treturn validate_parse(json, message_type, root, NULL);
+}
+
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const char *json, ${ENUM_NAME} message_type, std::string *strerr) {
+\tlibvariant::Variant v;
+\treturn validate_parse(json, message_type, v, strerr); 
+}
+
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const char *json, ${ENUM_NAME} message_type) {
+\treturn validate(json, message_type, NULL);
+}
+
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const libvariant::Variant& root, MessageTypesEnum message_type, std::string *strerr) {
+  return validate_parse(NULL, message_type, root, strerr);
+}
+
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const libvariant::Variant& root, MessageTypesEnum message_type) {
+\treturn validate_parse(NULL, message_type, root, NULL);
+}
+EOF
+declare -r VALIDATOR_FNC_DECL="$tmp"
+
+# START
+
+# Init
+ENUM_SECTION="${ENUM_TMPL_PREFIX}"
+MAP_GETTER_SECTION="${MAP_GETTER_TMPL_PREFIX}\n"
+CODETABLE_SECTION="${CODETABLE_FNC_TMPL_PREFIX}\n"
+ENUMTABLE_SECTION="${ENUMTABLE_FNC_TMPL_PREFIX}\n"
+
+declare -i COUNTER=0
+###         REGEXP SECTION          ###
+read -r -d '' MODIFY_SCHEMAS_REGEXP<<EOF
+s/(\\s*"schema"\\s*:\\s*\{\\s*"type"\\s*:\\s*")string"(\\s*,\\s*"enum"\\s*:\\s*\[\\s*)"\\s*CliNetworkAddDel\\s*"(\\s*\]\\s*\})/\1number", "multipleOf" : 1.0, "minumum" : 1\2${COUNTER}\3/
+EOF
+
+fwrite "$HEADER_GUARD_BEGIN"
+fwrite ""
+for f in ./json_schema/*.json; do
+  filename=`basename ${f%.json}` # TODO rewrite using builtins
+  COUNTER="$COUNTER + 1"
+  enum="${filename/Message/}"
+  read -r -d '' MODIFY_SCHEMAS_REGEXP<<EOF
+s/(\\s*"schema"\\s*:\\s*\{\\s*"type"\\s*:\\s*")string"(\\s*,\\s*"enum"\\s*:\\s*\[\\s*)"\\s*${enum}\\s*"(\\s*\]\\s*\})/\1number", "multipleOf" : 1.0, "minumum" : 1\2${COUNTER}\3/
+EOF
+
+  out=$(cat "$f" | sed -re "$MODIFY_SCHEMAS_REGEXP" | xxd -i)
+  #out=$(xxd -i < "$f")
+  out="${out}, 0x00"
+  tmp="${FUNC_WRAPPER_TMPL}"
+  tmp="${tmp/\#\#NAME\#\#/$filename}"
+  tmp="${tmp/\#\#ARRAY\#\#/$out}"
+  fwrite "$tmp"
+  fwrite "" 
+  # possible sed alteration
+  ENUM_SECTION="${ENUM_SECTION}\n\t${enum},"
+  tmp="${MAP_GETTER_TMPL_ITEM}"
+  tmp="${tmp/\#\#NAME\#\#/$filename}"
+  tmp="${tmp/\#\#ENUM\#\#/$enum}"
+  MAP_GETTER_SECTION="${MAP_GETTER_SECTION}\n${tmp}"
+
+  #
+  #tmpfile=$(mktemp --tmpdir=./json_schema)
+  #tmpfile="${tmpfile}.${filename}"
+
+  tmp="${CODETABLE_CASE_TMPL}"
+  tmp="${tmp/\#\#NUMBER\#\#/${COUNTER}}"
+  tmp="${tmp/\#\#ENUM_NAME\#\#/${enum}}"
+  CODETABLE_SECTION="${CODETABLE_SECTION}\n${tmp}"
+
+  tmp="${ENUMTABLE_CASE_TMPL}"
+  tmp="${tmp/\#\#NUMBER\#\#/${COUNTER}}"
+  tmp="${tmp/\#\#ENUM_NAME\#\#/${enum}}"
+  ENUMTABLE_SECTION="${ENUMTABLE_SECTION}\n${tmp}"
+  #
+  # set -x
+  # overwrt=$(cat "$f" | sed -re "$MODIFY_SCHEMAS_REGEXP")
+  # set +x
+  #echo "$overwrt" > "$tmpfile"
+  #mv -f "$tmpfile" "$f"
+  
+done
+fwrite ""
+
+# End
+ENUM_SECTION="$ENUM_SECTION\n$ENUM_TMPL_POSTFIX\n"
+MAP_GETTER_SECTION="${MAP_GETTER_SECTION}\n\n${MAP_GETTER_TMPL_POSTFIX}\n"
+CODETABLE_SECTION="${CODETABLE_SECTION}\n${CODETABLE_FNC_TMPL_POSTFIX}\n"
+ENUMTABLE_SECTION="${ENUMTABLE_SECTION}\n${ENUMTABLE_FNC_TMPL_POSTFIX}\n"
+
+fwrite "${ENUM_SECTION}"
+fwrite "${MAP_GETTER_SECTION}"
+fwrite "${CODETABLE_SECTION}"
+fwrite "${ENUMTABLE_SECTION}"
+
+fwrite "${VALIDATOR_FNC_RET_TYPE_DECL}\n"
+fwrite "${VALIDATOR_FNC_DECL}\n"
+
+fwrite "${HEADER_GUARD_END}"
+
+exit 0

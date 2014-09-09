@@ -12,7 +12,11 @@ TESTS =
 
 AM_CPPFLAGS = \
 			  -include $(top_builddir)/config.h \
-			  -I $(top_srcdir)/src/utils
+			  -I $(top_srcdir)/src/utils \
+			  -I $(top_srcdir)/src/utils/messages \
+        -DDEBUG \
+        -DDEVEL
+
 
 AM_CFLAGS = ${my_CFLAGS} \
 	-fvisibility=hidden \
@@ -149,34 +153,39 @@ TESTS += $(check_SCRIPTS)
 #----------------------------------------------------------------------
 bin_PROGRAMS += \
 				netmon
-netmon_LDFLAGS = -lnetlink -ljsoncpp $(LIBZMQ_LIBS)
+netmon_LDFLAGS = -lnetlink -lVariant $(LIBZMQ_LIBS)
 netmon_SOURCES = \
 				 src/netmon/linux \
 				 src/netmon/netmon.c \
 				 src/netmon/jsonf.h \
-				 src/netmon/jsonf.cc
+				 src/netmon/jsonf.cc \
+         src/utils/messages/json_schemas.h
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE
 netmon_LDADD = libpriv-utils.la libpriv-log.la
 
 SUBDIRS = docs/man
 
-cli_LDFLAGS = -ljsoncpp -lzmq
+cli_LDFLAGS = -lVariant -lzmq
 bin_PROGRAMS += \
 			  cli
 cli_SOURCES = \
 			  src/cli/cli.h \
 			  src/cli/cli.c \
-			  src/cli/cli-network.cc
+			  src/cli/cli-network.cc \
+        src/utils/messages/json_schemas.h
 cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
 
 bin_PROGRAMS += \
 				cored
 cored_SOURCES = \
 				src/cored/main.h \
-				src/cored/main.cc
-cored_LDFLAGS = -lzmq -ljsoncpp -pthread
+				src/cored/main.cc \
+        src/utils/messages/json_schemas.h
+cored_LDFLAGS = -lzmq -lVariant -pthread
 cored_LDADD = libpriv-cored.la
 
+src/utils/messages/json_schemas.h: $(top_srcdir)/tools/gen-json-validator
+	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN

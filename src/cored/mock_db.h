@@ -71,13 +71,13 @@ struct network_dt
              const std::string& ip_address, uint8_t prefixlength,
              const std::string& mac_address)
   : interface(interface_name), ipversion(ip_version), ipaddress(ip_address),
-    prefixlen(prefixlength), macaddress(mac_address), type("AUTOMATIC") {}
+    prefixlen(prefixlength), macaddress(mac_address), type("automatic") {}
 
   network_dt(const char *interface_name, const char *ip_version,
              const char *ip_address, uint8_t prefixlength,
              const char *mac_address)
   : interface(interface_name), ipversion(ip_version), ipaddress(ip_address),
-    prefixlen(prefixlength), macaddress(mac_address), type("AUTOMATIC") {}  
+    prefixlen(prefixlength), macaddress(mac_address), type("automatic") {}  
 
   network_dt(const std::string& interface_name, const std::string& ip_version,
              const std::string& ip_address, uint8_t prefixlength,
