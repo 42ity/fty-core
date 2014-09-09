@@ -68,6 +68,13 @@ libpriv_log_la_SOURCES = \
 						 src/utils/log.c
 libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
+noinst_LTLIBRARIES += \
+					  libpriv-subprocess.la
+
+libpriv_subprocess_la_SOURCES = \
+								src/utils/subprocess.h \
+								src/utils/subprocess.cc
+
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
@@ -87,6 +94,8 @@ libpriv_test_run_la_SOURCES = \
 							  tests/include/catch.hpp \
 							  tests/test-run.cc
 libpriv_test_run_la_CPPFLAGS =$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+
+#----------------------------------------------------------------------
 
 check_PROGRAMS += \
 		 test-utils
@@ -120,6 +129,17 @@ test_log_LDADD = \
 				   libpriv-utils.la \
 				   libpriv-test-run.la
 test_log_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+
+check_PROGRAMS += \
+		 test-subprocess
+test_subprocess_SOURCES = \
+					src/utils/subprocess.h \
+					tests/utils/test-subprocess.cc
+test_subprocess_LDADD = \
+				   libpriv-subprocess.la \
+				   libpriv-test-run.la
+test_subprocess_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_subprocess_LDFLAGS = -lcxxtools
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
