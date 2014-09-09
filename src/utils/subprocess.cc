@@ -39,17 +39,17 @@ SubProcess::SubProcess(char** argv) :
 
 SubProcess::~SubProcess() {
     int _saved_errno = errno;
+    
+    //XXX: copy from cxxutils's Fork::~fork()
+    if (isRunning()) {
+        wait();
+    }
 
     // close pipes
     ::close(_outpair[0]);
     ::close(_errpair[0]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
-
-    //XXX: copy from cxxutils's Fork::~fork()
-    if (isRunning()) {
-        wait();
-    }
 
     errno = _saved_errno;
 }
