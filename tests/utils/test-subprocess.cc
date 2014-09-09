@@ -56,7 +56,6 @@ TEST_CASE("subprocess-read-stderr", "[subprocess][fd]") {
     read(proc.getStdout(), (void*) buf, 1023);
     CHECK(strlen(buf) == 0);
 
-    //FIXME: why number 1? printf; echo $? returns 2
     CHECK(ret == 1);
 }
 
