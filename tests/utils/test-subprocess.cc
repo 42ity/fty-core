@@ -1,6 +1,7 @@
 #include "catch.hpp"    //include catch as a first line
 #include <cstring>
 #include <unistd.h>
+#include <time.h>
 
 #include "subprocess.h"
 
@@ -28,13 +29,19 @@ TEST_CASE("subprocess-wait-false", "[subprocess][wait]") {
 
 TEST_CASE("subprocess-wait-sleep", "[subprocess][wait]") {
 
-    char *argv[] = {"/bin/sleep", "2", NULL};
+    char *argv[] = {"/bin/sleep", "3", NULL};
     int ret;
+    time_t start, stop;
 
     SubProcess proc(argv);
+    start = time(NULL);
+    REQUIRE(start != -1);
     proc.run();
     ret = proc.wait();
+    stop = time(NULL);
+    REQUIRE(stop != -1);
     CHECK(ret == 0);
+    CHECK((stop - start) > 2);
 }
 
 TEST_CASE("subprocess-read-stderr", "[subprocess][fd]") {
@@ -132,16 +139,24 @@ TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
     CHECK(ret == 0);
     sleep(1);
     proc.poll();
+    // note that getReturnCode does not report anything unless poll is called
     ret = proc.getReturnCode();
 
     CHECK(!proc.isRunning());
     CHECK(ret == -15);
 }
 
-// start = time
-// {
-// SubProcess proc("/bin/sleep 2");
-// proc.run();
-// }
-// stop = time();
-// CHECK(start - stop > XY);
+TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
+    char *argv[] = {"/bin/sleep", "2", NULL};
+    time_t start, stop;
+
+    start = time(NULL);
+    REQUIRE(start != -1);
+    {
+        SubProcess proc(argv);
+        proc.run();
+    } // destructor called here!
+    stop = time(NULL);
+    REQUIRE(stop != -1);
+    CHECK((stop - start) > 1);
+}
