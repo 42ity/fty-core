@@ -17,20 +17,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "subprocess.h"
 
+#include <cassert>
 #include <cerrno>
-#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <stdexcept>
 
 #include <sys/types.h>
 #include <signal.h>
+
+// forward declaration of helper functions
+// TODO: move somewhere else
+char * const * _mk_argv(std::vector<std::string> vec);
+void _free_argv(char * const * argv);
         
-SubProcess::SubProcess(char** argv) :
+SubProcess::SubProcess(std::vector<std::string> cxx_argv) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
+    _cxx_argv(cxx_argv),
     _return_code(-1),
     _core_dumped(false)
 {
-    _argv = argv;
     _outpair[0] = -1;
     _outpair[1] = -1;
     _errpair[0] = -1;
@@ -77,15 +84,23 @@ void SubProcess::run() {
         ::dup2(_outpair[1], STDOUT_FILENO);
         ::dup2(_errpair[1], STDERR_FILENO);
 
-        if (::execvp(_argv[0], _argv) == -1) {
+        auto argv = _mk_argv(_cxx_argv);
+        if (!argv) {
+            throw std::runtime_error("memory allocation failed");
+        }
+        if (::execvp(argv[0], argv) == -1) {
+            _free_argv(argv);
             throw std::runtime_error("execvpe failed");
         }
+        //_free_argv(argv); can be omited as successful execvpe means we can't reach this place being replaced by different process
 
     }
     else {
         _state = SubProcessState::RUNNING;
         ::close(_outpair[1]);
         ::close(_errpair[1]);
+        // set the returnCode
+        poll();
     }
 }
 
@@ -128,4 +143,36 @@ int SubProcess::kill(int signal) {
 
 int SubProcess::terminate() {
     return kill(15);
+}
+
+// ### helper functions ###
+char * const * _mk_argv(std::vector<std::string> vec) {
+
+    char ** argv = (char **) malloc(sizeof(char*) * (vec.size()+1));
+    assert(argv);
+
+    for (auto i=0u; i != vec.size(); i++) {
+
+        auto str = vec[i];
+        char* dest = (char*) malloc(sizeof(char) + (str.size() + 1));
+        memcpy(dest, str.c_str(), str.size());
+        dest[str.size()] = '\0';
+
+        argv[i] = dest;
+    }
+    argv[vec.size()] = NULL;
+
+    return (char * const*)argv;
+}
+
+void _free_argv(char * const * argv) {
+    char *foo;
+    std::size_t n;
+
+    n = 0;
+    while((foo = argv[n]) != NULL) {
+        free(foo);
+        n++;
+    }
+    free((void*)argv);
 }

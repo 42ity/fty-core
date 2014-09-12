@@ -2,12 +2,14 @@
 #include <cstring>
 #include <unistd.h>
 #include <time.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #include "subprocess.h"
 
 TEST_CASE("subprocess-wait-true", "[subprocess][wait]") {
 
-    char *argv[] = {"/bin/true", NULL};
+    std::vector<std::string> argv{"/bin/true"};
     int ret;
 
     SubProcess proc(argv);
@@ -18,7 +20,7 @@ TEST_CASE("subprocess-wait-true", "[subprocess][wait]") {
 
 TEST_CASE("subprocess-wait-false", "[subprocess][wait]") {
 
-    char *argv[] = {"/bin/false", NULL};
+    std::vector<std::string> argv{"/bin/false"};
     int ret;
 
     SubProcess proc(argv);
@@ -29,7 +31,7 @@ TEST_CASE("subprocess-wait-false", "[subprocess][wait]") {
 
 TEST_CASE("subprocess-wait-sleep", "[subprocess][wait]") {
 
-    char *argv[] = {"/bin/sleep", "3", NULL};
+    std::vector<std::string> argv{"/bin/sleep", "3"};
     int ret;
     time_t start, stop;
 
@@ -45,7 +47,7 @@ TEST_CASE("subprocess-wait-sleep", "[subprocess][wait]") {
 }
 
 TEST_CASE("subprocess-read-stderr", "[subprocess][fd]") {
-    char *argv[] = {"/usr/bin/printf", NULL};
+    std::vector<std::string> argv{"/usr/bin/printf"};
     char buf[1023];
     int ret;
 
@@ -67,7 +69,7 @@ TEST_CASE("subprocess-read-stderr", "[subprocess][fd]") {
 }
 
 TEST_CASE("subprocess-read-stdout", "[subprocess][fd]") {
-    char *argv[] = {"/usr/bin/printf", "the-test\n", NULL};
+    std::vector<std::string> argv{"/usr/bin/printf", "the-test\n"};
     char buf[1023];
     int ret;
 
@@ -89,7 +91,7 @@ TEST_CASE("subprocess-read-stdout", "[subprocess][fd]") {
 }
 
 TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
-    char *argv[] = {"/bin/sleep", "3", NULL};
+    std::vector<std::string> argv{"/bin/sleep", "3"};
     int ret, i;
 
     SubProcess proc(argv);
@@ -109,7 +111,7 @@ TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
 }
 
 TEST_CASE("subprocess-kill", "[subprocess][kill]") {
-    char *argv[] = {"/bin/sleep", "300", NULL};
+    std::vector<std::string> argv{"/bin/sleep", "300"};
     int ret;
 
     SubProcess proc(argv);
@@ -128,7 +130,7 @@ TEST_CASE("subprocess-kill", "[subprocess][kill]") {
 }
 
 TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
-    char *argv[] = {"/bin/sleep", "300", NULL};
+    std::vector<std::string> argv{"/bin/sleep", "300"};
     int ret;
 
     SubProcess proc(argv);
@@ -147,7 +149,7 @@ TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
 }
 
 TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
-    char *argv[] = {"/bin/sleep", "2", NULL};
+    std::vector<std::string> argv{"/bin/sleep", "2"};
     time_t start, stop;
 
     start = time(NULL);
@@ -159,4 +161,19 @@ TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
     stop = time(NULL);
     REQUIRE(stop != -1);
     CHECK((stop - start) > 1);
+}
+
+TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
+    std::vector<std::string> argv{"/bin/sleep", "200"};
+
+    SubProcess proc(argv);
+    proc.run();
+
+    kill(proc.getPid(), SIGTERM);
+    sleep(1);
+    proc.poll();
+
+    CHECK(!proc.isRunning());
+    CHECK(proc.getReturnCode() == -15);
+
 }

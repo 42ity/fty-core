@@ -25,8 +25,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cxxtools/posix/fork.h>
 
-#include <limits.h>
+#include <climits>
 #include <unistd.h>
+
+#include <vector>
+#include <string>
 
 /* \brief Process abstraction class with stdout/stderr redirection
  *
@@ -57,7 +60,8 @@ class SubProcess {
         //
         // @param argv - C-like string of argument, see execvpe(2) for details
         //
-        explicit SubProcess(char** argv);
+        // \todo does not deal with a command line limit
+        explicit SubProcess(std::vector<std::string> cxx_argv);
 
         // \brief close all pipes, waits on process termination
         //
@@ -129,11 +133,11 @@ class SubProcess {
 
         cxxtools::posix::Fork _fork;
         SubProcessState _state;
-        char** _argv;
-        int _outpair[2];
-        int _errpair[2];
+        std::vector<std::string> _cxx_argv;
         int _return_code;
         bool _core_dumped;
+        int _outpair[2];
+        int _errpair[2];
 
         // disallow copy and move constructors
         SubProcess(const SubProcess& p) = delete;
