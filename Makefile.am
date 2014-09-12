@@ -74,6 +74,7 @@ noinst_LTLIBRARIES += \
 libpriv_subprocess_la_SOURCES = \
 								src/utils/subprocess.h \
 								src/utils/subprocess.cc
+libpriv_subprocess_la_LIBADD = -lcxxtools
 
 #----------------------------------------------------------------------
 
