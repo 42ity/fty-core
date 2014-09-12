@@ -116,11 +116,11 @@ TEST_CASE("subprocess-kill", "[subprocess][kill]") {
 
     SubProcess proc(argv);
     proc.run();
-    sleep(1);
+    usleep(50);
 
     ret = proc.kill();
     CHECK(ret == 0);
-    sleep(1);
+    usleep(50);
     // note that getReturnCode does not report anything unless poll is called
     proc.poll();
     ret = proc.getReturnCode();
@@ -135,11 +135,11 @@ TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
 
     SubProcess proc(argv);
     proc.run();
-    sleep(1);
+    usleep(50);
 
     ret = proc.terminate();
     CHECK(ret == 0);
-    sleep(1);
+    usleep(50);
     proc.poll();
     // note that getReturnCode does not report anything unless poll is called
     ret = proc.getReturnCode();
@@ -170,7 +170,7 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     proc.run();
 
     kill(proc.getPid(), SIGTERM);
-    sleep(1);
+    usleep(50);
     proc.poll();
 
     CHECK(!proc.isRunning());
