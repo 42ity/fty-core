@@ -11,9 +11,11 @@ TEST_CASE("subprocess-wait-true", "[subprocess][wait]") {
 
     std::vector<std::string> argv{"/bin/true"};
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.wait();
     CHECK(ret == 0);
 }
@@ -22,9 +24,11 @@ TEST_CASE("subprocess-wait-false", "[subprocess][wait]") {
 
     std::vector<std::string> argv{"/bin/false"};
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.wait();
     CHECK(ret == 1);
 }
@@ -33,12 +37,14 @@ TEST_CASE("subprocess-wait-sleep", "[subprocess][wait]") {
 
     std::vector<std::string> argv{"/bin/sleep", "3"};
     int ret;
+    bool bret;
     time_t start, stop;
 
     SubProcess proc(argv);
     start = time(NULL);
     REQUIRE(start != -1);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.wait();
     stop = time(NULL);
     REQUIRE(stop != -1);
@@ -50,9 +56,11 @@ TEST_CASE("subprocess-read-stderr", "[subprocess][fd]") {
     std::vector<std::string> argv{"/usr/bin/printf"};
     char buf[1023];
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.wait();
     
     //something on stderr
@@ -72,9 +80,11 @@ TEST_CASE("subprocess-read-stdout", "[subprocess][fd]") {
     std::vector<std::string> argv{"/usr/bin/printf", "the-test\n"};
     char buf[1023];
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.wait();
     
     //nothing on stderr
@@ -93,9 +103,11 @@ TEST_CASE("subprocess-read-stdout", "[subprocess][fd]") {
 TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
     std::vector<std::string> argv{"/bin/sleep", "3"};
     int ret, i;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     ret = proc.getReturnCode();
 
     for (i = 0; i != 6; i++) {
@@ -113,9 +125,11 @@ TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
 TEST_CASE("subprocess-kill", "[subprocess][kill]") {
     std::vector<std::string> argv{"/bin/sleep", "300"};
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     usleep(50);
 
     ret = proc.kill();
@@ -132,9 +146,11 @@ TEST_CASE("subprocess-kill", "[subprocess][kill]") {
 TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
     std::vector<std::string> argv{"/bin/sleep", "300"};
     int ret;
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
     usleep(50);
 
     ret = proc.terminate();
@@ -151,12 +167,14 @@ TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
 TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
     std::vector<std::string> argv{"/bin/sleep", "2"};
     time_t start, stop;
+    bool bret;
 
     start = time(NULL);
     REQUIRE(start != -1);
     {
         SubProcess proc(argv);
-        proc.run();
+        bret = proc.run();
+        CHECK(bret);
     } // destructor called here!
     stop = time(NULL);
     REQUIRE(stop != -1);
@@ -165,9 +183,11 @@ TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
 
 TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     std::vector<std::string> argv{"/bin/sleep", "200"};
+    bool bret;
 
     SubProcess proc(argv);
-    proc.run();
+    bret = proc.run();
+    CHECK(bret);
 
     kill(proc.getPid(), SIGTERM);
     usleep(50);
@@ -176,4 +196,20 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     CHECK(!proc.isRunning());
     CHECK(proc.getReturnCode() == -15);
 
+}
+
+TEST_CASE("subprocess-run-fail", "[subprocess][run]") {
+    std::vector<std::string> argv{"/n/o/b/i/n/a/r/y",};
+    int ret;
+    bool bret;
+
+    SubProcess proc(argv);
+    bret = proc.run();
+    //XXX: bret reports only serious errors
+    CHECK(bret);
+    ret = proc.poll();
+    CHECK(ret == -1);
+    //XXX: we need to call wait to get the right status - it's weird, but you has to explicitly synch with external reurces every time
+    proc.wait();
+    CHECK(!proc.isRunning());
 }

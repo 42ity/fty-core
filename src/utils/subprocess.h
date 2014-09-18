@@ -93,12 +93,13 @@ class SubProcess {
         bool isCoreDumped() const { return _core_dumped; }
 
         // \brief creates a pipe/pair for stdout/stderr, fork and exec the command. Note this
-        // can be started only once, all subsequent calls becames nooop.
+        // can be started only once, all subsequent calls becames nooop and return true.
         //
-        // \throws std::runtime_error if pipe/fork syscalls fails
+        // @return true if exec was successfull, otherwise false and reason is in errno
         //
+        // \todo error reporting from a child
         //
-        void run();
+        bool run();
 
         //! \brief wait on program terminate
         //

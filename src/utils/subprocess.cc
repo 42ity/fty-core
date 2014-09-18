@@ -61,18 +61,18 @@ SubProcess::~SubProcess() {
     errno = _saved_errno;
 }
 
-void SubProcess::run() {
+bool SubProcess::run() {
 
     // do nothing if some process has been already started
     if (_outpair[0] != -1) {
-        return;
+        return true;
     }
 
     if (::pipe(_outpair) == -1) {
-        throw std::runtime_error("Failed to create a pipe for stdout");
+        return false;
     }
     if (::pipe(_errpair) == -1) {
-        throw std::runtime_error("Failed to create a for stderr");
+        return false;
     }
 
     _fork.fork();
@@ -86,27 +86,25 @@ void SubProcess::run() {
 
         auto argv = _mk_argv(_cxx_argv);
         if (!argv) {
-            throw std::runtime_error("memory allocation failed");
+            return false;
         }
-        if (::execvp(argv[0], argv) == -1) {
-            _free_argv(argv);
-            throw std::runtime_error("execvpe failed");
-        }
-        //_free_argv(argv); can be omited as successful execvpe means we can't reach this place being replaced by different process
+
+        // TODO: error checking and reporting to the parent
+        ::execvp(argv[0], argv);
 
     }
-    else {
-        _state = SubProcessState::RUNNING;
-        ::close(_outpair[1]);
-        ::close(_errpair[1]);
-        // set the returnCode
-        poll();
-    }
+    // we are in parent
+    _state = SubProcessState::RUNNING;
+    ::close(_outpair[1]);
+    ::close(_errpair[1]);
+    // set the returnCode
+    poll();
+    return true;
 }
 
 int SubProcess::wait(bool no_hangup)
 {
-    int status, ret;
+    int status;
     
     //thanks tomas for the fix!
     status=-1;
@@ -117,7 +115,7 @@ int SubProcess::wait(bool no_hangup)
         return _return_code;
     }
 
-    ret = ::waitpid(getPid(), &status, options);
+    ::waitpid(getPid(), &status, options);
 
     if (WIFEXITED(status)) {
         _state = SubProcessState::FINISHED;
