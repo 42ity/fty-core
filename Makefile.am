@@ -115,6 +115,13 @@ BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
 
 CLEANFILES	+=	src/utils/messages/json_schemas.h
 
+noinst_LTLIBRARIES += \
+					  libpriv-cidr.la
+libpriv_cidr_la_SOURCES = \
+						  src/utils/cidr.h \
+						  src/utils/cidr.cc
+libpriv_cidr_la_LIBADD = -lcidr
+
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
@@ -181,7 +188,7 @@ test_subprocess_LDADD = \
 				   libpriv-subprocess.la \
 				   libpriv-test-run.la
 test_subprocess_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
-test_subprocess_LDFLAGS = -lcxxtools
+test_subprocess_LDFLAGS = -lcxxtools -lcidr
 
 check_PROGRAMS += \
 		 test-cidr

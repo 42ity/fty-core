@@ -25,13 +25,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <sys/types.h>
 #include <signal.h>
+#include <time.h>
+
+namespace utils {
 
 // forward declaration of helper functions
 // TODO: move somewhere else
-char * const * _mk_argv(std::vector<std::string> vec);
+char * const * _mk_argv(Argv vec);
 void _free_argv(char * const * argv);
+std::size_t _argv_hash(Argv args);
         
-SubProcess::SubProcess(std::vector<std::string> cxx_argv) :
+SubProcess::SubProcess(Argv cxx_argv) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
     _cxx_argv(cxx_argv),
@@ -143,8 +147,108 @@ int SubProcess::terminate() {
     return kill(15);
 }
 
+ProcessQue::~ProcessQue() {
+
+    for (auto taskp: _running) {
+        taskp->wait();
+        delete taskp;
+    }
+    
+    for (auto taskp: _done) {
+        //avoids zombies, calls ::waitpid at least once
+        taskp->poll();
+        delete taskp;
+    }
+}
+
+bool ProcessQue::add(Argv &args) {
+    //avoid duplicates in _incomming and _running - use task.hash for that
+    _incomming.push_back(args);
+    return true;
+}
+
+void ProcessQue::schedule(bool schedule_new) {
+    //1. check a status of _running
+    //TODO: can't this work with for (auto &taskp_i: _running)??
+
+    for (auto proc_i = _running.begin(); proc_i != _running.end(); ) {
+
+        auto proc = *proc_i;
+
+        proc->poll();
+        if (!proc->isRunning()) {
+            _done.push_back(proc);
+            _running.erase(proc_i);
+            _running_c--;
+        } else {
+            proc_i++;
+        }
+    }
+
+    // do nothing if we should not or once we've reached a limit
+    if (!schedule_new || (_running_c == _running_limit)) {
+        return;
+    }
+
+    // 2. start enough new tasks
+    auto cnt = std::min((_running_limit - _running_c), _incomming.size());
+    for (auto i = 0u; i != cnt; i++) {
+
+        auto args = _incomming[0];
+        _incomming.pop_front();
+
+        auto proc = new SubProcess(args);
+        proc->run();
+        _running.push_front(proc);
+        _running_c++;
+    }
+}
+
+std::deque<SubProcess*>::const_iterator
+    ProcessQue::cbegin() const {
+        return _running.cbegin();
+}
+std::deque<SubProcess*>::const_iterator
+    ProcessQue::cend() const {
+        return _running.cend();
+}
+
+SubProcess* ProcessQue::pop_done() {
+   auto ret = _done[0];
+   _done.pop_front();
+   return ret;
+}
+
+bool ProcessQue::hasDone() const {
+    return !_done.empty();
+}
+
+bool ProcessQue::hasIncomming() const {
+    return !_incomming.empty();
+}
+
+bool ProcessQue::hasRunning() const {
+    return !_running.empty();
+}
+
+std::size_t ProcessQue::runningSize() const {
+    return _running.size();
+}
+
+void ProcessQue::terminateAll() {
+    auto it = cbegin();
+    while (it != cend()) {
+        SubProcess *proc = *it;
+        proc->terminate();
+        it++;
+        usleep(50);
+        proc->poll();
+    }
+    schedule(false);
+}
+
 // ### helper functions ###
-char * const * _mk_argv(std::vector<std::string> vec) {
+char * const * _mk_argv(Argv vec) {
 
     char ** argv = (char **) malloc(sizeof(char*) * (vec.size()+1));
     assert(argv);
@@ -174,3 +278,19 @@ void _free_argv(char * const * argv) {
     }
     free((void*)argv);
 }
+
+std::size_t _argv_hash(Argv args) {
+
+
+    std::hash<std::string> hash;
+    size_t ret = hash("");
+    
+    for (auto str : args) {
+        size_t foo = hash(str);
+        ret = ret ^ (foo << 1);
+    }
+    
+    return ret;
+}
+
+} //namespace utils

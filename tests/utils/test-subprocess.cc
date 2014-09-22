@@ -7,6 +7,8 @@
 
 #include "subprocess.h"
 
+using namespace utils;
+
 TEST_CASE("subprocess-wait-true", "[subprocess][wait]") {
 
     std::vector<std::string> argv{"/bin/true"};
@@ -213,3 +215,69 @@ TEST_CASE("subprocess-run-fail", "[subprocess][run]") {
     proc.wait();
     CHECK(!proc.isRunning());
 }
+
+TEST_CASE("subprocess-que", "[subprocess][processque]") {
+    Argv args{"/bin/cat"};
+    ProcessQue q{1};
+
+    CHECK(!q.hasDone());
+    CHECK(!q.hasIncomming());
+    CHECK(!q.hasRunning());
+    CHECK(q.runningSize() == 0);
+    
+    q.add(args);
+    CHECK(!q.hasDone());
+    CHECK(q.hasIncomming());
+    CHECK(!q.hasRunning());
+    CHECK(q.runningSize() == 0);
+    
+    q.add(args);
+    CHECK(!q.hasDone());
+    CHECK(q.hasIncomming());
+    CHECK(!q.hasRunning());
+    CHECK(q.runningSize() == 0);
+
+    fprintf(stderr, "first schedule()\n");
+    q.schedule();
+    CHECK(!q.hasDone());
+    CHECK(q.hasIncomming());
+    CHECK(q.hasRunning());
+    CHECK(q.runningSize() == 1);
+    
+    fprintf(stderr, "second schedule()\n");
+    //second schedule does not have any impact on runningSize due limit == 1
+    q.schedule();
+    CHECK(!q.hasDone());
+    CHECK(q.hasIncomming());
+    CHECK(q.hasRunning());
+    CHECK(q.runningSize() == 1);
+
+    //test the iterators + schedule(false) - terminateAll does not
+    //start any new jobs
+    q.terminateAll();
+    //XXX: THE PART BELOW IS EXTREMLY UNRELIABLE - THE BEST
+    //I WAS ABLE TO GET WITH A LOT OF USLEEP INSIDE WAS
+    //AROUND 75% SUCCESS RATE - SKIPPING FOR NOW
+    /*
+    for (int i = 0; i != 6; i++) {
+        if (q.hasDone()) {
+            break;
+        }
+        usleep(i*100);
+    }
+    CHECK(q.hasDone());
+    CHECK(q.hasIncomming());
+    CHECK(!q.hasRunning());
+    CHECK(q.runningSize() == 0);
+ 
+    q.schedule();
+    CHECK(q.hasDone());
+    CHECK(!q.hasIncomming());
+    CHECK(q.hasRunning());
+    CHECK(q.runningSize() == 1);
+
+    q.terminateAll();
+    */
+
+}
+

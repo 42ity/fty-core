@@ -29,10 +29,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 
 #include <vector>
+#include <deque>
 #include <string>
 
-/* \brief Process abstraction class with stdout/stderr redirection
+/* \brief Helper classes for managing processes
  *
+ * class SubProcess:
  * The advantage of this class is easyness of usage, as well as readability as
  * it handles several low-level oddities of POSIX/Linux C-API.
  *
@@ -49,7 +51,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * proc.wait();
  * std::cout "process pid: " << proc.getPid() << std::endl;
  * \endcode
+ *
+ * class ProcessQue:
+ * This maintains a queue of a processes. There are three queues: incomming,
+ * running and done. Those are updated only at schedule() call, when finished
+ * processes are moved to done and those from the incomming queue are started
+ * and moved to running.
  */
+
+namespace utils {
+
+typedef std::vector<std::string> Argv;
 
 class SubProcess {
     public:
@@ -61,7 +73,7 @@ class SubProcess {
         // @param argv - C-like string of argument, see execvpe(2) for details
         //
         // \todo does not deal with a command line limit
-        explicit SubProcess(std::vector<std::string> cxx_argv);
+        explicit SubProcess(Argv cxx_argv);
 
         // \brief close all pipes, waits on process termination
         //
@@ -134,7 +146,7 @@ class SubProcess {
 
         cxxtools::posix::Fork _fork;
         SubProcessState _state;
-        std::vector<std::string> _cxx_argv;
+        Argv _cxx_argv;
         int _return_code;
         bool _core_dumped;
         int _outpair[2];
@@ -147,6 +159,52 @@ class SubProcess {
         SubProcess& operator=(SubProcess&& p) = delete;
 
 };
+
+class ProcessQue {
+
+    public:
+
+        typedef std::deque<SubProcess*>::const_iterator const_iterator;
+
+        explicit ProcessQue(std::size_t limit = 4) :
+            _running_c(0),
+            _running_limit(limit),
+            _incomming(),
+            _running(),
+            _done()
+        {
+        }
+
+        virtual ~ProcessQue();
+
+        const_iterator cbegin() const;
+        const_iterator cend() const;
+        bool hasDone() const;
+        bool hasIncomming() const;
+        bool hasRunning() const;
+        std::size_t runningSize() const;
+        
+        SubProcess* pop_done();
+        bool add(Argv &args);
+        void schedule(bool schedule_new=true);
+        void terminateAll();
+
+
+    protected:
+        std::size_t _running_c;
+        std::size_t _running_limit;
+        std::deque<Argv> _incomming;
+        std::deque<SubProcess*> _running;
+        std::deque<SubProcess*> _done;
+
+        // disallow copy and move constructors
+        ProcessQue(const ProcessQue& p) = delete;
+        ProcessQue& operator=(ProcessQue p) = delete;
+        ProcessQue(const ProcessQue&& p) = delete;
+        ProcessQue& operator=(ProcessQue&& p) = delete;
+};
+
+} //namespace utils
 
 #endif //_SRC_UTILS_SUBPROCESS_H
 
