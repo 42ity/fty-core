@@ -1,8 +1,76 @@
 #!/bin/bash
 
-# TODO Add boilerplate
-# TODO Add doxygen to the generated code 
-# TODO Implement cleanup/trap !!! 
+# Header
+################################################################################
+#                                                                              #
+#  FILE        : gen-json-validator                                            #
+#  VERSION     : 1.0                                                           #
+#  CREATED     : 9.9.2014                                                      #
+#  REVISION    : 10.9.2014                                                     #
+#  AUTHOR      : Karol Hrdina (karolhrdina@eaton.com)                          #
+#  COMPANY     : Eaton EEIC                                                    #
+#                                                                              #
+#  USAGE                                                                       #
+#      gen-json-validator <path_to_topsrc_dir>                                 #
+#                                                                              #
+#  OPTIONS                                                                     #
+#    self-describing                                                           #
+#                                                                              #
+#  DESCRIPTION                                                                 #
+#  --------------------------------------------------------------------------  #
+#    Generate c++ header file with functionality for automatic json            #
+#  validation.                                                                 #
+#  Produces 'json_schemas.h' in $(topsrc_dir)/src/utils/messages               #
+#  --------------------------------------------------------------------------  #
+#                                                                              #
+#  TODOS                                                                       #
+#    - Implement cleanup/trap                                                  #
+#                                                                              #
+#  BUGS                                                                        #
+#    None known                                                                #
+#                                                                              #
+#  NOTES                                                                       #
+#    When adding any further major features please consider python.            #
+#                                                                              #
+################################################################################
+
+
+
+# Grandma friendly explanation (TODO i need to rewrite this, my grandma wouldn't
+# undestand this yet :( )
+# Requirements
+# - files need to be in format '<message_name>Message.json'
+# - contents of the file ( the json schema ) needs to have 'schema' property
+#   defined and this needs to be the <message_name> string. To encode message
+#   type into the schema itself is the only way to be able to recognize message
+#   types later.
+# 
+# Now the algo of the generator istelf
+# 1.
+#   Go to messages/json_schema/ directory
+# 2.
+#   Take all files that end in 'Message.json'
+# 3.
+#   One by one, do the following for each file
+# 3a.
+#   read the schema, replace the <message_name> string in the "schema" property
+#   with a unique natural number. This number will be later used when generating
+#   enumtable/codetable functions
+# 3b.
+#   encode this modified schema into c friendly hex array
+# 3c.
+#   create a getter function for this message type using the c friendly hex array
+# 3d.
+#   add <message_name> into the message enumeration
+# 3e.
+#   create a libvariant::Variant with a deserialized JSON,
+#   insert this object into a map with it's message enumeration
+#   as the key.
+# 3f.
+#   add case branches into switch statements for codetable/enumtable    
+# 3g.
+# TODO    
+#
 
 # CHALLENGE (Reward = Beer):
 # If you know about a better way of combining declare and heredoc in 
@@ -10,30 +78,20 @@
 # that using a bash external (i.e. cat) instead of bash builtin (i.e. 
 # read) is not considered a better way :)
 
-# IMPORTANT NOTE:
-# Looking back at the script i must confess that it had grown quite a bit.
-# In the beginning this task seemed very simple, but as i dived into it
-# certain interresting features(*) kept presenting themselves and i couldn't 
-# resist. Thus making this bash script more complex and longer then it ever
-# should have been. Without doubt, this script is eligible for a python
-# rewrite. If i knew this from the beginning i would have written it as so.
-# However, not all is lost and this might be a nice excercise for an aspiring
-# pythonist and/or a good lecture from a python guru like MVY & co about how
-# to do these things.
-# (*): There is one more feaure not implement at the moment (pb-compliant class
-# generation) but i'll wait for the python rewrite with this :)
-
 # check that we are in the correct place and that certain directories exist
 declare -r SRC_DIR="${1}"
-if [[ ! -d "$SRC_DIR/src/utils/messages" ||
-      ! -d "$SRC_DIR/src/utils/messages/json_schema" ]]; then
+declare -r DEP_DIR_OUT="${SRC_DIR}/utils/messages"
+declare -r DEP_DIR_IN="${SRC_DIR}/utils/messages/json_schema"
+
+if [[ ! -d "${DEP_DIR_OUT}" ||
+      ! -d "${DEP_DIR_IN}" ]]; then
   echo "ERROR: Directories don't exits."
   exit 1
 fi
 
-pushd "$SRC_DIR/src/utils/messages"
+pushd "${DEP_DIR_OUT}"
 if [[ $? -ne 0 ]]; then
-  echo "ERROR: Cannot change to ../src/utils/messages"  
+  echo "ERROR: Cannot change to ${DEP_DIR_OUT}"  
   exit 1
 fi
 
@@ -41,11 +99,44 @@ declare -r OUTPUT_FILENAME="json_schemas"
 declare -r OUTPUT_FILENAME_EXT="h"
 declare -r OUTPUT="${OUTPUT_FILENAME}.${OUTPUT_FILENAME_EXT}"
 
-function fwrite() {
+function fwrite_escape() {
   echo -e "${1}" >> "${OUTPUT}"
 }
-
+function fwrite() {
+  echo "${1}" >> "${OUTPUT}"
+}
 rm -f ./"${OUTPUT}"
+
+################################
+###    LICENSE BOILERPLATE   ###
+################################
+read -r -d '' tmp <<EOF
+/* ${OUTPUT}: json validation helpers generator
+ 
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*
+Author(s): Karol Hrdina <karolhrdina@eaton.com>
+ 
+Description: generator of automated json validator using libvirt
+References: BIOS-347, BIOS-377
+*/
+EOF
+declare -r LICENSE_BOILERPLATE="$tmp"
 
 #######################################
 ###    FUNCTION WRAPPER TEMPLATE    ###
@@ -63,8 +154,7 @@ declare -r FUNC_WRAPPER_TMPL="$tmp"
 #######################################
 ###          HEADER GUARD           ###
 #######################################
-# TODO PROJECT_PATH_FILE_H Podla toho kde sa byproduct.h bude generovat ... 
-declare -r HEADER_GUARD_TERM="${OUTPUT_FILENAME}_H__"
+declare -r HEADER_GUARD_TERM="utils_messages_${OUTPUT_FILENAME}_H__"
 read -r -d '' tmp <<EOF
 #ifndef ${HEADER_GUARD_TERM}
 #define ${HEADER_GUARD_TERM}
@@ -124,6 +214,20 @@ declare -r MAP_GETTER_TMPL_POSTFIX="$tmp"
 #######################################
 ###       CODETABLE SECTION         ###
 #######################################
+# TODO
+read -r -d '' tmp<<EOF
+/*!
+\\brief 
+
+Detailed description TODO
+
+\\param[in] code 
+\\return ${ENUM_NAME} 
+\\see
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r CODETABLE_FNC_DOXY="$tmp"
 
 read -r -d '' tmp<<EOF
 \tcase ##NUMBER##:
@@ -153,6 +257,22 @@ declare -r CODETABLE_FNC_TMPL_POSTFIX="$tmp"
 #######################################
 ###       ENUMTABLE SECTION         ###
 #######################################
+# TODO
+read -r -d '' tmp<<EOF
+/*!
+\\brief
+
+Detailed description TODO
+
+\\param[in] message_type 
+
+\\return ${ENUM_NAME}
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r ENUMTABLE_FNC_DOXY="$tmp"
+
 read -r -d '' tmp<<EOF
 \tcase ${ENUM_NAME}::##ENUM_NAME##:
 \t{
@@ -192,68 +312,273 @@ enum class ${VALIDATOR_FNC_RET_TYPE_NAME} {
 EOF
 declare -r VALIDATOR_FNC_RET_TYPE_DECL="$tmp"
 
+###      VALIDATE PARSE      ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of json string against a given "message type" (i.e.
+given json schema) and deserialize the json string
+
+\\param[in]  json					 json string to be validated
+\\param[in]  message_type  message type to validate the json string against  
+\\param[out] root					 deserialized json string			 
+\\param[out] strerr				 error string
+
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid and assign
+deserialized json string into 'root' parameter.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
+of syntax error in json schema of the given message type) and assign error string
+to strerr parameter.
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_PARSE_DOXY="$tmp"
+
 read -r -d '' tmp<<EOF
 ${VALIDATOR_FNC_RET_TYPE_NAME}
 validate_parse(
 const char *json,
 ${ENUM_NAME} message_type,
 libvariant::VariantRef root,
-std::string *strerr) {
-\tif (json != NULL) {
-\t\troot = libvariant::DeserializeJSON(json);
+std::string& strerr) {
+\tif (json == NULL) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
 \t}
+\troot = libvariant::DeserializeJSON(json);
 \tlibvariant::SchemaResult sr = SchemaValidate(
 \t\tutils::json::get_map().at(static_cast<int>(message_type)),
 \t\troot);
 \tif(sr.SchemaErrors()) {
-\t\tif (strerr != NULL) {
-\t\t\tstrerr->assign(sr.PrettyPrintMessage());
-\t\t}
-\t\treturn ValidateResultEnum::SchemaError;
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
 \t}
 \tif (sr.ValidationErrors()) {
-\t\tif (strerr != NULL) {
-\t\t\tstrerr->assign(sr.PrettyPrintMessage());
-\t\t}
-\t\treturn ValidateResultEnum::Invalid;
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
 \t}
-\treturn ValidateResultEnum::Valid;
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
 }
+EOF
+declare -r VALIDATE_PARSE_FNC_DECL="$tmp"
 
+###      VALIDATE PARSE OVERLOAD1     ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of json string against a given "message type" (i.e.
+given json schema) and deserialize the json string
+
+\\param[in]  json					 json string to be validated
+\\param[in]  message_type  message type to validate the json string against  
+\\param[out] root					 deserialized json string			 
+
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid and assign
+deserialized json string into 'root' parameter.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
+of syntax error in json schema of the given message type).
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_PARSE_OVRLD1_DOXY="$tmp"
+
+read -r -d '' tmp<<EOF
 ${VALIDATOR_FNC_RET_TYPE_NAME}
 validate_parse(
 const char *json,
 ${ENUM_NAME} message_type,
 libvariant::VariantRef root) {
-\treturn validate_parse(json, message_type, root, NULL);
-}
-
-${VALIDATOR_FNC_RET_TYPE_NAME}
-validate(
-const char *json, ${ENUM_NAME} message_type, std::string *strerr) {
-\tlibvariant::Variant v;
-\treturn validate_parse(json, message_type, v, strerr); 
-}
-
-${VALIDATOR_FNC_RET_TYPE_NAME}
-validate(
-const char *json, ${ENUM_NAME} message_type) {
-\treturn validate(json, message_type, NULL);
-}
-
-${VALIDATOR_FNC_RET_TYPE_NAME}
-validate(
-const libvariant::Variant& root, MessageTypesEnum message_type, std::string *strerr) {
-  return validate_parse(NULL, message_type, root, strerr);
-}
-
-${VALIDATOR_FNC_RET_TYPE_NAME}
-validate(
-const libvariant::Variant& root, MessageTypesEnum message_type) {
-\treturn validate_parse(NULL, message_type, root, NULL);
+\tif (json == NULL) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\troot = libvariant::DeserializeJSON(json);
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\troot);
+\tif(sr.SchemaErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
 }
 EOF
-declare -r VALIDATOR_FNC_DECL="$tmp"
+declare -r VALIDATE_PARSE_OVRLD1_FNC_DECL="$tmp"
+
+
+###      VALIDATE       ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of deserialized json against a given "message type" (i.e.
+given json schema).
+
+\\param[in]  json					 json string to be validated
+\\param[in]  message_type  message type to validate the json string against  
+\\param[out] strerr				 error string
+
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
+of syntax error in json schema of the given message type) and assign error string
+to strerr parameter.
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_DOXY="$tmp"
+
+
+read -r -d '' tmp<<EOF
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const char *json,
+${ENUM_NAME} message_type,
+std::string& strerr) {
+\tif (json == NULL) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\tlibvariant::Variant temp = libvariant::DeserializeJSON(json);
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\ttemp);
+\tif(sr.SchemaErrors()) {
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
+}
+EOF
+declare -r VALIDATE_FNC_DECL="$tmp"
+
+
+###      VALIDATE OVERLOAD 1      ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of json string against a given "message type" (i.e.
+given json schema).
+
+\\param[in]  json					 json string to be validated
+\\param[in]  message_type  message type to validate the json string against
+  
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
+of syntax error in json schema of the given message type)
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_OVRLD1_DOXY="$tmp"
+
+read -r -d '' tmp<<EOF
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const char *json,
+${ENUM_NAME} message_type) {
+\tif (json == NULL) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\tlibvariant::Variant temp = libvariant::DeserializeJSON(json);
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\ttemp);
+\tif(sr.SchemaErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
+}
+EOF
+declare -r VALIDATE_OVRLD1_FNC_DECL="$tmp"
+
+###      VALIDATE OVERLOAD 2      ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of deserialized json against a given "message type" (i.e.
+given json schema).
+
+\\param[in]  root					 deserialized json to be validated
+\\param[in]  message_type  message type to validate the deserialized json against  
+\\param[out] strerr				 error string
+
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+deserialized json being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in
+case of syntax error in json schema of the given message type) and assign error string
+to strerr parameter.
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_PARSE_OVRLD2_DOXY="$tmp"
+
+read -r -d '' tmp<<EOF
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const libvariant::Variant& root,
+${ENUM_NAME} message_type,
+std::string& strerr) {
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\troot);
+\tif(sr.SchemaErrors()) {
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\tstrerr.assign(sr.PrettyPrintMessage());
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
+}
+EOF
+declare -r VALIDATE_PARSE_OVRLD2_FNC_DECL="$tmp"
+
+###      VALIDATE OVERLOAD 3      ###
+read -r -d '' tmp<<EOF
+/*!
+\\brief Perform validation of deserialized json against a given "message type" (i.e.
+given json schema).
+
+\\param[in]  root					 deserialized json to be validated
+\\param[in]  message_type  message type to validate the json string against  
+
+\\return If successfull, return ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid.
+Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of input
+json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
+of syntax error in json schema of the given message type).
+
+\\author Karol Hrdina <karolhrdina@eaton.com>
+*/
+EOF
+declare -r VALIDATE_PARSE_OVRLD3_DOXY="$tmp"
+read -r -d '' tmp<<EOF
+${VALIDATOR_FNC_RET_TYPE_NAME}
+validate(
+const libvariant::Variant& root,
+MessageTypesEnum message_type) {
+\tlibvariant::SchemaResult sr = SchemaValidate(
+\t\tutils::json::get_map().at(static_cast<int>(message_type)),
+\t\troot);
+\tif(sr.SchemaErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError;
+\t}
+\tif (sr.ValidationErrors()) {
+\t\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid;
+\t}
+\treturn ${VALIDATOR_FNC_RET_TYPE_NAME}::Valid;
+
+}
+EOF
+declare -r VALIDATE_PARSE_OVRLD3_FNC_DECL="$tmp"
 
 # START
 
@@ -265,12 +590,14 @@ ENUMTABLE_SECTION="${ENUMTABLE_FNC_TMPL_PREFIX}\n"
 
 declare -i COUNTER=0
 ###         REGEXP SECTION          ###
-read -r -d '' MODIFY_SCHEMAS_REGEXP<<EOF
-s/(\\s*"schema"\\s*:\\s*\{\\s*"type"\\s*:\\s*")string"(\\s*,\\s*"enum"\\s*:\\s*\[\\s*)"\\s*CliNetworkAddDel\\s*"(\\s*\]\\s*\})/\1number", "multipleOf" : 1.0, "minumum" : 1\2${COUNTER}\3/
-EOF
+#read -r -d '' MODIFY_SCHEMAS_REGEXP<<EOF
+#s/(\\s*"schema"\\s*:\\s*\{\\s*"type"\\s*:\\s*")string"(\\s*,\\s*"enum"\\s*:\\s*\[\\s*)"\\s*CliNetworkAddDel\\s*"(\\s*\]\\s*\})/\1number", "multipleOf" : 1.0, "minumum" : 1\2${COUNTER}\3/
+#EOF
 
-fwrite "$HEADER_GUARD_BEGIN"
-fwrite ""
+fwrite_escape "${LICENSE_BOILERPLATE}"
+fwrite_escape ""
+fwrite_escape "${HEADER_GUARD_BEGIN}"
+fwrite_escape ""
 for f in ./json_schema/*.json; do
   filename=`basename ${f%.json}` # TODO rewrite using builtins
   COUNTER="$COUNTER + 1"
@@ -280,23 +607,17 @@ s/(\\s*"schema"\\s*:\\s*\{\\s*"type"\\s*:\\s*")string"(\\s*,\\s*"enum"\\s*:\\s*\
 EOF
 
   out=$(cat "$f" | sed -re "$MODIFY_SCHEMAS_REGEXP" | xxd -i)
-  #out=$(xxd -i < "$f")
-  out="${out}, 0x00"
+#  out="${out}, 0x00"
   tmp="${FUNC_WRAPPER_TMPL}"
   tmp="${tmp/\#\#NAME\#\#/$filename}"
   tmp="${tmp/\#\#ARRAY\#\#/$out}"
-  fwrite "$tmp"
-  fwrite "" 
-  # possible sed alteration
+  fwrite_escape "$tmp"
+  fwrite_escape "" 
   ENUM_SECTION="${ENUM_SECTION}\n\t${enum},"
   tmp="${MAP_GETTER_TMPL_ITEM}"
   tmp="${tmp/\#\#NAME\#\#/$filename}"
   tmp="${tmp/\#\#ENUM\#\#/$enum}"
   MAP_GETTER_SECTION="${MAP_GETTER_SECTION}\n${tmp}"
-
-  #
-  #tmpfile=$(mktemp --tmpdir=./json_schema)
-  #tmpfile="${tmpfile}.${filename}"
 
   tmp="${CODETABLE_CASE_TMPL}"
   tmp="${tmp/\#\#NUMBER\#\#/${COUNTER}}"
@@ -307,15 +628,9 @@ EOF
   tmp="${tmp/\#\#NUMBER\#\#/${COUNTER}}"
   tmp="${tmp/\#\#ENUM_NAME\#\#/${enum}}"
   ENUMTABLE_SECTION="${ENUMTABLE_SECTION}\n${tmp}"
-  #
-  # set -x
-  # overwrt=$(cat "$f" | sed -re "$MODIFY_SCHEMAS_REGEXP")
-  # set +x
-  #echo "$overwrt" > "$tmpfile"
-  #mv -f "$tmpfile" "$f"
   
 done
-fwrite ""
+fwrite_escape ""
 
 # End
 ENUM_SECTION="$ENUM_SECTION\n$ENUM_TMPL_POSTFIX\n"
@@ -323,14 +638,50 @@ MAP_GETTER_SECTION="${MAP_GETTER_SECTION}\n\n${MAP_GETTER_TMPL_POSTFIX}\n"
 CODETABLE_SECTION="${CODETABLE_SECTION}\n${CODETABLE_FNC_TMPL_POSTFIX}\n"
 ENUMTABLE_SECTION="${ENUMTABLE_SECTION}\n${ENUMTABLE_FNC_TMPL_POSTFIX}\n"
 
-fwrite "${ENUM_SECTION}"
-fwrite "${MAP_GETTER_SECTION}"
-fwrite "${CODETABLE_SECTION}"
-fwrite "${ENUMTABLE_SECTION}"
+fwrite_escape "${ENUM_SECTION}"
+fwrite_escape "${MAP_GETTER_SECTION}"
 
-fwrite "${VALIDATOR_FNC_RET_TYPE_DECL}\n"
-fwrite "${VALIDATOR_FNC_DECL}\n"
+fwrite "${CODETABLE_FNC_DOXY}"
+fwrite ""
+fwrite_escape "${CODETABLE_SECTION}"
 
-fwrite "${HEADER_GUARD_END}"
+fwrite "${ENUMTABLE_FNC_DOXY}"
+fwrite ""
+fwrite_escape "${ENUMTABLE_SECTION}"
+
+fwrite_escape "${VALIDATOR_FNC_RET_TYPE_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_PARSE_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_PARSE_FNC_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_PARSE_OVRLD1_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_PARSE_OVRLD1_FNC_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_FNC_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_OVRLD1_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_OVRLD1_FNC_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_OVRLD2_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_OVRLD2_FNC_DECL}\n"
+fwrite ""
+
+fwrite "${VALIDATE_OVRLD3_DOXY}"
+fwrite ""
+fwrite_escape "${VALIDATE_OVRLD3_FNC_DECL}\n"
+fwrite ""
+
+fwrite_escape "${HEADER_GUARD_END}\n"
 
 exit 0
