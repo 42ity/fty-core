@@ -210,9 +210,8 @@ nodist_cored_SOURCES = \
 cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
-src/utils/messages/json_schemas.h: $(top_srcdir)/tools/gen-json-validator
-	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)
 #----------------------------------------------------------------------
+EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
 src/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
