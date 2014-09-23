@@ -83,6 +83,8 @@ libpriv_subprocess_la_SOURCES = \
 								src/utils/subprocess.cc
 libpriv_subprocess_la_LIBADD = -lcxxtools
 
+libpriv_subprocess_la_LIBADD = -lcxxtools
+
 BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
 
 CLEANFILES	+=	src/utils/messages/json_schemas.h
@@ -98,7 +100,6 @@ endif
 
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST += tools/run-test.sh
-
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 
 check_LTLIBRARIES += \
@@ -146,6 +147,7 @@ test_log_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
 check_PROGRAMS += \
 		 test-subprocess
+
 test_subprocess_SOURCES = \
 					src/utils/subprocess.h \
 					tests/utils/test-subprocess.cc
@@ -157,6 +159,7 @@ test_subprocess_LDFLAGS = -lcxxtools
 
 check_PROGRAMS += \
 		test-json-schemas
+
 test_json_schemas_SOURCES = \
 						tests/utils/test-json-schemas.cc \
 						tests/utils/messages/json_schemas.h
