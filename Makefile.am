@@ -212,8 +212,14 @@ cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
+EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json
+BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
+
 src/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
+
+BUILT_SOURCES += $(top_srcdir)/tests/utils/messages/json_schemas.h
+tests/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
 
 if HAVE_DOXYGEN
