@@ -86,7 +86,7 @@ void worker(int socket_type, const char *connection, mock_db *db, int id) {
       ///////////////////////////////
       case utils::json::MessageTypesEnum::CliNetworkAddDel:
       {
-        validation_result = validate(root, message_type, &strerr);
+        validation_result = validate_parse(message.c_str(), message_type, root, strerr);
         if (validation_result != utils::json::ValidateResultEnum::Valid) {
           // TODO - log error strerr
           printf("ERROR: Validation failed:\nReason:'%s'\nMessage:\n%s\n",
@@ -122,7 +122,7 @@ void worker(int socket_type, const char *connection, mock_db *db, int id) {
       ///////////////////////////////
       case utils::json::MessageTypesEnum::CliNetworkList:
       {
-        validation_result = validate(root, message_type, &strerr);
+        validation_result = validate_parse(message.c_str(), message_type, root, strerr);
         if (validation_result != utils::json::ValidateResultEnum::Valid) {
           // TODO - log error strerr
           printf("ERROR: Validation failed:\nReason:'%s'\nMessage:\n%s\n",
@@ -165,7 +165,7 @@ void worker(int socket_type, const char *connection, mock_db *db, int id) {
       case utils::json::MessageTypesEnum::NetmonNetworkAddDel:
       {
         // Validate
-        validation_result = validate(root, message_type, &strerr);
+        validation_result = validate_parse(message.c_str(), message_type, root, strerr);
         if (validation_result != utils::json::ValidateResultEnum::Valid) {
           // TODO - log error strerr
           printf("ERROR: Validation failed:\nReason:'%s'\nMessage:\n%s\n",

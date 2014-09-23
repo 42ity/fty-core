@@ -153,9 +153,9 @@ FILE *stream, const char* message, const struct global_opts *gopts) {
 
   // validate
   std::string strerr;
-  libvariant::Variant root = libvariant::DeserializeJSON(message);
+  libvariant::Variant root;
   ValidateResultEnum validation_result =
-  validate(root, MessageTypesEnum::NetworkList, &strerr);
+  validate_parse(message, MessageTypesEnum::NetworkList, root, strerr);
 
   // TODO log - write something when message invalid
   if (validation_result != ValidateResultEnum::Valid) {
