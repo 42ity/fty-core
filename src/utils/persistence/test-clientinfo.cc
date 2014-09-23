@@ -16,16 +16,15 @@ TEST_CASE("Client info+getters","[dbclientinfo][constructor][toString][getId][ge
     REQUIRE(dbobj.getId() == -1 );
     REQUIRE(dbobj.getUrl() == urldcl );
     REQUIRE(utils::objectStatetoString(dbdevice.getState()) == osnewcl);
-    REQUIRE(dbobj.getName() == "unknown");
+    REQUIRE(dbobj.getClientId() == -1);
+    REQUIRE(dbobj.getDeviceDiscoveredId() == -1 );
+    REQUIRE(dbobj.getBlobData() == "");
+    REQUIRE(dbobj.getClientName() == "");
 }
 
-TEST_CASE("Device discovered+getters1","[dbclientinfo][constructor][toString][getId][getUrl][getState][getName]"){
-    std::string name = "myname";
+TEST_CASE("ClientInfo+getters1","[dbclientinfo][constructor]"){
+    std::string name = "mymodule";
     utils::DeviceDiscovered dbdevice(urldev,name);
-    std::string expected =  "url="  + urldev                + ";" +
-                            "id="   + std::to_string(-1)    + ";" +
-                            "state=" + osnew                + ";" +
-                            "name=" + name;
     REQUIRE(dbdevice.toString() == expected );
     REQUIRE(dbdevice.getId() == -1 );
     REQUIRE(dbdevice.getUrl() == urldev );
