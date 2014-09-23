@@ -67,58 +67,57 @@ class ClientInfo : public DataBaseTimeObject
          * \return Returns a number of selected rows
          */
         unsigned int selectLastRecord(std::string clientName, int deviceDiscoveredId);
-
-
-        /*Must fill also name*/
-        void  setClientId(int clientId);
-
-        void  setClientInfoId(int deviceDiscoveredId);
-
-        void  setDate(time_t date);
-
-        void  setBlobData(std::string blobData);
-
-        int getClientId();
-
-        int getClientInfoId();
-
-        time_t getDate();
         
+        /**
+         * \brief Get an id of deviceDiscovered
+         */
+        unsigned int getDiscoveredDeviceId();
 
+        /**
+         * \brief Get an id of client that gathered that info
+         */
+        unsigned int getClientId();
+
+        /**
+         * \brief Get a blob data
+         */
         std::string getBlobData();
 
+        /**
+         * \brief Get a clientname
+         */
+        std::string getClientName();
+
+        /**
+         * \brief set a clientId, clientName is selected from DB
+         */
+        void  setClientId(int clientId);
+        
+        /**
+         * \brief set a new blobData
+         */
+        void  setBlobData(std::string blobData);
+        
         ~ClientInfo();
 
-        std::string getName();
-
-        /* reads name from DB , by clientId */
-        void getNameDB();
-
-        /* changes clients name by finding in DB apropriate id and return true if it finds or false if it doesn't find
-         * changes client id*/
-        bool setName(std::string name);
-        bool selectLastRecord(std::string ClientName, CIDRAddress ip); // load info from client-name for deviceDiscovered, that has ip
-
-        bool selectLastRecord(std::string ClientName, std::string ip); // load info from client-name for deviceDiscovered, that has ip
-        //-----------------//
         /* reads History from db for specified client ,and deviceDiscovered*/
-
+/* NOT IMPLEMENTED 
         // returns Delailed Info for existing clientID and deviceDiscoveredID
-        std::vector<ClientInfo> getHistoryClientClientInfo(dateType date_type, time_t date, time_t date2 = time(NULL) );         
+        std::vector<ClientInfo> getHistoryClientInfo(dateType date_type, time_t date, time_t date2 = time(NULL) );         
         // returns Detailed Info for clientName and deviceDiscoveredIp
-        static std::vector<ClientInfo> getHistoryClientClientInfo
+        static std::vector<ClientInfo> getHistoryClientInfo
                 (std::string clientName, CIDRAddress deviceDiscoveredIp, dateType date_type, time_t date, time_t date2 = time(NULL)); 
-        static std::vector<ClientInfo> getHistoryClientClientInfo
+        static std::vector<ClientInfo> getHistoryClientInfo
                 (std::string clientName, std::string deviceDiscoveredIp, dateType date_type, time_t date, time_t date2 = time(NULL)); 
         // returns Detailed Info for existing clientID and deviceDiscoveredID       
-        std::vector<ClientInfo> getHistoryClientClientInfo(int n = 0); 
+        std::vector<ClientInfo> getHistoryClientInfo(int n = 0); 
         // returns Detailed Info for clientName and ClientInfoIp       
         static std::vector<ClientInfo> getHistoryClientClientInfo(std::string clientName, CIDRAddress deviceDiscoveredIp, int n = 0); 
         static std::vector<ClientInfo> getHistoryClientClientInfo(std::string clientName, std::string deviceDiscoveredIp, int n = 0); 
-
+*/
         //------------------//
         /* reads History from db for specified client*/
-
+/* NOT IMPLEMENTED
         // returns Detailed info for existing clientID
         std::vector<ClientInfo> getHistoryClient(dateType date_type, time_t date, time_t date2 = time(NULL));
         // returns Detailed info for ClientName
@@ -127,10 +126,10 @@ class ClientInfo : public DataBaseTimeObject
         std::vector<ClientInfo> getHistoryClient(int n = 0); 
         // returns Detailed info for ClientName
         static std::vector<ClientInfo> getHistoryClient(std::string clientName, int n = 0);
-
+*/
         //-------------------//
         /* reads History from db record for specified deviceDiscovered*/
-
+/* NOT IMPLEMENTED
         // returns Detailed Info for existing deviceDiscoveredId
         std::vector<ClientInfo> getHistoryClientInfo(dateType date_type, time_t date, time_t date2 = time(NULL));
         // returns Detailed Info for deviceDiscoveredIp
@@ -141,7 +140,7 @@ class ClientInfo : public DataBaseTimeObject
         // returns Detailed Info for deviceDiscoveredIp
         std::vector<ClientInfo> getHistoryClientInfo(CIDRAddress deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
         std::vector<ClientInfo> getHistoryClientInfo(std::string deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
-
+*/
 
     protected:
         
@@ -177,6 +176,13 @@ class ClientInfo : public DataBaseTimeObject
          *  All necessary pre-actions are made in selectTimestampt
          */
         unsigned int db_select_timestampt();
+
+        /**
+         * \brief Selects a clientname for current clientid
+         *
+         * \return Returns true if client with specified ID was found
+         */
+        bool selectClientName();
         
     private:
         /////////////////////////////////

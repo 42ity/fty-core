@@ -11,11 +11,11 @@ std::string osselectedcl  = utils::objectStatetoString(utils::ObjectState::OS_SE
 std::string osinsertedcl  = utils::objectStatetoString(utils::ObjectState::OS_INSERTED);
 
 TEST_CASE("Client info+getters","[dbclientinfo][constructor][toString][getId][getUrl][getState][getName]"){
-    utils::ClientInfo dbobj(urldcl);
+    utils::ClientInfo dbobj(urlcl);
     REQUIRE(dbobj.toString() > "" );
     REQUIRE(dbobj.getId() == -1 );
-    REQUIRE(dbobj.getUrl() == urldcl );
-    REQUIRE(utils::objectStatetoString(dbdevice.getState()) == osnewcl);
+    REQUIRE(dbobj.getUrl() == urlcl );
+    REQUIRE(utils::objectStatetoString(dbobj.getState()) == osnewcl);
     REQUIRE(dbobj.getClientId() == -1);
     REQUIRE(dbobj.getDeviceDiscoveredId() == -1 );
     REQUIRE(dbobj.getBlobData() == "");
@@ -24,11 +24,10 @@ TEST_CASE("Client info+getters","[dbclientinfo][constructor][toString][getId][ge
 
 TEST_CASE("ClientInfo+getters1","[dbclientinfo][constructor]"){
     std::string name = "mymodule";
-    utils::DeviceDiscovered dbdevice(urldev,name);
-    REQUIRE(dbdevice.toString() == expected );
-    REQUIRE(dbdevice.getId() == -1 );
-    REQUIRE(dbdevice.getUrl() == urldev );
-    REQUIRE(utils::objectStatetoString(dbdevice.getState()) == osnew);
-    REQUIRE(dbdevice.getName() == name);
+    utils::DeviceDiscovered dbobj(urlcl,name);
+    REQUIRE(dbobj.getId() == -1 );
+    REQUIRE(dbobj.getUrl() == urlcl );
+    REQUIRE(utils::objectStatetoString(dbobj.getState()) == osnewcl);
+    REQUIRE(dbobj.getName() == name);
 }
 

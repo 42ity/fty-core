@@ -232,4 +232,72 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
     return rsize;
 }
 
+unsigned int
+ClientInfo::
+getClientId()
+{
+    return _clientId;
 }
+
+unsigned int
+ClientInfo::
+getDiscoveredDevice()
+{
+    return _discoveredDeviceId;
+}
+
+
+unsigned int
+ClientInfo::
+getBlobData()
+{
+    return _blobData;
+}
+
+std::string
+ClientInfo::
+getClientname()
+{
+    return _clientName;
+}
+
+void
+ClientInfo::
+setClientId(int clientId)
+{
+    //TODO
+    if (this->selectClientName())
+        _clientId = clientId;
+}
+
+void
+ClientInfo::
+setBlobData(std::string blobData)
+{
+    //TODO
+    _blobData = blobData;
+}
+
+void
+ClientInfo::
+setDiscoveredDeviceId(int deviceDiscoveredId)
+{
+    //TODO
+    _deviceDiscoveredId = deviceDiscoveredId;
+}
+
+bool
+ClientInfo::
+selectClientName()
+{
+    Client client = Client(this->getUrl(),this->getClientId());
+    if (client.getState() == ObjectState::OS_SELECTED)
+    {
+        _clientName = client.getName();
+        return true;
+    }
+    else
+        return false;
+}
+
+} //end namespace
