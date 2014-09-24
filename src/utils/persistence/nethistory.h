@@ -15,45 +15,45 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file persistence.h
-    \brief Class for manipulating with database
+/*! \file NetHistory.h
+    \brief Class for manipulating with database table t_bios_net_history
 
-    While all our modules must behave well and must not do 
-    unnecessary actions, for all specific purposes 
-    specific functions are prepared.
-
-    It is assumed that all IP addresses would be written in IPv6 format
-    
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#pragma once    
-    
-#ifndef PERSISTENCE_H_
-#define PERSISTENCE_H_
+#ifndef NETHISTORY_H_
+#define NETHISTORY_H_
 
-#define MODULE_ADMIN "admin"
-
-#include <vector>
 #include <string>
-#include <iostream>
 #include <ctime>
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
 #include "cidr.h"
-#include "databaseobject.h"
+#include "databasetimeobject.h"
 
 namespace utils {
 
-//toString(ObjectState objectstate);
-
-class Ip;
-class Netmon : public DataBaseObject
+class NetHistory : public DataBaseTimeObject
 {
     public:
+         
+        /**
+         * \brief Creates a new object and specifies a connection.
+         *
+         * Creates a new object for the specified url in state OS_NEW.
+         */
+        NetHistory(std::string url);
 
-        Netmon(std::string url);
+        /**
+         * \brief Returns an object to initial state. It doesn't manipulate with database.
+         */
+        void clear();
 
-        ~Netmon();
+        /**
+         * \brief Returns all fields as string
+         */
+        std::string toString();
+
+        ~NetHistory();
 
         void setMac(std::string mac);
 
@@ -63,21 +63,56 @@ class Netmon : public DataBaseObject
 
         void setIp(CIDRAddress ip);
 
-        void setCommandId(int commandId);
-
-        void setCommandName(std::string name);
+        void setCommand(char command);
 
         std::string getMac();
 
         int getMask();
 
-        CIDRAddress getIpCIDR();
+        CIDRAddress getIp();
 
-        std::string getIp();
+        char getCommand();
 
         CIDRAddress getNetworkCIDR();
 
+        unsigned int selectById(unsigned int id);
+
     protected:
+        
+        /**
+         * \brief Checks the name length
+         *
+         * TODO add more checks if needed
+         */
+        bool check();
+
+        /**
+         *  \brief inserts a row.
+         *
+         *  All necessary pre-actions are made in dbsave
+         */
+        unsigned int db_insert();
+        
+        /**
+         *  \brief updates a row.
+         *
+         *  All necessary pre-actions are made in dbsave
+         */
+        unsigned int db_update();
+        
+        /**
+         *  \brief deletes a row.
+         *
+         *  All necessary pre-actions are made in dbdelete
+         */
+        unsigned int db_delete();
+        
+        /**
+         * \brief Selects a timestempt for stored ID.
+         *
+         * Internal method.
+         */
+        unsigned int db_select_timestampt();
 
     private:
         
@@ -87,11 +122,9 @@ class Netmon : public DataBaseObject
 
         CIDRAddress _ip;
 
-        time_t _date;
-
-        int _commandId;
+        char _command;
 };
 
 } // namespace utils
 
-#endif // PERSISTENCE_H_
+#endif // NETHISTORY_H_

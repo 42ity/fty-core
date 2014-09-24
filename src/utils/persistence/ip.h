@@ -1,26 +1,48 @@
-#pragma once
+/*
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*! \file ip.h
+    
+    \brief Class for databaseobject t_bios_discovered_ip
+    
+    \author Alena Chernikava <alenachernikava@eaton.com>
+*/ 
 
 #ifndef IP_H_
 #define IP_H_
 
 #include "cidr.h"
-#include "databaseobject.h"
+#include "databasetimeobject.h"
 
 class DeviceDiscovered;
 
 namespace utils{
     
 
-class Ip :public DataBaseObject
+class Ip :public DataBaseTimeObject
 {
 
     public:
-
+        
         Ip(std::string url);
 
         Ip(std::string url, std::string ip);
 
-        ~Ip();
+        ~Ip(){};
         
         void setIp(std::string ip);
 
@@ -44,7 +66,7 @@ class Ip :public DataBaseObject
         
         std::vector<Ip> getOtherIps();
 
-        unsigned int selectById(unsigned int n){};
+        unsigned int selectById(unsigned int n);
         
         void clear(){};
         /**
@@ -73,28 +95,28 @@ class Ip :public DataBaseObject
          *
          * TODO add more checks if needed
          */
-        bool check(){};
+        bool check();
 
         /**
          *  \brief inserts a row.
          *
          *  All necessary pre-actions are made in dbsave
          */
-        unsigned int db_insert(){};
+        unsigned int db_insert();
         
         /**
          *  \brief updates a row.
          *
          *  All necessary pre-actions are made in dbsave
          */
-        unsigned int db_update(){};
+        unsigned int db_update();
         
         /**
          *  \brief deletes a row.
          *
          *  All necessar
          */
-        unsigned int db_delete(){};
+        unsigned int db_delete();
     private:
         
         CIDRAddress _ip;

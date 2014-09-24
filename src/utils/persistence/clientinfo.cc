@@ -1,3 +1,28 @@
+/*
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*! \file clientinfo.cc
+    
+    \brief Realisation of the class for databaseobject t_bios_client_info
+    
+    \author Alena Chernikava <alenachernikava@eaton.com>
+*/ 
+ 
+
 #include "clientinfo.h"
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
@@ -36,6 +61,14 @@ ClientInfo(std::string url, std::string clientName)
     this->clear();
     _clientName = clientName;
     _clientId = Client::selectId(url, clientName);
+}
+
+ClientInfo::
+ClientInfo(std::string url, unsigned int clientId)
+    :DataBaseTimeObject(url)
+{
+    this->clear();
+    this->setClientId(clientId);
 }
 
 std::string 
@@ -116,7 +149,9 @@ db_update()
 
 // if any changes would be made here check if the same need to do in
 // ClientInfo::selectLastRecord(std::string clientName, int deviceDiscoveredId)
-unsigned int ClientInfo::selectLastRecord(int clientId, int deviceDiscoveredId)
+unsigned int 
+ClientInfo::
+selectLastRecord(int clientId, int deviceDiscoveredId)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
@@ -174,8 +209,40 @@ unsigned int
 ClientInfo::
 db_select_timestampt()
 {
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl());
     
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " v.timestampt"
+        " from"
+        " v_bios_client_info v"
+        " where v.id = :id"
+        );
+    
+    /**
+     *  Can return one row or nothing
+     */
+    int n;
+    try{
+        tntdb::Row row = st.setInt("id", this->getId()).selectRow();
+          
+        //timestampt
+        time_t tmp_t;
+        row[0].get(tmp_t);
+        this->setTimestampt(tmp_t);
+
+        //state
+        this->setState(ObjectState::OS_SELECTED);
+        
+        n = 1; 
+    }
+    catch (const tntdb::NotFound &e){
+        n = 0;
+    }
+    return n;
 }
+
 // if any changes would be made here check if the same need to do in
 // ClientInfo::selectLastRecord(int clientId, int deviceDiscoveredId)
 unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDiscoveredId)
@@ -241,13 +308,13 @@ getClientId()
 
 unsigned int
 ClientInfo::
-getDiscoveredDevice()
+getDeviceDiscoveredId()
 {
-    return _discoveredDeviceId;
+    return _deviceDiscoveredId;
 }
 
 
-unsigned int
+std::string
 ClientInfo::
 getBlobData()
 {
@@ -256,7 +323,7 @@ getBlobData()
 
 std::string
 ClientInfo::
-getClientname()
+getClientName()
 {
     return _clientName;
 }
@@ -266,8 +333,13 @@ ClientInfo::
 setClientId(int clientId)
 {
     //TODO
-    if (this->selectClientName())
+    if (this->selectClientName(clientId))
         _clientId = clientId;
+}
+ClientInfo::
+~ClientInfo()
+{
+    //TODO
 }
 
 void
@@ -280,7 +352,7 @@ setBlobData(std::string blobData)
 
 void
 ClientInfo::
-setDiscoveredDeviceId(int deviceDiscoveredId)
+setDeviceDiscoveredId(int deviceDiscoveredId)
 {
     //TODO
     _deviceDiscoveredId = deviceDiscoveredId;
@@ -288,9 +360,10 @@ setDiscoveredDeviceId(int deviceDiscoveredId)
 
 bool
 ClientInfo::
-selectClientName()
+selectClientName(unsigned int clientId)
 {
-    Client client = Client(this->getUrl(),this->getClientId());
+    Client client = Client(this->getUrl());
+    client.selectById(clientId);
     if (client.getState() == ObjectState::OS_SELECTED)
     {
         _clientName = client.getName();

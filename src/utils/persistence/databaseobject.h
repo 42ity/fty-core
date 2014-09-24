@@ -21,12 +21,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     This class consists of basic fields and methods, that are common
     for all database objects.
 
-    and some enums.
+    And some enums.
       
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#pragma once    
-    
 #ifndef DATABASEOBJECT_H_
 #define DATABASEOBJECT_H_
 

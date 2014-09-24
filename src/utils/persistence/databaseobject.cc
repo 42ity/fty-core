@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*! \file databaseobject.cc
     
     \brief Realisation of the class for basic databaseobject.
+    
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
  

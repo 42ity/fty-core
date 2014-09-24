@@ -15,200 +15,293 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file persistence.cc
-    \brief Class for manipulating with database
+/*! \file NetHistory.cc
+    \brief Class for manipulating with database table t_bios_net_history
 
-    While all our modules must behave well and must not do 
-    unnecessary actions, for all specific purposes 
-    specific functions are prepared.
-
-    
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
  
 #include <string>
 #include <stdlib.h>
-//#include "databaseobject.h"
-#include "persistence.h"
 #include <tntdb/result.h>
 #include <tntdb/row.h>
 #include <tntdb/value.h>
 #include <tntdb/statement.h>
+#include <tntdb/error.h>
 #include "log.h"
-
+#include "nethistory.h"
+ 
 namespace utils {
-
-/*
-std::map<ObjectState, std::string> ObjectStateMap = {
-    {OS_NEW, "new"},
-    {OS_SELECTED, "selected"},
-    {OS_UPDATED, "updated"},
-    {OS_DELETED, "deleted"}
-};
-*/
+   
 ////////////////////////////////////////////////////////////
-//////////      DataBaseObject               ///////////////
+//////////          NetHistory                 ///////
 ////////////////////////////////////////////////////////////
 
-/*
-// is used only for internal porposes. 
-void DataBaseObject::setId(int id)
-{
-    _id = id;
+void
+NetHistory::
+clear(){
+    DataBaseTimeObject::clear();
+    _mac =  "";
+    _mask = 0;
+    _ip = CIDRAddress();
+    _command = 'z';
+    //TODO OS_NEW
 }
 
-void DataBaseObject::setState(ObjectState state)
+NetHistory::
+NetHistory(std::string url)
+    :DataBaseTimeObject(url)
 {
-    _state = state;
-    if ( _state == OS_NEW)
-        _id = -1;
+    this->clear();
 }
 
-DataBaseObject::DataBaseObject(std::string url)
+std::string 
+NetHistory::
+toString()
 {
-    _url = url;
-    this->setState(OS_NEW);
+    return DataBaseTimeObject::toString() + ";" +
+             "mac=" + _mac + ";" +
+             "mask=" + std::to_string(_mask) +";" +
+             "ip" + _ip.toString() +";" +
+             "command" +_command;
 }
 
-ObjectState DataBaseObject::getState()
-{
-    return _state;
-}
-
-int DataBaseObject::getId()
-{
-    if ( _state == OS_NEW )
-    {
-        if (_id != -1)
-        {
-            //TODO log(this should never happen)
-        }
-        _id = -1;
-    }
-    return _id;
-}
-
-std::string DataBaseObject::getUrl()
-{
-    return _url;
-}
-
-// TODO make it protected?
-//void DataBaseObject::setUrl(std::string url)
-//{
-//    _url = url;
-//    // TODO drop ID
-//}
-
-DataBaseObject::~DataBaseObject()
+NetHistory::
+~NetHistory()
 {
     //TODO
 }
 
-std::string DataBaseObject::toString()
+bool
+NetHistory::
+check()
 {
-    std::string tmp = "_url="+_url+";_id="+std::to_string(_id)+";state=";//+utils::dbtoString(_state);
-    return tmp; 
-}
-*/
-} // namespace utils
-
-/*
-IP
-setIp(std::string ip){
-            _ip = ip;
-            _ip.valid()
-        }
-        std::string getIp() {
-            return _ip.toString();
-        }
-
-
-
-*/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-// Empty constructor
-DataBase::DataBase()
-{
-    _conn = NULL;
-}
-
-// Constructor with all parameters
-DataBase::DataBase(std::string db, std::string usr, std::string passwd)
-{
-    tntdb::Connection* conn = new tntdb::Connection;
-
-    //TODO if MYSQL then
-    *conn = tntdb::connect("mysql:db="+db+";user="+usr+";passwd="+passwd);
-    //TODO else TODO
-    //
-    _conn = conn;
+    return true;
 }
 
 
-unsigned int DataBase::insComputerNew(   const std::string name,
-                            const int info1, 
-                            const int info2,
-                            const std::string fingerprint)
+unsigned int 
+NetHistory::
+db_insert()
 {
-     tntdb::Statement st = _conn->prepare(
-        "insert     into    v_computer( ID , name , info1 , info2 , fingerprint )"
-        "           values  (NULL, :vname, :info1 , :vinfo2, :vfingerprint)");
-
-    unsigned int n=st.setString("vname", name) 
-        .setInt("vinfo1", info1)
-        .setInt("vinfo2", info2)
-        .setString("vfingerprint",fingerprint)
-        .execute();
-    return n;
-}
-
-unsigned int DataBase::insComputerUnknown( const int info1, 
-                            const int info2,
-                            const std::string fingerprint)
-{
-    return DataBase::insComputerNew("unknown",info1,info2,fingerprint);
-}
-
-unsigned int DataBase::selComputerByNameGeneral(std::string name)
-{
-    tntdb::Statement st ;
-    = _conn->prepare(
-        "select ID , name , info1 , info2 , fingerprint "
-        "       from v_computer where name=:vname");
     
-    unsigned int n=st.setString("vname", name)
-        .execute();
+    tntdb::Connection conn;  
+    conn = tntdb::connectCached(this->getUrl());
+
+    tntdb::Statement st = conn.prepareCached(
+        " insert into"
+        " v_bios_net_history (id,command,mask,mac,timestampt,ip)"
+        " values (NULL,:command,:mask,:mac, NOW(),:ip)"
+        );
+    
+    // Insert one row or nothing
+    unsigned int n  = st.setChar("command", _command).
+                         setInt("mask",_mask).
+                         setString("mac",_mac).
+                         setString("ip",_ip.toString()).
+                         execute();
+    
+    if ( n == 1 )
+    {
+        int newId =  conn.lastInsertId();
+        this->setId(newId);
+    }
+    
+    // n is 0 or 1
     return n;
 }
 
-//unsigned int selComputersIpByName(NULL/date/-1);
-*/
+unsigned int 
+NetHistory::
+db_delete()
+{
+    tntdb::Connection conn;  
+    conn = tntdb::connectCached(this->getUrl());
 
+    tntdb::Statement st = conn.prepareCached(
+        " delete from"
+        " v_bios_net_history "
+        " where id = :id"
+        );
+    
+    // Delete one row or nothing
+    unsigned int n  = st.setInt("id", this->getId()).execute();
+    
+    // n is 0 or 1
+    return n;
+}
+
+unsigned int 
+NetHistory::
+db_update()
+{
+    
+    tntdb::Connection conn;  
+    conn = tntdb::connectCached(this->getUrl());
+
+    tntdb::Statement st = conn.prepareCached(
+        " update"
+        " v_bios_net_history"
+        " set ip = :ip, mac = :mac , mask = :mask , command = :command"     //, aaa = :aa
+        " where id = :id"
+        );
+    
+    // update one row or nothing
+    unsigned int n  = st.setString("ip", _ip.toString()).
+                         setInt("mask",_mask).
+                         setString("mac", _mac).
+                         setChar("command",_command).
+                         execute();
+    
+    // n is 0 or 1
+    return n;
+}
+
+unsigned int 
+NetHistory::
+selectById(unsigned int id)
+{
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl());  // connects to the db
+    /**
+     * TODO add more columns
+     */
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " ip,mask,mac,command,timestampt"
+        " from"
+        " v_bios_net_history v"
+        " where v.id = :id"
+        );
+    
+    /**
+     *  Can return one row or nothing
+     */
+    int n;
+    try{
+        tntdb::Row row = st.setInt("id", id).selectRow();
+         //id
+        this->setId(id);
+        
+        //ip
+        std::string tmp_ip;
+        row[0].get(tmp_ip);
+        _ip = CIDRAddress(tmp_ip);
+
+        //mask
+        row[1].get(_mask);
+
+        //mac
+        row[2].get(_mac);
+
+        //timestampt
+        time_t tmp_t;
+        row[3].get(tmp_t);
+        this->setTimestampt(tmp_t);
+    
+        /**
+         * TODO don't forget read all columns here
+         */
+                
+        //state
+        this->setState(ObjectState::OS_SELECTED);
+        
+        n = 1; 
+    }
+    catch (const tntdb::NotFound &e){
+        n = 0;
+    }
+    return n;
+}
+
+int 
+NetHistory::
+getMask()
+{
+    return _mask;
+}
+
+CIDRAddress 
+NetHistory::
+getIp()
+{
+    return _ip;
+}
+
+char 
+NetHistory::
+getCommand()
+{
+    return _command;
+}
+
+std::string 
+NetHistory::
+getMac()
+{
+    return _mac;
+}
+
+
+void
+NetHistory::
+setMask(int mask)
+{
+    //TODO
+    _mask = mask;
+}
+
+void
+NetHistory::
+setIp(CIDRAddress ip)
+{//TODO
+    _ip = ip;
+}
+
+void 
+NetHistory::
+setCommand(char command)
+{
+    //TODO
+    _command = command;
+}
+unsigned int
+NetHistory::
+db_select_timestampt()
+{
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl());
+    
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " v.timestampt"
+        " from"
+        " v_bios_net_history v"
+        " where v.id = :id"
+        );
+    
+    /**
+     *  Can return one row or nothing
+     */
+    int n;
+    try{
+        tntdb::Row row = st.setInt("id", this->getId()).selectRow();
+          
+        //timestampt
+        time_t tmp_t;
+        row[0].get(tmp_t);
+        this->setTimestampt(tmp_t);
+
+        //state
+        this->setState(ObjectState::OS_SELECTED);
+        
+        n = 1; 
+    }
+    catch (const tntdb::NotFound &e){
+        n = 0;
+    }
+    return n;
+}
+
+
+} //end of namespace

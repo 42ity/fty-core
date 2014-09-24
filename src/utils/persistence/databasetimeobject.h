@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
       
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#pragma once    
     
 #ifndef DATABASETIMEOBJECT_H_
 #define DATABASETIMEOBJECT_H_
@@ -100,7 +99,9 @@ class DataBaseTimeObject: public DataBaseObject
         unsigned int selectTimestampt();
 
     protected:
-        
+        /**
+         * \brief internal method for uinsert
+         */ 
         virtual unsigned int db_insert(){return 1;};
         
         /**

@@ -24,10 +24,9 @@ TEST_CASE("Client info+getters","[dbclientinfo][constructor][toString][getId][ge
 
 TEST_CASE("ClientInfo+getters1","[dbclientinfo][constructor]"){
     std::string name = "mymodule";
-    utils::DeviceDiscovered dbobj(urlcl,name);
+    utils::ClientInfo dbobj(urlcl,name);
     REQUIRE(dbobj.getId() == -1 );
     REQUIRE(dbobj.getUrl() == urlcl );
     REQUIRE(utils::objectStatetoString(dbobj.getState()) == osnewcl);
-    REQUIRE(dbobj.getName() == name);
 }
 

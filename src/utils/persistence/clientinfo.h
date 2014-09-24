@@ -1,12 +1,31 @@
-#pragma once
+/*
+Copyright (C) 2014 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
-#ifndef MODULEINFO_H_
-#define MODULEINFO_H_
+/*! \file clientinfo.h
+    \brief Basic Class for manipulating with database object t_bios_client_info
 
+    \author Alena Chernikava <alenachernikava@eaton.com>
+*/  
+#ifndef CLIENTINFO_H_
+#define CLIENTINFO_H_
 
 #include "databasetimeobject.h"
 #include "cidr.h"
-
+#include "tntdb/error.h"
 
 namespace utils {
 
@@ -23,6 +42,11 @@ class ClientInfo : public DataBaseTimeObject
          * \brief creates a new object with specified connection for a client clientName
          */
         ClientInfo(std::string url, std::string clientName);
+        
+        /** 
+         * \brief creates a new object with specified connection for a client clientId
+         */
+        ClientInfo(std::string url, unsigned int clientId);
 
         /**
          * \brief Returns all fields as string
@@ -31,7 +55,6 @@ class ClientInfo : public DataBaseTimeObject
         
         /**
          * \Brief Returns an object to OS_NEW state with initial parameters
-         * Must be rewritten in every child-class
          */
         void clear();
         
@@ -71,7 +94,7 @@ class ClientInfo : public DataBaseTimeObject
         /**
          * \brief Get an id of deviceDiscovered
          */
-        unsigned int getDiscoveredDeviceId();
+        unsigned int getDeviceDiscoveredId();
 
         /**
          * \brief Get an id of client that gathered that info
@@ -93,6 +116,11 @@ class ClientInfo : public DataBaseTimeObject
          */
         void  setClientId(int clientId);
         
+        /**
+         * \brief set a DeviceDiscoveredId
+         */
+        void  setDeviceDiscoveredId(int deviceDiscoveredId);
+
         /**
          * \brief set a new blobData
          */
@@ -182,7 +210,7 @@ class ClientInfo : public DataBaseTimeObject
          *
          * \return Returns true if client with specified ID was found
          */
-        bool selectClientName();
+        bool selectClientName(unsigned int clientId);
         
     private:
         /////////////////////////////////
@@ -218,4 +246,4 @@ class ClientInfo : public DataBaseTimeObject
 
 } // end of namespace utils
 
-#endif // MODULEINFO_H_
+#endif // CLIENTINFO_H_
