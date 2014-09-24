@@ -400,7 +400,6 @@ bool CIDRList::add(const CIDRAddress& net) {
       return false;
     }
   }
-  // CIDRAddress *copy = new CIDRAddress(net);
   _networks.push_back(net);
   return true;
 }
@@ -415,7 +414,6 @@ bool CIDRList::exclude(const CIDRAddress& net) {
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ) {
     if( _excludedNetworks[i].equals(net) ) return false;
   }
-  //CIDRAddress *copy = new CIDRAddress(net);
   _excludedNetworks.push_back(net);
   return true;
 }
