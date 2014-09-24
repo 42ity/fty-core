@@ -158,6 +158,16 @@ test_subprocess_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 test_subprocess_LDFLAGS = -lcxxtools
 
 check_PROGRAMS += \
+		 test-cidr
+test_cidr_SOURCES = \
+					src/utils/cidr.cc \
+					tests/utils/test-cidr.cc
+test_cidr_LDADD = \
+				   libpriv-test-run.la
+test_cidr_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_cidr_LDFLAGS = -lcidr
+
+check_PROGRAMS += \
 		test-json-schemas
 
 test_json_schemas_SOURCES = \
