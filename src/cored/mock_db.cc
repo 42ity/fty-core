@@ -42,12 +42,12 @@ bool mock_db::network_insert(const char* interface, const char* ipversion,
         it->ipaddress.compare(ipaddress) == 0 &&
         it->prefixlen == prefixlen &&
         it->macaddress.compare(macaddress) == 0 &&
-        it->type.compare("AUTOMATIC") == 0) {
+        it->type.compare("automatic") == 0) {
       return false;
     }    
   }  
   networks_.push_back(network_dt(interface, ipversion, ipaddress, prefixlen,
-                                 macaddress, "AUTOMATIC"));
+                                 macaddress, "automatic"));
   return true;
 }
 
@@ -85,12 +85,12 @@ const char *ipversion, const char *ipaddress, uint8_t prefixlen) {
         it->ipaddress.compare(ipaddress) == 0 &&
         it->prefixlen == prefixlen &&
         it->macaddress.empty() &&
-        it->type.compare("MANUAL") == 0) {
+        it->type.compare("manual") == 0) {
      return false;
     }    
   }   
   networks_.push_back(network_dt("", ipversion, ipaddress, prefixlen,
-                                 "", "MANUAL"));
+                                 "", "manual"));
   return true;
 }
 
@@ -133,7 +133,7 @@ mock_db::network_remove(const char *interface, const char *ipversion,
         it->ipaddress.compare(ipaddress) == 0 &&
         it->prefixlen == prefixlen &&
         it->macaddress.compare(macaddress) == 0 &&
-        it->type.compare("AUTOMATIC") == 0) {
+        it->type.compare("automatic") == 0) {
       break;
     }    
   }
@@ -158,7 +158,7 @@ void mock_db::network_list(std::list<network_dt>& result) const {
       if (it->ipversion.compare(it_mask->ipversion) == 0 &&
           it->ipaddress.compare(it_mask->ipaddress) == 0 &&
           it->prefixlen == it_mask->prefixlen) {
-        result.back().type.assign("DELETED");
+        result.back().type.assign("deleted");
       }  
     }
   }  

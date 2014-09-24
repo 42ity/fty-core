@@ -25,27 +25,34 @@ References: BIOS-247, BIOS-244
 */
 
 #include <string.h>
-#include "jsoncpp/json/json.h"
+#include <Variant/Variant.h>
+#include <Variant/Schema.h>
+
+#include "json_schemas.h"
 
 #include "jsonf.h"
 
 const char *json_pack(const char *event, const char *name, const char *ipver,
                       const char *ipaddr, uint8_t prefixlen, const char *mac) {
-  Json::FastWriter wr;
-  Json::Value command(Json::arrayValue);
-  Json::Value json(Json::objectValue);
+  //Json::FastWriter wr;
+  //Json::Value command(Json::arrayValue);
+  libvariant::Variant command(libvariant::VariantDefines::ListType);
+  //Json::Value json(Json::objectValue);
+  libvariant::Variant json(libvariant::VariantDefines::MapType);
 
-  json["module"] = "netmon";
+  json["module"] = JP_MODULE;
 
-  command.append("network");
-  if (strcmp(event, "add") == 0) {
-    command.append("add");
+  //command.append("network");
+  command.Append("network");
+  if (strcmp(event, JP_EVENT_ADD) == 0) {
+    command.Append(JP_EVENT_ADD);
   } else {
-    command.append("del");
+    command.Append(JP_EVENT_DEL);
   }
   json["command"] = command;
 
-  Json::Value data(Json::objectValue);
+  //Json::Value data(Json::objectValue);
+  libvariant::Variant data(libvariant::VariantDefines::MapType);
 
   data["name"]  = name;
   data["ipver"] = ipver;
@@ -55,6 +62,11 @@ const char *json_pack(const char *event, const char *name, const char *ipver,
 
   json["data"] = data;
 
+  // Don't forget to self-describe the message
+  json["schema"] = utils::json::enumtable(
+    utils::json::MessageTypesEnum::NetmonNetworkAddDel);
 
-  return strdup(wr.write(json).c_str());
+
+  //return strdup(wr.write(json).c_str());
+  return strdup(libvariant::SerializeJSON(json).c_str());
 }
