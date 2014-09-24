@@ -33,9 +33,19 @@ PKG_PROG_PKG_CONFIG
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_LANG_PUSH([C++])
-AC_CHECK_HEADERS([jsoncpp/json/json.h], [], AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
+#AC_CHECK_HEADERS([jsoncpp/json/json.h],
+#                 [],
+#                 AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
+# libvariant
+AC_CHECK_HEADERS([Variant/Variant.h],
+                 [],
+                 AC_MSG_ERROR([cannot find required header Variant/Variant.h]))
+AC_CHECK_HEADERS([Variant/Schema.h],
+                 [],
+                 AC_MSG_ERROR([cannot find required header Variant/Schema.h]))
 AC_LANG_POP([C++])
-PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 4])])
+PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
+PKG_CHECK_MODULES([LIBVARIANT], [libvariant], [], [AC_MSG_ERROR([cannot find libvariant])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
@@ -148,6 +158,8 @@ Summary:
         LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
         LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
+        LIBVARIANT_CFLAGS:       ${LIBVARIANT_CFLAGS}
+        LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
 
         debug mode:              ${enable_debug:-no}
 ])
