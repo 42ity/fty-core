@@ -1,22 +1,11 @@
 #!/bin/bash
 
-search () {
-   for dir in *
-   do
-      if [ -f "$dir" ] ; then   # ==> Если это file (-f)...
-          exec nmap2json.pl -f "${dir}"
-      fi
-   done
-}
-
-# - Main -
-if [ $# = 0 ] ; then
-   cd `pwd`    # ==> Если аргумент командной строки отсутствует, то используется текущий каталог.
-else
-   cd $1       # ==> иначе перейти в заданный каталог.
+declare -r HARD_ERROR=99
+if [[ -z "${1}" ]]; then
+    echo "FATAL: name of test is missing, exiting!"
+    exit ${HARD_ERROR}
 fi
-echo "Начальный каталог = `pwd`"
 
-   search   # ==> Вызвать функцию поиска.
+mkdir -p tests/junit/
 
-exit 0
+exec "${1}" -r junit -o "tests/junit/${1}.xml"
