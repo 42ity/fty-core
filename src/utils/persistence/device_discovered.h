@@ -133,7 +133,7 @@ class DeviceDiscovered:  public DataBaseObject {
          * It is smart. If name = oldname do nothing
          * If OS_SELECTED and new name, than state is changed to  OS_UPDATED.
          */    
-        void setName(std::string);
+        void setName(std::string name);
     
         std::vector<ClientInfo> getHisroty(time_t date, dateType date_type);
     

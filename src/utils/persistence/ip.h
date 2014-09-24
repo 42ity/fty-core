@@ -56,14 +56,6 @@ class Ip :public DataBaseTimeObject
 
         int getDeviceDiscoveredId();
 
-        time_t getDate();
-
-        void setDate(time_t date);
-
-        unsigned int dbSave();
-
-        unsigned int dbDelete();
-        
         std::vector<Ip> getOtherIps();
 
         unsigned int selectById(unsigned int n);
@@ -72,7 +64,7 @@ class Ip :public DataBaseTimeObject
         /**
          * \brief Selects the last information about Ip and returns it as Ip object in state OS_SELECTED.
          */
-        static Ip* getLastInfo(std::string url, std::string Ip);
+        static Ip* getLastInfo(std::string url, std::string ip);
 
         /*reads from Db, doesnt store it anywhere*/
         DeviceDiscovered getDeviceDiscovered();
@@ -122,8 +114,6 @@ class Ip :public DataBaseTimeObject
         CIDRAddress _ip;
 
         int _deviceDiscoveredId;
-
-        time_t _date;
 
 };
 

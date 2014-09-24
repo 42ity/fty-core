@@ -193,7 +193,7 @@ selectByName(std::string name)
         
         n = 1; 
     }
-    catch (const tntdb::NotFound &e){
+    catch (const tntdb::NotFound e){
         n = 0;
     }
     return n;

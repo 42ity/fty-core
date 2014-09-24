@@ -215,7 +215,7 @@ Ip::getLastInfo(std::string url, std::string ip)
         //date
         time_t datetmp;
         row[2].get(datetmp);
-        newIp->setDate(datetmp);
+        newIp->setTimestampt(datetmp);
             
         /**
           * TODO don't forget read all columns here
@@ -261,13 +261,6 @@ Ip::
 setDeviceDiscoveredId(int deviceDiscoveredId)
 {
     _deviceDiscoveredId = deviceDiscoveredId;
-}
-
-void 
-Ip::
-setDate(time_t date)
-{
-    _date = date;
 }
 
 Ip::

@@ -37,7 +37,7 @@ TEST_CASE("Databaseobject dbsave","[dbobj][dbsave][dbdelete]"){
     int n = dbobj.dbdelete();
     REQUIRE( n == 0 );
     REQUIRE(dbobj.toString() == expected );
-
+    
     expected =  "url="  + url                   + ";" +
                             "id="   + std::to_string(-1)    + ";" +
                             "state=" + osselectedbo;
