@@ -8,17 +8,24 @@ check_LTLIBRARIES =
 noinst_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+BUILT_SOURCES =
+CLEANFILES =
 TESTS =
 
 AM_CPPFLAGS = \
 			  -include $(top_builddir)/config.h \
-			  -I $(top_srcdir)/src/utils
+			  -I $(top_srcdir)/src/utils \
+			  -I $(top_srcdir)/src/utils/messages \
+        -DDEBUG \
+        -DDEVEL
+
 
 AM_CFLAGS = ${my_CFLAGS} \
 	-fvisibility=hidden \
 	-ffunction-sections \
 	-fdata-sections \
-	$(LIBZMQ_CFLAGS)
+	$(LIBZMQ_CFLAGS) \
+	$(LIBVARIANT_CFLAGS)
 
 AM_CXXFLAGS = ${my_CXXFLAGS} \
 	-fvisibility=hidden \
@@ -76,6 +83,12 @@ libpriv_subprocess_la_SOURCES = \
 								src/utils/subprocess.cc
 libpriv_subprocess_la_LIBADD = -lcxxtools
 
+libpriv_subprocess_la_LIBADD = -lcxxtools
+
+BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
+
+CLEANFILES	+=	src/utils/messages/json_schemas.h
+
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
@@ -87,7 +100,6 @@ endif
 
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST += tools/run-test.sh
-
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 
 check_LTLIBRARIES += \
@@ -135,6 +147,7 @@ test_log_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
 check_PROGRAMS += \
 		 test-subprocess
+
 test_subprocess_SOURCES = \
 					src/utils/subprocess.h \
 					tests/utils/test-subprocess.cc
@@ -154,41 +167,70 @@ test_cidr_LDADD = \
 test_cidr_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 test_cidr_LDFLAGS = -lcidr
 
+check_PROGRAMS += \
+		test-json-schemas
+
+test_json_schemas_SOURCES = \
+						tests/utils/test-json-schemas.cc \
+						tests/utils/messages/json_schemas.h
+test_json_schemas_LDADD = \
+                    		libpriv-test-run.la
+test_json_schemas_LDFLAGS = \
+                    		$(LIBVARIANT_LIBS)
+test_json_schemas_CPPFLAGS = -I $(top_srcdir)/tests/include -I $(top_srcdir)/tests/utils/messages -D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 #----------------------------------------------------------------------
+
 bin_PROGRAMS += \
 				netmon
-netmon_LDFLAGS = -lnetlink -ljsoncpp $(LIBZMQ_LIBS)
+netmon_LDFLAGS = -lnetlink $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 netmon_SOURCES = \
 				 src/netmon/linux \
 				 src/netmon/netmon.c \
 				 src/netmon/jsonf.h \
 				 src/netmon/jsonf.cc
+nodist_netmon_SOURCES = \
+				src/utils/messages/json_schemas.h
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE
 netmon_LDADD = libpriv-utils.la libpriv-log.la
 
 SUBDIRS = docs/man
 
-cli_LDFLAGS = -ljsoncpp -lzmq
 bin_PROGRAMS += \
 			  cli
 cli_SOURCES = \
-			  src/cli/cli.h \
-			  src/cli/cli.c \
-			  src/cli/cli-network.cc
+			src/cli/cli.h \
+			src/cli/cli.c \
+			src/cli/cli-network.cc \
+			src/utils/messages/json_schemas.h
+nodist_cli_SOURCES = \
+				src/utils/messages/json_schemas.h
 cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
+cli_LDFLAGS = -ljsoncpp $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
 
 bin_PROGRAMS += \
 				cored
 cored_SOURCES = \
 				src/cored/main.h \
 				src/cored/main.cc
-cored_LDFLAGS = -lzmq -ljsoncpp -pthread
+nodist_cored_SOURCES = \
+				src/utils/messages/json_schemas.h
 cored_LDADD = libpriv-cored.la
+cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 #----------------------------------------------------------------------
+EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
+EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json
+BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
+
+src/utils/messages/json_schemas.h: Makefile
+	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
+
+BUILT_SOURCES += $(top_srcdir)/tests/utils/messages/json_schemas.h
+tests/utils/messages/json_schemas.h: Makefile
+	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
 
 if HAVE_DOXYGEN
 EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
