@@ -232,10 +232,10 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 
     switch (ifa->ifa_family) {
         case AF_INET:
-            ipfamily = "IPV4"; // inet
+            ipfamily = JP_IPVER_IPV4; // inet
             break;
         case AF_INET6:
-            ipfamily = "IPV6"; //inet6
+            ipfamily = JP_IPVER_IPV6; //inet6
             break;
         default:
             log_warning("unsupported family: %d\n", ifa->ifa_family);

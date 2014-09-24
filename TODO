@@ -1,0 +1,15 @@
+TODO
+====
+
+The list of known issues, which has to be addressed!
+
+src/utils/messages
+------------------
+GCL: Major comments are same as previous on PR BIOS-347 :
+-> The validation JSON file name should include the kind of message (Request, Reply, Pub, Sub..)
+-> The validation JSON file name should include the client name,
+-> The validation schema should not have client module attribute name hardcoded,
+-> The validation schema should have a version property,
+-> the printf calls should be remplaced by a right log API usage.
+
+see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23 for more detail.

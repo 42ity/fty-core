@@ -29,55 +29,29 @@ References: BIOS-245, BIOS-126
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <string.h>
 
-#include <jsoncpp/json/json.h>
 #include <zmq.h>
 
 #include "log.h"
-#include "utils.h"
 #include "cli.h"
+#include "../utils/messages/json_schemas.h"
+#include "../utils/utils.h"
 
 #define ZMQ_RECV_BUFFER_SIZE  1024
 #define ZMQ_BUS_DEFAULT   "tcp://localhost:5559"
+#define NETWORK_LIST_CMD_FORMAT \
+  " | %c | %-39s | %-10s | %-17s\n"
 
-/* IMPLEMENTATION SPECIFICS
+#define NETWORK_TYPE_AUTOMATIC "automatic"
+#define NETWORK_TYPE_DELETED   "deleted"
+#define NETWORK_TYPE_MANUAL    "manual"
 
-`network list` expected json:
-{
-  "RD-ID"     : rc-identifier,
-  "networks"  :
-    [{
-      "type"      :   type-value,
-      "name"      :   name-value,
-      "ipver"     :   ipver-value,
-      "ipaddr"    :   ipaddr-value,
-      "prefixlen" :   prefixlen,
-      "mac"       :   mac-value
-     },...]
-}
+#define IPADDRESS_VER_IPV4  "ipv4"
+#define IPADDRESS_VER_IPV6  "ipv6"
 
-`network add` json sent:
-{
-  "module"  : module-value,
-  "command" : [ "network", "add" ],
-  "data"    : {
-    "ipver"     :   ipver-value,
-    "ipaddr"    :   ipaddr-value,
-    "prefixlen" :   prefixlen
-  }
-}
 
-`network remove` json sent:
-{
-  "module"  : module-value,
-  "command" : [ "network", "del" ],
-  "data"    : {
-    "ipver"     :   ipver-value,
-    "ipaddr"    :   ipaddr-value,
-    "prefixlen" :   prefixlen
-  }
-}
-*/
+using namespace utils::json;
 
 struct network_opts {
     bool show_details;
@@ -101,36 +75,13 @@ static void do_network_help() {
     fputs("            remove ip-address/prefixlen - remove network range from monitoring\n", stderr);
 }
 
-static const char* str_enum_ValueType(Json::ValueType vt) {
-    switch (vt) {
-        case Json::ValueType::nullValue:
-            return "'null' value"; break;
-        case Json::ValueType::intValue:
-            return "signed integer value"; break;
-        case Json::ValueType::uintValue:
-            return "unsigned integer value"; break;
-        case Json::ValueType::realValue:
-            return "double value"; break;
-        case Json::ValueType::stringValue:
-            return "UTF-8 string value"; break;
-        case Json::ValueType::booleanValue:
-            return "bool value"; break;
-        case Json::ValueType::arrayValue:
-            return "array value (ordered list)"; break;
-        case Json::ValueType::objectValue:
-            return "object value (collection of name/value pairs)"; break;
-    }
-}
 
-static char char_type(Json::Value &v) {
-
-    if (v == "AUTOMATIC") {
+static char network_type_to_char(const char *string) {
+    if (strcmp(string, NETWORK_TYPE_AUTOMATIC) == 0) {
         return 'A';
-    }
-    else if (v == "DELETED") {
+    } else if (strcmp(string, NETWORK_TYPE_DELETED) == 0) {
         return 'D';
-    }
-    else if (v == "MANUAL") {
+    } else if (strcmp(string, NETWORK_TYPE_MANUAL) == 0) {
         return 'M';
     }
     return '?';
@@ -139,22 +90,25 @@ static char char_type(Json::Value &v) {
 static bool json_pack(const char **gargv, int argc,  std::string& result) {
 
   char *const *argv = (char *const*) gargv;
-  Json::FastWriter wr;
-  Json::Value command(Json::arrayValue);
-  Json::Value json(Json::objectValue);
 
-  // TODO KHR (?) : All of these magical constants
+  libvariant::Variant command(libvariant::VariantDefines::ListType);
+  libvariant::Variant json(libvariant::VariantDefines::MapType);
+
   json["module"] = "cli";
-  command.append("network");
+  command.Append("network");
 
   ////  LIST  ////
-  if (streq(argv[optind], "list")) {
-    command.append("list");
-    json["data"] = Json::Value(Json::objectValue);
+  if (argv[optind] && strcmp(argv[optind], "list") == 0) {
+    json["schema"] = utils::json::enumtable(
+      utils::json::MessageTypesEnum::CliNetworkList);
+    command.Append("list");    
+    json["command"] = command;
   ////  ADD, REMOVE   ////
-  } else if(streq(argv[optind], "add") ||
-            streq(argv[optind], "remove")) {
-    Json::Value data(Json::objectValue);
+  } else if(argv[optind] &&
+            (strcmp(argv[optind], "add") == 0 || strcmp(argv[optind], "remove") == 0)) {
+    libvariant::Variant data(libvariant::VariantDefines::MapType);
+    json["schema"] = utils::json::enumtable(
+      utils::json::MessageTypesEnum::CliNetworkAddDel);
     if (optind + 1 == argc) {
       fprintf(stderr, "Too few arguments.\n");
       return false;
@@ -166,14 +120,14 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
               argv[optind+1]);
       return false;
     }
-    data["ipver"] = "IPV4";
+    data["ipver"] = IPADDRESS_VER_IPV4;
     data["ipaddr"] = argument.substr(0, index);
-    data["prefixlen"] = argument.substr(index + 1, argument.length());
+    data["prefixlen"] = atoi(argument.substr(index + 1, argument.length()).c_str());
     json["data"] = data;
-    if (streq(argv[optind], "add")) {  
-      command.append("add");
+    if (argv[optind] && strcmp(argv[optind], "add") == 0) {  
+      command.Append("add");      
     } else {
-      command.append("del");
+      command.Append("del");
     }
   ////  ERROR - UNKNOWN SUB-COMMAND  ////
   } else {
@@ -182,7 +136,7 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
     return false;
   }
   json["command"] = command;
-  result.assign(wr.write(json));
+  result.assign(libvariant::SerializeJSON(json));
   return true;
 }
 
@@ -195,32 +149,54 @@ FILE *stream, const char* message, const struct global_opts *gopts) {
     return EXIT_FAILURE;
   }
 
-  Json::Reader rd;
-  Json::Value root{Json::ValueType::arrayValue};
+  libvariant::Variant data(libvariant::VariantDefines::ListType);
+
+  // validate
+  std::string strerr;
+  libvariant::Variant root;
+  ValidateResultEnum validation_result =
+  validate_parse(message, MessageTypesEnum::NetworkList, root, strerr);
+
+  // TODO log - write something when message invalid
+  if (validation_result != ValidateResultEnum::Valid) {
+    printf("ERROR:\n%s\n", strerr.c_str());
+    printf("Message:\n%s\n", message);
+    return EXIT_FAILURE;
+  }  
+
+/*
   bool res = rd.parse(message, root, false);
   if (res == false) {
       log_error("Error parsing json message:\n%s\n",
               rd.getFormattedErrorMessages().c_str());
       return EXIT_FAILURE;
   }
-
-  assert(root.isObject());
-
-  for (auto rcid : root.getMemberNames()) {    
-    fputs(rcid.c_str(), stdout);
-    fputs("\n", stdout);
-
-    for (auto entry : root[rcid]) {
-      assert(entry.isObject());
-      fprintf(stdout,
-              "\t%c %s/%d %s %s\n",
-              char_type(entry["type"]),
-              entry["ipaddr"].asCString(),
-              entry["prefixlen"].asInt(),
-              entry["name"].asCString(),
-              entry["mac"].asCString());
-      }
-  }
+*/
+  //assert(root.isObject());
+  
+  std::string name, mac;
+  fprintf(stdout, "rc-id:\t%s\n", std::to_string(root["rc-id"].AsInt()).c_str());
+  for (unsigned int i = 0; i < root["networks"].Size(); ++i) {
+     
+     if (root["networks"][i].Contains("name")) {
+      name.assign( root["networks"][i]["name"].AsString());
+     } else {
+      name.assign("");
+     }
+     if (root["networks"][i].Contains("mac")) {
+      mac.assign( root["networks"][i]["mac"].AsString());
+     } else {
+      mac.assign("");
+     }
+     fprintf(stdout,
+            NETWORK_LIST_CMD_FORMAT,
+            network_type_to_char(root["networks"][i]["type"].AsString().c_str()),
+            root["networks"][i]["ipaddr"].AsString().append("/").append(
+              std::to_string(root["networks"][i]["prefixlen"].AsInt())
+            ).c_str(),            
+            name.c_str(),
+            mac.c_str());   
+  }  
   return EXIT_SUCCESS;
 }
 
@@ -329,7 +305,7 @@ return define/enum... however in the time given, i wasn't able to make it work..
     return EXIT_FAILURE;
   }
 */
-  if (streq(argv[optind], "list")) {
+  if (argv[optind] && strcmp(argv[optind], "list") == 0) {
     char buffer[ZMQ_RECV_BUFFER_SIZE+1];
     ret = zmq_recv(socket, buffer, ZMQ_RECV_BUFFER_SIZE, 0);
     buffer[ZMQ_RECV_BUFFER_SIZE] = '\0';
