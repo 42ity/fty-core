@@ -15,7 +15,7 @@ TEST_CASE("Databasetimeobject constructor+getters","[dbtobj][constructor][toStri
     REQUIRE(dbobj.getId() == -1);
     REQUIRE(dbobj.getUrl() == urlbto);
     REQUIRE(dbobj.getState() == utils::ObjectState::OS_NEW);
-    REQUIRE(dbobj.getTimestampt() <= time(nullptr)); 
+    REQUIRE(dbobj.getTimestamp() <= time(nullptr)); 
 }
 
 TEST_CASE("Databasetimeobject dbsave/dbdelete","[dbtobj][dbsave][dbdelete]"){

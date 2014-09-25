@@ -1,4 +1,5 @@
 #include <catch.hpp>
+#include <iostream>
 
 #include <device_discovered.h>
 
@@ -14,7 +15,7 @@ TEST_CASE("Device discovered static","[dbdevice][clientname][getDetailedClientNa
     REQUIRE(utils::DeviceDiscovered::getDetailedClientName() == MODULE_ADMIN);
 }
 
-TEST_CASE("Device discovered+getters","[dbdevice][constructor][toString][getId][getUrl][getState][getName]"){
+TEST_CASE("Device discovered+getters","[dbdevice][constructor1][toString][getId][getUrl][getState][getName]"){
     utils::DeviceDiscovered dbdevice(urldev);
     std::string expected =  "url="  + urldev                + ";" +
                             "id="   + std::to_string(-1)    + ";" +
@@ -27,7 +28,7 @@ TEST_CASE("Device discovered+getters","[dbdevice][constructor][toString][getId][
     REQUIRE(dbdevice.getName() == "unknown");
 }
 
-TEST_CASE("Device discovered+getters1","[dbdevice][constructor][toString][getId][getUrl][getState][getName]"){
+TEST_CASE("Device discovered+getters1","[dbdevice][constructor2][toString][getId][getUrl][getState][getName]"){
     std::string name = "myname";
     utils::DeviceDiscovered dbdevice(urldev,name);
     std::string expected =  "url="  + urldev                + ";" +
