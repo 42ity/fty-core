@@ -216,6 +216,37 @@ TEST_CASE("subprocess-run-fail", "[subprocess][run]") {
     CHECK(!proc.isRunning());
 }
 
+TEST_CASE("subprocess-proccache", "[subprocess][proccache]") {
+    ProcCache c{};
+
+    c.pushStdout("stdout");
+    c.pushStderr("s");
+    c.pushStderr("td");
+    c.pushStderr("err");
+
+    std::pair<std::string, std::string> r = c.pop();
+    CHECK(r.first == "stdout");
+    CHECK(r.second == "stderr");
+    
+    //pop means to clear everything - so next attempt is an empty string(s)
+    std::pair<std::string, std::string> r2 = c.pop();
+    CHECK(r2.first == "");
+    CHECK(r2.second == "");
+
+    // test the copy contructor
+    c.pushStdout("copy");
+    ProcCache c2 = c;
+    c.pushStdout(" this");
+
+    r = c.pop();
+    r2 = c2.pop();
+    CHECK(r.first == "copy this");
+    CHECK(r.second == "");
+    CHECK(r2.first == "copy");
+    CHECK(r2.second == "");
+
+}
+
 TEST_CASE("subprocess-que", "[subprocess][processque]") {
     Argv args{"/bin/cat"};
     ProcessQue q{1};

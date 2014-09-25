@@ -216,6 +216,15 @@ class ProcCache {
             _ecache{}
         {}
 
+        ProcCache (const ProcCache &cache) {
+            _ocache.str(cache._ocache.str());
+            _ocache.clear();
+            _ecache.str(cache._ecache.str());
+            _ecache.clear();
+        }
+
+        //TODO: other constructors + operators
+
         void pushStdout(const char* str);
 
         void pushStderr(const char* str);
@@ -227,7 +236,6 @@ class ProcCache {
         std::ostringstream _ocache;
         std::ostringstream _ecache;
 };
-
 
 } //namespace utils
 
