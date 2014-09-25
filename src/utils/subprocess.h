@@ -26,11 +26,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cxxtools/posix/fork.h>
 
 #include <climits>
+#include <cstring>
 #include <unistd.h>
 
 #include <vector>
 #include <deque>
 #include <string>
+#include <sstream>
+#include <map>
 
 /* \brief Helper classes for managing processes
  *
@@ -203,6 +206,28 @@ class ProcessQue {
         ProcessQue(const ProcessQue&& p) = delete;
         ProcessQue& operator=(ProcessQue&& p) = delete;
 };
+
+//! caches process's stdout/stderr in std::ostringstream
+class ProcCache {
+    public:
+
+        ProcCache():
+            _ocache{},
+            _ecache{}
+        {}
+
+        void pushStdout(const char* str);
+
+        void pushStderr(const char* str);
+
+        std::pair<std::string, std::string> pop();
+
+    protected:
+
+        std::ostringstream _ocache;
+        std::ostringstream _ecache;
+};
+
 
 } //namespace utils
 

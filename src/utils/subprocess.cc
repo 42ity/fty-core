@@ -247,6 +247,26 @@ void ProcessQue::terminateAll() {
     schedule(false);
 }
 
+void ProcCache::pushStdout(const char* str) {
+    _ocache << str;
+}
+
+void ProcCache::pushStderr(const char* str) {
+    _ecache << str;
+}
+
+std::pair<std::string, std::string> ProcCache::pop() {
+    std::pair<std::string, std::string> ret = std::make_pair(
+            _ocache.str(),
+            _ecache.str());
+    _ocache.str(std::string());
+    _ocache.clear();
+    _ecache.str(std::string());
+    _ecache.clear();
+    return ret;
+}
+
+
 // ### helper functions ###
 char * const * _mk_argv(Argv vec) {
 
