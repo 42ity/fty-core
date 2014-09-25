@@ -15,13 +15,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file client.cc
+/*! \file devicecype.cc
     \brief Realisation of the class for manipulating with the database objects
-    stored in the table t_bios_client.
+    stored in the table t_bios_device_type.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#include "client.h"
+#include "devicetype.h"
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
 #include <tntdb/statement.h>
@@ -31,31 +31,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace utils {
 
 /////////////////////////////////////////////////////
-////////////        Client    ///////////////////////
+////////////        DeviceType    ///////////////////////
 /////////////////////////////////////////////////////
 
 void
-Client::
+DeviceType::
 clear_this()
 {
     _name = "";
 }
 
-Client::
-Client(std::string url)
+DeviceType::
+DeviceType(std::string url)
     :DataBaseObject(url)
 {
     this->clear_this();
 }
 
-Client::
-~Client()
+DeviceType::
+~DeviceType()
 {
     //TODO
 }
 
 void
-Client::
+DeviceType::
 clear()
 {
     DataBaseObject::clear();
@@ -63,13 +63,13 @@ clear()
 }
 
 std::string
-Client::
+DeviceType::
 getName()
 {
     return _name;
 }
 
-int Client::selectId(std::string url, std::string name)
+int DeviceType::selectId(std::string url, std::string name)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
@@ -78,7 +78,7 @@ int Client::selectId(std::string url, std::string name)
         "select "
         "v.id"
         "from"
-        "v_bios_client v"
+        "v_device_type v"
         "where v.name = :name"
         );
           
@@ -97,7 +97,7 @@ int Client::selectId(std::string url, std::string name)
 
 
 unsigned int 
-Client::
+DeviceType::
 db_insert()
 {
     
@@ -106,7 +106,7 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_client (id,name)"
+        " v_bios_device_type (id,name)"
         " values (NULL,:name)"
         );
     
@@ -124,7 +124,7 @@ db_insert()
 }
 
 unsigned int 
-Client::
+DeviceType::
 db_delete()
 {
     tntdb::Connection conn;  
@@ -132,7 +132,7 @@ db_delete()
 
     tntdb::Statement st = conn.prepareCached(
         " delete from"
-        " v_bios_client "
+        " v_bios_device_type "
         " where id = :id"
         );
     
@@ -144,7 +144,7 @@ db_delete()
 }
 
 unsigned int 
-Client::
+DeviceType::
 db_update()
 {
     
@@ -153,7 +153,7 @@ db_update()
 
     tntdb::Statement st = conn.prepareCached(
         " update"
-        " v_bios_client"
+        " v_bios_device_type"
         " set name = :name"
         " where id = :id"
         );
@@ -166,7 +166,7 @@ db_update()
 }
 
 unsigned int 
-Client::
+DeviceType::
 selectByName(std::string name)
 {
     tntdb::Connection conn; 
@@ -176,7 +176,7 @@ selectByName(std::string name)
         " select"
         " id"
         " from"
-        " v_bios_client v"
+        " v_bios_device_type v"
         " where v.name = :name"
         );
     
@@ -207,7 +207,7 @@ selectByName(std::string name)
 }
 
 unsigned int 
-Client::
+DeviceType::
 selectById(unsigned int id)
 {
     tntdb::Connection conn; 
@@ -217,7 +217,7 @@ selectById(unsigned int id)
         " select"
         " name"
         " from"
-        " v_bios_client v"
+        " v_bios_device_type v"
         " where v.id = :id"
         );
     
@@ -246,7 +246,7 @@ selectById(unsigned int id)
 }
 
 void 
-Client::
+DeviceType::
 setName(std::string name)
 {
     if ( (_name != name) && (this->getState() != OS_DELETED) )
@@ -267,7 +267,7 @@ setName(std::string name)
 }
 
 bool
-Client::
+DeviceType::
 check()
 {
     if ( _name.length() <= this->getNamesLength() )

@@ -15,20 +15,20 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file client.h
+/*! \file devicetype.h
     \brief Basic class for manipulating with the database objects stored 
-    in tha table t_bios_client.
+    in tha table t_bios_device_type.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef CLIENT_H_
-#define CLIENT_H_
+#ifndef DEVICETYPE_H_
+#define DEVICETYPE_H_
 
 #include "databaseobject.h"
 
 namespace utils{
 
-class Client: public DataBaseObject
+class DeviceType: public DataBaseObject
 {
     public:
 
@@ -37,19 +37,19 @@ class Client: public DataBaseObject
          *
          * Creates a new object for the specified url in state OS_NEW
          */
-        Client(std::string url);
+        DeviceType(std::string url);
 
         /**
-         * \brief Selects from the DB a client by its name
+         * \brief Selects from the DB a device type by its name
          *
-         * Selects from DB client by name.
+         * Select from DB device type by name.
          *
          * \return A number of rows selected.
          */
         unsigned int selectByName(std::string name);
 
         /**
-         * \brief Returns client's name
+         * \brief Returns device type's name 
          */
         std::string getName();
 
@@ -59,20 +59,20 @@ class Client: public DataBaseObject
          * If state is OS_DELETED then do nothing
          * If newname = oldname then do nothing
          * If state is OS_SELECTED and newname != oldname
-         *  than state is changed to OS_UPDATED.
+         * than state is changed to OS_UPDATED.
          *
-         * \param name - new name of the client
+         * \param name - new name of the device type
          */    
         void setName(std::string name);
         
         /**
-         * \brief Selects from DB a client by ID. Rewrites object.
+         * \brief Selects from DB a device type by ID. Rewrites object.
          *
-         * If client was found:
+         * If device type was found:
          * -selects exactly one row
          * -state changed to OS_SELECTED
          *
-         * If client was not found:
+         * If device type was not found:
          * -selects nothing
          * -everything remains the same
          *  
@@ -82,17 +82,17 @@ class Client: public DataBaseObject
          */
         unsigned int selectById(unsigned int id);
 
-        ~Client();
+        ~DeviceType();
         
         /**
          * \brief Selects an Id by name in the DB specified by url
          *
          * Selects an Id by name in the DB specified by url
          * 
-         * \param url - specifies database
-         * \param name - name of the client
+         * \param url  - specifies database
+         * \param name - name of the device type
          * 
-         * \return an ID or -1 if nothing was found
+         * \return An ID or -1 if nothing was found
          */
         static int selectId(std::string url, std::string name);
 
@@ -109,7 +109,7 @@ class Client: public DataBaseObject
     protected:
         
         /**
-         * \brief Internal method for insert 
+         * \brief Internal method for insert
          *
          * \return A Number of rows affected 
          */
@@ -117,20 +117,23 @@ class Client: public DataBaseObject
         
         /**
          * \brief Internal method for update
-         *          
-         * \return A Number of rows affected
+         *
+         * \return A Number of rows affected 
          */
         unsigned int db_update();
 
         /**
          * \brief Internal method for delete
-         *          
-         * \return A Number of rows affected
+         * 
+         * \return A Number of rows affected 
          */
         unsigned int db_delete();
         
         /**
          * \brief Internal method for check before insert or update
+         *
+         * Checks the length of the name.
+         *
          */
         bool check();
 
@@ -142,7 +145,7 @@ class Client: public DataBaseObject
         void clear_this();
         
         /**
-         * \brief A name of the client
+         * \brief A name of the deviceType
          */
         std::string _name;
 
@@ -150,4 +153,4 @@ class Client: public DataBaseObject
 
 }   // end of namespace
 
-#endif //CLIENT_H_
+#endif //DEVICETYPE_H_

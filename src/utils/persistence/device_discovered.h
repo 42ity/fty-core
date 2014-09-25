@@ -125,14 +125,17 @@ class DeviceDiscovered:  public DataBaseObject {
          * \brief Returns a deviceDiscovereds name
          */
         std::string getName();
-
+        
         /**
-         * \brief set new name for the object.
+         * \brief Sets a new name for the object.
          *
-         * If state = OS_DELETED then do nothing
-         * It is smart. If name = oldname do nothing
-         * If OS_SELECTED and new name, than state is changed to  OS_UPDATED.
-         */    
+         * If state is OS_DELETED then do nothing
+         * If newname = oldname then do nothing
+         * If state is OS_SELECTED and newname != oldname
+         *  than state is changed to OS_UPDATED.
+         *
+         *  \param name - new name of the client
+         */ 
         void setName(std::string name);
     
         std::vector<ClientInfo> getHisroty(time_t date, dateType date_type);
@@ -162,9 +165,6 @@ class DeviceDiscovered:  public DataBaseObject {
     
         void mergeWithDeviceDiscoveredList
                 (std::vector<DeviceDiscovered> deviceDiscovereds);
-        /**
-         * TODO All setters and getters
-         */
          
         ~DeviceDiscovered();
 
