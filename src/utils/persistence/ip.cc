@@ -146,7 +146,7 @@ selectById(unsigned int id)
         this->setId(id);
         
         //ip
-        std::string tmp_str;
+        std::string tmp_str="";
         row[0].get(tmp_str);
         _ip = CIDRAddress(tmp_str);
     
@@ -154,7 +154,7 @@ selectById(unsigned int id)
         row[1].get(_deviceDiscoveredId);
 
         //timestamp
-        time_t tmp_t;
+        time_t tmp_t ;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
         row[1].get(tmp_t);
         this->setTimestamp(tmp_t);
                 
@@ -205,16 +205,17 @@ Ip::getLastInfo(std::string url, std::string ip)
         newIp->setIp(ip);
            
         //id
-        int tmp;
+        int tmp = -1;
         row[0].get(tmp);
         newIp->setId(tmp);
     
         //deviceDiscoveredId
+        tmp = -1;
         row[1].get(tmp);
         newIp->setDeviceDiscoveredId(tmp);
     
         //date
-        time_t datetmp;
+        time_t datetmp;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
         row[2].get(datetmp);
         newIp->setTimestamp(datetmp);
             

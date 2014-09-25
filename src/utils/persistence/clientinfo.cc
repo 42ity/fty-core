@@ -175,12 +175,12 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
 
         //fill all fields                                 
         //id
-        int tmp;
+        int tmp = -1;
         row[0].get(tmp);
         this->setId(tmp);
     
         //date
-        time_t tmp_t;
+        time_t tmp_t; // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
         row[1].get(tmp_t);
         this->setTimestamp(tmp_t);
 
@@ -228,7 +228,8 @@ db_select_timestamp()
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
         //timestamp
-        time_t tmp_t;
+        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
+
         row[0].get(tmp_t);
         this->setTimestamp(tmp_t);
 
@@ -269,12 +270,13 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
 
         //fill all fields                         
         //id
-        int tmp;
+        int tmp = -1 ;
         row[0].get(tmp);
         this->setId(tmp);
     
         //date
-        time_t tmp_t;
+        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
+
         row[1].get(tmp_t);
         this->setTimestamp(tmp_t);
 

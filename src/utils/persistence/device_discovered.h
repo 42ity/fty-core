@@ -212,6 +212,9 @@ class DeviceDiscovered:  public DataBaseObject {
          */
         void clear();
         
+        //TODO at the end, instead of this method use method setDeviceType(DeviceType deviceType)
+        //                                                   setDeviceType(std::string deviceTypeName)
+        //it can garantee that this field is invalid only id deviceTypeId = -1.
         /**
          * \brief Sets a new device type for the object.
          *
@@ -294,6 +297,8 @@ class DeviceDiscovered:  public DataBaseObject {
     
         /**
          * \brief Id of discovered device type.
+         *
+         * id = -1 means it is invalid.
          */
         int _deviceTypeId;
 

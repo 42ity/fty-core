@@ -65,6 +65,7 @@ DeviceDiscovered::
 DeviceDiscovered(std::string url, std::string name)
     :DataBaseObject(url)
 {
+    this->clear_this();
     _clientId = Client::selectId(url,_clientName);
     _name = name;
 }
@@ -73,7 +74,7 @@ std::string
 DeviceDiscovered::
 toString()
 {
-    return DataBaseObject::toString() + ";" + "name=" + _name;
+    return DataBaseObject::toString() + ";" + "name=" + _name + ";" + "devicetypeid=" + std::to_string(_deviceTypeId);
 }
 
 void 
@@ -134,7 +135,10 @@ DeviceDiscovered::
 check()
 {
     if ( _name.length() <= this->getNamesLength() )
-        return true;
+        if ( _deviceTypeId > 0 )    // if this field is ok.
+            return true;
+        else
+            return false;
     else
         return false;
 }
@@ -237,7 +241,6 @@ selectByName(std::string url, std::string name)
     std::vector<DeviceDiscovered> devicesDiscovered;
 
     int rsize = result.size();
-
     if ( rsize > 0 )
     {
         //There are discovered devices with such name
@@ -249,11 +252,12 @@ selectByName(std::string url, std::string name)
             DeviceDiscovered* newdeviceDiscovered = new DeviceDiscovered(url);
             
             //id
-            int tmp_i;
+            int tmp_i = -1;
             row[0].get(tmp_i);
             newdeviceDiscovered->setId(tmp_i);
 
             //deviceTypeId
+            tmp_i = -1;
             row[1].get(tmp_i);
             newdeviceDiscovered->setDeviceTypeId(tmp_i);
             

@@ -184,7 +184,7 @@ selectById(int id)
         this->setId(id);
         
         //ip
-        std::string tmp_ip;
+        std::string tmp_ip = "";
         row[0].get(tmp_ip);
         _ip = CIDRAddress(tmp_ip);
 
@@ -195,7 +195,7 @@ selectById(int id)
         row[2].get(_mac);
 
         //timestamp
-        time_t tmp_t;
+        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
         row[3].get(tmp_t);
         this->setTimestamp(tmp_t);
     
@@ -289,7 +289,7 @@ db_select_timestamp()
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
         //timestamp
-        time_t tmp_t;
+        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
         row[0].get(tmp_t);
         this->setTimestamp(tmp_t);
 
