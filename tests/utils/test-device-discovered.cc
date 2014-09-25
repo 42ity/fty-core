@@ -10,17 +10,18 @@ std::string osdeleted   = utils::objectStatetoString(utils::ObjectState::OS_DELE
 std::string osupdated   = utils::objectStatetoString(utils::ObjectState::OS_UPDATED);
 std::string osselected  = utils::objectStatetoString(utils::ObjectState::OS_SELECTED);
 
-TEST_CASE("Device discovered static","[dbdevice][clientname][getDetailedClientName]")
+TEST_CASE("Device discovered static","[dbdevice][clientname][getDetailedClientName][6]")
 {
     REQUIRE(utils::DeviceDiscovered::getDetailedClientName() == MODULE_ADMIN);
 }
 
-TEST_CASE("Device discovered+getters","[dbdevice][constructor1][toString][getId][getUrl][getState][getName]"){
+TEST_CASE("Device discovered+getters","[dbdevice][constructor1][toString][getId][getUrl][getState][getName][7]"){
     utils::DeviceDiscovered dbdevice(urldev);
     std::string expected =  "url="  + urldev                + ";" +
                             "id="   + std::to_string(-1)    + ";" +
                             "state=" + osnew                + ";" +
-                            "name=" + "unknown";
+                            "name=" + "unknown" + ";" +
+                            "devicetypeid=" + std::to_string(-1);
     REQUIRE(dbdevice.toString() == expected );
     REQUIRE(dbdevice.getId() == -1 );
     REQUIRE(dbdevice.getUrl() == urldev );
@@ -28,13 +29,15 @@ TEST_CASE("Device discovered+getters","[dbdevice][constructor1][toString][getId]
     REQUIRE(dbdevice.getName() == "unknown");
 }
 
-TEST_CASE("Device discovered+getters1","[dbdevice][constructor2][toString][getId][getUrl][getState][getName]"){
+TEST_CASE("Device discovered+getters1","[dbdevice][constructor2][toString][getId][getUrl][getState][getName][8]"){
     std::string name = "myname";
     utils::DeviceDiscovered dbdevice(urldev,name);
     std::string expected =  "url="  + urldev                + ";" +
                             "id="   + std::to_string(-1)    + ";" +
                             "state=" + osnew                + ";" +
-                            "name=" + name;
+                            "name=" + name+ ";" +
+                            "devicetypeid=" + std::to_string(-1);
+;
     REQUIRE(dbdevice.toString() == expected );
     REQUIRE(dbdevice.getId() == -1 );
     REQUIRE(dbdevice.getUrl() == urldev );
@@ -42,7 +45,7 @@ TEST_CASE("Device discovered+getters1","[dbdevice][constructor2][toString][getId
     REQUIRE(dbdevice.getName() == name);
 }
 
-TEST_CASE("Device discovered selectbyname","[dbdevice][select][byname]"){
+TEST_CASE("Device discovered selectbyname","[dbdevice][select][byname][9]"){
     
     
     std::string newname = "select_device";
@@ -54,16 +57,21 @@ TEST_CASE("Device discovered selectbyname","[dbdevice][select][byname]"){
     std::string expected1 = "url="  + urldev                + ";" +
                             "id="   + std::to_string(1)     + ";" +
                             "state=" + osselected           + ";" +
-                            "name=" + newname;
+                            "name=" + newname+ ";" +
+                            "devicetypeid=" + std::to_string(-1);
+;
     
     std::string expected2 = "url="  + urldev                + ";" +
                             "id="   + std::to_string(2)     + ";" +
                             "state=" + osselected           + ";" +
-                            "name=" + newname;
+                            "name=" + newname+ ";" +
+                            "devicetypeid=" + std::to_string(-1);
+;
 
     utils::DeviceDiscovered dbdevice1 = dbdevices.front();
     utils::DeviceDiscovered dbdevice2 = dbdevices.back();
-    
+    INFO(dbdevice1.toString());
+    INFO(dbdevice2.toString());
     bool f1 =  (dbdevice1.toString() == expected1)  &&  ( dbdevice2.toString() == expected2);
     bool f2 =  (dbdevice1.toString() == expected2)  &&  ( dbdevice2.toString() == expected1);
     bool result = f1 || f2;
@@ -76,7 +84,7 @@ TEST_CASE("Device discovered selectbyname","[dbdevice][select][byname]"){
 }
 
 
-TEST_CASE("Device discovered setName","[dbdevice][setName]")
+TEST_CASE("Device discovered setName/setDeviceType","[dbdevice][setName][setDeviceType][2]")
 {
     utils::DeviceDiscovered dbdevice(urldev);
     std::string newname = "set_name";
@@ -105,8 +113,8 @@ TEST_CASE("Device discovered setName","[dbdevice][setName]")
     
     dbdevices =  utils::DeviceDiscovered::selectByName(urldev,newname);
     dbdevice = dbdevices.front();
-    dbdevice.dbdelete();
-    
+    int n = dbdevice.dbdelete();
+    REQUIRE ( n == 1 );
     //OS_DELETED set= OS_DELETED
     dbdevice.setName(newname);
     REQUIRE(dbdevice.getState() == utils::ObjectState::OS_DELETED);
@@ -116,20 +124,24 @@ TEST_CASE("Device discovered setName","[dbdevice][setName]")
     
     //return to consistent state
     utils::DeviceDiscovered newdevice = utils::DeviceDiscovered(urldev,newname);
-    int n = newdevice.dbsave();
+    n = newdevice.dbsave();
+    REQUIRE( n == 0 );  // because deviceType is invalid
+    newdevice.setDeviceTypeId(1);
+    n = newdevice.dbsave();
     REQUIRE( n == 1 );
 }
 
 
-TEST_CASE("Device discovered insert/delete ","[dbdevice][save][insert][delete]"){
+TEST_CASE("Device discovered insert/delete ","[dbdevice][save][insert][delete][3]"){
     utils::DeviceDiscovered dbdevice(urldev);
     std::string newname = "insert_delete";
     dbdevice.setName(newname);
+    dbdevice.setDeviceTypeId(1);
     int n = dbdevice.dbsave();
     if ( n == 1 )
     {
         REQUIRE(dbdevice.getId() > 0 );
-        REQUIRE( utils::objectStatetoString(dbdevice.getState()) == osselected);
+        REQUIRE(utils::objectStatetoString(dbdevice.getState()) == osselected);
     }
     if ( n > 1)     // unreal situation
         FAIL("inserted more than one row");
@@ -167,6 +179,9 @@ TEST_CASE("Device discovered update","[dbdevice][save][update]"){
     std::string newname = "update";
     utils::DeviceDiscovered dbdevice(urldev,newname);
     int n = dbdevice.dbsave();
+    REQUIRE(n == 0 );
+    dbdevice.setDeviceTypeId(1);
+    n = dbdevice.dbsave();
     REQUIRE( n == 1 );
     n = dbdevice.selectById(dbdevice.getId());
     REQUIRE( n == 1 );
@@ -190,11 +205,14 @@ TEST_CASE("Device discovered update","[dbdevice][save][update]"){
 }
 
 
-TEST_CASE("Device discovered select by Id","[dbdevice][select][byId]"){
+TEST_CASE("Device discovered select by Id","[dbdevice][select][byId][1]"){
     
     std::string newname = "select_by_id";
     utils::DeviceDiscovered dbdevice(urldev,newname);
     int n = dbdevice.dbsave();
+    REQUIRE( n == 0 );
+    dbdevice.setDeviceTypeId(1);
+    n = dbdevice.dbsave();
     REQUIRE( n == 1 );
 
     // select one row
