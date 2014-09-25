@@ -266,6 +266,36 @@ std::pair<std::string, std::string> ProcCache::pop() {
     return ret;
 }
 
+bool ProcCacheMap::hasPid(pid_t pid) const {
+    return (_map.count(pid) == 1);
+}
+
+void ProcCacheMap::pushStdout(pid_t pid, const char* str) {
+    _push_cstr(pid, str, true);
+}
+
+void ProcCacheMap::pushStderr(pid_t pid, const char* str) {
+    _push_cstr(pid, str, false);
+}
+
+void ProcCacheMap::_push_cstr(pid_t pid, const char* str, bool push_stdout) {
+    if (!hasPid(pid)) {
+        _map[pid] = ProcCache{};
+    }
+    if (push_stdout) {
+        _map[pid].pushStdout(str);
+    }
+    else {
+        _map[pid].pushStdout(str);
+    }
+
+}
+
+std::pair<std::string, std::string> ProcCacheMap::pop(pid_t pid) {
+    std::pair<std::string, std::string> ret = _map[pid].pop();
+    _map.erase(pid);
+    return ret;
+}
 
 // ### helper functions ###
 char * const * _mk_argv(Argv vec) {

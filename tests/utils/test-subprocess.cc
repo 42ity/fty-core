@@ -247,6 +247,43 @@ TEST_CASE("subprocess-proccache", "[subprocess][proccache]") {
 
 }
 
+TEST_CASE("subprocess-proccachemap", "[subprocess][proccachemap]") {
+    ProcCacheMap c{};
+    pid_t pid1, pid2;
+
+    pid1 = 1;
+    pid2 = 42;
+
+    REQUIRE(!c.hasPid(pid1));
+    REQUIRE(!c.hasPid(pid2));
+
+    c.pushStdout(pid1, "stdout");
+
+    CHECK(c.hasPid(pid1));
+    CHECK(!c.hasPid(pid2));
+
+    //XXX: I've assumed [] would raise an exception ...
+    std::pair<std::string, std::string> r = c.pop(pid2);
+    CHECK(r.first == "");
+    CHECK(r.second == "");
+
+    CHECK(c.hasPid(pid1));
+    CHECK(!c.hasPid(pid2));
+
+    r = c.pop(pid1);
+    CHECK(!c.hasPid(pid1));
+    CHECK(!c.hasPid(pid2));
+    CHECK(r.first == "stdout");
+    CHECK(r.second == "");
+
+    r = c.pop(pid1);
+    CHECK(!c.hasPid(pid1));
+    CHECK(!c.hasPid(pid2));
+    CHECK(r.first == "");
+    CHECK(r.second == "");
+
+}
+
 TEST_CASE("subprocess-que", "[subprocess][processque]") {
     Argv args{"/bin/cat"};
     ProcessQue q{1};

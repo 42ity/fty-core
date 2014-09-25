@@ -223,6 +223,14 @@ class ProcCache {
             _ecache.clear();
         }
 
+        ProcCache& operator=(const ProcCache &cache) {
+            _ocache.str(cache._ocache.str());
+            _ocache.clear();
+            _ecache.str(cache._ecache.str());
+            _ecache.clear();
+            return *this;
+        }
+
         //TODO: other constructors + operators
 
         void pushStdout(const char* str);
@@ -236,6 +244,31 @@ class ProcCache {
         std::ostringstream _ocache;
         std::ostringstream _ecache;
 };
+
+//! map<pid_t, ProcCache> with ProcCache-like API
+class ProcCacheMap {
+
+    public:
+
+        ProcCacheMap():
+            _map()
+        {};
+
+        bool hasPid(pid_t pid) const;
+
+        void pushStdout(pid_t pid, const char* str);
+
+        void pushStderr(pid_t pid, const char* str);
+
+        std::pair<std::string, std::string> pop(pid_t pid);
+
+    protected:
+        typedef std::map<pid_t, ProcCache> map_type;
+        map_type _map;
+
+        void _push_cstr(pid_t pid, const char* str, bool push_stdout);
+};
+
 
 } //namespace utils
 
