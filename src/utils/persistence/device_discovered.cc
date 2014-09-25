@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file device_discovered.h
-    \brief Realisation of the class for databaseobject t_bios_device_discovered
+    \brief Realisation of the class for manipulating with the database 
+    objects stored in the table t_bios_discovered_device
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -36,11 +37,28 @@ namespace utils{
 //////////          DeviceDiscovered                 ///////
 ////////////////////////////////////////////////////////////
 
+void
+DeviceDiscovered::
+clear_this()
+{
+    _name = "unknown";
+    _deviceTypeId = -1;
+}
+
+void
+DeviceDiscovered::
+clear()
+{
+    DataBaseObject::clear();
+    this->clear_this();
+}
+
 DeviceDiscovered::
 DeviceDiscovered(std::string url)
     :DataBaseObject(url)
 {
-    _name = "unknown";
+    _clientId = Client::selectId(url,_clientName);
+    this->clear_this();
 }
 
 DeviceDiscovered::
@@ -62,18 +80,48 @@ void
 DeviceDiscovered::
 setName(std::string name)
 {
-    if ( (_name != name) && (this->getState() != OS_DELETED) )
+    if ( ( _name != name ) && ( this->getState() != ObjectState::OS_DELETED ) )
     {
-        switch (this->getState()){
-            case OS_SELECTED: 
-                this->setState(OS_UPDATED);
-            case OS_UPDATED:
-            case OS_NEW:
-            _name = name;
+        switch ( this->getState() ){
+            case ObjectState::OS_SELECTED: 
+                this->setState(ObjectState::OS_UPDATED);
+                _name = name;
+                break;
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _name = name;
+                break;
+            default:
+                //log this should never happen
+                break;
         }
     }
     //else do nothing
 }
+
+void 
+DeviceDiscovered::
+setDeviceTypeId(int deviceTypeId)
+{
+    if ( ( _deviceTypeId != deviceTypeId ) && ( this->getState() != ObjectState::OS_DELETED ) )
+    {
+        switch ( this->getState() ){
+            case ObjectState::OS_SELECTED: 
+                this->setState(ObjectState::OS_UPDATED);
+                _deviceTypeId = deviceTypeId;
+                break;
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _deviceTypeId = deviceTypeId;
+                break;
+            default:
+                //log this should never happen
+                break;
+        }
+    }
+    //else do nothing
+}
+
 
 DeviceDiscovered::
 ~DeviceDiscovered()
@@ -96,18 +144,19 @@ unsigned int
 DeviceDiscovered::
 db_insert()
 {
-    
     tntdb::Connection conn;  
     conn = tntdb::connectCached(this->getUrl());
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_device_discovered (id,name)"
-        " values (NULL,:name)"
+        " v_bios_device_discovered (id,name,id_device_type)"
+        " values (NULL,:name,:iddevicetype)"
         );
     
     // Insert one row or nothing
-    unsigned int n  = st.setString("name", this->getName()).execute();
+    unsigned int n  = st.setString("name", this->getName()).
+                         setInt("iddevicetype",_deviceTypeId).
+                         execute();
     
     if ( n == 1 )
     {
@@ -150,12 +199,15 @@ db_update()
     tntdb::Statement st = conn.prepareCached(
         " update"
         " v_bios_device_discovered"
-        " set name = :name"     //, aaa = :aa
+        " set name = :name , id_device_type = :iddevicetype"     //, aaa = :aa
         " where id = :id"
         );
     
     // update one row or nothing
-    unsigned int n  = st.setString("name", this->getName()).setInt("id",this->getId()).execute();
+    unsigned int n  = st.setString("name", this->getName()).
+                         setInt("id",this->getId()).
+                         setInt("iddevicetype",_deviceTypeId).
+                         execute();
     
     // n is 0 or 1
     return n;
@@ -166,14 +218,11 @@ DeviceDiscovered::
 selectByName(std::string url, std::string name)
 {
     tntdb::Connection conn;  
-    conn = tntdb::connectCached(url);  // connects to the db
+    conn = tntdb::connectCached(url); 
 
-    /**
-     * TODO add more columns
-     */
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " id"
+        " v.id , v.id_device_type"
         " from"
         " v_bios_device_discovered v"
         " where v.name = :name"
@@ -200,17 +249,17 @@ selectByName(std::string url, std::string name)
             DeviceDiscovered* newdeviceDiscovered = new DeviceDiscovered(url);
             
             //id
-            int tid;
-            row[0].get(tid);  // read column #0 into variable tid
-            newdeviceDiscovered->setId(tid);
+            int tmp_i;
+            row[0].get(tmp_i);
+            newdeviceDiscovered->setId(tmp_i);
+
+            //deviceTypeId
+            row[1].get(tmp_i);
+            newdeviceDiscovered->setDeviceTypeId(tmp_i);
             
             //name
             newdeviceDiscovered->setName(name);
-            
-            /**
-             * TODO don't forget read all columns here
-             */
-            
+                      
             //state
             newdeviceDiscovered->setState(ObjectState::OS_SELECTED);
 
@@ -223,16 +272,14 @@ selectByName(std::string url, std::string name)
 
 unsigned int 
 DeviceDiscovered::
-selectById(unsigned int id)
+selectById(int id)
 {
     tntdb::Connection conn; 
-    conn = tntdb::connectCached(this->getUrl());  // connects to the db
-    /**
-     * TODO add more columns
-     */
+    conn = tntdb::connectCached(this->getUrl());
+
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " name"
+        " v.name , v.id_device_type"
         " from"
         " v_bios_device_discovered v"
         " where v.id = :id"
@@ -244,16 +291,16 @@ selectById(unsigned int id)
     int n;
     try{
         tntdb::Row row = st.setInt("id", id).selectRow();
-         //id
+        
+        //id
         this->setId(id);
         
         //name
-        row[0].get(_name);  // read column #0 into variable _name
+        row[0].get(_name);
+
+        //deviceTypeId
+        row[1].get(_deviceTypeId);
     
-        /**
-         * TODO don't forget read all columns here
-         */
-                
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -298,7 +345,8 @@ ClientInfo *
 DeviceDiscovered::
 selectLastDetailInfo()
 {
-    if ( this->getState() != ObjectState::OS_NEW )
+    if (( this->getState() != ObjectState::OS_NEW ) &&
+         ( this->getState() != ObjectState::OS_DELETED ) )
     {
 
         ClientInfo *newClientInfo = new ClientInfo(this->getUrl());
@@ -340,4 +388,11 @@ getName()
     return _name;
 }
 
-} //end of namespace
+int 
+DeviceDiscovered::
+getDeviceTypeId()
+{
+    return _deviceTypeId;
+}
+
+} //end of namespace utils

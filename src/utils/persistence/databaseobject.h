@@ -16,15 +16,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file databaseobject.h
-    \brief Basic Class for manipulating with database objects
+    \brief The basic class for manipulating with database objects
 
     This class consists of basic fields and methods, that are common
     for all database objects.
 
-    And some enums.
+    Here are introduled two enums. One for the state of the objects and one 
+    for manipulating with the history.
       
     \author Alena Chernikava <alenachernikava@eaton.com>
-*/  
+*/
+
 #ifndef DATABASEOBJECT_H_
 #define DATABASEOBJECT_H_
 
@@ -33,25 +35,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace utils {
  
 /**
- * represents the relation of the object to the database
+ * \brief Represents the relation of the object to the database
  */
-enum ObjectState{
-    OS_SELECTED,    //Object fully coresponds with the row
-    OS_NEW,         //Object is new, there is no record in DB
-    OS_UPDATED,     //Object is in DB, but here is a modified version
-    OS_DELETED,     //Object was deleted from DB
-    OS_INSERTED     //Object was successfully inserted to DB, but at the application level field "date" is out of date
+enum class ObjectState : char{
+    OS_SELECTED = 's',  //Object fully coresponds with the row
+    OS_NEW      = 'n',  //Object is new, there is no record in DB
+    OS_UPDATED  = 'u',  //Object is in DB, but here is a modified version
+    OS_DELETED  = 'd',  //Object was deleted from DB
+    OS_INSERTED = 'i'   //Object was successfully inserted to DB, but at the 
+                        //application level field "timestamp" is out of date
 };
 
 /** 
- * represents a way of selection by date
+ * \brief Represents a way of selection by date
  */
-enum dateType{
-    DT_BEFORE_DATE,
-    DT_BEFORE_DATE_INCL,
-    DT_AFTER_DATE,
-    DT_AFTER_DATE_INCL,
-    DT_BETWEEN
+enum class dateType : char{
+    DT_BEFORE_DATE      = 'b', //Selection of the history before specified date
+    DT_BEFORE_DATE_INCL = 'B', //Selection of the history before specified date
+                               //inclusive
+    DT_AFTER_DATE       = 'a', //Selection of the history after specified date
+    DT_AFTER_DATE_INCL  = 'A', //Selection of the history after specified date 
+                               //inclusive
+    DT_BETWEEN          = 'm'  //Selection of the history between specified 
+                               //dates
 };
 
 /**
@@ -64,26 +70,35 @@ std::string objectStatetoString(ObjectState objectstate);
 /////////////////////////////////////////////////
 
 /**
- * represents general methods for database objects
+ * \Brief This class represents general methods and fields that are common 
+ * for all for database objects.
+ *
+ * But this behaviour could be changed in child classed in case of need.
  */
-
 class DataBaseObject
 {
     public:
         
         /**
-         * \brief Save this record to database
+         * \brief Saves this object to database.
          *
-         * It does insert or update statement and returns a number 
-         * of rows affected. During the inserting an ID would be change in
-         * case of success.
+         * It does insert or update statement.
+         * In case of successful insert:
+         *      - an Id of the object would be changed to match 
+         *        the actual state.
+         * In case of successful update/insert:
+         *      - a state would be chaned to OS_SELECTED
+         * 
+         * \return A number of rows affected.
          */
         unsigned int dbsave();
         
         /**
-         * \brief Delete a record from database by ID
+         * \brief Deletes this object from database by Id.
          *
-         * it Changes status to OS_DELETED
+         * In case of success object status would be changed to OS_DELETED.
+         *
+         * \return A number of rows affected.
          */
         unsigned int dbdelete();
         
@@ -91,6 +106,8 @@ class DataBaseObject
          * \brief Creates a new object and specifies a connection.
          *
          * Creates a new object for the specified url in state OS_NEW.
+         * 
+         * \param url - connection to the database
          */
         DataBaseObject(std::string url);
 
@@ -98,47 +115,67 @@ class DataBaseObject
         ~DataBaseObject();
         
         /**
-         * \brief Get a value of state
+         * \brief Gets a value of object's state.
+         *
+         * \return Object's state.
          */
         ObjectState getState();
 
         /**
-         * \brief Get a value of ID
+         * \brief Gets a value of object's ID.
+         *
+         * Id is validonly in OS_SELECTED and OS_UPDATED states.
+         *
+         * \return Object's Id.
          */
         int getId();
 
         /**
-         * \brief Get a value of url
+         * \brief Gets a value of object's url.
+         * 
+         * \return Object's url.
          */
         std::string getUrl();
 
         /**
-         * \brief Returns a string of all fields 
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * Must be rewritten in every child-class.
+         * 
+         * \return Object as string.
          */
         std::string toString();
 
         /**
-         * \Brief Returns an object to OS_NEW state with initial parameters
-         * Must be rewritten in every child-class
+         * \brief Returns an object to OS_NEW state with initial parameters.
+         * 
+         * Must be rewritten in every child-class.
          */
         virtual void clear();
 
         /**
-         * \brief Get a maximum length of all fields "name" in database.
+         * \brief Gets a maximum length of all fields "name" in database.
+         *
+         * \return A maximum length of "name"-fields in database.
          */
         static int getNamesLength();
        
         /**
          * \brief A prototype method. Selects object by Id.
          * 
-         * Must be rewritten in every child-class
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
          */
-        virtual unsigned int selectById(unsigned int id){return 1;};
+        virtual unsigned int selectById(int id){return 1;};
         
         /**
-         * \brief Reloads this object by its id from the DB
+         * \brief Reloads this object by its id from the DB.
          *
-         * In case of state OS_NEW/OS_DELETED there is nothing to reload
+         * In case of state OS_NEW/OS_DELETED/OS_SELECTED there is nothing 
+         * to reload.
+         *
+         * \return A number of rows affected.
          */
         unsigned int reload();
          
@@ -151,39 +188,57 @@ class DataBaseObject
     protected:
         
         /**
-         * \brief Set a new state for the object.
+         * \brief Sets a new state for the object.
          *
-         * For Class internal use only
+         * For Class internal use only.
+         *
+         * \param A new state.
          */    
         void setState(ObjectState state);
         
         /**
-         * Is used for filling the object. It is not desiened for 
+         * \brief Sets a new ID for the object.
+         *
+         * It is used for filling the object. It is not desiened for 
          * using outside the child classes.
+         *
+         * \param A new Id.
          */
         void setId(int id);
 
         /**
-         *  \brief internal method for insert 
-         * Must be rewritten in every child-class
+         * \brief Internal method for insert.
+         *
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
          */
         virtual unsigned int db_insert(){return 1;};
         
         /**
-         *  \brief internal method for update
-         * Must be rewritten in every child-class
+         * \brief Internal method for update.
+         *
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
          */
         virtual unsigned int db_update(){return 1;};
 
         /**
-         *  \brief internal method for delete
-         * Must be rewritten in every child-class
+         * \brief Internal method for delete.
+         *
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
          */
         virtual unsigned int db_delete(){return 1;};
         
         /**
-         *  \brief internal method for check before insert or update
-         * Must be rewritten in every child-class
+         * \brief Internal method for check before insert or update.
+         * 
+         * Must be rewritten in every child-class.
+         *
+         * \return true if check was successful.
          */
         virtual bool check(){ return true;};
 
@@ -191,19 +246,19 @@ class DataBaseObject
     private:
         
         /**
-         * \brief A state of the object with the relation to the DB
+         * \brief A state of the object with the relation to the DB.
          */    
         ObjectState _state;
         
         /**
-         * \brief An url that specifies a connection to the DB
+         * \brief An url that specifies a connection to the DB.
          */
         std::string _url;
     
         /**
-         * \brief Id of the row 
+         * \brief Id of the row.
          * 
-         * Id is valid only if its state is not OS_NEW
+         * Id is valid only if its state is not OS_NEW/OS_DELETED.
          */
         int _id;
         
@@ -211,13 +266,12 @@ class DataBaseObject
          * \brief A maximum length of all fields "name" in database.
          *
          * TODO is it 25?
-         * while if length of string is more than length of field it 
-         * would be cutted without any error
          */
         static int _names_length;
-};
+
+}; // end of the class
 
 
-} // namespace utils
+}  // end of namespace utils
 
 #endif // DATABASEOBJECT_H_

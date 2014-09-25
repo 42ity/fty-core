@@ -22,8 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
  
-#include <string>
-#include <iostream>
 #include "databaseobject.h"
 #include "log.h"
 
@@ -33,7 +31,6 @@ namespace utils {
 //////////      DataBaseObject               ///////////////
 ////////////////////////////////////////////////////////////
 
-// is used only for internal porposes. 
 void 
 DataBaseObject::
 setId(int id)
@@ -46,7 +43,7 @@ DataBaseObject::
 setState(ObjectState state)
 {
     _state = state;
-    if ( _state == OS_NEW )
+    if ( _state == ObjectState::OS_NEW )
         _id = -1;
 }
 
@@ -69,7 +66,7 @@ int
 DataBaseObject::
 getId()
 {
-    if ( ( ( _state == OS_NEW ) || (_state == OS_DELETED ))&& ( _id != -1 ) )
+    if ( ( ( _state == ObjectState::OS_NEW ) || (_state == ObjectState::OS_DELETED )) && ( _id != -1 ) )
     {
             //TODO log(this should never happen)
     }
@@ -95,50 +92,43 @@ toString()
 {
     std::string tmp =   "url="  + _url                   + ";" +
                         "id="   + std::to_string(_id)    + ";" +
-                        "state=" + utils::objectStatetoString(_state) ;
+                        "state=" + objectStatetoString(_state);
     return tmp; 
 }
 
-unsigned int                // number of row affected
+unsigned int                
 DataBaseObject::
 dbsave()
 {
-    if ( _state == OS_NEW )
+    if ( _state == ObjectState::OS_NEW )
     {
-        if (this->check())  // if check is true (ok), then proceed
+        if ( this->check() )  // if check is true (ok), then proceed
         {
             int n = this->db_insert();
             if ( n > 0 )
-                _state = OS_SELECTED;
+                _state = ObjectState::OS_SELECTED;
             return n;
         }
         else                // if check is false, then discard an insert
             return 0;
     }
-    else if ( _state == OS_UPDATED )    //a DataBaseObject never rich this state, only its child could
+    else if ( _state == ObjectState::OS_UPDATED )    //a DataBaseObject never rich this state, only its child could
     {
-        if (this->check())
+        if ( this->check() )
         {
             int n = this->db_update();
             if ( n > 0 )
-                _state = OS_SELECTED;
+                _state = ObjectState::OS_SELECTED;
             return n;        
         }
         else
             return 0;
     }
-    else if (_state == OS_SELECTED )
+    else  //if  _state == OS_SELECTED  ||  OS_DELETED ||  OS_INSERTED
     {
         // do nothing
         return 0;
     }
-    else    //_state == OS_DELETED or OS_INSERTED
-    {
-        //do nothing
-        return 0;
-        //TODO
-    }
-
 }
 
 // delete object by its id
@@ -146,23 +136,22 @@ unsigned int
 DataBaseObject::
 dbdelete()
 {
-    if ( _state == OS_NEW )
+    if ( _state == ObjectState::OS_NEW )
     {   // no id is known
-        //do nothing
+        // do nothing
         return 0;
     }
-    else if ( ( _state == OS_UPDATED ) || ( _state == OS_SELECTED ) || (_state == OS_INSERTED))
+    else if ( ( _state == ObjectState::OS_UPDATED ) || ( _state == ObjectState::OS_SELECTED ) || ( _state == ObjectState::OS_INSERTED ) )
     {
         int n = this->db_delete();
         if ( n > 0 )
         {
-            _state = OS_DELETED;
+            _state = ObjectState::OS_DELETED;
             _id = -1;               // make id non valid
-            //TODO add some stuff
         }
         return n;        
     }
-    else if (_state == OS_DELETED )
+    else if (_state == ObjectState::OS_DELETED )
     {
         // do nothing, the object is bad;
         return 0;
@@ -178,17 +167,16 @@ getNamesLength()
     return _names_length;
 }
 
-//where I need to put it TODO
 std::string 
 objectStatetoString(ObjectState objectstate)
 {
     switch (objectstate){
-        case OS_NEW:        return "osnew";
-        case OS_SELECTED:   return "osselected";
-        case OS_UPDATED:    return "osupdated";
-        case OS_DELETED:    return "osdeleted";
-        case OS_INSERTED:   return "osinserted";
-        default:            return "osunknown";
+        case ObjectState::OS_NEW:        return "osnew";
+        case ObjectState::OS_SELECTED:   return "osselected";
+        case ObjectState::OS_UPDATED:    return "osupdated";
+        case ObjectState::OS_DELETED:    return "osdeleted";
+        case ObjectState::OS_INSERTED:   return "osinserted";
+        default:                         return "osunknown";
     }
 }
 
@@ -208,7 +196,7 @@ void
 DataBaseObject::
 clear()
 {
-    _state = OS_NEW;
+    _state = ObjectState::OS_NEW;
     _id = -1;
 }
 

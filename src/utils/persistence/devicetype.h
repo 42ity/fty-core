@@ -16,8 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file devicetype.h
-    \brief Basic class for manipulating with the database objects stored 
-    in tha table t_bios_device_type.
+    \brief Class for manipulating with the database objects stored 
+    in the table t_bios_device_type.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -28,6 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils{
 
+/*
+ * \brief DeviceType is a class for representing a database entity
+ * t_bios_device_type.
+ */
 class DeviceType: public DataBaseObject
 {
     public:
@@ -35,12 +39,14 @@ class DeviceType: public DataBaseObject
         /**
          * \brief Creates a new object and specifies a connection.
          *
-         * Creates a new object for the specified url in state OS_NEW
+         * Creates a new object for the specified url in state OS_NEW.
+         *
+         * \param url - connection to the database.
          */
         DeviceType(std::string url);
 
         /**
-         * \brief Selects from the DB a device type by its name
+         * \brief Selects from the DB a device type by its name.
          *
          * Select from DB device type by name.
          *
@@ -49,19 +55,19 @@ class DeviceType: public DataBaseObject
         unsigned int selectByName(std::string name);
 
         /**
-         * \brief Returns device type's name 
+         * \brief Returns device type's name.
          */
         std::string getName();
 
         /**
          * \brief Sets a new name for the object.
          *
-         * If state is OS_DELETED then do nothing
-         * If newname = oldname then do nothing
-         * If state is OS_SELECTED and newname != oldname
+         * If state is OS_DELETED then do nothing.
+         * If newname = oldname then do nothing.
+         * If state is OS_SELECTED and newname != oldname.
          * than state is changed to OS_UPDATED.
          *
-         * \param name - new name of the device type
+         * \param name - new name of the device type.
          */    
         void setName(std::string name);
         
@@ -69,88 +75,97 @@ class DeviceType: public DataBaseObject
          * \brief Selects from DB a device type by ID. Rewrites object.
          *
          * If device type was found:
-         * -selects exactly one row
-         * -state changed to OS_SELECTED
+         * -selects exactly one row.
+         * -state changed to OS_SELECTED.
          *
          * If device type was not found:
-         * -selects nothing
-         * -everything remains the same
+         * -selects nothing.
+         * -everything remains the same.
          *  
-         * \param id of row in database
+         * \param id of row in database.
          *  
-         * \return A number of rows selected
+         * \return A number of rows selected.
          */
-        unsigned int selectById(unsigned int id);
+        unsigned int selectById(int id);
 
         ~DeviceType();
         
         /**
-         * \brief Selects an Id by name in the DB specified by url
+         * \brief Selects an Id by name in the DB specified by url.
          *
-         * Selects an Id by name in the DB specified by url
+         * Selects an Id by name in the DB specified by url.
          * 
-         * \param url  - specifies database
-         * \param name - name of the device type
+         * \param url  - specifies database.
+         * \param name - name of the device type.
          * 
-         * \return An ID or -1 if nothing was found
+         * \return An ID or -1 if nothing was found.
          */
         static int selectId(std::string url, std::string name);
 
         /**
-         * \brief Returns all fields as string
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * \return Object as string.
          */
         std::string toString();
         
         /**
-         * \brief Returns an object to OS_NEW state with initial parameters
+         * \brief Returns an object to OS_NEW state with initial parameters.
          */
         void clear();
 
     protected:
         
         /**
-         * \brief Internal method for insert
+         * \brief Internal method for insert.
          *
-         * \return A Number of rows affected 
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_insert();
         
         /**
-         * \brief Internal method for update
+         * \brief Internal method for update.
          *
-         * \return A Number of rows affected 
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_update();
 
         /**
-         * \brief Internal method for delete
+         * \brief Internal method for delete.
          * 
-         * \return A Number of rows affected 
+         * All necessary pre-actions are made in dbdelete.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_delete();
         
         /**
-         * \brief Internal method for check before insert or update
+         * \brief Internal method for check before insert or update.
          *
          * Checks the length of the name.
          *
+         * \return true if check was successful.
          */
         bool check();
 
     private:
     
         /**
-         * \brief Returns private fields of this object to initial state
+         * \brief Returns private fields of this object to initial state.
          */
         void clear_this();
         
         /**
-         * \brief A name of the deviceType
+         * \brief A name of the deviceType.
          */
         std::string _name;
 
 };  // end of the class
 
-}   // end of namespace
+}   // end of namespace utils
 
 #endif //DEVICETYPE_H_

@@ -17,8 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \file ip.h
     
-    \brief Realisation of the class for databaseobject t_bios_discovered_ip
-    
+    \brief Realisation of the class for manipulating with the database 
+    objects stored in the table t_bios_discoverd_ip
+ 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
 #include "ip.h"
@@ -33,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace utils{
 
 /////////////////////////////////////////////////////////////
-////////////////// IP ///////////////////////////////////////
+//////////           IP          ////////////////////////////
 /////////////////////////////////////////////////////////////
 
 bool
@@ -54,7 +55,7 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_discovered_ip (id,ip,timestampt,id_discovered_device)"
+        " v_bios_discovered_ip (id,ip,timestamp,id_discovered_device)"
         " values (NULL, :ip, NOW(),:discovereddeviceid)"
         );
     
@@ -128,7 +129,7 @@ selectById(unsigned int id)
      */
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " ip, id_discovered_device, timestampt"
+        " ip, id_discovered_device, timestamp"
         " from"
         " v_bios_discovered_ip v"
         " where v.id = :id"
@@ -152,10 +153,10 @@ selectById(unsigned int id)
         //id_discovereddevice
         row[1].get(_deviceDiscoveredId);
 
-        //timestampt
+        //timestamp
         time_t tmp_t;
         row[1].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
                 
         //state
         this->setState(ObjectState::OS_SELECTED);
@@ -181,11 +182,11 @@ Ip::getLastInfo(std::string url, std::string ip)
      * TODO ip6 char to int
      */
     tntdb::Statement st = conn.prepareCached(
-        "select "
-        "v.id, v.id_deviceDiscovered, v.datum"
-        "from"
-        "v_ip_last v"
-        "where v.ip = :thisip"
+        " select "
+        " v.id, v.id_deviceDiscovered, v.datum"
+        " from"
+        " v_ip_last v"
+        " where v.ip = :thisip"
         );
     
     /**
@@ -215,12 +216,12 @@ Ip::getLastInfo(std::string url, std::string ip)
         //date
         time_t datetmp;
         row[2].get(datetmp);
-        newIp->setTimestampt(datetmp);
+        newIp->setTimestamp(datetmp);
             
         /**
           * TODO don't forget read all columns here
           */
-        newIp->setState(OS_SELECTED);
+        newIp->setState(ObjectState::OS_SELECTED);
 
         return newIp;
 

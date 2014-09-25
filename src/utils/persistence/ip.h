@@ -16,8 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file ip.h
-    
-    \brief Class for databaseobject t_bios_discovered_ip
+    \brief Class for manipulating with the database objects stored 
+    in the table t_bios_discovered_ip.
     
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
@@ -32,6 +32,10 @@ class DeviceDiscovered;
 
 namespace utils{
     
+/*
+ * \brief IP is a class for representing a database entity
+ * t_bios_descovered_ip.
+ */
 
 class Ip :public DataBaseTimeObject
 {
@@ -115,8 +119,8 @@ class Ip :public DataBaseTimeObject
 
         int _deviceDiscoveredId;
 
-};
+}; // end of the class
 
-} // namespace utils
+}  // namespace utils
 
 #endif //IP_H_

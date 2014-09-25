@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file device_discovered.h
-    \brief Basic Class for manipulating with database object t_bios_device_discovered
+    \brief Class for manipulating with the database objects stored 
+    in the table t_bios_discovered_device.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -40,7 +41,7 @@ namespace utils{
 
 /*
  * \brief DeviceDiscovered is a class for representing a database entity
- * t_device_discovered
+ * t_bios_discovered_device.
  */
 class DeviceDiscovered:  public DataBaseObject {
     
@@ -51,6 +52,8 @@ class DeviceDiscovered:  public DataBaseObject {
          *
          * Creates a new object for the specified url with name = "unknown" 
          * in state OS_NEW.
+         *
+         * \param url - connection to the database.
          */
         DeviceDiscovered(std::string url);
     
@@ -60,184 +63,243 @@ class DeviceDiscovered:  public DataBaseObject {
          *
          * Creates a new object for the specified url with name = name in 
          * state OS_NEW.
+         *
+         * \param url  - connection to the database.
+         * \param name - name of discovered device.
          */
         DeviceDiscovered(std::string url, std::string name);
     
         /**
-         * \brief Returns all fields as string
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * \return Object as string.
          */
         std::string toString();
        
         /**
-         * \brief Selects from the DB discovered devices by name
+         * \brief Selects from the DB discovered devices by name.
          *
-         * Select from DB discovered devices by name and returns a set of 
-         * matched discovered devices in
-         * vector. All elements there would have state OS_SELECTED.
+         * Selects from DB discovered devices by name and returns a set of 
+         * matched discovered devices in a vector. 
+         * All elements there would be in state OS_SELECTED.
+         
+         * \param url  - connection to the database.
+         * \param name - name of discovered device.
+         *
+         * \return a vector of devices.
          */
         static std::vector<DeviceDiscovered> 
                     selectByName(std::string url, std::string name);
        
         /**
-         * \brief Select from DB discovered device by ID. Rewrites object.
+         * \brief Selects from DB a discovered device by ID. Rewrites this object.
          *
          * If discovered device was found:
-         * -selects exactly one row
-         * -state changed to OS_SELECTED
+         * -selects exactly one row.
+         * -state is changed to OS_SELECTED.
          *
          * If discovered device was not found:
-         * -selects nothing
-         * -everything remains the same
+         * -selects nothing.
+         * -everything remains the same.
          *
-         *  \return number of rows selected
+         * \param id - id of discovered device.
+         *
+         * \return A number of rows selected.
          */
-        unsigned int selectById(unsigned int id);
+        unsigned int selectById(int id);
         
         /**
          * \brief Selects a discovered device by Ip.
          *
-         * Selects the last assigned discovered device to the specified Ip.
+         * Selects the discovered device last assigned to the specified Ip.
          *
-         * \return number of rows selected.
-         * TODO toString doesnt work
+         * \param ip - ip of device.
+         *
+         * \return A number of rows selected.
          */
         unsigned int selectByIp(CIDRAddress ip);
         
         /**
-         * \brief Selects a deviceDiscovered by Ip.
+         * \brief Selects a discovered device by Ip.
          *
-         * Selects the last assigned deviceDiscovered to the specified Ip.
+         * Selects thediscovered device last assigned to the specified Ip.
          *
-         * \return number of rows selected.
+         * \param ip - ip of device.
+         *
+         * \return A number of rows selected.
          */
         unsigned int selectByIp(std::string ip);
         
         /**
-         * \brief Selects the last information about this deviceDiscovered
+         * \brief Selects the last information about this discovered device.
+         * 
+         * In case of state OS_NEW/OS_DELETED there is nothing to do and it returns 0.
          *
-         * \return returns number of rows selected.
-         *
-         * In case of state OS_NEW there is nothing to do and it eturns 0.
+         * \return A number of rows selected.
          */
         ClientInfo *selectLastDetailInfo();
 
         /**
-         * \brief Returns a deviceDiscovereds name
+         * \brief Get a discovered device's name.
+         *
+         * \return A name od discovered device.
          */
         std::string getName();
         
         /**
          * \brief Sets a new name for the object.
          *
-         * If state is OS_DELETED then do nothing
-         * If newname = oldname then do nothing
-         * If state is OS_SELECTED and newname != oldname
+         * If state is OS_DELETED then do nothing.
+         * If newname = oldname then do nothing.
+         * If state is OS_SELECTED and newname != oldname.
          *  than state is changed to OS_UPDATED.
          *
-         *  \param name - new name of the client
+         *  \param name - new name of the discovered device.
          */ 
         void setName(std::string name);
     
+        /* NOT IMPLEMENTED
         std::vector<ClientInfo> getHisroty(time_t date, dateType date_type);
     
         std::vector<ClientInfo> getHistory(int n = 0);
     
-        /* for this deviceDiscoveredId*/
+        // for this deviceDiscoveredId
         std::vector<Ip> getIps();
         
         std::vector<Ip> getIpsv4();
     
         std::vector<Ip> getIpsv6();
-    
-        /*TODO get Ips as history*/
-    
+     
         Ip addIp(std::string ip);
     
         Ip addIp(CIDRAddress ip);
-           
+           */
+        //NOT IMPLEMENTED
         /* merges this deviceDiscovered with deviceDiscovered and 
-         * result is in this
-         * TODO the deviceDiscovered would be deleted. How to solve 
+         * result is in this.
+         * TODO the deviceDiscovered would be deleted. How to solve .
          * history dependences? delete or update with new comp_id or join
-         * with some dummy element
-         */
+         * with some dummy element.
+         
         void mergeWithDeviceDiscovered(DeviceDiscovered deviceDiscovered);
     
         void mergeWithDeviceDiscoveredList
                 (std::vector<DeviceDiscovered> deviceDiscovereds);
-         
+         */
+
+
         ~DeviceDiscovered();
 
         /**
          * \brief Get an Id of the client responsible for detailed info 
-         * about this deviceDiscovered
+         * about this discovered device.
+         *
+         * \return Id of the client responsible for detailed info.
          */
         int getDetailedClientId();
 
         /**
          * \brief Get a name of the client responsible for detailed info 
-         * about this deviceDiscovered
+         * about this discovered device.
+         *
+         * \return Name of the client responsible for detailed info.
          */
         static std::string getDetailedClientName();
+
+        /**
+         * \brief Returns an object to OS_NEW state with initial parameters.
+         * 
+         */
+        void clear();
+        
+        /**
+         * \brief Sets a new device type for the object.
+         *
+         * If state is OS_DELETED then do nothing.
+         * If newtype = oldtype then do nothing.
+         * If state is OS_SELECTED and newtype != oldtype.
+         *  than state is changed to OS_UPDATED.
+         *
+         *  \param deviceTypeId - new deviceTypeid of the discovered device.
+         */ 
+        void setDeviceTypeId(int deviceTypeId);
+        
+        /**
+         * \brief Get an Id of discovered device type.
+         *
+         * \return Id of discovered device type.
+         */
+        int getDeviceTypeId();
 
     protected:
         
         /**
-         * \brief Checks the name length
+         * \brief Checks the name length.
          *
-         * TODO add more checks if needed
+         * \return true if check was successful.
          */
         bool check();
-
+        
         /**
-         *  \brief inserts a row.
+         * \brief Internal method for insert.
          *
-         *  All necessary pre-actions are made in dbsave
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_insert();
         
         /**
-         *  \brief updates a row.
+         * \brief Internal method for update.
          *
-         *  All necessary pre-actions are made in dbsave
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_update();
-        
+
         /**
-         *  \brief deletes a row.
+         * \brief Internal method for delete.
+         * 
+         * All necessary pre-actions are made in dbdelete.
          *
-         *  All necessary pre-actions are made in dbdelete
+         * \return A Number of rows affected.
          */
         unsigned int db_delete();
-    
+        
     private:
         
         /**
-         * \brief An Id of the client which is responsible for detailed info
+         * \brief Returns private fields of this object to initial state.
+         */
+        void clear_this();
+       
+        /**
+         * \brief An Id of the client which is responsible for detailed info.
          *
          * This field is selected from DB in constructor and user can not 
-         * modify it, 
-         * but could recieve its value throgh get-method
+         * modify it, but could access its value throgh get-method.
          */
         int _clientId;
         
         /**
-         * \brief A name of the client which is responsible for detailed info
+         * \brief A name of the client which is responsible for detailed info.
          */
         static std::string _clientName;
         
         /**
-         * \brief name of the deviceDiscovered
+         * \brief A name of the discovered device.
          */
         std::string _name;
     
         /**
-         * TODO here must be all other columns in the table
+         * \brief Id of discovered device type.
          */
-       
-};
+        int _deviceTypeId;
 
-} // end of namaspace
+}; // end of the class
+
+}  // end of namaspace utils
 
 
 #endif //DEVICE_DISCOVERED_H_

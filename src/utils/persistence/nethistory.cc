@@ -90,7 +90,7 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_net_history (id,command,mask,mac,timestampt,ip)"
+        " v_bios_net_history (id,command,mask,mac,timestamp,ip)"
         " values (NULL,:command,:mask,:mac, NOW(),:ip)"
         );
     
@@ -159,7 +159,7 @@ db_update()
 
 unsigned int 
 NetHistory::
-selectById(unsigned int id)
+selectById(int id)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl());  // connects to the db
@@ -168,7 +168,7 @@ selectById(unsigned int id)
      */
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " ip,mask,mac,command,timestampt"
+        " ip,mask,mac,command,timestamp"
         " from"
         " v_bios_net_history v"
         " where v.id = :id"
@@ -194,10 +194,10 @@ selectById(unsigned int id)
         //mac
         row[2].get(_mac);
 
-        //timestampt
+        //timestamp
         time_t tmp_t;
         row[3].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
     
         /**
          * TODO don't forget read all columns here
@@ -265,16 +265,17 @@ setCommand(char command)
     //TODO
     _command = command;
 }
+
 unsigned int
 NetHistory::
-db_select_timestampt()
+db_select_timestamp()
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl());
     
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " v.timestampt"
+        " v.timestamp"
         " from"
         " v_bios_net_history v"
         " where v.id = :id"
@@ -287,10 +288,10 @@ db_select_timestampt()
     try{
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
-        //timestampt
+        //timestamp
         time_t tmp_t;
         row[0].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
 
         //state
         this->setState(ObjectState::OS_SELECTED);
@@ -304,4 +305,4 @@ db_select_timestampt()
 }
 
 
-} //end of namespace
+} //end of namespace utils

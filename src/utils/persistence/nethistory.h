@@ -75,7 +75,7 @@ class NetHistory : public DataBaseTimeObject
 
         CIDRAddress getNetworkCIDR();
 
-        unsigned int selectById(unsigned int id);
+        unsigned int selectById(int id);
 
     protected:
         
@@ -108,11 +108,11 @@ class NetHistory : public DataBaseTimeObject
         unsigned int db_delete();
         
         /**
-         * \brief Selects a timestempt for stored ID.
+         * \brief Selects a timestamp for stored ID.
          *
          * Internal method.
          */
-        unsigned int db_select_timestampt();
+        unsigned int db_select_timestamp();
 
     private:
         
@@ -123,8 +123,9 @@ class NetHistory : public DataBaseTimeObject
         CIDRAddress _ip;
 
         char _command;
-};
 
-} // namespace utils
+}; // end of the class
+
+}  // end of namespace utils
 
 #endif // NETHISTORY_H_

@@ -64,7 +64,7 @@ ClientInfo(std::string url, std::string clientName)
 }
 
 ClientInfo::
-ClientInfo(std::string url, unsigned int clientId)
+ClientInfo(std::string url,  int clientId)
     :DataBaseTimeObject(url)
 {
     this->clear();
@@ -97,7 +97,7 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_client_info (id, id_client, id_discovered_device, ext, timestampt)"
+        " v_bios_client_info (id, id_client, id_discovered_device, ext, timestamp)"
         " values (NULL,:idclient,:iddiscovereddevice, :ext, NOW())"
         );
     
@@ -114,7 +114,7 @@ db_insert()
     }
     
     //We don't want get back to application level time of inserting.
-    //In case of need use after inserting a method selectTimestampt.
+    //In case of need use after inserting a method selectTimestamp.
  
     // n is 0 or 1
     return n;
@@ -157,11 +157,11 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
     conn = tntdb::connectCached(this->getUrl()); 
 
     tntdb::Statement st = conn.prepareCached(
-        "select "
-        "v.id, v.datum, v.info, v.name"
-        "from"
-        "v_client_info_last v"
-        "where v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
+        " select "
+        " v.id, v.datum, v.info, v.name"
+        " from"
+        " v_client_info_last v"
+        " where v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
         );
     
     //   Should return one row or nothing.
@@ -182,7 +182,7 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
         //date
         time_t tmp_t;
         row[1].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
 
         //blobData
         row[2].get(_blobData);
@@ -196,7 +196,7 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
         //deviceDiscoveredId
         _deviceDiscoveredId = deviceDiscoveredId;
                         
-        this->setState(OS_SELECTED);
+        this->setState(ObjectState::OS_SELECTED);
     }
     else if (rsize > 1)
     {
@@ -207,14 +207,14 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
 
 unsigned int
 ClientInfo::
-db_select_timestampt()
+db_select_timestamp()
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl());
     
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " v.timestampt"
+        " v.timestamp"
         " from"
         " v_bios_client_info v"
         " where v.id = :id"
@@ -227,10 +227,10 @@ db_select_timestampt()
     try{
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
-        //timestampt
+        //timestamp
         time_t tmp_t;
         row[0].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
 
         //state
         this->setState(ObjectState::OS_SELECTED);
@@ -251,11 +251,11 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
     conn = tntdb::connectCached(this->getUrl()); 
 
     tntdb::Statement st = conn.prepareCached(
-        "select "
-        "v.id, v.datum, v.info, v.id_client"
-        "from"
-        "v_client_info_last v"
-        "where v.id_deviceDiscovered = :id_devicediscovered and v.client_name = :clientname"
+        " select "
+        " v.id, v.datum, v.info, v.id_client"
+        " from"
+        " v_client_info_last v"
+        " where v.id_deviceDiscovered = :id_devicediscovered and v.client_name = :clientname"
         );
     
     //   Should return one row or nothing.
@@ -276,7 +276,7 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
         //date
         time_t tmp_t;
         row[1].get(tmp_t);
-        this->setTimestampt(tmp_t);
+        this->setTimestamp(tmp_t);
 
         //blobData
         row[2].get(_blobData);
@@ -290,7 +290,7 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
         //deviceDiscoveredId
         _deviceDiscoveredId = deviceDiscoveredId;
                         
-        this->setState(OS_SELECTED);
+        this->setState(ObjectState::OS_SELECTED);
     }
     else if (rsize > 1)
     {
@@ -299,14 +299,14 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
     return rsize;
 }
 
-unsigned int
+ int
 ClientInfo::
 getClientId()
 {
     return _clientId;
 }
 
-unsigned int
+ int
 ClientInfo::
 getDeviceDiscoveredId()
 {
@@ -360,7 +360,7 @@ setDeviceDiscoveredId(int deviceDiscoveredId)
 
 bool
 ClientInfo::
-selectClientName(unsigned int clientId)
+selectClientName( int clientId)
 {
     Client client = Client(this->getUrl());
     client.selectById(clientId);
@@ -373,4 +373,4 @@ selectClientName(unsigned int clientId)
         return false;
 }
 
-} //end namespace
+} //end of namespace utils

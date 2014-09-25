@@ -16,11 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file client.h
-    \brief Basic class for manipulating with the database objects stored 
-    in tha table t_bios_client.
+    \brief A basic class for manipulating with the database objects stored 
+    in the table t_bios_client.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
-*/  
+*/
+
 #ifndef CLIENT_H_
 #define CLIENT_H_
 
@@ -35,12 +36,14 @@ class Client: public DataBaseObject
         /**
          * \brief Creates a new object and specifies a connection.
          *
-         * Creates a new object for the specified url in state OS_NEW
+         * Creates a new object for the specified url in state OS_NEW.
+         *
+         * \param url - connection to the database.
          */
         Client(std::string url);
 
         /**
-         * \brief Selects from the DB a client by its name
+         * \brief Selects from the DB a client by its name.
          *
          * Selects from DB client by name.
          *
@@ -49,105 +52,119 @@ class Client: public DataBaseObject
         unsigned int selectByName(std::string name);
 
         /**
-         * \brief Returns client's name
+         * \brief Gets a client's name.
+         *
+         * \return Client's name.
          */
         std::string getName();
 
         /**
          * \brief Sets a new name for the object.
          *
-         * If state is OS_DELETED then do nothing
-         * If newname = oldname then do nothing
-         * If state is OS_SELECTED and newname != oldname
+         * If state is OS_DELETED then do nothing.
+         * If newname = oldname then do nothing.
+         * If state is OS_SELECTED and newname != oldname.
          *  than state is changed to OS_UPDATED.
          *
-         * \param name - new name of the client
+         * \param name - new name of the client.
          */    
         void setName(std::string name);
         
         /**
-         * \brief Selects from DB a client by ID. Rewrites object.
+         * \brief Selects from DB a client by ID. Rewrites this object.
          *
          * If client was found:
-         * -selects exactly one row
-         * -state changed to OS_SELECTED
+         * -selects exactly one row.
+         * -state changed to OS_SELECTED.
          *
          * If client was not found:
-         * -selects nothing
-         * -everything remains the same
+         * -selects nothing.
+         * -everything remains the same.
          *  
-         * \param id of row in database
+         * \param id of row in database.
          *  
-         * \return A number of rows selected
+         * \return A number of rows selected.
          */
-        unsigned int selectById(unsigned int id);
+        unsigned int selectById( int id);
 
         ~Client();
         
         /**
-         * \brief Selects an Id by name in the DB specified by url
+         * \brief Selects an Id by name in the DB specified by url.
          *
-         * Selects an Id by name in the DB specified by url
+         * Selects an Id by name in the DB specified by url.
          * 
-         * \param url - specifies database
-         * \param name - name of the client
+         * \param url  - specifies database.
+         * \param name - name of the client.
          * 
-         * \return an ID or -1 if nothing was found
+         * \return An ID or -1 if nothing was found.
          */
         static int selectId(std::string url, std::string name);
 
         /**
-         * \brief Returns all fields as string
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * \return Object as string.
          */
         std::string toString();
         
         /**
-         * \brief Returns an object to OS_NEW state with initial parameters
+         * \brief Returns an object to OS_NEW state with initial parameters.
          */
         void clear();
 
     protected:
         
         /**
-         * \brief Internal method for insert 
+         * \brief Internal method for insert.
          *
-         * \return A Number of rows affected 
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_insert();
         
         /**
-         * \brief Internal method for update
+         * \brief Internal method for update.
          *          
-         * \return A Number of rows affected
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_update();
 
         /**
-         * \brief Internal method for delete
+         * \brief Internal method for delete.
          *          
-         * \return A Number of rows affected
+         * All necessary pre-actions are made in dbdelete.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_delete();
         
         /**
-         * \brief Internal method for check before insert or update
+         * \brief Internal method for check before insert or update.
+         *
+         * Checks the length of the name.
+         *
+         * \return true if check was successful.
          */
         bool check();
 
     private:
     
         /**
-         * \brief Returns private fields of this object to initial state
+         * \brief Returns private fields of this object to initial state.
          */
         void clear_this();
         
         /**
-         * \brief A name of the client
+         * \brief A name of the client.
          */
         std::string _name;
 
 };  // end of the class
 
-}   // end of namespace
+}   // end of namespace utils
 
 #endif //CLIENT_H_

@@ -17,9 +17,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \file databasetimeobject.cc
     
-    \brief Basic Class for manipulating with database objects that have timestamptcolumn
+    \brief A basic Class for manipulating with database objects that have timestamp column
 
     This class changes logic of insertion.
+    
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
  
@@ -39,7 +40,14 @@ DataBaseTimeObject::
 DataBaseTimeObject(std::string url)
     :DataBaseObject(url)
 {
-    this->clear();
+    this->clear_this();
+}
+
+void
+DataBaseTimeObject::
+clear_this()
+{
+    _timestamp = time(nullptr); 
 }
 
 DataBaseTimeObject::
@@ -52,62 +60,56 @@ std::string
 DataBaseTimeObject::
 toString()
 {
-    time_t t = std::time(nullptr);
-    std::string timestr = ctime(&t);
+    std::string timestr = ctime(&_timestamp);
     std::string tmp =   "url="  + this->getUrl()                   + ";" +
                         "id="   + std::to_string(this->getId())    + ";" +
-                        "state=" + utils::objectStatetoString(this->getState()) + ";" +
+                        "state=" + objectStatetoString(this->getState()) + ";" +
                         "time=" + timestr;
     return tmp;
 }
  
-unsigned int                // number of row affected
+unsigned int                
 DataBaseTimeObject::
 dbsave()
 {
-    if ( this->getState() == OS_NEW )
+    if ( this->getState() == ObjectState::OS_NEW )
     {
         if (this->check())  // if check is true (ok), then proceed
         {
             int n = this->db_insert();
             if ( n > 0 )
-                this->setState(OS_INSERTED);
+                this->setState(ObjectState::OS_INSERTED);
             return n;
         }
         else                // if check is false, then discard an insert
             return 0;
     }
     /* TODO but now updates are not allowed
-    else if ( this->getState() == OS_UPDATED )
+    else if ( this->getState() == ObjectState::OS_UPDATED )
     {
         if (this->check())
         {
             int n = this->db_update();
             if ( n > 0 )
-                this->getState() = OS_SELECTED;
+                this->getState() = ObjectState::OS_SELECTED;
             return n;        
         }
         else
             return 0;
     }*/
-    else if ( (this->getState() == OS_SELECTED ) || (this->getState() == OS_INSERTED))
+    else //if ( (this->getState() == ObjectState::OS_SELECTED ) || ( this->getState() == ObjectState::OS_INSERTED) 
+        //|| (this->getState() == ObjectState::OS_DELETED) )
     {
-        // do nothing, while it is in actual state
+        // do nothing
         return 0;
     }
-    else    //this->getState() == OS_DELETED
-    {
-        //do nothing while this object is outofdate
-        return 0;
-    }
-
 }
 
 time_t
 DataBaseTimeObject::
-getTimestampt()
+getTimestamp()
 {
-    return _timestampt;
+    return _timestamp;
 }
 
 void
@@ -115,22 +117,23 @@ DataBaseTimeObject::
 clear()
 {
     DataBaseObject::clear();
-    _timestampt = time(nullptr); 
+    this->clear_this();
 }
 
 unsigned int
 DataBaseTimeObject::
-selectTimestampt()
+selectTimestamp()
 {
-    if ( this->getState() == utils::ObjectState::OS_INSERTED )
-        return this->db_select_timestampt();
+    if ( this->getState() == ObjectState::OS_INSERTED )
+        return this->db_select_timestamp();
+    return 0;
 }
 
 void
 DataBaseTimeObject::
-setTimestampt(time_t timestampt)
+setTimestamp(time_t timestamp)
 {
-    _timestampt = timestampt;
+    _timestamp = timestamp;
 }
 
 } // end namespace utils

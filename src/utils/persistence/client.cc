@@ -20,7 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     stored in the table t_bios_client.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
-*/  
+*/
+ 
 #include "client.h"
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
@@ -75,14 +76,14 @@ int Client::selectId(std::string url, std::string name)
     conn = tntdb::connectCached(url);
 
     tntdb::Statement st = conn.prepareCached(
-        "select "
-        "v.id"
-        "from"
-        "v_bios_client v"
-        "where v.name = :name"
+        " select "
+        " v.id"
+        " from"
+        " v_bios_client v"
+        " where v.name = :name"
         );
           
-    unsigned int tmp = -1;
+    int tmp = -1;
     
     try{
         tntdb::Value result = st.setString("name", name).selectValue();
@@ -159,7 +160,9 @@ db_update()
         );
     
     // update one row or nothing
-    unsigned int n  = st.setString("name", this->getName()).setInt("id",this->getId()).execute();
+    unsigned int n  = st.setString("name", this->getName()).
+                         setInt("id",this->getId()).
+                         execute();
     
     // n is 0 or 1
     return n;
@@ -174,7 +177,7 @@ selectByName(std::string name)
     
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " id"
+        " v.id"
         " from"
         " v_bios_client v"
         " where v.name = :name"
@@ -208,14 +211,14 @@ selectByName(std::string name)
 
 unsigned int 
 Client::
-selectById(unsigned int id)
+selectById( int id)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
     
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " name"
+        " v.name"
         " from"
         " v_bios_client v"
         " where v.id = :id"
@@ -249,13 +252,13 @@ void
 Client::
 setName(std::string name)
 {
-    if ( (_name != name) && (this->getState() != OS_DELETED) )
+    if ( (_name != name) && (this->getState() != ObjectState::OS_DELETED) )
     {
         switch (this->getState()){
-            case OS_SELECTED: 
-                this->setState(OS_UPDATED);
-            case OS_UPDATED:
-            case OS_NEW:
+            case ObjectState::OS_SELECTED: 
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
                 _name = name;
                 break;
             default:
@@ -276,4 +279,4 @@ check()
         return false;
 }
 
-}  // end of namespace
+}  // end of namespace utils

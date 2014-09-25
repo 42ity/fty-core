@@ -16,8 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file devicecype.cc
-    \brief Realisation of the class for manipulating with the database objects
-    stored in the table t_bios_device_type.
+    \brief Realisation of the class for manipulating with the database 
+    objects stored in the table t_bios_device_type.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -31,7 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace utils {
 
 /////////////////////////////////////////////////////
-////////////        DeviceType    ///////////////////////
+////////////        DeviceType    ///////////////////
 /////////////////////////////////////////////////////
 
 void
@@ -75,17 +75,17 @@ int DeviceType::selectId(std::string url, std::string name)
     conn = tntdb::connectCached(url);
 
     tntdb::Statement st = conn.prepareCached(
-        "select "
-        "v.id"
-        "from"
-        "v_device_type v"
-        "where v.name = :name"
+        " select "
+        " v.id"
+        " from"
+        " v_device_type v"
+        " where v.name = :name"
         );
           
-    unsigned int tmp = -1;
+    int tmp = -1;
     
     try{
-        tntdb::Value result = st.setString("name", name).selectValue();
+        tntdb::Value result = st.setString("name", name).selectValue(); 
         result.get(tmp);
     }
     catch (const tntdb::NotFound &e){
@@ -159,7 +159,9 @@ db_update()
         );
     
     // update one row or nothing
-    unsigned int n  = st.setString("name", this->getName()).setInt("id",this->getId()).execute();
+    unsigned int n  = st.setString("name", this->getName()).
+                         setInt("id",this->getId()).
+                         execute();
     
     // n is 0 or 1
     return n;
@@ -208,7 +210,7 @@ selectByName(std::string name)
 
 unsigned int 
 DeviceType::
-selectById(unsigned int id)
+selectById(int id)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
@@ -249,13 +251,13 @@ void
 DeviceType::
 setName(std::string name)
 {
-    if ( (_name != name) && (this->getState() != OS_DELETED) )
+    if ( (_name != name) && (this->getState() != ObjectState::OS_DELETED) )
     {
         switch (this->getState()){
-            case OS_SELECTED: 
-                this->setState(OS_UPDATED);
-            case OS_UPDATED:
-            case OS_NEW:
+            case ObjectState::OS_SELECTED: 
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
                 _name = name;
                 break;
             default:
@@ -276,4 +278,4 @@ check()
         return false;
 }
 
-}  // end of namespace
+}  // end of namespace utils

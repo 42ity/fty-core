@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file clientinfo.h
-    \brief Basic Class for manipulating with database object t_bios_client_info
+    \brief A basic class for manipulating with database objects stored 
+    in the table t_bios_client_info.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -34,95 +35,95 @@ class ClientInfo : public DataBaseTimeObject
     public:
 
         /**
-         * \brief Creates a new object with specified connection
+         * \brief Creates a new object with specified connection.
          */
         ClientInfo(std::string url);
 
         /** 
-         * \brief creates a new object with specified connection for a client clientName
+         * \brief creates a new object with specified connection for a client clientName.
          */
         ClientInfo(std::string url, std::string clientName);
         
         /** 
-         * \brief creates a new object with specified connection for a client clientId
+         * \brief creates a new object with specified connection for a client clientId.
          */
-        ClientInfo(std::string url, unsigned int clientId);
+        ClientInfo(std::string url,  int clientId);
 
         /**
-         * \brief Returns all fields as string
+         * \brief Returns all fields as string.
          */
         std::string toString();
         
         /**
-         * \Brief Returns an object to OS_NEW state with initial parameters
+         * \Brief Returns an object to OS_NEW state with initial parameters.
          */
         void clear();
         
         /**
-         * \brief  Selects the last information about device with deviceDiscoveredId 
-         * provided by client with clientId(clientName) stored in this object
+         * \brief  Selects the last information about device with deviceDiscoveredId .
+         * provided by client with clientId(clientName) stored in this object.
          *
-         * Takes existing clientId and deviceDiscoveredId
-         * \return Returns a number of selected rows
+         * Takes existing clientId and deviceDiscoveredId.
+         * \return Returns a number of selected rows.
          */
         unsigned int selectLastRecord();
 
         /**
-         * \brief  Selects the last information about device with deviceDiscoveredId 
-         * provided by client with clientId
+         * \brief  Selects the last information about device with deviceDiscoveredId. 
+         * provided by client with clientId.
          *
          * Takes clientId and deviceDiscoveredId as parameters.
-         * In case of success (one row found) rewrite all object 
+         * In case of success (one row found) rewrite all object .
          * and put it in state OS_SELECTED. In other cases nothing to change.
          * 
-         * \return Returns a number of selected rows
+         * \return Returns a number of selected rows.
          */
         unsigned int selectLastRecord(int clientId, int deviceDiscoveredId);
 
         /**
-         * \brief  Selects the last information about device with deviceDiscoveredId 
-         * provided by client with clientName
+         * \brief  Selects the last information about device with deviceDiscoveredId .
+         * provided by client with clientName.
          *
          * Takes clientName and deviceDiscoveredId as parameters.
-         * In case of success (one row found) rewrite all object 
+         * In case of success (one row found) rewrite all object .
          * and put it in state OS_SELECTED. In other cases nothing to change.
          * 
-         * \return Returns a number of selected rows
+         * \return Returns a number of selected rows.
          */
         unsigned int selectLastRecord(std::string clientName, int deviceDiscoveredId);
         
         /**
-         * \brief Get an id of deviceDiscovered
+         * \brief Get an id of deviceDiscovered.
          */
-        unsigned int getDeviceDiscoveredId();
+        int getDeviceDiscoveredId();
 
         /**
-         * \brief Get an id of client that gathered that info
+         * \brief Get an id of client that gathered that info.
          */
-        unsigned int getClientId();
+        int getClientId();
 
         /**
-         * \brief Get a blob data
+         * \brief Get a blob data.
          */
         std::string getBlobData();
 
         /**
-         * \brief Get a clientname
+         * \brief Get a clientname.
          */
         std::string getClientName();
 
         /**
-         * \brief set a clientId, clientName is selected from DB
+         * \brief set a clientId, clientName is selected from DB.
          */
         void  setClientId(int clientId);
         
         /**
-         * \brief set a DeviceDiscoveredId
+         * \brief set a DeviceDiscoveredId.
          */
         void  setDeviceDiscoveredId(int deviceDiscoveredId);
 
         /**
-         * \brief set a new blobData
+         * \brief set a new blobData.
          */
         void  setBlobData(std::string blobData);
         
@@ -173,44 +174,44 @@ class ClientInfo : public DataBaseTimeObject
     protected:
         
         /**
-         * \brief TODO if need
+         * \brief TODO if need.
          */
         bool check(){};
 
         /**
-         *  \brief inserts a row.
+         *  \brief inserts a row..
          *
-         *  All necessary pre-actions are made in dbsave
+         *  All necessary pre-actions are made in dbsave.
          */
         unsigned int db_insert();
         
         /**
          *  \brief updates a row.
          *
-         *  All necessary pre-actions are made in dbsave
+         *  All necessary pre-actions are made in dbsave.
          */
         unsigned int db_update();
         
         /**
          *  \brief deletes a row.
          *
-         *  All necessary pre-actions are made in dbdelete
+         *  All necessary pre-actions are made in dbdelete.
          */
         unsigned int db_delete();
         
         /**
          * \brief Selects a timestempt for stored ID.
          *
-         *  All necessary pre-actions are made in selectTimestampt
+         *  All necessary pre-actions are made in selectTimestamp.
          */
-        unsigned int db_select_timestampt();
+        unsigned int db_select_timestamp();
 
         /**
-         * \brief Selects a clientname for current clientid
+         * \brief Selects a clientname for current clientid.
          *
-         * \return Returns true if client with specified ID was found
+         * \return Returns true if client with specified ID was found.
          */
-        bool selectClientName(unsigned int clientId);
+        bool selectClientName( int clientId);
         
     private:
         /////////////////////////////////
@@ -218,12 +219,12 @@ class ClientInfo : public DataBaseTimeObject
         /////////////////////////////////
 
         /**
-         * \brief Id of the client who gathered this info
+         * \brief Id of the client who gathered this info.
          */
         int _clientId;
 
         /**
-         * \brief An id of the discovered device which was scanned
+         * \brief An id of the discovered device which was scanned.
          */
         int _deviceDiscoveredId;
 
@@ -237,13 +238,14 @@ class ClientInfo : public DataBaseTimeObject
         ////////////////////////////////
 
         /**
-         * \brief Name of the client who gathered this info
+         * \brief Name of the client who gathered this info.
          *
          * Calculates automatically. Cannot be changed manually.
          */
         std::string _clientName;
-};
 
-} // end of namespace utils
+}; // end of the class
+
+}  // end of namespace utils
 
 #endif // CLIENTINFO_H_

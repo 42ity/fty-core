@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file databasetimeobject.h
-    \brief Basic Class for manipulating with database objects that have timestamptcolumn
+    \brief A basic class for manipulating with database objects that have timestamp column.
 
     This class changes logic of insertion.
       
@@ -36,7 +36,7 @@ namespace utils {
 /////////////////////////////////////////////////
 
 /**
- * Represents general methods for manipulating database objects that have timestampt column
+ * \brief Represents general methods for manipulating database objects that have timestamp column.
  */
 
 class DataBaseTimeObject: public DataBaseObject
@@ -44,14 +44,14 @@ class DataBaseTimeObject: public DataBaseObject
     public:
         
         /**
-         * \brief Save this record to database
+         * \brief Saves this object to database.
          *
-         * It does only insert statement and returns a number 
-         * of rows affected. 
-         * During the inserting an ID would be changed in
-         * case of success.
-         * After inserting object goes to the state OS_INSERTED.
-         * It means, that all fields except timestampt coinsides with database
+         * It does only insert statement.
+         *
+         * In case od success an Id would be changed and state would be OS_INSERTED.
+         * It means, that all fields except timestamp coinsides with database.
+         * 
+         * \return A number of rows affected. 
          */
         unsigned int dbsave();
         
@@ -59,95 +59,121 @@ class DataBaseTimeObject: public DataBaseObject
          * \brief Creates a new object and specifies a connection.
          *
          * Creates a new object for the specified url in state OS_NEW.
+         * 
+         * \param url - connection to the database
          */
         DataBaseTimeObject(std::string url);
 
-        //TODO
         ~DataBaseTimeObject();
         
         /**
-         * \brief Returns a string of all fields, incl timestampt 
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * \return Object as string.
          */
         std::string toString();
 
         /**
-         * \Brief Returns an object to OS_NEW state with initial parameters
+         * \brief Returns an object to OS_NEW state with initial parameters.
+         * 
+         * Must be rewritten in every child-class.
          */
         virtual void clear();
 
-        /* TODO assignment and compasisson
-           DataBaseTimeObject ==
-
-           DataBaseTimeObject =
-
-        */
-
         /**
-         * \brief Returns a time of inserting. This field is valid only if the object has state OS_selected.
+         * \brief Gets a timestamp.
+         *
+         * This field is valid only if the object has state OS_SELECTED.
+         *
+         * \return A timestamp.
          */
-        time_t getTimestampt();
+        time_t getTimestamp();
 
         /**
-         * \brief Selects a timestampt from DB.
+         * \brief Selects a timestamp from DB.
          *
          * It selects only if object has state OS_INSERTED.
-         * While in OS_NEW - no,
-         *       in OS_DELETED non valid
-         *       in OS_UPDATED this state isn't use here.
-         *       in OS_SELETED is already selected
+         * While in OS_NEW - nothing to select,
+         *       in OS_DELETED object is already not valid
+         *       in OS_UPDATED this state is invalid for historical data.
+         *       in OS_SELETED is already selected.
          */
-        unsigned int selectTimestampt();
+        unsigned int selectTimestamp();
 
     protected:
+        
         /**
-         * \brief internal method for uinsert
-         */ 
+         * \brief Internal method for insert.
+         *
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
+         */
         virtual unsigned int db_insert(){return 1;};
         
         /**
-         *  \brief internal method for update
-         * TODO but update is not allowed
+         * \brief Internal method for update.
+         *
+         * \return A number of rows affected.
          */
         unsigned int db_update(){return 0;};
 
         /**
-         *  \brief internal method for delete
-         * Must be rewritten in every child-class
+         * \brief Internal method for delete.
+         *
+         * Must be rewritten in every child-class.
+         *
+         * \return A number of rows affected.
          */
         virtual unsigned int db_delete(){return 1;};
         
         /**
-         *  \brief internal method for check before insert or update
-         * Must be rewritten in every child-class
+         * \brief Internal method for check before insert or update.
+         * 
+         * Must be rewritten in every child-class.
+         *
+         * \return true if check was successful.
          */
         virtual bool check(){return true;};
 
         /**
-         * \brief Selects a timestempt for stored ID.
+         * \brief Selects a timestamp for stored Id.
          *
          * Internal method.
-         * Mustbe rewritten in every child-class
+         *
+         * Mustbe rewritten in every child-class.
+         * 
+         * \return true if check was successful.
          */
-        virtual unsigned int db_select_timestampt(){};
+        virtual unsigned int db_select_timestamp(){};
 
         /**
-         * Is used for filling the object. It is not designed for 
+         * \brief Sets a new Timestamp for the object.
+         *
+         * It is used for filling the object. It is not desiened for 
          * using outside the child classes.
+         *
+         * \param A new timestamp.
          */
-        void setTimestampt(time_t timestampt);
+        void setTimestamp(time_t timestamp);
         
     private:
+        
+        /**
+         * \brief Returns private fields of this object to initial state.
+         */
+        void clear_this();
 
         /**
          * \brief Time of inserting. Is filled automatically with NOW() statement of database.
          *
          * User cannot modify it manually.
          */
-        time_t _timestampt;
+        time_t _timestamp;
 
-};
+}; // end of the class
 
 
-} // namespace utils
+}  // end of namespace utils
 
 #endif // DATABASETIMEOBJECT_H_
