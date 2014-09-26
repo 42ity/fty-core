@@ -140,8 +140,12 @@ class mock_db
   \note Although we try to follow a no in-out parameter policy, an alternative
         to this would be std::list<...>& list_networks(), call new operator
         inside and propagate memory management onto the caller. 
+    
+MVY: time to learn std::unique_ptr or rvalue references and move semantics, thus
+    std::list<network_dt> && network_list() ;-)
   */
   void network_list(std::list<network_dt>& networks) const; 
+  void network_mask_list(std::list<network_dt>& networks) const; 
 
  private:
   std::list<network_dt> networks_;

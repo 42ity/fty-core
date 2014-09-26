@@ -68,11 +68,11 @@ static struct option long_options[] = {
 };
 
 static void do_network_help() {
-    fputs("cli network {list|add|remove} command-arguments\n", stderr);
+    fputs("cli network {show|add|remove} command-arguments\n", stderr);
     fputs("\n", stderr);
-    fputs("            list - list of networks to monitor\n", stderr);
+    fputs("            show - list of networks to monitor\n", stderr);
     fputs("            add ip-address/prefixlen - add new network range to monitor\n", stderr);
-    fputs("            remove ip-address/prefixlen - remove network range from monitoring\n", stderr);
+    fputs("            del ip-address/prefixlen - remove network range from monitoring\n", stderr);
 }
 
 
@@ -98,14 +98,14 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
   command.Append("network");
 
   ////  LIST  ////
-  if (argv[optind] && strcmp(argv[optind], "list") == 0) {
+  if (argv[optind] && strcmp(argv[optind], "show") == 0) {
     json["schema"] = utils::json::enumtable(
       utils::json::MessageTypesEnum::CliNetworkList);
     command.Append("list");    
     json["command"] = command;
   ////  ADD, REMOVE   ////
   } else if(argv[optind] &&
-            (strcmp(argv[optind], "add") == 0 || strcmp(argv[optind], "remove") == 0)) {
+            (strcmp(argv[optind], "add") == 0 || strcmp(argv[optind], "del") == 0)) {
     libvariant::Variant data(libvariant::VariantDefines::MapType);
     json["schema"] = utils::json::enumtable(
       utils::json::MessageTypesEnum::CliNetworkAddDel);
@@ -141,7 +141,7 @@ static bool json_pack(const char **gargv, int argc,  std::string& result) {
 }
 
 static int
-do_network_list(
+do_network_show(
 FILE *stream, const char* message, const struct global_opts *gopts) {
 	assert(stream);
   if (stream == NULL) {
@@ -305,7 +305,7 @@ return define/enum... however in the time given, i wasn't able to make it work..
     return EXIT_FAILURE;
   }
 */
-  if (argv[optind] && strcmp(argv[optind], "list") == 0) {
+  if (argv[optind] && strcmp(argv[optind], "show") == 0) {
     char buffer[ZMQ_RECV_BUFFER_SIZE+1];
     ret = zmq_recv(socket, buffer, ZMQ_RECV_BUFFER_SIZE, 0);
     buffer[ZMQ_RECV_BUFFER_SIZE] = '\0';
@@ -315,7 +315,7 @@ return define/enum... however in the time given, i wasn't able to make it work..
       log_error("zmq_recv failed: %m.\n");
       return EXIT_FAILURE;
     }
-    return do_network_list(stdout, buffer, gopts);
+    return do_network_show(stdout, buffer, gopts);
   }
   zmq_close(socket);
   zmq_ctx_destroy(context);
