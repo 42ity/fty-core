@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include <devicetype.h>
-
-std::string urldt = "mysql:db=box_utf8;user=root";
+tntdb::Connection conn = tntdb::connect();
+std::string urldt = "sqlite:box_utf8.db";
 
 std::string osnewdt       = utils::objectStatetoString(utils::ObjectState::OS_NEW);
 std::string osdeleteddt   = utils::objectStatetoString(utils::ObjectState::OS_DELETED);

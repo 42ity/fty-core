@@ -132,7 +132,7 @@ drop view v_bios_discovered_ip;
 create view v_bios_discovered_ip as select id_ip id, iph,ipl, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
 
 drop view v_bios_net_history;
-create view v_bios_net_history as select id_net_history , ipl,iph, ip , mac,mask, command, timestamp from t_bios_net_history;
+create view v_bios_net_history as select id_net_history id, ipl,iph, ip , mac,mask, command, timestamp from t_bios_net_history;
 
 
 
