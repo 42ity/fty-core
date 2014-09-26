@@ -16,4 +16,5 @@ see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23 for m
 
 src/cli/cli-network.cc
 ---------------------
-Command line output does not match http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
+ * Command line output does not match http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
+ * cli should use cidr to perform check on input values
