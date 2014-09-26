@@ -35,8 +35,8 @@ bool mock_db::network_insert(const char* interface, const char* ipversion,
     return false;
   }
   std::lock_guard<std::mutex> lock_guard(networks_mutex_);
-  std::list<network_dt>::const_iterator it;
-  for (it = networks_.cbegin(); it != networks_.cend(); it++) {    
+ 
+ for (auto it = networks_.cbegin(); it != networks_.cend(); it++) {    
     if (it->interface.compare(interface) == 0 &&
         it->ipversion.compare(ipversion) == 0 &&
         it->ipaddress.compare(ipaddress) == 0 &&
@@ -68,15 +68,11 @@ const char *ipversion, const char *ipaddress, uint8_t prefixlen) {
     if (it->ipversion.compare(ipversion) == 0 &&
         it->ipaddress.compare(ipaddress) == 0 &&
         it->prefixlen == prefixlen) {
+      networks_mask_.erase(it);
       break;
     }
   }
-  // if (it != networks_mask_.cend()) { // gcc v.4.9
-  if (it != networks_mask_.end()) {
-    networks_mask_.erase(it);
-    return true;
-  }
-
+  
   // or add a manual network
   // for (it = networks_.cbegin(); it != networks_.cend(); it++) { // gcc v.4.9
   for (it = networks_.begin(); it != networks_.end(); it++) {
@@ -99,8 +95,18 @@ bool
 mock_db::network_remove(const char* ipversion, const char* ipaddress,
                         uint8_t prefixlen) {
   std::lock_guard<std::mutex> lock_guard(networks_mutex_);
-  std::list<network_dt>::const_iterator it;
-  for (it = networks_mask_.cbegin(); it != networks_mask_.cend(); it++) {
+
+  for (auto it = networks_.begin(); it != networks_.end(); it++) {
+      if (it->type == "manual" &&
+          it->ipaddress == ipaddress &&
+          it->prefixlen == prefixlen) {
+
+          networks_.erase(it);
+          break;
+      }
+  }
+
+  for (auto it = networks_mask_.cbegin(); it != networks_mask_.cend(); it++) {
     if (it->ipversion.compare(ipversion) == 0 &&
         it->ipaddress.compare(ipaddress) == 0 &&
         it->prefixlen == prefixlen) {
@@ -148,20 +154,14 @@ mock_db::network_remove(const char *interface, const char *ipversion,
 void mock_db::network_list(std::list<network_dt>& result) const {
   std::lock_guard<std::mutex> lock_guard(networks_mutex_);
   result.clear();
-  std::list<network_dt>::const_iterator it;
-  for (it = networks_.cbegin(); it != networks_.cend(); it++) {
-    result.push_back(*it);
-    std::list<network_dt>::const_iterator it_mask;
-    for (it_mask = networks_mask_.cbegin();
-         it_mask != networks_mask_.cend();
-         it_mask++) {
-      if (it->ipversion.compare(it_mask->ipversion) == 0 &&
-          it->ipaddress.compare(it_mask->ipaddress) == 0 &&
-          it->prefixlen == it_mask->prefixlen) {
-        result.back().type.assign("deleted");
-      }  
-    }
-  }  
+  for (auto it : networks_) {
+    result.push_back(it);
+  }
+
+  for (auto it : networks_mask_) {
+      it.type = "deleted";
+    result.push_back(it);
+  }
   return; 
 }
 

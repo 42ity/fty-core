@@ -31,6 +31,9 @@ References: BIOS-248
 #include <iostream>
 #include <algorithm>
 #include <list>
+#include <map>
+#include <utility>
+#include <set>
 
 //#include <jsoncpp/json/json.h>
 
@@ -42,6 +45,54 @@ References: BIOS-248
 #include "utilities.h"
 #include "utilities_zeromq.h"
 #include "../utils/messages/json_schemas.h"
+
+// this is horribly ineffecient, so we know why we need real DB (even sqlite would do it better)
+std::list<network_dt> rfc10_networks(const std::list<network_dt> &networks) {
+    std::list<network_dt> ret;
+    std::map<std::pair<std::string, uint8_t>, std::string> filtm;
+    
+    for (auto it = networks.cbegin(); it != networks.cend(); it++) {
+        
+        auto ip = make_pair(it->ipaddress, it->prefixlen);
+        
+        if (filtm.count(ip) == 0) {
+            filtm[ip] = it->type;
+            continue;
+        }
+
+        // "D" overrides 'em all
+        if (it->type == "deleted") {
+            filtm[ip] = "deleted";
+            continue;
+        }
+
+        if (filtm[ip] == "automatic") {
+            continue;
+        }
+
+        filtm[ip] == "manual";
+    }
+
+    std::set<std::pair<std::string, uint8_t>> printed;    
+
+    //convert map back to list
+    for (auto it = networks.cbegin(); it != networks.cend(); it++) {
+        
+        auto ip = make_pair(it->ipaddress, it->prefixlen);
+
+        if (printed.count(ip) == 1) {
+            continue;
+        }
+        printed.insert(ip);
+
+        auto item = *it;
+        item.type = filtm[ip];
+        ret.push_back(item);
+
+    }
+    return ret;
+
+}
 
 void worker(int socket_type, const char *connection, mock_db *db, int id) {
   zmq::context_t context(1);
