@@ -49,6 +49,15 @@ DeviceType(std::string url)
 }
 
 DeviceType::
+DeviceType(std::string url, std::string name)
+    :DataBaseObject(url)
+{
+    this->clear_this();
+    _name = name;
+}
+
+
+DeviceType::
 ~DeviceType()
 {
     //TODO
@@ -69,6 +78,14 @@ getName()
     return _name;
 }
 
+std::string
+DeviceType::
+toString()
+{
+    std::string tmp = DataBaseObject::toString();
+    return tmp + ";" + "name="+_name;
+}
+
 int DeviceType::selectId(std::string url, std::string name)
 {
     tntdb::Connection conn; 
@@ -78,7 +95,7 @@ int DeviceType::selectId(std::string url, std::string name)
         " select "
         " v.id"
         " from"
-        " v_device_type v"
+        " v_bios_device_type v"
         " where v.name = :name"
         );
           

@@ -176,7 +176,7 @@ class ClientInfo : public DataBaseTimeObject
         /**
          * \brief TODO if need.
          */
-        bool check(){};
+        bool check();
 
         /**
          *  \brief inserts a row..

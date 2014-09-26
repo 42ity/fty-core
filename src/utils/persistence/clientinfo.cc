@@ -87,6 +87,16 @@ unsigned int ClientInfo::selectLastRecord()
     return  this->selectLastRecord(this->_clientId,this->_deviceDiscoveredId);
 }
 
+bool
+ClientInfo::
+check()
+{
+    if ( _clientId > 0 )    //_clientId is NOTNULL
+        return true;
+    else
+        return false;
+}
+
 unsigned int 
 ClientInfo::
 db_insert()
@@ -102,11 +112,15 @@ db_insert()
         );
     
     // Insert one row or nothing
-    unsigned int n  = st.setInt("idclient", _clientId).
-                         setInt("iddiscovereddevice",_deviceDiscoveredId).
-                         setString("ext",_blobData).
-                         execute();
-    
+    st.setInt("idclient", _clientId).
+       setString("ext",_blobData);
+ 
+    unsigned int n = 0;
+    if ( _deviceDiscoveredId == -1 )
+        n = st.setNull("iddiscovereddevice").execute();
+    else
+        n = st.setInt("iddiscovereddevice",_deviceDiscoveredId).execute();
+
     if ( n == 1 )
     {
         int newId =  conn.lastInsertId();

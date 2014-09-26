@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file devicetype.h
-    \brief Class for manipulating with the database objects stored 
+    \brief A class for manipulating with the database objects stored 
     in the table t_bios_device_type.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -44,11 +44,21 @@ class DeviceType: public DataBaseObject
          * \param url - connection to the database.
          */
         DeviceType(std::string url);
+        
+        /**
+         * \brief Creates a new object with specified name and specifies a connection.
+         *
+         * Creates a new object with specified name for the specified url in state OS_NEW.
+         *
+         * \param name - name of the object
+         * \param url  - connection to the database.
+         */
+        DeviceType(std::string url, std::string name);
 
         /**
          * \brief Selects from the DB a device type by its name.
          *
-         * Select from DB device type by name.
+         * Selects from DB device type by name.
          *
          * \return A number of rows selected.
          */
@@ -82,7 +92,7 @@ class DeviceType: public DataBaseObject
          * -selects nothing.
          * -everything remains the same.
          *  
-         * \param id of row in database.
+         * \param id - id of the row in database.
          *  
          * \return A number of rows selected.
          */

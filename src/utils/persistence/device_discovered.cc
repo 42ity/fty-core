@@ -135,7 +135,7 @@ DeviceDiscovered::
 check()
 {
     if ( _name.length() <= this->getNamesLength() )
-        if ( _deviceTypeId > 0 )    // if this field is ok.
+        if ( _deviceTypeId > 0 )    // if this field is  notNULL
             return true;
         else
             return false;

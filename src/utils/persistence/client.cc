@@ -70,6 +70,13 @@ getName()
     return _name;
 }
 
+std::string
+Client::
+toString()
+{
+    std::string tmp = DataBaseObject::toString();
+    return tmp + ";" + "name="+_name;
+}
 int Client::selectId(std::string url, std::string name)
 {
     tntdb::Connection conn; 

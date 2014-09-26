@@ -184,7 +184,8 @@ unsigned int
 DataBaseObject::
 reload()
 {
-    if ((_state != ObjectState::OS_NEW) && (_state != ObjectState::OS_DELETED))
+    if (( _state != ObjectState::OS_NEW ) && ( _state != ObjectState::OS_DELETED ) && 
+        ( _state != ObjectState::OS_SELECTED ) )
     {
         return this->selectById(_id);
     }
