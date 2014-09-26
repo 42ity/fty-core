@@ -15,14 +15,15 @@ DROP TABLE t_bios_device_type;
 
 CREATE TABLE t_bios_device_type(
     id_device_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(25),
-    PRIMARY KEY(id_device_type)
-);
+    name VARCHAR(25) NOT NULL,
+    PRIMARY KEY(id_device_type),
+    UNIQUE INDEX `UI_t_bios_device_type_name` (`name` ASC)
+)AUTO_INCREMENT = 2;
 
 CREATE TABLE t_bios_discovered_device(
     id_discovered_device SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(25),
-    id_device_type TINYINT UNSIGNED,
+    id_device_type TINYINT UNSIGNED NOT NULL,
 
     PRIMARY KEY(id_discovered_device),
     
@@ -38,7 +39,7 @@ CREATE TABLE t_bios_discovered_ip(
     ipl BIGINT UNSIGNED,
     iph BIGINT UNSIGNED,
     id_discovered_device SMALLINT UNSIGNED,
-    timestamp datetime,
+    timestamp datetime NOT NULL,
     ip char(19),
     PRIMARY KEY(id_ip),
 
@@ -57,7 +58,7 @@ CREATE TABLE t_bios_net_history(
     ipl BIGINT UNSIGNED,
     iph BIGINT UNSIGNED,
     ip CHAR(19),
-    timestamp datetime,
+    timestamp datetime NOT NULL,
 
     PRIMARY KEY(id_net_history)
 );
@@ -66,14 +67,16 @@ CREATE TABLE t_bios_client(
     id_client TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(25),
 
-    PRIMARY KEY(id_client)
+    PRIMARY KEY(id_client),
+
+    UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
 );
 
 CREATE TABLE t_bios_client_info(
     id_client_info BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     id_client TINYINT UNSIGNED NOT NULL,
     id_discovered_device SMALLINT UNSIGNED,
-    timestamp datetime,
+    timestamp datetime NOT NULL,
     ext BLOB,
 
     PRIMARY KEY(id_client_info),
@@ -90,11 +93,16 @@ CREATE TABLE t_bios_client_info(
         ON DELETE CASCADE
 );
 
+insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
 
 
-insert into t_bios_discovered_device(id_discovered_device,name) values(NULL,"select_device");
-insert into t_bios_discovered_device(id_discovered_device,name) values(NULL,"select_device");
-insert into t_bios_discovered_device(id_discovered_device,name) values(NULL,"set_name");
+
+
+
+
+insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
+insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
+insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"set_name",1);
 
 insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");

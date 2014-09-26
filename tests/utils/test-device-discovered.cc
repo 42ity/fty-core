@@ -58,14 +58,14 @@ TEST_CASE("Device discovered selectbyname","[dbdevice][select][byname][9]"){
                             "id="   + std::to_string(1)     + ";" +
                             "state=" + osselected           + ";" +
                             "name=" + newname+ ";" +
-                            "devicetypeid=" + std::to_string(-1);
+                            "devicetypeid=" + std::to_string(1);
 ;
     
     std::string expected2 = "url="  + urldev                + ";" +
                             "id="   + std::to_string(2)     + ";" +
                             "state=" + osselected           + ";" +
                             "name=" + newname+ ";" +
-                            "devicetypeid=" + std::to_string(-1);
+                            "devicetypeid=" + std::to_string(1);
 ;
 
     utils::DeviceDiscovered dbdevice1 = dbdevices.front();
