@@ -13,3 +13,8 @@ GCL: Major comments are same as previous on PR BIOS-347 :
 -> the printf calls should be remplaced by a right log API usage.
 
 see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23 for more detail.
+
+src/cli/cli-network.cc
+---------------------
+ * Command line output does not match http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
+ * cli should use cidr to perform check on input values
