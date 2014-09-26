@@ -153,7 +153,7 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_device_discovered (id,name,id_device_type)"
+        " v_bios_discovered_device (id,name,id_device_type)"
         " values (NULL,:name,:iddevicetype)"
         );
     
@@ -181,7 +181,7 @@ db_delete()
 
     tntdb::Statement st = conn.prepareCached(
         " delete from"
-        " v_bios_device_discovered "
+        " v_bios_discovered_device "
         " where id = :id"
         );
     
@@ -202,7 +202,7 @@ db_update()
 
     tntdb::Statement st = conn.prepareCached(
         " update"
-        " v_bios_device_discovered"
+        " v_bios_discovered_device"
         " set name = :name , id_device_type = :iddevicetype"     //, aaa = :aa
         " where id = :id"
         );
@@ -228,7 +228,7 @@ selectByName(std::string url, std::string name)
         " select"
         " v.id , v.id_device_type"
         " from"
-        " v_bios_device_discovered v"
+        " v_bios_discovered_device v"
         " where v.name = :name"
         );
 
@@ -285,7 +285,7 @@ selectById(int id)
         " select"
         " v.name , v.id_device_type"
         " from"
-        " v_bios_device_discovered v"
+        " v_bios_discovered_device v"
         " where v.id = :id"
         );
     
