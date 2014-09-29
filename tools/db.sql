@@ -145,10 +145,10 @@ create view v_bios_net_history as select id_net_history id, ipl,iph, ip , mac,ma
 
 
 drop view v_bios_ip_last;
-create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device, iph, ipl, ip from v_bios_discovered_ip group by ipl, iph;
+create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device, iph, ipl, ip,id from v_bios_discovered_ip group by ipl, iph;
 
 drop view v_bios_client_info_last;
-create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client from v_bios_client_info  group by id_discovered_device, id_client;
+create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client,id from v_bios_client_info  group by id_discovered_device, id_client;
 
 
 
