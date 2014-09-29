@@ -150,7 +150,7 @@ db_insert()
 {
     tntdb::Connection conn;  
     conn = tntdb::connectCached(this->getUrl());
-
+    
     tntdb::Statement st = conn.prepareCached(
         " insert into"
         " v_bios_discovered_device (id,name,id_device_type)"
@@ -178,7 +178,7 @@ db_delete()
 {
     tntdb::Connection conn;  
     conn = tntdb::connectCached(this->getUrl());
-
+    
     tntdb::Statement st = conn.prepareCached(
         " delete from"
         " v_bios_discovered_device "

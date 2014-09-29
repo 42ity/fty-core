@@ -102,7 +102,6 @@ insert into t_bios_device_type (id_device_type, name) values (1, "not_classified
 
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
-insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"set_name",1);
 
 insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");

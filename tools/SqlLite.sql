@@ -74,7 +74,6 @@ insert into v_bios_device_type (id, name) values (1, "not_classified");
 
 insert into v_bios_discovered_device(id,name,id_device_type) values(NULL,"select_device",1);
 insert into v_bios_discovered_device(id,name,id_device_type) values(NULL,"select_device",1);
-insert into v_bios_discovered_device(id,name,id_device_type) values(NULL,"set_name",1);
 
 insert into v_bios_client(id,name) values(NULL,"mymodule");
 insert into v_bios_client(id,name) values(NULL,"admin");
