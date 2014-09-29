@@ -1,57 +1,49 @@
 #include <catch.hpp>
 #include <iostream>
-
+#include "dbinit.h"
 #include <devicetype.h>
 
-std::string urldt = "sqlite:/home/achernikava/work/core/tools/my1db.db";
-
-std::string osnewdt       = utils::objectStatetoString(utils::ObjectState::OS_NEW);
-std::string osdeleteddt   = utils::objectStatetoString(utils::ObjectState::OS_DELETED);
-std::string osupdateddt   = utils::objectStatetoString(utils::ObjectState::OS_UPDATED);
-std::string osselecteddt  = utils::objectStatetoString(utils::ObjectState::OS_SELECTED);
-std::string osinserteddt  = utils::objectStatetoString(utils::ObjectState::OS_INSERTED);
-
 TEST_CASE("device type getters1","[dbdevtype][constructor1][toString][getId][getUrl][getState][getName]"){
-    utils::DeviceType dbdevicetype(urldt);
-    std::string expected =  "url="   + urldt                + ";" +
-                            "id="    + std::to_string(-1)   + ";" +
-                            "state=" + osnewdt              + ";" +
-                            "name="  + ""                   ;
-    REQUIRE(dbdevicetype.toString() == expected );
-    REQUIRE(dbdevicetype.getId()    == -1 );
-    REQUIRE(dbdevicetype.getUrl()   == urldt );
-    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osnewdt);
-    REQUIRE(dbdevicetype.getName() == "");
+    utils::DeviceType dbdevicetype(url);
+    std::string expected =  "url="   + url                + ";" +
+                            "id="    + std::to_string(-1) + ";" +
+                            "state=" + osnew              + ";" +
+                            "name="  + ""                 ;
+    REQUIRE( dbdevicetype.toString() == expected );
+    REQUIRE( dbdevicetype.getId()    == -1 );
+    REQUIRE( dbdevicetype.getUrl()   == url );
+    REQUIRE( utils::objectStatetoString(dbdevicetype.getState()) == osnew );
+    REQUIRE( dbdevicetype.getName() == "" );
 }
 
 TEST_CASE("device type getters2","[dbdevtype][constructor2][toString][getId][getUrl][getState][getName]"){
-
     std::string name = "constructor";
 
-    utils::DeviceType dbdevicetype(urldt,name);
-    std::string expected =  "url="   + urldt                + ";" +
+    utils::DeviceType dbdevicetype(url,name);
+    std::string expected =  "url="   + url                + ";" +
                             "id="    + std::to_string(-1)   + ";" +
-                            "state=" + osnewdt              + ";" +
+                            "state=" + osnew              + ";" +
                             "name="  + name                 ;
     REQUIRE(dbdevicetype.toString() == expected );
     REQUIRE(dbdevicetype.getId()    == -1 );
-    REQUIRE(dbdevicetype.getUrl()   == urldt );
-    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osnewdt);
+    REQUIRE(dbdevicetype.getUrl()   == url );
+    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osnew);
     REQUIRE(dbdevicetype.getName() == name);
 }
 
-TEST_CASE("device type selectbyname","[dbdevicetype][select][byName]"){
+TEST_CASE("device type selectbyname","[dbdevicetype][select][byName]")
+{
     //THIS RECORD SHOULD ALWAYS BEEN THERE
     std::string newname = "not_classified";
     //name is unique
-    utils::DeviceType dbdevicetype =  utils::DeviceType(urldt);
+    utils::DeviceType dbdevicetype =  utils::DeviceType(url);
     
     int n = dbdevicetype.selectByName(newname);
     REQUIRE(n == 1);
    
-    std::string expected = "url="    + urldt                + ";" +
+    std::string expected = "url="    + url                + ";" +
                             "id="    + std::to_string(1)    + ";" +
-                            "state=" + osselecteddt           + ";" +
+                            "state=" + osselected           + ";" +
                             "name="  + newname              ;
     REQUIRE( dbdevicetype.toString() == expected );
 
@@ -67,14 +59,14 @@ TEST_CASE("device type selectbyid","[dbdevicetype][select][byId]"){
     int newid = 1;
     std::string newname = "not_classified";
     //name is unique
-    utils::DeviceType dbdevicetype =  utils::DeviceType(urldt);
+    utils::DeviceType dbdevicetype =  utils::DeviceType(url);
     
     int n = dbdevicetype.selectById(newid);
     REQUIRE(n == 1);
    
-    std::string expected = "url="    + urldt                 + ";" +
+    std::string expected = "url="    + url                 + ";" +
                            "id="     + std::to_string(newid) + ";" +
-                           "state="  + osselecteddt            + ";" +
+                           "state="  + osselected            + ";" +
                            "name="   + newname               ;
     REQUIRE( dbdevicetype.toString() == expected );
 
@@ -88,10 +80,10 @@ TEST_CASE("device type selectbyid","[dbdevicetype][select][byId]"){
 TEST_CASE("device type selectId","[dbdevicetype][select][Id]"){
     std::string newname = "not_classified";
     
-    int n  =  utils::DeviceType::selectId(urldt,newname);
+    int n  =  utils::DeviceType::selectId(url,newname);
     REQUIRE( n == 1); //it is an ID
     
-    n  =  utils::DeviceType::selectId(urldt,"not found");
+    n  =  utils::DeviceType::selectId(url,"not found");
     REQUIRE( n == -1); //it is an ID
 }
 
@@ -99,7 +91,7 @@ TEST_CASE("device type clear","[dbdevicetype][clear]"){
 
     std::string newname = "not_classified";
     
-    utils::DeviceType  dbdevicetype =  utils::DeviceType(urldt);
+    utils::DeviceType  dbdevicetype =  utils::DeviceType(url);
     std::string expected = dbdevicetype.toString();
     
     int n = dbdevicetype.selectByName(newname);
@@ -111,7 +103,7 @@ TEST_CASE("device type clear","[dbdevicetype][clear]"){
 
 TEST_CASE("device type setName","[dbdevicetype][setName]")
 {
-    utils::DeviceType dbdevicetype(urldt);
+    utils::DeviceType dbdevicetype(url);
     std::string newname = "set_name";
     //OS_NEW set OS_NEW
     dbdevicetype.setName(newname);
@@ -119,7 +111,7 @@ TEST_CASE("device type setName","[dbdevicetype][setName]")
     REQUIRE(dbdevicetype.getId() == -1 );
     
     //insert test info
-    utils::DeviceType newdevicetype = utils::DeviceType(urldt);
+    utils::DeviceType newdevicetype = utils::DeviceType(url);
     newdevicetype.setName(newname);
     int n = newdevicetype.dbsave();
     REQUIRE( n == 1 );
@@ -160,7 +152,7 @@ TEST_CASE("device type setName","[dbdevicetype][setName]")
 
 TEST_CASE("device type reload ","[dbdevicetype][reload]"){
     
-    utils::DeviceType dbdevicetype(urldt);
+    utils::DeviceType dbdevicetype(url);
     std::string newname = "reload";
     dbdevicetype.setName(newname);
     std::string expected = dbdevicetype.toString();
@@ -198,7 +190,7 @@ TEST_CASE("device type reload ","[dbdevicetype][reload]"){
 
 
 TEST_CASE("device type insert/delete ","[dbdevicetype][save][insert][delete]"){
-    utils::DeviceType dbdevicetype(urldt);
+    utils::DeviceType dbdevicetype(url);
     std::string newname = "insert_delete";
     dbdevicetype.setName(newname);
     int n = dbdevicetype.dbsave();
@@ -206,7 +198,7 @@ TEST_CASE("device type insert/delete ","[dbdevicetype][save][insert][delete]"){
     if ( n == 1 )
     {
         REQUIRE(dbdevicetype.getId() > 0 );
-        REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osselecteddt);
+        REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osselected);
         expected = dbdevicetype.toString();
         n = dbdevicetype.dbsave();
         REQUIRE( n == 0);
@@ -219,7 +211,7 @@ TEST_CASE("device type insert/delete ","[dbdevicetype][save][insert][delete]"){
             FAIL("more than one row was deleted");
         if ( n == 1 )
         {
-            REQUIRE( utils::objectStatetoString(dbdevicetype.getState()) == osdeleteddt);
+            REQUIRE( utils::objectStatetoString(dbdevicetype.getState()) == osdeleted);
             REQUIRE( dbdevicetype.getId() == -1 );
 
             expected = dbdevicetype.toString();
@@ -238,7 +230,7 @@ TEST_CASE("device type insert/delete ","[dbdevicetype][save][insert][delete]"){
 }
 
 TEST_CASE("device type insert long name ","[dbdevicetype][save][insert][longname]"){
-    utils::DeviceType dbdevicetype(urldt);
+    utils::DeviceType dbdevicetype(url);
     
     std::string newname = "this should fail";
     for (int i = 0 ; i < dbdevicetype.getNamesLength() ; i++ )
@@ -253,7 +245,7 @@ TEST_CASE("device type insert long name ","[dbdevicetype][save][insert][longname
 TEST_CASE("device type update","[dbdevicetype][save][update]"){
     
     std::string newname = "update";
-    utils::DeviceType dbdevicetype(urldt,newname);
+    utils::DeviceType dbdevicetype(url,newname);
     int n = dbdevicetype.dbsave();
     REQUIRE( n == 1 );
     
@@ -262,14 +254,14 @@ TEST_CASE("device type update","[dbdevicetype][save][update]"){
     REQUIRE( n == 1 );
     
     dbdevicetype.setName(newname+newname);
-    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osupdateddt);
+    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osupdated);
     
     n = dbdevicetype.dbsave();
     REQUIRE( n == 1 );
-    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osselecteddt);
-    std::string expected = "url="    + urldt                 + ";" +
+    REQUIRE(utils::objectStatetoString(dbdevicetype.getState()) == osselected);
+    std::string expected = "url="    + url                 + ";" +
                            "id="     + std::to_string(newid) + ";" +
-                           "state="  + osselecteddt            + ";" +
+                           "state="  + osselected            + ";" +
                            "name="   + newname+newname               ;
     REQUIRE(dbdevicetype.toString() == expected );
 
