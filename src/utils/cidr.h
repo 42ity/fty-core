@@ -45,7 +45,9 @@ Example:
 #ifndef UTILS_CIDR_H_
 #define UTILS_CIDR_H_
 
+extern "C" {
 #include <libcidr.h>
+}
 #include <vector>
 #include <string>
 #include <iostream>
