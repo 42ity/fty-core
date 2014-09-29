@@ -2,8 +2,8 @@
 #include <iostream>
 
 #include <devicetype.h>
-tntdb::Connection conn = tntdb::connect();
-std::string urldt = "sqlite:box_utf8.db";
+
+std::string urldt = "sqlite:/home/achernikava/work/core/tools/my1db.db";
 
 std::string osnewdt       = utils::objectStatetoString(utils::ObjectState::OS_NEW);
 std::string osdeleteddt   = utils::objectStatetoString(utils::ObjectState::OS_DELETED);
