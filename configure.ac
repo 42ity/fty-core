@@ -40,6 +40,9 @@ AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([Variant/Variant.h],
                  [],
                  AC_MSG_ERROR([cannot find required header Variant/Variant.h]))
+AC_CHECK_HEADERS([tntdb.h],
+                 [],
+                 AC_MSG_ERROR([cannot find required header tntdb.h]))
 AC_CHECK_HEADERS([Variant/Schema.h],
                  [],
                  AC_MSG_ERROR([cannot find required header Variant/Schema.h]))
