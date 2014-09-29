@@ -101,6 +101,15 @@ AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
 
+#test-db-run-path
+AC_CONFIG_FILES([tools/dbpath.h])
+dnl sqlite
+dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
+dnl mariadb/mysql
+dnl TODO
+myDBuser=root
+myDBpath="mysql:db=box_utf8;user=""@myDBuser"
+AC_SUBST([myDBPath])
 
 # astyle
 dnl ASTYLE would have the absolute path, use AC_CHECK_PROGS for relative
