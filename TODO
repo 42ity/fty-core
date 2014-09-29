@@ -13,3 +13,11 @@ GCL: Major comments are same as previous on PR BIOS-347 :
 -> the printf calls should be remplaced by a right log API usage.
 
 see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23 for more detail.
+
+
+BIOS-354:
+-> Write all unit tests.
+-> Write documentation (3 classes are not documented properly)
+-> It is hardly posible to use SQLite for testing purposes, because it database often become busy and tests are failed. It caused the simplisity of SQLite (it can'r properly work with connection-pool and concurrent threads).
+   So need to test on MariaDb.
+
