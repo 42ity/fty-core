@@ -144,7 +144,7 @@ class DataBaseObject
          * 
          * \return Object as string.
          */
-        std::string toString();
+        virtual std::string toString();
 
         /**
          * \brief Returns an object to OS_NEW state with initial parameters.
@@ -158,7 +158,7 @@ class DataBaseObject
          *
          * \return A maximum length of "name"-fields in database.
          */
-        static int getNamesLength();
+        static unsigned int getNamesLength();
        
         /**
          * \brief A prototype method. Selects object by Id.
@@ -167,7 +167,7 @@ class DataBaseObject
          *
          * \return A number of rows affected.
          */
-        virtual unsigned int selectById(int id){return 1;};
+        virtual unsigned int selectById(int id) = 0;
         
         /**
          * \brief Reloads this object by its id from the DB.
@@ -213,7 +213,7 @@ class DataBaseObject
          *
          * \return A number of rows affected.
          */
-        virtual unsigned int db_insert(){return 1;};
+        virtual unsigned int db_insert() = 0;
         
         /**
          * \brief Internal method for update.
@@ -222,7 +222,7 @@ class DataBaseObject
          *
          * \return A number of rows affected.
          */
-        virtual unsigned int db_update(){return 1;};
+        virtual unsigned int db_update() = 0;
 
         /**
          * \brief Internal method for delete.
@@ -231,7 +231,7 @@ class DataBaseObject
          *
          * \return A number of rows affected.
          */
-        virtual unsigned int db_delete(){return 1;};
+        virtual unsigned int db_delete() = 0;
         
         /**
          * \brief Internal method for check before insert or update.

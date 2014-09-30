@@ -39,20 +39,26 @@ namespace utils {
 
 void
 NetHistory::
-clear(){
-    DataBaseTimeObject::clear();
+clear_this()
+{
     _mac =  "";
     _mask = 0;
     _ip = CIDRAddress();
     _command = 'z';
-    //TODO OS_NEW
+}
+
+void
+NetHistory::
+clear(){
+    DataBaseTimeObject::clear();
+    this->clear_this();
 }
 
 NetHistory::
 NetHistory(std::string url)
     :DataBaseTimeObject(url)
 {
-    this->clear();
+    this->clear_this();
 }
 
 std::string 
@@ -195,14 +201,17 @@ selectById(int id)
         row[2].get(_mac);
 
         //timestamp
-        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-        row[3].get(tmp_t);
-        this->setTimestamp(tmp_t);
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[3].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
     
-        /**
-         * TODO don't forget read all columns here
-         */
-                
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -288,11 +297,19 @@ db_select_timestamp()
     try{
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
+        
         //timestamp
-        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-        row[0].get(tmp_t);
-        this->setTimestamp(tmp_t);
-
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[0].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+        
         //state
         this->setState(ObjectState::OS_SELECTED);
         

@@ -199,15 +199,14 @@ check_PROGRAMS += \
 				  test-db
 test_db_SOURCES = \
 				  tests/utils/test-clientinfo.cc \
-				  tests/utils/test-databasetimeobject.cc \
 				  tests/utils/test-device-discovered.cc \
-				  tests/utils/test-devicetype.cc \
-				  tests/utils/test-persistence.cc
+				  tests/utils/test-devicetype.cc
+
 test_db_LDADD = \
 				libpriv-db.la \
 				libpriv-cidr.la \
                 libpriv-test-run.la
-test_db_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/ -I $(top_srcdir)/src/utils/persistence
+test_db_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/ -I $(top_srcdir)/src/utils/persistence -I$(top_srcdir)/tools
 test_db_LDFLAGS = -ltntdb -lcxxtools -lcidr
 
 TESTS += $(check_PROGRAMS)

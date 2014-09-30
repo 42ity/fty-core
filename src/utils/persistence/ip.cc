@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*! \file ip.h
     
     \brief Realisation of the class for manipulating with the database 
-    objects stored in the table t_bios_discoverd_ip
+    objects stored in the table t_bios_discovered_ip
  
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
@@ -41,6 +41,8 @@ bool
 Ip::
 check()
 {
+
+    //TODO descoveredDeviceId
     return true;
 }
 
@@ -120,13 +122,11 @@ db_update()
 
 unsigned int 
 Ip::
-selectById(unsigned int id)
+selectById(int id)
 {
     tntdb::Connection conn; 
-    conn = tntdb::connectCached(this->getUrl());  // connects to the db
-    /**
-     * TODO add more columns
-     */
+    conn = tntdb::connectCached(this->getUrl());
+    
     tntdb::Statement st = conn.prepareCached(
         " select"
         " ip, id_discovered_device, timestamp"
@@ -151,13 +151,22 @@ selectById(unsigned int id)
         _ip = CIDRAddress(tmp_str);
     
         //id_discovereddevice
+        _deviceDiscoveredId = -1;       //if NULL value was read
         row[1].get(_deviceDiscoveredId);
 
         //timestamp
-        time_t tmp_t ;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-        row[1].get(tmp_t);
-        this->setTimestamp(tmp_t);
-                
+        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
+                                       // So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[1].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -169,13 +178,11 @@ selectById(unsigned int id)
     return n;
 }
 
-
-
 Ip* 
 Ip::getLastInfo(std::string url, std::string ip)
 {
     tntdb::Connection conn; 
-    conn = tntdb::connectCached(url);  // connects to the db
+    conn = tntdb::connectCached(url);
 
     /**
      * TODO add more columns
@@ -183,9 +190,9 @@ Ip::getLastInfo(std::string url, std::string ip)
      */
     tntdb::Statement st = conn.prepareCached(
         " select "
-        " v.id, v.id_deviceDiscovered, v.datum"
+        " v.id, v.id_discovered_device, v.datum"
         " from"
-        " v_ip_last v"
+        " v_bios_ip_last v"
         " where v.ip = :thisip"
         );
     
@@ -205,23 +212,28 @@ Ip::getLastInfo(std::string url, std::string ip)
         newIp->setIp(ip);
            
         //id
-        int tmp = -1;
-        row[0].get(tmp);
-        newIp->setId(tmp);
+        int tmp_i = -1;
+        row[0].get(tmp_i);
+        newIp->setId(tmp_i);
     
         //deviceDiscoveredId
-        tmp = -1;
-        row[1].get(tmp);
-        newIp->setDeviceDiscoveredId(tmp);
+        tmp_i = -1;
+        row[1].get(tmp_i);
+        newIp->setDeviceDiscoveredId(tmp_i);
     
-        //date
-        time_t datetmp;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-        row[2].get(datetmp);
-        newIp->setTimestamp(datetmp);
-            
-        /**
-          * TODO don't forget read all columns here
-          */
+        //timestamp
+        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
+                                       // So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[2].get(tmp_t);
+        if (isNotNull)
+            newIp->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+        
         newIp->setState(ObjectState::OS_SELECTED);
 
         return newIp;
@@ -269,9 +281,31 @@ Ip::
 Ip(std::string url)
     :DataBaseTimeObject(url)
 {
+    this->clear_this();
+}
+
+Ip::
+Ip(std::string url, std::string ip)
+    :DataBaseTimeObject(url)
+{
+    this->clear_this();
+    _ip = CIDRAddress(ip);
+}
+
+void
+Ip::
+clear_this()
+{
     _ip = CIDRAddress("");
 }
 
+void
+Ip::
+clear()
+{
+    DataBaseTimeObject::clear();
+    this->clear_this();
+}
 
 }// namespace utils
 

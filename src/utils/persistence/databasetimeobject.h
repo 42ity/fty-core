@@ -145,7 +145,7 @@ class DataBaseTimeObject: public DataBaseObject
          * 
          * \return true if check was successful.
          */
-        virtual unsigned int db_select_timestamp(){};
+        virtual unsigned int db_select_timestamp(){return false;};
 
         /**
          * \brief Sets a new Timestamp for the object.

@@ -206,7 +206,7 @@ TEST_CASE("device type insert/delete ","[dbdevicetype][save][insert][delete]"){
         
         n = dbdevicetype.dbdelete();
         if ( n == 0 )   // unreal situation
-            FAIL("nothing was deleted");
+            FAIL("nothing was deleted"); 
         if ( n > 1 )    // unreal situation
             FAIL("more than one row was deleted");
         if ( n == 1 )
@@ -233,7 +233,7 @@ TEST_CASE("device type insert long name ","[dbdevicetype][save][insert][longname
     utils::DeviceType dbdevicetype(url);
     
     std::string newname = "this should fail";
-    for (int i = 0 ; i < dbdevicetype.getNamesLength() ; i++ )
+    for (unsigned int i = 0 ; i < dbdevicetype.getNamesLength() ; i++ )
         newname+="a";
 
     dbdevicetype.setName(newname);

@@ -170,8 +170,10 @@ class ClientInfo : public DataBaseTimeObject
         std::vector<ClientInfo> getHistoryClientInfo(CIDRAddress deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
         std::vector<ClientInfo> getHistoryClientInfo(std::string deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
 */
-
+        unsigned int selectById(int id);
     protected:
+        
+        void clear_this();
         
         /**
          * \brief TODO if need.
@@ -226,7 +228,7 @@ class ClientInfo : public DataBaseTimeObject
         /**
          * \brief An id of the discovered device which was scanned.
          */
-        int _deviceDiscoveredId;
+        int _discoveredDeviceId;
 
         /**
          * \brief an information in unknown format. We don't care.

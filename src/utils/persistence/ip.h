@@ -42,8 +42,25 @@ class Ip :public DataBaseTimeObject
 
     public:
         
+        /**
+         * \brief Creates a new object and specifies a connection.
+         *
+         * Creates a new object for the specified url in the state OS_NEW.
+         *
+         * \param url - connection to the database.
+         */
         Ip(std::string url);
-
+        
+        /**
+         * \brief Creates a new object with the specified ip and 
+         * specifies a connection.
+         *
+         * Creates a new object with the specified ip for the specified url 
+         * in the state OS_NEW.
+         *
+         * \param ip  - an ip of the object
+         * \param url - a connection to the database.
+         */
         Ip(std::string url, std::string ip);
 
         ~Ip(){};
@@ -62,9 +79,13 @@ class Ip :public DataBaseTimeObject
 
         std::vector<Ip> getOtherIps();
 
-        unsigned int selectById(unsigned int n);
+        unsigned int selectById(int id);
         
-        void clear(){};
+        /**
+         * \brief Returns an object to OS_NEW state with initial parameters.
+         */
+        void clear();
+        
         /**
          * \brief Selects the last information about Ip and returns it as Ip object in state OS_SELECTED.
          */
@@ -87,33 +108,44 @@ class Ip :public DataBaseTimeObject
 
     protected:
         /**
-         * \brief Checks the name length
+         * \brief Checks DeviceDiscoveredId
          *
-         * TODO add more checks if needed
+         * TODO 
          */
         bool check();
-
+       
         /**
-         *  \brief inserts a row.
+         * \brief Internal method for insert.
          *
-         *  All necessary pre-actions are made in dbsave
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_insert();
         
         /**
-         *  \brief updates a row.
+         * \brief Internal method for update.
          *
-         *  All necessary pre-actions are made in dbsave
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_update();
         
         /**
-         *  \brief deletes a row.
+         * \brief Internal method for delete.
+         * 
+         * All necessary pre-actions are made in dbdelete.
          *
-         *  All necessar
+         * \return A Number of rows affected.
          */
         unsigned int db_delete();
     private:
+        
+        /**
+         * \brief Returns private fields of this object to initial state.
+         */
+        void clear_this();
         
         CIDRAddress _ip;
 

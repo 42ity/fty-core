@@ -136,31 +136,25 @@ unsigned int
 DataBaseObject::
 dbdelete()
 {
-    if ( _state == ObjectState::OS_NEW )
-    {   // no id is known
-        // do nothing
-        return 0;
-    }
-    else if ( ( _state == ObjectState::OS_UPDATED ) || ( _state == ObjectState::OS_SELECTED ) || ( _state == ObjectState::OS_INSERTED ) )
+    int n = 0;
+    if ( ( _state == ObjectState::OS_UPDATED ) || ( _state == ObjectState::OS_SELECTED ) || ( _state == ObjectState::OS_INSERTED ) )
     {
-        int n = this->db_delete();
+        n = this->db_delete();
         if ( n > 0 )
         {
             _state = ObjectState::OS_DELETED;
             _id = -1;               // make id non valid
         }
-        return n;        
     }
-    else if (_state == ObjectState::OS_DELETED )
-    {
-        // do nothing, the object is bad;
-        return 0;
-    }
+    
+    //else if ( _state == ObjectState::OS_NEW ) ||  (_state == ObjectState::OS_DELETED )
+    // do nothing
+    return n;
 }
 
 int DataBaseObject::_names_length = 25;
 
-int
+unsigned int
 DataBaseObject::
 getNamesLength()
 {

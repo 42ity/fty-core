@@ -38,20 +38,27 @@ namespace utils {
 
 void
 ClientInfo::
+clear_this()
+{
+    _clientName = "";
+    _clientId = -1;
+    _discoveredDeviceId = -1;
+    _blobData = "";
+}
+
+void
+ClientInfo::
 clear()
 {
     DataBaseTimeObject::clear();
-    _clientName = "";
-    _clientId = -1;
-    _deviceDiscoveredId = -1;
-    _blobData = "";
+    this->clear_this();
 }  
 
 ClientInfo::
 ClientInfo(std::string url)
     :DataBaseTimeObject(url)
 {
-    this->clear();
+    this->clear_this();
 }
 
 ClientInfo::
@@ -78,13 +85,13 @@ toString()
     return DataBaseTimeObject::toString() + ";" +
                             "clientId=" + std::to_string(_clientId)           + ";" +
                             "clientName"+ _clientName         + ";" +
-                            "deviceId=" + std::to_string(_deviceDiscoveredId) + ";" +
+                            "deviceId=" + std::to_string(_discoveredDeviceId) + ";" +
                             "blobdata=" + _blobData;
 }
 
 unsigned int ClientInfo::selectLastRecord()
 {
-    return  this->selectLastRecord(this->_clientId,this->_deviceDiscoveredId);
+    return  this->selectLastRecord(this->_clientId,this->_discoveredDeviceId);
 }
 
 bool
@@ -116,10 +123,10 @@ db_insert()
        setString("ext",_blobData);
  
     unsigned int n = 0;
-    if ( _deviceDiscoveredId == -1 )
+    if ( _discoveredDeviceId == -1 )
         n = st.setNull("iddiscovereddevice").execute();
     else
-        n = st.setInt("iddiscovereddevice",_deviceDiscoveredId).execute();
+        n = st.setInt("iddiscovereddevice",_discoveredDeviceId).execute();
 
     if ( n == 1 )
     {
@@ -158,14 +165,15 @@ unsigned int
 ClientInfo::
 db_update()
 {
+    return 0;
     //TODO but now we don't want to modify already existing data.    
 }
 
 // if any changes would be made here check if the same need to do in
-// ClientInfo::selectLastRecord(std::string clientName, int deviceDiscoveredId)
+// ClientInfo::selectLastRecord(std::string clientName, int discoveredDeviceId)
 unsigned int 
 ClientInfo::
-selectLastRecord(int clientId, int deviceDiscoveredId)
+selectLastRecord(int clientId, int discoveredDeviceId)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
@@ -174,12 +182,12 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
         " select "
         " v.id, v.datum, v.info, v.name"
         " from"
-        " v_client_info_last v"
+        " v_bios_client_info_last v"
         " where v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
         );
     
     //   Should return one row or nothing.
-    tntdb::Result result = st.setInt("id_deviceidscovered", deviceDiscoveredId).
+    tntdb::Result result = st.setInt("id_deviceidscovered", discoveredDeviceId).
                                 setInt("id_client", clientId).select();
     int rsize = result.size();
     if ( rsize == 1)
@@ -193,10 +201,17 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
         row[0].get(tmp);
         this->setId(tmp);
     
-        //date
-        time_t tmp_t; // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-        row[1].get(tmp_t);
-        this->setTimestamp(tmp_t);
+        //timestamp
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[1].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
 
         //blobData
         row[2].get(_blobData);
@@ -207,8 +222,8 @@ selectLastRecord(int clientId, int deviceDiscoveredId)
         //clientName
         row[3].get(_clientName);
 
-        //deviceDiscoveredId
-        _deviceDiscoveredId = deviceDiscoveredId;
+        //discoveredDeviceId
+        _discoveredDeviceId = discoveredDeviceId;
                         
         this->setState(ObjectState::OS_SELECTED);
     }
@@ -242,11 +257,17 @@ db_select_timestamp()
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
         //timestamp
-        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-
-        row[0].get(tmp_t);
-        this->setTimestamp(tmp_t);
-
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[0].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+        
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -259,8 +280,8 @@ db_select_timestamp()
 }
 
 // if any changes would be made here check if the same need to do in
-// ClientInfo::selectLastRecord(int clientId, int deviceDiscoveredId)
-unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDiscoveredId)
+// ClientInfo::selectLastRecord(int clientId, int discoveredDeviceId)
+unsigned int ClientInfo::selectLastRecord(std::string clientName, int discoveredDeviceId)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
@@ -269,12 +290,12 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
         " select "
         " v.id, v.datum, v.info, v.id_client"
         " from"
-        " v_client_info_last v"
-        " where v.id_deviceDiscovered = :id_devicediscovered and v.client_name = :clientname"
+        " v_bios_client_info_last v"
+        " where v.id_discovered_device = :id_devicediscovered and v.client_name = :clientname"
         );
     
     //   Should return one row or nothing.
-    tntdb::Result result = st.setInt("id_devicediscovered", deviceDiscoveredId).
+    tntdb::Result result = st.setInt("id_devicediscovered", discoveredDeviceId).
                                 setString("clientname", clientName).select();
     int rsize = result.size();
     if ( rsize == 1)
@@ -288,12 +309,18 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
         row[0].get(tmp);
         this->setId(tmp);
     
-        //date
-        time_t tmp_t;  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value
-
-        row[1].get(tmp_t);
-        this->setTimestamp(tmp_t);
-
+        //timestamp
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[1].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+        
         //blobData
         row[2].get(_blobData);
     
@@ -303,8 +330,8 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int deviceDisc
         //clientId
         row[3].get(_clientId);
 
-        //deviceDiscoveredId
-        _deviceDiscoveredId = deviceDiscoveredId;
+        //discoveredDeviceId
+        _discoveredDeviceId = discoveredDeviceId;
                         
         this->setState(ObjectState::OS_SELECTED);
     }
@@ -326,7 +353,7 @@ getClientId()
 ClientInfo::
 getDeviceDiscoveredId()
 {
-    return _deviceDiscoveredId;
+    return _discoveredDeviceId;
 }
 
 
@@ -368,10 +395,10 @@ setBlobData(std::string blobData)
 
 void
 ClientInfo::
-setDeviceDiscoveredId(int deviceDiscoveredId)
+setDeviceDiscoveredId(int discoveredDeviceId)
 {
     //TODO
-    _deviceDiscoveredId = deviceDiscoveredId;
+    _discoveredDeviceId = discoveredDeviceId;
 }
 
 bool
@@ -387,6 +414,65 @@ selectClientName( int clientId)
     }
     else
         return false;
+}
+
+unsigned int
+ClientInfo::
+selectById(int id)
+{
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl()); 
+
+    tntdb::Statement st = conn.prepareCached(
+        " select "
+        " v.timestamp, v.ext, v.id_client , v.id_discovered_device"
+        " from"
+        " v_bios_client_info v"
+        " where v.id = :id"
+        );
+
+    //   Can return one row or nothing
+    int n = 0;
+    try{ 
+        tntdb::Row row = st.setInt("id", id).selectRow();
+          
+        //timestamp
+        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+                                       // but it should never happen, while this column must be NOT NULL
+        bool isNotNull = row[0].get(tmp_t);
+        if (isNotNull)
+            this->setTimestamp(tmp_t);
+        else
+        {
+            //TODO
+            //log THIS SHOULD NEVER HAPPEN
+        }
+                        
+        //id
+        this->setId(id);
+    
+        //blobData
+        row[1].get(_blobData);
+    
+        //clientId
+        int tmp_i = -1;
+        row[2].get(tmp_i);
+        this->setClientId(tmp_i);
+        
+        //discoveredDeviceId
+        tmp_i = -1;
+        row[3].get(tmp_i);
+        _discoveredDeviceId = tmp_i;
+
+        //state
+        this->setState(ObjectState::OS_SELECTED);
+        
+        n = 1; 
+    }
+    catch (const tntdb::NotFound &e){
+        n = 0;
+    }
+    return n;
 }
 
 } //end of namespace utils

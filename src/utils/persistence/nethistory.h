@@ -79,6 +79,8 @@ class NetHistory : public DataBaseTimeObject
 
     protected:
         
+        void clear_this();
+
         /**
          * \brief Checks the name length
          *

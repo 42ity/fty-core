@@ -349,6 +349,7 @@ ClientInfo *
 DeviceDiscovered::
 selectLastDetailInfo()
 {
+    ClientInfo *result = NULL;
     if (( this->getState() != ObjectState::OS_NEW ) &&
          ( this->getState() != ObjectState::OS_DELETED ) )
     {
@@ -358,15 +359,14 @@ selectLastDetailInfo()
         int n = newClientInfo->selectLastRecord(this->getDetailedClientId(),this->getId());
         
         if ( n == 1)
-            return newClientInfo;
+            result = newClientInfo;
         else if (n > 1 )
         {
             //TODO log this should never happen
-            return NULL;
+            result = NULL;
         }
     }
-    else
-        return NULL;
+    return result;
 }
 
 
