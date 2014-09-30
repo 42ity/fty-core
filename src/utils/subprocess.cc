@@ -65,6 +65,10 @@ SubProcess::~SubProcess() {
     errno = _saved_errno;
 }
 
+const Argv SubProcess::argv() const {
+    return _cxx_argv;
+}
+
 bool SubProcess::run() {
 
     // do nothing if some process has been already started
@@ -250,8 +254,14 @@ void ProcessQue::terminateAll() {
 void ProcCache::pushStdout(const char* str) {
     _ocache << str;
 }
+void ProcCache::pushStdout(const std::string& str) {
+    _ocache << str;
+}
 
 void ProcCache::pushStderr(const char* str) {
+    _ecache << str;
+}
+void ProcCache::pushStderr(const std::string& str) {
     _ecache << str;
 }
 
@@ -274,11 +284,32 @@ void ProcCacheMap::pushStdout(pid_t pid, const char* str) {
     _push_cstr(pid, str, true);
 }
 
+void ProcCacheMap::pushStdout(pid_t pid, const std::string& str) {
+    _push_str(pid, str, true);
+}
+
 void ProcCacheMap::pushStderr(pid_t pid, const char* str) {
     _push_cstr(pid, str, false);
 }
 
+void ProcCacheMap::pushStderr(pid_t pid, const std::string& str) {
+    _push_str(pid, str, false);
+}
+
 void ProcCacheMap::_push_cstr(pid_t pid, const char* str, bool push_stdout) {
+    if (!hasPid(pid)) {
+        _map[pid] = ProcCache{};
+    }
+    if (push_stdout) {
+        _map[pid].pushStdout(str);
+    }
+    else {
+        _map[pid].pushStdout(str);
+    }
+
+}
+
+void ProcCacheMap::_push_str(pid_t pid, const std::string& str, bool push_stdout) {
     if (!hasPid(pid)) {
         _map[pid] = ProcCache{};
     }
@@ -313,7 +344,6 @@ char * const * _mk_argv(Argv vec) {
         argv[i] = dest;
     }
     argv[vec.size()] = NULL;
-
     return (char * const*)argv;
 }
 

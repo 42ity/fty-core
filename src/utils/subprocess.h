@@ -84,6 +84,8 @@ class SubProcess {
         //          child process never ends. Better to call terminate() manually.
         //
         virtual ~SubProcess();
+
+        const Argv argv() const;
         
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
@@ -234,8 +236,10 @@ class ProcCache {
         //TODO: other constructors + operators
 
         void pushStdout(const char* str);
+        void pushStdout(const std::string& str);
 
         void pushStderr(const char* str);
+        void pushStderr(const std::string& str);
 
         std::pair<std::string, std::string> pop();
 
@@ -257,8 +261,10 @@ class ProcCacheMap {
         bool hasPid(pid_t pid) const;
 
         void pushStdout(pid_t pid, const char* str);
+        void pushStdout(pid_t pid, const std::string& str);
 
         void pushStderr(pid_t pid, const char* str);
+        void pushStderr(pid_t pid, const std::string& str);
 
         std::pair<std::string, std::string> pop(pid_t pid);
 
@@ -267,6 +273,7 @@ class ProcCacheMap {
         map_type _map;
 
         void _push_cstr(pid_t pid, const char* str, bool push_stdout);
+        void _push_str(pid_t pid, const std::string& str, bool push_stdout);
 };
 
 
