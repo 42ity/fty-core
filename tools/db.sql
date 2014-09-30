@@ -70,7 +70,7 @@ CREATE TABLE t_bios_client(
     PRIMARY KEY(id_client),
 
     UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
-);
+) AUTO_INCREMENT = 2;
 
 CREATE TABLE t_bios_client_info(
     id_client_info BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -95,7 +95,7 @@ CREATE TABLE t_bios_client_info(
 
 insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
 
-
+insert into t_bios_client (id_client, name) values (1, "nmap");
 
 
 

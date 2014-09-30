@@ -50,6 +50,14 @@ Client(std::string url)
 }
 
 Client::
+Client(std::string url, std::string name)
+    :DataBaseObject(url)
+{
+    this->clear_this();
+    _name = name;
+}
+
+Client::
 ~Client()
 {
     //TODO

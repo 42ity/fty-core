@@ -39,19 +39,21 @@ class DeviceType: public DataBaseObject
         /**
          * \brief Creates a new object and specifies a connection.
          *
-         * Creates a new object for the specified url in state OS_NEW.
+         * Creates a new object for the specified url in the state OS_NEW.
          *
-         * \param url - connection to the database.
+         * \param url - a connection to the database.
          */
         DeviceType(std::string url);
         
         /**
-         * \brief Creates a new object with specified name and specifies a connection.
+         * \brief Creates a new object with the specified name and 
+         * specifies a connection.
          *
-         * Creates a new object with specified name for the specified url in state OS_NEW.
+         * Creates a new object with the specified name for 
+         * the specified url in the state OS_NEW.
          *
-         * \param name - name of the object
-         * \param url  - connection to the database.
+         * \param name - a name of the object.
+         * \param url  - a connection to the database.
          */
         DeviceType(std::string url, std::string name);
 

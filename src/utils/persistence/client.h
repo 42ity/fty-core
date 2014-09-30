@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file client.h
-    \brief A basic class for manipulating with the database objects stored 
+    \brief A class for manipulating with the database objects stored 
     in the table t_bios_client.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -29,6 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils{
 
+/*
+ * \brief Client is a class for representing a database entity
+ * t_bios_client.
+ */
 class Client: public DataBaseObject
 {
     public:
@@ -36,11 +40,22 @@ class Client: public DataBaseObject
         /**
          * \brief Creates a new object and specifies a connection.
          *
-         * Creates a new object for the specified url in state OS_NEW.
+         * Creates a new object for the specified url in the state OS_NEW.
          *
-         * \param url - connection to the database.
+         * \param url - a connection to the database.
          */
         Client(std::string url);
+        
+        /**
+         * \brief Creates a new object and specifies a connection.
+         *
+         * Creates a new object with the specified name for 
+         * the specified url in the state OS_NEW.
+         *
+         * \param name - a name of the object.
+         * \param url  - a connection to the database.
+         */
+        Client(std::string url, std::string name);
 
         /**
          * \brief Selects from the DB a client by its name.
