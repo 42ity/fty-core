@@ -82,3 +82,4 @@ TEST_CASE("client info getters3","[dbclientinfo][constructor3][toString][getId][
     REQUIRE( dbclientinfo.toString() == expected );
 }
 
+
