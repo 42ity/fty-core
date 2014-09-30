@@ -108,8 +108,8 @@ dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
 dnl mariadb/mysql
 dnl TODO
 myDBuser=root
-myDBpath="mysql:db=box_utf8;user=""@myDBuser"
-AC_SUBST([myDBPath])
+myDBpath="mysql:db=box_utf8;user=""${myDBuser}"
+AC_SUBST([myDBpath])
 
 # astyle
 dnl ASTYLE would have the absolute path, use AC_CHECK_PROGS for relative
