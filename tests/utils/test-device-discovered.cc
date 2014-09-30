@@ -169,7 +169,7 @@ TEST_CASE("Device discovered insert long name ","[dbdevice][save][insert][longna
     utils::DeviceDiscovered dbdevice(url);
     
     std::string newname = "this should fail";
-    for (int i = 0 ; i < dbdevice.getNamesLength() ; i++ )
+    for (unsigned int i = 0 ; i < dbdevice.getNamesLength() ; i++ )
         newname+="a";
 
     dbdevice.setName(newname);
