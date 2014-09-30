@@ -8,6 +8,6 @@ Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-d
 
 Package: core
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends} , tntdb4-mysql
+Depends: ${misc:Depends}, ${shlibs:Depends} , tntdb4-mysql, libcidr0
 Description: BIOS core
  Core functionality implemented for BIOS.

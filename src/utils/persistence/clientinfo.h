@@ -72,7 +72,9 @@ class ClientInfo : public DataBaseTimeObject
         ClientInfo(std::string url,  int clientId);
 
         /**
-         * \brief Returns all fields as string.
+         * \brief Converts all fields to string and concatenates them.
+         *
+         * \return Object as string.
          */
         std::string toString();
         
@@ -115,37 +117,37 @@ class ClientInfo : public DataBaseTimeObject
         unsigned int selectLastRecord(std::string clientName, int deviceDiscoveredId);
         
         /**
-         * \brief Get an id of deviceDiscovered.
+         * \brief Gets an id of discovered device which this info regards.
          */
         int getDeviceDiscoveredId();
 
         /**
-         * \brief Get an id of client that gathered that info.
+         * \brief Gets an id of client that gathered that info.
          */
         int getClientId();
 
         /**
-         * \brief Get a blob data.
+         * \brief Gets a blob data.
          */
         std::string getBlobData();
 
         /**
-         * \brief Get a clientname.
+         * \brief Gets a client name that gathered that info.
          */
         std::string getClientName();
 
         /**
-         * \brief set a clientId, clientName is selected from DB.
+         * \brief Sets a clientId (clientName is selected from DB automatically).
          */
         void  setClientId(int clientId);
         
         /**
-         * \brief set a DeviceDiscoveredId.
+         * \brief Sets a DeviceDiscoveredId.
          */
         void  setDeviceDiscoveredId(int deviceDiscoveredId);
 
         /**
-         * \brief set a new blobData.
+         * \brief Sets a new blobData.
          */
         void  setBlobData(std::string blobData);
         
@@ -192,41 +194,65 @@ class ClientInfo : public DataBaseTimeObject
         std::vector<ClientInfo> getHistoryClientInfo(CIDRAddress deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
         std::vector<ClientInfo> getHistoryClientInfo(std::string deviceDiscoveredIp, int n = 0); // takes existing deviceDiscoveredID
 */
+        /**
+         * \brief Selects from DB a client info by ID. Rewrites object.
+         *
+         * If client info was found:
+         * -selects exactly one row.
+         * -state changed to OS_SELECTED.
+         *
+         * If client info was not found:
+         * -selects nothing.
+         * -everything remains the same.
+         *  
+         * \param id - id of the row in database.
+         *  
+         * \return A number of rows selected.
+         */
         unsigned int selectById(int id);
+        
     protected:
         
-        void clear_this();
-        
         /**
-         * \brief TODO if need.
+         * \brief Checks if client was identified (by ID or by Name).
+         * 
+         * \return true if check was successful.
          */
         bool check();
 
         /**
-         *  \brief inserts a row..
+         * \brief Internal method for insert.
          *
-         *  All necessary pre-actions are made in dbsave.
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_insert();
         
         /**
-         *  \brief updates a row.
+         * \brief Internal method for update.
          *
-         *  All necessary pre-actions are made in dbsave.
+         * All necessary pre-actions are made in dbsave.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_update();
-        
+
         /**
-         *  \brief deletes a row.
+         * \brief Internal method for delete.
+         * 
+         * All necessary pre-actions are made in dbdelete.
          *
-         *  All necessary pre-actions are made in dbdelete.
+         * \return A Number of rows affected.
          */
         unsigned int db_delete();
-        
+
         /**
          * \brief Selects a timestempt for stored ID.
          *
          *  All necessary pre-actions are made in selectTimestamp.
+         *
+         * \return A Number of rows affected.
          */
         unsigned int db_select_timestamp();
 
@@ -235,9 +261,15 @@ class ClientInfo : public DataBaseTimeObject
          *
          * \return Returns true if client with specified ID was found.
          */
-        bool selectClientName( int clientId);
+        bool selectClientName(int clientId);
         
     private:
+
+        /**
+         * \brief Returns private fields of this object to initial state.
+         */
+        void clear_this();
+        
         /////////////////////////////////
         /* fields from the DB*/
         /////////////////////////////////

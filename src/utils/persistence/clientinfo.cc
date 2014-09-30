@@ -82,11 +82,11 @@ std::string
 ClientInfo::
 toString()
 {
-    return DataBaseTimeObject::toString() + ";" +
-                            "clientId=" + std::to_string(_clientId)           + ";" +
-                            "clientName="+ _clientName         + ";" +
-                            "deviceId=" + std::to_string(_discoveredDeviceId) + ";" +
-                            "blobdata=" + _blobData;
+    return DataBaseTimeObject::toString()                                      + ";" +
+           "clientId="                   + std::to_string(_clientId)           + ";" +
+           "clientName="                 + _clientName                         + ";" +
+           "deviceId="                   + std::to_string(_discoveredDeviceId) + ";" +
+           "blobdata="                   + _blobData                           ;
 }
 
 unsigned int ClientInfo::selectLastRecord()
@@ -188,21 +188,22 @@ selectLastRecord(int clientId, int discoveredDeviceId)
     
     //   Should return one row or nothing.
     tntdb::Result result = st.setInt("id_deviceidscovered", discoveredDeviceId).
-                                setInt("id_client", clientId).select();
+                              setInt("id_client", clientId).
+                              select();
     int rsize = result.size();
     if ( rsize == 1)
     {
         tntdb::Result::const_iterator it = result.begin();
         tntdb::Row row = *it;
 
-        //fill all fields                                 
         //id
         int tmp = -1;
         row[0].get(tmp);
         this->setId(tmp);
     
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
+                                       // So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[1].get(tmp_t);
         if (isNotNull)
@@ -257,8 +258,9 @@ db_select_timestamp()
         tntdb::Row row = st.setInt("id", this->getId()).selectRow();
           
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
+        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
+                                    //So need to define initial value.
+                                    // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[0].get(tmp_t);
         if (isNotNull)
             this->setTimestamp(tmp_t);
@@ -296,21 +298,22 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int discovered
     
     //   Should return one row or nothing.
     tntdb::Result result = st.setInt("id_devicediscovered", discoveredDeviceId).
-                                setString("clientname", clientName).select();
+                              setString("clientname", clientName).
+                              select();
     int rsize = result.size();
     if ( rsize == 1)
     {
         tntdb::Result::const_iterator it = result.begin();
         tntdb::Row row = *it;
 
-        //fill all fields                         
         //id
         int tmp = -1 ;
         row[0].get(tmp);
         this->setId(tmp);
     
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
+                                       // So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[1].get(tmp_t);
         if (isNotNull)
@@ -356,7 +359,6 @@ getDeviceDiscoveredId()
     return _discoveredDeviceId;
 }
 
-
 std::string
 ClientInfo::
 getBlobData()
@@ -375,10 +377,27 @@ void
 ClientInfo::
 setClientId(int clientId)
 {
-    //TODO
-    if (this->selectClientName(clientId))
-        _clientId = clientId;
+    if ( (_clientId != clientId) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case objectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+                if (this->selectClientName(clientId))
+                    _clientId = clientId;
+                break;
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                if (this->selectClientName(clientId))
+                    _clientId = clientId;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
 }
+
 ClientInfo::
 ~ClientInfo()
 {
@@ -389,21 +408,49 @@ void
 ClientInfo::
 setBlobData(std::string blobData)
 {
-    //TODO
-    _blobData = blobData;
+    if ( (_blobData != blobData) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case objectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _blobData = blobData;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 void
 ClientInfo::
 setDeviceDiscoveredId(int discoveredDeviceId)
 {
-    //TODO
-    _discoveredDeviceId = discoveredDeviceId;
+    if ( (_discoveredDeviceId != discoveredDeviceId) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case objectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _discoveredDeviceId = discoveredDeviceId;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 bool
 ClientInfo::
-selectClientName( int clientId)
+selectClientName(int clientId)
 {
     Client client = Client(this->getUrl());
     client.selectById(clientId);
@@ -437,7 +484,8 @@ selectById(int id)
         tntdb::Row row = st.setInt("id", id).selectRow();
           
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
+                                       // So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[0].get(tmp_t);
         if (isNotNull)
