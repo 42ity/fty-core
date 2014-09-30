@@ -65,7 +65,7 @@ ClientInfo::
 ClientInfo(std::string url, std::string clientName)
     :DataBaseTimeObject(url)
 {
-    this->clear();
+    this->clear_this();
     _clientName = clientName;
     _clientId = Client::selectId(url, clientName);
 }
@@ -74,7 +74,7 @@ ClientInfo::
 ClientInfo(std::string url,  int clientId)
     :DataBaseTimeObject(url)
 {
-    this->clear();
+    this->clear_this();
     this->setClientId(clientId);
 }
 
@@ -84,7 +84,7 @@ toString()
 {
     return DataBaseTimeObject::toString() + ";" +
                             "clientId=" + std::to_string(_clientId)           + ";" +
-                            "clientName"+ _clientName         + ";" +
+                            "clientName="+ _clientName         + ";" +
                             "deviceId=" + std::to_string(_discoveredDeviceId) + ";" +
                             "blobdata=" + _blobData;
 }

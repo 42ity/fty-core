@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file clientinfo.h
-    \brief A basic class for manipulating with database objects stored 
+    \brief A class for manipulating with database objects stored 
     in the table t_bios_client_info.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -30,22 +30,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
+/*
+ * \brief ClientInfo is a class for representing a database entity
+ * t_bios_client_info.
+ */
 class ClientInfo : public DataBaseTimeObject
 {
     public:
 
         /**
-         * \brief Creates a new object with specified connection.
+         * \brief Creates a new object and specifies a connection.
+         *
+         * Creates a new object for the specified url in the state OS_NEW.
+         *
+         * \param url - a connection to the database.
          */
         ClientInfo(std::string url);
 
-        /** 
-         * \brief creates a new object with specified connection for a client clientName.
+        /**
+         * \brief Creates a new object with the specified ClientName and 
+         * specifies a connection.
+         *
+         * Creates a new object with the specified ClientName for 
+         * the specified url in the state OS_NEW.
+         *
+         * \param clientName - a name of the client who provides this information.
+         * \param url        - a connection to the database.
          */
         ClientInfo(std::string url, std::string clientName);
         
-        /** 
-         * \brief creates a new object with specified connection for a client clientId.
+        /**
+         * \brief Creates a new object with the specified ClientId and 
+         * specifies a connection.
+         *
+         * Creates a new object with the specified ClientId for 
+         * the specified url in the state OS_NEW.
+         *
+         * \param clientId - an id of the client who provides this information.
+         * \param url      - a connection to the database.
          */
         ClientInfo(std::string url,  int clientId);
 

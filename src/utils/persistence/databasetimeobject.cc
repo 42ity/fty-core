@@ -47,7 +47,7 @@ void
 DataBaseTimeObject::
 clear_this()
 {
-    _timestamp = time(nullptr); 
+    _timestamp = time(NULL); 
 }
 
 DataBaseTimeObject::
@@ -61,9 +61,7 @@ DataBaseTimeObject::
 toString()
 {
     std::string timestr = ctime(&_timestamp);
-    std::string tmp =   "url="  + this->getUrl()                   + ";" +
-                        "id="   + std::to_string(this->getId())    + ";" +
-                        "state=" + objectStatetoString(this->getState()) + ";" +
+    std::string tmp =   DataBaseObject::toString() + ";" +
                         "time=" + timestr;
     return tmp;
 }
