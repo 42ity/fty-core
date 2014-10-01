@@ -83,7 +83,33 @@ libpriv_subprocess_la_SOURCES = \
 								src/utils/subprocess.cc
 libpriv_subprocess_la_LIBADD = -lcxxtools
 
-libpriv_subprocess_la_LIBADD = -lcxxtools
+noinst_LTLIBRARIES += \
+					  libpriv-cidr.la
+libpriv_cidr_la_SOURCES = \
+						 src/utils/cidr.h \
+						 src/utils/cidr.cc
+
+noinst_LTLIBRARIES += \
+					  libpriv-db.la
+
+libpriv_db_la_SOURCES = \
+								 src/utils/db.h \
+								 src/utils/persistence/client.cc \
+								 src/utils/persistence/client.h \
+								 src/utils/persistence/clientinfo.cc \
+								 src/utils/persistence/clientinfo.h \
+								 src/utils/persistence/databaseobject.cc \
+								 src/utils/persistence/databaseobject.h \
+								 src/utils/persistence/databasetimeobject.cc \
+								 src/utils/persistence/databasetimeobject.h \
+								 src/utils/persistence/device_discovered.cc \
+								 src/utils/persistence/device_discovered.h \
+								 src/utils/persistence/devicetype.cc \
+								 src/utils/persistence/devicetype.h \
+								 src/utils/persistence/ip.cc \
+								 src/utils/persistence/ip.h \
+								 src/utils/persistence/nethistory.cc \
+								 src/utils/persistence/nethistory.h
 
 BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
 
@@ -178,6 +204,21 @@ test_json_schemas_LDADD = \
 test_json_schemas_LDFLAGS = \
                     		$(LIBVARIANT_LIBS)
 test_json_schemas_CPPFLAGS = -I $(top_srcdir)/tests/include -I $(top_srcdir)/tests/utils/messages -D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
+
+check_PROGRAMS += \
+				  test-db
+test_db_SOURCES = \
+				  tests/utils/test-clientinfo.cc \
+				  tests/utils/test-device-discovered.cc \
+				  tests/utils/test-devicetype.cc \
+			          tests/utils/test-client.cc
+
+test_db_LDADD = \
+				libpriv-db.la \
+				libpriv-cidr.la \
+                libpriv-test-run.la
+test_db_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/ -I $(top_srcdir)/src/utils/persistence -I$(top_srcdir)/tools
+test_db_LDFLAGS = -ltntdb -lcxxtools -lcidr
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
