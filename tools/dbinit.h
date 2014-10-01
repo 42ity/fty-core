@@ -1,7 +1,7 @@
 #ifndef DBINIT_H_
 #define DBINIT_H_
 
-#include "databaseobject.h"
+#include "persistence/databaseobject.h"
 #include "dbpath.h"
 
 static const std::string osnew       = utils::objectStatetoString(utils::ObjectState::OS_NEW);
