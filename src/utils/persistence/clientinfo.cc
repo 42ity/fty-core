@@ -381,7 +381,7 @@ setClientId(int clientId)
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case objectState::OS_INSERTED:
+            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
                 if (this->selectClientName(clientId))
                     _clientId = clientId;
@@ -412,7 +412,7 @@ setBlobData(std::string blobData)
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case objectState::OS_INSERTED:
+            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
@@ -434,7 +434,7 @@ setDeviceDiscoveredId(int discoveredDeviceId)
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case objectState::OS_INSERTED:
+            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
