@@ -18,3 +18,9 @@ src/cli/cli-network.cc
 ---------------------
  * Command line output does not match http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
  * cli should use cidr to perform check on input values
+
+BIOS-354:
+-> Write all unit tests.
+-> Write documentation (3 classes are not documented properly)
+-> It is hardly posible to use SQLite for testing purposes, because it database often become busy and tests are failed. It caused the simplisity of SQLite (it can'r properly work with connection-pool and concurrent threads).
+   So need to test on MariaDb.
