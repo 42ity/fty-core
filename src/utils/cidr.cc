@@ -18,6 +18,12 @@ CIDRAddress::CIDRAddress(const CIDRAddress& address) {
   set(address);
 }
 
+CIDRAddress::CIDRAddress(CIDRAddress&& other) {
+  _cidr = NULL;
+  setCidrPtr(other._cidr);;
+  other._cidr = NULL;
+}
+
 CIDRAddress& CIDRAddress::operator++() {
   struct in_addr inaddr;
   struct in6_addr in6addr;
@@ -93,6 +99,17 @@ CIDRAddress CIDRAddress::operator--(int) {
 void CIDRAddress::setCidrPtr(CIDR *newcidr) {
   if(_cidr) cidr_free(_cidr);
   _cidr = newcidr;
+}
+
+int CIDRAddress::protocol() const {
+  if( ! valid() ) { return 0; }
+  if( cidr_get_proto(_cidr) == CIDR_IPV4 ) {
+    return 4;
+  }
+  if( cidr_get_proto(_cidr) == CIDR_IPV6 ) {
+    return 6;
+  }
+  return 0;
 }
 
 int CIDRAddress::prefix() {
@@ -287,6 +304,15 @@ CIDRAddress& CIDRAddress::operator=(const CIDRAddress& address){
   return *this;
 }
 
+CIDRAddress& CIDRAddress::operator=(CIDRAddress&& address){
+  if( this != &address ){
+    setCidrPtr( address._cidr );
+    address._cidr = NULL;
+  }
+  return *this;
+}
+
+
 CIDRAddress::~CIDRAddress() {
   setCidrPtr( NULL );
 }
@@ -370,12 +396,11 @@ bool CIDRList::add(const std::string net) {
 bool CIDRList::add(const CIDRAddress& net) {
   if( ! net.valid() ) { return false; }
   for(unsigned int i=0; i<_networks.size(); i++ ) {
-    if( _networks[i]->equals(net) ) {
+    if( _networks[i].equals(net) ) {
       return false;
     }
   }
-  CIDRAddress *copy = new CIDRAddress(net);
-  _networks.push_back(copy);
+  _networks.push_back(net);
   return true;
 }
 
@@ -387,19 +412,18 @@ bool CIDRList::exclude(const std::string net) {
 bool CIDRList::exclude(const CIDRAddress& net) {
   if( ! net.valid() ) return false;
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ) {
-    if( _excludedNetworks[i]->equals(net) ) return false;
+    if( _excludedNetworks[i].equals(net) ) return false;
   }
-  CIDRAddress *copy = new CIDRAddress(net);
-  _excludedNetworks.push_back(copy);
+  _excludedNetworks.push_back(net);
   return true;
 }
 
 CIDRAddress CIDRList::firstAddress() {
   CIDRAddress addr, result;
   if( ! _networks.size() ) { return result; }
-  result = _networks[0]->host();
+  result = _networks[0].host();
   for(unsigned int i=1; i<_networks.size(); i++ ){
-    addr = _networks[i]->host();
+    addr = _networks[i].host();
     if( addr < result ) result = addr;
   }
   return result;
@@ -408,9 +432,9 @@ CIDRAddress CIDRList::firstAddress() {
 CIDRAddress CIDRList::lastAddress() {
   CIDRAddress addr, result;
   if( ! _networks.size() ) { return result; }
-  result = _networks[0]->hostMax();
+  result = _networks[0].hostMax();
   for(unsigned int i=1; i<_networks.size(); i++ ){
-    addr = _networks[i]->hostMax();
+    addr = _networks[i].hostMax();
     if( addr >  result ) result = addr;
   }
   return result;
@@ -421,11 +445,11 @@ CIDRAddress CIDRList::bestNetworkFor(CIDRAddress& address) {
   CIDRAddress net;
 
   for(unsigned int i=0; i<_networks.size(); i++ ) {
-    if( _networks[i]->contains(address) ) {
-      prefix = _networks[i]->prefix();
+    if( _networks[i].contains(address) ) {
+      prefix = _networks[i].prefix();
       if(prefix > bestprefix) {
         bestprefix = prefix;
-        net = *_networks[i];
+        net = _networks[i];
       }
     }
   }
@@ -435,13 +459,14 @@ CIDRAddress CIDRList::bestNetworkFor(CIDRAddress& address) {
 void CIDRList::_skipToNextPool(CIDRAddress& address) {
   CIDRAddress selected;
   for(unsigned int i=0; i<_networks.size(); i++ ) {
-    if( *_networks[i] > address ) {
+    // we should not walk trough ipv6
+    if( _networks[i] > address && (_networks[i].protocol() == 4 ) ) {
       if( selected.valid() ) {
-        if( *_networks[i] < selected ) {
-          selected = _networks[i]->host();
+        if( _networks[i] < selected ) {
+          selected = _networks[i].host();
         }
       } else {
-        selected = _networks[i]->host();
+        selected = _networks[i].host();
       }
     }
   }
@@ -455,14 +480,14 @@ void CIDRList::_skipToExcludeEnd(CIDRAddress& address) {
   CIDRAddress selected = excludeEnd;
   
   for(unsigned int i=0; i<_networks.size(); i++ ) {
-    if( (*_networks[i] > address) && (*_networks[i] < excludeEnd) ) {
+    if( (_networks[i] > address) && (_networks[i] < excludeEnd) ) {
       if( selected.valid() ) {
-        if( *_networks[i] < selected ) {
-          selected = _networks[i]->host();
+        if( _networks[i] < selected ) {
+          selected = _networks[i].host();
           --selected;
         }
       } else {
-        selected = _networks[i]->host();
+        selected = _networks[i].host();
         --selected;
       }
     }
@@ -480,11 +505,11 @@ CIDRAddress CIDRList::bestExcludeFor(CIDRAddress& address) {
   int prefix, bestprefix = -1;
   CIDRAddress net;
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ) {
-    if( _excludedNetworks[i]->contains(address) ) {
-      prefix = _excludedNetworks[i]->prefix();
+    if( _excludedNetworks[i].contains(address) ) {
+      prefix = _excludedNetworks[i].prefix();
       if(prefix > bestprefix) {
         bestprefix = prefix;
-        net = *_excludedNetworks[i];
+        net = _excludedNetworks[i];
       }
     }
   }
@@ -499,14 +524,14 @@ int CIDRList::bestExcludePrefixFor(CIDRAddress& address) {
 
 bool CIDRList::includes(const CIDRAddress& address) {
   for(unsigned int i=0; i<_networks.size(); i++ ){
-    if( _networks[i]->contains(address)  ) return true;
+    if( _networks[i].contains(address)  ) return true;
   }
   return false;
 }
 
 bool CIDRList::excludes(const CIDRAddress& address) {
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ){
-    if( _excludedNetworks[i]->contains(address) ) {
+    if( _excludedNetworks[i].contains(address) ) {
       return true;
     }
   }
@@ -514,13 +539,7 @@ bool CIDRList::excludes(const CIDRAddress& address) {
 }
 
 CIDRList::~CIDRList(){
-  unsigned int i;
-  for(i=0; i < _networks.size(); i++ ) {
-    if(_networks[i] != NULL)  { delete _networks[i]; }
-  }
-  for(i=0; i < _excludedNetworks.size(); i++ ) {
-    if(_excludedNetworks[i] != NULL) { delete _excludedNetworks[i]; }
-  }
+
 }
 
 } // namespace utils

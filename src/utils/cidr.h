@@ -106,6 +106,12 @@ public:
   CIDRAddress(const CIDRAddress& address);
 
   /**
+   * \brief Creates new object with specified network (move constructor).
+   * \param reference to other CIDRAddress object.
+   */
+  CIDRAddress(CIDRAddress&& other);
+
+  /**
    * \brief increases IPv4 address of 1.
    *
    * If object if IPv4 valid address (network or host) address is incremented by 1.
@@ -160,6 +166,7 @@ public:
    *
    */
   CIDRAddress& operator=(const CIDRAddress& address);
+  CIDRAddress& operator=(CIDRAddress&& address);
 
   /**
    * \brief compare two CIDRAddress.
@@ -191,6 +198,11 @@ public:
    */
   bool operator==(const std::string &a2);
 
+  /**
+   * \brief address type
+   * \return int 0 - invalid, 4 - ipv4, 6 - ipv6
+   */
+  int protocol() const;
   /**
    * \brief prefix of CIDRAddress.
    */
@@ -458,9 +470,9 @@ public:
   bool excludes(const CIDRAddress& address);
 private:
   // list of includes
-  std::vector<CIDRAddress *> _networks;
+  std::vector<CIDRAddress> _networks;
   // list of excludes
-  std::vector<CIDRAddress *> _excludedNetworks;
+  std::vector<CIDRAddress> _excludedNetworks;
   // highest address from list
   CIDRAddress _last;
 
