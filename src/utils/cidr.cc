@@ -329,9 +329,18 @@ bool CIDRAddress::operator==(const CIDRAddress &a2) {
   return (compare(a2) == 0);
 }
 
+bool CIDRAddress::operator!=(const CIDRAddress &a2) {
+  return (compare(a2) != 0);
+}
+
 bool CIDRAddress::operator==(const std::string &a2) {
   CIDRAddress ca2(a2);
   return (compare(ca2) == 0);
+}
+
+bool CIDRAddress::operator!=(const std::string &a2) {
+  CIDRAddress ca2(a2);
+  return (compare(ca2) != 0);
 }
 
 std::ostream& operator<<(std::ostream& os, CIDRAddress& address)

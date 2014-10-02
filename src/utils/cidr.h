@@ -191,12 +191,14 @@ public:
    * \see   operator>(const CIDRAddress& a2);
    */
   bool operator==(const CIDRAddress &a2);
+  bool operator!=(const CIDRAddress &a2);
 
   /**
    * \brief compare CIDRAddress with string.
    * \see   operator>(const CIDRAddress& a2);
    */
   bool operator==(const std::string &a2);
+  bool operator!=(const std::string &a2);
 
   /**
    * \brief address type
