@@ -17,6 +17,7 @@ TEST_CASE("CIDR Operators","[cidr][operators]") {
   REQUIRE( a4small < a4big );
   a6small--;
   REQUIRE( a6small < a6big );
+  REQUIRE( a6small != a6big );
 }
 
 TEST_CASE("CIDR string manipulation","[cidr][operators]") {
