@@ -84,12 +84,23 @@ bool
 NetHistory::
 check()
 {
-    if (_name.length() <= this->getNamesLength())
+    if ((_name.length() <= this->getNamesLength()) &&
+        this->check_command() )
         return true;
     else
         return false;
 }
 
+bool
+NetHistory::
+check_command()
+{
+    if  ( ( _command == 'a') || ( _command == 'd') )
+        return true;
+    else
+        return false;
+
+}
 
 unsigned int 
 NetHistory::

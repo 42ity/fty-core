@@ -16,7 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file NetHistory.h
-    \brief Class for manipulating with database table t_bios_net_history
+    \brief A class for manipulating with the database objects stored 
+    in the table t_bios_net_history.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
@@ -32,6 +33,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
+/*
+ * \brief NetHistory is a class for representing a database entity
+ * t_bios_device_type.
+ */
 class NetHistory : public DataBaseTimeObject
 {
     public:
@@ -40,21 +45,35 @@ class NetHistory : public DataBaseTimeObject
          * \brief Creates a new object and specifies a connection.
          *
          * Creates a new object for the specified url in state OS_NEW.
+         *
+         * \param url - a connection to the database.
          */
         NetHistory(std::string url);
 
         /**
-         * \brief Returns an object to initial state. It doesn't manipulate with database.
+         * \brief Returns an object to OS_NEW state with initial parameters.
+         *
+         * Returns an object to initial state. It doesn't manipulate with database.
          */
         void clear();
 
         /**
-         * \brief Returns all fields as string
+         * \brief Returns all fields as string.
          */
         std::string toString();
 
         ~NetHistory();
 
+        /**
+         * \brief Sets a new name for the object.
+         *
+         * If state is OS_DELETED then do nothing.
+         * If newname = oldname then do nothing.
+         * If state is OS_SELECTED and newname != oldname.
+         * than state is changed to OS_UPDATED.
+         *
+         * \param name - new name of the device type.
+         */    
         void setMac(std::string mac);
 
         void setMask(int mask);
@@ -82,11 +101,13 @@ class NetHistory : public DataBaseTimeObject
         unsigned int selectById(int id);
 
     protected:
-        
+       
+        bool check_command();
+         
         void clear_this();
 
         /**
-         * \brief Checks the name length
+         * \brief Checks the name length, command
          *
          * TODO add more checks if needed
          */
