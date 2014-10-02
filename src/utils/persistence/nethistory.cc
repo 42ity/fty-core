@@ -102,7 +102,7 @@ db_insert()
     tntdb::Statement st = conn.prepareCached(
         " insert into"
         " v_bios_net_history (id,command,mask,mac,timestamp,ip,name)"
-        " values (NULL,:command,:mask,:mac, NOW(),:ip, :name)"
+        " values (NULL,:command,:mask, conv(:mac, 16, 10), NOW(),:ip, :name)"
         );
     
     // Insert one row or nothing
@@ -154,7 +154,7 @@ db_update()
     tntdb::Statement st = conn.prepareCached(
         " update"
         " v_bios_net_history"
-        " set ip = :ip, mac = :mac , mask = :mask , command = :command , name = :name"     //, aaa = :aa
+        " set ip = :ip, mac = conv(:mac,16,10) , mask = :mask , command = :command , name = :name"     //, aaa = :aa
         " where id = :id"
         );
     
@@ -181,7 +181,7 @@ selectById(int id)
      */
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " ip,mask,mac,command,timestamp,name"
+        " ip,mask,conv(mac,10,16),command,timestamp,name"
         " from"
         " v_bios_net_history v"
         " where v.id = :id"
@@ -211,7 +211,7 @@ selectById(int id)
         row[3].get(_command);
 
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[4].get(tmp_t);
         if (isNotNull)
@@ -359,6 +359,29 @@ setIp(CIDRAddress ip)
 
 void 
 NetHistory::
+setIp(std::string ip)
+{
+    CIDRAddress tmp_ip(ip);
+    if (  (_ip != tmp_ip ) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _ip = tmp_ip;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }  
+
+}
+
+void 
+NetHistory::
 setCommand(char command)
 {
     if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) )
@@ -402,7 +425,7 @@ db_select_timestamp()
           
         
         //timestamp
-        time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
+        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
         bool isNotNull = row[0].get(tmp_t);
         if (isNotNull)
