@@ -45,6 +45,7 @@ clear_this()
     _mask = 0;
     _ip = CIDRAddress();
     _command = 'z';
+    _name = "";
 }
 
 void
@@ -65,11 +66,12 @@ std::string
 NetHistory::
 toString()
 {
-    return DataBaseTimeObject::toString() + ";" +
-             "mac=" + _mac + ";" +
-             "mask=" + std::to_string(_mask) +";" +
-             "ip" + _ip.toString() +";" +
-             "command" +_command;
+    return DataBaseTimeObject::toString()         + ";" +
+             "mac="       + _mac                  + ";" +
+             "mask="      + std::to_string(_mask) + ";" +
+             "ip="        + _ip.toString()        + ";" +
+             "command="   + _command              + ";" +
+             "name="      + _name                 ; 
 }
 
 NetHistory::
@@ -82,7 +84,10 @@ bool
 NetHistory::
 check()
 {
-    return true;
+    if (_name.length() <= this->getNamesLength())
+        return true;
+    else
+        return false;
 }
 
 
@@ -96,8 +101,8 @@ db_insert()
 
     tntdb::Statement st = conn.prepareCached(
         " insert into"
-        " v_bios_net_history (id,command,mask,mac,timestamp,ip)"
-        " values (NULL,:command,:mask,:mac, NOW(),:ip)"
+        " v_bios_net_history (id,command,mask,mac,timestamp,ip,name)"
+        " values (NULL,:command,:mask,:mac, NOW(),:ip, :name)"
         );
     
     // Insert one row or nothing
@@ -105,6 +110,7 @@ db_insert()
                          setInt("mask",_mask).
                          setString("mac",_mac).
                          setString("ip",_ip.toString()).
+                         setString("name",_name).
                          execute();
     
     if ( n == 1 )
@@ -148,7 +154,7 @@ db_update()
     tntdb::Statement st = conn.prepareCached(
         " update"
         " v_bios_net_history"
-        " set ip = :ip, mac = :mac , mask = :mask , command = :command"     //, aaa = :aa
+        " set ip = :ip, mac = :mac , mask = :mask , command = :command , name = :name"     //, aaa = :aa
         " where id = :id"
         );
     
@@ -157,6 +163,7 @@ db_update()
                          setInt("mask",_mask).
                          setString("mac", _mac).
                          setChar("command",_command).
+                         setString("name",_name).
                          execute();
     
     // n is 0 or 1
@@ -174,7 +181,7 @@ selectById(int id)
      */
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " ip,mask,mac,command,timestamp"
+        " ip,mask,mac,command,timestamp,name"
         " from"
         " v_bios_net_history v"
         " where v.id = :id"
@@ -200,10 +207,13 @@ selectById(int id)
         //mac
         row[2].get(_mac);
 
+        //command
+        row[3].get(_command);
+
         //timestamp
         time_t tmp_t = time(nullptr);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
                                        // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[3].get(tmp_t);
+        bool isNotNull = row[4].get(tmp_t);
         if (isNotNull)
             this->setTimestamp(tmp_t);
         else
@@ -211,7 +221,10 @@ selectById(int id)
             //TODO
             //log THIS SHOULD NEVER HAPPEN
         }
-    
+        
+        //name
+        row[5].get(_name);
+        
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -251,28 +264,118 @@ getMac()
     return _mac;
 }
 
+std::string 
+NetHistory::
+getName()
+{
+    return _name;
+}
+
+void
+NetHistory::
+setName(std::string name)
+{
+    if ( (_name != name) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _name = name;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+}
+
 
 void
 NetHistory::
 setMask(int mask)
 {
-    //TODO
-    _mask = mask;
+    if ( (_mask != mask) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _mask = mask;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
 }
 
 void
 NetHistory::
+setMac(std::string mac)
+{
+    if ( (_mac != mac) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _mac = mac;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+}
+
+
+void
+NetHistory::
 setIp(CIDRAddress ip)
-{//TODO
-    _ip = ip;
+{
+    if (  (!(_ip == ip)) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _ip = ip;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }  
 }
 
 void 
 NetHistory::
 setCommand(char command)
 {
-    //TODO
-    _command = command;
+    if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+            case ObjectState::OS_INSERTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                 _command = command;
+                 break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }  
 }
 
 unsigned int

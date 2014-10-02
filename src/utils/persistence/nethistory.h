@@ -65,6 +65,8 @@ class NetHistory : public DataBaseTimeObject
 
         void setCommand(char command);
 
+        void setName(std::string name);
+
         std::string getMac();
 
         int getMask();
@@ -72,6 +74,8 @@ class NetHistory : public DataBaseTimeObject
         CIDRAddress getIp();
 
         char getCommand();
+
+        std::string getName();
 
         CIDRAddress getNetworkCIDR();
 
@@ -125,6 +129,8 @@ class NetHistory : public DataBaseTimeObject
         CIDRAddress _ip;
 
         char _command;
+
+        std::string _name;
 
 }; // end of the class
 
