@@ -93,7 +93,7 @@ noinst_LTLIBRARIES += \
 					  libpriv-db.la
 
 libpriv_db_la_SOURCES = \
-								 src/utils/db.h \
+								 src/utils/persistence.h \
 								 src/utils/persistence/client.cc \
 								 src/utils/persistence/client.h \
 								 src/utils/persistence/clientinfo.cc \
@@ -253,13 +253,37 @@ cli_LDFLAGS = -ljsoncpp $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += \
 				cored
+
 cored_SOURCES = \
 				src/cored/main.h \
 				src/cored/main.cc
+
 nodist_cored_SOURCES = \
 				src/utils/messages/json_schemas.h
 cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
+
+#bin_PROGRAMS += \
+#				simple_c
+
+#simple_c_SOURCES = \
+#	src/simple/c.cc \
+#	src/simple/defs.h
+
+#simple_c_LDFLAGS = -lczmq
+
+bin_PROGRAMS += \
+				simple_s
+
+simple_s_SOURCES = \
+	src/simple/s.cc \
+	src/simple/defs.h \
+	tools/dbinit.h \
+	src/utils/persistence.h
+
+simple_s_LDFLAGS = -lcidr -lczmq -lcxxtools -ltntdb
+simple_s_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
+simple_s_LDADD = libpriv-db.la libpriv-cidr.la
 
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
