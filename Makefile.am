@@ -128,6 +128,25 @@ endif
 EXTRA_DIST += tools/run-test.sh
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 
+
+#Test case examples:
+#
+#thisTestOnly            Matches the test case called, 'thisTestOnly'
+#"this test only"        Matches the test case called, 'this test only'
+#these*                  Matches all cases starting with 'these'
+#exclude:notThis         Matches all tests except, 'notThis'
+#~notThis                Matches all tests except, 'notThis'
+#~*private*              Matches all tests except those that contain 'private'
+#a* ~ab* abc             Matches all tests that start with 'a', except those that
+#                        start with 'ab', except 'abc', which is included
+#
+#Names within square brackets are interpreted as tags. A series of tags form an AND expression wheras a comma-separated sequence forms an OR expression. e.g.:
+#
+#[one][two],[three]
+
+
+#AM_LOG_FLAGS = exclude:[db*]  -t
+
 check_LTLIBRARIES += \
 					  libpriv-test-run.la
 
