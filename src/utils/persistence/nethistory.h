@@ -65,11 +65,11 @@ class NetHistory : public DataBaseTimeObject
         ~NetHistory();
 
         /**
-         * \brief Sets a new name for the object.
+         * \brief Sets a new mac address for the object.
          *
          * If state is OS_DELETED then do nothing.
-         * If newname = oldname then do nothing.
-         * If state is OS_SELECTED and newname != oldname.
+         * If newmac = oldmac then do nothing.
+         * If state is OS_SELECTED/OS_INSERTED and newmac != oldmac.
          * than state is changed to OS_UPDATED.
          *
          * \param name - new name of the device type.

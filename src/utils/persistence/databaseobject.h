@@ -102,18 +102,7 @@ class DataBaseObject
          */
         unsigned int dbdelete();
         
-        /**
-         * \brief Creates a new object and specifies a connection.
-         *
-         * Creates a new object for the specified url in state OS_NEW.
-         * 
-         * \param url - connection to the database
-         */
-        DataBaseObject(std::string url);
-
-        //TODO
-        ~DataBaseObject();
-        
+                
         /**
          * \brief Gets a value of object's state.
          *
@@ -186,7 +175,19 @@ class DataBaseObject
 
         */
     protected:
-        
+       
+       /**
+         * \brief Creates a new object and specifies a connection.
+         *
+         * Creates a new object for the specified url in state OS_NEW.
+         * 
+         * \param url - connection to the database
+         */
+        DataBaseObject(std::string url);
+
+        //TODO
+        ~DataBaseObject();
+ 
         /**
          * \brief Sets a new state for the object.
          *
