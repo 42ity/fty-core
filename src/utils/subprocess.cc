@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cstring>
 #include <cstdlib>
 #include <stdexcept>
+#include <algorithm>
 
 #include <sys/types.h>
 #include <signal.h>
@@ -175,28 +176,27 @@ void ProcessQue::schedule(bool schedule_new) {
     //1. check a status of _running
     //TODO: can't this work with for (auto &taskp_i: _running)??
 
-    for (auto proc_i = _running.begin(); proc_i != _running.end(); ) {
-
-        auto proc = *proc_i;
-
+    for (auto proc: _running) {
         proc->poll();
         if (!proc->isRunning()) {
             _done.push_back(proc);
-            _running.erase(proc_i);
-            _running_c--;
-        } else {
-            proc_i++;
         }
     }
 
+    // http://stackoverflow.com/a/9053941
+    _running.erase(
+            std::remove_if(_running.begin(), _running.end(),
+            [] (SubProcess *proc) -> bool {return !proc->isRunning();}),
+            _running.end());
+
     // do nothing if we should not or once we've reached a limit
-    if (!schedule_new || (_running_c == _running_limit)) {
+    if (!schedule_new || (_running.size() == _running_limit)) {
         return;
     }
 
     // 2. start enough new tasks
-    auto cnt = std::min((_running_limit - _running_c), _incomming.size());
-    for (auto i = 0u; i != cnt; i++) {
+    auto cnt = std::min((_running_limit - _running.size()), _incomming.size());
+    for (auto i = 0u; i < cnt; i++) {
 
         auto args = _incomming[0];
         _incomming.pop_front();
@@ -204,7 +204,6 @@ void ProcessQue::schedule(bool schedule_new) {
         auto proc = new SubProcess(args);
         proc->run();
         _running.push_front(proc);
-        _running_c++;
     }
 }
 

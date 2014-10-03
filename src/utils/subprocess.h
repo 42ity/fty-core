@@ -172,7 +172,6 @@ class ProcessQue {
         typedef std::deque<SubProcess*>::const_iterator const_iterator;
 
         explicit ProcessQue(std::size_t limit = 4) :
-            _running_c(0),
             _running_limit(limit),
             _incomming(),
             _running(),
@@ -196,7 +195,6 @@ class ProcessQue {
 
 
     protected:
-        std::size_t _running_c;
         std::size_t _running_limit;
         std::deque<Argv> _incomming;
         std::deque<SubProcess*> _running;
