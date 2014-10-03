@@ -176,6 +176,8 @@ Summary:
         LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
         LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
         LIBCIDR_LIBS:            ${LIBCIDR_LIBS}
+        LIBJSONCPP_CFLAGS:       ${LIBJSONCPP_CFLAGS}
+        LIBJSONCPP_LIBS:         ${LIBJSONCPP_LIBS}
 
         debug mode:              ${enable_debug:-no}
 ])
