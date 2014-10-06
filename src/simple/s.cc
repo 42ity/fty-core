@@ -2,6 +2,8 @@
 #include "dbinit.h"
 #include "defs.h"
 #include <algorithm>
+#include <stdlib.h>
+#include <stdio.h>
 
 #define MSG_T_NETMON  1
 
@@ -9,8 +11,10 @@ void persistence_actor(zsock_t *pipe, void *args) {
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
+
     zpoller_t *poller = zpoller_new(insock, pipe, NULL);
     assert(poller);
+
     zsock_signal(pipe, 0);
  
     size_t i = 0;
@@ -21,39 +25,28 @@ void persistence_actor(zsock_t *pipe, void *args) {
         if (which == pipe) {
             break;
         }
-
-        
-        char *name; 
-        char *ipver;
-        char *ipaddr;
-        char *prefixlen;
-        char *mac;
-        char *unknown; // TODO because we use router/dealer there appears one more frame with empty string.
-        char *command;
-        int mask;
+        if (which == insock)
+        {
  
-        //zmsg_t *msg = zmsg_new();
-
-        zstr_recvx(insock, &unknown,&name,&ipver,&ipaddr,&mac,&command,&prefixlen,NULL);
-
-//        zmsg_pop(msg);  // remove routing info
-//        zmsg_pushstrf(msg, "%d: PERSISTENCE got ", i);
-//        zmsg_pushstrf(msg,"name = %s", name);
-//        zmsg_pushstrf(msg,"ipver = %s", ipver);
-//        zmsg_pushstrf(msg,"ipaddr = %s", ipaddr);
-//        zmsg_pushstrf(msg,"mac = %s",mac);
-//        zmsg_pushstrf(msg,"unknown = %s",unknown);
-//
-        int n ; // number of rows inserted;
-        int msgtype = MSG_T_NETMON;
-        std::string s(mac);
-        std::remove( s.begin(), s.end(), ':');
-
-        switch (msgtype) {
-
-            case MSG_T_NETMON:
+            zmsg_t *msg = zmsg_recv(insock);
+            zmsg_pop(msg);  // remove routing info
+            char *msg_header = zmsg_popstr (msg);
+            
+            int n = 0; // number of rows affected
+            if ( strcmp(msg_header ,"netmon") == 0 )
             {
-                mask = atoi(prefixlen);
+                char *prefixlen = zmsg_popstr(msg);
+                char *mac = zmsg_popstr(msg);
+                char *ipaddr = zmsg_popstr(msg);
+                char *ipver = zmsg_popstr(msg);
+                char *name = zmsg_popstr(msg);
+                char *command = zmsg_popstr(msg);
+                
+                //drop : from string and reduce to apropriate length
+                std::string s(mac);
+                std::remove( s.begin(), s.end(), ':');
+                s.erase(12,5);
+                int mask = atoi(prefixlen);
 
                 utils::NetHistory nethistory = utils::NetHistory(url);
 
@@ -62,14 +55,26 @@ void persistence_actor(zsock_t *pipe, void *args) {
                 nethistory.setIp(ipaddr);
                 nethistory.setMask(mask);
                 nethistory.setCommand(*command);
-        
-                n = nethistory.dbsave();
+            
+                int n = nethistory.dbsave();
 
-                break;
+                zstr_free(&command);
+                zstr_free(&name);
+                zstr_free(&ipver);
+                zstr_free(&ipaddr);
+                zstr_free(&mac);
+                zstr_free(&prefixlen);
             }
-            default:
-                break;
-        }
+            else if (  strcmp(msg_header ,"nmap") == 0  )
+            {
+            }
+            else if (  strcmp(msg_header ,"nut") == 0  )
+            {
+            }
+            //TODO add all clients for message parsing
+            //else if (  strcmp(msg_header ,"nmap") == 0  )
+            //else if (  strcmp(msg_header ,"nmap") == 0  )
+
 //        if ( n == 1 )
 //        {   // success
 //
@@ -79,22 +84,15 @@ void persistence_actor(zsock_t *pipe, void *args) {
 //
 //        }
 //        
-        zstr_free(&name);
-        zstr_free(&ipver);
-        zstr_free(&ipaddr);
-        zstr_free(&mac);
-        zstr_free(&unknown);
-        zstr_free(&command);
-        zstr_free(&prefixlen);
-//        zmsg_print(msg);
-//        zmsg_destroy(&msg);
-        i++;
+            zstr_free(&msg_header);          
+            zmsg_destroy(&msg);
+            i++;
+        }
+
 
     }
-
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
-
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
@@ -113,8 +111,8 @@ void netmon_actor(zsock_t *pipe, void *args) {
     const char *name = "myname";
     const char *ipver = "4";
     const char *ipaddr = "10.144.55.5";
-    const char *prefixlen = "8";
-    const char *mac = "0123456789ab";
+    int prefixlen = 8;
+    const char *mac = "01:23:45:67:89:ab";
     const char *command = "a";
      
     while(!zpoller_terminated(poller)) {
@@ -123,7 +121,22 @@ void netmon_actor(zsock_t *pipe, void *args) {
         if (which == pipe) {
                 break;
         }
-        zstr_sendx(dbsock, "aaa",ipver,ipaddr,mac,command,prefixlen,NULL); 
+        
+        zmsg_t * msg = zmsg_new();
+        
+        //add all necessary fields
+        zmsg_pushstr(msg, command);
+        zmsg_pushstr(msg, name);
+        zmsg_pushstr(msg, ipver);
+        zmsg_pushstr(msg, ipaddr);
+        zmsg_pushstr(msg, mac);
+        //  convert int to char
+        char mask[4];
+        sprintf(mask,"%d",prefixlen);
+        zmsg_pushstrf(msg,mask);
+        //add header
+        zmsg_pushstr (msg, "netmon");
+        zmsg_send(&msg, dbsock);
         //zstr_sendf(dbsock, "%d: hello", i);
         //zstr_sendf(nlsock, "%d: hello", i);
         i++;
