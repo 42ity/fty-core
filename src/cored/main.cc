@@ -180,8 +180,10 @@ void worker(int socket_type, const char *connection, mock_db *db, int id) {
                  strerr.c_str(), message.c_str());
           continue;
         }
-        std::list<network_dt> networks;
-        db->network_list(networks);
+        std::list<network_dt> db_networks;
+        db->network_list(db_networks);
+
+        auto networks = rfc10_networks(db_networks);
         
         libvariant::Variant json(libvariant::VariantDefines::MapType);
         libvariant::Variant array(libvariant::VariantDefines::ListType);
