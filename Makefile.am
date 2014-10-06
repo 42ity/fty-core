@@ -145,7 +145,7 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #[one][two],[three]
 
 
-#AM_LOG_FLAGS = exclude:[db*]  -t
+AM_LOG_FLAGS = exclude:[db*]  -t
 
 check_LTLIBRARIES += \
 					  libpriv-test-run.la
