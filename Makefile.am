@@ -268,6 +268,14 @@ nodist_cored_SOURCES = \
 cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
+bin_PROGRAMS += \
+				driver-nmap
+driver_nmap_SOURCES = \
+					  src/drivers/nmap/nmap.cc \
+					  src/drivers/nmap/nmap-parse.cc
+driver_nmap_LDADD = libpriv-subprocess.la
+driver_nmap_LDFLAGS = -lczmq -lcxxtools
+
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
 EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json

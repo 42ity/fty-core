@@ -60,10 +60,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * running and done. Those are updated only at schedule() call, when finished
  * processes are moved to done and those from the incomming queue are started
  * and moved to running.
+ *
+ * class ProcCache:
+ * Maintains stdout/stderr output for a process in
+ * std::ostringstream. It is helper class for
+ *
+ * class ProcCacheMap:
+ * Maintain a cache for set of processes - each is identified by pid
+ * (/todo think about const SubProcess *). It stores output of several
+ * processes run and poll'ed in parallel.
  */
 
 namespace utils {
 
+//! \brief list of arguments    
 typedef std::vector<std::string> Argv;
 
 class SubProcess {
@@ -85,6 +95,7 @@ class SubProcess {
         //
         virtual ~SubProcess();
 
+        // \brief return the commandline
         const Argv argv() const;
         
         //! \brief return pid of executed command
@@ -171,6 +182,10 @@ class ProcessQue {
 
         typedef std::deque<SubProcess*>::const_iterator const_iterator;
 
+        // \brief construct instance
+        //
+        // @param argv - maximum number of processes to run in parallel
+        //
         explicit ProcessQue(std::size_t limit = 4) :
             _running_limit(limit),
             _incomming(),
@@ -181,16 +196,28 @@ class ProcessQue {
 
         virtual ~ProcessQue();
 
+        // \brief return const iterator to begining of a list of running processes
         const_iterator cbegin() const;
+        // \brief return const iterator to the end of a list of running processes
         const_iterator cend() const;
+        // \brief returns if there are processes in done queue
         bool hasDone() const;
+        // \brief returns if there are processes in an incomming queue
         bool hasIncomming() const;
+        // \brief returns if there are processes in an running queue
         bool hasRunning() const;
+        // \brief returns the size of running queue
         std::size_t runningSize() const;
         
+        // \brief remove the SubProcess from done queue and return it
         SubProcess* pop_done();
+        // \brief add new task to queue
         bool add(Argv &args);
+        // \brief schedule new processes
+        //
+        // @param schedule_new - to start new processes (default)
         void schedule(bool schedule_new=true);
+        // \brief terminate all running processes and update the queue using schedule(false)
         void terminateAll();
 
 
@@ -211,11 +238,13 @@ class ProcessQue {
 class ProcCache {
     public:
 
+        // \brief construct instance
         ProcCache():
             _ocache{},
             _ecache{}
         {}
 
+        // \brief copy instance
         ProcCache (const ProcCache &cache) {
             _ocache.str(cache._ocache.str());
             _ocache.clear();
@@ -223,6 +252,7 @@ class ProcCache {
             _ecache.clear();
         }
 
+        // \brief move
         ProcCache& operator=(const ProcCache &cache) {
             _ocache.str(cache._ocache.str());
             _ocache.clear();
@@ -231,14 +261,17 @@ class ProcCache {
             return *this;
         }
 
-        //TODO: other constructors + operators
-
+        // \brief push new stuff to cache of stdout
         void pushStdout(const char* str);
+        // \brief push new stuff to cache of stdout
         void pushStdout(const std::string& str);
 
+        // \brief push new stuff to cache of stderr
         void pushStderr(const char* str);
+        // \brief push new stuff to cache of stderr
         void pushStderr(const std::string& str);
 
+        // \brief pop cached values for stdout/stderr
         std::pair<std::string, std::string> pop();
 
     protected:
@@ -252,16 +285,22 @@ class ProcCacheMap {
 
     public:
 
+        // \brief construct instance
         ProcCacheMap():
             _map()
         {};
 
+        // \brief is pid in a map?
         bool hasPid(pid_t pid) const;
 
+        // \brief push new stuff to cache of stdout
         void pushStdout(pid_t pid, const char* str);
+        // \brief push new stuff to cache of stdout
         void pushStdout(pid_t pid, const std::string& str);
 
+        // \brief push new stuff to cache of stderr
         void pushStderr(pid_t pid, const char* str);
+        // \brief push new stuff to cache of stderr
         void pushStderr(pid_t pid, const std::string& str);
 
         std::pair<std::string, std::string> pop(pid_t pid);
