@@ -50,6 +50,7 @@ AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBVARIANT], [libvariant], [], [AC_MSG_ERROR([cannot find libvariant])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
+PKG_CHECK_MODULES([LIBJSONCPP], [jsoncpp], [], [AC_MSG_ERROR([cannot find libjsoncpp])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
@@ -175,6 +176,8 @@ Summary:
         LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
         LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
         LIBCIDR_LIBS:            ${LIBCIDR_LIBS}
+        LIBJSONCPP_CFLAGS:       ${LIBJSONCPP_CFLAGS}
+        LIBJSONCPP_LIBS:         ${LIBJSONCPP_LIBS}
 
         debug mode:              ${enable_debug:-no}
 ])
