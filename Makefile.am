@@ -318,19 +318,17 @@ tests/utils/messages/json_schemas.h: Makefile
 
 if HAVE_DOXYGEN
 EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
+endif
 
-html check: clean-html
+all-local:
+	./tools/gen-json-validator ./src
+if HAVE_DOXYGEN
 	$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
-
-clean-html:
-	rm -rf  $(top_srcdir)/${myDOXDIR}/html
-
-.PHONY: clean-html
- 
 endif
 
 clean-local:
 	rm -rf $(top_builddir)/tests/junit
+	rm -rf  $(top_srcdir)/${myDOXDIR}/html
 
 if HAVE_ASTYLE
 EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
