@@ -144,20 +144,6 @@ static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
     return 0;
 }
 
-static int cmd_streamer(zloop_t *loop, int timer_id, void *arg) {
-
-    zsock_t *fd = zsock_new_dealer(DRIVER_NMAP_SOCK);
-    assert(fd);
-
-    zclock_sleep(200); //XXX: wait between dealer socket new and real estabilish ...
-    //zstr_sendx(fd, "defaultlistscan", "10.130.38.0/24", NULL);
-    //zclock_sleep(1000);
-    zstr_sendx(fd, "defaultdevicescan", "tomcat", NULL);
-    zclock_sleep(150);
-
-    zsock_destroy(&fd);
-}
-
 static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
 
     char* delim;
@@ -191,7 +177,6 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     return 0;
 }
 
-//XXX: this part is going to be removed once nmap driver will be integrated with the rest!!
 int main() {
 
     int r;
@@ -204,9 +189,6 @@ int main() {
     r = zloop_timer(loop, 2000, 10, timer_handler, NULL);
     assert(r == 0);
     
-    r = zloop_timer(loop, 1000, 5, cmd_streamer, NULL);
-    assert(r == 0);
-
     r = zloop_reader(loop, cmdfd, command_handler, NULL);
 
     r = zloop_start(loop);
