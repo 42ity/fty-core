@@ -15,28 +15,18 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file nmap.h
-    \brief Common definitions for nmap driver
+/*! \file nmap-parse.h
+    \brief Parsing code for nmap XML output
     \author Michal Vyskocil <michalvyskocil@eaton.com>
  */
 
-#ifndef _SRC_DRIVERS_NMAP_H_
-#define _SRC_DRIVERS_NMAP_H_
+#ifndef _SRC_DRIVERS_NMAP_PARSE_H_
+#define _SRC_DRIVERS_NMAP_PARSE_H_
 
 #include <iostream>
 #include <sstream>
 #include <list>
 #include <string>
-
-// TODO autoconf friendly way
-#define NMAP_BIN "/usr/bin/nmap"
-#define SUDO_BIN "/ust/bin/sudo"
-
-
-enum class NmapMethod {
-    DefaultListScan,
-    DefaultDeviceScan
-};
 
 //! \brief parse results of nmap list scan -sL and return a list of ip addresses
 //
@@ -60,4 +50,5 @@ void parse_device_scan(std::istream& inp);
 // \return nothing \todo return structure to be defined
 void parse_device_scan(const std::string& inp);
 
-#endif //_SRC_DRIVERS_NMAP_H_
+#endif //_SRC_DRIVERS_NMAP_PARSE_H_
+

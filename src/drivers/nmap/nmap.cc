@@ -31,7 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <czmq.h>
 
 #include "subprocess.h"
-#include "nmap.h"
+#include "nmap-driver.h"
+#include "nmap-parse.h"
 
 typedef utils::ProcessQue ProcessQue;
 typedef utils::SubProcess SubProcess;
@@ -180,7 +181,6 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     }
 
     Argv args = _map[meth];
-    //todo strdup?
     args.push_back(arg);
 
     _que.add(args);
@@ -191,6 +191,7 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     return 0;
 }
 
+//XXX: this part is going to be removed once nmap driver will be integrated with the rest!!
 int main() {
 
     int r;

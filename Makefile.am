@@ -265,7 +265,9 @@ cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 bin_PROGRAMS += \
 				driver-nmap
 driver_nmap_SOURCES = \
+					  src/drivers/nmap/nmap-driver.h \
 					  src/drivers/nmap/nmap.cc \
+					  src/drivers/nmap/nmap-parse.h \
 					  src/drivers/nmap/nmap-parse.cc
 driver_nmap_LDADD = libpriv-subprocess.la
 driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} -lcxxtools

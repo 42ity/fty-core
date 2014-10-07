@@ -7,7 +7,7 @@
 
 #include <cassert>
 
-#include "nmap.h"
+#include "nmap-parse.h"
 
 using namespace cxxtools::xml;
 using namespace cxxtools;
