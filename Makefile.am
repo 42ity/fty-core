@@ -115,13 +115,6 @@ BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
 
 CLEANFILES	+=	src/utils/messages/json_schemas.h
 
-noinst_LTLIBRARIES += \
-					  libpriv-cidr.la
-libpriv_cidr_la_SOURCES = \
-						  src/utils/cidr.h \
-						  src/utils/cidr.cc
-libpriv_cidr_la_LIBADD = -lcidr
-
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
