@@ -1,7 +1,10 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 #include <algorithm>
 #include <vector>
-#include <stdio.h>
+
+#include <czmq.h>
 
 #include "persistence.h"
 #include "dbinit.h"
@@ -74,8 +77,7 @@ void persistence_actor(zsock_t *pipe, void *args) {
         i++;
         netdisc_msg_destroy (&msg);
     }
-
-    }
+    
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
 }
