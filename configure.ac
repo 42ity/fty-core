@@ -47,6 +47,7 @@ AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBVARIANT], [libvariant], [], [AC_MSG_ERROR([cannot find libvariant])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
+PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq 3.0 (git snapshot)])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
@@ -166,6 +167,8 @@ Summary:
         LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
         LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
+        LIBCZMQ_CFLAGS:          ${LIBCZMQ_CFLAGS}
+        LIBCZMQ_LIBS:            ${LIBCZMQ_LIBS}
         LIBVARIANT_CFLAGS:       ${LIBVARIANT_CFLAGS}
         LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
         LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
