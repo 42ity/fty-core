@@ -1,0 +1,32 @@
+Poc of simple "poor man's" BIOS architecture
+============================================
+
+ * clients conected directly together
+ * each one has DEALER for PUBLISHING
+ * and one ROUTER socket for getting commands
+ * built on top of czmq
+ * uses zproto for network discovery messages
+
+3 threads
+
+ 1. persistence: binds to the ROUTER socket and blindly prints everything to stdout
+ 2. netmon: connects using DEALER socket to persistence and netlogic and pushing data there
+ 3. netlogic: binds to the ROUTER socket for incomming events from netmon, connects to the persistence to forward messages there
+
+
+How to build
+~~~~~~~~~~~~
+just type make (and be sure you've latest git snapshot from https://github.com/zeromq/czmq, does not work with a latest release!)
+
+in a case you've installed it in a non-standard location, just modify Makefile
+CPPFLAGS = -I /path/with/include
+LDFLAGS = -L /path/with/shared/library -lczmq
+
+and run with LD_LIBRARY_PATH=/path/with/shared/library
+
+How to use
+~~~~~~~~~~
+
+c (client) no longer exists; previous start/stop/... commands not available
+
+Note: during async nature of ROUTER/DEALER the communication between s and c (recv) is not done properly, however this is an on-time hack.

@@ -94,7 +94,7 @@ noinst_LTLIBRARIES += \
 					  libpriv-db.la
 
 libpriv_db_la_SOURCES = \
-								 src/utils/db.h \
+								 src/utils/persistence.h \
 								 src/utils/persistence/client.cc \
 								 src/utils/persistence/client.h \
 								 src/utils/persistence/clientinfo.cc \
@@ -128,6 +128,25 @@ endif
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST += tools/run-test.sh
 LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
+
+
+#Test case examples:
+#
+#thisTestOnly            Matches the test case called, 'thisTestOnly'
+#"this test only"        Matches the test case called, 'this test only'
+#these*                  Matches all cases starting with 'these'
+#exclude:notThis         Matches all tests except, 'notThis'
+#~notThis                Matches all tests except, 'notThis'
+#~*private*              Matches all tests except those that contain 'private'
+#a* ~ab* abc             Matches all tests that start with 'a', except those that
+#                        start with 'ab', except 'abc', which is included
+#
+#Names within square brackets are interpreted as tags. A series of tags form an AND expression wheras a comma-separated sequence forms an OR expression. e.g.:
+#
+#[one][two],[three]
+
+
+AM_LOG_FLAGS = exclude:[db*]  -t
 
 check_LTLIBRARIES += \
 					  libpriv-test-run.la
@@ -254,9 +273,11 @@ cli_LDFLAGS = $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += \
 				cored
+
 cored_SOURCES = \
 				src/cored/main.h \
 				src/cored/main.cc
+
 nodist_cored_SOURCES = \
 				src/utils/messages/json_schemas.h
 cored_LDADD = libpriv-cored.la
@@ -272,11 +293,26 @@ driver_nmap_SOURCES = \
 driver_nmap_LDADD = libpriv-subprocess.la
 driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} -lcxxtools
 
+bin_PROGRAMS += \
+				simple
+
+simple_SOURCES = \
+	src/simple/main.cc \
+	src/simple/defs.h \
+	tools/dbinit.h \
+	src/utils/persistence.h \
+    src/simple/netdisc_msg.c \
+    src/simple/netdisc_msg.h 
+
+simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
+simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
+simple_LDADD = libpriv-db.la libpriv-cidr.la
+
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
 EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json
-BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
 
+BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
 src/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
 
@@ -286,19 +322,17 @@ tests/utils/messages/json_schemas.h: Makefile
 
 if HAVE_DOXYGEN
 EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
+endif
 
-html check: clean-html
+all-local:
+	./tools/gen-json-validator ./src
+if HAVE_DOXYGEN
 	$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
-
-clean-html:
-	rm -rf  $(top_srcdir)/${myDOXDIR}/html
-
-.PHONY: clean-html
- 
 endif
 
 clean-local:
 	rm -rf $(top_builddir)/tests/junit
+	rm -rf  $(top_srcdir)/${myDOXDIR}/html
 
 if HAVE_ASTYLE
 EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
