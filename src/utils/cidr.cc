@@ -13,6 +13,16 @@ CIDRAddress::CIDRAddress(const std::string address) {
   set(address);
 }
 
+CIDRAddress::CIDRAddress(const std::string address, const std::string prefix) {
+  _cidr = NULL;
+  set(address + "/" + prefix);
+}
+
+CIDRAddress::CIDRAddress(const std::string address, const unsigned int prefix) {
+  _cidr = NULL;
+  set(address + "/" + std::to_string( prefix ) );
+}
+
 CIDRAddress::CIDRAddress(const CIDRAddress& address) {
   _cidr = NULL;
   set(address);
@@ -187,6 +197,15 @@ CIDRAddress CIDRAddress::host() {
   }
   return result;
 }
+
+CIDRAddress CIDRAddress::network() {
+  CIDRAddress result;
+  
+  if( ! valid() ) return result;
+  result.setCidrPtr( cidr_addr_network(_cidr) );
+  return result;
+}
+
 
 CIDRAddress CIDRAddress::broadcast(){
   CIDRAddress result;
