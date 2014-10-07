@@ -283,19 +283,19 @@ cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += \
-				simple_s
+				simple
 
-simple_s_SOURCES = \
-	src/simple/s.cc \
+simple_SOURCES = \
+	src/simple/main.cc \
 	src/simple/defs.h \
 	tools/dbinit.h \
 	src/utils/persistence.h \
     src/simple/netdisc_msg.c \
     src/simple/netdisc_msg.h 
 
-simple_s_LDFLAGS = -lcidr -lczmq -lcxxtools -ltntdb
-simple_s_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
-simple_s_LDADD = libpriv-db.la libpriv-cidr.la
+simple_LDFLAGS = -lcidr -lczmq -lcxxtools -ltntdb
+simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
+simple_LDADD = libpriv-db.la libpriv-cidr.la
 
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
