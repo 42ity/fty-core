@@ -249,7 +249,7 @@ cli_SOURCES = \
 nodist_cli_SOURCES = \
 				src/utils/messages/json_schemas.h
 cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
-cli_LDFLAGS = -ljsoncpp $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
+cli_LDFLAGS = $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
 
 bin_PROGRAMS += \
 				cored
