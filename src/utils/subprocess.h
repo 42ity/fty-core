@@ -25,11 +25,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cxxtools/posix/fork.h>
 
-#include <limits.h>
+#include <climits>
+#include <cstring>
 #include <unistd.h>
 
-/* \brief Process abstraction class with stdout/stderr redirection
+#include <vector>
+#include <deque>
+#include <string>
+#include <sstream>
+#include <map>
+
+/* \brief Helper classes for managing processes
  *
+ * class SubProcess:
  * The advantage of this class is easyness of usage, as well as readability as
  * it handles several low-level oddities of POSIX/Linux C-API.
  *
@@ -46,7 +54,27 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * proc.wait();
  * std::cout "process pid: " << proc.getPid() << std::endl;
  * \endcode
+ *
+ * class ProcessQue:
+ * This maintains a queue of a processes. There are three queues: incomming,
+ * running and done. Those are updated only at schedule() call, when finished
+ * processes are moved to done and those from the incomming queue are started
+ * and moved to running.
+ *
+ * class ProcCache:
+ * Maintains stdout/stderr output for a process in
+ * std::ostringstream. It is helper class for
+ *
+ * class ProcCacheMap:
+ * Maintain a cache for set of processes - each is identified by pid
+ * (/todo think about const SubProcess *). It stores output of several
+ * processes run and poll'ed in parallel.
  */
+
+namespace utils {
+
+//! \brief list of arguments    
+typedef std::vector<std::string> Argv;
 
 class SubProcess {
     public:
@@ -57,7 +85,8 @@ class SubProcess {
         //
         // @param argv - C-like string of argument, see execvpe(2) for details
         //
-        explicit SubProcess(char** argv);
+        // \todo does not deal with a command line limit
+        explicit SubProcess(Argv cxx_argv);
 
         // \brief close all pipes, waits on process termination
         //
@@ -65,6 +94,9 @@ class SubProcess {
         //          child process never ends. Better to call terminate() manually.
         //
         virtual ~SubProcess();
+
+        // \brief return the commandline
+        const Argv argv() const;
         
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
@@ -89,12 +121,13 @@ class SubProcess {
         bool isCoreDumped() const { return _core_dumped; }
 
         // \brief creates a pipe/pair for stdout/stderr, fork and exec the command. Note this
-        // can be started only once, all subsequent calls becames nooop.
+        // can be started only once, all subsequent calls becames nooop and return true.
         //
-        // \throws std::runtime_error if pipe/fork syscalls fails
+        // @return true if exec was successfull, otherwise false and reason is in errno
         //
+        // \todo error reporting from a child
         //
-        void run();
+        bool run();
 
         //! \brief wait on program terminate
         //
@@ -129,11 +162,11 @@ class SubProcess {
 
         cxxtools::posix::Fork _fork;
         SubProcessState _state;
-        char** _argv;
-        int _outpair[2];
-        int _errpair[2];
+        Argv _cxx_argv;
         int _return_code;
         bool _core_dumped;
+        int _outpair[2];
+        int _errpair[2];
 
         // disallow copy and move constructors
         SubProcess(const SubProcess& p) = delete;
@@ -142,6 +175,146 @@ class SubProcess {
         SubProcess& operator=(SubProcess&& p) = delete;
 
 };
+
+class ProcessQue {
+
+    public:
+
+        typedef std::deque<SubProcess*>::const_iterator const_iterator;
+
+        // \brief construct instance
+        //
+        // @param argv - maximum number of processes to run in parallel
+        //
+        explicit ProcessQue(std::size_t limit = 4) :
+            _running_limit(limit),
+            _incomming(),
+            _running(),
+            _done()
+        {
+        }
+
+        virtual ~ProcessQue();
+
+        // \brief return const iterator to begining of a list of running processes
+        const_iterator cbegin() const;
+        // \brief return const iterator to the end of a list of running processes
+        const_iterator cend() const;
+        // \brief returns if there are processes in done queue
+        bool hasDone() const;
+        // \brief returns if there are processes in an incomming queue
+        bool hasIncomming() const;
+        // \brief returns if there are processes in an running queue
+        bool hasRunning() const;
+        // \brief returns the size of running queue
+        std::size_t runningSize() const;
+        
+        // \brief remove the SubProcess from done queue and return it
+        SubProcess* pop_done();
+        // \brief add new task to queue
+        bool add(Argv &args);
+        // \brief schedule new processes
+        //
+        // @param schedule_new - to start new processes (default)
+        void schedule(bool schedule_new=true);
+        // \brief terminate all running processes and update the queue using schedule(false)
+        void terminateAll();
+
+
+    protected:
+        std::size_t _running_limit;
+        std::deque<Argv> _incomming;
+        std::deque<SubProcess*> _running;
+        std::deque<SubProcess*> _done;
+
+        // disallow copy and move constructors
+        ProcessQue(const ProcessQue& p) = delete;
+        ProcessQue& operator=(ProcessQue p) = delete;
+        ProcessQue(const ProcessQue&& p) = delete;
+        ProcessQue& operator=(ProcessQue&& p) = delete;
+};
+
+//! caches process's stdout/stderr in std::ostringstream
+class ProcCache {
+    public:
+
+        // \brief construct instance
+        ProcCache():
+            _ocache{},
+            _ecache{}
+        {}
+
+        // \brief copy instance
+        ProcCache (const ProcCache &cache) {
+            _ocache.str(cache._ocache.str());
+            _ocache.clear();
+            _ecache.str(cache._ecache.str());
+            _ecache.clear();
+        }
+
+        // \brief move
+        ProcCache& operator=(const ProcCache &cache) {
+            _ocache.str(cache._ocache.str());
+            _ocache.clear();
+            _ecache.str(cache._ecache.str());
+            _ecache.clear();
+            return *this;
+        }
+
+        // \brief push new stuff to cache of stdout
+        void pushStdout(const char* str);
+        // \brief push new stuff to cache of stdout
+        void pushStdout(const std::string& str);
+
+        // \brief push new stuff to cache of stderr
+        void pushStderr(const char* str);
+        // \brief push new stuff to cache of stderr
+        void pushStderr(const std::string& str);
+
+        // \brief pop cached values for stdout/stderr
+        std::pair<std::string, std::string> pop();
+
+    protected:
+
+        std::ostringstream _ocache;
+        std::ostringstream _ecache;
+};
+
+//! map<pid_t, ProcCache> with ProcCache-like API
+class ProcCacheMap {
+
+    public:
+
+        // \brief construct instance
+        ProcCacheMap():
+            _map()
+        {};
+
+        // \brief is pid in a map?
+        bool hasPid(pid_t pid) const;
+
+        // \brief push new stuff to cache of stdout
+        void pushStdout(pid_t pid, const char* str);
+        // \brief push new stuff to cache of stdout
+        void pushStdout(pid_t pid, const std::string& str);
+
+        // \brief push new stuff to cache of stderr
+        void pushStderr(pid_t pid, const char* str);
+        // \brief push new stuff to cache of stderr
+        void pushStderr(pid_t pid, const std::string& str);
+
+        std::pair<std::string, std::string> pop(pid_t pid);
+
+    protected:
+        typedef std::map<pid_t, ProcCache> map_type;
+        map_type _map;
+
+        void _push_cstr(pid_t pid, const char* str, bool push_stdout);
+        void _push_str(pid_t pid, const std::string& str, bool push_stdout);
+};
+
+
+} //namespace utils
 
 #endif //_SRC_UTILS_SUBPROCESS_H
 
