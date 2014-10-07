@@ -5,6 +5,7 @@ Poc of simple "poor man's" BIOS architecture
  * each one has DEALER for PUBLISHING
  * and one ROUTER socket for getting commands
  * built on top of czmq
+ * uses zproto for network discovery messages
 
 3 threads
 
@@ -26,14 +27,6 @@ and run with LD_LIBRARY_PATH=/path/with/shared/library
 How to use
 ~~~~~~~~~~
 
-Type ./s - nothing happens
-
-Type ./c start (on different terminal) and messages starts to appear
-
-Type ./c stop they stop
-
-Type ./c start they continue again
-
-Type ./c quit - server quits
+c (client) no longer exists; previous start/stop/... commands not available
 
 Note: during async nature of ROUTER/DEALER the communication between s and c (recv) is not done properly, however this is an on-time hack.

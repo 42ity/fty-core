@@ -298,7 +298,9 @@ simple_s_SOURCES = \
 	src/simple/s.cc \
 	src/simple/defs.h \
 	tools/dbinit.h \
-	src/utils/persistence.h
+	src/utils/persistence.h \
+    src/simple/netdisc_msg.c \
+    src/simple/netdisc_msg.h 
 
 simple_s_LDFLAGS = -lcidr -lczmq -lcxxtools -ltntdb
 simple_s_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/

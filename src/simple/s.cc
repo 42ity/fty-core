@@ -1,11 +1,22 @@
+#include <stdlib.h>
+#include <algorithm>
+#include <vector>
+#include <stdio.h>
+
 #include "persistence.h"
 #include "dbinit.h"
 #include "defs.h"
-#include <algorithm>
-#include <stdlib.h>
-#include <stdio.h>
+#include "netdisc_msg.h"
 
 #define MSG_T_NETMON  1
+#define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
+
+
+// ugly, but this is not production code
+int irq = 0;
+void interrupt (int signum) {
+    irq = 1;
+}
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
@@ -25,70 +36,44 @@ void persistence_actor(zsock_t *pipe, void *args) {
         if (which == pipe) {
             break;
         }
-        if (which == insock)
-        {
- 
-            zmsg_t *msg = zmsg_recv(insock);
-            zmsg_pop(msg);  // remove routing info
-            char *msg_header = zmsg_popstr (msg);
-            
-            int n = 0; // number of rows affected
-            if ( strcmp(msg_header ,"netmon") == 0 )
-            {
-                char *prefixlen = zmsg_popstr(msg);
-                char *mac = zmsg_popstr(msg);
-                char *ipaddr = zmsg_popstr(msg);
-                char *ipver = zmsg_popstr(msg);
-                char *name = zmsg_popstr(msg);
-                char *command = zmsg_popstr(msg);
-                
-                //drop : from string and reduce to apropriate length
-                std::string s(mac);
-                std::remove( s.begin(), s.end(), ':');
-                s.erase(12,5);
-                int mask = atoi(prefixlen);
 
-                utils::NetHistory nethistory = utils::NetHistory(url);
-
-                nethistory.setMac(s);
-                nethistory.setName(name);
-                nethistory.setIp(ipaddr);
-                nethistory.setMask(mask);
-                nethistory.setCommand(*command);
-            
-                int n = nethistory.dbsave();
-
-                zstr_free(&command);
-                zstr_free(&name);
-                zstr_free(&ipver);
-                zstr_free(&ipaddr);
-                zstr_free(&mac);
-                zstr_free(&prefixlen);
-            }
-            else if (  strcmp(msg_header ,"nmap") == 0  )
-            {
-            }
-            else if (  strcmp(msg_header ,"nut") == 0  )
-            {
-            }
-            //TODO add all clients for message parsing
-            //else if (  strcmp(msg_header ,"nmap") == 0  )
-            //else if (  strcmp(msg_header ,"nmap") == 0  )
-
-//        if ( n == 1 )
-//        {   // success
-//
-//        }
-//        else
-//        {   // fail
-//
-//        }
-//        
-            zstr_free(&msg_header);          
-            zmsg_destroy(&msg);
-            i++;
+        netdisc_msg_t *msg = netdisc_msg_recv (insock);
+        
+        const char *name = netdisc_msg_name (msg); 
+        byte ipver = netdisc_msg_ipver (msg);
+        const char *ipaddr = netdisc_msg_ipaddr (msg);
+        byte prefixlen = netdisc_msg_prefixlen (msg);
+        const char *mac = netdisc_msg_mac (msg);
+        int command_id = netdisc_msg_id (msg);
+        char command;
+        if (command_id == 1) {
+            command = 'a';
+        } else {
+            command = 'd';
         }
+        int mask;
 
+        int n ; // number of rows inserted;
+        std::string s(mac);
+        std::remove( s.begin(), s.end(), ':');
+        s.erase(12,5);
+
+        // So far, only netmon messages are being stored
+        utils::NetHistory nethistory = utils::NetHistory(url);
+
+        puts (name);
+        puts (ipaddr);
+        nethistory.setMac(s); // mac
+        nethistory.setName(name);
+        nethistory.setIp(ipaddr);
+        nethistory.setMask(prefixlen);
+        nethistory.setCommand(command);
+        
+        n = nethistory.dbsave();
+
+        i++;
+        netdisc_msg_destroy (&msg);
+    }
 
     }
     zpoller_destroy(&poller);
@@ -97,55 +82,62 @@ void persistence_actor(zsock_t *pipe, void *args) {
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
+    const int names_len = 6;    
+    const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
+    
     zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
     assert(dbsock);
-    zsock_t * nlsock = zsock_new_dealer(NETLOGIC_SOCK);
-    assert(nlsock);
-    zpoller_t *poller = zpoller_new(pipe, NULL);
-    assert(poller);
-    zsock_signal(pipe, 0);
+
+    // Until SIGINT, randomly select between addition or deletion event
+    // if it's addition - generate some random data (name, ipver...), add this to a vector; send message
+    // if it's deletion - and vector not empty: select one randomly from vector, remove from vector, send message; else skip
+    // sleep for (800, 2000) ms
+    std::vector<std::tuple<std::string, byte, std::string, byte, std::string>> stored;         
+    while(1) {
+        if (irq == 1)
+            break;
+        byte command = random() % 2; // 0 - os_add; 1 - os_del
+        if (command == 0) {            
+            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_OS_ADD);
+            netdisc_msg_set_name (ndmsg, "%s", names[randof(names_len)]);
+            netdisc_msg_set_ipver (ndmsg, 0);
+            netdisc_msg_set_ipaddr (ndmsg, "%d.%d.%d.%d",
+                randof(255) + 1, randof(256), randof(256), randof(256));
+            netdisc_msg_set_prefixlen (ndmsg, (byte) randof(33));
+            netdisc_msg_set_mac (ndmsg, "%s", "bb:0a:21:02:fe:aa");
+           // store it
+            stored.push_back (
+                std::make_tuple (netdisc_msg_name (ndmsg),
+                                 netdisc_msg_ipver (ndmsg),
+                                 netdisc_msg_ipaddr (ndmsg),
+                                 netdisc_msg_prefixlen (ndmsg),
+                                 netdisc_msg_mac (ndmsg)));
+            // send it
+            netdisc_msg_send (&ndmsg, dbsock);          
  
-    size_t i = 0;
-    int timeout = -1;
-
-    const char *name = "myname";
-    const char *ipver = "4";
-    const char *ipaddr = "10.144.55.5";
-    int prefixlen = 8;
-    const char *mac = "01:23:45:67:89:ab";
-    const char *command = "a";
-     
-    while(!zpoller_terminated(poller)) {
-
-        zsock_t *which = (zsock_t *) zpoller_wait(poller, 1000);
-        if (which == pipe) {
-                break;
         }
-        
-        zmsg_t * msg = zmsg_new();
-        
-        //add all necessary fields
-        zmsg_pushstr(msg, command);
-        zmsg_pushstr(msg, name);
-        zmsg_pushstr(msg, ipver);
-        zmsg_pushstr(msg, ipaddr);
-        zmsg_pushstr(msg, mac);
-        //  convert int to char
-        char mask[4];
-        sprintf(mask,"%d",prefixlen);
-        zmsg_pushstrf(msg,mask);
-        //add header
-        zmsg_pushstr (msg, "netmon");
-        zmsg_send(&msg, dbsock);
-        //zstr_sendf(dbsock, "%d: hello", i);
-        //zstr_sendf(nlsock, "%d: hello", i);
-        i++;
+        else if (command == 1) {
+            if (stored.size() == 0)
+                continue;
+            int which = randof(stored.size());
+
+            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_OS_DEL);
+            netdisc_msg_set_name (ndmsg, "%s", std::get<0>(stored.at(which)).c_str());
+            netdisc_msg_set_ipver (ndmsg, 0);
+            netdisc_msg_set_ipaddr (ndmsg, "%s",  std::get<2>(stored.at(which)).c_str());
+            netdisc_msg_set_prefixlen (ndmsg, (byte) std::get<3>(stored.at(which)));
+            netdisc_msg_set_mac (ndmsg, "%s", std::get<4>(stored.at(which)).c_str());            
+            // send it
+            netdisc_msg_send (&ndmsg, dbsock);            
+            // erase
+            auto it = stored.begin();
+            for (int i = 0; i < which; ++i) { ++it; }             
+            stored.erase (it);
+        }
+        zclock_sleep (randof(1200) + 800);
     }
 
-    zpoller_destroy(&poller);
-    zsock_destroy(&nlsock);
     zsock_destroy(&dbsock);
-
 }
 
 void netlogic_actor(zsock_t *pipe, void *args) {
@@ -186,6 +178,9 @@ void netlogic_actor(zsock_t *pipe, void *args) {
 
 
 int main() {
+    srandom ((unsigned) time (NULL));
+    zsys_catch_interrupts ();
+    zsys_handler_set (&interrupt);
 
     int i;
 
