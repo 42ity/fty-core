@@ -23,6 +23,8 @@ void interrupt (int signum) {
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
+    zsys_catch_interrupts ();
+    zsys_handler_set (&interrupt);
     zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
@@ -34,6 +36,8 @@ void persistence_actor(zsock_t *pipe, void *args) {
     size_t i = 0;
 
     while(!zpoller_terminated(poller)) {
+        if (irq == 1)
+            break;
 
         zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
         if (which == pipe) {
@@ -84,6 +88,8 @@ void persistence_actor(zsock_t *pipe, void *args) {
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
+    zsys_catch_interrupts ();
+    zsys_handler_set (&interrupt);
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
     
@@ -142,43 +148,6 @@ void netmon_actor(zsock_t *pipe, void *args) {
     zsock_destroy(&dbsock);
 }
 
-void netlogic_actor(zsock_t *pipe, void *args) {
-
-    zsock_t * insock = zsock_new_router(NETLOGIC_SOCK);
-    assert(insock);
-    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
-    assert(dbsock);
-    zpoller_t *poller = zpoller_new(insock, pipe, NULL);
-    assert(poller);
-    zsock_signal(pipe, 0);
-
-    size_t i = 0;
-
-    while(!zpoller_terminated(poller)) {
-
-        zsock_t *which =  (zsock_t *)  zpoller_wait(poller, 1000);
-        if (which == pipe) {
-            break;
-        }
-
-        if (which == insock) {
-            zmsg_t *msg = zmsg_recv(insock);
-            zmsg_pop(msg);  // remove routing info
-            zmsg_pushstrf(msg, "%d: NETLOGIC got ", i);
-            zmsg_send(&msg, dbsock);
-            i++;
-            continue;
-        }
-
-    }
-
-    zpoller_destroy(&poller);
-    zsock_destroy(&insock);
-    zsock_destroy(&dbsock);
-
-}
-
-
 int main() {
     srandom ((unsigned) time (NULL));
     zsys_catch_interrupts ();
@@ -191,55 +160,13 @@ int main() {
 
     zactor_t *netmon = zactor_new(netmon_actor, NULL);
     assert(netmon);
-    
-    zactor_t *netlogic = zactor_new(netlogic_actor, NULL);
-    assert(netlogic);
 
-    zsock_t *cli_sock = zsock_new_rep(CLI_SOCK);
-    assert(cli_sock);
-
-    zpoller_t *poller = zpoller_new(netmon, cli_sock, NULL);
-    assert(poller);
-
-    while (!zpoller_terminated(poller)) {
-        zsock_t *which =  (zsock_t *) zpoller_wait(poller, -1);
-
-        if (which == cli_sock) {
-            //handle command line
-            char* cmd = zstr_recv(cli_sock);
-            fprintf(stderr, "INFO: got event on cli_sock, cmd: '%s'\n", cmd);
-            zstr_send(netmon, cmd);
-            char* reply = zstr_recv(netmon);
-            zstr_send(cli_sock, reply);
-            char* exp_reply;
-            asprintf(&exp_reply, "%s/ACK", cmd);
-            bool to_exit = false;
-            if (!streq(reply, exp_reply)) {
-                fprintf(stderr, "ERROR: invalid reply, expected '%s', got '%s'\n", exp_reply, reply);
-                zstr_send(netmon, "$TERM");
-                to_exit = true;
-            } else if (streq(cmd, "quit")) {
-                to_exit = true;
-            }
-            free(exp_reply);
-            free(reply);
-            free(cmd);
-            if (to_exit) {
-                fprintf(stderr, "INFO: exiting\n");
-                break;
-            }
-        } else if (which == zactor_resolve(netmon)) {
-            fprintf(stderr, "INFO: got unexpected message from netmon");
-            zmsg_t *msg = zmsg_recv(netmon);
-            zmsg_print(msg);
-            zmsg_destroy(&msg);
-        }
-
+    // temporary
+    while (1) {
+        if (irq == 1)
+            break;
     }
-
-    zpoller_destroy(&poller);
-    zsock_destroy(&cli_sock);
-    zactor_destroy(&netlogic);
+    
     zactor_destroy(&netmon);
     zactor_destroy(&db);
 
