@@ -25,6 +25,7 @@ AM_CFLAGS = ${my_CFLAGS} \
 	-ffunction-sections \
 	-fdata-sections \
 	$(LIBZMQ_CFLAGS) \
+	$(LIBCZMQ_CFLAGS) \
 	$(LIBVARIANT_CFLAGS)
 
 AM_CXXFLAGS = ${my_CXXFLAGS} \
@@ -267,7 +268,7 @@ driver_nmap_SOURCES = \
 					  src/drivers/nmap/nmap.cc \
 					  src/drivers/nmap/nmap-parse.cc
 driver_nmap_LDADD = libpriv-subprocess.la
-driver_nmap_LDFLAGS = -lczmq -lcxxtools
+driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} -lcxxtools
 
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
