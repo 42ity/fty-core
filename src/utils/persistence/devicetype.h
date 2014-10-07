@@ -123,6 +123,8 @@ class DeviceType: public DataBaseObject
         
         /**
          * \brief Returns an object to OS_NEW state with initial parameters.
+         *
+         * Returns an object to initial state. It doesn't manipulate with database.
          */
         void clear();
 
