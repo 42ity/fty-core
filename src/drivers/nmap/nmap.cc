@@ -120,10 +120,7 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
             //\todo make it nicer! There needs to be code mapping argv to NmapMethod
             auto argv = proc->argv();
             if (std::count(argv.begin(), argv.end(), "-sL")) {
-                auto res = parse_list_scan(p.first.data());
-                for (auto s: res) {
-                    std::cout << s << std::endl;
-                }
+                parse_list_scan(p.first.data());
             }
             else {
                 parse_device_scan(p.first.data());

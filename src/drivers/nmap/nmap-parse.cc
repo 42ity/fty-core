@@ -12,37 +12,133 @@
 using namespace cxxtools::xml;
 using namespace cxxtools;
 
-std::list<std::string> parse_list_scan(std::istream& inp) {
+enum class ListState {
+    START,
+    HOST,
+    HOSTNAME,
+    ENDHOST
+};
+
+void parse_list_scan(std::istream& inp) {
     
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
+    std::string reason_v;
+    std::string addr_v;
+
+    enum ListState state = ListState::START;
 
     for (auto node_it = r.current(); node_it != r.end(); ++node_it ) {
 
-        if (node_it->type() != Node::StartElement) {
-            continue;
-        }
-        
-        const StartElement& el = static_cast<const StartElement&>(*node_it);
+        switch(state) {
+            case ListState::START:
 
-        auto k = convert<std::string>(el.name());
-        if (k != "address") {
-            continue;
-        }
+                if (node_it->type() != Node::StartElement) {
+                    continue;
+                }
+                
+                {
+                const StartElement& el = static_cast<const StartElement&>(*node_it);
 
-        auto addr = convert<String>("addr");
-        if (!el.hasAttribute(addr)) {
-            continue;
-        }
+                const auto k = convert<std::string>(el.name());
+                if (k != "status") {
+                    continue;
+                }
 
-        auto v = convert<std::string>(el.attribute(addr));
-        ls_res.push_back(v);
+                static auto state_attr = convert<String>("state");
+                const auto v = convert<std::string>(el.attribute(state_attr));
+                if (v == "up" || v == "unknown") {
+                    state = ListState::HOST;
+
+                    static auto reason = convert<String>("reason");
+                    reason_v = convert<std::string>(el.attribute(reason));
+                }
+                else {
+                    state = ListState::ENDHOST;
+                }
+                }
+                break;
+
+            case ListState::HOST:
+
+                if (node_it->type() != Node::StartElement) {
+                    continue;
+                }
+                
+                {
+                const StartElement& el = static_cast<const StartElement&>(*node_it);
+
+                const auto k = convert<std::string>(el.name());
+                if (k != "address") {
+                    continue;
+                }
+
+                static const auto addr = convert<String>("addr");
+                if (!el.hasAttribute(addr)) {
+                    continue;
+                }
+
+                addr_v = convert<std::string>(el.attribute(addr));
+                state = ListState::HOSTNAME;
+                }
+                break;
+
+            case ListState::HOSTNAME:
+
+                if (node_it->type() == Node::EndElement) {
+                    const EndElement& el = static_cast<const EndElement&>(*node_it);
+                    const auto name = convert<std::string>(el.name());
+                    if (name == "host") {
+                        state = ListState::START;
+                        continue;
+                    }
+                }
+
+                {
+                if (node_it->type() != Node::StartElement) {
+                    continue;
+                }
+                const StartElement& el = static_cast<const StartElement&>(*node_it);
+                const auto k = convert<std::string>(el.name());
+                if (k != "hostname") {
+                    continue;
+                }
+
+                static const auto name = convert<String>("name");
+                static const auto type = convert<String>("type");
+                if (! el.hasAttribute(name) || ! el.hasAttribute(type)) {
+                    continue;
+                }
+
+                const auto v1 = el.attribute(name);
+                const auto v2 = el.attribute(type);
+
+                std::cout << "addr: " << addr_v << " reason: " << reason_v ;
+                std::cout << " name: " << v1 << " type: " << v2;
+                std::cout << std::endl;
+                }
+                break;
+
+            case ListState::ENDHOST:
+                if (node_it->type() != Node::EndElement) {
+                    continue;
+                }
+                
+                {
+                const EndElement& el = static_cast<const EndElement&>(*node_it);
+
+                auto k = convert<std::string>(el.name());
+                if (k != "host") {
+                    continue;
+                }
+                state = ListState::START;
+                }
+                break;
+        }
     }
-
-    return ls_res;
 }
 
-std::list<std::string> parse_list_scan(const std::string& inp) {
+void parse_list_scan(const std::string& inp) {
     std::istringstream stream{inp};
     return parse_list_scan(stream);
 }
@@ -119,17 +215,3 @@ void parse_device_scan(const std::string& inp) {
     std::istringstream stream{inp};
     parse_device_scan(stream);
 }
-
-/*
-int main() {
-
-    JsonSerializer js{std::cout};
-    js.beautify(true);
-    SerializationInfo si;
-
-    std::ifstream f{"device-scan.xml"};
-    parse_device_scan(f);
-
-    //js.serialize(si).finish();
-}
-*/

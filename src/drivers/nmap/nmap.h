@@ -41,14 +41,12 @@ enum class NmapMethod {
 //! \brief parse results of nmap list scan -sL and return a list of ip addresses
 //
 // \param inp - input stream
-// \return list of strings with ip addresses
-std::list<std::string> parse_list_scan(std::istream& inp);
+void parse_list_scan(std::istream& inp);
 
 //! \brief parse results of nmap list scan -sL and return a list of ip addresses
 //
 // \param inp - input string
-// \return list of strings with ip addresses
-std::list<std::string> parse_list_scan(const std::string& inp);
+void parse_list_scan(const std::string& inp);
 
 //! \brief parse results of nmap device scan (-R -sT -sU) and print the found information
 //
