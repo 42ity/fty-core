@@ -114,7 +114,6 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
 
         if (proc->getReturnCode() != 0) {
             //\todo how to report scan fail?
-            printf("%s", p.second.data());
         }
         else {
             //\todo make it nicer! There needs to be code mapping argv to NmapMethod
@@ -166,7 +165,6 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
 
     //TODO: can't have multiple args!
     zstr_recvx(reader, &delim, &command, &arg, NULL);
-    printf("got '%s', '%s'\n", command, arg);
 
     enum NmapMethod meth;
     if (streq(command, "defaultlistscan")) {
@@ -186,7 +184,6 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     args.push_back(arg);
 
     _que.add(args);
-    printf("_que.runningSize()-> %ld\n", _que.runningSize());
 
     free(delim);
     free(command);
