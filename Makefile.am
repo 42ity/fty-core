@@ -282,15 +282,6 @@ nodist_cored_SOURCES = \
 cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
-#bin_PROGRAMS += \
-#				simple_c
-
-#simple_c_SOURCES = \
-#	src/simple/c.cc \
-#	src/simple/defs.h
-
-#simple_c_LDFLAGS = -lczmq
-
 bin_PROGRAMS += \
 				simple_s
 
@@ -309,8 +300,8 @@ simple_s_LDADD = libpriv-db.la libpriv-cidr.la
 #----------------------------------------------------------------------
 EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
 EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json
-BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
 
+BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
 src/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
 
