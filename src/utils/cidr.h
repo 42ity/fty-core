@@ -101,6 +101,29 @@ public:
 
   /**
    * \brief Creates new object with specified network.
+   * \param string representing ip address
+   * \param string network prefix
+   *
+   * The address is set to accorting the parameter. Paremeters can be
+   *   - "10.0.0.1","32" 
+   *   - "1.2.3.0/24","8"
+   */
+  CIDRAddress(const std::string address, const std::string prefix);
+
+  /**
+   * \brief Creates new object with specified network.
+   * \param string representing ip address
+   * \param unsigned int network prefix
+   *
+   * The address is set to accorting the parameter. Paremeters can be
+   *   - "10.0.0.1",32 
+   *   - "1.2.3.0/24", 8
+   *   - "::1",128
+   */
+  CIDRAddress(const std::string address, const unsigned int prefix);
+
+  /**
+   * \brief Creates new object with specified network.
    * \param reference to other CIDRAddress object.
    */
   CIDRAddress(const CIDRAddress& address);
@@ -276,6 +299,15 @@ public:
    * - fe80::/64 => fe80::/128
    */
   CIDRAddress host();
+
+  /**
+   * \brief returns network address of this host
+   *
+   * In newly created object, IP address is set to network according mask.
+   * - 10.0.0.1/24 => 10.0.0.0/24
+   * - fe80::ABCD/64 => fe80::/62
+   */
+  CIDRAddress network();
 
   /**
    * \brief returns a broadcast address
