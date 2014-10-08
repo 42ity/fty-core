@@ -76,11 +76,7 @@ class NetHistory : public DataBaseTimeObject
          */    
         void setMac(std::string mac);
 
-        void setMask(int mask);
-
-        void setIp(std::string ip);
-
-        void setIp(CIDRAddress ip);
+        void setAddres(CIDRAddress address);
 
         void setCommand(char command);
 
@@ -90,16 +86,28 @@ class NetHistory : public DataBaseTimeObject
 
         int getMask();
 
-        CIDRAddress getIp();
+        std::string getIp();
 
         char getCommand();
 
         std::string getName();
 
-        CIDRAddress getNetworkCIDR();
+        CIDRAddress getAddress();
+
+        void setAddress(CIDRAddress address);
 
         unsigned int selectById(int id);
 
+        /**
+         * \brief Selects ids of the rows matching the template (Address(IP/mask),command)
+         *
+         * Don't modify the object.
+         *
+         * \return A vector of ids found.
+         */
+        std::vector<int> checkUnique();
+        
+        
     protected:
        
         bool check_command();
@@ -145,9 +153,7 @@ class NetHistory : public DataBaseTimeObject
         
         std::string _mac;
 
-        int _mask;
-
-        CIDRAddress _ip;
+        CIDRAddress _address;
 
         char _command;
 

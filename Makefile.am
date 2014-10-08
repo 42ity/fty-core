@@ -301,8 +301,9 @@ simple_SOURCES = \
 	src/simple/defs.h \
 	tools/dbinit.h \
 	src/utils/persistence.h \
-    src/simple/netdisc_msg.c \
-    src/simple/netdisc_msg.h 
+    	src/simple/netdisc_msg.c \
+    	src/simple/netdisc_msg.h \
+	src/simple/persistencelogic.cc
 
 simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
 simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/

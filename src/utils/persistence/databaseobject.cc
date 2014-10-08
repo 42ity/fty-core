@@ -131,6 +131,22 @@ dbsave()
     }
 }
 
+// delete object by specified id
+unsigned int
+DataBaseObject::
+deleteById(int id)
+{
+    
+    this->setId(id);
+    int n = this->db_delete();
+    if ( n > 0 )
+    {
+        _state = ObjectState::OS_DELETED;
+        _id = -1;               // make id non valid
+    }
+    return n;
+}
+
 // delete object by its id
 unsigned int 
 DataBaseObject::
