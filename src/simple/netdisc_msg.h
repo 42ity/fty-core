@@ -35,14 +35,14 @@
 
 /*  These are the netdisc_msg messages:
 
-    OS_ADD - Add automatically discovered network.
+    AUTO_ADD - Add automatically discovered network.
         name                string      network interface name
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
         mac                 string      mac address
 
-    OS_DEL - Remove automatically discovered netowork.
+    AUTO_DEL - Remove automatically discovered netowork.
         name                string      network interface name
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
@@ -54,17 +54,17 @@
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
 
-    MAN_EXCL - Manually excluded network.
+    MAN_DEL - Manually excluded network.
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
 
-    REV_ADD - Revert manually added network.
+    EXCL_ADD - Revert manually added network.
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
 
-    REV_EXCL - Revert manually excluded network.
+    EXCL_DEL - Revert manually excluded network.
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
@@ -76,12 +76,12 @@
 
 #define NETDISC_MSG_VERSION                 1.0
 
-#define NETDISC_MSG_OS_ADD                  1
-#define NETDISC_MSG_OS_DEL                  2
+#define NETDISC_MSG_AUTO_ADD                1
+#define NETDISC_MSG_AUTO_DEL                2
 #define NETDISC_MSG_MAN_ADD                 3
-#define NETDISC_MSG_MAN_EXCL                4
-#define NETDISC_MSG_REV_ADD                 5
-#define NETDISC_MSG_REV_EXCL                6
+#define NETDISC_MSG_MAN_DEL                 4
+#define NETDISC_MSG_EXCL_ADD                5
+#define NETDISC_MSG_EXCL_DEL                6
 #define NETDISC_MSG_TEST                    7
 
 #ifdef __cplusplus
@@ -129,18 +129,18 @@ int
 int
     netdisc_msg_send_again (netdisc_msg_t *self, void *output);
 
-//  Encode the OS_ADD 
+//  Encode the AUTO_ADD 
 zmsg_t *
-    netdisc_msg_encode_os_add (
+    netdisc_msg_encode_auto_add (
         const char *name,
         byte ipver,
         const char *ipaddr,
         byte prefixlen,
         const char *mac);
 
-//  Encode the OS_DEL 
+//  Encode the AUTO_DEL 
 zmsg_t *
-    netdisc_msg_encode_os_del (
+    netdisc_msg_encode_auto_del (
         const char *name,
         byte ipver,
         const char *ipaddr,
@@ -154,23 +154,23 @@ zmsg_t *
         const char *ipaddr,
         byte prefixlen);
 
-//  Encode the MAN_EXCL 
+//  Encode the MAN_DEL 
 zmsg_t *
-    netdisc_msg_encode_man_excl (
+    netdisc_msg_encode_man_del (
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
 
-//  Encode the REV_ADD 
+//  Encode the EXCL_ADD 
 zmsg_t *
-    netdisc_msg_encode_rev_add (
+    netdisc_msg_encode_excl_add (
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
 
-//  Encode the REV_EXCL 
+//  Encode the EXCL_DEL 
 zmsg_t *
-    netdisc_msg_encode_rev_excl (
+    netdisc_msg_encode_excl_del (
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
@@ -182,20 +182,20 @@ zmsg_t *
         zhash_t *hash);
 
 
-//  Send the OS_ADD to the output in one step
+//  Send the AUTO_ADD to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    netdisc_msg_send_os_add (void *output,
+    netdisc_msg_send_auto_add (void *output,
         const char *name,
         byte ipver,
         const char *ipaddr,
         byte prefixlen,
         const char *mac);
     
-//  Send the OS_DEL to the output in one step
+//  Send the AUTO_DEL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    netdisc_msg_send_os_del (void *output,
+    netdisc_msg_send_auto_del (void *output,
         const char *name,
         byte ipver,
         const char *ipaddr,
@@ -210,26 +210,26 @@ int
         const char *ipaddr,
         byte prefixlen);
     
-//  Send the MAN_EXCL to the output in one step
+//  Send the MAN_DEL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    netdisc_msg_send_man_excl (void *output,
+    netdisc_msg_send_man_del (void *output,
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
     
-//  Send the REV_ADD to the output in one step
+//  Send the EXCL_ADD to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    netdisc_msg_send_rev_add (void *output,
+    netdisc_msg_send_excl_add (void *output,
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
     
-//  Send the REV_EXCL to the output in one step
+//  Send the EXCL_DEL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    netdisc_msg_send_rev_excl (void *output,
+    netdisc_msg_send_excl_del (void *output,
         byte ipver,
         const char *ipaddr,
         byte prefixlen);
