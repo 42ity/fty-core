@@ -263,7 +263,7 @@ netdisc_msg_decode (zmsg_t **msg_p)
     GET_NUMBER1 (self->id);
 
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
+        case NETDISC_MSG_AUTO_ADD:
             GET_STRING (self->name);
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
@@ -271,7 +271,7 @@ netdisc_msg_decode (zmsg_t **msg_p)
             GET_STRING (self->mac);
             break;
 
-        case NETDISC_MSG_OS_DEL:
+        case NETDISC_MSG_AUTO_DEL:
             GET_STRING (self->name);
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
@@ -285,19 +285,19 @@ netdisc_msg_decode (zmsg_t **msg_p)
             GET_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_MAN_EXCL:
+        case NETDISC_MSG_MAN_DEL:
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
             GET_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_REV_ADD:
+        case NETDISC_MSG_EXCL_ADD:
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
             GET_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_REV_EXCL:
+        case NETDISC_MSG_EXCL_DEL:
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
             GET_NUMBER1 (self->prefixlen);
@@ -366,7 +366,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
 
     size_t frame_size = 2 + 1;          //  Signature and message ID
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
+        case NETDISC_MSG_AUTO_ADD:
             //  name is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->name)
@@ -385,7 +385,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
                 frame_size += strlen (self->mac);
             break;
             
-        case NETDISC_MSG_OS_DEL:
+        case NETDISC_MSG_AUTO_DEL:
             //  name is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->name)
@@ -415,7 +415,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case NETDISC_MSG_MAN_EXCL:
+        case NETDISC_MSG_MAN_DEL:
             //  ipver is a 1-byte integer
             frame_size += 1;
             //  ipaddr is a string with 1-byte length
@@ -426,7 +426,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case NETDISC_MSG_REV_ADD:
+        case NETDISC_MSG_EXCL_ADD:
             //  ipver is a 1-byte integer
             frame_size += 1;
             //  ipaddr is a string with 1-byte length
@@ -437,7 +437,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case NETDISC_MSG_REV_EXCL:
+        case NETDISC_MSG_EXCL_DEL:
             //  ipver is a 1-byte integer
             frame_size += 1;
             //  ipaddr is a string with 1-byte length
@@ -486,7 +486,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
     PUT_NUMBER1 (self->id);
 
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
+        case NETDISC_MSG_AUTO_ADD:
             if (self->name) {
                 PUT_STRING (self->name);
             }
@@ -506,7 +506,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
                 PUT_NUMBER1 (0);    //  Empty string
             break;
 
-        case NETDISC_MSG_OS_DEL:
+        case NETDISC_MSG_AUTO_DEL:
             if (self->name) {
                 PUT_STRING (self->name);
             }
@@ -536,7 +536,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             PUT_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_MAN_EXCL:
+        case NETDISC_MSG_MAN_DEL:
             PUT_NUMBER1 (self->ipver);
             if (self->ipaddr) {
                 PUT_STRING (self->ipaddr);
@@ -546,7 +546,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             PUT_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_REV_ADD:
+        case NETDISC_MSG_EXCL_ADD:
             PUT_NUMBER1 (self->ipver);
             if (self->ipaddr) {
                 PUT_STRING (self->ipaddr);
@@ -556,7 +556,7 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             PUT_NUMBER1 (self->prefixlen);
             break;
 
-        case NETDISC_MSG_REV_EXCL:
+        case NETDISC_MSG_EXCL_DEL:
             PUT_NUMBER1 (self->ipver);
             if (self->ipaddr) {
                 PUT_STRING (self->ipaddr);
@@ -707,17 +707,17 @@ netdisc_msg_send_again (netdisc_msg_t *self, void *output)
 
 
 //  --------------------------------------------------------------------------
-//  Encode OS_ADD message
+//  Encode AUTO_ADD message
 
 zmsg_t * 
-netdisc_msg_encode_os_add (
+netdisc_msg_encode_auto_add (
     const char *name,
     byte ipver,
     const char *ipaddr,
     byte prefixlen,
     const char *mac)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_OS_ADD);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
     netdisc_msg_set_name (self, name);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
@@ -728,17 +728,17 @@ netdisc_msg_encode_os_add (
 
 
 //  --------------------------------------------------------------------------
-//  Encode OS_DEL message
+//  Encode AUTO_DEL message
 
 zmsg_t * 
-netdisc_msg_encode_os_del (
+netdisc_msg_encode_auto_del (
     const char *name,
     byte ipver,
     const char *ipaddr,
     byte prefixlen,
     const char *mac)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_OS_DEL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_DEL);
     netdisc_msg_set_name (self, name);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
@@ -766,15 +766,15 @@ netdisc_msg_encode_man_add (
 
 
 //  --------------------------------------------------------------------------
-//  Encode MAN_EXCL message
+//  Encode MAN_DEL message
 
 zmsg_t * 
-netdisc_msg_encode_man_excl (
+netdisc_msg_encode_man_del (
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_EXCL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_DEL);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -783,15 +783,15 @@ netdisc_msg_encode_man_excl (
 
 
 //  --------------------------------------------------------------------------
-//  Encode REV_ADD message
+//  Encode EXCL_ADD message
 
 zmsg_t * 
-netdisc_msg_encode_rev_add (
+netdisc_msg_encode_excl_add (
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_REV_ADD);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_ADD);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -800,15 +800,15 @@ netdisc_msg_encode_rev_add (
 
 
 //  --------------------------------------------------------------------------
-//  Encode REV_EXCL message
+//  Encode EXCL_DEL message
 
 zmsg_t * 
-netdisc_msg_encode_rev_excl (
+netdisc_msg_encode_excl_del (
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_REV_EXCL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_DEL);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -834,10 +834,10 @@ netdisc_msg_encode_test (
 
 
 //  --------------------------------------------------------------------------
-//  Send the OS_ADD to the socket in one step
+//  Send the AUTO_ADD to the socket in one step
 
 int
-netdisc_msg_send_os_add (
+netdisc_msg_send_auto_add (
     void *output,
     const char *name,
     byte ipver,
@@ -845,7 +845,7 @@ netdisc_msg_send_os_add (
     byte prefixlen,
     const char *mac)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_OS_ADD);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
     netdisc_msg_set_name (self, name);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
@@ -856,10 +856,10 @@ netdisc_msg_send_os_add (
 
 
 //  --------------------------------------------------------------------------
-//  Send the OS_DEL to the socket in one step
+//  Send the AUTO_DEL to the socket in one step
 
 int
-netdisc_msg_send_os_del (
+netdisc_msg_send_auto_del (
     void *output,
     const char *name,
     byte ipver,
@@ -867,7 +867,7 @@ netdisc_msg_send_os_del (
     byte prefixlen,
     const char *mac)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_OS_DEL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_DEL);
     netdisc_msg_set_name (self, name);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
@@ -896,16 +896,16 @@ netdisc_msg_send_man_add (
 
 
 //  --------------------------------------------------------------------------
-//  Send the MAN_EXCL to the socket in one step
+//  Send the MAN_DEL to the socket in one step
 
 int
-netdisc_msg_send_man_excl (
+netdisc_msg_send_man_del (
     void *output,
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_EXCL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_DEL);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -914,16 +914,16 @@ netdisc_msg_send_man_excl (
 
 
 //  --------------------------------------------------------------------------
-//  Send the REV_ADD to the socket in one step
+//  Send the EXCL_ADD to the socket in one step
 
 int
-netdisc_msg_send_rev_add (
+netdisc_msg_send_excl_add (
     void *output,
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_REV_ADD);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_ADD);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -932,16 +932,16 @@ netdisc_msg_send_rev_add (
 
 
 //  --------------------------------------------------------------------------
-//  Send the REV_EXCL to the socket in one step
+//  Send the EXCL_DEL to the socket in one step
 
 int
-netdisc_msg_send_rev_excl (
+netdisc_msg_send_excl_del (
     void *output,
     byte ipver,
     const char *ipaddr,
     byte prefixlen)
 {
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_REV_EXCL);
+    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_DEL);
     netdisc_msg_set_ipver (self, ipver);
     netdisc_msg_set_ipaddr (self, ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
@@ -980,7 +980,7 @@ netdisc_msg_dup (netdisc_msg_t *self)
     if (self->routing_id)
         copy->routing_id = zframe_dup (self->routing_id);
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
+        case NETDISC_MSG_AUTO_ADD:
             copy->name = self->name? strdup (self->name): NULL;
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
@@ -988,7 +988,7 @@ netdisc_msg_dup (netdisc_msg_t *self)
             copy->mac = self->mac? strdup (self->mac): NULL;
             break;
 
-        case NETDISC_MSG_OS_DEL:
+        case NETDISC_MSG_AUTO_DEL:
             copy->name = self->name? strdup (self->name): NULL;
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
@@ -1002,19 +1002,19 @@ netdisc_msg_dup (netdisc_msg_t *self)
             copy->prefixlen = self->prefixlen;
             break;
 
-        case NETDISC_MSG_MAN_EXCL:
+        case NETDISC_MSG_MAN_DEL:
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
             copy->prefixlen = self->prefixlen;
             break;
 
-        case NETDISC_MSG_REV_ADD:
+        case NETDISC_MSG_EXCL_ADD:
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
             copy->prefixlen = self->prefixlen;
             break;
 
-        case NETDISC_MSG_REV_EXCL:
+        case NETDISC_MSG_EXCL_DEL:
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
             copy->prefixlen = self->prefixlen;
@@ -1038,8 +1038,8 @@ netdisc_msg_print (netdisc_msg_t *self)
 {
     assert (self);
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
-            zsys_debug ("NETDISC_MSG_OS_ADD:");
+        case NETDISC_MSG_AUTO_ADD:
+            zsys_debug ("NETDISC_MSG_AUTO_ADD:");
             if (self->name)
                 zsys_debug ("    name='%s'", self->name);
             else
@@ -1056,8 +1056,8 @@ netdisc_msg_print (netdisc_msg_t *self)
                 zsys_debug ("    mac=");
             break;
             
-        case NETDISC_MSG_OS_DEL:
-            zsys_debug ("NETDISC_MSG_OS_DEL:");
+        case NETDISC_MSG_AUTO_DEL:
+            zsys_debug ("NETDISC_MSG_AUTO_DEL:");
             if (self->name)
                 zsys_debug ("    name='%s'", self->name);
             else
@@ -1084,8 +1084,8 @@ netdisc_msg_print (netdisc_msg_t *self)
             zsys_debug ("    prefixlen=%ld", (long) self->prefixlen);
             break;
             
-        case NETDISC_MSG_MAN_EXCL:
-            zsys_debug ("NETDISC_MSG_MAN_EXCL:");
+        case NETDISC_MSG_MAN_DEL:
+            zsys_debug ("NETDISC_MSG_MAN_DEL:");
             zsys_debug ("    ipver=%ld", (long) self->ipver);
             if (self->ipaddr)
                 zsys_debug ("    ipaddr='%s'", self->ipaddr);
@@ -1094,8 +1094,8 @@ netdisc_msg_print (netdisc_msg_t *self)
             zsys_debug ("    prefixlen=%ld", (long) self->prefixlen);
             break;
             
-        case NETDISC_MSG_REV_ADD:
-            zsys_debug ("NETDISC_MSG_REV_ADD:");
+        case NETDISC_MSG_EXCL_ADD:
+            zsys_debug ("NETDISC_MSG_EXCL_ADD:");
             zsys_debug ("    ipver=%ld", (long) self->ipver);
             if (self->ipaddr)
                 zsys_debug ("    ipaddr='%s'", self->ipaddr);
@@ -1104,8 +1104,8 @@ netdisc_msg_print (netdisc_msg_t *self)
             zsys_debug ("    prefixlen=%ld", (long) self->prefixlen);
             break;
             
-        case NETDISC_MSG_REV_EXCL:
-            zsys_debug ("NETDISC_MSG_REV_EXCL:");
+        case NETDISC_MSG_EXCL_DEL:
+            zsys_debug ("NETDISC_MSG_EXCL_DEL:");
             zsys_debug ("    ipver=%ld", (long) self->ipver);
             if (self->ipaddr)
                 zsys_debug ("    ipaddr='%s'", self->ipaddr);
@@ -1183,23 +1183,23 @@ netdisc_msg_command (netdisc_msg_t *self)
 {
     assert (self);
     switch (self->id) {
-        case NETDISC_MSG_OS_ADD:
-            return ("OS_ADD");
+        case NETDISC_MSG_AUTO_ADD:
+            return ("AUTO_ADD");
             break;
-        case NETDISC_MSG_OS_DEL:
-            return ("OS_DEL");
+        case NETDISC_MSG_AUTO_DEL:
+            return ("AUTO_DEL");
             break;
         case NETDISC_MSG_MAN_ADD:
             return ("MAN_ADD");
             break;
-        case NETDISC_MSG_MAN_EXCL:
-            return ("MAN_EXCL");
+        case NETDISC_MSG_MAN_DEL:
+            return ("MAN_DEL");
             break;
-        case NETDISC_MSG_REV_ADD:
-            return ("REV_ADD");
+        case NETDISC_MSG_EXCL_ADD:
+            return ("EXCL_ADD");
             break;
-        case NETDISC_MSG_REV_EXCL:
-            return ("REV_EXCL");
+        case NETDISC_MSG_EXCL_DEL:
+            return ("EXCL_DEL");
             break;
         case NETDISC_MSG_TEST:
             return ("TEST");
@@ -1510,7 +1510,7 @@ netdisc_msg_test (bool verbose)
     //  Encode/send/decode and verify each message type
     int instance;
     netdisc_msg_t *copy;
-    self = netdisc_msg_new (NETDISC_MSG_OS_ADD);
+    self = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
     
     //  Check that _dup works on empty message
     copy = netdisc_msg_dup (self);
@@ -1538,7 +1538,7 @@ netdisc_msg_test (bool verbose)
         assert (streq (netdisc_msg_mac (self), "Life is short but Now lasts for ever"));
         netdisc_msg_destroy (&self);
     }
-    self = netdisc_msg_new (NETDISC_MSG_OS_DEL);
+    self = netdisc_msg_new (NETDISC_MSG_AUTO_DEL);
     
     //  Check that _dup works on empty message
     copy = netdisc_msg_dup (self);
@@ -1590,7 +1590,7 @@ netdisc_msg_test (bool verbose)
         assert (netdisc_msg_prefixlen (self) == 123);
         netdisc_msg_destroy (&self);
     }
-    self = netdisc_msg_new (NETDISC_MSG_MAN_EXCL);
+    self = netdisc_msg_new (NETDISC_MSG_MAN_DEL);
     
     //  Check that _dup works on empty message
     copy = netdisc_msg_dup (self);
@@ -1614,7 +1614,7 @@ netdisc_msg_test (bool verbose)
         assert (netdisc_msg_prefixlen (self) == 123);
         netdisc_msg_destroy (&self);
     }
-    self = netdisc_msg_new (NETDISC_MSG_REV_ADD);
+    self = netdisc_msg_new (NETDISC_MSG_EXCL_ADD);
     
     //  Check that _dup works on empty message
     copy = netdisc_msg_dup (self);
@@ -1638,7 +1638,7 @@ netdisc_msg_test (bool verbose)
         assert (netdisc_msg_prefixlen (self) == 123);
         netdisc_msg_destroy (&self);
     }
-    self = netdisc_msg_new (NETDISC_MSG_REV_EXCL);
+    self = netdisc_msg_new (NETDISC_MSG_EXCL_DEL);
     
     //  Check that _dup works on empty message
     copy = netdisc_msg_dup (self);
