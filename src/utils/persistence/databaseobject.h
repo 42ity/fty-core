@@ -167,7 +167,14 @@ class DataBaseObject
          * \return A number of rows affected.
          */
         unsigned int reload();
-         
+        
+        /**
+         * \brief Deletes the object with specified ID from the DB
+         *
+         * \return A number of rows deleted.
+         */
+        unsigned int deleteById(int id);
+ 
         /* TODO assignment and compasisson
         DataBaseObject ==
 

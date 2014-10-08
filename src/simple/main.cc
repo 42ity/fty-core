@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
-
+#include "cidr.h"
 #include <czmq.h>
 
 #include "persistence.h"
@@ -72,8 +72,8 @@ void persistence_actor(zsock_t *pipe, void *args) {
         puts (ipaddr);
         nethistory.setMac(s); // mac
         nethistory.setName(name);
-        nethistory.setIp(ipaddr);
-        nethistory.setMask(prefixlen);
+        utils::CIDRAddress address(ipaddr,prefixlen);
+        nethistory.setAddress(address);
         nethistory.setCommand(command);
         
         n = nethistory.dbsave();
