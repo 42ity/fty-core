@@ -25,6 +25,7 @@ AM_CFLAGS = ${my_CFLAGS} \
 	-ffunction-sections \
 	-fdata-sections \
 	$(LIBZMQ_CFLAGS) \
+	$(LIBCZMQ_CFLAGS) \
 	$(LIBVARIANT_CFLAGS)
 
 AM_CXXFLAGS = ${my_CXXFLAGS} \
@@ -200,7 +201,7 @@ test_subprocess_LDADD = \
 				   libpriv-subprocess.la \
 				   libpriv-test-run.la
 test_subprocess_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
-test_subprocess_LDFLAGS = -lcxxtools
+test_subprocess_LDFLAGS = -lcxxtools -lcidr
 
 check_PROGRAMS += \
 		 test-cidr
@@ -268,7 +269,7 @@ cli_SOURCES = \
 nodist_cli_SOURCES = \
 				src/utils/messages/json_schemas.h
 cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
-cli_LDFLAGS = -ljsoncpp $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
+cli_LDFLAGS = $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
 
 bin_PROGRAMS += \
 				cored
@@ -283,6 +284,16 @@ cored_LDADD = libpriv-cored.la
 cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += \
+				driver-nmap
+driver_nmap_SOURCES = \
+					  src/drivers/nmap/nmap-driver.h \
+					  src/drivers/nmap/nmap.cc \
+					  src/drivers/nmap/nmap-parse.h \
+					  src/drivers/nmap/nmap-parse.cc
+driver_nmap_LDADD = libpriv-subprocess.la
+driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} -lcxxtools
+
+bin_PROGRAMS += \
 				simple
 
 simple_SOURCES = \
@@ -293,7 +304,7 @@ simple_SOURCES = \
     src/simple/netdisc_msg.c \
     src/simple/netdisc_msg.h 
 
-simple_LDFLAGS = -lcidr -lczmq -lcxxtools -ltntdb
+simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
 simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
 simple_LDADD = libpriv-db.la libpriv-cidr.la
 

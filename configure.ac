@@ -33,9 +33,6 @@ PKG_PROG_PKG_CONFIG
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_LANG_PUSH([C++])
-#AC_CHECK_HEADERS([jsoncpp/json/json.h],
-#                 [],
-#                 AC_MSG_ERROR([cannot find required header jsoncpp/json/json.h]))
 # libvariant
 AC_CHECK_HEADERS([Variant/Variant.h],
                  [],
@@ -50,13 +47,11 @@ AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBVARIANT], [libvariant], [], [AC_MSG_ERROR([cannot find libvariant])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
-PKG_CHECK_MODULES([LIBJSONCPP], [jsoncpp], [], [AC_MSG_ERROR([cannot find libjsoncpp])])
+PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq 3.0 (git snapshot)])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
 dnl Checks for libraries.
-dnl FIXME: Replace `main' with a function in `-ljsoncpp':
-dnl AC_CHECK_LIB([jsoncpp], [main])
 dnl FIXME: Replace `main' with a function in `-lnetlink':
 dnl AC_CHECK_LIB([netlink], [main])
 dnl FIXME: Replace `main' with a function in `-lzmq':
@@ -172,12 +167,12 @@ Summary:
         LDFLAGS:                 ${OUR_LDFLAGS} ${LDFLAGS}
         LIBZMQ_CFLAGS:           ${LIBZMQL_CFLAGS}
         LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
+        LIBCZMQ_CFLAGS:          ${LIBCZMQ_CFLAGS}
+        LIBCZMQ_LIBS:            ${LIBCZMQ_LIBS}
         LIBVARIANT_CFLAGS:       ${LIBVARIANT_CFLAGS}
         LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
         LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
         LIBCIDR_LIBS:            ${LIBCIDR_LIBS}
-        LIBJSONCPP_CFLAGS:       ${LIBJSONCPP_CFLAGS}
-        LIBJSONCPP_LIBS:         ${LIBJSONCPP_LIBS}
 
         debug mode:              ${enable_debug:-no}
 ])
