@@ -7,6 +7,7 @@
 #include <czmq.h>
 
 #include "persistence.h"
+#include "persistencelogic.h"
 #include "dbinit.h"
 #include "defs.h"
 #include "netdisc_msg.h"
@@ -45,41 +46,9 @@ void persistence_actor(zsock_t *pipe, void *args) {
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        
-        const char *name = netdisc_msg_name (msg); 
-        byte ipver = netdisc_msg_ipver (msg);
-        const char *ipaddr = netdisc_msg_ipaddr (msg);
-        byte prefixlen = netdisc_msg_prefixlen (msg);
-        const char *mac = netdisc_msg_mac (msg);
-        int command_id = netdisc_msg_id (msg);
-        char command;
-        if (command_id == 1) {
-            command = 'a';
-        } else {
-            command = 'd';
-        }
-        int mask;
-
-        int n ; // number of rows inserted;
-        std::string s(mac);
-        std::remove( s.begin(), s.end(), ':');
-        s.erase(12,5);
-
-        // So far, only netmon messages are being stored
-        utils::NetHistory nethistory = utils::NetHistory(url);
-
-        puts (name);
-        puts (ipaddr);
-        nethistory.setMac(s); // mac
-        nethistory.setName(name);
-        utils::CIDRAddress address(ipaddr,prefixlen);
-        nethistory.setAddress(address);
-        nethistory.setCommand(command);
-        
-        n = nethistory.dbsave();
-
+        bool b = utils::process_message(url,msg);
+       
         i++;
-        netdisc_msg_destroy (&msg);
     }
     
     zpoller_destroy(&poller);
@@ -106,7 +75,7 @@ void netmon_actor(zsock_t *pipe, void *args) {
             break;
         byte command = random() % 2; // 0 - os_add; 1 - os_del
         if (command == 0) {            
-            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_OS_ADD);
+            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
             netdisc_msg_set_name (ndmsg, "%s", names[randof(names_len)]);
             netdisc_msg_set_ipver (ndmsg, 0);
             netdisc_msg_set_ipaddr (ndmsg, "%d.%d.%d.%d",
@@ -129,7 +98,7 @@ void netmon_actor(zsock_t *pipe, void *args) {
                 continue;
             int which = randof(stored.size());
 
-            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_OS_DEL);
+            netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_AUTO_DEL);
             netdisc_msg_set_name (ndmsg, "%s", std::get<0>(stored.at(which)).c_str());
             netdisc_msg_set_ipver (ndmsg, 0);
             netdisc_msg_set_ipaddr (ndmsg, "%s",  std::get<2>(stored.at(which)).c_str());

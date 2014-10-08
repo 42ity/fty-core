@@ -301,12 +301,14 @@ simple_SOURCES = \
 	src/simple/defs.h \
 	tools/dbinit.h \
 	src/utils/persistence.h \
-    	src/simple/netdisc_msg.c \
-    	src/simple/netdisc_msg.h \
-	src/utils/persistencelogic.cc
+    src/simple/netdisc_msg.c \
+    src/simple/netdisc_msg.h \
+	src/utils/persistencelogic.cc \
+	src/utils/persistencelogic.h 
 
-simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
-simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/
+
+simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} -lcxxtools -ltntdb
+simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple
 simple_LDADD = libpriv-db.la libpriv-cidr.la
 
 #----------------------------------------------------------------------
