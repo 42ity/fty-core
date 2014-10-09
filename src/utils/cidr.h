@@ -231,7 +231,7 @@ public:
   /**
    * \brief prefix of CIDRAddress.
    */
-  int  prefix();
+  int prefix() const;
 
   /**
    * \brief set IP address to invalid (You can imagine this address as 0.0.0.0 or ::)
@@ -307,7 +307,7 @@ public:
    * - 10.0.0.1/24 => 10.0.0.0/24
    * - fe80::ABCD/64 => fe80::/62
    */
-  CIDRAddress network();
+  CIDRAddress network() const;
 
   /**
    * \brief returns a broadcast address
@@ -337,7 +337,7 @@ public:
    *
    * Returned string contains prefix, only if it isn't a host. Prefix 32 (or 128 for IPv6) is suppressed.
    */
-  std::string toString();
+  std::string toString() const;
 
   /**
    * \brief converts address to string
@@ -346,7 +346,7 @@ public:
    *
    * Returned string is network address. You can enforce or suppress network mask using predefined constants.
    */
-  std::string toString(CIDROptions option);
+  std::string toString(CIDROptions option) const;
 
   /**
    * \brief compare two ip addresses

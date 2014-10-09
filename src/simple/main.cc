@@ -34,7 +34,6 @@ void persistence_actor(zsock_t *pipe, void *args) {
 
     zsock_signal(pipe, 0);
  
-    size_t i = 0;
 
     while(!zpoller_terminated(poller)) {
         if (irq == 1)
@@ -46,9 +45,7 @@ void persistence_actor(zsock_t *pipe, void *args) {
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        bool b = utils::process_message(url,msg);
-       
-        i++;
+        bool b = utils::db::process_message (url, *msg);
     }
     
     zpoller_destroy(&poller);
@@ -140,3 +137,4 @@ int main() {
     zactor_destroy(&db);
 
 }
+

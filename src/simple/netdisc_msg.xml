@@ -60,11 +60,4 @@ Revert manually excluded network.
     <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
 </message>
 
-<!-- PURPOSE: Test the zproto collections capabilites -->
-<message name = "test" id = "7">
-Testing message.
-    <field name = "list" type = "strings">list</field>
-    <field name = "hash" type = "dictionary">dict</field>
-</message>
-
 </class>

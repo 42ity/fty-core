@@ -122,7 +122,7 @@ int CIDRAddress::protocol() const {
   return 0;
 }
 
-int CIDRAddress::prefix() {
+int CIDRAddress::prefix() const {
   return cidr_get_pflen(_cidr);
 }
 
@@ -198,7 +198,7 @@ CIDRAddress CIDRAddress::host() {
   return result;
 }
 
-CIDRAddress CIDRAddress::network() {
+CIDRAddress CIDRAddress::network() const {
   CIDRAddress result;
   
   if( ! valid() ) return result;
@@ -225,11 +225,11 @@ bool CIDRAddress::set(const CIDRAddress& from) {
   return ( _cidr != NULL );
 }
 
-std::string CIDRAddress::toString() {
+std::string CIDRAddress::toString() const {
   return toString(CIDR_AUTO_PREFIX);
 }
 
-std::string CIDRAddress::toString(CIDROptions opt) {
+std::string CIDRAddress::toString(CIDROptions opt) const {
   std::string addr = "";
   bool showprefix = true;
   char *cstr;
