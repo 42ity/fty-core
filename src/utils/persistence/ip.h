@@ -22,15 +22,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
 
-#ifndef IP_H_
-#define IP_H_
+#ifndef UTILS_PERSISTENCE_IP_H_
+#define UTILS_PERSISTENCE_IP_H_
 
 #include "cidr.h"
 #include "databasetimeobject.h"
 
 class DeviceDiscovered;
 
-namespace utils{
+namespace utils {
+
+namespace db {
     
 /*
  * \brief IP is a class for representing a database entity
@@ -153,6 +155,9 @@ class Ip :public DataBaseTimeObject
 
 }; // end of the class
 
+
+} // namespace db
+
 }  // namespace utils
 
-#endif //IP_H_
+#endif // UTILS_PERSISTENCE_IP_H_

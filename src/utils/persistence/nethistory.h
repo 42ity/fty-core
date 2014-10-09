@@ -33,6 +33,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
+namespace db {
+
 /*
  * \brief NetHistory is a class for representing a database entity
  * t_bios_device_type.
@@ -148,6 +150,8 @@ class NetHistory : public DataBaseTimeObject
         std::string _name;
 
 }; // class NetHistory
+
+} // namespace db
 
 }  // end of namespace utils
 

@@ -27,12 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef DATABASEOBJECT_H_
-#define DATABASEOBJECT_H_
+#ifndef UTILS_PERSISTENCE_DATABASEOBJECT_H_
+#define UTILS_PERSISTENCE_DATABASEOBJECT_H_
 
 #include <string>
 
 namespace utils {
+
+namespace db {
  
 /**
  * \brief Represents the relation of the object to the database
@@ -279,6 +281,7 @@ class DataBaseObject
 
 }; // end of the class
 
+} // namespace db
 
 }  // end of namespace utils
 

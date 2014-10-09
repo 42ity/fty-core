@@ -32,10 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nethistory.h"
  
 namespace utils {
-   
-////////////////////////////////////////////////////////////
-//////////          NetHistory                 ///////
-////////////////////////////////////////////////////////////
+
+namespace db {
 
 void
 NetHistory::
@@ -403,5 +401,7 @@ int NetHistory::checkUnique()
     row[0].get(ret_val);
     return ret_val;
 }
+
+} // namespace db
 
 } //end of namespace utils

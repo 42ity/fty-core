@@ -110,7 +110,7 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
 
     unsigned int rows_affected = 0;
 
-    utils::NetHistory nethistory(url);
+    utils::db::NetHistory nethistory(url);
     nethistory.setAddress(address);
     nethistory.setCommand(command);           
     int id_unique = nethistory.checkUnique();

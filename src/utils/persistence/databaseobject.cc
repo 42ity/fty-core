@@ -27,9 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
-////////////////////////////////////////////////////////////
-//////////      DataBaseObject               ///////////////
-////////////////////////////////////////////////////////////
+namespace db {
 
 void 
 DataBaseObject::
@@ -211,4 +209,7 @@ clear()
     _id = -1;
 }
 
+} // namespace db
+
 } // end namespace utils
+

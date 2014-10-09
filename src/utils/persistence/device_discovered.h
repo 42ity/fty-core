@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef DEVICE_DISCOVERED_H_
-#define DEVICE_DISCOVERED_H_
+#ifndef UTILS_PERSISTENCE_DEVICE_DISCOVERED_H_
+#define UTILS_PERSISTENCE_DEVICE_DISCOVERED_H_
 
 #define MODULE_ADMIN "admin"
 
@@ -35,9 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils{
 
-////////////////////////////////////////////////////////
-////           DeviceDiscovered       //////////////////
-////////////////////////////////////////////////////////
+namespace db {
 
 /*
  * \brief DeviceDiscovered is a class for representing a database entity
@@ -304,7 +302,9 @@ class DeviceDiscovered:  public DataBaseObject {
 
 }; // end of the class
 
+} // namespace db
+
 }  // end of namaspace utils
 
 
-#endif //DEVICE_DISCOVERED_H_
+#endif // UTILS_PERSISTENCE_DEVICE_DISCOVERED_H_

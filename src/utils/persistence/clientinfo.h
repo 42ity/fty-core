@@ -21,14 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef CLIENTINFO_H_
-#define CLIENTINFO_H_
+#ifndef UTILS_PERSISTENCE_CLIENTINFO_H_
+#define UTILS_PERSISTENCE_CLIENTINFO_H_
 
 #include "databasetimeobject.h"
 #include "cidr.h"
 #include "tntdb/error.h"
 
 namespace utils {
+
+namespace db {
 
 /*
  * \brief ClientInfo is a class for representing a database entity
@@ -301,6 +303,8 @@ class ClientInfo : public DataBaseTimeObject
         std::string _clientName;
 
 }; // end of the class
+
+} // namespace db
 
 }  // end of namespace utils
 
