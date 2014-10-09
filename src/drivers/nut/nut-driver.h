@@ -39,24 +39,24 @@ void nut_actor(zsock_t *pipe, void *args);
  * by NUT.
  */
 
-class NUTUPS {
-    friend class NUTUPSList;
+class NUTDevice {
+    friend class NUTDeviceList;
  public:
     /**
      * \brief Creates new NUTUPS with empty set of values without name.
      */
-    NUTUPS();
+    NUTDevice();
 
     /**
      * \brief Creates new NUTUPS with empty set of values with name (name corresponds
      * with NUTs /etc/ups/ups.conf
      */
-    NUTUPS(std::string name);
+    NUTDevice(std::string name);
 
     /**
      * \brief Method for obtaining UPS's name.
      */
-    std::string name();
+    const std::string name();
 
     /**
      * \brief Method for checking that some changes in UPS status happened.
@@ -66,7 +66,7 @@ class NUTUPS {
      * Method returns true if there are some changes in UPS since last
      * statusMessage has been called.
      */
-    bool changed();
+    bool changed() const;
     
     /**
      * \brief Produces a std::string with UPS status in JSON format.
@@ -81,8 +81,8 @@ class NUTUPS {
      *        cout << UPS.statusMessage() << endl;
      *    }
      */
-    std::string statusMessage();
-    ~NUTUPS();
+    const std::string statusMessage();
+    ~NUTDevice();
  private:
 
     /**
@@ -139,9 +139,9 @@ class NUTUPS {
 /**
  * \brief NUTUPSList is class for holding list of NUTUPS objects.
  */
-class NUTUPSList {
+class NUTDeviceList {
  public:
-    NUTUPSList();
+    NUTDeviceList();
 
     /**
      * \brief Reads status information from NUT daemon.
@@ -155,30 +155,30 @@ class NUTUPSList {
     /**
      * \brief Returns true if there is at least one device claiming change.
      */
-    bool changed();
+    bool changed() const;
 
     /**
      * \brief returns the size of device list (number of upses)
      */
-    unsigned int size();
+    size_t size();
 
-    //! \brief get the NUTUPS object by name
-    NUTUPS& operator[](std::string name);
+    //! \brief get the NUTDevice object by name
+    NUTDevice& operator[](const std::string name);
 
     //! \brief get the iterators, to be able to go trough list of devices
-    std::map<std::string, NUTUPS>::iterator begin();
-    std::map<std::string, NUTUPS>::iterator end();
+    std::map<std::string, NUTDevice>::iterator begin();
+    std::map<std::string, NUTDevice>::iterator end();
 
-    ~NUTUPSList();
+    ~NUTDeviceList();
  private:
     //! \brief Connection to NUT daemon
     nut::TcpClient nutClient;
 
     //! \brief list of NUT devices
-    std::map<std::string, NUTUPS> _devices;  
+    std::map<std::string, NUTDevice> _devices;  
 
     //! \brief connect to NUT daemon
-    void connect();
+    bool connect();
 
     //! \brief disconnect from NUT daemon
     void disconnect();

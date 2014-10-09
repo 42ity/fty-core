@@ -76,29 +76,30 @@ static const std::vector<std::string> inventoryBIOS {
     "battery.type"
 };
 
-NUTUPS::NUTUPS() {  
+NUTDevice::NUTDevice() {  
     _change = false;
     _name = "";
 }
 
-NUTUPS::NUTUPS(std::string aName) {  
+NUTDevice::NUTDevice(std::string aName) {  
     _change = false;
     name(aName);
 }
 
-void NUTUPS::name(const std::string aName) {
+void NUTDevice::name(const std::string aName) {
     _name = aName;
 }
 
-std::string NUTUPS::name() {
+const std::string NUTDevice::name() {
     return _name;
 }
 
-bool NUTUPS::changed() {
+bool NUTDevice::changed() const {
     return _change;
 }
 
-void NUTUPS::updatePhysics(std::string varName, float newValue) {
+void NUTDevice::updatePhysics(std::string varName, float newValue) {
+    // calculating round(newValue * 100) without math library
     long int newValueInt = ((newValue * 100) + 0.5);
     if( _physics.count( varName ) == 0 ) {
         // this is new value
@@ -121,7 +122,7 @@ void NUTUPS::updatePhysics(std::string varName, float newValue) {
     }
 }
 
-void NUTUPS::updatePhysics(std::string varName, std::vector<std::string> values) {
+void NUTDevice::updatePhysics(std::string varName, std::vector<std::string> values) {
     if( values.size() == 1 ) {
         // don't know how to handle multiple values
         // multiple values would be probably nonsence
@@ -132,9 +133,9 @@ void NUTUPS::updatePhysics(std::string varName, std::vector<std::string> values)
     }
 }
 
-void NUTUPS::updateInventory(std::string varName, std::vector<std::string> values) {
+void NUTDevice::updateInventory(std::string varName, std::vector<std::string> values) {
     std::string inventory = "";
-    for(unsigned int i = 0 ; i < values.size() ; ++i ) {
+    for(size_t i = 0 ; i < values.size() ; ++i ) {
         inventory += values[i];
         if( i < values.size() -1 ) {
             inventory += ", ";
@@ -154,17 +155,15 @@ void NUTUPS::updateInventory(std::string varName, std::vector<std::string> value
     }
 }
 
-void NUTUPS::update(std::map<std::string,std::vector<std::string>> vars ) {
-    for(unsigned int i = 0; i < physicsNUT.size(); ++i) {
-        // cout << "update " << physicsNUT[i] << endl;
+void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
+    for(size_t i = 0; i < physicsNUT.size(); ++i) {
         if( vars.count(physicsNUT[i]) ) {
             // variable found in received data
             std::vector<std::string> values = vars[physicsNUT[i]];
             updatePhysics( physicsBIOS[i], values );
         }
     }
-    for(unsigned int i = 0; i < inventoryNUT.size(); ++i) {
-        // cout << "update " << inventoryNUT[i] << endl;
+    for(size_t i = 0; i < inventoryNUT.size(); ++i) {
         if( vars.count(inventoryNUT[i]) ) {
             // variable found in received data
             std::vector<std::string> values = vars[inventoryNUT[i]];
@@ -173,7 +172,7 @@ void NUTUPS::update(std::map<std::string,std::vector<std::string>> vars ) {
     }
 }
 
-std::string NUTUPS::itof(long int X) {
+std::string NUTDevice::itof(long int X) {
     std::string num,dec;
 
     num = std::to_string( X / 100 );
@@ -186,15 +185,15 @@ std::string NUTUPS::itof(long int X) {
     }
 }
 
-std::string NUTUPS::statusMessage() {
+const std::string NUTDevice::statusMessage() {
     std::string msg = "",val;
-    for(auto it = _physics.begin(); it != _physics.end(); ++it){
-        msg += "\"" + it->first + "\":" + itof(it->second ) + ", ";
+    for(auto it : _physics ){
+        msg += "\"" + it.first + "\":" + itof(it.second ) + ", ";
     }
-    for(auto it = _inventory.begin(); it != _inventory.end(); ++it){
-        val = it->second;
+    for(auto it : _inventory ){
+        val = it.second;
         std::replace(val.begin(), val.end(),'"',' ');
-        msg += "\"" + it->first + "\":\"" + val + "\", ";
+        msg += "\"" + it.first + "\":\"" + val + "\", ";
     }
     if( msg.size() > 2 ) {
         msg = msg.substr(0, msg.size()-2 );
@@ -203,22 +202,22 @@ std::string NUTUPS::statusMessage() {
     return "{" + msg + "}";
 }
 
-NUTUPS::~NUTUPS() {
+NUTDevice::~NUTDevice() {
 
 }
 
-NUTUPSList::NUTUPSList() {
+NUTDeviceList::NUTDeviceList() {
 
 }
 
-void NUTUPSList::updateDeviceList() {
+void NUTDeviceList::updateDeviceList() {
     try {
         std::set<std::string> devs = nutClient.getDeviceNames();
         // add newly appeared devices
-        for(auto it = devs.begin(); it != devs.end(); ++it ) {
+        for(auto &it : devs ) {
             // cout << *it << endl;
-            if( _devices.count( *it ) == 0 ) {
-                _devices[*it] = NUTUPS(*it);
+            if( _devices.count( it ) == 0 ) {
+                _devices[it] = NUTDevice(it);
             }
         }
         // remove missing devices
@@ -235,71 +234,62 @@ void NUTUPSList::updateDeviceList() {
     } catch (...) {}
 }
 
-void NUTUPSList::updateDeviceStatus() {
+void NUTDeviceList::updateDeviceStatus() {
     try {
-        for(auto device = _devices.begin(); device != _devices.end(); ++device) {
-            nut::Device nutDevice = nutClient.getDevice(device->first);
-            device->second.update( nutDevice.getVariableValues());
+        for(auto &device : _devices ) {
+            nut::Device nutDevice = nutClient.getDevice(device.first);
+            device.second.update( nutDevice.getVariableValues());
         }
     } catch (...) {}
 }
 
-void NUTUPSList::connect() {
+bool NUTDeviceList::connect() {
     try {
         nutClient.connect("localhost",3493);
     } catch (...) {}
+    return nutClient.isConnected();
 }
 
-void NUTUPSList::disconnect() {
+void NUTDeviceList::disconnect() {
     try {
         nutClient.disconnect();
     } catch (...) {}
 }
 
-void NUTUPSList::update() {
-    connect();
-    updateDeviceList();
-    updateDeviceStatus();
-    disconnect();
-}
-
-/**
-   
-void NUTUPSList::doMessage() {
-    for(auto it = _devices.begin(); it != _devices.end(); ++it) {
-        if( it->second.changed() ) {
-            cout << it->second.name() << " " << it->second.statusMessage() << endl;
-        }
+void NUTDeviceList::update() {
+    if( connect() ) {
+        updateDeviceList();
+        updateDeviceStatus();
+        disconnect();
     }
 }
-*/
 
-unsigned int NUTUPSList::size() {
+size_t NUTDeviceList::size() {
     return _devices.size();
 }
 
-NUTUPS& NUTUPSList::operator[](std::string name) {
+NUTDevice& NUTDeviceList::operator[](const std::string name) {
     return _devices[name];
 }
 
-std::map<std::string, NUTUPS>::iterator NUTUPSList::begin() {
+std::map<std::string, NUTDevice>::iterator NUTDeviceList::begin() {
     return _devices.begin();
 }
 
-std::map<std::string, NUTUPS>::iterator NUTUPSList::end() {
+std::map<std::string, NUTDevice>::iterator NUTDeviceList::end() {
     return _devices.end();
 }
 
-bool NUTUPSList::changed() {
+bool NUTDeviceList::changed() const {
 
-    for(auto  it = _devices.begin() ; it != _devices.end(); ++it) {
-        if(it->second.changed() ) return true; 
+    for(auto  &it : _devices ) {
+        if(it.second.changed() ) return true; 
     }
     return false;
 }
 
 
-NUTUPSList::~NUTUPSList() {
+NUTDeviceList::~NUTDeviceList() {
     disconnect();
 }
 
@@ -308,11 +298,15 @@ NUTUPSList::~NUTUPSList() {
 #include <chrono>
 
 int main(int argc, char *argv[]) {
-    NUTUPSList mups;
+    NUTDeviceList mydevs;
 
     while(true) {
-        mups.update();
-        mups.doMessage();
+        mydevs.update();
+        for(auto &it : mydevs ) {
+            if(it.second.changed() ) {
+                cout << it.first << it.second.statusMessage() << std::endl;
+            }
+        }
         std::this_thread::sleep_for(std::chrono::seconds(2));
     }
     return 0;
