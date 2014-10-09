@@ -31,11 +31,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 void nut_actor(zsock_t *pipe, void *args);
 
 /**
- * \class NUTUPS
+ * \class NUTDevice
  *
- * \brief Class for keeping status information of one UPS as it is presented by NUT.
+ * \brief Class for keeping status information of one UPS/ePDU/... as it is presented by NUT.
  *
- * NUTUPS keeps inventory, status and measurement values of one UPS as it is presented
+ * NUTDevice keeps inventory, status and measurement values of one device as it is presented
  * by NUT.
  */
 
@@ -43,37 +43,37 @@ class NUTDevice {
     friend class NUTDeviceList;
  public:
     /**
-     * \brief Creates new NUTUPS with empty set of values without name.
+     * \brief Creates new NUTDevice with empty set of values without name.
      */
     NUTDevice();
 
     /**
-     * \brief Creates new NUTUPS with empty set of values with name (name corresponds
+     * \brief Creates new NUTDevice with empty set of values with name (name corresponds
      * with NUTs /etc/ups/ups.conf
      */
     NUTDevice(std::string name);
 
     /**
-     * \brief Method for obtaining UPS's name.
+     * \brief Method for obtaining device's name.
      */
     const std::string name();
 
     /**
-     * \brief Method for checking that some changes in UPS status happened.
+     * \brief Method for checking that some changes in device status happened.
      * \return bool
      * \see statusMessage()
      *
-     * Method returns true if there are some changes in UPS since last
+     * Method returns true if there are some changes in device since last
      * statusMessage has been called.
      */
     bool changed() const;
     
     /**
-     * \brief Produces a std::string with UPS status in JSON format.
+     * \brief Produces a std::string with device status in JSON format.
      * \return std::string
      * \see change()
      *
-     * Method returns string with UPS status message. The flag _change is
+     * Method returns string with device status message. The flag _change is
      * set to false. Method returs the actual status allways, even if there is
      * no change.
      *
@@ -86,7 +86,7 @@ class NUTDevice {
  private:
 
     /**
-     * \brief sets the UPS name
+     * \brief sets the device name
      */
     void name(const std::string name);
 
@@ -130,14 +130,14 @@ class NUTDevice {
     std::map<std::string, std::string> _inventory;
     //! \brief flag, if there is change to be published
     bool _change;
-    //! \brief ups name
+    //! \brief device name
     std::string _name;
     //! \brief Transformation of our integer (x100) back
     std::string itof(long int);
 };
 
 /**
- * \brief NUTUPSList is class for holding list of NUTUPS objects.
+ * \brief NUTDeviceList is class for holding list of NUTDevice objects.
  */
 class NUTDeviceList {
  public:
@@ -158,7 +158,7 @@ class NUTDeviceList {
     bool changed() const;
 
     /**
-     * \brief returns the size of device list (number of upses)
+     * \brief returns the size of device list (number of devices)
      */
     size_t size();
 
