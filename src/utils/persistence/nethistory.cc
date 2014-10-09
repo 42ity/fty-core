@@ -81,7 +81,7 @@ NetHistory::
 check()
 {
     if ((_name.length() <= this->getNamesLength()) &&
-        this->check_command() )
+        this->check_command() && _address.valid() )
         return true;
     else
         return false;
@@ -206,12 +206,12 @@ selectById(int id)
         row[0].get(tmp_ip);
 
         //mask
-        int tmp_i = 32;
+        int tmp_i = -1;
         row[1].get(tmp_i);
 
         //address
         _address = CIDRAddress(tmp_ip,tmp_i);
-        _address.network(); // put in network format
+        _address = _address.network(); // put in network format, to be sure it is in network format
 
         //mac
         row[2].get(_mac);
@@ -291,15 +291,15 @@ void
 NetHistory::
 setAddress(const CIDRAddress& cidr_address)
 {
-    // cidr_address.network();  // We are not sure, if the passed address is in a network format
-    if ( ( _address != cidr_address.network() ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    CIDRAddress newaddr = cidr_address.network();  // We are not sure, if the passed address is in a network format
+    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
-                 _address = cidr_address;
+                 _address = newaddr;
                  break;
             default:
                 // TODO log this should never happen

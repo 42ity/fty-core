@@ -7,6 +7,11 @@ namespace utils {
 
 namespace db {
 
+/**
+ * \brief Processes the network discovery messages.
+ *
+ * \return true if processing was successful and false if message was bad
+ */
 bool
 process_message(const std::string& url, const netdisc_msg_t& msg);
 

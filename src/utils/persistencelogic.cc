@@ -118,15 +118,16 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
     switch (msg_id) {
 
         case NETDISC_MSG_AUTO_ADD:
-        {
+        {   
+            // if auto_add tries to add second time the same network, then it is a fatal error
             assert (id_unique == -1);
             
             nethistory.setName(name);
             nethistory.setMac(mac);
 
             rows_affected = nethistory.dbsave();
-            assert (rows_affected == 1);
-            result = true;
+            if (rows_affected == 1)     // if checks didn't pass, then nothing would be inserted
+                result = true;
             break;
         }
         case NETDISC_MSG_AUTO_DEL:
@@ -144,9 +145,11 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         {
             if (id_unique == -1) { 
                 rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);
+                if (rows_affected == 1)
+                    result = true;
             }
-            result = true;
+            else
+                result = true;
             break;
         }
         case NETDISC_MSG_MAN_DEL:
@@ -162,9 +165,11 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         {
             if (id_unique == -1) { 
                 rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);
+                if (rows_affected == 1)
+                    result = true;
             }
-            result = true;
+            else
+                result = true;
             break;
 
         }
