@@ -1,0 +1,43 @@
+<%pre>
+#include "sasl.h"
+#include "tokens.h"
+#include <tnt/httpmessage.h>
+#include <tnt/httpheader.h>
+#include <stdio.h>
+</%pre>
+<%args>
+std::string grant_type="";
+std::string username="";
+std::string password="";
+std::string client_id="";
+</%args>
+<%cpp>
+#ifndef VALID_FOR
+#define VALID_FOR 300
+#endif //VALID_FOR
+
+int valid = VALID_FOR;
+
+reply.setContentType("application/json;charset=UTF-8");
+
+reply.setHeader(tnt::httpheader::cacheControl, "no-store");
+reply.setHeader(tnt::httpheader::pragma, "no-cache");
+</%cpp>
+% if(grant_type != "password") {
+{
+    "error":" unsupported_grant_type"
+}
+% } else {
+% if(authenticate(username.c_str(), password.c_str())) {
+{
+    "access_token":"<$ tokens::get_instance()->gen_token(valid) $>",
+    "token_type":"bearer",
+    "expires_in":"<$ valid $>",
+}
+% } else {
+{
+    "error":"invalid_grant"
+}
+% return HTTP_UNAUTHORIZED;
+% }
+% }
