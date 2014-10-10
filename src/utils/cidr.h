@@ -228,8 +228,11 @@ public:
    * \return int 0 - invalid, 4 - ipv4, 6 - ipv6
    */
   int protocol() const;
+
   /**
    * \brief prefix of CIDRAddress.
+   *
+   * Method returns prefix or -1 on error (invalid address).
    */
   int prefix() const;
 

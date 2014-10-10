@@ -122,8 +122,13 @@ int CIDRAddress::protocol() const {
   return 0;
 }
 
-int CIDRAddress::prefix() const {
-  return cidr_get_pflen(_cidr);
+
+int CIDRAddress::prefix() const  {
+  if( valid() ) {
+    return cidr_get_pflen(_cidr);
+  } else {
+    return -1; 
+  }
 }
 
 void CIDRAddress::invalidate() {
