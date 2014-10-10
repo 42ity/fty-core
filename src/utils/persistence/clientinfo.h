@@ -47,7 +47,7 @@ class ClientInfo : public DataBaseTimeObject
          *
          * \param url - a connection to the database.
          */
-        ClientInfo(std::string url);
+        ClientInfo(const std::string &url);
 
         /**
          * \brief Creates a new object with the specified ClientName and 
@@ -59,7 +59,7 @@ class ClientInfo : public DataBaseTimeObject
          * \param clientName - a name of the client who provides this information.
          * \param url        - a connection to the database.
          */
-        ClientInfo(std::string url, std::string clientName);
+        ClientInfo(const std::string &url, const std::string &clientName);
         
         /**
          * \brief Creates a new object with the specified ClientId and 
@@ -71,7 +71,7 @@ class ClientInfo : public DataBaseTimeObject
          * \param clientId - an id of the client who provides this information.
          * \param url      - a connection to the database.
          */
-        ClientInfo(std::string url,  int clientId);
+        ClientInfo(const std::string &url,  int clientId);
 
         /**
          * \brief Converts all fields to string and concatenates them.
@@ -220,7 +220,7 @@ class ClientInfo : public DataBaseTimeObject
          * 
          * \return true if check was successful.
          */
-        bool check();
+        bool check() const;
 
         /**
          * \brief Internal method for insert.

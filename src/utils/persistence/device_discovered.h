@@ -53,7 +53,7 @@ class DeviceDiscovered:  public DataBaseObject {
          *
          * \param url - connection to the database.
          */
-        DeviceDiscovered(std::string url);
+        DeviceDiscovered(const std::string &url);
     
         /**
          * \brief Creates a new object with specified name and specifies a 
@@ -65,7 +65,7 @@ class DeviceDiscovered:  public DataBaseObject {
          * \param url  - connection to the database.
          * \param name - name of discovered device.
          */
-        DeviceDiscovered(std::string url, std::string name);
+        DeviceDiscovered(const std::string &url, const std::string &name);
     
         /**
          * \brief Converts all fields to string and concatenates them.
@@ -239,7 +239,7 @@ class DeviceDiscovered:  public DataBaseObject {
          *
          * \return true if check was successful.
          */
-        bool check();
+        bool check() const;
         
         /**
          * \brief Internal method for insert.

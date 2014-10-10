@@ -53,14 +53,14 @@ clear()
 }  
 
 ClientInfo::
-ClientInfo(std::string url)
+ClientInfo(const std::string &url)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
 }
 
 ClientInfo::
-ClientInfo(std::string url, std::string clientName)
+ClientInfo(const std::string &url, const std::string &clientName)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
@@ -69,7 +69,7 @@ ClientInfo(std::string url, std::string clientName)
 }
 
 ClientInfo::
-ClientInfo(std::string url,  int clientId)
+ClientInfo(const std::string &url,  int clientId)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
@@ -94,7 +94,7 @@ unsigned int ClientInfo::selectLastRecord()
 
 bool
 ClientInfo::
-check()
+check() const
 {
     if ( _clientId > 0 )    //_clientId is NOTNULL
         return true;

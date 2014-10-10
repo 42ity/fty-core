@@ -2,14 +2,21 @@ create database IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_c
 
 use box_utf8;
 
-CREATE TABLE IF NOT EXISTS t_bios_device_type(
+drop table if exists t_bios_discovered_ip;
+drop table if exists t_bios_net_history;
+drop table if exists t_bios_client_info;
+drop table if exists t_bios_client;
+drop table if exists t_bios_discovered_device;
+drop table if exists t_bios_device_type;
+
+CREATE TABLE t_bios_device_type(
     id_device_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(25) NOT NULL,
     PRIMARY KEY(id_device_type),
     UNIQUE INDEX `UI_t_bios_device_type_name` (`name` ASC)
 )AUTO_INCREMENT = 2;
 
-CREATE TABLE IF NOT EXISTS t_bios_discovered_device(
+CREATE TABLE t_bios_discovered_device(
     id_discovered_device SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(25),
     id_device_type TINYINT UNSIGNED NOT NULL,
@@ -23,7 +30,7 @@ CREATE TABLE IF NOT EXISTS t_bios_discovered_device(
         ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS t_bios_discovered_ip(
+CREATE TABLE t_bios_discovered_ip(
     id_ip INT UNSIGNED NOT NULL  AUTO_INCREMENT,
     ipl BIGINT UNSIGNED,
     iph BIGINT UNSIGNED,
@@ -39,7 +46,7 @@ CREATE TABLE IF NOT EXISTS t_bios_discovered_ip(
         ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS t_bios_net_history(
+CREATE TABLE t_bios_net_history(
     id_net_history INT UNSIGNED NOT NULL AUTO_INCREMENT,
     command CHAR(1),
     mac BIGINT UNSIGNED,
@@ -53,7 +60,7 @@ CREATE TABLE IF NOT EXISTS t_bios_net_history(
     PRIMARY KEY(id_net_history)
 );
 
-CREATE TABLE IF NOT EXISTS t_bios_client(
+CREATE TABLE t_bios_client(
     id_client TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
     name VARCHAR(25),
 
@@ -62,7 +69,7 @@ CREATE TABLE IF NOT EXISTS t_bios_client(
     UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
 ) AUTO_INCREMENT = 2;
 
-CREATE TABLE IF NOT EXISTS t_bios_client_info(
+CREATE TABLE t_bios_client_info(
     id_client_info BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     id_client TINYINT UNSIGNED NOT NULL,
     id_discovered_device SMALLINT UNSIGNED,
@@ -100,6 +107,12 @@ insert into t_bios_device_type(id_device_type,name) values (NULL,"UPS");
 
 
 
+drop view if exists v_bios_device_type;
+drop view if exists v_bios_discovered_device;
+drop view if exists v_bios_client;
+drop view if exists v_bios_client_info;
+drop view if exists v_bios_discovered_ip;
+drop view if exists v_bios_net_history;
 
 
 

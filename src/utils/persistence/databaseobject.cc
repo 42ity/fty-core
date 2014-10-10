@@ -46,7 +46,7 @@ setState(ObjectState state)
 }
 
 DataBaseObject::
-DataBaseObject(std::string url)
+DataBaseObject(const std::string &url)
 {
     // TODO how to check if the connection is ok?
     _url = url;
@@ -55,14 +55,14 @@ DataBaseObject(std::string url)
 
 ObjectState 
 DataBaseObject::
-getState()
+getState() const
 {
     return _state;
 }
 
 int 
 DataBaseObject::
-getId()
+getId() const
 {
     if ( ( ( _state == ObjectState::OS_NEW ) || (_state == ObjectState::OS_DELETED )) && ( _id != -1 ) )
     {
@@ -73,7 +73,7 @@ getId()
 
 std::string 
 DataBaseObject::
-getUrl()
+getUrl() const
 {
     return _url;
 }
@@ -86,7 +86,7 @@ DataBaseObject::
 
 std::string 
 DataBaseObject::
-toString()
+toString() const
 {
     std::string tmp =   "url="  + _url                   + ";" +
                         "id="   + std::to_string(_id)    + ";" +
@@ -175,19 +175,6 @@ getNamesLength()
     return _names_length;
 }
 
-std::string 
-objectStatetoString(ObjectState objectstate)
-{
-    switch (objectstate){
-        case ObjectState::OS_NEW:        return "osnew";
-        case ObjectState::OS_SELECTED:   return "osselected";
-        case ObjectState::OS_UPDATED:    return "osupdated";
-        case ObjectState::OS_DELETED:    return "osdeleted";
-        case ObjectState::OS_INSERTED:   return "osinserted";
-        default:                         return "osunknown";
-    }
-}
-
 unsigned int 
 DataBaseObject::
 reload()
@@ -207,6 +194,19 @@ clear()
 {
     _state = ObjectState::OS_NEW;
     _id = -1;
+}
+
+std::string 
+objectStatetoString(ObjectState objectstate)
+{
+    switch (objectstate){
+        case ObjectState::OS_NEW:        return "osnew";
+        case ObjectState::OS_SELECTED:   return "osselected";
+        case ObjectState::OS_UPDATED:    return "osupdated";
+        case ObjectState::OS_DELETED:    return "osdeleted";
+        case ObjectState::OS_INSERTED:   return "osinserted";
+        default:                         return "osunknown";
+    }
 }
 
 } // namespace db

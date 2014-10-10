@@ -26,8 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 #include <ctime>
+
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
+
 #include "cidr.h"
 #include "databasetimeobject.h"
 
@@ -50,7 +52,7 @@ class NetHistory : public DataBaseTimeObject
          *
          * \param url - a connection to the database.
          */
-        NetHistory(std::string url);
+        NetHistory(const std::string &url);
 
         /**
          * \brief Returns an object to OS_NEW state with initial parameters.
@@ -62,7 +64,7 @@ class NetHistory : public DataBaseTimeObject
         /**
          * \brief Returns all fields as string.
          */
-        std::string toString();
+        std::string toString() const;
 
         ~NetHistory();
 
@@ -77,17 +79,24 @@ class NetHistory : public DataBaseTimeObject
          * \param name - new name of the device type.
          */    
         void setMac(const std::string& mac_address);
+        
         void setAddress(const CIDRAddress& cidr_address);
+        
         void setCommand(char command);
+        
         void setName(const std::string& name);
 
         const std::string& getMac() const { return _mac; };
+        
         int getMask() const { return _address.prefix(); };
+        
         std::string getIp() const { return _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX); };
+        
         char getCommand() const { return _command; };
+        
         const std::string& getName() const { return _name; };
+        
         const CIDRAddress& getAddress() const { return _address; };
-
     
         unsigned int selectById(int id);
 
@@ -100,7 +109,7 @@ class NetHistory : public DataBaseTimeObject
         
     protected:
        
-        bool check_command();
+        bool check_command() const;
          
         void clear_this();
 
@@ -109,7 +118,7 @@ class NetHistory : public DataBaseTimeObject
          *
          * TODO add more checks if needed
          */
-        bool check();
+        bool check() const;
 
         /**
          *  \brief inserts a row.
