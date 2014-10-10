@@ -30,9 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
-/////////////////////////////////////////////////////
-////////////        DeviceType    ///////////////////
-/////////////////////////////////////////////////////
+namespace db {
 
 void
 DeviceType::
@@ -294,5 +292,7 @@ check()
     else
         return false;
 }
+
+} // namespace db
 
 }  // end of namespace utils

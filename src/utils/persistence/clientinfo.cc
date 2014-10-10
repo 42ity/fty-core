@@ -31,10 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "client.h"
 
 namespace utils {
-    
-////////////////////////////////////////////////////
-///////////// ClientInfo ///////////////////////////
-////////////////////////////////////////////////////
+
+namespace db {    
 
 void
 ClientInfo::
@@ -522,5 +520,7 @@ selectById(int id)
     }
     return n;
 }
+
+} // namespace db
 
 } //end of namespace utils

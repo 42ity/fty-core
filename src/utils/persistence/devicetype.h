@@ -21,12 +21,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef DEVICETYPE_H_
-#define DEVICETYPE_H_
+#ifndef UTILS_PERSISTENCE_DEVICETYPE_H_
+#define UTILS_PERSISTENCE_DEVICETYPE_H_
 
 #include "databaseobject.h"
 
-namespace utils{
+namespace utils {
+
+namespace db {
 
 /*
  * \brief DeviceType is a class for representing a database entity
@@ -180,6 +182,8 @@ class DeviceType: public DataBaseObject
 
 };  // end of the class
 
+} // namespace db
+
 }   // end of namespace utils
 
-#endif //DEVICETYPE_H_
+#endif // UTILS_PERSISTENCE_DEVICETYPE_H_

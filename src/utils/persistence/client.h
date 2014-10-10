@@ -22,12 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef CLIENT_H_
-#define CLIENT_H_
+#ifndef UTILS_PERSISTENCE_CLIENT_H_
+#define UTILS_PERSISTENCE_CLIENT_H_
 
 #include "databaseobject.h"
 
-namespace utils{
+namespace utils {
+
+namespace db {
 
 /*
  * \brief Client is a class for representing a database entity
@@ -180,6 +182,8 @@ class Client: public DataBaseObject
 
 };  // end of the class
 
+} // namespace db
+
 }   // end of namespace utils
 
-#endif //CLIENT_H_
+#endif // UTILS_PERSISTENCE_CLIENT_H_

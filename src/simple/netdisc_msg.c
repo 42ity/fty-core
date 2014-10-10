@@ -53,9 +53,6 @@ struct _netdisc_msg_t {
     char *ipaddr;                       //  ip address
     byte prefixlen;                     //  ip prefix length
     char *mac;                          //  mac address
-    zlist_t *list;                      //  list
-    zhash_t *hash;                      //  dict
-    size_t hash_bytes;                  //  Size of dictionary content
 };
 
 //  --------------------------------------------------------------------------
@@ -221,9 +218,6 @@ netdisc_msg_destroy (netdisc_msg_t **self_p)
         free (self->name);
         free (self->ipaddr);
         free (self->mac);
-        if (self->list)
-            zlist_destroy (&self->list);
-        zhash_destroy (&self->hash);
 
         //  Free object itself
         free (self);
@@ -301,35 +295,6 @@ netdisc_msg_decode (zmsg_t **msg_p)
             GET_NUMBER1 (self->ipver);
             GET_STRING (self->ipaddr);
             GET_NUMBER1 (self->prefixlen);
-            break;
-
-        case NETDISC_MSG_TEST:
-            {
-                size_t list_size;
-                GET_NUMBER4 (list_size);
-                self->list = zlist_new ();
-                zlist_autofree (self->list);
-                while (list_size--) {
-                    char *string;
-                    GET_LONGSTR (string);
-                    zlist_append (self->list, string);
-                    free (string);
-                }
-            }
-            {
-                size_t hash_size;
-                GET_NUMBER4 (hash_size);
-                self->hash = zhash_new ();
-                zhash_autofree (self->hash);
-                while (hash_size--) {
-                    char *key, *value;
-                    GET_STRING (key);
-                    GET_LONGSTR (value);
-                    zhash_insert (self->hash, key, value);
-                    free (key);
-                    free (value);
-                }
-            }
             break;
 
         default:
@@ -448,32 +413,6 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case NETDISC_MSG_TEST:
-            //  list is an array of strings
-            frame_size += 4;    //  Size is 4 octets
-            if (self->list) {
-                //  Add up size of list contents
-                char *list = (char *) zlist_first (self->list);
-                while (list) {
-                    frame_size += 4 + strlen (list);
-                    list = (char *) zlist_next (self->list);
-                }
-            }
-            //  hash is an array of key=value strings
-            frame_size += 4;    //  Size is 4 octets
-            if (self->hash) {
-                self->hash_bytes = 0;
-                //  Add up size of dictionary contents
-                char *item = (char *) zhash_first (self->hash);
-                while (item) {
-                    self->hash_bytes += 1 + strlen (zhash_cursor (self->hash));
-                    self->hash_bytes += 4 + strlen (item);
-                    item = (char *) zhash_next (self->hash);
-                }
-            }
-            frame_size += self->hash_bytes;
-            break;
-            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -564,30 +503,6 @@ netdisc_msg_encode (netdisc_msg_t **self_p)
             else
                 PUT_NUMBER1 (0);    //  Empty string
             PUT_NUMBER1 (self->prefixlen);
-            break;
-
-        case NETDISC_MSG_TEST:
-            if (self->list) {
-                PUT_NUMBER4 (zlist_size (self->list));
-                char *list = (char *) zlist_first (self->list);
-                while (list) {
-                    PUT_LONGSTR (list);
-                    list = (char *) zlist_next (self->list);
-                }
-            }
-            else
-                PUT_NUMBER4 (0);    //  Empty string array
-            if (self->hash) {
-                PUT_NUMBER4 (zhash_size (self->hash));
-                char *item = (char *) zhash_first (self->hash);
-                while (item) {
-                    PUT_STRING (zhash_cursor (self->hash));
-                    PUT_LONGSTR (item);
-                    item = (char *) zhash_next (self->hash);
-                }
-            }
-            else
-                PUT_NUMBER4 (0);    //  Empty dictionary
             break;
 
     }
@@ -817,23 +732,6 @@ netdisc_msg_encode_excl_del (
 
 
 //  --------------------------------------------------------------------------
-//  Encode TEST message
-
-zmsg_t * 
-netdisc_msg_encode_test (
-    zlist_t *list,
-    zhash_t *hash)
-{
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_TEST);
-    zlist_t *list_copy = zlist_dup (list);
-    netdisc_msg_set_list (self, &list_copy);
-    zhash_t *hash_copy = zhash_dup (hash);
-    netdisc_msg_set_hash (self, &hash_copy);
-    return netdisc_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Send the AUTO_ADD to the socket in one step
 
 int
@@ -950,24 +848,6 @@ netdisc_msg_send_excl_del (
 
 
 //  --------------------------------------------------------------------------
-//  Send the TEST to the socket in one step
-
-int
-netdisc_msg_send_test (
-    void *output,
-    zlist_t *list,
-    zhash_t *hash)
-{
-    netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_TEST);
-    zlist_t *list_copy = zlist_dup (list);
-    netdisc_msg_set_list (self, &list_copy);
-    zhash_t *hash_copy = zhash_dup (hash);
-    netdisc_msg_set_hash (self, &hash_copy);
-    return netdisc_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Duplicate the netdisc_msg message
 
 netdisc_msg_t *
@@ -1018,11 +898,6 @@ netdisc_msg_dup (netdisc_msg_t *self)
             copy->ipver = self->ipver;
             copy->ipaddr = self->ipaddr? strdup (self->ipaddr): NULL;
             copy->prefixlen = self->prefixlen;
-            break;
-
-        case NETDISC_MSG_TEST:
-            copy->list = self->list? zlist_dup (self->list): NULL;
-            copy->hash = self->hash? zhash_dup (self->hash): NULL;
             break;
 
     }
@@ -1114,28 +989,6 @@ netdisc_msg_print (netdisc_msg_t *self)
             zsys_debug ("    prefixlen=%ld", (long) self->prefixlen);
             break;
             
-        case NETDISC_MSG_TEST:
-            zsys_debug ("NETDISC_MSG_TEST:");
-            zsys_debug ("    list=");
-            if (self->list) {
-                char *list = (char *) zlist_first (self->list);
-                while (list) {
-                    zsys_debug ("        '%s'", list);
-                    list = (char *) zlist_next (self->list);
-                }
-            }
-            zsys_debug ("    hash=");
-            if (self->hash) {
-                char *item = (char *) zhash_first (self->hash);
-                while (item) {
-                    zsys_debug ("        %s=%s", zhash_cursor (self->hash), item);
-                    item = (char *) zhash_next (self->hash);
-                }
-            }
-            else
-                zsys_debug ("(NULL)");
-            break;
-            
     }
 }
 
@@ -1200,9 +1053,6 @@ netdisc_msg_command (netdisc_msg_t *self)
             break;
         case NETDISC_MSG_EXCL_DEL:
             return ("EXCL_DEL");
-            break;
-        case NETDISC_MSG_TEST:
-            return ("TEST");
             break;
     }
     return "?";
@@ -1310,176 +1160,6 @@ netdisc_msg_set_mac (netdisc_msg_t *self, const char *format, ...)
     free (self->mac);
     self->mac = zsys_vprintf (format, argptr);
     va_end (argptr);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get the list field, without transferring ownership
-
-zlist_t *
-netdisc_msg_list (netdisc_msg_t *self)
-{
-    assert (self);
-    return self->list;
-}
-
-//  Get the list field and transfer ownership to caller
-
-zlist_t *
-netdisc_msg_get_list (netdisc_msg_t *self)
-{
-    assert (self);
-    zlist_t *list = self->list;
-    self->list = NULL;
-    return list;
-}
-
-//  Set the list field, transferring ownership from caller
-
-void
-netdisc_msg_set_list (netdisc_msg_t *self, zlist_t **list_p)
-{
-    assert (self);
-    assert (list_p);
-    zlist_destroy (&self->list);
-    self->list = *list_p;
-    *list_p = NULL;
-}
-
-//  --------------------------------------------------------------------------
-//  Iterate through the list field, and append a list value
-
-const char *
-netdisc_msg_list_first (netdisc_msg_t *self)
-{
-    assert (self);
-    if (self->list)
-        return (char *) (zlist_first (self->list));
-    else
-        return NULL;
-}
-
-const char *
-netdisc_msg_list_next (netdisc_msg_t *self)
-{
-    assert (self);
-    if (self->list)
-        return (char *) (zlist_next (self->list));
-    else
-        return NULL;
-}
-
-void
-netdisc_msg_list_append (netdisc_msg_t *self, const char *format, ...)
-{
-    //  Format into newly allocated string
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    char *string = zsys_vprintf (format, argptr);
-    va_end (argptr);
-
-    //  Attach string to list
-    if (!self->list) {
-        self->list = zlist_new ();
-        zlist_autofree (self->list);
-    }
-    zlist_append (self->list, string);
-    free (string);
-}
-
-size_t
-netdisc_msg_list_size (netdisc_msg_t *self)
-{
-    return zlist_size (self->list);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get the hash field without transferring ownership
-
-zhash_t *
-netdisc_msg_hash (netdisc_msg_t *self)
-{
-    assert (self);
-    return self->hash;
-}
-
-//  Get the hash field and transfer ownership to caller
-
-zhash_t *
-netdisc_msg_get_hash (netdisc_msg_t *self)
-{
-    zhash_t *hash = self->hash;
-    self->hash = NULL;
-    return hash;
-}
-
-//  Set the hash field, transferring ownership from caller
-
-void
-netdisc_msg_set_hash (netdisc_msg_t *self, zhash_t **hash_p)
-{
-    assert (self);
-    assert (hash_p);
-    zhash_destroy (&self->hash);
-    self->hash = *hash_p;
-    *hash_p = NULL;
-}
-
-//  --------------------------------------------------------------------------
-//  Get/set a value in the hash dictionary
-
-const char *
-netdisc_msg_hash_string (netdisc_msg_t *self, const char *key, const char *default_value)
-{
-    assert (self);
-    const char *value = NULL;
-    if (self->hash)
-        value = (const char *) (zhash_lookup (self->hash, key));
-    if (!value)
-        value = default_value;
-
-    return value;
-}
-
-uint64_t
-netdisc_msg_hash_number (netdisc_msg_t *self, const char *key, uint64_t default_value)
-{
-    assert (self);
-    uint64_t value = default_value;
-    char *string = NULL;
-    if (self->hash)
-        string = (char *) (zhash_lookup (self->hash, key));
-    if (string)
-        value = atol (string);
-
-    return value;
-}
-
-void
-netdisc_msg_hash_insert (netdisc_msg_t *self, const char *key, const char *format, ...)
-{
-    //  Format into newly allocated string
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    char *string = zsys_vprintf (format, argptr);
-    va_end (argptr);
-
-    //  Store string in hash table
-    if (!self->hash) {
-        self->hash = zhash_new ();
-        zhash_autofree (self->hash);
-    }
-    zhash_update (self->hash, key, string);
-    free (string);
-}
-
-size_t
-netdisc_msg_hash_size (netdisc_msg_t *self)
-{
-    return zhash_size (self->hash);
 }
 
 
@@ -1660,34 +1340,6 @@ netdisc_msg_test (bool verbose)
         assert (netdisc_msg_ipver (self) == 123);
         assert (streq (netdisc_msg_ipaddr (self), "Life is short but Now lasts for ever"));
         assert (netdisc_msg_prefixlen (self) == 123);
-        netdisc_msg_destroy (&self);
-    }
-    self = netdisc_msg_new (NETDISC_MSG_TEST);
-    
-    //  Check that _dup works on empty message
-    copy = netdisc_msg_dup (self);
-    assert (copy);
-    netdisc_msg_destroy (&copy);
-
-    netdisc_msg_list_append (self, "Name: %s", "Brutus");
-    netdisc_msg_list_append (self, "Age: %d", 43);
-    netdisc_msg_hash_insert (self, "Name", "Brutus");
-    netdisc_msg_hash_insert (self, "Age", "%d", 43);
-    //  Send twice from same object
-    netdisc_msg_send_again (self, output);
-    netdisc_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = netdisc_msg_recv (input);
-        assert (self);
-        assert (netdisc_msg_routing_id (self));
-        
-        assert (netdisc_msg_list_size (self) == 2);
-        assert (streq (netdisc_msg_list_first (self), "Name: Brutus"));
-        assert (streq (netdisc_msg_list_next (self), "Age: 43"));
-        assert (netdisc_msg_hash_size (self) == 2);
-        assert (streq (netdisc_msg_hash_string (self, "Name", "?"), "Brutus"));
-        assert (netdisc_msg_hash_number (self, "Age", 0) == 43);
         netdisc_msg_destroy (&self);
     }
 

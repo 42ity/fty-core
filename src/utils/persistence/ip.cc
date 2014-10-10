@@ -33,9 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils{
 
-/////////////////////////////////////////////////////////////
-//////////           IP          ////////////////////////////
-/////////////////////////////////////////////////////////////
+namespace db {
 
 bool
 Ip::
@@ -307,6 +305,8 @@ clear()
     this->clear_this();
 }
 
-}// namespace utils
+} // namespace db
+
+} // namespace utils
 
 

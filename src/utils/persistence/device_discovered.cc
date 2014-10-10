@@ -31,11 +31,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/row.h>
 #include <tntdb/error.h>
 
-namespace utils{
-    
-////////////////////////////////////////////////////////////
-//////////          DeviceDiscovered                 ///////
-////////////////////////////////////////////////////////////
+namespace utils {
+
+namespace db {    
 
 void
 DeviceDiscovered::
@@ -398,5 +396,7 @@ getDeviceTypeId()
 {
     return _deviceTypeId;
 }
+
+} // namespace db
 
 } //end of namespace utils

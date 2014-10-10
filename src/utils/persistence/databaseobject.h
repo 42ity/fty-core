@@ -27,12 +27,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef DATABASEOBJECT_H_
-#define DATABASEOBJECT_H_
+#ifndef UTILS_PERSISTENCE_DATABASEOBJECT_H_
+#define UTILS_PERSISTENCE_DATABASEOBJECT_H_
 
 #include <string>
 
 namespace utils {
+
+namespace db {
  
 /**
  * \brief Represents the relation of the object to the database
@@ -167,7 +169,14 @@ class DataBaseObject
          * \return A number of rows affected.
          */
         unsigned int reload();
-         
+        
+        /**
+         * \brief Deletes the object with specified ID from the DB
+         *
+         * \return A number of rows deleted.
+         */
+        unsigned int deleteById(int id);
+ 
         /* TODO assignment and compasisson
         DataBaseObject ==
 
@@ -272,6 +281,7 @@ class DataBaseObject
 
 }; // end of the class
 
+} // namespace db
 
 }  // end of namespace utils
 

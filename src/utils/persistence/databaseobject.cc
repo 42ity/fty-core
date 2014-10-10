@@ -27,9 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
-////////////////////////////////////////////////////////////
-//////////      DataBaseObject               ///////////////
-////////////////////////////////////////////////////////////
+namespace db {
 
 void 
 DataBaseObject::
@@ -131,6 +129,22 @@ dbsave()
     }
 }
 
+// delete object by specified id
+unsigned int
+DataBaseObject::
+deleteById(int id)
+{
+    
+    this->setId(id);
+    int n = this->db_delete();
+    if ( n > 0 )
+    {
+        _state = ObjectState::OS_DELETED;
+        _id = -1;               // make id non valid
+    }
+    return n;
+}
+
 // delete object by its id
 unsigned int 
 DataBaseObject::
@@ -195,4 +209,7 @@ clear()
     _id = -1;
 }
 
+} // namespace db
+
 } // end namespace utils
+

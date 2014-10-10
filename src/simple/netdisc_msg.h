@@ -68,10 +68,6 @@
         ipver               number 1    ip version; 0 - IPV4, 1 - IPV6
         ipaddr              string      ip address
         prefixlen           number 1    ip prefix length
-
-    TEST - Testing message.
-        list                strings     list
-        hash                dictionary  dict
 */
 
 #define NETDISC_MSG_VERSION                 1.0
@@ -82,7 +78,6 @@
 #define NETDISC_MSG_MAN_DEL                 4
 #define NETDISC_MSG_EXCL_ADD                5
 #define NETDISC_MSG_EXCL_DEL                6
-#define NETDISC_MSG_TEST                    7
 
 #ifdef __cplusplus
 extern "C" {
@@ -175,12 +170,6 @@ zmsg_t *
         const char *ipaddr,
         byte prefixlen);
 
-//  Encode the TEST 
-zmsg_t *
-    netdisc_msg_encode_test (
-        zlist_t *list,
-        zhash_t *hash);
-
 
 //  Send the AUTO_ADD to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -234,13 +223,6 @@ int
         const char *ipaddr,
         byte prefixlen);
     
-//  Send the TEST to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    netdisc_msg_send_test (void *output,
-        zlist_t *list,
-        zhash_t *hash);
-    
 //  Duplicate the netdisc_msg message
 netdisc_msg_t *
     netdisc_msg_dup (netdisc_msg_t *self);
@@ -292,49 +274,6 @@ const char *
     netdisc_msg_mac (netdisc_msg_t *self);
 void
     netdisc_msg_set_mac (netdisc_msg_t *self, const char *format, ...);
-
-//  Get/set the list field
-zlist_t *
-    netdisc_msg_list (netdisc_msg_t *self);
-//  Get the list field and transfer ownership to caller
-zlist_t *
-    netdisc_msg_get_list (netdisc_msg_t *self);
-//  Set the list field, transferring ownership from caller
-void
-    netdisc_msg_set_list (netdisc_msg_t *self, zlist_t **list_p);
-
-//  Iterate through the list field, and append a list value
-const char *
-    netdisc_msg_list_first (netdisc_msg_t *self);
-const char *
-    netdisc_msg_list_next (netdisc_msg_t *self);
-void
-    netdisc_msg_list_append (netdisc_msg_t *self, const char *format, ...);
-size_t
-    netdisc_msg_list_size (netdisc_msg_t *self);
-
-//  Get/set the hash field
-zhash_t *
-    netdisc_msg_hash (netdisc_msg_t *self);
-//  Get the hash field and transfer ownership to caller
-zhash_t *
-    netdisc_msg_get_hash (netdisc_msg_t *self);
-//  Set the hash field, transferring ownership from caller
-void
-    netdisc_msg_set_hash (netdisc_msg_t *self, zhash_t **hash_p);
-    
-//  Get/set a value in the hash dictionary
-const char *
-    netdisc_msg_hash_string (netdisc_msg_t *self,
-        const char *key, const char *default_value);
-uint64_t
-    netdisc_msg_hash_number (netdisc_msg_t *self,
-        const char *key, uint64_t default_value);
-void
-    netdisc_msg_hash_insert (netdisc_msg_t *self,
-        const char *key, const char *format, ...);
-size_t
-    netdisc_msg_hash_size (netdisc_msg_t *self);
 
 //  Self test of this class
 int

@@ -31,9 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
-/////////////////////////////////////////////////////
-////////////        Client    ///////////////////////
-/////////////////////////////////////////////////////
+namespace db {
 
 void
 Client::
@@ -293,5 +291,7 @@ check()
     else
         return false;
 }
+
+} // namespace db
 
 }  // end of namespace utils

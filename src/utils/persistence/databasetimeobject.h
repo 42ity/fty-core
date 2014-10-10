@@ -23,17 +23,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
     
-#ifndef DATABASETIMEOBJECT_H_
-#define DATABASETIMEOBJECT_H_
+#ifndef UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_
+#define UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_
 
 #include "databaseobject.h"
 #include <string>
 
 namespace utils {
- 
-/////////////////////////////////////////////////
-////////// DataBaseTimeObject ///////////////////
-/////////////////////////////////////////////////
+
+namespace db { 
 
 /**
  * \brief Represents general methods for manipulating database objects that have timestamp column.
@@ -173,7 +171,8 @@ class DataBaseTimeObject: public DataBaseObject
 
 }; // end of the class
 
+} // namespace db
 
 }  // end of namespace utils
 
-#endif // DATABASETIMEOBJECT_H_
+#endif // UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_

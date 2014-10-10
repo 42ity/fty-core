@@ -32,9 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace utils {
 
-////////////////////////////////////////////////////////////
-//////////      DataBaseTimeObject               ///////////
-////////////////////////////////////////////////////////////
+namespace db {
 
 DataBaseTimeObject::
 DataBaseTimeObject(std::string url)
@@ -134,4 +132,7 @@ setTimestamp(time_t timestamp)
     _timestamp = timestamp;
 }
 
+} // namespace db
+
 } // end namespace utils
+

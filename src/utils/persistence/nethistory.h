@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef NETHISTORY_H_
-#define NETHISTORY_H_
+#ifndef UTILS_PERSISTENCE_NETHISTORY_H_
+#define UTILS_PERSISTENCE_NETHISTORY_H_
 
 #include <string>
 #include <ctime>
@@ -32,6 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "databasetimeobject.h"
 
 namespace utils {
+
+namespace db {
 
 /*
  * \brief NetHistory is a class for representing a database entity
@@ -74,32 +76,28 @@ class NetHistory : public DataBaseTimeObject
          *
          * \param name - new name of the device type.
          */    
-        void setMac(std::string mac);
-
-        void setMask(int mask);
-
-        void setIp(std::string ip);
-
-        void setIp(CIDRAddress ip);
-
+        void setMac(const std::string& mac_address);
+        void setAddress(const CIDRAddress& cidr_address);
         void setCommand(char command);
+        void setName(const std::string& name);
 
-        void setName(std::string name);
+        const std::string& getMac() const { return _mac; };
+        int getMask() const { return _address.prefix(); };
+        std::string getIp() const { return _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX); };
+        char getCommand() const { return _command; };
+        const std::string& getName() const { return _name; };
+        const CIDRAddress& getAddress() const { return _address; };
 
-        std::string getMac();
-
-        int getMask();
-
-        CIDRAddress getIp();
-
-        char getCommand();
-
-        std::string getName();
-
-        CIDRAddress getNetworkCIDR();
-
+    
         unsigned int selectById(int id);
 
+        /*!
+            \brief Check whether record is unique (identified by (ipaddr, prefixlen, command) triplet).
+            \return If record is not unique, return the first encountered row id; otherwise return -1
+        */
+        int checkUnique();
+        
+        
     protected:
        
         bool check_command();
@@ -145,16 +143,17 @@ class NetHistory : public DataBaseTimeObject
         
         std::string _mac;
 
-        int _mask;
-
-        CIDRAddress _ip;
+        CIDRAddress _address;
 
         char _command;
 
         std::string _name;
 
-}; // end of the class
+}; // class NetHistory
+
+} // namespace db
 
 }  // end of namespace utils
 
-#endif // NETHISTORY_H_
+#endif // UTILS_PERSISTENCE_NETHISTORY_H_
+
