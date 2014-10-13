@@ -85,3 +85,27 @@ TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
         FAIL("nothing was inserted");
 }
 
+
+
+TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
+    
+    utils::db::NetHistory dbnethistory(url);
+    std::string newname = "selectById";
+    utils::CIDRAddress newaddress("1.2.3.4",8);
+    std::string newmac = "11:22:33:AA:91:11";
+    dbnethistory.setName(newname);
+    dbnethistory.setAddress(newaddress);
+    dbnethistory.setMac(newmac);
+    dbnethistory.setCommand('a');
+
+    int n = dbnethistory.dbsave();
+    REQUIRE( n == 1 );
+    int newidd = dbnethistory.getId();   // save id for further control
+
+    utils::db::NetHistory newnh(url);
+    n = newnh.selectById(newidd);
+    REQUIRE( n == 1 );
+    n = newnh.dbdelete();
+    REQUIRE( n == 1);
+}
+

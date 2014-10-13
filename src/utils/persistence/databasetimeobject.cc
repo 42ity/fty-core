@@ -29,10 +29,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include <iomanip>
 #include <ctime>
-
 namespace utils {
 
 namespace db {
+
+time_t convertToCTime(const tntdb::Datetime &datetime)
+{
+    struct tm* timeinfo = new tm();
+
+    timeinfo->tm_year = datetime.getYear()-1900;
+    timeinfo->tm_mon  = datetime.getMonth()-1;
+    timeinfo->tm_mday = datetime.getDay();
+    timeinfo->tm_hour = datetime.getHour();
+    timeinfo->tm_min  = datetime.getMinute(); 
+    timeinfo->tm_sec  = datetime.getSecond();
+    //TODO return +1 hour
+    return mktime ( timeinfo );
+}
 
 DataBaseTimeObject::
 DataBaseTimeObject(const std::string &url)

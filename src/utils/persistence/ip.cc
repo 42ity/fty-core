@@ -153,12 +153,10 @@ selectById(int id)
         row[1].get(_deviceDiscoveredId);
 
         //timestamp
-        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[1].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[1].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -220,12 +218,10 @@ Ip::getLastInfo(std::string url, std::string ip)
         newIp->setDeviceDiscoveredId(tmp_i);
     
         //timestamp
-        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[2].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[2].get(mydatetime);
         if (isNotNull)
-            newIp->setTimestamp(tmp_t);
+            newIp->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO

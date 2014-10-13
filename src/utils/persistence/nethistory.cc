@@ -40,13 +40,16 @@ namespace utils {
 namespace db {
 
 
+//-----------------------------------------------------------
 
+//Internal function for remove colons from mac address
 void
 removeColonMac(std::string &newmac)
 {
     newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
 }
 
+//Internal function for add colons to mac address
 const std::string
 addColonMac(const std::string &mac)
 {
@@ -59,7 +62,8 @@ addColonMac(const std::string &mac)
     return macWithColons;
 }
 
-//------------------------------------------------------------
+//-----------------------------------------------------------
+
 void
 NetHistory::
 clear_this()
@@ -98,7 +102,6 @@ toString() const
 NetHistory::
 ~NetHistory()
 {
-    //TODO
 }
 
 const std::string 
@@ -189,7 +192,8 @@ unsigned int
 NetHistory::
 db_update()
 {
-    
+    // Now we are not going to update existing records. 
+    // Don't update the timpestamp now.
     tntdb::Connection conn;  
     conn = tntdb::connectCached(this->getUrl());
 
@@ -235,43 +239,30 @@ selectById(int id)
         tntdb::Row row = st.setInt("id", id).selectRow();
          //id
         this->setId(id);
-    std::cout << " id " <<  id << std::endl;
         
         //ip
         std::string tmp_ip = "";
         row[0].get(tmp_ip);
-    std::cout << " ip " << tmp_ip << std::endl;
 
         //mask
         int tmp_i = -1;
         row[1].get(tmp_i);
-    std::cout << " mask " << tmp_i << std::endl;
 
         //address
         _address = CIDRAddress(tmp_ip,tmp_i);
         _address = _address.network(); // put in network format, to be sure it is in network format
-    std::cout << " address " << _address.toString() << std::endl;
 
         //mac
         row[2].getString(_mac);
-    std::cout << " mac " << _mac << std::endl;
 
         //command
         row[3].get(_command);
-    std::cout << " command " << _command << std::endl;
 
         //timestamp
-        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. 
-                                    // So need to define initial value.
-                                    // but it should never happen, while this column must be NOT NULL
-        
-      tntdb::Datetime mydatetime;
-    
+        tntdb::Datetime mydatetime;
         bool isNotNull = row[4].get(mydatetime);
-
         if (isNotNull)
-            ;
-           // this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -280,7 +271,6 @@ selectById(int id)
         
         //name
         row[5].get(_name);
-    std::cout << " name " << _name << std::endl;
         
         //state
         this->setState(ObjectState::OS_SELECTED);
@@ -297,7 +287,8 @@ void
 NetHistory::
 setName(const std::string& name)
 {
-    if ( ( _name != name ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if ( ( _name != name ) && ( this->getState() != ObjectState::OS_DELETED )
+         && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -320,7 +311,8 @@ setMac(const std::string& mac_address)
     std::string macc(mac_address);
     utils::db::removeColonMac(macc);
 
-    if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
+        && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -341,8 +333,10 @@ void
 NetHistory::
 setAddress(const CIDRAddress& cidr_address)
 {
-    CIDRAddress newaddr = cidr_address.network();  // We are not sure, if the passed address is in a network format
-    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    // We are not sure, if the passed address is in a network format, so convert it now
+    CIDRAddress newaddr = cidr_address.network();  
+    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) 
+        && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -362,7 +356,8 @@ void
 NetHistory::
 setCommand(char command)
 {
-    if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) 
+        && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -398,21 +393,19 @@ db_select_timestamp()
      */
     int n;
     try{
-        tntdb::Row row = st.setInt("id", this->getId()).selectRow();
+        tntdb::Value value = st.setInt("id", this->getId()).selectValue();
           
-        
         //timestamp
-        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[0].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = value.get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
             //log THIS SHOULD NEVER HAPPEN
         }
-        
+
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -442,7 +435,8 @@ checkUnique() const
         );
 
     tntdb::Result result = st.setChar("command", _command).
-                              setString("ip", _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              setString("ip", _address.
+                                toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
                               select();
     if (result.empty()) {
