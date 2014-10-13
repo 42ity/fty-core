@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file NetHistory.h
+/*! \file nethistory.h
     \brief A class for manipulating with the database objects stored 
     in the table t_bios_net_history.
 
@@ -71,19 +71,49 @@ class NetHistory : public DataBaseTimeObject
         /**
          * \brief Sets a new mac address for the object.
          *
-         * If state is OS_DELETED then do nothing.
+         * If state is OS_DELETED/OS_INSERTED then do nothing.
          * If newmac = oldmac then do nothing.
-         * If state is OS_SELECTED/OS_INSERTED and newmac != oldmac.
+         * If state is OS_SELECTED and newmac != oldmac.
          * than state is changed to OS_UPDATED.
          *
-         * \param name - new name of the device type.
+         * \param mac_address - new mac_address.
          */    
         void setMac(const std::string& mac_address);
         
+        /**
+         * \brief Sets a new address for the object.
+         *
+         * If state is OS_DELETED/OS_INSERTED then do nothing.
+         * If newaddress = oldaddress then do nothing.
+         * If state is OS_SELECTED and newaddress != oldaddress.
+         * than state is changed to OS_UPDATED.
+         *
+         * \param cidr_address - new address.
+         */    
         void setAddress(const CIDRAddress& cidr_address);
         
+        /**
+         * \brief Sets a new command address for the object.
+         *
+         * If state is OS_DELETED/OS_INSERTED then do nothing.
+         * If newcommand = oldcommand then do nothing.
+         * If state is OS_SELECTED and newcommand != oldcommand.
+         * than state is changed to OS_UPDATED.
+         *
+         * \param command - new command.
+         */    
         void setCommand(char command);
         
+        /**
+         * \brief Sets a new name for the object.
+         *
+         * If state is OS_DELETED/OS_INSERTED then do nothing.
+         * If newname = oldname then do nothing.
+         * If state is OS_SELECTED and newname != oldname.
+         * than state is changed to OS_UPDATED.
+         *
+         * \param name - new name.
+         */    
         void setName(const std::string& name);
 
         const std::string& getMac() const { return _mac; };
@@ -100,11 +130,12 @@ class NetHistory : public DataBaseTimeObject
     
         unsigned int selectById(int id);
 
-        /*!
-            \brief Check whether record is unique (identified by (ipaddr, prefixlen, command) triplet).
-            \return If record is not unique, return the first encountered row id; otherwise return -1
+        /**
+         * \brief Check whether the record is unique (identified by (ipaddr, prefixlen, command) triplet).
+         * 
+         * \return If record is not unique, return the first encountered row id; otherwise return -1
         */
-        int checkUnique();
+        int checkUnique() const;
         
         
     protected:

@@ -377,7 +377,9 @@ db_select_timestamp()
 }
 
 
-int NetHistory::checkUnique()
+int 
+NetHistory::
+checkUnique() const
 {
     // TODO need to add unique index in DB ?
     tntdb::Connection conn; 
