@@ -6,6 +6,8 @@ Poc of simple "poor man's" BIOS architecture
  * and one ROUTER socket for getting commands
  * built on top of czmq
  * uses zproto for network discovery messages
+ * uses real netmon network linux stack
+ * keeps the netmon_mock for testing purposes (--test-mode)
 
 3 threads
 

@@ -22,10 +22,20 @@ void interrupt (int signum) {
     irq = 1;
 }
 
+int persistence_irq = 0;
+void persistence_interrupt (int signum) {
+    persistence_irq = 1;
+}
+
+int netmon_irq = 0;
+void netmon_interrupt (int signum) {
+    netmon_irq = 1;
+}
+
 void persistence_actor(zsock_t *pipe, void *args) {
 
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
+//    zsys_catch_interrupts ();
+//    zsys_handler_set (&persistence_interrupt);
     zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
@@ -33,43 +43,61 @@ void persistence_actor(zsock_t *pipe, void *args) {
     assert(poller);
 
     zsock_signal(pipe, 0);
- 
 
     while(!zpoller_terminated(poller)) {
-        if (irq == 1)
-            break;
+//        if (persistence_irq == 1)
+//            break;
 
         zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
-        if (which == pipe) {
+        if (which == pipe || which == NULL) {
             break;
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
+        // debug TODO switch to log 
+        printf ("debug::\n\tname\t=\t%s\n\tipver\t=\t%d\n\tipaddr\t=\t%s\n\tprefixlen\t=\t%d\n\tmac\t=\t%s\n",            
+            netdisc_msg_name (msg),
+            netdisc_msg_ipver (msg),
+            netdisc_msg_ipaddr (msg),
+            netdisc_msg_prefixlen (msg),
+            netdisc_msg_mac (msg));
+
         bool b = utils::db::process_message (url, *msg);
     }
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
+    printf ("persistence finished\n");
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
+//    zsys_catch_interrupts ();
+//    zsys_handler_set (&netmon_interrupt);
+
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
     
-    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
+    zsock_t * dbsock = zsock_new_dealer (DB_SOCK);
     assert(dbsock);
+    zpoller_t *poller = zpoller_new (pipe, NULL);
+    assert(poller);
+
+    zsock_signal(pipe, 0);
 
     // Until SIGINT, randomly select between addition or deletion event
     // if it's addition - generate some random data (name, ipver...), add this to a vector; send message
     // if it's deletion - and vector not empty: select one randomly from vector, remove from vector, send message; else skip
     // sleep for (800, 2000) ms
     std::vector<std::tuple<std::string, byte, std::string, byte, std::string>> stored;         
-    while(1) {
-        if (irq == 1)
-            break;
+    while(!zpoller_terminated (poller)) {        
+//        if (irq == 1)
+//            break;
+        zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
+        if (which == pipe || which == NULL) {
+                break;
+        }
+
         byte command = random() % 2; // 0 - os_add; 1 - os_del
         if (command == 0) {            
             netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
@@ -112,29 +140,51 @@ void netmon_actor(zsock_t *pipe, void *args) {
     }
 
     zsock_destroy(&dbsock);
+    printf ("netmon finished\n");
 }
 
-int main() {
+int main(int argc, char **argv) {
+
     srandom ((unsigned) time (NULL));
     zsys_catch_interrupts ();
     zsys_handler_set (&interrupt);
 
-    int i;
-
-    zactor_t *db = zactor_new(persistence_actor, NULL);
+    zactor_t *db = zactor_new (persistence_actor, NULL);
     assert(db);
 
-    zactor_t *netmon = zactor_new(netmon_actor, NULL);
-    assert(netmon);
+    bool test_mode = false;
+    if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
+        test_mode = true;
+    }
 
-    // temporary
-    while (1) {
-        if (irq == 1)
-            break;
+    zactor_t *netmon = NULL;
+    if (test_mode) {
+        netmon = zactor_new (netmon_actor, NULL);
+        assert(netmon);
+    }
+
+    zpoller_t *poller = zpoller_new(netmon, db, NULL);
+    assert(poller);
+
+    while (!zpoller_terminated(poller)) {
+        zsock_t *which = (zsock_t *)zpoller_wait (poller, -1);
     }
     
-    zactor_destroy(&netmon);
+    // temporary
+    /*
+    while (1) {        
+        if (irq == 1) {
+            printf ("Shutting down...\n");
+            break;
+        }
+    }
+    */
+    zsock_signal (netmon, 0);
+    zsock_signal (db, 0);
+    if (test_mode) {    
+        zactor_destroy(&netmon);
+    }
     zactor_destroy(&db);
-
+    return EXIT_SUCCESS;
 }
 
