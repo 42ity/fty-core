@@ -23,11 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 #include <string>
 #include <stdlib.h>
+
 #include <tntdb/result.h>
 #include <tntdb/row.h>
 #include <tntdb/value.h>
 #include <tntdb/statement.h>
 #include <tntdb/error.h>
+
 #include "log.h"
 #include "nethistory.h"
  
@@ -53,7 +55,7 @@ clear(){
 }
 
 NetHistory::
-NetHistory(std::string url)
+NetHistory(const std::string &url)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
@@ -61,11 +63,11 @@ NetHistory(std::string url)
 
 std::string 
 NetHistory::
-toString()
+toString() const
 {
     return DataBaseTimeObject::toString()         + ";" +
              "mac="       + _mac                  + ";" +
-             "adress="    + _address.toString()   + ";" +
+             "address="   + _address.toString()   + ";" +
              "command="   + _command              + ";" +
              "name="      + _name                 ; 
 }
@@ -78,7 +80,7 @@ NetHistory::
 
 bool
 NetHistory::
-check()
+check() const
 {
     if ((_name.length() <= this->getNamesLength()) &&
         this->check_command() && _address.valid() )
@@ -89,7 +91,7 @@ check()
 
 bool
 NetHistory::
-check_command()
+check_command() const
 {
     if  ( ( _command == 'a') || ( _command == 'm') || ( _command == 'e') )
         return true;
@@ -375,7 +377,9 @@ db_select_timestamp()
 }
 
 
-int NetHistory::checkUnique()
+int 
+NetHistory::
+checkUnique() const
 {
     // TODO need to add unique index in DB ?
     tntdb::Connection conn; 

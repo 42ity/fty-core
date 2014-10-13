@@ -51,7 +51,7 @@ class Ip :public DataBaseTimeObject
          *
          * \param url - connection to the database.
          */
-        Ip(std::string url);
+        Ip(const std::string &url);
         
         /**
          * \brief Creates a new object with the specified ip and 
@@ -63,7 +63,7 @@ class Ip :public DataBaseTimeObject
          * \param ip  - an ip of the object
          * \param url - a connection to the database.
          */
-        Ip(std::string url, std::string ip);
+        Ip(const std::string &url, const std::string &ip);
 
         ~Ip(){};
         
@@ -114,7 +114,7 @@ class Ip :public DataBaseTimeObject
          *
          * TODO 
          */
-        bool check();
+        bool check() const;
        
         /**
          * \brief Internal method for insert.
