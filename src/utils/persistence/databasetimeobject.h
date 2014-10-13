@@ -60,7 +60,7 @@ class DataBaseTimeObject: public DataBaseObject
          * 
          * \param url - connection to the database
          */
-        DataBaseTimeObject(std::string url);
+        DataBaseTimeObject(const std::string &url);
 
         ~DataBaseTimeObject();
         
@@ -69,7 +69,7 @@ class DataBaseTimeObject: public DataBaseObject
          *
          * \return Object as string.
          */
-        std::string toString();
+        std::string toString() const;
 
         /**
          * \brief Returns an object to OS_NEW state with initial parameters.
@@ -132,7 +132,7 @@ class DataBaseTimeObject: public DataBaseObject
          *
          * \return true if check was successful.
          */
-        virtual bool check(){return true;};
+        virtual bool check() const {return true;};
 
         /**
          * \brief Selects a timestamp for stored Id.

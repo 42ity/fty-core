@@ -4,7 +4,7 @@
 #include <client.h>
 
 TEST_CASE("client getters1","[dbdevtype][constructor1][toString][getId][getUrl][getState][getName]"){
-    utils::Client dbclient(url);
+    utils::db::Client dbclient(url);
     std::string expected =  "url="   + url                + ";" +
                             "id="    + std::to_string(-1) + ";" +
                             "state=" + osnew              + ";" +
@@ -12,14 +12,14 @@ TEST_CASE("client getters1","[dbdevtype][constructor1][toString][getId][getUrl][
     REQUIRE( dbclient.toString() == expected );
     REQUIRE( dbclient.getId()    == -1 );
     REQUIRE( dbclient.getUrl()   == url );
-    REQUIRE( utils::objectStatetoString(dbclient.getState()) == osnew );
+    REQUIRE( utils::db::objectStatetoString(dbclient.getState()) == osnew );
     REQUIRE( dbclient.getName() == "" );
 }
 
 TEST_CASE("client getters2","[dbdevtype][constructor2][toString][getId][getUrl][getState][getName]"){
     std::string name = "constructor";
 
-    utils::Client dbclient(url,name);
+    utils::db::Client dbclient(url,name);
     std::string expected =  "url="   + url                + ";" +
                             "id="    + std::to_string(-1) + ";" +
                             "state=" + osnew              + ";" +
@@ -27,7 +27,7 @@ TEST_CASE("client getters2","[dbdevtype][constructor2][toString][getId][getUrl][
     REQUIRE(dbclient.toString() == expected );
     REQUIRE(dbclient.getId()    == -1 );
     REQUIRE(dbclient.getUrl()   == url );
-    REQUIRE(utils::objectStatetoString(dbclient.getState()) == osnew);
+    REQUIRE(utils::db::objectStatetoString(dbclient.getState()) == osnew);
     REQUIRE(dbclient.getName() == name);
 }
 
@@ -36,7 +36,7 @@ TEST_CASE("client selectbyname","[dbclient][select][byName]")
     //THIS RECORD SHOULD ALWAYS BEEN THERE
     std::string newname = "nmap";
     //name is unique
-    utils::Client dbclient =  utils::Client(url);
+    utils::db::Client dbclient =  utils::db::Client(url);
     
     int n = dbclient.selectByName(newname);
     REQUIRE(n == 1);
@@ -59,7 +59,7 @@ TEST_CASE("client selectbyid","[dbclient][select][byId]"){
     int newid = 1;
     std::string newname = "nmap";
     //name is unique
-    utils::Client dbclient =  utils::Client(url);
+    utils::db::Client dbclient =  utils::db::Client(url);
     
     int n = dbclient.selectById(newid);
     REQUIRE(n == 1);
@@ -80,10 +80,10 @@ TEST_CASE("client selectbyid","[dbclient][select][byId]"){
 TEST_CASE("client selectId","[dbclient][select][Id]"){
     std::string newname = "nmap";
     
-    int n  =  utils::Client::selectId(url,newname);
+    int n  =  utils::db::Client::selectId(url,newname);
     REQUIRE( n == 1); //it is an ID
     
-    n  =  utils::Client::selectId(url,"not found");
+    n  =  utils::db::Client::selectId(url,"not found");
     REQUIRE( n == -1); //it is an ID
 }
 
@@ -91,7 +91,7 @@ TEST_CASE("client clear","[dbclient][clear]"){
 
     std::string newname = "nmap";
     
-    utils::Client  dbclient =  utils::Client(url);
+    utils::db::Client  dbclient =  utils::db::Client(url);
     std::string expected = dbclient.toString();
     
     int n = dbclient.selectByName(newname);
@@ -103,37 +103,37 @@ TEST_CASE("client clear","[dbclient][clear]"){
 
 TEST_CASE("client setName","[dbclient][setName]")
 {
-    utils::Client dbclient(url);
+    utils::db::Client dbclient(url);
     std::string newname = "set_name";
     //OS_NEW set OS_NEW
     dbclient.setName(newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_NEW);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_NEW);
     REQUIRE(dbclient.getId() == -1 );
     
     //insert test info
-    utils::Client newclient = utils::Client(url);
+    utils::db::Client newclient = utils::db::Client(url);
     newclient.setName(newname);
     int n = newclient.dbsave();
     REQUIRE( n == 1 );
 
     n = dbclient.selectByName(newname);
     REQUIRE( n == 1 );    //in DB must be one row for testing
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_SELECTED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_SELECTED);
 
     //OS_SELECTED set= OS_SELECTED
     dbclient.setName(newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_SELECTED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_SELECTED);
     //OS_SELECTED set!= OS_UPDATED
     dbclient.setName(newname+newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_UPDATED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_UPDATED);
     REQUIRE(dbclient.getName() == newname+newname);
     //OS_UPDATED set = OS_UPDATED
     dbclient.setName(newname+newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_UPDATED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_UPDATED);
     REQUIRE(dbclient.getName() == newname+newname);
     //OS_UPDATED set!= OS_UPDATED
     dbclient.setName(newname+newname+newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_UPDATED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_UPDATED);
     REQUIRE(dbclient.getName() == newname+newname+newname);
     
     n = dbclient.dbdelete();
@@ -142,17 +142,17 @@ TEST_CASE("client setName","[dbclient][setName]")
     //OS_DELETED set= OS_DELETED
     std::string oldname = dbclient.getName();
     dbclient.setName(newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_DELETED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_DELETED);
     REQUIRE(dbclient.getName() == oldname);
     //OS_DELETED set!= OS_DELETED
     dbclient.setName(newname+newname);
-    REQUIRE(dbclient.getState() == utils::ObjectState::OS_DELETED);
+    REQUIRE(dbclient.getState() == utils::db::ObjectState::OS_DELETED);
     REQUIRE(dbclient.getName() == oldname);
 }
 
 TEST_CASE("client reload ","[dbclient][reload]"){
     
-    utils::Client dbclient(url);
+    utils::db::Client dbclient(url);
     std::string newname = "reload";
     dbclient.setName(newname);
     std::string expected = dbclient.toString();
@@ -190,7 +190,7 @@ TEST_CASE("client reload ","[dbclient][reload]"){
 
 
 TEST_CASE("client insert/delete ","[dbclient][save][insert][delete]"){
-    utils::Client dbclient(url);
+    utils::db::Client dbclient(url);
     std::string newname = "insert_delete";
     dbclient.setName(newname);
     int n = dbclient.dbsave();
@@ -198,7 +198,7 @@ TEST_CASE("client insert/delete ","[dbclient][save][insert][delete]"){
     if ( n == 1 )
     {
         REQUIRE(dbclient.getId() > 0 );
-        REQUIRE(utils::objectStatetoString(dbclient.getState()) == osselected);
+        REQUIRE(utils::db::objectStatetoString(dbclient.getState()) == osselected);
         expected = dbclient.toString();
         n = dbclient.dbsave();
         REQUIRE( n == 0);
@@ -211,7 +211,7 @@ TEST_CASE("client insert/delete ","[dbclient][save][insert][delete]"){
             FAIL("more than one row was deleted");
         if ( n == 1 )
         {
-            REQUIRE( utils::objectStatetoString(dbclient.getState()) == osdeleted);
+            REQUIRE( utils::db::objectStatetoString(dbclient.getState()) == osdeleted);
             REQUIRE( dbclient.getId() == -1 );
 
             expected = dbclient.toString();
@@ -230,7 +230,7 @@ TEST_CASE("client insert/delete ","[dbclient][save][insert][delete]"){
 }
 
 TEST_CASE("client insert long name ","[dbclient][save][insert][longname]"){
-    utils::Client dbclient(url);
+    utils::db::Client dbclient(url);
     
     std::string newname = "this should fail";
     for (unsigned int i = 0 ; i < dbclient.getNamesLength() ; i++ )
@@ -245,7 +245,7 @@ TEST_CASE("client insert long name ","[dbclient][save][insert][longname]"){
 TEST_CASE("client update","[dbclient][save][update]"){
     
     std::string newname = "update";
-    utils::Client dbclient(url,newname);
+    utils::db::Client dbclient(url,newname);
     int n = dbclient.dbsave();
     REQUIRE( n == 1 );
     
@@ -254,11 +254,11 @@ TEST_CASE("client update","[dbclient][save][update]"){
     REQUIRE( n == 1 );
     
     dbclient.setName(newname+newname);
-    REQUIRE(utils::objectStatetoString(dbclient.getState()) == osupdated);
+    REQUIRE(utils::db::objectStatetoString(dbclient.getState()) == osupdated);
     
     n = dbclient.dbsave();
     REQUIRE( n == 1 );
-    REQUIRE(utils::objectStatetoString(dbclient.getState()) == osselected);
+    REQUIRE(utils::db::objectStatetoString(dbclient.getState()) == osselected);
     std::string expected = "url="    + url                 + ";" +
                            "id="     + std::to_string(newid) + ";" +
                            "state="  + osselected            + ";" +

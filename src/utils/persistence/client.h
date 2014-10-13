@@ -46,7 +46,7 @@ class Client: public DataBaseObject
          *
          * \param url - a connection to the database.
          */
-        Client(std::string url);
+        Client(const std::string &url);
         
         /**
          * \brief Creates a new object and specifies a connection.
@@ -57,7 +57,7 @@ class Client: public DataBaseObject
          * \param name - a name of the object.
          * \param url  - a connection to the database.
          */
-        Client(std::string url, std::string name);
+        Client(const std::string &url, const std::string &name);
 
         /**
          * \brief Selects from the DB a client by its name.
@@ -166,7 +166,7 @@ class Client: public DataBaseObject
          *
          * \return true if check was successful.
          */
-        bool check();
+        bool check() const;
 
     private:
     

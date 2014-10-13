@@ -40,14 +40,14 @@ clear_this()
 }
 
 DeviceType::
-DeviceType(std::string url)
+DeviceType(const std::string &url)
     :DataBaseObject(url)
 {
     this->clear_this();
 }
 
 DeviceType::
-DeviceType(std::string url, std::string name)
+DeviceType(const std::string &url, const std::string &name)
     :DataBaseObject(url)
 {
     this->clear_this();
@@ -285,12 +285,16 @@ setName(std::string name)
 
 bool
 DeviceType::
-check()
+check() const
 {
     if ( _name.length() <= this->getNamesLength() )
+    {
         return true;
+    }
     else
+    {
         return false;
+    }
 }
 
 } // namespace db

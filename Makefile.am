@@ -10,111 +10,101 @@ check_SCRIPTS =
 noinst_SCRIPTS =
 BUILT_SOURCES =
 CLEANFILES =
+DISTCLEANFILES =
 TESTS =
 
-AM_CPPFLAGS = \
-			  -include $(top_builddir)/config.h \
-			  -I $(top_srcdir)/src/utils \
-			  -I $(top_srcdir)/src/utils/messages \
-        -DDEBUG \
-        -DDEVEL
+SUBDIRS = docs/man
+
+AM_CPPFLAGS = 			-include $(top_builddir)/config.h \
+				-I $(top_srcdir)/src/utils \
+				-I $(top_srcdir)/src/utils/messages \
+				-DDEBUG \
+				-DDEVEL
 
 
-AM_CFLAGS = ${my_CFLAGS} \
-	-fvisibility=hidden \
-	-ffunction-sections \
-	-fdata-sections \
-	$(LIBZMQ_CFLAGS) \
-	$(LIBCZMQ_CFLAGS) \
-	$(LIBVARIANT_CFLAGS)
+AM_CFLAGS =			${my_CFLAGS} \
+				-fvisibility=hidden \
+				-ffunction-sections \
+				-fdata-sections \
+				$(LIBZMQ_CFLAGS) \
+				$(LIBCZMQ_CFLAGS) \
+				$(LIBVARIANT_CFLAGS)
 
-AM_CXXFLAGS = ${my_CXXFLAGS} \
-	-fvisibility=hidden \
-	-ffunction-sections \
-	-fdata-sections
+AM_CXXFLAGS =			${my_CXXFLAGS} \
+				-fvisibility=hidden \
+				-ffunction-sections \
+				-fdata-sections
 
-AM_LDFLAGS = \
-	-Wl,--gc-sections \
-	-Wl,--as-needed
+AM_LDFLAGS = 			-Wl,--gc-sections \
+				-Wl,--as-needed
 
 
 #----------------------------------------------------------------------
-noinst_LTLIBRARIES += \
-					libpriv-utils.la
+noinst_LTLIBRARIES += 		libpriv-utils.la
 
-libpriv_utils_la_SOURCES = \
-					src/utils/utils.c \
-					src/utils/utils.h
+libpriv_utils_la_SOURCES = 	src/utils/utils.c \
+				src/utils/utils.h
 
-noinst_LTLIBRARIES += \
-					  libpriv-cli.la
+noinst_LTLIBRARIES += 		libpriv-cli.la
 
-libpriv_cli_la_SOURCES = \
-						 src/utils/utils.h \
-						 src/cli/cli.h \
-						 src/cli/cli-shared.c
+libpriv_cli_la_SOURCES = 	src/utils/utils.h \
+				src/cli/cli.h \
+				src/cli/cli-shared.c
 
-libpriv_cli_la_LIBADD = libpriv-utils.la
+libpriv_cli_la_LIBADD = 	libpriv-utils.la
 
-noinst_LTLIBRARIES += \
-  libpriv-cored.la
+noinst_LTLIBRARIES += 		libpriv-cored.la
 
-libpriv_cored_la_SOURCES = \
-  src/utils/zmq.hpp \
-  src/cored/mock_db.h \
-  src/cored/mock_db.cc \
-  src/cored/utilities.h \
-  src/cored/utilities.cc \
-  src/cored/utilities_zeromq.h \
-  src/cored/utilities_zeromq.cc
+libpriv_cored_la_SOURCES = 	src/utils/zmq.hpp \
+				src/cored/mock_db.h \
+				src/cored/mock_db.cc \
+				src/cored/utilities.h \
+				src/cored/utilities.cc \
+				src/cored/utilities_zeromq.h \
+				src/cored/utilities_zeromq.cc
 
-noinst_LTLIBRARIES += \
-					  libpriv-log.la
+noinst_LTLIBRARIES += 		libpriv-log.la
 
-libpriv_log_la_SOURCES = \
-						 src/utils/log.h \
-						 src/utils/log.c
+libpriv_log_la_SOURCES = 	src/utils/log.h \
+				src/utils/log.c
+
 libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 noinst_LTLIBRARIES += \
-					  libpriv-subprocess.la
+				libpriv-subprocess.la
 
-libpriv_subprocess_la_SOURCES = \
-								src/utils/subprocess.h \
-								src/utils/subprocess.cc
+libpriv_subprocess_la_SOURCES = src/utils/subprocess.h \
+				src/utils/subprocess.cc
+
 libpriv_subprocess_la_LIBADD = -lcxxtools
 
-noinst_LTLIBRARIES += \
-					  libpriv-cidr.la
-libpriv_cidr_la_SOURCES = \
-						 src/utils/cidr.h \
-						 src/utils/cidr.cc
+noinst_LTLIBRARIES += 		libpriv-cidr.la
 
-noinst_LTLIBRARIES += \
-					  libpriv-db.la
+libpriv_cidr_la_SOURCES = 	src/utils/cidr.h \
+				src/utils/cidr.cc
 
-libpriv_db_la_SOURCES = \
-								 src/utils/persistence.h \
-								 src/utils/persistence/client.cc \
-								 src/utils/persistence/client.h \
-								 src/utils/persistence/clientinfo.cc \
-								 src/utils/persistence/clientinfo.h \
-								 src/utils/persistence/databaseobject.cc \
-								 src/utils/persistence/databaseobject.h \
-								 src/utils/persistence/databasetimeobject.cc \
-								 src/utils/persistence/databasetimeobject.h \
-								 src/utils/persistence/device_discovered.cc \
-								 src/utils/persistence/device_discovered.h \
-								 src/utils/persistence/devicetype.cc \
-								 src/utils/persistence/devicetype.h \
-								 src/utils/persistence/ip.cc \
-								 src/utils/persistence/ip.h \
-								 src/utils/persistence/nethistory.cc \
-								 src/utils/persistence/nethistory.h
+noinst_LTLIBRARIES += 		libpriv-db.la
 
-BUILT_SOURCES	+=	src/utils/messages/json_schemas.h
+libpriv_db_la_SOURCES = 	src/utils/persistence.h \
+				src/utils/persistence/client.cc \
+				src/utils/persistence/client.h \
+				src/utils/persistence/clientinfo.cc \
+				src/utils/persistence/clientinfo.h \
+				src/utils/persistence/databaseobject.cc \
+				src/utils/persistence/databaseobject.h \
+				src/utils/persistence/databasetimeobject.cc \
+				src/utils/persistence/databasetimeobject.h \
+				src/utils/persistence/device_discovered.cc \
+				src/utils/persistence/device_discovered.h \
+				src/utils/persistence/devicetype.cc \
+				src/utils/persistence/devicetype.h \
+				src/utils/persistence/ip.cc \
+				src/utils/persistence/ip.h \
+				src/utils/persistence/nethistory.cc \
+				src/utils/persistence/nethistory.h
 
-CLEANFILES	+=	src/utils/messages/json_schemas.h
+
+DISTCLEANFILES +=		docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
@@ -146,102 +136,91 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #[one][two],[three]
 
 
-AM_LOG_FLAGS = exclude:[db*]  -t
+AM_LOG_FLAGS = 				exclude:[db*]  -t
 
-check_LTLIBRARIES += \
-					  libpriv-test-run.la
+check_LTLIBRARIES += 			libpriv-test-run.la
 
-libpriv_test_run_la_SOURCES = \
-							  tests/include/catch.hpp \
-							  tests/test-run.cc
-libpriv_test_run_la_CPPFLAGS =$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
+					tests/test-run.cc
+
+libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
 #----------------------------------------------------------------------
+#                        Unit tests
+#----------------------------------------------------------------------
 
-check_PROGRAMS += \
-		 test-utils
-test_utils_SOURCES = \
-					src/utils/utils.h \
+check_PROGRAMS += 			test-utils
+test_utils_SOURCES = 			src/utils/utils.h \
 					tests/utils/test-utils.cc
-test_utils_LDADD = \
-				   libpriv-utils.la \
-				   libpriv-test-run.la
-test_utils_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_utils_LDADD = 			libpriv-utils.la \
+					libpriv-test-run.la
+test_utils_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
-check_PROGRAMS += \
-		 test-cli
-test_cli_SOURCES = \
-				   src/cli/cli.h \
-				   tests/cli/test-cli.cc
-test_cli_LDADD = \
-				 libpriv-utils.la \
-				 libpriv-cli.la \
-				 libpriv-test-run.la
-test_cli_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include -I $(top_srcdir)/src/cli
+check_PROGRAMS += 			test-cli
+test_cli_SOURCES = 			src/cli/cli.h \
+					tests/cli/test-cli.cc
+test_cli_LDADD = 			libpriv-utils.la \
+					libpriv-cli.la \
+					libpriv-test-run.la
+test_cli_CPPFLAGS =			$(AM_CPPFLAGS) \
+					-I $(top_srcdir)/tests/include \
+					-I $(top_srcdir)/src/cli
 
-check_PROGRAMS += \
-		 test-log
-test_log_SOURCES = \
-					src/utils/log.h \
+check_PROGRAMS += 			test-log
+test_log_SOURCES = 			src/utils/log.h \
 					src/utils/utils.h \
 					tests/utils/test-log.cc
-test_log_LDADD = \
-				   libpriv-log.la \
-				   libpriv-utils.la \
-				   libpriv-test-run.la
-test_log_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_log_LDADD = 			libpriv-log.la \
+					libpriv-utils.la \
+					libpriv-test-run.la
+test_log_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
-check_PROGRAMS += \
-		 test-subprocess
-
-test_subprocess_SOURCES = \
-					src/utils/subprocess.h \
+check_PROGRAMS += 			test-subprocess
+test_subprocess_SOURCES = 		src/utils/subprocess.h \
 					tests/utils/test-subprocess.cc
-test_subprocess_LDADD = \
-				   libpriv-subprocess.la \
-				   libpriv-test-run.la
-test_subprocess_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
-test_subprocess_LDFLAGS = -lcxxtools -lcidr
+test_subprocess_LDADD = 		libpriv-subprocess.la \
+					libpriv-test-run.la
+test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_subprocess_LDFLAGS =		-lcxxtools -lcidr
 
-check_PROGRAMS += \
-		 test-cidr
-test_cidr_SOURCES = \
-					src/utils/cidr.cc \
+check_PROGRAMS += 			test-cidr
+test_cidr_SOURCES = 			src/utils/cidr.cc \
 					tests/utils/test-cidr.cc
-test_cidr_LDADD = \
-				   libpriv-test-run.la
-test_cidr_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
-test_cidr_LDFLAGS = -lcidr
+test_cidr_LDADD = 			libpriv-test-run.la
+test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
+test_cidr_LDFLAGS =			-lcidr
 
-check_PROGRAMS += \
-		test-json-schemas
 
-test_json_schemas_SOURCES = \
-						tests/utils/test-json-schemas.cc \
-						tests/utils/messages/json_schemas.h
-test_json_schemas_LDADD = \
-                    		libpriv-test-run.la
-test_json_schemas_LDFLAGS = \
-                    		$(LIBVARIANT_LIBS)
-test_json_schemas_CPPFLAGS = -I $(top_srcdir)/tests/include -I $(top_srcdir)/tests/utils/messages -D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
+check_PROGRAMS += 			test-json-schemas
+test_json_schemas_SOURCES = 		tests/utils/test-json-schemas.cc \
+					tests/utils/messages/json_schemas.h
+test_json_schemas_LDADD = 		libpriv-test-run.la
+test_json_schemas_LDFLAGS =		$(LIBVARIANT_LIBS)
+test_json_schemas_CPPFLAGS =		-I $(top_srcdir)/tests/include \
+					-I $(top_srcdir)/tests/utils/messages \
+					-D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
 
-check_PROGRAMS += \
-				  test-db
-test_db_SOURCES = \
-				  tests/utils/test-clientinfo.cc \
-				  tests/utils/test-device-discovered.cc \
-				  tests/utils/test-devicetype.cc \
-			          tests/utils/test-client.cc
-
-test_db_LDADD = \
-				libpriv-db.la \
-				libpriv-cidr.la \
-                libpriv-test-run.la
-test_db_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/ -I $(top_srcdir)/src/utils/persistence -I$(top_srcdir)/tools
-test_db_LDFLAGS = -ltntdb -lcxxtools -lcidr
+check_PROGRAMS += 			test-db
+test_db_SOURCES = 			tests/utils/test-clientinfo.cc \
+					tests/utils/test-device-discovered.cc \
+					tests/utils/test-devicetype.cc \
+					tests/utils/test-client.cc \
+					tests/utils/test-nethistory.cc
+test_db_LDADD = 			libpriv-db.la \
+					libpriv-cidr.la \
+					libpriv-test-run.la
+test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
+					-I $(top_srcdir)/tests/include/ \
+					-I $(top_srcdir)/src/utils/persistence \
+					-I $(top_srcdir)/tools \
+					-I $(top_builddir)/tools
+test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
+
+#----------------------------------------------------------------------
+#                        binaries
 #----------------------------------------------------------------------
 
 bin_PROGRAMS += \
@@ -260,91 +239,135 @@ netmon_LDFLAGS = -lnetlink $(LIBZMQ_LIBS) ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS}
 netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
 netmon_LDADD = libpriv-utils.la libpriv-log.la
 
-SUBDIRS = docs/man
-
-bin_PROGRAMS += \
-			  cli
-cli_SOURCES = \
-			src/cli/cli.h \
-			src/cli/cli.c \
-			src/cli/cli-network.cc \
-			src/utils/messages/json_schemas.h
-nodist_cli_SOURCES = \
-				src/utils/messages/json_schemas.h
-cli_LDADD = libpriv-utils.la libpriv-cli.la libpriv-log.la
-cli_LDFLAGS = $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS) 
-
-bin_PROGRAMS += \
-				cored
-
-cored_SOURCES = \
-				src/cored/main.h \
-				src/cored/main.cc
-
-nodist_cored_SOURCES = \
-				src/utils/messages/json_schemas.h
-cored_LDADD = libpriv-cored.la
-cored_LDFLAGS = -pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
-
-bin_PROGRAMS += \
-				driver-nmap
-driver_nmap_SOURCES = \
-					  src/drivers/nmap/nmap-driver.h \
-					  src/drivers/nmap/nmap.cc \
-					  src/drivers/nmap/nmap-parse.h \
-					  src/drivers/nmap/nmap-parse.cc
-driver_nmap_LDADD = libpriv-subprocess.la
-driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} -lcxxtools
-
-bin_PROGRAMS += \
-				simple
-
-simple_SOURCES = \
-	src/simple/main.cc \
-	src/simple/defs.h \
-	tools/dbinit.h \
-	src/utils/persistence.h \
-    src/simple/netdisc_msg.c \
-    src/simple/netdisc_msg.h \
-	src/utils/persistencelogic.cc \
-	src/utils/persistencelogic.h 
+bin_PROGRAMS += 			netmon
+netmon_LDFLAGS =			-lnetlink $(LIBZMQ_LIBS) ${LIBCZMQ_LIBS}
+netmon_SOURCES = 			src/netmon/linux \
+					src/netmon/netmon.c \
+					src/simple/netdisc_msg.h \
+					src/simple/netdisc_msg.c \
+					src/netmon/netmon_msg_send.cc \
+					src/netmon/netmon_msg_send.h
+nodist_netmon_SOURCES = 		src/utils/messages/json_schemas.h
+# Consider moving zproto protocols to libpriv-...
+netmon_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
+netmon_LDADD =				libpriv-utils.la libpriv-log.la
 
 
-simple_LDFLAGS = -lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} -lcxxtools -ltntdb
-simple_CPPFLAGS = -I $(top_srcdir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple
-simple_LDADD = libpriv-db.la libpriv-cidr.la
+
+bin_PROGRAMS += 			cli
+cli_SOURCES = 				src/cli/cli.h \
+					src/cli/cli.c \
+					src/cli/cli-network.cc \
+					src/utils/messages/json_schemas.h
+nodist_cli_SOURCES = 			src/utils/messages/json_schemas.h
+cli_LDADD =				libpriv-utils.la libpriv-cli.la libpriv-log.la
+cli_LDFLAGS =				$(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
+
+bin_PROGRAMS += 			cored
+
+cored_SOURCES = 			src/cored/main.h \
+					src/cored/main.cc
+
+nodist_cored_SOURCES = 			src/utils/messages/json_schemas.h
+cored_LDADD =				libpriv-cored.la
+cored_LDFLAGS =				-pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
+
+bin_PROGRAMS += 			simple
+
+simple_SOURCES = 			src/simple/main.cc \
+					src/simple/defs.h \
+					$(top_srcdir)/tools/dbinit.h \
+					src/utils/persistence.h \
+					src/simple/netdisc_msg.c \
+					src/simple/netdisc_msg.h \
+					src/utils/persistencelogic.cc \
+					src/utils/persistencelogic.h
+
+
+simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
+#simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} -lcxxtools -ltntdb
+simple_CPPFLAGS =			-I $(top_srcdir)/tools/ -I $(top_builddir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple/
+simple_LDADD =				libpriv-db.la libpriv-cidr.la
+
+bin_PROGRAMS += 			driver-nmap
+
+driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
+					src/drivers/nmap/nmap.cc \
+					src/drivers/nmap/nmap-parse.h \
+					src/drivers/nmap/nmap-parse.cc
+driver_nmap_LDADD =			libpriv-subprocess.la
+driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} -lcxxtools
+
 
 #----------------------------------------------------------------------
-EXTRA_DIST += $(top_srcdir)/tools/gen-json-validator
-EXTRA_DIST += $(top_srcdir)/src/utils/messages/json_schema/*.json
+#                        Extra files and sources
+#----------------------------------------------------------------------
 
-BUILT_SOURCES += $(top_srcdir)/src/utils/messages/json_schemas.h
+EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
+					$(top_srcdir)/src/utils/messages/json_schema/*.json \
+					$(top_srcdir)/tests/utils/messages/json_schema/*.json \
+					$(top_srcdir)/tools/dbpath.h.in
+
+CLEANFILES +=				tools/dbpath.h
+
+
+if HAVE_DOXYGEN
+EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
+endif
+EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
+
+
+BUILT_SOURCES +=			$(top_srcdir)/src/utils/messages/json_schemas.h \
+					$(top_srcdir)/tests/utils/messages/json_schemas.h \
+					$(top_srcdir)/tools/dbinit.h
+
+CLEANFILES +=				src/utils/messages/json_schemas.h
+
+
+#----------------------------------------------------------------------
+#                        JSON validator targets
+#----------------------------------------------------------------------
+
 src/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
 
-BUILT_SOURCES += $(top_srcdir)/tests/utils/messages/json_schemas.h
 tests/utils/messages/json_schemas.h: Makefile
 	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
 
+#----------------------------------------------------------------------
+#                        doxygen html generation
+#----------------------------------------------------------------------
+
+${myDOXDIR}/html:
 if HAVE_DOXYGEN
-EXTRA_DIST += $(top_srcdir)/${myDOXDIR}/html
+	test -d $(top_srcdir)/${myDOXDIR}/html || $(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
 endif
 
-all-local:
-	./tools/gen-json-validator ./src
-if HAVE_DOXYGEN
-	$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
-endif
+#----------------------------------------------------------------------
+#                        hook for make all => generate files too
+#----------------------------------------------------------------------
+
+all-local: ${myDOXDIR}/html tests/utils/messages/json_schemas.h src/utils/messages/json_schemas.h
+
+
+#----------------------------------------------------------------------
+#                        clean, what was not removed automatically
+#----------------------------------------------------------------------
 
 clean-local:
-	rm -rf $(top_builddir)/tests/junit
-	rm -rf  $(top_srcdir)/${myDOXDIR}/html
+	/bin/rm -rf $(top_builddir)/tests/junit
+if HAVE_DOXYGEN
+	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
+endif
 
+#----------------------------------------------------------------------
+#                        astyle formating
+#----------------------------------------------------------------------
 if HAVE_ASTYLE
 EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
 	$(top_srcdir)/tools/astyle-bios
 checkstyle:
 	$(top_srcdir)/tools/astyle-bios -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 style:
-	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src	
+	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 endif

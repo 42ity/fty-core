@@ -110,7 +110,7 @@ class DataBaseObject
          *
          * \return Object's state.
          */
-        ObjectState getState();
+        ObjectState getState() const;
 
         /**
          * \brief Gets a value of object's ID.
@@ -119,14 +119,14 @@ class DataBaseObject
          *
          * \return Object's Id.
          */
-        int getId();
+        int getId() const;
 
         /**
          * \brief Gets a value of object's url.
          * 
          * \return Object's url.
          */
-        std::string getUrl();
+        std::string getUrl() const;
 
         /**
          * \brief Converts all fields to string and concatenates them.
@@ -135,7 +135,7 @@ class DataBaseObject
          * 
          * \return Object as string.
          */
-        virtual std::string toString();
+        virtual std::string toString() const;
 
         /**
          * \brief Returns an object to OS_NEW state with initial parameters.
@@ -192,7 +192,7 @@ class DataBaseObject
          * 
          * \param url - connection to the database
          */
-        DataBaseObject(std::string url);
+        DataBaseObject(const std::string &url);
 
         //TODO
         ~DataBaseObject();
@@ -250,7 +250,7 @@ class DataBaseObject
          *
          * \return true if check was successful.
          */
-        virtual bool check(){ return true;};
+        virtual bool check() const {return true;};
 
 
     private:

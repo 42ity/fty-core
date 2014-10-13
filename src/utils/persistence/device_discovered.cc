@@ -52,7 +52,7 @@ clear()
 }
 
 DeviceDiscovered::
-DeviceDiscovered(std::string url)
+DeviceDiscovered(const std::string &url)
     :DataBaseObject(url)
 {
     _clientId = Client::selectId(url,_clientName);
@@ -60,7 +60,7 @@ DeviceDiscovered(std::string url)
 }
 
 DeviceDiscovered::
-DeviceDiscovered(std::string url, std::string name)
+DeviceDiscovered(const std::string &url, const std::string &name)
     :DataBaseObject(url)
 {
     this->clear_this();
@@ -130,7 +130,7 @@ DeviceDiscovered::
 
 bool
 DeviceDiscovered::
-check()
+check() const
 {
     if ( _name.length() <= this->getNamesLength() )
         if ( _deviceTypeId > 0 )    // if this field is  notNULL

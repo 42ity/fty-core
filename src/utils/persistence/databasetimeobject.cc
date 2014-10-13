@@ -35,7 +35,7 @@ namespace utils {
 namespace db {
 
 DataBaseTimeObject::
-DataBaseTimeObject(std::string url)
+DataBaseTimeObject(const std::string &url)
     :DataBaseObject(url)
 {
     this->clear_this();
@@ -56,7 +56,7 @@ DataBaseTimeObject::
 
 std::string 
 DataBaseTimeObject::
-toString()
+toString() const
 {
     std::string timestr = ctime(&_timestamp);
     std::string tmp =   DataBaseObject::toString() + ";" +

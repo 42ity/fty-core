@@ -45,7 +45,7 @@ class DeviceType: public DataBaseObject
          *
          * \param url - a connection to the database.
          */
-        DeviceType(std::string url);
+        DeviceType(const std::string &url);
         
         /**
          * \brief Creates a new object with the specified name and 
@@ -57,7 +57,7 @@ class DeviceType: public DataBaseObject
          * \param name - a name of the object.
          * \param url  - a connection to the database.
          */
-        DeviceType(std::string url, std::string name);
+        DeviceType(const std::string &url, const std::string &name);
 
         /**
          * \brief Selects from the DB a device type by its name.
@@ -166,7 +166,7 @@ class DeviceType: public DataBaseObject
          *
          * \return true if check was successful.
          */
-        bool check();
+        bool check () const;
 
     private:
     

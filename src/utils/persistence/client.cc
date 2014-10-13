@@ -41,14 +41,14 @@ clear_this()
 }
 
 Client::
-Client(std::string url)
+Client(const std::string &url)
     :DataBaseObject(url)
 {
     this->clear_this();
 }
 
 Client::
-Client(std::string url, std::string name)
+Client(const std::string &url, const std::string &name)
     :DataBaseObject(url)
 {
     this->clear_this();
@@ -284,7 +284,7 @@ setName(std::string name)
 
 bool
 Client::
-check()
+check() const
 {
     if ( _name.length() <= this->getNamesLength() )
         return true;

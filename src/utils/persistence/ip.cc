@@ -37,7 +37,7 @@ namespace db {
 
 bool
 Ip::
-check()
+check() const
 {
 
     //TODO descoveredDeviceId
@@ -276,14 +276,14 @@ setDeviceDiscoveredId(int deviceDiscoveredId)
 }
 
 Ip::
-Ip(std::string url)
+Ip(const std::string &url)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
 }
 
 Ip::
-Ip(std::string url, std::string ip)
+Ip(const std::string &url, const std::string &ip)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
