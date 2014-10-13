@@ -28,7 +28,6 @@ References: BIOS-397
 */
 
 #include <assert.h>
-#include <algorithm>
 
 #include <czmq.h>
 
@@ -104,7 +103,6 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
     const char *ipaddr  = netdisc_msg_ipaddr (&msg_nc);
     int prefixlen       = static_cast<int>(netdisc_msg_prefixlen (&msg_nc));
     std::string mac (netdisc_msg_mac (&msg_nc));
-    mac.erase (std::remove (mac.begin(), mac.end(), ':'), mac.end()); // Alenka needs the colon characters stripped
     char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
     CIDRAddress address (ipaddr, prefixlen);
 
@@ -126,6 +124,7 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
             nethistory.setMac(mac);
 
             rows_affected = nethistory.dbsave();
+            
             if (rows_affected == 1)     // if checks didn't pass, then nothing would be inserted
                 result = true;
             break;

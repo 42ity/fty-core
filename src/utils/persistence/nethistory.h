@@ -116,7 +116,7 @@ class NetHistory : public DataBaseTimeObject
          */    
         void setName(const std::string& name);
 
-        const std::string& getMac() const { return _mac; };
+        const std::string getMac() const;
         
         int getMask() const { return _address.prefix(); };
         
@@ -180,6 +180,8 @@ class NetHistory : public DataBaseTimeObject
         unsigned int db_select_timestamp();
 
     private:
+
+        std::string& addColonMac();
         
         std::string _mac;
 

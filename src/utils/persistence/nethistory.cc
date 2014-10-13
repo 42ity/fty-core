@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file NetHistory.cc
+/*! \file nethistory.cc
     \brief Class for manipulating with database table t_bios_net_history
 
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 #include <string>
 #include <stdlib.h>
+#include <algorithm>
 
 #include <tntdb/result.h>
 #include <tntdb/row.h>
@@ -32,11 +33,33 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 #include "nethistory.h"
+
  
 namespace utils {
 
 namespace db {
 
+
+
+void
+removeColonMac(std::string &newmac)
+{
+    newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
+}
+
+const std::string
+addColonMac(const std::string &mac)
+{
+    std::string macWithColons(mac);
+    macWithColons.insert(2,1,':');
+    macWithColons.insert(5,1,':');
+    macWithColons.insert(8,1,':');
+    macWithColons.insert(11,1,':');
+    macWithColons.insert(14,1,':');
+    return macWithColons;
+}
+
+//------------------------------------------------------------
 void
 NetHistory::
 clear_this()
@@ -66,16 +89,26 @@ NetHistory::
 toString() const
 {
     return DataBaseTimeObject::toString()         + ";" +
-             "mac="       + _mac                  + ";" +
+             "mac="       + this->getMac()        + ";" +
              "address="   + _address.toString()   + ";" +
              "command="   + _command              + ";" +
              "name="      + _name                 ; 
 }
-
+  
 NetHistory::
 ~NetHistory()
 {
     //TODO
+}
+
+const std::string 
+NetHistory::
+getMac() const
+{
+    if (_mac != "")    
+        return utils::db::addColonMac(_mac);
+    else
+        return "";
 }
 
 bool
@@ -202,32 +235,43 @@ selectById(int id)
         tntdb::Row row = st.setInt("id", id).selectRow();
          //id
         this->setId(id);
+    std::cout << " id " <<  id << std::endl;
         
         //ip
         std::string tmp_ip = "";
         row[0].get(tmp_ip);
+    std::cout << " ip " << tmp_ip << std::endl;
 
         //mask
         int tmp_i = -1;
         row[1].get(tmp_i);
+    std::cout << " mask " << tmp_i << std::endl;
 
         //address
         _address = CIDRAddress(tmp_ip,tmp_i);
         _address = _address.network(); // put in network format, to be sure it is in network format
+    std::cout << " address " << _address.toString() << std::endl;
 
         //mac
-        row[2].get(_mac);
+        row[2].getString(_mac);
+    std::cout << " mac " << _mac << std::endl;
 
         //command
         row[3].get(_command);
+    std::cout << " command " << _command << std::endl;
 
         //timestamp
         time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. 
                                     // So need to define initial value.
                                     // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[4].get(tmp_t);
+        
+      tntdb::Datetime mydatetime;
+    
+        bool isNotNull = row[4].get(mydatetime);
+
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            ;
+           // this->setTimestamp(tmp_t);
         else
         {
             //TODO
@@ -236,6 +280,7 @@ selectById(int id)
         
         //name
         row[5].get(_name);
+    std::cout << " name " << _name << std::endl;
         
         //state
         this->setState(ObjectState::OS_SELECTED);
@@ -272,14 +317,17 @@ void
 NetHistory::
 setMac(const std::string& mac_address)
 {
-    if ( ( _mac != mac_address ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    std::string macc(mac_address);
+    utils::db::removeColonMac(macc);
+
+    if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
-                 _mac = mac_address;
+                 _mac = macc;
                  break;
             default:
                 // TODO log this should never happen
