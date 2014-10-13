@@ -223,22 +223,6 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-bin_PROGRAMS += \
-				netmon
-netmon_SOURCES = \
-        src/netmon/linux \
-		src/netmon/netmon.c \
-        src/simple/netdisc_msg.h \
-        src/simple/netdisc_msg.c \
-        src/netmon/netmon_msg_send.cc \
-        src/netmon/netmon_msg_send.h
-nodist_netmon_SOURCES = \
-				src/utils/messages/json_schemas.h
-# Consider moving zproto protocols to libpriv-...
-netmon_LDFLAGS = -lnetlink $(LIBZMQ_LIBS) ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS}
-netmon_CPPFLAGS = $(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
-netmon_LDADD = libpriv-utils.la libpriv-log.la
-
 bin_PROGRAMS += 			netmon
 netmon_LDFLAGS =			-lnetlink $(LIBZMQ_LIBS) ${LIBCZMQ_LIBS}
 netmon_SOURCES = 			src/netmon/linux \
