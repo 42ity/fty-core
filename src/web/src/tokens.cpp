@@ -21,7 +21,7 @@ tokens *tokens::get_instance() {
 
 std::string tokens::gen_token(int& valid) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
-    char buff[MESSAGE_LEN+1];
+    char buff[MESSAGE_LEN + 1];
     long int tme = (time(NULL) + valid) / ROUND;
     tme *= ROUND;
     valid = (tme - time(NULL));
@@ -32,7 +32,7 @@ std::string tokens::gen_token(int& valid) {
 
     sprintf(buff, "%ld", tme);
     buff[strlen(buff)] = 0x20;
-    buff[16] = 0;
+    buff[MESSAGE_LEN] = 0;
 
     crypto_secretbox_easy(ciphertext, (unsigned char *)buff, MESSAGE_LEN, nonce, key);
 
@@ -59,9 +59,9 @@ void tokens::decode_token(char *buff, const std::string token) {
 }
 
 bool tokens::verify_token(const std::string token) {
-    char buff[MESSAGE_LEN+1];
-    long int tme=0;
+    char buff[MESSAGE_LEN + 1];
+    long int tme = 0;
     decode_token(buff, token);
     sscanf(buff, "%ld", &tme);
-    return tme>time(NULL);
+    return tme > time(NULL);
 }
