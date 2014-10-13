@@ -1,5 +1,4 @@
-/*
- * netmon.c		"ip monitor".
+/* netmon.c
  *
  *		This program is free software; you can redistribute it and/or
  *		modify it under the terms of the GNU General Public License
@@ -8,11 +7,20 @@
  *
  * Authors:	Alexey Kuznetsov, <kuznet@ms2.inr.ac.ru>
  *
- * Retrieved from: https://github.com/infoburp/iproute2.git
- * Adapted for BIOS-247, Michal Vyskocil <michalvyskocil@eaton.com>,
- *                       Karol Hrdina <karolhrdina@eaton.com>
- *
  */
+
+/*
+Description:
+    Retrieved from: https://github.com/infoburp/iproute2.git
+
+Adaptation by: Michal Vyskocil <michalvyskocil@eaton.com>,
+               Karol Hrdina <karolhrdina@eaton.com>
+
+References: BIOS-247, BIOS-406
+
+TODO: Resolve ctrl-c unresponsiveness
+*/
+
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -23,6 +31,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include <asm/types.h>
 #include <libnetlink.h>
@@ -38,10 +47,11 @@
 #include <linux/rtnetlink.h>
 #include <linux/netdevice.h>
 
-#include <zmq.h>
+#include <czmq.h>
 
-#include "jsonf.h"
 #include "log.h"
+#include "defs.h"
+#include "netmon_msg_send.h"
 
 // include/utils.h
 #define SPRINT_BSIZE 64
@@ -55,7 +65,6 @@
 
 // ip/ipaddr.c
 struct rtnl_handle rth = { .fd = -1 };
-//char * _SL_ = NULL;
 #define _SL_ "\n"
 
 // ip/ipaddress.c
@@ -197,10 +206,10 @@ const char *qd_mac(const char* ethname) {
     return (const char*) mac;
 }
 
-static int print_addrinfo(const struct sockaddr_nl *who,
-		      struct nlmsghdr *n, void *requester) {
-	
-    int ret;
+static int
+print_addrinfo (const struct sockaddr_nl *who, struct nlmsghdr *n,
+                void *requester) {    
+    int ret = -1;
 
     struct ifaddrmsg *ifa = NLMSG_DATA(n);
 	//struct ifinfomsg *ifi = NLMSG_DATA(n);
@@ -213,7 +222,7 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 	SPRINT_BUF(b1);
 
     const char *ethname = ll_index_to_name(ifa->ifa_index);
-    const char* ipfamily = NULL;
+    uint8_t ipfamily;
     const char *ipaddress = NULL;
     uint8_t prefixlen = 0;
     const char *mac = qd_mac(ethname);
@@ -222,7 +231,8 @@ static int print_addrinfo(const struct sockaddr_nl *who,
     if (n->nlmsg_type != RTM_NEWADDR && n->nlmsg_type != RTM_DELADDR)
 		return 0;
 
-    const char *type = n->nlmsg_type == RTM_NEWADDR ? "add" : "del";
+    const char *type = n->nlmsg_type == RTM_NEWADDR ?
+        NETMON_EVENT_ADD : NETMON_EVENT_DEL;
 	
     len -= NLMSG_LENGTH(sizeof(*ifa));
 	if (len < 0) {
@@ -232,10 +242,10 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 
     switch (ifa->ifa_family) {
         case AF_INET:
-            ipfamily = JP_IPVER_IPV4; // inet
+            ipfamily = NETDISC_IPVER_IPV4; // inet
             break;
         case AF_INET6:
-            ipfamily = JP_IPVER_IPV6; //inet6
+            ipfamily = NETDISC_IPVER_IPV6; //inet6
             break;
         default:
             log_warning("unsupported family: %d\n", ifa->ifa_family);
@@ -273,23 +283,8 @@ static int print_addrinfo(const struct sockaddr_nl *who,
 						      abuf, sizeof(abuf));
     }
     */
-
-    if (use_zmq) {
-        const char *msg = json_pack(type, ethname, ipfamily, ipaddress, prefixlen, mac);
-        ret = zmq_send(requester, msg, strlen(msg), 0);
-        if (ret != strlen(msg)) {
-            log_critical("failed to send all data to zmq socket: %m\n");
-            exit(EXIT_FAILURE);
-        }
-        if (msg != NULL) {
-          free(msg);
-          msg = NULL;
-        }
-    }
-    else {
-        fprintf(stdout, "([%s], %s, %s, %s/%d, %s)\n", type, ethname, ipfamily, ipaddress, prefixlen, mac);
-    }
-
+    
+    netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
 	return 0;
 }
 
@@ -487,46 +482,15 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
-  int ret;
+//    zsys_catch_interrupts ();
+//    zsys_handler_set (&interrupt);
 
-	unsigned groups = ~RTMGRP_TC;
-	const char *prog = *argv; // TODO MVY(?): unused variable?
+    unsigned groups = ~RTMGRP_TC;
+	const char *prog = *argv; 
 
-  void *context = NULL;
-  void *requester = NULL;
-	
-  const char *ZMQ_BUS = getenv("ZMQ_BUS");
+    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
+    assert(dbsock);
 
-  if (ZMQ_BUS == NULL || strlen(ZMQ_BUS) == 0) {
-    use_zmq = false;
-    log_info("environment variable ZMQ_BUS not defined. Printing to stdout.\n");
-  } else {
-    use_zmq = true;
-    context = zmq_ctx_new();
-    if (!context) {
-      log_critical("can't initialize zmq context: %m\n");
-      exit(EXIT_FAILURE);
-    }
-    requester = zmq_socket(context, ZMQ_DEALER);
-    if (!requester) {
-      log_critical("can't initialize zmq socket: %m\n");
-      exit(EXIT_FAILURE);
-    }
-    // setsockopt
-    zmq_setsockopt(socket, ZMQ_IDENTITY, "netmon", strlen("netmon")); // TODO for now ok, rework later
-/*
-    if (ret == -1) {
-      fprintf(stderr, "zmq_setsockopt failed\n");
-      exit(EXIT_FAILURE);
-    }
-*/
-    ret = zmq_connect(requester, ZMQ_BUS);
-    if (ret == -1) {
-      log_critical("can't connect to %s: %m\n", ZMQ_BUS);
-      exit(EXIT_FAILURE);
-    }
-  }
-	
     rtnl_close(&rth);
     argc--;	argv++;
 
@@ -536,14 +500,12 @@ int main(int argc, char **argv) {
 	if (rtnl_open(&rth, groups) < 0)
 		exit(1);
 
-    ipaddr_list(requester);
-	if (rtnl_listen(&rth, accept_msg, requester) < 0)
+    ipaddr_list(dbsock);
+	if (rtnl_listen(&rth, accept_msg, dbsock) < 0)
 		exit(2);
-    
-    if (use_zmq) {
-        zmq_close(requester);
-        zmq_ctx_destroy (context);
-    }
-	return 0;
 
+    zsock_destroy(&dbsock);
+    assert (dbsock == NULL);
+	
+	return 0;
 }
