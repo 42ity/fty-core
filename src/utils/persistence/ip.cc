@@ -254,21 +254,50 @@ void
 Ip::
 setIp(std::string ip)
 {
-    _ip = CIDRAddress(ip);
+    CIDRAddress newaddress(ip);
+    this->setIp(newaddress);
 }
 
 void 
 Ip::
 setIp(CIDRAddress ip)
 {
-    _ip = ip;
+   if ( (_ip != ip) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _ip = ip;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 void 
 Ip::
 setDeviceDiscoveredId(int deviceDiscoveredId)
 {
-    _deviceDiscoveredId = deviceDiscoveredId;
+    if ( (_deviceDiscoveredId != deviceDiscoveredId) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _deviceDiscoveredId = deviceDiscoveredId;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 Ip::

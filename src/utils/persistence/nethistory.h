@@ -37,6 +37,8 @@ namespace utils {
 
 namespace db {
 
+bool checkMac (const std::string &mac_address);
+
 /*
  * \brief NetHistory is a class for representing a database entity
  * t_bios_device_type.
@@ -181,8 +183,6 @@ class NetHistory : public DataBaseTimeObject
 
     private:
 
-        std::string& addColonMac();
-        
         std::string _mac;
 
         CIDRAddress _address;

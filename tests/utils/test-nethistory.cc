@@ -104,6 +104,7 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
 
     utils::db::NetHistory newnh(url);
     n = newnh.selectById(newidd);
+    INFO(newnh.toString());
     REQUIRE( n == 1 );
     n = newnh.dbdelete();
     REQUIRE( n == 1);

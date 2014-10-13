@@ -371,11 +371,10 @@ void
 ClientInfo::
 setClientId(int clientId)
 {
-    if ( (_clientId != clientId) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_clientId != clientId) && (this->getState() != ObjectState::OS_DELETED)&&  (this->getState() != ObjectState::OS_INSERTED) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
                 if (this->selectClientName(clientId))
                     _clientId = clientId;
@@ -402,11 +401,10 @@ void
 ClientInfo::
 setBlobData(std::string blobData)
 {
-    if ( (_blobData != blobData) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_blobData != blobData) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
@@ -424,11 +422,10 @@ void
 ClientInfo::
 setDeviceDiscoveredId(int discoveredDeviceId)
 {
-    if ( (_discoveredDeviceId != discoveredDeviceId) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_discoveredDeviceId != discoveredDeviceId) && (this->getState() != ObjectState::OS_DELETED) && (this->getState() != ObjectState::OS_INSERTED)  )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:

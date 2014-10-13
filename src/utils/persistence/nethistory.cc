@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/value.h>
 #include <tntdb/statement.h>
 #include <tntdb/error.h>
+#include <cxxtools/regex.h>
 
 #include "log.h"
 #include "nethistory.h"
@@ -62,6 +63,16 @@ addColonMac(const std::string &mac)
     return macWithColons;
 }
 
+//Internal method:check whether the mac address has right format
+bool
+checkMac (const std::string &mac_address)
+{
+    cxxtools::Regex regex("^[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]$");
+    if(!regex.match(mac_address))
+        return false;
+    else
+        return true;
+}
 //-----------------------------------------------------------
 
 void
@@ -129,6 +140,9 @@ bool
 NetHistory::
 check_command() const
 {
+
+    // TODO change hardcoded constants to DEFINE
+    // in future refinement
     if  ( ( _command == 'a') || ( _command == 'm') || ( _command == 'e') )
         return true;
     else
@@ -308,22 +322,25 @@ void
 NetHistory::
 setMac(const std::string& mac_address)
 {
-    std::string macc(mac_address);
-    utils::db::removeColonMac(macc);
-
-    if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
-        && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if (checkMac(mac_address))
     {
-        switch (this->getState()){
-            case ObjectState::OS_SELECTED:
-                this->setState(ObjectState::OS_UPDATED);
-            case ObjectState::OS_UPDATED:
-            case ObjectState::OS_NEW:
-                 _mac = macc;
-                 break;
-            default:
-                // TODO log this should never happen
-                break;
+        std::string macc(mac_address);
+        utils::db::removeColonMac(macc);
+    
+        if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
+            && ( this->getState() != ObjectState::OS_INSERTED ) )
+        {
+            switch (this->getState()){
+                case ObjectState::OS_SELECTED:
+                    this->setState(ObjectState::OS_UPDATED);
+                case ObjectState::OS_UPDATED:
+                case ObjectState::OS_NEW:
+                     _mac = macc;
+                     break;
+                default:
+                    // TODO log this should never happen
+                    break;
+            }
         }
     }
 }
