@@ -35,16 +35,17 @@ namespace db {
 
 time_t convertToCTime(const tntdb::Datetime &datetime)
 {
-    struct tm* timeinfo = new tm();
+    struct tm timeinfo;
 
-    timeinfo->tm_year = datetime.getYear()-1900;
-    timeinfo->tm_mon  = datetime.getMonth()-1;
-    timeinfo->tm_mday = datetime.getDay();
-    timeinfo->tm_hour = datetime.getHour();
-    timeinfo->tm_min  = datetime.getMinute(); 
-    timeinfo->tm_sec  = datetime.getSecond();
+    timeinfo.tm_year = datetime.getYear()-1900;
+    timeinfo.tm_mon  = datetime.getMonth()-1;
+    timeinfo.tm_mday = datetime.getDay();
+    timeinfo.tm_hour = datetime.getHour();
+    timeinfo.tm_min  = datetime.getMinute(); 
+    timeinfo.tm_sec  = datetime.getSecond();
+    timeinfo.tm_isdst = true;
     //TODO return +1 hour
-    return mktime ( timeinfo );
+    return mktime ( &timeinfo );
 }
 
 DataBaseTimeObject::
