@@ -44,7 +44,7 @@ time_t convertToCTime(const tntdb::Datetime &datetime)
     timeinfo.tm_min  = datetime.getMinute(); 
     timeinfo.tm_sec  = datetime.getSecond();
     timeinfo.tm_isdst = true;
-    //TODO return +1 hour
+    
     return mktime ( &timeinfo );
 }
 
