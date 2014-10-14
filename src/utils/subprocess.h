@@ -140,13 +140,13 @@ class SubProcess {
         //! \brief no hanging varint of /see wait
         int poll() {  return wait(true); }
 
-        //! \brief kill the subprocess with defined signal
+        //! \brief kill the subprocess with defined signal, default SIGTERM/15
         //
         //  @return see kill(2)
         //  \todo - to throw an exception (signal != 0)?
-        int kill(int signal=9);
+        int kill(int signal=SIGTERM);
 
-        //! \brief terminate the subprocess with SIGTERM
+        //! \brief terminate the subprocess with SIGKILL/9
         //
         //  @return \see kill
         int terminate();

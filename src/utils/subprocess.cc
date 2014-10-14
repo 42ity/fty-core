@@ -149,7 +149,7 @@ int SubProcess::kill(int signal) {
 }
 
 int SubProcess::terminate() {
-    return kill(15);
+    return kill(SIGKILL);
 }
 
 ProcessQue::~ProcessQue() {
