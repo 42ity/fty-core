@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
+#include <exception>
 #include <czmq.h>
 #include <cxxtools/posix/fork.h>
 #include <cxxtools/posix/exec.h>
+#include <tntdb/error.h>
 
 #include "cidr.h"
 #include "persistence.h"
@@ -47,7 +49,14 @@ void persistence_actor(zsock_t *pipe, void *args) {
             netdisc_msg_prefixlen (msg),
             netdisc_msg_mac (msg));
 
-        bool b = utils::db::process_message (url, *msg);
+        try {
+            bool b = utils::db::process_message (url, *msg);
+        } catch (tntdb::Error &e) {
+            fprintf (stderr, "%s", e.what());
+            fprintf (stderr, "%To resolve this problem, please see README file\n");
+            log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
+            break;
+        }
     }
     
     zpoller_destroy(&poller);
