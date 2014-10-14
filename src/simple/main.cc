@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
-#include "cidr.h"
 #include <czmq.h>
+#include <cxxtools/posix/fork.h>
+#include <cxxtools/posix/exec.h>
 
+#include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
 #include "dbinit.h"
@@ -15,28 +17,9 @@
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
 
-
-// ugly, but this is not production code
-int irq = 0;
-void interrupt (int signum) {
-    irq = 1;
-}
-
-int persistence_irq = 0;
-void persistence_interrupt (int signum) {
-    persistence_irq = 1;
-}
-
-int netmon_irq = 0;
-void netmon_interrupt (int signum) {
-    netmon_irq = 1;
-}
-
 void persistence_actor(zsock_t *pipe, void *args) {
 
-//    zsys_catch_interrupts ();
-//    zsys_handler_set (&persistence_interrupt);
-    zsock_t * insock = zsock_new_router(DB_SOCK);
+   zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
     zpoller_t *poller = zpoller_new(insock, pipe, NULL);
@@ -45,11 +28,8 @@ void persistence_actor(zsock_t *pipe, void *args) {
     zsock_signal(pipe, 0);
 
     while(!zpoller_terminated(poller)) {
-//        if (persistence_irq == 1)
-//            break;
-
         zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
-        if (which == pipe || which == NULL) {
+        if (which == pipe) {
             break;
         }
 
@@ -67,20 +47,16 @@ void persistence_actor(zsock_t *pipe, void *args) {
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
-    printf ("persistence finished\n");
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
-
-//    zsys_catch_interrupts ();
-//    zsys_handler_set (&netmon_interrupt);
 
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
     
     zsock_t * dbsock = zsock_new_dealer (DB_SOCK);
     assert(dbsock);
-    zpoller_t *poller = zpoller_new (pipe, NULL);
+    zpoller_t *poller = zpoller_new (dbsock, pipe, NULL);
     assert(poller);
 
     zsock_signal(pipe, 0);
@@ -91,10 +67,8 @@ void netmon_actor(zsock_t *pipe, void *args) {
     // sleep for (800, 2000) ms
     std::vector<std::tuple<std::string, byte, std::string, byte, std::string>> stored;         
     while(!zpoller_terminated (poller)) {        
-//        if (irq == 1)
-//            break;
-        zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
-        if (which == pipe || which == NULL) {
+       zsock_t *which = (zsock_t *) zpoller_wait(poller, randof(1200) + 800);
+        if (which == pipe) {
                 break;
         }
 
@@ -136,33 +110,37 @@ void netmon_actor(zsock_t *pipe, void *args) {
             for (int i = 0; i < which; ++i) { ++it; }             
             stored.erase (it);
         }
-        zclock_sleep (randof(1200) + 800);
     }
 
     zsock_destroy(&dbsock);
-    printf ("netmon finished\n");
 }
 
 int main(int argc, char **argv) {
 
     srandom ((unsigned) time (NULL));
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
-
-    zactor_t *db = zactor_new (persistence_actor, NULL);
-    assert(db);
-
     bool test_mode = false;
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
     }
 
+    zactor_t *db = zactor_new (persistence_actor, NULL);
+    assert(db);
+
     zactor_t *netmon = NULL;
+
     if (test_mode) {
         netmon = zactor_new (netmon_actor, NULL);
         assert(netmon);
+    } else {       
+        cxxtools::posix::Fork process;
+        if (process.child()) {
+            // we are in the child process here.
+            cxxtools::posix::Exec e("./netmon"); // fine for the moment
+            // normally the child either exits or execs an other process
+            e.exec();
+        }
     }
-
+    
     zpoller_t *poller = zpoller_new(netmon, db, NULL);
     assert(poller);
 
@@ -170,21 +148,11 @@ int main(int argc, char **argv) {
         zsock_t *which = (zsock_t *)zpoller_wait (poller, -1);
     }
     
-    // temporary
-    /*
-    while (1) {        
-        if (irq == 1) {
-            printf ("Shutting down...\n");
-            break;
-        }
-    }
-    */
-    zsock_signal (netmon, 0);
-    zsock_signal (db, 0);
     if (test_mode) {    
         zactor_destroy(&netmon);
     }
     zactor_destroy(&db);
+
     return EXIT_SUCCESS;
 }
 
