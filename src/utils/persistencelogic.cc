@@ -34,6 +34,7 @@ References: BIOS-397
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
+#include "log.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -92,6 +93,11 @@ int nethistory_cmd_id (char cmd) {
 bool
 process_message(const std::string& url, const netdisc_msg_t& msg)
 {
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+    log_info ("%s", "process_message() start\n");
+
     bool result = false;
 
     // cast away the const - zproto generated methods dont' have const
@@ -123,12 +129,9 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
             if (id_unique == -1) 
             { 
                 rows_affected = nethistory.dbsave();
-            
-                if (rows_affected == 1)     // if checks didn't pass, then nothing would be inserted
-                    result = true;
+                assert (rows_affected == 1);            
             }
-            else
-                result = true;
+            result = true;
             break;
         }
         case NETDISC_MSG_AUTO_DEL:
@@ -146,11 +149,9 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         {
             if (id_unique == -1) { 
                 rows_affected = nethistory.dbsave();
-                if (rows_affected == 1)
-                    result = true;
+                assert (rows_affected == 1);
             }
-            else
-                result = true;
+            result = true;
             break;
         }
         case NETDISC_MSG_MAN_DEL:
@@ -166,11 +167,9 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         {
             if (id_unique == -1) { 
                 rows_affected = nethistory.dbsave();
-                if (rows_affected == 1)
-                    result = true;
+                assert (rows_affected == 1);
             }
-            else
-                result = true;
+            result = true;
             break;
 
         }
@@ -186,10 +185,19 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         }
         default:
         {
-            result = false;
+        // Example: Let's suppose we are listening on a ROUTER socket from a range of producers.
+        //          Someone sends us a message from older protocol that has been dropped.
+        //          Are we going to return 'false', that usually means db fatal error, and
+        //          make the caller crash/quit? OR does it make more sense to say, OK, message
+        //          has been processed and we'll log a warning about unexpected message type
+            result = true;        
+            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
             break;
         }
-    }       
+        
+    }
+    log_info ("%s", "process_message() end\n");
+    log_close ();       
     return result;
 };
 
