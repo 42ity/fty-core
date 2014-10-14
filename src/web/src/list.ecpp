@@ -1,0 +1,13 @@
+<%pre>
+#include <cxxtools/split.h>
+</%pre>
+<%cpp>
+    // Check URL validity
+    std::string id;
+
+    // Prepare the reply
+</%cpp>
+{
+    "<$ request.getArg("type") $>": [
+    ]
+}

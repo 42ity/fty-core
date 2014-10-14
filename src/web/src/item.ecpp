@@ -1,0 +1,27 @@
+<%pre>
+#include <cxxtools/split.h>
+</%pre>
+<%cpp>
+    // Check URL validity
+    std::string id;
+    if((id = request.getArg("id")).empty()) {
+</%cpp>
+{ "error":"invalid_url" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+    if(false) {
+</%cpp>
+{ "error":"item_not_found" }
+<%cpp>
+        return HTTP_NOT_FOUND;
+    }
+
+    // Prepare the reply
+</%cpp>
+{
+    "id":"<$ id $>",
+    "name":""
+    "type":"<$ request.getArg("type") $>"
+}
