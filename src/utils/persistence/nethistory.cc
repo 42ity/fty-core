@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file NetHistory.cc
+/*! \file nethistory.cc
     \brief Class for manipulating with database table t_bios_net_history
 
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -23,19 +23,57 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
 #include <string>
 #include <stdlib.h>
+#include <algorithm>
 
 #include <tntdb/result.h>
 #include <tntdb/row.h>
 #include <tntdb/value.h>
 #include <tntdb/statement.h>
 #include <tntdb/error.h>
+#include <cxxtools/regex.h>
 
 #include "log.h"
 #include "nethistory.h"
+
  
 namespace utils {
 
 namespace db {
+
+
+//-----------------------------------------------------------
+
+//Internal function for remove colons from mac address
+void
+_removeColonMac(std::string &newmac)
+{
+    newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
+}
+
+//Internal function for add colons to mac address
+const std::string
+_addColonMac(const std::string &mac)
+{
+    std::string macWithColons(mac);
+    macWithColons.insert(2,1,':');
+    macWithColons.insert(5,1,':');
+    macWithColons.insert(8,1,':');
+    macWithColons.insert(11,1,':');
+    macWithColons.insert(14,1,':');
+    return macWithColons;
+}
+
+//Internal method:check whether the mac address has right format
+bool
+checkMac (const std::string &mac_address)
+{
+    cxxtools::Regex regex("^[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]$");
+    if(!regex.match(mac_address))
+        return false;
+    else
+        return true;
+}
+//-----------------------------------------------------------
 
 void
 NetHistory::
@@ -66,16 +104,25 @@ NetHistory::
 toString() const
 {
     return DataBaseTimeObject::toString()         + ";" +
-             "mac="       + _mac                  + ";" +
+             "mac="       + this->getMac()        + ";" +
              "address="   + _address.toString()   + ";" +
              "command="   + _command              + ";" +
              "name="      + _name                 ; 
 }
-
+  
 NetHistory::
 ~NetHistory()
 {
-    //TODO
+}
+
+const std::string 
+NetHistory::
+getMac() const
+{
+    if (_mac != "")    
+        return utils::db::_addColonMac(_mac);
+    else
+        return "";
 }
 
 bool
@@ -93,6 +140,9 @@ bool
 NetHistory::
 check_command() const
 {
+
+    // TODO change hardcoded constants to DEFINE
+    // in future refinement
     if  ( ( _command == 'a') || ( _command == 'm') || ( _command == 'e') )
         return true;
     else
@@ -156,7 +206,8 @@ unsigned int
 NetHistory::
 db_update()
 {
-    
+    // Now we are not going to update existing records. 
+    // Don't update the timpestamp now.
     tntdb::Connection conn;  
     conn = tntdb::connectCached(this->getUrl());
 
@@ -216,18 +267,16 @@ selectById(int id)
         _address = _address.network(); // put in network format, to be sure it is in network format
 
         //mac
-        row[2].get(_mac);
+        row[2].getString(_mac);
 
         //command
         row[3].get(_command);
 
         //timestamp
-        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. 
-                                    // So need to define initial value.
-                                    // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[4].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[4].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -252,7 +301,8 @@ void
 NetHistory::
 setName(const std::string& name)
 {
-    if ( ( _name != name ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if ( ( _name != name ) && ( this->getState() != ObjectState::OS_DELETED )
+         && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -272,18 +322,25 @@ void
 NetHistory::
 setMac(const std::string& mac_address)
 {
-    if ( ( _mac != mac_address ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if (checkMac(mac_address))
     {
-        switch (this->getState()){
-            case ObjectState::OS_SELECTED:
-                this->setState(ObjectState::OS_UPDATED);
-            case ObjectState::OS_UPDATED:
-            case ObjectState::OS_NEW:
-                 _mac = mac_address;
-                 break;
-            default:
-                // TODO log this should never happen
-                break;
+        std::string macc(mac_address);
+        utils::db::_removeColonMac(macc);
+    
+        if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
+            && ( this->getState() != ObjectState::OS_INSERTED ) )
+        {
+            switch (this->getState()){
+                case ObjectState::OS_SELECTED:
+                    this->setState(ObjectState::OS_UPDATED);
+                case ObjectState::OS_UPDATED:
+                case ObjectState::OS_NEW:
+                     _mac = macc;
+                     break;
+                default:
+                    // TODO log this should never happen
+                    break;
+            }
         }
     }
 }
@@ -293,8 +350,10 @@ void
 NetHistory::
 setAddress(const CIDRAddress& cidr_address)
 {
-    CIDRAddress newaddr = cidr_address.network();  // We are not sure, if the passed address is in a network format
-    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    // We are not sure, if the passed address is in a network format, so convert it now
+    CIDRAddress newaddr = cidr_address.network();  
+    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) 
+        && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -314,7 +373,8 @@ void
 NetHistory::
 setCommand(char command)
 {
-    if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) && ( this->getState() != ObjectState::OS_INSERTED ) )
+    if ( (_command != command) && (this->getState() != ObjectState::OS_DELETED) 
+        && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
@@ -350,21 +410,19 @@ db_select_timestamp()
      */
     int n;
     try{
-        tntdb::Row row = st.setInt("id", this->getId()).selectRow();
+        tntdb::Value value = st.setInt("id", this->getId()).selectValue();
           
-        
         //timestamp
-        time_t tmp_t = time(NULL);  // TODO if get-method got NULL, than it doesn't modify variable. So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[0].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = value.get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
             //log THIS SHOULD NEVER HAPPEN
         }
-        
+
         //state
         this->setState(ObjectState::OS_SELECTED);
         
@@ -375,13 +433,31 @@ db_select_timestamp()
     }
     return n;
 }
+int
+NetHistory::
+checkUnique() const
+{
+    if ( _command == 'a' )
+        return this->checkUniqueAuto();
+    else if ( _command == 'm' )
+        return this->checkUniqueManual();
+    else if ( _command == 'e' )
+        return this->checkUniqueExclude();
+    return -1;
+}
 
 
 int 
 NetHistory::
-checkUnique() const
+checkUniqueExclude() const
 {
-    // TODO need to add unique index in DB ?
+    return this->checkUniqueManual();
+}
+
+int 
+NetHistory::
+checkUniqueManual() const
+{
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl());
     
@@ -392,10 +468,45 @@ checkUnique() const
         " v_bios_net_history v"
         " where v.command = :command and v.ip = :ip and v.mask = :mask"
         );
-
+    //It must be called only for commands 'e' and  'm'
     tntdb::Result result = st.setChar("command", _command).
-                              setString("ip", _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              setString("ip", _address.
+                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
+                              select();
+    if (result.empty()) {
+        return -1;
+    }        
+    tntdb::Row row = result.getRow(0);
+    int ret_val = -1;
+    row[0].get(ret_val);
+    return ret_val;
+}
+
+
+int 
+NetHistory::
+checkUniqueAuto() const
+{
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl());
+    
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " id"
+        " from"
+        " v_bios_net_history v"
+        " where v.command = :command and v.ip = :ip and v.mask = :mask"
+        "       and  v.mac = conv(:mac, 16, 10) and v.name = :name"
+        );
+
+    //It must be called only for commands 'a'
+    tntdb::Result result = st.setChar("command", _command).
+                              setString("ip", _address.
+                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              setInt("mask",_address.prefix()).
+                              setString("mac",_mac).
+                              setString("name",_name).
                               select();
     if (result.empty()) {
         return -1;

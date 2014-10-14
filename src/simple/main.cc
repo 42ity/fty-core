@@ -3,13 +3,16 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
+#include <exception>
 #include <czmq.h>
+#include <tntdb/error.h>
 
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
 #include "dbinit.h"
 #include "defs.h"
+#include "log.h"
 #include "netdisc_msg.h"
 #include "subprocess.h"
 
@@ -21,7 +24,12 @@ static utils::SubProcess netmon_proc{args};
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
-   zsock_t * insock = zsock_new_router(DB_SOCK);
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+    log_info ("%s", "persistence_actor() start\n");
+
+    zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
     zpoller_t *poller = zpoller_new(insock, pipe, NULL);
@@ -36,22 +44,35 @@ void persistence_actor(zsock_t *pipe, void *args) {
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        // debug TODO switch to log 
-        printf ("debug::\n\tname\t=\t%s\n\tipver\t=\t%d\n\tipaddr\t=\t%s\n\tprefixlen\t=\t%d\n\tmac\t=\t%s\n",            
+        log_debug ("name='%s';ipver='%d';ipaddr='%s';prefixlen='%d';mac='%s'\n",            
             netdisc_msg_name (msg),
             netdisc_msg_ipver (msg),
             netdisc_msg_ipaddr (msg),
             netdisc_msg_prefixlen (msg),
             netdisc_msg_mac (msg));
 
-        bool b = utils::db::process_message (url, *msg);
+        try {
+            bool b = utils::db::process_message (url, *msg);
+        } catch (tntdb::Error &e) {
+            fprintf (stderr, "%s", e.what());
+            fprintf (stderr, "%To resolve this problem, please see README file\n");
+            log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
+            break;
+        }
     }
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
+    log_info ("%s", "persistence_actor end\n");
+    log_close();
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
+
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+    log_info ("%s", "netmon_actor() start\n");
 
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
@@ -115,6 +136,9 @@ void netmon_actor(zsock_t *pipe, void *args) {
     }
 
     zsock_destroy(&dbsock);
+    log_info ("%s", "netmon_actor end\n");
+    log_close();
+
 }
 
 void term_netmon(void) {
@@ -125,11 +149,16 @@ void term_netmon(void) {
 
 int main(int argc, char **argv) {
 
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
 
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
+        log_info ("%s", "Test Mode: Running mocked netmon_actor instead of netmon.\n");
     }
 
     atexit(term_netmon);
@@ -161,7 +190,8 @@ int main(int argc, char **argv) {
     }
     
     if (test_mode) {    
-        zactor_destroy(&netmon);
+        zactor_destroy(&netmon);        
+        log_info ("%s", "destroying netmon_actor\n"); 
     }
     else {
         // normally kill() would be enough, but netmon can't cope
@@ -169,7 +199,8 @@ int main(int argc, char **argv) {
         netmon_proc.terminate();
     }
     zactor_destroy(&db);
-
+    log_info ("%s", "destroying persistence_actor\n"); 
+    log_close ();
     return EXIT_SUCCESS;
 }
 

@@ -24,15 +24,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
  
-#include <string>
+#include <string.h>
+
 #include "databasetimeobject.h"
 #include "log.h"
 #include <iomanip>
 #include <ctime>
-
 namespace utils {
 
 namespace db {
+
+time_t convertToCTime(const tntdb::Datetime &datetime)
+{
+    struct tm timeinfo;
+    memset(&timeinfo,0,sizeof(tm));
+
+    timeinfo.tm_year = datetime.getYear()-1900;
+    timeinfo.tm_mon  = datetime.getMonth()-1;
+    timeinfo.tm_mday = datetime.getDay();
+    timeinfo.tm_hour = datetime.getHour();
+    timeinfo.tm_min  = datetime.getMinute(); 
+    timeinfo.tm_sec  = datetime.getSecond();
+    // TODO check winter time
+    timeinfo.tm_isdst = -1;
+    
+    return mktime ( &timeinfo );
+}
 
 DataBaseTimeObject::
 DataBaseTimeObject(const std::string &url)

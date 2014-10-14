@@ -200,12 +200,10 @@ selectLastRecord(int clientId, int discoveredDeviceId)
         this->setId(tmp);
     
         //timestamp
-        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[1].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[1].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -253,15 +251,13 @@ db_select_timestamp()
      */
     int n;
     try{
-        tntdb::Row row = st.setInt("id", this->getId()).selectRow();
+        tntdb::Value value = st.setInt("id", this->getId()).selectValue();
           
         //timestamp
-        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
-                                    //So need to define initial value.
-                                    // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[0].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = value.get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -281,7 +277,9 @@ db_select_timestamp()
 
 // if any changes would be made here check if the same need to do in
 // ClientInfo::selectLastRecord(int clientId, int discoveredDeviceId)
-unsigned int ClientInfo::selectLastRecord(std::string clientName, int discoveredDeviceId)
+unsigned int 
+ClientInfo::
+selectLastRecord(std::string clientName, int discoveredDeviceId)
 {
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl()); 
@@ -310,12 +308,10 @@ unsigned int ClientInfo::selectLastRecord(std::string clientName, int discovered
         this->setId(tmp);
     
         //timestamp
-        time_t tmp_t = time(NULL);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[1].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[1].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -375,11 +371,10 @@ void
 ClientInfo::
 setClientId(int clientId)
 {
-    if ( (_clientId != clientId) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_clientId != clientId) && (this->getState() != ObjectState::OS_DELETED)&&  (this->getState() != ObjectState::OS_INSERTED) )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
                 if (this->selectClientName(clientId))
                     _clientId = clientId;
@@ -406,11 +401,10 @@ void
 ClientInfo::
 setBlobData(std::string blobData)
 {
-    if ( (_blobData != blobData) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_blobData != blobData) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
@@ -428,11 +422,10 @@ void
 ClientInfo::
 setDeviceDiscoveredId(int discoveredDeviceId)
 {
-    if ( (_discoveredDeviceId != discoveredDeviceId) && (this->getState() != ObjectState::OS_DELETED) )
+    if ( (_discoveredDeviceId != discoveredDeviceId) && (this->getState() != ObjectState::OS_DELETED) && (this->getState() != ObjectState::OS_INSERTED)  )
     {
         switch (this->getState()){
             case ObjectState::OS_SELECTED:
-            case ObjectState::OS_INSERTED:
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
@@ -482,12 +475,10 @@ selectById(int id)
         tntdb::Row row = st.setInt("id", id).selectRow();
           
         //timestamp
-        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[0].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[0].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
