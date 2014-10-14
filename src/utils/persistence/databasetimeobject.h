@@ -28,15 +28,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "databaseobject.h"
 #include <string>
-
+#include <tntdb/datetime.h>
 namespace utils {
 
 namespace db { 
 
 /**
+ * \brief Helper for transformation from tntdb::Datetime to time_t
+ */
+time_t convertToCTime(const tntdb::Datetime &datetime);
+
+/**
  * \brief Represents general methods for manipulating database objects that have timestamp column.
  */
-
 class DataBaseTimeObject: public DataBaseObject
 {
     public:

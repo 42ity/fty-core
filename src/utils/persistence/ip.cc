@@ -153,12 +153,10 @@ selectById(int id)
         row[1].get(_deviceDiscoveredId);
 
         //timestamp
-        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[1].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[1].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(tmp_t);
+            this->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -220,12 +218,10 @@ Ip::getLastInfo(std::string url, std::string ip)
         newIp->setDeviceDiscoveredId(tmp_i);
     
         //timestamp
-        time_t tmp_t = time(nullptr);  // if get-method got NULL, than it doesn't modify variable. 
-                                       // So need to define initial value.
-                                       // but it should never happen, while this column must be NOT NULL
-        bool isNotNull = row[2].get(tmp_t);
+        tntdb::Datetime mydatetime;
+        bool isNotNull = row[2].get(mydatetime);
         if (isNotNull)
-            newIp->setTimestamp(tmp_t);
+            newIp->setTimestamp(utils::db::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -258,21 +254,50 @@ void
 Ip::
 setIp(std::string ip)
 {
-    _ip = CIDRAddress(ip);
+    CIDRAddress newaddress(ip);
+    this->setIp(newaddress);
 }
 
 void 
 Ip::
 setIp(CIDRAddress ip)
 {
-    _ip = ip;
+   if ( (_ip != ip) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _ip = ip;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 void 
 Ip::
 setDeviceDiscoveredId(int deviceDiscoveredId)
 {
-    _deviceDiscoveredId = deviceDiscoveredId;
+    if ( (_deviceDiscoveredId != deviceDiscoveredId) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
+    {
+        switch (this->getState()){
+            case ObjectState::OS_SELECTED:
+                this->setState(ObjectState::OS_UPDATED);
+            case ObjectState::OS_UPDATED:
+            case ObjectState::OS_NEW:
+                _deviceDiscoveredId = deviceDiscoveredId;
+                break;
+            default:
+                // TODO log this should never happen
+                break;
+        }
+    }
+    //else do nothing
 }
 
 Ip::
