@@ -148,6 +148,8 @@ class SubProcess {
 
         //! \brief terminate the subprocess with SIGKILL/9
         //
+        //  This calls wait() to ensure we are not creating zombies
+        //
         //  @return \see kill
         int terminate();
     
