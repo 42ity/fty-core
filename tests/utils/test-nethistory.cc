@@ -39,21 +39,25 @@ TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
     utils::db::NetHistory dbnethistory(url);
     std::string newname = "insert_delete";
     utils::CIDRAddress newaddress("1.1.1.1",8);
+    std::string newmac = "12:34:56:78:91:11";
     dbnethistory.setName(newname);
     dbnethistory.setAddress(newaddress);
-    dbnethistory.setMac("123456789111");
+    dbnethistory.setMac(newmac);
+    REQUIRE( dbnethistory.getMac() == newmac );
     dbnethistory.setCommand('a');
+
     int n = dbnethistory.dbsave();
-    std::string expected;
+
     if ( n == 1 )
     {
         REQUIRE(dbnethistory.getId() > 0 );
         REQUIRE(utils::db::objectStatetoString(dbnethistory.getState()) == osinserted);
-        expected = dbnethistory.toString();
+        std::string expected = dbnethistory.toString();
         n = dbnethistory.dbsave();
         REQUIRE( n == 0 );
         REQUIRE( dbnethistory.toString() == expected );
         
+        int newidd = dbnethistory.getId();   // save id for further control 
         n = dbnethistory.dbdelete();
         if ( n == 0 )   // unreal situation
             FAIL("nothing was deleted"); 
@@ -69,14 +73,40 @@ TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
             INFO(expected);
             REQUIRE( n == 0 );
             REQUIRE(dbnethistory.toString() == expected);
-            //check if there is really row was deleted
+            
+            utils::db::NetHistory newnh(url);
+            n = newnh.selectById(newidd);
+            REQUIRE( n == 0 );  //row must be deleted from the db
         }
     }
     else if ( n > 1)     // unreal situation
         FAIL("inserted more than one row");
     else if ( n == 0 )   // this could happen if there are some problems with db
         FAIL("nothing was inserted");
+}
 
-    //TODO check unreal situation
+
+
+TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
+    
+    utils::db::NetHistory dbnethistory(url);
+    std::string newname = "selectById";
+    utils::CIDRAddress newaddress("1.2.3.4",8);
+    std::string newmac = "11:22:33:AA:91:11";
+    dbnethistory.setName(newname);
+    dbnethistory.setAddress(newaddress);
+    dbnethistory.setMac(newmac);
+    dbnethistory.setCommand('a');
+
+    int n = dbnethistory.dbsave();
+    REQUIRE( n == 1 );
+    int newidd = dbnethistory.getId();   // save id for further control
+
+    utils::db::NetHistory newnh(url);
+    n = newnh.selectById(newidd);
+    INFO(newnh.toString());
+    REQUIRE( n == 1 );
+    n = newnh.dbdelete();
+    REQUIRE( n == 1);
 }
 
