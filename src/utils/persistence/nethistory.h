@@ -131,15 +131,12 @@ class NetHistory : public DataBaseTimeObject
         const CIDRAddress& getAddress() const { return _address; };
     
         unsigned int selectById(int id);
-
+        
         /**
-         * \brief Check whether the record is unique (identified by (ipaddr, prefixlen, command) triplet).
-         * 
-         * \return If record is not unique, return the first encountered row id; otherwise return -1
-        */
+         * \brief Check for the existing duplicate rows
+         */
         int checkUnique() const;
-        
-        
+
     protected:
        
         bool check_command() const;
@@ -182,6 +179,25 @@ class NetHistory : public DataBaseTimeObject
         unsigned int db_select_timestamp();
 
     private:
+        /**
+         * \brief Check whether the record is unique (identified by (ipaddr, prefixlen, mac,name) for command 'a').
+         * 
+         * \return If record is not unique, return the first encountered row id; otherwise return -1
+        */
+        int checkUniqueAuto() const;
+        
+        /**
+         * \brief Check whether the record is unique (identified by (ipaddr, prefixlen) for commands 'm' and 'e').
+         * 
+         * \return If record is not unique, return the first encountered row id; otherwise return -1
+        */
+        int checkUniqueManual() const;
+ 
+        /**
+         * \brief Now it is the same as CheckUniqueManual
+        */
+        int checkUniqueExclude() const;
+
 
         std::string _mac;
 

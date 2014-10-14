@@ -110,22 +110,24 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
 
     utils::db::NetHistory nethistory(url);
     nethistory.setAddress(address);
-    nethistory.setCommand(command);           
+    nethistory.setCommand(command);      
+    nethistory.setName(name);
+    nethistory.setMac(mac);
+     
     int id_unique = nethistory.checkUnique();
 
     switch (msg_id) {
 
         case NETDISC_MSG_AUTO_ADD:
-        {   
-            // if auto_add tries to add second time the same network, then it is a fatal error
-            assert (id_unique == -1);
+        {  
+            if (id_unique == -1) 
+            { 
+                rows_affected = nethistory.dbsave();
             
-            nethistory.setName(name);
-            nethistory.setMac(mac);
-
-            rows_affected = nethistory.dbsave();
-            
-            if (rows_affected == 1)     // if checks didn't pass, then nothing would be inserted
+                if (rows_affected == 1)     // if checks didn't pass, then nothing would be inserted
+                    result = true;
+            }
+            else
                 result = true;
             break;
         }

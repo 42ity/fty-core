@@ -433,13 +433,31 @@ db_select_timestamp()
     }
     return n;
 }
+int
+NetHistory::
+checkUnique() const
+{
+    if ( _command == 'a' )
+        return this->checkUniqueAuto();
+    else if ( _command == 'm' )
+        return this->checkUniqueManual();
+    else if ( _command == 'e' )
+        return this->checkUniqueExclude();
+    return -1;
+}
 
 
 int 
 NetHistory::
-checkUnique() const
+checkUniqueExclude() const
 {
-    // TODO need to add unique index in DB ?
+    return this->checkUniqueManual();
+}
+
+int 
+NetHistory::
+checkUniqueManual() const
+{
     tntdb::Connection conn; 
     conn = tntdb::connectCached(this->getUrl());
     
@@ -450,11 +468,45 @@ checkUnique() const
         " v_bios_net_history v"
         " where v.command = :command and v.ip = :ip and v.mask = :mask"
         );
-
+    //It must be called only for commands 'e' and  'm'
     tntdb::Result result = st.setChar("command", _command).
                               setString("ip", _address.
-                                toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
+                              select();
+    if (result.empty()) {
+        return -1;
+    }        
+    tntdb::Row row = result.getRow(0);
+    int ret_val = -1;
+    row[0].get(ret_val);
+    return ret_val;
+}
+
+
+int 
+NetHistory::
+checkUniqueAuto() const
+{
+    tntdb::Connection conn; 
+    conn = tntdb::connectCached(this->getUrl());
+    
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " id"
+        " from"
+        " v_bios_net_history v"
+        " where v.command = :command and v.ip = :ip and v.mask = :mask"
+        "       and  v.mac = conv(:mac, 16, 10) and v.name = :name"
+        );
+
+    //It must be called only for commands 'a'
+    tntdb::Result result = st.setChar("command", _command).
+                              setString("ip", _address.
+                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              setInt("mask",_address.prefix()).
+                              setString("mac",_mac).
+                              setString("name",_name).
                               select();
     if (result.empty()) {
         return -1;
