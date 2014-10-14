@@ -482,6 +482,12 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
+    if (isatty(STDERR_FILENO)) {
+        fprintf(stderr, "%s", "WARNING: netmon does communicate through zeromq bus, so does not prints anything to stdout\n");
+        fprintf(stderr, "%s", "         Please start simple, which will autospawn netmon internally\n");
+        fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented, use kill -9 for now\n");
+    }
+
 //    zsys_catch_interrupts ();
 //    zsys_handler_set (&interrupt);
 
