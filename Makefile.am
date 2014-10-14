@@ -271,7 +271,7 @@ simple_SOURCES = 			src/simple/main.cc \
 simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
 #simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} -lcxxtools -ltntdb
 simple_CPPFLAGS =			-I $(top_srcdir)/tools/ -I $(top_builddir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple/
-simple_LDADD =				libpriv-db.la libpriv-cidr.la
+simple_LDADD =				libpriv-db.la libpriv-cidr.la libpriv-log.la
 
 bin_PROGRAMS += 			driver-nmap
 
