@@ -4,8 +4,6 @@
 #include <algorithm>
 #include <vector>
 #include <czmq.h>
-#include <cxxtools/posix/fork.h>
-#include <cxxtools/posix/exec.h>
 
 #include "cidr.h"
 #include "persistence.h"
@@ -13,9 +11,13 @@
 #include "dbinit.h"
 #include "defs.h"
 #include "netdisc_msg.h"
+#include "subprocess.h"
 
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
+
+static const utils::Argv args{"./netmon"};
+static utils::SubProcess netmon_proc{args};
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
@@ -115,13 +117,22 @@ void netmon_actor(zsock_t *pipe, void *args) {
     zsock_destroy(&dbsock);
 }
 
+void term_netmon(void) {
+    if (netmon_proc.isRunning()) {
+        netmon_proc.terminate();
+    }
+}
+
 int main(int argc, char **argv) {
 
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
+
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
     }
+
+    atexit(term_netmon);
 
     zactor_t *db = zactor_new (persistence_actor, NULL);
     assert(db);
@@ -131,13 +142,14 @@ int main(int argc, char **argv) {
     if (test_mode) {
         netmon = zactor_new (netmon_actor, NULL);
         assert(netmon);
-    } else {       
-        cxxtools::posix::Fork process;
-        if (process.child()) {
-            // we are in the child process here.
-            cxxtools::posix::Exec e("./netmon"); // fine for the moment
-            // normally the child either exits or execs an other process
-            e.exec();
+    } else {
+        netmon_proc.run();
+        zclock_sleep(100);  //process handling is tricky - this ensures child has been started
+
+        netmon_proc.poll();
+        if (!netmon_proc.isRunning()) {
+            fprintf(stderr, "ERROR: netmon does not run, exitcode: %d\n", netmon_proc.getReturnCode());
+            return netmon_proc.getReturnCode();
         }
     }
     
@@ -150,6 +162,11 @@ int main(int argc, char **argv) {
     
     if (test_mode) {    
         zactor_destroy(&netmon);
+    }
+    else {
+        // normally kill() would be enough, but netmon can't cope
+        // with them atm
+        netmon_proc.terminate();
     }
     zactor_destroy(&db);
 
