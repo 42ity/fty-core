@@ -1,0 +1,35 @@
+<%pre>
+#include "tokens.h"
+#include <tnt/httpmessage.h>
+#include <tnt/httpheader.h>
+</%pre>
+<%args>
+std::string access_token="";
+</%args>
+<%cpp>
+if(request.hasHeader(tnt::httpheader::authorization)) {
+	access_token = request.getHeader(tnt::httpheader::authorization);
+	if(access_token.compare(0,7,"Bearer ")) {
+		access_token = "";
+	} else {
+		access_token = access_token.substr(7);
+	}
+}
+if(access_token.empty()) {
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+</%cpp>
+<html><body><h1>Not authorized, <a href="/api/1.0/token">get token</a> first!</h1></body></html>
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+} else if(!tokens::get_instance()->verify_token(access_token)) {
+reply.setContentType("application/json;charset=UTF-8");
+reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+
+reply.setHeader(tnt::httpheader::cacheControl, "no-store");
+reply.setHeader(tnt::httpheader::pragma, "no-cache");
+</%cpp>
+{
+    "error":"invalid_token"
+}
+% return HTTP_UNAUTHORIZED;
+% }

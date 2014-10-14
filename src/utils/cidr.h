@@ -201,27 +201,27 @@ public:
    * Addresses are compared without prefix consideration (i.e. 10.0.0.0/8 > 10.0.0.0/32
    * returns false because here they are equal).
    */
-  bool operator>(const CIDRAddress &a2);
+  bool operator>(const CIDRAddress &a2) const;
 
   /**
    * \brief compare two CIDRAddress.
    * \see   operator>(const CIDRAddress& a2);
    */
-  bool operator<(const CIDRAddress &a2);
+  bool operator<(const CIDRAddress &a2) const;
 
   /**
    * \brief compare two CIDRAddress.
    * \see   operator>(const CIDRAddress& a2);
    */
-  bool operator==(const CIDRAddress &a2);
-  bool operator!=(const CIDRAddress &a2);
+  bool operator==(const CIDRAddress &a2) const;
+  bool operator!=(const CIDRAddress &a2) const;
 
   /**
    * \brief compare CIDRAddress with string.
    * \see   operator>(const CIDRAddress& a2);
    */
-  bool operator==(const std::string &a2);
-  bool operator!=(const std::string &a2);
+  bool operator==(const std::string &a2) const;
+  bool operator!=(const std::string &a2) const;
 
   /**
    * \brief address type
@@ -234,7 +234,7 @@ public:
    *
    * Method returns prefix or -1 on error (invalid address).
    */
-  int prefix() const;
+  int  prefix() const;
 
   /**
    * \brief set IP address to invalid (You can imagine this address as 0.0.0.0 or ::)
@@ -252,17 +252,17 @@ public:
    * \return true if address is in block.
    *
    * You can check wheter Your host or network belongs to particular network.
-   *     CIDRAddress("10.0.0.0/24").contains( CIDRAddress("10.0.0.128/25"); // true
-   *     CIDRAddress("10.0.0.0/24").contains( CIDRAddress("10.0.0.0/24"); // true
-   *     CIDRAddress("10.0.0.0/25").contains( CIDRAddress("10.0.0.0/24"); // false
+   *     CIDRAddress("10.0.0.0/24").contains( CIDRAddress("10.0.0.128/25") ); // true
+   *     CIDRAddress("10.0.0.0/24").contains( CIDRAddress("10.0.0.0/24") ); // true
+   *     CIDRAddress("10.0.0.0/25").contains( CIDRAddress("10.0.0.0/24") ); // false
    */
-  bool contains(const CIDRAddress& address);
+  bool contains(const CIDRAddress& address) const;
 
   /**
    * \brief checks if the network or host is fully contained in the other.
    * \see valid();
    */
-  bool in(const CIDRAddress& address);
+  bool in(const CIDRAddress& address) const;
 
   /**
    * \brief checks if networks or hosts are the same
@@ -271,7 +271,7 @@ public:
    * Two CIDRAddress are compared including network prefix. Contrary to == 
    * operator 10.0.0.0/8 is not equal to 10.0.0.0/24.
    */
-  bool equals(const CIDRAddress& address);
+  bool equals(const CIDRAddress& address) const;
 
   /**
    * \brief returns the minimal host address from network
@@ -283,7 +283,7 @@ public:
    * it is a host or point-to-point link. So
    * - 10.0.0.0/31 => 10.0.0.0
    */
-  CIDRAddress hostMin();
+  CIDRAddress hostMin() const;
 
   /**
    * \brief returns the maximal host address from network
@@ -292,7 +292,7 @@ public:
    * Returned address is the last one before the broadcast (10.0.0.0/24 => 10.0.0.254).
    * In case of long prefix there is not a broadcast. The reason is described in hostMin()
    */
-  CIDRAddress hostMax();
+  CIDRAddress hostMax() const;
 
   /**
    * \brief returns network address as a host
@@ -301,7 +301,7 @@ public:
    * - 10.0.0.0/24 => 10.0.0.0/32
    * - fe80::/64 => fe80::/128
    */
-  CIDRAddress host();
+  CIDRAddress host() const;
 
   /**
    * \brief returns network address of this host
@@ -320,7 +320,7 @@ public:
    * In case of point-to-point or host it stil creates CIDRAddress object - copy of host address or highest
    * address from point-to-point link.
    */
-  CIDRAddress broadcast();
+  CIDRAddress broadcast() const;
 
   /**
    * \brief set address according parameter
@@ -367,7 +367,7 @@ public:
    * - when comparing IPv6 with IPv4, algorithm says that IPv6 is bigger (i. e. ::1 > 192.168.0.1).
    * - when comparing invalid address, valid > invalid, invalid == invalid
    */
-  int compare(const CIDRAddress& a2);
+  int compare(const CIDRAddress& a2) const;
   ~CIDRAddress();
 private:
   // private pointer to libcidr structure 
@@ -384,7 +384,7 @@ private:
 /**
  * \brief Overloaded << operator for output stream uses toString() method of CIDRAddress.
  */
-std::ostream& operator<<(std::ostream& os, CIDRAddress& address);
+std::ostream& operator<<(std::ostream& os, const CIDRAddress& address);
 
 /**
  * \class CIDRList

@@ -3,9 +3,11 @@
 #include <assert.h>
 #include <algorithm>
 #include <vector>
-#include "cidr.h"
 #include <czmq.h>
+#include <cxxtools/posix/fork.h>
+#include <cxxtools/posix/exec.h>
 
+#include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
 #include "dbinit.h"
@@ -15,36 +17,31 @@
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
 
-
-// ugly, but this is not production code
-int irq = 0;
-void interrupt (int signum) {
-    irq = 1;
-}
-
 void persistence_actor(zsock_t *pipe, void *args) {
 
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
-    zsock_t * insock = zsock_new_router(DB_SOCK);
+   zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
     zpoller_t *poller = zpoller_new(insock, pipe, NULL);
     assert(poller);
 
     zsock_signal(pipe, 0);
- 
 
     while(!zpoller_terminated(poller)) {
-        if (irq == 1)
-            break;
-
         zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
         if (which == pipe) {
             break;
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
+        // debug TODO switch to log 
+        printf ("debug::\n\tname\t=\t%s\n\tipver\t=\t%d\n\tipaddr\t=\t%s\n\tprefixlen\t=\t%d\n\tmac\t=\t%s\n",            
+            netdisc_msg_name (msg),
+            netdisc_msg_ipver (msg),
+            netdisc_msg_ipaddr (msg),
+            netdisc_msg_prefixlen (msg),
+            netdisc_msg_mac (msg));
+
         bool b = utils::db::process_message (url, *msg);
     }
     
@@ -54,22 +51,27 @@ void persistence_actor(zsock_t *pipe, void *args) {
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
     
-    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
+    zsock_t * dbsock = zsock_new_dealer (DB_SOCK);
     assert(dbsock);
+    zpoller_t *poller = zpoller_new (dbsock, pipe, NULL);
+    assert(poller);
+
+    zsock_signal(pipe, 0);
 
     // Until SIGINT, randomly select between addition or deletion event
     // if it's addition - generate some random data (name, ipver...), add this to a vector; send message
     // if it's deletion - and vector not empty: select one randomly from vector, remove from vector, send message; else skip
     // sleep for (800, 2000) ms
     std::vector<std::tuple<std::string, byte, std::string, byte, std::string>> stored;         
-    while(1) {
-        if (irq == 1)
-            break;
+    while(!zpoller_terminated (poller)) {        
+       zsock_t *which = (zsock_t *) zpoller_wait(poller, randof(1200) + 800);
+        if (which == pipe) {
+                break;
+        }
+
         byte command = random() % 2; // 0 - os_add; 1 - os_del
         if (command == 0) {            
             netdisc_msg_t *ndmsg = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
@@ -108,33 +110,49 @@ void netmon_actor(zsock_t *pipe, void *args) {
             for (int i = 0; i < which; ++i) { ++it; }             
             stored.erase (it);
         }
-        zclock_sleep (randof(1200) + 800);
     }
 
     zsock_destroy(&dbsock);
 }
 
-int main() {
+int main(int argc, char **argv) {
+
     srandom ((unsigned) time (NULL));
-    zsys_catch_interrupts ();
-    zsys_handler_set (&interrupt);
+    bool test_mode = false;
+    if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
+        test_mode = true;
+    }
 
-    int i;
-
-    zactor_t *db = zactor_new(persistence_actor, NULL);
+    zactor_t *db = zactor_new (persistence_actor, NULL);
     assert(db);
 
-    zactor_t *netmon = zactor_new(netmon_actor, NULL);
-    assert(netmon);
+    zactor_t *netmon = NULL;
 
-    // temporary
-    while (1) {
-        if (irq == 1)
-            break;
+    if (test_mode) {
+        netmon = zactor_new (netmon_actor, NULL);
+        assert(netmon);
+    } else {       
+        cxxtools::posix::Fork process;
+        if (process.child()) {
+            // we are in the child process here.
+            cxxtools::posix::Exec e("./netmon"); // fine for the moment
+            // normally the child either exits or execs an other process
+            e.exec();
+        }
     }
     
-    zactor_destroy(&netmon);
+    zpoller_t *poller = zpoller_new(netmon, db, NULL);
+    assert(poller);
+
+    while (!zpoller_terminated(poller)) {
+        zsock_t *which = (zsock_t *)zpoller_wait (poller, -1);
+    }
+    
+    if (test_mode) {    
+        zactor_destroy(&netmon);
+    }
     zactor_destroy(&db);
 
+    return EXIT_SUCCESS;
 }
 

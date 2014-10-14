@@ -122,8 +122,7 @@ int CIDRAddress::protocol() const {
   return 0;
 }
 
-
-int CIDRAddress::prefix() const  {
+int CIDRAddress::prefix() const {
   if( valid() ) {
     return cidr_get_pflen(_cidr);
   } else {
@@ -160,33 +159,33 @@ bool CIDRAddress::valid() const {
   return false;
 }
 
-bool CIDRAddress::contains(const CIDRAddress& address) {
+bool CIDRAddress::contains(const CIDRAddress& address) const {
   return (cidr_contains(_cidr,address._cidr) == 0);
 }
 
-bool CIDRAddress::in(const CIDRAddress& address) {
+bool CIDRAddress::in(const CIDRAddress& address) const {
   return (cidr_contains(address._cidr,_cidr) == 0);  
 }
 
-bool CIDRAddress::equals(const CIDRAddress& address) {
+bool CIDRAddress::equals(const CIDRAddress& address) const {
   return (cidr_equals(address._cidr,_cidr) == 0);  
 }
 
-CIDRAddress CIDRAddress::hostMin(){
+CIDRAddress CIDRAddress::hostMin() const {
   CIDRAddress result;
   CIDR *host = cidr_addr_hostmin(_cidr);
   result.setCidrPtr(host);
   return result;
 }
 
-CIDRAddress CIDRAddress::hostMax(){
+CIDRAddress CIDRAddress::hostMax() const {
   CIDRAddress result;
   CIDR *host = cidr_addr_hostmax(_cidr);
   result.setCidrPtr(host);
   return result;
 }
 
-CIDRAddress CIDRAddress::host() {
+CIDRAddress CIDRAddress::host() const {
   CIDRAddress result;
   in_addr in_addr4;
   in6_addr in_addr6;
@@ -212,7 +211,7 @@ CIDRAddress CIDRAddress::network() const {
 }
 
 
-CIDRAddress CIDRAddress::broadcast(){
+CIDRAddress CIDRAddress::broadcast() const {
   CIDRAddress result;
   CIDR *host = cidr_addr_broadcast(_cidr);
   result.setCidrPtr(host);
@@ -264,7 +263,7 @@ std::string CIDRAddress::toString(CIDROptions opt) const {
   return addr;
 }
 
-  int CIDRAddress::compare(const CIDRAddress &a2) {
+  int CIDRAddress::compare(const CIDRAddress &a2) const {
   struct in_addr inaddr1, inaddr2;
   struct in6_addr in6addr1, in6addr2;
   unsigned char *bytes1, *bytes2;
@@ -341,33 +340,33 @@ CIDRAddress::~CIDRAddress() {
   setCidrPtr( NULL );
 }
 
-bool CIDRAddress::operator>(const CIDRAddress &a2) {
+bool CIDRAddress::operator>(const CIDRAddress &a2) const {
   return (compare(a2) == 1);
 }
 
-bool CIDRAddress::operator<(const CIDRAddress &a2) {
+bool CIDRAddress::operator<(const CIDRAddress &a2) const {
   return (compare(a2) == -1);
 }
 
-bool CIDRAddress::operator==(const CIDRAddress &a2) {
+bool CIDRAddress::operator==(const CIDRAddress &a2) const {
   return (compare(a2) == 0);
 }
 
-bool CIDRAddress::operator!=(const CIDRAddress &a2) {
+bool CIDRAddress::operator!=(const CIDRAddress &a2) const {
   return (compare(a2) != 0);
 }
 
-bool CIDRAddress::operator==(const std::string &a2) {
+bool CIDRAddress::operator==(const std::string &a2) const {
   CIDRAddress ca2(a2);
   return (compare(ca2) == 0);
 }
 
-bool CIDRAddress::operator!=(const std::string &a2) {
+bool CIDRAddress::operator!=(const std::string &a2) const {
   CIDRAddress ca2(a2);
   return (compare(ca2) != 0);
 }
 
-std::ostream& operator<<(std::ostream& os, CIDRAddress& address)
+std::ostream& operator<<(std::ostream& os, const CIDRAddress& address)
 {
   return os << address.toString();
 }

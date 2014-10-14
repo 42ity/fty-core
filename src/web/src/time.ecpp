@@ -1,0 +1,30 @@
+<%pre>
+#include <cxxtools/regex.h>
+</%pre>
+<%cpp>
+reply.setContentType("application/json;charset=UTF-8");
+
+reply.setHeader(tnt::httpheader::cacheControl, "no-store");
+reply.setHeader(tnt::httpheader::pragma, "no-cache");
+if(!request.isMethodGET()) {
+</%cpp>
+<%include>auth-verify.ecpp</%include>
+<%cpp>
+	const std::string& body = request.getBody();
+	cxxtools::Regex regex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+
+	if(!regex.match(body) ||
+	    system((std::string("sudo date -s ") + body).c_str()) != 0) {
+</%cpp>
+{ "error":"invalid_format" }
+<%cpp>
+		return HTTP_BAD_REQUEST;
+	}
+}
+time_t tme = time(NULL);
+struct tm tm_s;
+gmtime_r(&tme, &tm_s);
+char buff[32];
+strftime(buff, 32, "%FT%TZ", &tm_s);
+</%cpp>
+{ "time" : "<$ buff $>" }
