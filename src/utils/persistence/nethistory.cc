@@ -45,14 +45,14 @@ namespace db {
 
 //Internal function for remove colons from mac address
 void
-removeColonMac(std::string &newmac)
+_removeColonMac(std::string &newmac)
 {
     newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
 }
 
 //Internal function for add colons to mac address
 const std::string
-addColonMac(const std::string &mac)
+_addColonMac(const std::string &mac)
 {
     std::string macWithColons(mac);
     macWithColons.insert(2,1,':');
@@ -120,7 +120,7 @@ NetHistory::
 getMac() const
 {
     if (_mac != "")    
-        return utils::db::addColonMac(_mac);
+        return utils::db::_addColonMac(_mac);
     else
         return "";
 }
@@ -325,7 +325,7 @@ setMac(const std::string& mac_address)
     if (checkMac(mac_address))
     {
         std::string macc(mac_address);
-        utils::db::removeColonMac(macc);
+        utils::db::_removeColonMac(macc);
     
         if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
             && ( this->getState() != ObjectState::OS_INSERTED ) )
