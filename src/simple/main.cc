@@ -12,6 +12,7 @@
 #include "persistencelogic.h"
 #include "dbinit.h"
 #include "defs.h"
+#include "log.h"
 #include "netdisc_msg.h"
 
 #define MSG_T_NETMON  1
@@ -19,7 +20,12 @@
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
-   zsock_t * insock = zsock_new_router(DB_SOCK);
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+    log_info ("%s", "persistence_actor() start\n");
+
+    zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
 
     zpoller_t *poller = zpoller_new(insock, pipe, NULL);
@@ -34,8 +40,7 @@ void persistence_actor(zsock_t *pipe, void *args) {
         }
 
         netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        // debug TODO switch to log 
-        printf ("debug::\n\tname\t=\t%s\n\tipver\t=\t%d\n\tipaddr\t=\t%s\n\tprefixlen\t=\t%d\n\tmac\t=\t%s\n",            
+        log_debug ("name='%s';ipver='%d';ipaddr='%s';prefixlen='%d';mac='%s'\n",            
             netdisc_msg_name (msg),
             netdisc_msg_ipver (msg),
             netdisc_msg_ipaddr (msg),
@@ -47,9 +52,16 @@ void persistence_actor(zsock_t *pipe, void *args) {
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
+    log_info ("%s", "persistence_actor end\n");
+    log_close();
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
+
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
+    log_info ("%s", "netmon_actor() start\n");
 
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
@@ -113,14 +125,22 @@ void netmon_actor(zsock_t *pipe, void *args) {
     }
 
     zsock_destroy(&dbsock);
+    log_info ("%s", "netmon_actor end\n");
+    log_close();
+
 }
 
 int main(int argc, char **argv) {
+
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_set_syslog_level(LOG_DEBUG);
 
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
+        log_info ("%s", "Test Mode: Running mocked netmon_actor instead of netmon.\n");
     }
 
     zactor_t *db = zactor_new (persistence_actor, NULL);
@@ -137,7 +157,9 @@ int main(int argc, char **argv) {
             // we are in the child process here.
             cxxtools::posix::Exec e("./netmon"); // fine for the moment
             // normally the child either exits or execs an other process
+            log_info ("%s", "starting child process\n");
             e.exec();
+            log_info ("%s", "child process finished\n");
         }
     }
     
@@ -149,10 +171,12 @@ int main(int argc, char **argv) {
     }
     
     if (test_mode) {    
-        zactor_destroy(&netmon);
+        zactor_destroy(&netmon);        
+        log_info ("%s", "destroying netmon_actor\n"); 
     }
     zactor_destroy(&db);
-
+    log_info ("%s", "destroying persistence_actor\n"); 
+    log_close ();
     return EXIT_SUCCESS;
 }
 
