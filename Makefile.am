@@ -278,9 +278,13 @@ bin_PROGRAMS += 			driver-nmap
 driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 					src/drivers/nmap/nmap.cc \
 					src/drivers/nmap/nmap-parse.h \
-					src/drivers/nmap/nmap-parse.cc
-driver_nmap_LDADD =			libpriv-subprocess.la
+					src/drivers/nmap/nmap-parse.cc \
+					src/simple/nmap_msg.h \
+					src/simple/nmap_msg.c
+
+driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
 driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} -lcxxtools
+driver_nmap_CPPFLAGS =			-I $(top_srcdir)/src/simple -I $(top_srcdir)/src/utils
 
 
 #----------------------------------------------------------------------
