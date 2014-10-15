@@ -25,9 +25,9 @@
 <message name = "list_scan" id = "2">
     Results of a list scan, this parses 'host' element with a limited set of fields, see ELEMENT host in nmap DTD
     <field name = "addr" type = "string">IP address</field>
-    <field name = "state" type = "string">State string (up, down, unknown, ...)</field>
-    <field name = "reason" type = "string">Reason string (user-set, ...)</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (PTR, hosts, ...)</field>
+    <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
+    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
 </message>
 
 <!--
@@ -35,20 +35,16 @@
                           smurf | ports | os | distance | uptime | 
                           tcpsequence | ipidsequence | tcptssequence |
                           hostscript | trace)*, times? ) >
-supported: status, address, hostnames, ports
-omitted: smurf, os, distance, uptime, tcpsequence, ipidsequence, tcptssequence, hostscript, trace, times
-
-to be implemented: hostscript
-to be added os
+supported: status, address, hostnames, ports, os, hostscript (see scan_script)
+omitted: smurf, distance, uptime, tcpsequence, ipidsequence, tcptssequence, trace, times
 -->
 <message name = "dev_scan" id = "3">
     Results of a device scan, this parses 'host' element, see ELEMENT host in nmap DTD
-    <field name = "scan_id" type = "number" size="1">number of a scan, uint8_t - this will match the dev_scan with subsequent port_scan and script_scan messages</field>
     <field name = "addr" type = "string">IP address</field>
-    <field name = "state" type = "string">Status string (up, down, unknown, ...)</field>
-    <field name = "reason" type = "string">Reason string (user-set, arp-response)</field>
+    <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "addresses" type = "dictionary">dictionary of address : vendor, where vendor is valid only for mac addresses</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (PTR, hosts, ...)</field>
+    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
 </message>
 
 <!--
@@ -70,7 +66,6 @@ omitted:    owner
 
 <message name = "port_scan" id = "4">
     Results of a device scan, this parses 'port' element, see ELEMENT port in nmap DTD
-    <field name = "scan_id" type = "number" size="1">This is id of matching dev_scan, uint8_t</field>
     <field name = "protocol" type = "string">Name of protocol</field>
     <field name = "portid" type = "number" size="2">Port number (1-65535), uint16_t</field>
 </message>
@@ -88,10 +83,9 @@ omitted:    owner
 -->
 <message name = "port_scan_state" id = "5">
     State of port (see &lt;port ... &lt;state in xml output)
-    <field name = "scan_id" type = "number" size="1">This is id of matching dev_scan, uint8_t</field>
-    <field name = "state" type = "string">State (open, close, filtered) of a port</field>
-    <field name = "reason" type = "string">How nmap got the message (syn-ack)</field>
-    <field name = "reason_ttl" type = "string">reason_ttl</field>
+    <field name = "port_state" type = "number" size="1">Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
+    <field name = "reason_ttl" type = "number" size="1">reason_ttl</field>
     <field name = "reason_ip" type = "string">reason_ip (optional)</field>
 </message>
 
@@ -121,15 +115,14 @@ to be implemented cpe
 
 <message name = "port_scan_service" id = "6">
     Service running on a port (see &lt;port ... &lt;service in xml output)
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
     <field name = "name" type = "string">Name of a service</field>
     <field name = "conf" type = "number" size="1">confidence in result's correcntess (0-10)</field>
-    <field name = "method" type = "string">How nmap got it (table|probed)</field>
+    <field name = "method" type = "number" size="1">How nmap got it (table|probed)</field>
     <field name = "version" type = "string">version (optional)</field>
     <field name = "product" type = "string">product (optional)</field>
     <field name = "extrainfo" type = "string">product (optional)</field>
-    <field name = "tunnel" type = "string">tunnel (optional)</field>
-    <field name = "proto" type = "string">proto (optional)</field>
+    <field name = "tunnel" type = "number" size="1">tunnel (ssl) (optional)</field>
+    <field name = "service_proto" type = "number" size="1">proto  (rpc) (optional)</field>
     <field name = "rpcnum" type = "number" size="4">rpcnum (optional)</field>
     <field name = "lowver" type = "number" size="4">lowver (optional)</field>
     <field name = "highver" type = "number" size="4">highver (optional)</field>
@@ -140,16 +133,10 @@ to be implemented cpe
     <field name = "cpe" type = "string">cpe (optional)</field>
 </message>
 
-<message name = "port_scan_script" id = "7">
+<message name = "scan_script" id = "7">
     Output of NSE script
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
     <field name = "script_id" type = "string">Name of a script (like ssh-hostkeys)</field>
-    <field name = "table" type = "chunk">Data - probably raw XML ...</field>
-</message>
-
-<message name = "dev_scan_end" id = "8">
-    Last message for this scan_id, all remaining messages with the same scan_id can be discarded
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
+    <field name = "data" type = "chunk">Data - raw XML</field>
 </message>
 
 <!--
@@ -164,8 +151,7 @@ to be implemented cpe
 -->
 <message name = "dev_scan_portused" id = "9">
     Content of element 'os/portused', see nmap dtd ELEMENT portused
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
-    <field name = "state" type = "string">State of port</field>
+    <field name = "port_state" type = "number" size="1">Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str</field>
     <field name = "proto" type = "string">Protocol name</field>
     <field name = "portid" type = "number" size="2">Port number (1-65535), uint16_t</field>
     <field name = "osfingerprints" type = "strings">List of OS fingerprints</field>
@@ -183,7 +169,6 @@ to be implemented cpe
 -->
 <message name = "dev_scan_osmatch" id = "10">
     Content of element 'os/osmatch', see nmap dtd ELEMENT portused
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
     <field name = "name" type = "string">OS name</field>
     <field name = "accuracy" type = "number" size="1">Match accuracy, uint16_t</field>
 </message>
@@ -200,7 +185,6 @@ to be implemented cpe
 -->
 <message name = "dev_scan_osclass" id = "11">
     Content of element 'os/osmatch/osclass', see nmap dtd ELEMENT portused
-    <field name = "scan_id" type = "number" size="1">Id of matching dev_scan scan, uint8_t</field>
     <field name = "vendor" type = "string">Vendor name</field>
     <field name = "osgen" type = "string">OS generation (optional)</field>
     <field name = "type" type = "string">OS type (optional)</field>
