@@ -25,6 +25,7 @@ Structure describing asset element
 <message name = "get_element" id = "2">
 Ask for specific element
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
 </message>
 
 <message name = "return_element" id = "3">
@@ -47,6 +48,7 @@ Returns element we were asked for
 <message name = "delete_element" id = "6">
 Returns element we were asked for
     <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
+    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
 </message>
 
 <message name = "get_elements" id = "7">

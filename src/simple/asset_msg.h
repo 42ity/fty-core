@@ -43,6 +43,7 @@
 
     GET_ELEMENT - Ask for specific element
         element_id          number 4    Unique ID of the asset element
+        type                number 1    Type of the device, defined in enum somewhere
 
     RETURN_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the asset element
@@ -57,6 +58,7 @@
 
     DELETE_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the element to be deleted
+        type                number 1    Type of the device, defined in enum somewhere
 
     GET_ELEMENTS - Ask for all elements of specific type
         type                number 1    Type of the device, defined in enum somewhere
@@ -132,7 +134,8 @@ zmsg_t *
 //  Encode the GET_ELEMENT 
 zmsg_t *
     asset_msg_encode_get_element (
-        uint32_t element_id);
+        uint32_t element_id,
+        byte type);
 
 //  Encode the RETURN_ELEMENT 
 zmsg_t *
@@ -154,7 +157,8 @@ zmsg_t *
 //  Encode the DELETE_ELEMENT 
 zmsg_t *
     asset_msg_encode_delete_element (
-        uint32_t element_id);
+        uint32_t element_id,
+        byte type);
 
 //  Encode the GET_ELEMENTS 
 zmsg_t *
@@ -180,7 +184,8 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_get_element (void *output,
-        uint32_t element_id);
+        uint32_t element_id,
+        byte type);
     
 //  Send the RETURN_ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -206,7 +211,8 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_delete_element (void *output,
-        uint32_t element_id);
+        uint32_t element_id,
+        byte type);
     
 //  Send the GET_ELEMENTS to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.

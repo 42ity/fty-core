@@ -285,6 +285,7 @@ asset_msg_decode (zmsg_t **msg_p)
 
         case ASSET_MSG_GET_ELEMENT:
             GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_RETURN_ELEMENT:
@@ -315,6 +316,7 @@ asset_msg_decode (zmsg_t **msg_p)
 
         case ASSET_MSG_DELETE_ELEMENT:
             GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -401,6 +403,8 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_GET_ELEMENT:
             //  element_id is a 4-byte integer
             frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
             break;
             
         case ASSET_MSG_RETURN_ELEMENT:
@@ -419,6 +423,8 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_DELETE_ELEMENT:
             //  element_id is a 4-byte integer
             frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
             break;
             
         case ASSET_MSG_GET_ELEMENTS:
@@ -481,6 +487,7 @@ asset_msg_encode (asset_msg_t **self_p)
 
         case ASSET_MSG_GET_ELEMENT:
             PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_RETURN_ELEMENT:
@@ -496,6 +503,7 @@ asset_msg_encode (asset_msg_t **self_p)
 
         case ASSET_MSG_DELETE_ELEMENT:
             PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -679,10 +687,12 @@ asset_msg_encode_element (
 
 zmsg_t * 
 asset_msg_encode_get_element (
-    uint32_t element_id)
+    uint32_t element_id,
+    byte type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_ELEMENT);
     asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
     return asset_msg_encode (&self);
 }
 
@@ -738,10 +748,12 @@ asset_msg_encode_insert_element (
 
 zmsg_t * 
 asset_msg_encode_delete_element (
-    uint32_t element_id)
+    uint32_t element_id,
+    byte type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_DELETE_ELEMENT);
     asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
     return asset_msg_encode (&self);
 }
 
@@ -800,10 +812,12 @@ asset_msg_send_element (
 int
 asset_msg_send_get_element (
     void *output,
-    uint32_t element_id)
+    uint32_t element_id,
+    byte type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_ELEMENT);
     asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
     return asset_msg_send (&self, output);
 }
 
@@ -863,10 +877,12 @@ asset_msg_send_insert_element (
 int
 asset_msg_send_delete_element (
     void *output,
-    uint32_t element_id)
+    uint32_t element_id,
+    byte type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_DELETE_ELEMENT);
     asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
     return asset_msg_send (&self, output);
 }
 
@@ -922,6 +938,7 @@ asset_msg_dup (asset_msg_t *self)
 
         case ASSET_MSG_GET_ELEMENT:
             copy->element_id = self->element_id;
+            copy->type = self->type;
             break;
 
         case ASSET_MSG_RETURN_ELEMENT:
@@ -940,6 +957,7 @@ asset_msg_dup (asset_msg_t *self)
 
         case ASSET_MSG_DELETE_ELEMENT:
             copy->element_id = self->element_id;
+            copy->type = self->type;
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -989,6 +1007,7 @@ asset_msg_print (asset_msg_t *self)
         case ASSET_MSG_GET_ELEMENT:
             zsys_debug ("ASSET_MSG_GET_ELEMENT:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
             break;
             
         case ASSET_MSG_RETURN_ELEMENT:
@@ -1023,6 +1042,7 @@ asset_msg_print (asset_msg_t *self)
         case ASSET_MSG_DELETE_ELEMENT:
             zsys_debug ("ASSET_MSG_DELETE_ELEMENT:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
             break;
             
         case ASSET_MSG_GET_ELEMENTS:
@@ -1474,6 +1494,7 @@ asset_msg_test (bool verbose)
     asset_msg_destroy (&copy);
 
     asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
     //  Send twice from same object
     asset_msg_send_again (self, output);
     asset_msg_send (&self, output);
@@ -1484,6 +1505,7 @@ asset_msg_test (bool verbose)
         assert (asset_msg_routing_id (self));
         
         assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_RETURN_ELEMENT);
@@ -1564,6 +1586,7 @@ asset_msg_test (bool verbose)
     asset_msg_destroy (&copy);
 
     asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
     //  Send twice from same object
     asset_msg_send_again (self, output);
     asset_msg_send (&self, output);
@@ -1574,6 +1597,7 @@ asset_msg_test (bool verbose)
         assert (asset_msg_routing_id (self));
         
         assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_GET_ELEMENTS);
