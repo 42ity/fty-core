@@ -6,23 +6,50 @@
   -->
 <tntnet>
   <mappings>
-    <!-- We are getting authorized -->
-    <mapping>
-      <target>auth@bios</target>
-      <url>^/api/1.0/token$</url>
-    </mapping>
-    <!-- Make sure nobody goes bellow here without authentification -->
-    <mapping>
-      <target>time@bios</target>
-      <url>^/api/1.0/admin/time.*$</url>
-    </mapping>
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>
       <pathinfo>./static/$1</pathinfo>
       <url>^/static/(.*)</url>
     </mapping>
-  </mappings>
+    <!-- We are getting authorized -->
+    <mapping>
+      <target>auth@bios</target>
+      <url>^/api/1.0/token$</url>
+    </mapping>
+    <!-- And from now on all modifying requests have to be authenticated -->
+    <mapping>
+      <target>auth-verify@bios</target>
+      <method>(POST|PUT|DELETE)</method>
+    </mapping>
+    <!-- Make sure everybody speaks json from now on -->
+    <mapping>
+      <target>json@bios</target>
+    </mapping>
+    <!-- API itself -->
+
+    <!-- Time settings -->
+    <mapping>
+      <target>time@bios</target>
+      <url>^/api/1.0/admin/time.*$</url>
+    </mapping>
+    <!-- Asset management -->
+    <mapping>
+      <target>item@bios</target>
+      <url>^/api/1.0/asset/(room|datacenter|group)/(.*)$</url>
+      <args>
+        <id>$2</id>
+        <type>$1</type>
+      </args>
+    </mapping>
+    <mapping>
+      <target>list@bios</target>
+      <url>^/api/1.0/asset/(room|datacenter|group)s$</url>
+      <args>
+        <type>$1</type>
+      </args>
+    </mapping>
+ </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
   <listeners>

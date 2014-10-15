@@ -1,0 +1,7 @@
+<%cpp>
+    // No matter what, we are speaking JSON
+    reply.setContentType("application/json;charset=UTF-8");
+    reply.setHeader(tnt::httpheader::cacheControl, "no-store");
+    reply.setHeader(tnt::httpheader::pragma, "no-cache");
+	return DECLINED;
+</%cpp>

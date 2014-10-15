@@ -32,4 +32,6 @@ reply.setHeader(tnt::httpheader::pragma, "no-cache");
     "error":"invalid_token"
 }
 % return HTTP_UNAUTHORIZED;
+% } else {
+% return DECLINED;
 % }
