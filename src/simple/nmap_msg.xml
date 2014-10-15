@@ -25,9 +25,9 @@
 <message name = "list_scan" id = "2">
     Results of a list scan, this parses 'host' element with a limited set of fields, see ELEMENT host in nmap DTD
     <field name = "addr" type = "string">IP address</field>
-    <field name = "state" type = "string">State string (up, down, unknown, ...)</field>
-    <field name = "reason" type = "string">Reason string (user-set, ...)</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (PTR, hosts, ...)</field>
+    <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
+    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
 </message>
 
 <!--
@@ -41,10 +41,10 @@ omitted: smurf, distance, uptime, tcpsequence, ipidsequence, tcptssequence, trac
 <message name = "dev_scan" id = "3">
     Results of a device scan, this parses 'host' element, see ELEMENT host in nmap DTD
     <field name = "addr" type = "string">IP address</field>
-    <field name = "state" type = "string">Status string (up, down, unknown, ...)</field>
-    <field name = "reason" type = "string">Reason string (user-set, arp-response)</field>
+    <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "addresses" type = "dictionary">dictionary of address : vendor, where vendor is valid only for mac addresses</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (PTR, hosts, ...)</field>
+    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
 </message>
 
 <!--
@@ -83,9 +83,9 @@ omitted:    owner
 -->
 <message name = "port_scan_state" id = "5">
     State of port (see &lt;port ... &lt;state in xml output)
-    <field name = "state" type = "string">State (open, close, filtered) of a port</field>
-    <field name = "reason" type = "string">How nmap got the message (syn-ack)</field>
-    <field name = "reason_ttl" type = "string">reason_ttl</field>
+    <field name = "port_state" type = "number" size="1">Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str</field>
+    <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
+    <field name = "reason_ttl" type = "number" size="1">reason_ttl</field>
     <field name = "reason_ip" type = "string">reason_ip (optional)</field>
 </message>
 
@@ -117,12 +117,12 @@ to be implemented cpe
     Service running on a port (see &lt;port ... &lt;service in xml output)
     <field name = "name" type = "string">Name of a service</field>
     <field name = "conf" type = "number" size="1">confidence in result's correcntess (0-10)</field>
-    <field name = "method" type = "string">How nmap got it (table|probed)</field>
+    <field name = "method" type = "number" size="1">How nmap got it (table|probed)</field>
     <field name = "version" type = "string">version (optional)</field>
     <field name = "product" type = "string">product (optional)</field>
     <field name = "extrainfo" type = "string">product (optional)</field>
-    <field name = "tunnel" type = "string">tunnel (optional)</field>
-    <field name = "proto" type = "string">proto (optional)</field>
+    <field name = "tunnel" type = "number" size="1">tunnel (ssl) (optional)</field>
+    <field name = "service_proto" type = "number" size="1">proto  (rpc) (optional)</field>
     <field name = "rpcnum" type = "number" size="4">rpcnum (optional)</field>
     <field name = "lowver" type = "number" size="4">lowver (optional)</field>
     <field name = "highver" type = "number" size="4">highver (optional)</field>
@@ -136,7 +136,7 @@ to be implemented cpe
 <message name = "scan_script" id = "7">
     Output of NSE script
     <field name = "script_id" type = "string">Name of a script (like ssh-hostkeys)</field>
-    <field name = "table" type = "chunk">Data - probably raw XML ...</field>
+    <field name = "data" type = "chunk">Data - raw XML</field>
 </message>
 
 <!--
@@ -151,7 +151,7 @@ to be implemented cpe
 -->
 <message name = "dev_scan_portused" id = "9">
     Content of element 'os/portused', see nmap dtd ELEMENT portused
-    <field name = "state" type = "string">State of port</field>
+    <field name = "port_state" type = "number" size="1">Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str</field>
     <field name = "proto" type = "string">Protocol name</field>
     <field name = "portid" type = "number" size="2">Port number (1-65535), uint16_t</field>
     <field name = "osfingerprints" type = "strings">List of OS fingerprints</field>
