@@ -31,8 +31,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <czmq.h>
 
 #include "subprocess.h"
+#include "nmap_msg.h"
 #include "nmap-driver.h"
 #include "nmap-parse.h"
+#include "log.h"
 
 typedef utils::ProcessQue ProcessQue;
 typedef utils::SubProcess SubProcess;
@@ -146,12 +148,16 @@ static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
 
 static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
 
-    char* delim;
-    char* command;
-    char* arg;
 
     //TODO: can't have multiple args!
-    zstr_recvx(reader, &delim, &command, &arg, NULL);
+    //zstr_recvx(reader, &delim, &command, &arg, NULL);
+    nmap_msg_t *msg = nmap_msg_recv (reader);
+    // TODO log the message
+    
+    const char *command = nmap_msg_type (msg);
+    const char *arg = (const char*) zlist_head (nmap_msg_args (msg));
+    log_info ("\t%s\t%s\n", command, arg);
+    
 
     enum NmapMethod meth;
     if (streq(command, "defaultlistscan")) {
@@ -160,9 +166,9 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
         meth = NmapMethod::DefaultDeviceScan;
     }
     else {
-        free(delim);
-        free(command);
-        free(arg);
+        nmap_msg_destroy (&msg);
+//        free(command);
+//        free(arg);
         return 0;
     }
 
@@ -171,30 +177,70 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
 
     _que.add(args);
 
-    free(delim);
-    free(command);
-    free(arg);
+    nmap_msg_destroy (&msg);
+//    free(command);
+//    free(arg);
     return 0;
+}
+
+void nmap_actor (zsock_t *pipe, void *args) {
+
+    log_info ("%s", "nmap_actor() start\n");
+
+    zsock_t *cmdfd = zsock_new_router (DRIVER_NMAP_SOCK);
+    assert (cmdfd);
+    zpoller_t *poller = zpoller_new (cmdfd, pipe, NULL);
+    assert (poller);
+    zsock_signal (pipe, 0);
+
+    zloop_t *loop = zloop_new();
+    assert(loop);
+    int rv = zloop_timer (loop, 2000, 10, timer_handler, NULL);
+    assert (rv != -1);
+    
+    rv = zloop_reader(loop, cmdfd, command_handler, NULL);
+    rv = zloop_start(loop);
+    assert (rv == 0);
+
+    zloop_destroy(&loop);        
+    zpoller_destroy (&poller);
+    zsock_destroy (&cmdfd);
+
+    log_info ("%s", "nmap_actor() end\n");
 }
 
 int main() {
 
-    int r;
+    log_open();
+    log_set_level(LOG_DEBUG);
 
-    zsock_t *cmdfd = zsock_new_router(DRIVER_NMAP_SOCK);
-
-    zloop_t *loop = zloop_new();
-    assert(loop);
-
-    r = zloop_timer(loop, 2000, 10, timer_handler, NULL);
-    assert(r == 0);
+    zactor_t *nmap = zactor_new (nmap_actor, NULL);
+    assert(nmap);
     
-    r = zloop_reader(loop, cmdfd, command_handler, NULL);
+    // TODO connect here is ok, the other connects (inside actors) should be binds
+    zsock_t *dealer = zsock_new_dealer (DRIVER_NMAP_SOCK);
+    assert (dealer);
 
-    r = zloop_start(loop);
-    assert(r == 0);
+    nmap_msg_t * msg = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
+    assert (msg);
+    nmap_msg_set_type (msg, "%s", "defaultlistscan", NULL);
 
-    zloop_destroy(&loop);
-    zsock_destroy(&cmdfd);
+    zlist_t *zl = zlist_new ();
+    char * hv = "10.130.38.200";
+    zlist_append (zl, hv);
+    nmap_msg_set_args (msg, &zl);
+    zlist_destroy (&zl);
+//    zstr_sendx(dealer, "defaultlistscan", "10.130.38.200", NULL);
+    nmap_msg_send (&msg, dealer);
+    
+    // TODO - same thing with uninterupability;
+    // until next commit, please don't bash me for this
+    while (1) {
+        zclock_sleep (1000);
+    }
+
+    zactor_destroy(&nmap);
+    log_info ("%s", "destroying nmap_actor\n");
+    log_close ();
     return 0;
 }
