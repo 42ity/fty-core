@@ -15,7 +15,7 @@
     <!-- We are getting authorized -->
     <mapping>
       <target>auth@bios</target>
-      <url>^/api/1.0/token$</url>
+      <url>^/api/v1/oauth2/token$</url>
     </mapping>
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
@@ -31,12 +31,12 @@
     <!-- Time settings -->
     <mapping>
       <target>time@bios</target>
-      <url>^/api/1.0/admin/time.*$</url>
+      <url>^/api/v1/admin/time.*$</url>
     </mapping>
     <!-- Asset management -->
     <mapping>
       <target>item@bios</target>
-      <url>^/api/1.0/asset/(room|datacenter|group)/(.*)$</url>
+      <url>^/api/v1/asset/(room|datacenter|rack)/(.*)$</url>
       <args>
         <id>$2</id>
         <type>$1</type>
@@ -44,7 +44,7 @@
     </mapping>
     <mapping>
       <target>list@bios</target>
-      <url>^/api/1.0/asset/(room|datacenter|group)s$</url>
+      <url>^/api/v1/asset/(room|datacenter|rack|group)s$</url>
       <args>
         <type>$1</type>
       </args>
