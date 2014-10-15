@@ -290,7 +290,8 @@ driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} -lcxxtools
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/utils/messages/json_schema/*.json \
 					$(top_srcdir)/tests/utils/messages/json_schema/*.json \
-					$(top_srcdir)/tools/dbpath.h.in
+					$(top_srcdir)/tools/dbpath.h.in \
+					$(top_srcdir)/simple/*_msg.xml
 
 CLEANFILES +=				tools/dbpath.h
 
