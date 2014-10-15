@@ -1,0 +1,62 @@
+<class
+    name = "asset_msg"
+    signature = "5"
+    title = "assets management protocol"
+    script = "zproto_codec_c"
+    header = "."
+    source = "."    
+    include = "czmq.h"
+    >
+
+<!-- this includes our Eaton license into the generated header and source files -->
+<include filename = "license.xml" />
+
+<!-- This is here for a purpose. DO CHANGE it if back-compatibility breaking change occurs -->
+<define name = "VERSION" value = "1.0" />
+
+<message name = "element" id = "1">
+Structure describing asset element
+    <field name = "name" type = "string">Name of the element</field>
+    <field name = "location" type = "string">Location URI of the parent element</field>
+    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+    <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
+</message>
+
+<message name = "get_element" id = "2">
+Ask for specific element
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+</message>
+
+<message name = "return_element" id = "3">
+Returns element we were asked for
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "msg" type = "msg">Element to be delivered, NULL if not found</field>
+</message>
+
+<message name = "update_element" id = "4">
+Returns element we were asked for
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "msg" type = "msg">Element to be updated</field>
+</message>
+
+<message name = "insert_element" id = "5">
+Returns element we were asked for
+    <field name = "msg" type = "msg">Element to be inserted</field>
+</message>
+
+<message name = "delete_element" id = "6">
+Returns element we were asked for
+    <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
+</message>
+
+<message name = "get_elements" id = "7">
+Ask for all elements of specific type
+    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+</message>
+
+<message name = "return_elements" id = "8">
+Returns elements we were asked for
+    <field name = "elemenet_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
+</message>
+
+</class>
