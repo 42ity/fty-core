@@ -37,7 +37,7 @@
 
     ELEMENT - Structure describing asset element
         name                string      Name of the element
-        location            string      Location URI of the parent element
+        location            number 4    ID of the parent element
         type                number 1    Type of the device, defined in enum somewhere
         ext                 dictionary  Hash map of extended attributes
 
@@ -60,6 +60,13 @@
         element_id          number 4    Unique ID of the element to be deleted
         type                number 1    Type of the device, defined in enum somewhere
 
+    OK - Message from database that everything was processed successfully.
+        element_id          number 4    Unique ID of the element that was proccessed
+
+    FAIL - Message from database that something went wrong.
+        element_id          number 4    Unique ID of the element that was being proccessed
+        error_id            number 1    Type of the error, enum defined somewhere else
+
     GET_ELEMENTS - Ask for all elements of specific type
         type                number 1    Type of the device, defined in enum somewhere
 
@@ -75,8 +82,10 @@
 #define ASSET_MSG_UPDATE_ELEMENT            4
 #define ASSET_MSG_INSERT_ELEMENT            5
 #define ASSET_MSG_DELETE_ELEMENT            6
-#define ASSET_MSG_GET_ELEMENTS              7
-#define ASSET_MSG_RETURN_ELEMENTS           8
+#define ASSET_MSG_OK                        7
+#define ASSET_MSG_FAIL                      8
+#define ASSET_MSG_GET_ELEMENTS              9
+#define ASSET_MSG_RETURN_ELEMENTS           10
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,7 +136,7 @@ int
 zmsg_t *
     asset_msg_encode_element (
         const char *name,
-        const char *location,
+        uint32_t location,
         byte type,
         zhash_t *ext);
 
@@ -160,6 +169,17 @@ zmsg_t *
         uint32_t element_id,
         byte type);
 
+//  Encode the OK 
+zmsg_t *
+    asset_msg_encode_ok (
+        uint32_t element_id);
+
+//  Encode the FAIL 
+zmsg_t *
+    asset_msg_encode_fail (
+        uint32_t element_id,
+        byte error_id);
+
 //  Encode the GET_ELEMENTS 
 zmsg_t *
     asset_msg_encode_get_elements (
@@ -176,7 +196,7 @@ zmsg_t *
 int
     asset_msg_send_element (void *output,
         const char *name,
-        const char *location,
+        uint32_t location,
         byte type,
         zhash_t *ext);
     
@@ -213,6 +233,19 @@ int
     asset_msg_send_delete_element (void *output,
         uint32_t element_id,
         byte type);
+    
+//  Send the OK to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_ok (void *output,
+        uint32_t element_id);
+    
+//  Send the FAIL to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_fail (void *output,
+        uint32_t element_id,
+        byte error_id);
     
 //  Send the GET_ELEMENTS to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -255,10 +288,10 @@ void
     asset_msg_set_name (asset_msg_t *self, const char *format, ...);
 
 //  Get/set the location field
-const char *
+uint32_t
     asset_msg_location (asset_msg_t *self);
 void
-    asset_msg_set_location (asset_msg_t *self, const char *format, ...);
+    asset_msg_set_location (asset_msg_t *self, uint32_t location);
 
 //  Get/set the type field
 byte
@@ -304,6 +337,12 @@ zmsg_t *
 //  Set the msg field, transferring ownership from caller
 void
     asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p);
+
+//  Get/set the error_id field
+byte
+    asset_msg_error_id (asset_msg_t *self);
+void
+    asset_msg_set_error_id (asset_msg_t *self, byte error_id);
 
 //  Get/set the elemenet_ids field
 zhash_t *

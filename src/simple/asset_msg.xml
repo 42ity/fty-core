@@ -17,7 +17,7 @@
 <message name = "element" id = "1">
 Structure describing asset element
     <field name = "name" type = "string">Name of the element</field>
-    <field name = "location" type = "string">Location URI of the parent element</field>
+    <field name = "location" type = "number" size = "4">ID of the parent element</field>
     <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
 </message>
@@ -51,12 +51,23 @@ Returns element we were asked for
     <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
 </message>
 
-<message name = "get_elements" id = "7">
+<message name = "ok" id = "7">
+Message from database that everything was processed successfully.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the element that was proccessed</field>
+</message>
+
+<message name = "fail" id = "8">
+Message from database that something went wrong.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the element that was being proccessed</field>
+    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined somewhere else</field>
+</message>
+
+<message name = "get_elements" id = "9">
 Ask for all elements of specific type
     <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
 </message>
 
-<message name = "return_elements" id = "8">
+<message name = "return_elements" id = "10">
 Returns elements we were asked for
     <field name = "elemenet_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
 </message>

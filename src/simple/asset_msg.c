@@ -49,12 +49,13 @@ struct _asset_msg_t {
     byte *needle;                       //  Read/write pointer for serialization
     byte *ceiling;                      //  Valid upper limit for read pointer
     char *name;                         //  Name of the element
-    char *location;                     //  Location URI of the parent element
+    uint32_t location;                  //  ID of the parent element
     byte type;                          //  Type of the device, defined in enum somewhere
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
     uint32_t element_id;                //  Unique ID of the asset element
     zmsg_t *msg;                        //  Element to be delivered, NULL if not found
+    byte error_id;                      //  Type of the error, enum defined somewhere else
     zhash_t *elemenet_ids;              //  Unique IDs of the asset element mapped to the elements name
     size_t elemenet_ids_bytes;          //  Size of dictionary content
 };
@@ -220,7 +221,6 @@ asset_msg_destroy (asset_msg_t **self_p)
         //  Free class properties
         zframe_destroy (&self->routing_id);
         free (self->name);
-        free (self->location);
         zhash_destroy (&self->ext);
         zmsg_destroy (&self->msg);
         zhash_destroy (&self->elemenet_ids);
@@ -265,7 +265,7 @@ asset_msg_decode (zmsg_t **msg_p)
     switch (self->id) {
         case ASSET_MSG_ELEMENT:
             GET_STRING (self->name);
-            GET_STRING (self->location);
+            GET_NUMBER4 (self->location);
             GET_NUMBER1 (self->type);
             {
                 size_t hash_size;
@@ -317,6 +317,15 @@ asset_msg_decode (zmsg_t **msg_p)
         case ASSET_MSG_DELETE_ELEMENT:
             GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->type);
+            break;
+
+        case ASSET_MSG_OK:
+            GET_NUMBER4 (self->element_id);
+            break;
+
+        case ASSET_MSG_FAIL:
+            GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->error_id);
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -379,10 +388,8 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->name)
                 frame_size += strlen (self->name);
-            //  location is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->location)
-                frame_size += strlen (self->location);
+            //  location is a 4-byte integer
+            frame_size += 4;
             //  type is a 1-byte integer
             frame_size += 1;
             //  ext is an array of key=value strings
@@ -427,6 +434,18 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size += 1;
             break;
             
+        case ASSET_MSG_OK:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case ASSET_MSG_FAIL:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            //  error_id is a 1-byte integer
+            frame_size += 1;
+            break;
+            
         case ASSET_MSG_GET_ELEMENTS:
             //  type is a 1-byte integer
             frame_size += 1;
@@ -466,11 +485,7 @@ asset_msg_encode (asset_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->location) {
-                PUT_STRING (self->location);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
+            PUT_NUMBER4 (self->location);
             PUT_NUMBER1 (self->type);
             if (self->ext) {
                 PUT_NUMBER4 (zhash_size (self->ext));
@@ -504,6 +519,15 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_DELETE_ELEMENT:
             PUT_NUMBER4 (self->element_id);
             PUT_NUMBER1 (self->type);
+            break;
+
+        case ASSET_MSG_OK:
+            PUT_NUMBER4 (self->element_id);
+            break;
+
+        case ASSET_MSG_FAIL:
+            PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->error_id);
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -668,7 +692,7 @@ asset_msg_send_again (asset_msg_t *self, void *output)
 zmsg_t * 
 asset_msg_encode_element (
     const char *name,
-    const char *location,
+    uint32_t location,
     byte type,
     zhash_t *ext)
 {
@@ -759,6 +783,34 @@ asset_msg_encode_delete_element (
 
 
 //  --------------------------------------------------------------------------
+//  Encode OK message
+
+zmsg_t * 
+asset_msg_encode_ok (
+    uint32_t element_id)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_OK);
+    asset_msg_set_element_id (self, element_id);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode FAIL message
+
+zmsg_t * 
+asset_msg_encode_fail (
+    uint32_t element_id,
+    byte error_id)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_FAIL);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_error_id (self, error_id);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Encode GET_ELEMENTS message
 
 zmsg_t * 
@@ -792,7 +844,7 @@ int
 asset_msg_send_element (
     void *output,
     const char *name,
-    const char *location,
+    uint32_t location,
     byte type,
     zhash_t *ext)
 {
@@ -888,6 +940,36 @@ asset_msg_send_delete_element (
 
 
 //  --------------------------------------------------------------------------
+//  Send the OK to the socket in one step
+
+int
+asset_msg_send_ok (
+    void *output,
+    uint32_t element_id)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_OK);
+    asset_msg_set_element_id (self, element_id);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the FAIL to the socket in one step
+
+int
+asset_msg_send_fail (
+    void *output,
+    uint32_t element_id,
+    byte error_id)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_FAIL);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_error_id (self, error_id);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the GET_ELEMENTS to the socket in one step
 
 int
@@ -931,7 +1013,7 @@ asset_msg_dup (asset_msg_t *self)
     switch (self->id) {
         case ASSET_MSG_ELEMENT:
             copy->name = self->name? strdup (self->name): NULL;
-            copy->location = self->location? strdup (self->location): NULL;
+            copy->location = self->location;
             copy->type = self->type;
             copy->ext = self->ext? zhash_dup (self->ext): NULL;
             break;
@@ -958,6 +1040,15 @@ asset_msg_dup (asset_msg_t *self)
         case ASSET_MSG_DELETE_ELEMENT:
             copy->element_id = self->element_id;
             copy->type = self->type;
+            break;
+
+        case ASSET_MSG_OK:
+            copy->element_id = self->element_id;
+            break;
+
+        case ASSET_MSG_FAIL:
+            copy->element_id = self->element_id;
+            copy->error_id = self->error_id;
             break;
 
         case ASSET_MSG_GET_ELEMENTS:
@@ -987,10 +1078,7 @@ asset_msg_print (asset_msg_t *self)
                 zsys_debug ("    name='%s'", self->name);
             else
                 zsys_debug ("    name=");
-            if (self->location)
-                zsys_debug ("    location='%s'", self->location);
-            else
-                zsys_debug ("    location=");
+            zsys_debug ("    location=%ld", (long) self->location);
             zsys_debug ("    type=%ld", (long) self->type);
             zsys_debug ("    ext=");
             if (self->ext) {
@@ -1043,6 +1131,17 @@ asset_msg_print (asset_msg_t *self)
             zsys_debug ("ASSET_MSG_DELETE_ELEMENT:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
             zsys_debug ("    type=%ld", (long) self->type);
+            break;
+            
+        case ASSET_MSG_OK:
+            zsys_debug ("ASSET_MSG_OK:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            break;
+            
+        case ASSET_MSG_FAIL:
+            zsys_debug ("ASSET_MSG_FAIL:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    error_id=%ld", (long) self->error_id);
             break;
             
         case ASSET_MSG_GET_ELEMENTS:
@@ -1129,6 +1228,12 @@ asset_msg_command (asset_msg_t *self)
         case ASSET_MSG_DELETE_ELEMENT:
             return ("DELETE_ELEMENT");
             break;
+        case ASSET_MSG_OK:
+            return ("OK");
+            break;
+        case ASSET_MSG_FAIL:
+            return ("FAIL");
+            break;
         case ASSET_MSG_GET_ELEMENTS:
             return ("GET_ELEMENTS");
             break;
@@ -1165,7 +1270,7 @@ asset_msg_set_name (asset_msg_t *self, const char *format, ...)
 //  --------------------------------------------------------------------------
 //  Get/set the location field
 
-const char *
+uint32_t
 asset_msg_location (asset_msg_t *self)
 {
     assert (self);
@@ -1173,15 +1278,10 @@ asset_msg_location (asset_msg_t *self)
 }
 
 void
-asset_msg_set_location (asset_msg_t *self, const char *format, ...)
+asset_msg_set_location (asset_msg_t *self, uint32_t location)
 {
-    //  Format location from provided arguments
     assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->location);
-    self->location = zsys_vprintf (format, argptr);
-    va_end (argptr);
+    self->location = location;
 }
 
 
@@ -1343,6 +1443,24 @@ asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p)
 
 
 //  --------------------------------------------------------------------------
+//  Get/set the error_id field
+
+byte
+asset_msg_error_id (asset_msg_t *self)
+{
+    assert (self);
+    return self->error_id;
+}
+
+void
+asset_msg_set_error_id (asset_msg_t *self, byte error_id)
+{
+    assert (self);
+    self->error_id = error_id;
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get the elemenet_ids field without transferring ownership
 
 zhash_t *
@@ -1465,7 +1583,7 @@ asset_msg_test (bool verbose)
     asset_msg_destroy (&copy);
 
     asset_msg_set_name (self, "Life is short but Now lasts for ever");
-    asset_msg_set_location (self, "Life is short but Now lasts for ever");
+    asset_msg_set_location (self, 123);
     asset_msg_set_type (self, 123);
     asset_msg_ext_insert (self, "Name", "Brutus");
     asset_msg_ext_insert (self, "Age", "%d", 43);
@@ -1479,7 +1597,7 @@ asset_msg_test (bool verbose)
         assert (asset_msg_routing_id (self));
         
         assert (streq (asset_msg_name (self), "Life is short but Now lasts for ever"));
-        assert (streq (asset_msg_location (self), "Life is short but Now lasts for ever"));
+        assert (asset_msg_location (self) == 123);
         assert (asset_msg_type (self) == 123);
         assert (asset_msg_ext_size (self) == 2);
         assert (streq (asset_msg_ext_string (self, "Name", "?"), "Brutus"));
@@ -1598,6 +1716,48 @@ asset_msg_test (bool verbose)
         
         assert (asset_msg_element_id (self) == 123);
         assert (asset_msg_type (self) == 123);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_OK);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_FAIL);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    asset_msg_set_error_id (self, 123);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_error_id (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_GET_ELEMENTS);
