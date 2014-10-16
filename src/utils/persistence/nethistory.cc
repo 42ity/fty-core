@@ -517,6 +517,96 @@ checkUniqueAuto() const
     return ret_val;
 }
 
+
+std::vector<NetHistory>
+NetHistory::
+getHistory(const std::string& url)
+{
+    
+    tntdb::Connection conn;  
+    conn = tntdb::connectCached(url); 
+
+    tntdb::Statement st = conn.prepareCached(
+        " select"
+        " v.id, v.name , conv(v.mac,10,16), v.ip , v.mask, v.command , v.timestamp"
+        " from"
+        " v_bios_net_history v"
+        );
+
+    tntdb::Result result = st.select();
+
+    std::vector<NetHistory> history;
+
+    int rsize = result.size();
+    if ( rsize > 0 )
+    {
+        //There are some records
+        for ( tntdb::Result::const_iterator it = result.begin();
+                it != result.end(); ++it)
+        {
+            tntdb::Row row = *it;
+
+            NetHistory* newNetHistory = new NetHistory(url);
+            
+            //id
+            int tmp_i = -1;
+            row[0].get(tmp_i);
+            newNetHistory->setId(tmp_i);
+
+            //name
+            std::string tmp_s = "";
+            row[1].get(tmp_s);
+            newNetHistory->setName(tmp_s);
+
+            //mac
+            tmp_s = "";
+            row[2].getString(tmp_s);
+            //TODO check if mac is ok
+            newNetHistory->setMac(_addColonMac(tmp_s));
+                    
+            //ip
+            tmp_s = "";
+            row[3].get(tmp_s);
+
+            //mask
+            tmp_i = -1;
+            row[4].get(tmp_i);
+
+            //address
+            CIDRAddress address = CIDRAddress(tmp_s,tmp_i);
+            // put in network format, to be sure it is in network format
+            address = address.network();
+            newNetHistory->setAddress(address);
+
+            //command
+            char tmp_c = 'z';
+            row[5].get(tmp_c);
+            newNetHistory->setCommand(tmp_c);
+
+
+            //timestamp
+            tntdb::Datetime mydatetime;
+            bool isNotNull = row[6].get(mydatetime);
+            if (isNotNull)
+                newNetHistory->setTimestamp(utils::db::convertToCTime(mydatetime));
+            else
+            {
+                //TODO
+                //log THIS SHOULD NEVER HAPPEN
+            }
+            
+            //state
+            newNetHistory->setState(ObjectState::OS_SELECTED);
+            
+            //TODO insert only if valid
+            //TODO redisign mac check
+            history.push_back(*newNetHistory);
+        }
+    }
+    //If no rows were selected, return empty vector
+    return history;
+}
+
 } // namespace db
 
 } //end of namespace utils
