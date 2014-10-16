@@ -1,13 +1,45 @@
 <%pre>
-#include <cxxtools/split.h>
+#include <czmq.h>
+
+#include "asset_msg.h"
+#include "data.h"
 </%pre>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
 <%cpp>
     // Check URL validity
     std::string id;
+
+    // Get data
+    asset_msg_t* dta = asset_mgr.get_items(request.getArg("type"));
+
+    if(dta == NULL) {
+</%cpp>
+{ "error":"item_not_found" }
+<%cpp>
+        return HTTP_NOT_FOUND;
+    }
 
     // Prepare the reply
 </%cpp>
 {
     "<$ request.getArg("type") $>": [
+<%cpp>
+    zhash_t *ids = asset_msg_get_elemenet_ids(dta);
+    if(ids != NULL) {
+        int count = zhash_size(ids);
+        int i = 0;
+        void *it = NULL;
+        for(i = 1, it = zhash_first(ids); it != 0;
+            i++,   it = zhash_next(ids) ) {
+</%cpp>
+        {
+            "id":"<$ (char*)zhash_cursor(ids) $>",
+            "name":"<$ (char*)it $>"
+        }<? i != count ? "," ?>
+%       }
     ]
+%   }
 }
+%   asset_msg_destroy(&dta);
