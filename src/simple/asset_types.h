@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ASSET_TYPES_H
+#define ASSET_TYPES_H
 
 enum asset_type {
     DATACENTER,
@@ -7,4 +8,4 @@ enum asset_type {
     RACK
 };
 
-
+#endif //ASSET_TYPES_H
