@@ -90,6 +90,90 @@ CREATE TABLE t_bios_client_info(
         ON DELETE CASCADE
 );
 
+
+
+
+
+
+
+DROP TABLE if exists t_bios_asset_power_topology;
+DROP TABLE if exists t_bios_asset_device;
+DROP TABLE if exists t_bios_asset_device_type;
+
+CREATE TABLE t_bios_asset_power_topology (
+  id_power_topology     INT UNSIGNED    NOT NULL AUTO_INCREMENT,
+  id_asset_device_src   INT UNSIGNED    NOT NULL,
+  src_inlet             TINYINT         NULL,
+  id_asset_device_dist  INT UNSIGNED    NOT NULL,
+  dist_outlet           TINYINT         NULL,
+  
+  PRIMARY KEY (id_power_topology),
+  
+  INDEX FK_ASSET_DEVICE_SRC_idx     (id_asset_device_src    ASC),
+  INDEX FK_ASSET_DEVICE_DIST_idx    (id_asset_device_dist   ASC),
+  
+  CONSTRAINT FK_ASSET_DEVICE_SRC
+    FOREIGN KEY (id_asset_device_src)
+    REFERENCES t_bios_asset_device(id_asset_device)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT FK_ASSET_DEVICE_DIST
+    FOREIGN KEY (id_asset_device_dist)
+    REFERENCES t_bios_asset_device(id_asset_device)
+    ON DELETE RESTRICT
+);
+
+CREATE TABLE t_bios_asset_device (
+  id_asset_device       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_asset_element      INT UNSIGNED NOT NULL,
+  hostname              VARCHAR(25),
+  full_hostname         VARCHAR(45),
+  ip                    VARCHAR(25),
+  mac                   BIGINT,
+  id_asset_device_type  INT UNSIGNED NOT NULL,
+
+  PRIMARY KEY (id_asset_device),
+
+  INDEX FK_ASSET_DEVICE_idx         (id_asset_element       ASC),
+  INDEX FK_ASSET_DEVICE_TYPE_idx    (id_asset_device_type   ASC),
+
+  CONSTRAINT FK_ASSETDEVICE_ELEMENT
+    FOREIGN KEY (id_asset_element)
+    REFERENCES t_bios_asset_element (id_element)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT FK_ASSETDEVICE_DEVICE_TYPE
+    FOREIGN KEY (id_asset_device_type)
+    REFERENCES t_bios_asset_device_type (id_asset_element_type)
+    ON DELETE RESTRICT
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
 
 insert into t_bios_client (id_client, name) values (1, "nmap");
