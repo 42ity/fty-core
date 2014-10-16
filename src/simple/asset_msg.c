@@ -50,6 +50,7 @@ struct _asset_msg_t {
     byte *ceiling;                      //  Valid upper limit for read pointer
     char *name;                         //  Name of the element
     uint32_t location;                  //  ID of the parent element
+    byte location_type;                 //  Type of the parent device, defined in enum somewhere
     byte type;                          //  Type of the device, defined in enum somewhere
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
@@ -266,6 +267,7 @@ asset_msg_decode (zmsg_t **msg_p)
         case ASSET_MSG_ELEMENT:
             GET_STRING (self->name);
             GET_NUMBER4 (self->location);
+            GET_NUMBER1 (self->location_type);
             GET_NUMBER1 (self->type);
             {
                 size_t hash_size;
@@ -390,6 +392,8 @@ asset_msg_encode (asset_msg_t **self_p)
                 frame_size += strlen (self->name);
             //  location is a 4-byte integer
             frame_size += 4;
+            //  location_type is a 1-byte integer
+            frame_size += 1;
             //  type is a 1-byte integer
             frame_size += 1;
             //  ext is an array of key=value strings
@@ -486,6 +490,7 @@ asset_msg_encode (asset_msg_t **self_p)
             else
                 PUT_NUMBER1 (0);    //  Empty string
             PUT_NUMBER4 (self->location);
+            PUT_NUMBER1 (self->location_type);
             PUT_NUMBER1 (self->type);
             if (self->ext) {
                 PUT_NUMBER4 (zhash_size (self->ext));
@@ -693,12 +698,14 @@ zmsg_t *
 asset_msg_encode_element (
     const char *name,
     uint32_t location,
+    byte location_type,
     byte type,
     zhash_t *ext)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_ELEMENT);
     asset_msg_set_name (self, name);
     asset_msg_set_location (self, location);
+    asset_msg_set_location_type (self, location_type);
     asset_msg_set_type (self, type);
     zhash_t *ext_copy = zhash_dup (ext);
     asset_msg_set_ext (self, &ext_copy);
@@ -845,12 +852,14 @@ asset_msg_send_element (
     void *output,
     const char *name,
     uint32_t location,
+    byte location_type,
     byte type,
     zhash_t *ext)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_ELEMENT);
     asset_msg_set_name (self, name);
     asset_msg_set_location (self, location);
+    asset_msg_set_location_type (self, location_type);
     asset_msg_set_type (self, type);
     zhash_t *ext_copy = zhash_dup (ext);
     asset_msg_set_ext (self, &ext_copy);
@@ -1014,6 +1023,7 @@ asset_msg_dup (asset_msg_t *self)
         case ASSET_MSG_ELEMENT:
             copy->name = self->name? strdup (self->name): NULL;
             copy->location = self->location;
+            copy->location_type = self->location_type;
             copy->type = self->type;
             copy->ext = self->ext? zhash_dup (self->ext): NULL;
             break;
@@ -1079,6 +1089,7 @@ asset_msg_print (asset_msg_t *self)
             else
                 zsys_debug ("    name=");
             zsys_debug ("    location=%ld", (long) self->location);
+            zsys_debug ("    location_type=%ld", (long) self->location_type);
             zsys_debug ("    type=%ld", (long) self->type);
             zsys_debug ("    ext=");
             if (self->ext) {
@@ -1282,6 +1293,24 @@ asset_msg_set_location (asset_msg_t *self, uint32_t location)
 {
     assert (self);
     self->location = location;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the location_type field
+
+byte
+asset_msg_location_type (asset_msg_t *self)
+{
+    assert (self);
+    return self->location_type;
+}
+
+void
+asset_msg_set_location_type (asset_msg_t *self, byte location_type)
+{
+    assert (self);
+    self->location_type = location_type;
 }
 
 
@@ -1584,6 +1613,7 @@ asset_msg_test (bool verbose)
 
     asset_msg_set_name (self, "Life is short but Now lasts for ever");
     asset_msg_set_location (self, 123);
+    asset_msg_set_location_type (self, 123);
     asset_msg_set_type (self, 123);
     asset_msg_ext_insert (self, "Name", "Brutus");
     asset_msg_ext_insert (self, "Age", "%d", 43);
@@ -1598,6 +1628,7 @@ asset_msg_test (bool verbose)
         
         assert (streq (asset_msg_name (self), "Life is short but Now lasts for ever"));
         assert (asset_msg_location (self) == 123);
+        assert (asset_msg_location_type (self) == 123);
         assert (asset_msg_type (self) == 123);
         assert (asset_msg_ext_size (self) == 2);
         assert (streq (asset_msg_ext_string (self, "Name", "?"), "Brutus"));

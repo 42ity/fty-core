@@ -11,14 +11,18 @@ int main(int argc, char** argv) {
 
     printf("Enter element id: ");
     scanf("%d", &id);
-    printf("Enter element location: ");
+    printf("Enter element type: ");
     scanf("%d", &loc);
+    asset_msg_set_type(element, loc);
     printf("Enter element name: ");
     scanf("%s", name);
-
     asset_msg_set_name(element, "%s", name);
+    printf("Enter element location: ");
+    scanf("%d", &loc);
     asset_msg_set_location(element, loc);
-    asset_msg_set_type(element, 0);
+    printf("Enter parent element type: ");
+    scanf("%d", &loc);
+    asset_msg_set_location_type(element, loc);
 
     sprintf(key, "y");
     sprintf(value, "y");
