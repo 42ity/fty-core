@@ -23,4 +23,6 @@ TODO
 
 Currently hacked together. Needs rewrite to use autotools, get rid of
 hardcoded values and maybe some indentation and comments wouldn't hurt either.
-Also at some point we need to rotate keys for security reason.
+Also at some point we need to rotate keys for security reason. Maybe
+implementing API call for refreshing token sounds like a good idea to allow
+people to prolong their session.
