@@ -137,6 +137,8 @@ class NetHistory : public DataBaseTimeObject
          */
         int checkUnique() const;
 
+        static std::vector<NetHistory> getHistory(const std::string & url);
+
     protected:
        
         bool check_command() const;
