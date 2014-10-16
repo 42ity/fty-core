@@ -43,7 +43,7 @@
 
 -->
 
-<message name = "poverdev_status" id = "201">
+<message name = "powerdev_status" id = "201">
     Actual device status. Values, that allows UPS identification, are specified individually, rest is a dictionary
     <field name = "deviceID"             type = "string">Device ID - nut name</field>
     <field name = "model"                type = "string">Device model</field>
