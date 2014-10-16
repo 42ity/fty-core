@@ -265,12 +265,15 @@ simple_SOURCES = 			src/simple/main.cc \
 					src/simple/netdisc_msg.c \
 					src/simple/netdisc_msg.h \
 					src/utils/persistencelogic.cc \
-					src/utils/persistencelogic.h
+					src/utils/persistencelogic.h \
+					src/simple/powerdev_msg.c \
+					src/drivers/nut/nut-actor.cc \
+					src/drivers/nut/nut-driver.cc
 
 
-simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} -lcxxtools -ltntdb
+simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBNUTCLIENT_LIBS} -lcxxtools -ltntdb
 #simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} -lcxxtools -ltntdb
-simple_CPPFLAGS =			-I $(top_srcdir)/tools/ -I $(top_builddir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple/
+simple_CPPFLAGS =			-I $(top_srcdir)/tools/ -I $(top_builddir)/tools/ -I $(top_srcdir)/src/utils/ -I $(top_srcdir)/src/simple/ -I $(top_srcdir)/src/drivers/nut
 simple_LDADD =				libpriv-db.la libpriv-cidr.la libpriv-log.la libpriv-subprocess.la
 
 bin_PROGRAMS += 			driver-nmap

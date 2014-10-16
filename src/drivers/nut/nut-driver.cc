@@ -61,15 +61,15 @@ static const std::vector<std::string> inventoryNUT {
 };
 
 static const std::vector<std::string> inventoryBIOS {
-    "device.model",
-    "device.mfr",
-    "device.serial",
-    "device.type",
+    "model",
+    "manufacturer",
+    "serial",
+    "type",
     "device.description",
     "device.contact",
     "device.location",
     "device.part",
-    "ups.status",
+    "status",
     "ups.alarm",
     "ups.serial",
     "battery.date",
@@ -90,12 +90,16 @@ void NUTDevice::name(const std::string aName) {
     _name = aName;
 }
 
-const std::string NUTDevice::name() {
+std::string NUTDevice::name() const {
     return _name;
 }
 
 bool NUTDevice::changed() const {
     return _change;
+}
+
+void NUTDevice::changed(const bool status) {
+    _change = status;
 }
 
 void NUTDevice::updatePhysics(std::string varName, float newValue) {
@@ -172,7 +176,7 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
     }
 }
 
-std::string NUTDevice::itof(long int X) {
+std::string NUTDevice::itof(const long int X) const {
     std::string num,dec;
 
     num = std::to_string( X / 100 );
@@ -185,7 +189,7 @@ std::string NUTDevice::itof(long int X) {
     }
 }
 
-const std::string NUTDevice::statusMessage() {
+std::string NUTDevice::toString() const {
     std::string msg = "",val;
     for(auto it : _physics ){
         msg += "\"" + it.first + "\":" + itof(it.second ) + ", ";
@@ -198,8 +202,45 @@ const std::string NUTDevice::statusMessage() {
     if( msg.size() > 2 ) {
         msg = msg.substr(0, msg.size()-2 );
     }
-    _change = false;
     return "{" + msg + "}";
+}
+
+std::map<std::string,std::string> NUTDevice::properties() const {
+    std::map<std::string,std::string> map;
+    for(auto it : _physics ){
+        map[ it.first ] = itof(it.second);
+    }
+    for(auto it : _inventory ){
+        map[ it.first ] = it.second;
+    }
+    return map;
+}
+
+
+bool NUTDevice::hasProperty(const std::string name) const {
+    if( _physics.count( name ) != 0 ) {
+        // this is a number and value exists
+        return true;
+    }
+    if( _inventory.count( name ) != 0 ) {
+        // this is a inventory string, value exists
+        return true;
+    }
+    return false;
+}
+
+std::string NUTDevice::property(const std::string name) const {
+    auto iterP = _physics.find(name);
+    if( iterP != _physics.end() ) {
+        // this is a number, value exists
+        return itof(iterP->second);
+    }
+    auto iterI = _inventory.find(name);
+    if( iterI != _inventory.end() ) {
+        // this is a inventory string, value exists
+        return iterI->second;
+    }
+    return "";
 }
 
 NUTDevice::~NUTDevice() {
@@ -288,28 +329,7 @@ bool NUTDeviceList::changed() const {
     return false;
 }
 
-
 NUTDeviceList::~NUTDeviceList() {
     disconnect();
 }
-
-
-#include <thread>
-#include <chrono>
-
-int main(int argc, char *argv[]) {
-    NUTDeviceList mydevs;
-
-    while(true) {
-        mydevs.update();
-        for(auto &it : mydevs ) {
-            if(it.second.changed() ) {
-                cout << it.first << it.second.statusMessage() << std::endl;
-            }
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(2));
-    }
-    return 0;
-}
-
 

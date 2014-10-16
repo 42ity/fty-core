@@ -23,12 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _SRC_DRIVERS_NUT_DRIVER_H_
 #define _SRC_DRIVERS_NUT_DRIVER_H_
 
-#include <czmq.h>
 #include <map>
 #include <vector>
 #include <nutclient.h>
-
-void nut_actor(zsock_t *pipe, void *args);
+#include <czmq.h>
 
 /**
  * \class NUTDevice
@@ -56,32 +54,64 @@ class NUTDevice {
     /**
      * \brief Method for obtaining device's name.
      */
-    const std::string name();
+    std::string name() const;
 
     /**
      * \brief Method for checking that some changes in device status happened.
      * \return bool
-     * \see statusMessage()
      *
      * Method returns true if there are some changes in device since last
      * statusMessage has been called.
      */
     bool changed() const;
-    
+
+    /**
+     * \brief Method for setting the change status.
+     */
+    void changed(const bool status);
+
     /**
      * \brief Produces a std::string with device status in JSON format.
      * \return std::string
      * \see change()
      *
-     * Method returns string with device status message. The flag _change is
-     * set to false. Method returs the actual status allways, even if there is
-     * no change.
+     * Method returns string with device status message. Method returs the
+     * actual status in json like std::string.
      *
      *    if( UPS.change() ) {
-     *        cout << UPS.statusMessage() << endl;
+     *        cout << UPS.toString() << endl;
+     *        UPS.changed(false);
      *    }
      */
-    const std::string statusMessage();
+    std::string toString() const;
+
+    /**
+     * \brief method checks whether this device reports particular property.
+     * \return bool, true if property exists
+     */
+    bool hasProperty(const std::string name) const;
+
+    /**
+     * \brief method returns particular device property.
+     * \return std::string, property value as a string or empty
+     *         string ("") if property doesn't exists
+     *
+     *    if( UPS.hasProperty("voltage") ) {
+     *        cout << "voltage " << UPS.property("voltage") << "\n";
+     *    } else {
+     *        cout << "voltage unknown\n";
+     *    }
+     */
+    std::string property(const std::string name) const;
+
+    /**
+     * \brief method returns all discovered properties of device.
+     * \return std::map<std::string,std::string> property values
+     *
+     * Method transforms all properties (physical and inventory) to
+     * map. Numeric values are converted to strings using itof() method.
+     */
+    std::map<std::string,std::string> properties() const;
     ~NUTDevice();
  private:
 
@@ -133,7 +163,7 @@ class NUTDevice {
     //! \brief device name
     std::string _name;
     //! \brief Transformation of our integer (x100) back
-    std::string itof(long int);
+    std::string itof(const long int) const;
 };
 
 /**
@@ -189,5 +219,7 @@ class NUTDeviceList {
     //! \brief update status of NUT devices
     void updateDeviceStatus();
 };
+
+
 
 #endif // _SRC_DRIVERS_NUT_DRIVER_H_
