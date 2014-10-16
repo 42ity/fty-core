@@ -9,10 +9,11 @@ Poc of simple "poor man's" BIOS architecture
  * uses real netmon network linux stack
  * keeps the netmon_mock for testing purposes (--test-mode)
 
-2 actors:
+3 actors:
 
  1. persistence: binds to the ROUTER socket and blindly prints everything to stdout
  2. netmon mock: when  in --test-mode
+ 3. nut: connects to local NUT server
 
 KNOWN ISSUES:
  netmon process is not being terminated; you need to terminate it manually
