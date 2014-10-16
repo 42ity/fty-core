@@ -18,6 +18,9 @@ expected location - currently hardcoded to +/var/run/saslauthd/mux+ and that
 you have correct credentials set in +test_web.sh+. Afterwards you can run
 +make test+ and in different terminal on the same machine +test_web.sh+.
 
+To test assets, run +mk_test_data.sh+ which will generate static files you can
+use to test assets using API calls defined in rfc-11.
+
 TODO
 ----
 

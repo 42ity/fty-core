@@ -6,16 +6,18 @@ int main(int argc, char** argv) {
     char key[1024];
     char value[1024];
     char name[1024];
-    int id;
+    int id, loc;
     asset_msg_t *element = asset_msg_new(ASSET_MSG_ELEMENT);
 
     printf("Enter element id: ");
     scanf("%d", &id);
+    printf("Enter element location: ");
+    scanf("%d", &loc);
     printf("Enter element name: ");
     scanf("%s", name);
 
     asset_msg_set_name(element, "%s", name);
-    asset_msg_set_location(element, 0);
+    asset_msg_set_location(element, loc);
     asset_msg_set_type(element, 0);
 
     sprintf(key, "y");
