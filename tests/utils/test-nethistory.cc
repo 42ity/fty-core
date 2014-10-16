@@ -110,3 +110,11 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
     REQUIRE( n == 1);
 }
 
+TEST_CASE("net history select all","[dbnethistory][select][getHistory]"){
+    std::vector<utils::db::NetHistory> history = utils::db::NetHistory::getHistory(url);
+    INFO(history.size());
+    for ( auto i = history.begin(); i != history.end(); i++ ) {
+        std::cout<< ((*i).toString()) << std::endl;
+    }
+    REQUIRE (history.size() > 0);
+}
