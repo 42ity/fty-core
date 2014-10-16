@@ -1,11 +1,12 @@
 #ifndef ASSET_TYPES_H
 #define ASSET_TYPES_H
 
-enum asset_type {
+enum class asset_type : byte {
     DATACENTER,
     ROOM,
     ROW,
-    RACK
+    RACK,
+    GROUP
 };
 
 #endif //ASSET_TYPES_H
