@@ -1,0 +1,120 @@
+NUT driver
+==========
+
+This driver connects to the NUT daemon and periodically checks for all
+configured devices and their changes. Whenever there is a change, nut-actor
+generates 0MQ message.
+
+The message for every configured device is also generated on application
+start (this is considered as a change from nothing to something).
+
+Dependencies
+------------
+
+To be able build the driver, nut-devel package >= 2.7 is required. Particularly
+libnutclient library.
+
+To have also some messages produced, nut-server must be configured and
+running. It is not necessary to configure and run nut-server, if You
+are not interested for power device messages.
+
+Configuration
+-------------
+
+NUT configuration is stored in several files in /etc/ups/ (CentOS).
+
+nut.conf
+~~~~~~~~
+for us, there is one line in this file:
+
+MODE=standalone
+
+ups.conf
+~~~~~~~~
+In this file we should specify out particular devices.
+
+Here is working example:
+
+----------------------------------------------------------
+[labroz]
+    driver = "snmp-ups"
+    port = "10.130.38.135"
+    desc = "9135"
+    mibs = "mge"
+    community = "public"
+
+[nutdev1]
+    driver = "snmp-ups"
+    port = "10.130.32.120"
+    desc = "Eaton 9PX"
+    mibs = "mge"
+    community = "public"
+
+[nutdev2]
+    driver = "snmp-ups"
+    port = "10.130.32.121"
+    desc = "Eaton 5PX"
+    mibs = "mge"
+    community = "public"
+
+[nutdev3]
+    driver = "snmp-ups"
+    port = "10.130.32.123"
+    desc = "Eaton 5PX"
+    mibs = "mge"
+    community = "public"
+
+[nutdev4]
+    driver = "snmp-ups"
+    port = "10.130.32.122"
+    desc = "Eaton 5PX"
+    mibs = "mge"
+    community = "public"
+
+[nutdev5]
+    driver = "snmp-ups"
+    port = "10.130.32.125"
+    desc = "Smart-UPS 1000"
+    mibs = "apcc"
+    community = "public"
+
+[nutdev6]
+    driver = "snmp-ups"
+    port = "10.130.32.125"
+    desc = "APC"
+    mibs = "ietf"
+    community = "public"
+----------------------------------------------------------
+
+
+upsd.conf
+~~~~~~~~~
+Let this file empty (only comments here).
+
+upsd.users
+~~~~~~~~~~
+As far as we only read values (no commands are sent to UPS), we
+don't need edit this file.
+
+upsmon.conf
+~~~~~~~~~~~
+This file specifies actions and communication params (like timeouts, ssl).
+We don't need to touch this file.
+
+upssched.conf
+~~~~~~~~~~~~~
+Let this file untouched.
+
+
+NUT services
+------------
+
+There are two services to be started after configuration (Dependency is defined
+in CentOS package).
+
+  systemctl start nut-server
+
+eventually
+
+  systemctl start nut-driver
+
