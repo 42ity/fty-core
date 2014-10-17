@@ -38,6 +38,7 @@
     ELEMENT - Structure describing asset element
         name                string      Name of the element
         location            number 4    ID of the parent element
+        location_type       number 1    Type of the parent device, defined in enum somewhere
         type                number 1    Type of the device, defined in enum somewhere
         ext                 dictionary  Hash map of extended attributes
 
@@ -137,6 +138,7 @@ zmsg_t *
     asset_msg_encode_element (
         const char *name,
         uint32_t location,
+        byte location_type,
         byte type,
         zhash_t *ext);
 
@@ -197,6 +199,7 @@ int
     asset_msg_send_element (void *output,
         const char *name,
         uint32_t location,
+        byte location_type,
         byte type,
         zhash_t *ext);
     
@@ -292,6 +295,12 @@ uint32_t
     asset_msg_location (asset_msg_t *self);
 void
     asset_msg_set_location (asset_msg_t *self, uint32_t location);
+
+//  Get/set the location_type field
+byte
+    asset_msg_location_type (asset_msg_t *self);
+void
+    asset_msg_set_location_type (asset_msg_t *self, byte location_type);
 
 //  Get/set the type field
 byte

@@ -7,6 +7,8 @@ pushd data/datacenter
 1
 0
 test_dc
+0
+0
 country
 France
 company
@@ -19,6 +21,8 @@ pushd data/room
 2
 1
 alpha
+1
+0
 description
 Empty_room
 exit
@@ -27,6 +31,8 @@ EOF
 3
 1
 beta
+1
+0
 description
 Real_room
 exit
@@ -35,8 +41,10 @@ popd
 pushd data/row
 "$BASEDIR"/fake_message << EOF
 4
-3
+2
 front_one
+3
+1
 description
 Real_room
 exit
@@ -45,8 +53,10 @@ popd
 pushd data/rack
 "$BASEDIR"/fake_message << EOF
 5
-4
+3
 in_the_row
+4
+2
 brand
 Eaton
 u_size
@@ -57,6 +67,8 @@ EOF
 6
 3
 sole_rack
+3
+1
 brand
 APC
 u_size
