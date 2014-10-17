@@ -32,6 +32,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define NMAP_BIN "/usr/bin/nmap"
 #define SUDO_BIN "/ust/bin/sudo"
 
+#define SCAN_CMDTYPE_DEFAULT_LIST   "defaultlistscan"
+#define SCAN_CMDTYPE_DEFAULT_DEVICE   "defaultdevicescan"
+
 //! \brief scanning methods supported by a driver
 enum class NmapMethod {
     DefaultListScan,
@@ -39,3 +42,4 @@ enum class NmapMethod {
 };
 
 #endif //_SRC_DRIVERS_NMAP_DRIVER_H_
+
