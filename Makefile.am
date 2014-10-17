@@ -45,23 +45,6 @@ noinst_LTLIBRARIES += 		libpriv-utils.la
 libpriv_utils_la_SOURCES = 	src/utils/utils.c \
 				src/utils/utils.h
 
-noinst_LTLIBRARIES += 		libpriv-cli.la
-
-libpriv_cli_la_SOURCES = 	src/utils/utils.h \
-				src/cli/cli.h \
-				src/cli/cli-shared.c
-
-libpriv_cli_la_LIBADD = 	libpriv-utils.la
-
-noinst_LTLIBRARIES += 		libpriv-cored.la
-
-libpriv_cored_la_SOURCES = 	src/utils/zmq.hpp \
-				src/cored/mock_db.h \
-				src/cored/mock_db.cc \
-				src/cored/utilities.h \
-				src/cored/utilities.cc \
-				src/cored/utilities_zeromq.h \
-				src/cored/utilities_zeromq.cc
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -156,16 +139,6 @@ test_utils_LDADD = 			libpriv-utils.la \
 					libpriv-test-run.la
 test_utils_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-cli
-test_cli_SOURCES = 			src/cli/cli.h \
-					tests/cli/test-cli.cc
-test_cli_LDADD = 			libpriv-utils.la \
-					libpriv-cli.la \
-					libpriv-test-run.la
-test_cli_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I $(top_srcdir)/tests/include \
-					-I $(top_srcdir)/src/cli
-
 check_PROGRAMS += 			test-log
 test_log_SOURCES = 			src/utils/log.h \
 					src/utils/utils.h \
@@ -235,26 +208,6 @@ nodist_netmon_SOURCES = 		src/utils/messages/json_schemas.h
 # Consider moving zproto protocols to libpriv-...
 netmon_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
 netmon_LDADD =				libpriv-utils.la libpriv-log.la
-
-
-
-bin_PROGRAMS += 			cli
-cli_SOURCES = 				src/cli/cli.h \
-					src/cli/cli.c \
-					src/cli/cli-network.cc \
-					src/utils/messages/json_schemas.h
-nodist_cli_SOURCES = 			src/utils/messages/json_schemas.h
-cli_LDADD =				libpriv-utils.la libpriv-cli.la libpriv-log.la
-cli_LDFLAGS =				$(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
-
-bin_PROGRAMS += 			cored
-
-cored_SOURCES = 			src/cored/main.h \
-					src/cored/main.cc
-
-nodist_cored_SOURCES = 			src/utils/messages/json_schemas.h
-cored_LDADD =				libpriv-cored.la
-cored_LDFLAGS =				-pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += 			simple
 
