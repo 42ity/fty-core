@@ -1,31 +1,107 @@
+The INSTALL document for $BIOS
+==============================
+
+This INSTALL document is about building and installing prerequisite and
+resulting packages for the Eaton $BIOS core project.
+
+To ease copy-pasting, the example commands in this document are prefixed
+with a colon+semicolon prompt `:;` which is an empty command for shell
+interpreters (unlike the dollar `$` or hash `#` signs which have their
+meaning for shells and can adversely influence copy-pasted commands).
+
+
+
+Get the source
+--------------
+If you are reading this file, you probably have some version of the
+$BIOS core project source code already. It might not be the most fresh
+version, however, so to stay on the bleeding edge of development you
+might want to clone the source-code repository onto your development
+system.
+
+Checkout of the main upstream repository itself is more of interest to
+those responsible for building the current project state into binaries
+for validation or redistribution. Code should not be "pushed" into this
+repository directly except after review by the source code gate-keepers.
+The upstream $BIOS core project repository can be cloned with the command
+below (proper access to the project infrastructure server is required)
+over SSH (keys should be uploaded to the user's Stash account first):
+----
+:; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
+----
+...or over HTTP (plaintext password may be required which is not good, and
+special characters may need URL percent-encoding which is inconvenient):
+----
+:; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
+----
+
+The project workflow for actual development implies that one should first
+"fork" the upstream repository in the Stash web-interface into a private
+namespace (named like E1234567 below) with automatic application of updates
+from the upstream repo, then `git clone` this private repository onto his
+or her PC for actual coding; it is convenient to also register the common
+upstream repository as such, to facilitate comparisons and updates which
+were not resolved automatically (i.e. several changes applied to the same
+area in the tracked files and possibly conflicting):
+----
+:; git clone ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git && \
+   cd core/ && \
+   git remote add upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
+----
+
+
+
 Configure package repositories of pre-built prerequisites for the project
-=========================================================================
- 0 Currently BIOS relies on some Linux-specific features, so the code is
-   not expected to compile and work in other operating system platforms,
-   at least not in its entirety. It is not currently a goal of the core
-   development team to support deployment on more platforms than we can
-   handle and validate ourselves. Current target devices will be ARM boxes
-   running an embedded Linux distribution, and the developer workstations
-   run an assortment of recent PC Linux distributions. The project services
-   include an OBS-based server to automatically check out and rebuild the
-   packages with some of our and third-party code relevant for our project.
+-------------------------------------------------------------------------
+Currently $BIOS relies on some Linux-specific features, so the code is
+not expected to compile and work in other operating system platforms,
+at least not in its entirety. It is not currently a goal of the core
+development team to support deployment on more platforms than we can
+handle and validate ourselves. Current target devices will be ARM boxes
+running an embedded Linux distribution, and the developer workstations
+run an assortment of recent PC Linux distributions. The project team's
+infrastructure services include an Open Build Service (OBS)-based server
+to automatically check out and rebuild the packages with some of our own
+and third-party code relevant for our project for some platforms that
+are of interest to ourselves.
 
- 1 The software packages built for the project can be located in OBS
-   build-result repositories, including the following Linux OS releases:
-     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
-     http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
-     http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
-   these packages include such build and/or runtime dependencies as
-   libvariant, iproute2, mariadb, zeromq and so on.
+The software packages built for the project can be located in our OBS
+build-results repositories, including the following Linux OS releases:
 
- 1a. One of the Linux OSes supported automatically by our OBS service is
-   Debian 8.0 for "x86_64" and "armhf" architectures (and "all" for some
-   platform-independent code).
+ * http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
+ * http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
+ * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
-   For a Debian-8.0 system, consider downloading the current packages into
-   some temporary storage with this script:
-[source,shell]
----------------------------------------------------------------------
+These packages include such build and/or runtime dependencies as
+libvariant, iproute2, mariadb, zeromq and so on.
+
+Installing an APT package source for Debian 8.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+One of the Linux OSes supported automatically by our OBS service is
+Debian 8.0 for "x86_64" and "armhf" architectures (and "all" for some
+platform-independent code). This is currently a "testing" variant of
+Debian and a moving target in terms of formal support (although seems
+recently "frozen" and heading to official stable supported release).
+However, automatic dependency handling in OBS should handle refreshed
+source code coming from upstream for us.
+
+Automatic setup of OBS as a package source for a supported Debian 8.0
+platform with APT package management should work like this (execute
+as "root"):
+----
+:; echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
+   /etc/apt/sources.list.d/00bios-obs-deb8.list && \
+   apt-get update
+----
+Afterwards the usual installation and update actions with `apt-get install`,
+search with `apt-cache search` and so on should work.
+
+Manually fetching and installing packages built for Debian 8.0
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For weird manual installations of our pre-built packages from OBS to
+a system similar to Debian-8.0, consider downloading the current
+package files into some temporary storage with this script:
+----
 #!/bin/sh
 for DIR in \
     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/{amd64,all}/ \
@@ -33,35 +109,64 @@ for DIR in \
     wget -l1 -np -nd -N -c -r --remove-listing --accept=.deb "$DIR"
 done
 rm -f *.html*
----------------------------------------------------------------------
-   Then you can install the packages with "dpkg -i ..."
+----
+Then you can install the packages with `dpkg -i filename.deb`
 
-   To fetch the sources used by OBS for a local rebuild, check this out:
-[source,shell]
----------------------------------------------------------------------
+To fetch the sources used by OBS for a local rebuild, check this out:
+----
 #!/bin/sh
 wget -l1 -np -nd -N -c -r --remove-listing \
     --accept='.dsc,.tar.xz,.tar.gz,.tar.bz2,.tgz,.tbz,.tbz2,.txz' \
     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
----------------------------------------------------------------------
+----
 
-Build dependencies installation
-===============================
- 1 Install iproute-dev development files, version "20120521", using
-   your configured system repositories:
-     apt-get install iproute-dev
-   OR
-     zypper install libnetlink-devel
-   (TODO: Which version should be used - same release as the current
-   Linux kernel on a given machine? Specific release? Latest release?)
- 2 Install libVariant (from prerequisites above)
+
+
+Installation of the build dependencies
+--------------------------------------
+ * Install iproute-dev development files, version "20120521", using
+your configured system repositories, i.e. with Debian APT:
+----
+:; apt-get install iproute-dev
+----
+...or with Suse Zypper:
+----
+:; zypper install libnetlink-devel
+----
+
+[NOTE]
+======
+*TODO*: Which version should be used - same release as the current
+Linux kernel on a given machine? Specific release? Latest release?)
+======
+
+ * Install libVariant (from prerequisites above), i.e.:
+----
+:; apt-get install libvariant libvariant-dev
+----
+
+
 
 Configure and build the project sources
-=======================================
-no configure
--1 Run autoreconf -fiv
+---------------------------------------
+If no configure script is available yet (or if it needs to be rebuilt)...
 
-else (if configure script exists)
- 1 Type ./configure
- 2 type make
- 3 type make DESTDIR=/some/path install
+ * create or update the `configure` script:
+----
+:; autoreconf -fiv
+----
+
+else (if configure script exists and is acceptable):
+
+ * Configure the build system:
+----
+:; ./configure
+----
+ * Build the sources:
+----
+:; make
+----
+ * Install the binaries (under a chosen destination root directory):
+----
+:; make DESTDIR=/some/path install
+----
