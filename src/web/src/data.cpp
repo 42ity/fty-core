@@ -5,7 +5,7 @@
 
 byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-    asset_type ret = asset_type::UNKNOWN;
+    byte ret = asset_type::UNKNOWN;
     if(type == "datacenter") {
         ret = asset_type::DATACENTER;
     } else if(type == "room") {
@@ -17,15 +17,10 @@ byte asset_manager::type_to_byte(std::string type) {
     } else if(type == "group") {
         ret = asset_type::GROUP;
     }
-    return (byte)ret;
+    return ret;
 }
 
 std::string asset_manager::byte_to_type(byte type) {
-    asset_type conv = (asset_type)type;
-    return asset_manager::byte_to_type(conv);
-}
-
-std::string asset_manager::byte_to_type(asset_type type) {
     switch(type) {
         case asset_type::DATACENTER:
             return "datacenter";
@@ -37,5 +32,7 @@ std::string asset_manager::byte_to_type(asset_type type) {
             return "rack";
         case asset_type::GROUP:
             return "group";
+        default:
+            return "";
     }
 }

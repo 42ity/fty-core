@@ -10,5 +10,4 @@ class asset_manager {
         asset_msg_t* get_items(std::string type);
         static byte type_to_byte(std::string type);
         static std::string byte_to_type(byte type);
-        static std::string byte_to_type(asset_type type);
 };
