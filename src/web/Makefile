@@ -8,12 +8,12 @@ test: all
 	${TNTNET} tntnet.xml
 
 clean:
-	${RM} bios.so src/*.o
+	${RM} bios.so fake_message fake_message.o src/*.o
 
 bios.so: src/auth.o src/auth-verify.o src/sasl.o src/tokens.o src/time.o src/item.o src/json.o src/list.o src/mock.o ../simple/asset_msg.o src/data.cpp
 	${CXX} -o $@ $^ ${LDFLAGS} ${CXXFLAGS}
 
-fake_message: fake_message.o ../simple/asset_msg.o
+fake_message: fake_message.o ../simple/asset_msg.o src/data.o
 	${CXX} -o $@ -I../simple $^ -lczmq
 
 .SUFFIXES: .ecpp .gif .jpg .css .js .cpp

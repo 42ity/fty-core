@@ -1,6 +1,7 @@
 #include <czmq.h>
 
 #include "asset_msg.h"
+#include "data.h"
 
 int main(int argc, char** argv) {
     char key[1024];
@@ -12,8 +13,8 @@ int main(int argc, char** argv) {
     printf("Enter element id: ");
     scanf("%d", &id);
     printf("Enter element type: ");
-    scanf("%d", &loc);
-    asset_msg_set_type(element, loc);
+    scanf("%s", name);
+    asset_msg_set_type(element, asset_manager::type_to_byte(name));
     printf("Enter element name: ");
     scanf("%s", name);
     asset_msg_set_name(element, "%s", name);
@@ -21,8 +22,8 @@ int main(int argc, char** argv) {
     scanf("%d", &loc);
     asset_msg_set_location(element, loc);
     printf("Enter parent element type: ");
-    scanf("%d", &loc);
-    asset_msg_set_location_type(element, loc);
+    scanf("%s", name);
+    asset_msg_set_location_type(element, asset_manager::type_to_byte(name));
 
     sprintf(key, "y");
     sprintf(value, "y");
@@ -42,5 +43,6 @@ int main(int argc, char** argv) {
     FILE* fl = fopen(key, "w");
     zmsg_save(msg, fl);
     fclose(fl);
+    printf("\n");
     return 0;
 }
