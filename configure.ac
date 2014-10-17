@@ -33,16 +33,9 @@ PKG_PROG_PKG_CONFIG
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_LANG_PUSH([C++])
-# libvariant
-AC_CHECK_HEADERS([Variant/Variant.h],
-                 [],
-                 AC_MSG_ERROR([cannot find required header Variant/Variant.h]))
 AC_CHECK_HEADERS([tntdb.h],
                  [],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
-AC_CHECK_HEADERS([Variant/Schema.h],
-                 [],
-                 AC_MSG_ERROR([cannot find required header Variant/Schema.h]))
 AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
