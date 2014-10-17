@@ -66,8 +66,8 @@ struct _asset_msg_t {
     uint16_t my_socket;                 //  
     uint32_t element_id;                //  Unique ID of the asset element
     byte error_id;                      //  Type of the error, enum defined somewhere else
-    zhash_t *elemenet_ids;              //  Unique IDs of the asset element mapped to the elements name
-    size_t elemenet_ids_bytes;          //  Size of dictionary content
+    zhash_t *element_ids;               //  Unique IDs of the asset element mapped to the elements name
+    size_t element_ids_bytes;           //  Size of dictionary content
 };
 
 //  --------------------------------------------------------------------------
@@ -242,7 +242,7 @@ asset_msg_destroy (asset_msg_t **self_p)
         free (self->fqdn);
         free (self->mac);
         zmsg_destroy (&self->msg);
-        zhash_destroy (&self->elemenet_ids);
+        zhash_destroy (&self->element_ids);
 
         //  Free object itself
         free (self);
@@ -399,13 +399,13 @@ asset_msg_decode (zmsg_t **msg_p)
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
-                self->elemenet_ids = zhash_new ();
-                zhash_autofree (self->elemenet_ids);
+                self->element_ids = zhash_new ();
+                zhash_autofree (self->element_ids);
                 while (hash_size--) {
                     char *key, *value;
                     GET_STRING (key);
                     GET_LONGSTR (value);
-                    zhash_insert (self->elemenet_ids, key, value);
+                    zhash_insert (self->element_ids, key, value);
                     free (key);
                     free (value);
                 }
@@ -569,19 +569,19 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
             
         case ASSET_MSG_RETURN_ELEMENTS:
-            //  elemenet_ids is an array of key=value strings
+            //  element_ids is an array of key=value strings
             frame_size += 4;    //  Size is 4 octets
-            if (self->elemenet_ids) {
-                self->elemenet_ids_bytes = 0;
+            if (self->element_ids) {
+                self->element_ids_bytes = 0;
                 //  Add up size of dictionary contents
-                char *item = (char *) zhash_first (self->elemenet_ids);
+                char *item = (char *) zhash_first (self->element_ids);
                 while (item) {
-                    self->elemenet_ids_bytes += 1 + strlen (zhash_cursor (self->elemenet_ids));
-                    self->elemenet_ids_bytes += 4 + strlen (item);
-                    item = (char *) zhash_next (self->elemenet_ids);
+                    self->element_ids_bytes += 1 + strlen (zhash_cursor (self->element_ids));
+                    self->element_ids_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->element_ids);
                 }
             }
-            frame_size += self->elemenet_ids_bytes;
+            frame_size += self->element_ids_bytes;
             break;
             
         default:
@@ -707,13 +707,13 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
 
         case ASSET_MSG_RETURN_ELEMENTS:
-            if (self->elemenet_ids) {
-                PUT_NUMBER4 (zhash_size (self->elemenet_ids));
-                char *item = (char *) zhash_first (self->elemenet_ids);
+            if (self->element_ids) {
+                PUT_NUMBER4 (zhash_size (self->element_ids));
+                char *item = (char *) zhash_first (self->element_ids);
                 while (item) {
-                    PUT_STRING (zhash_cursor (self->elemenet_ids));
+                    PUT_STRING (zhash_cursor (self->element_ids));
                     PUT_LONGSTR (item);
-                    item = (char *) zhash_next (self->elemenet_ids);
+                    item = (char *) zhash_next (self->element_ids);
                 }
             }
             else
@@ -1057,11 +1057,11 @@ asset_msg_encode_get_elements (
 
 zmsg_t * 
 asset_msg_encode_return_elements (
-    zhash_t *elemenet_ids)
+    zhash_t *element_ids)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
-    zhash_t *elemenet_ids_copy = zhash_dup (elemenet_ids);
-    asset_msg_set_elemenet_ids (self, &elemenet_ids_copy);
+    zhash_t *element_ids_copy = zhash_dup (element_ids);
+    asset_msg_set_element_ids (self, &element_ids_copy);
     return asset_msg_encode (&self);
 }
 
@@ -1269,11 +1269,11 @@ asset_msg_send_get_elements (
 int
 asset_msg_send_return_elements (
     void *output,
-    zhash_t *elemenet_ids)
+    zhash_t *element_ids)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
-    zhash_t *elemenet_ids_copy = zhash_dup (elemenet_ids);
-    asset_msg_set_elemenet_ids (self, &elemenet_ids_copy);
+    zhash_t *element_ids_copy = zhash_dup (element_ids);
+    asset_msg_set_element_ids (self, &element_ids_copy);
     return asset_msg_send (&self, output);
 }
 
@@ -1354,7 +1354,7 @@ asset_msg_dup (asset_msg_t *self)
             break;
 
         case ASSET_MSG_RETURN_ELEMENTS:
-            copy->elemenet_ids = self->elemenet_ids? zhash_dup (self->elemenet_ids): NULL;
+            copy->element_ids = self->element_ids? zhash_dup (self->element_ids): NULL;
             break;
 
     }
@@ -1502,12 +1502,12 @@ asset_msg_print (asset_msg_t *self)
             
         case ASSET_MSG_RETURN_ELEMENTS:
             zsys_debug ("ASSET_MSG_RETURN_ELEMENTS:");
-            zsys_debug ("    elemenet_ids=");
-            if (self->elemenet_ids) {
-                char *item = (char *) zhash_first (self->elemenet_ids);
+            zsys_debug ("    element_ids=");
+            if (self->element_ids) {
+                char *item = (char *) zhash_first (self->element_ids);
                 while (item) {
-                    zsys_debug ("        %s=%s", zhash_cursor (self->elemenet_ids), item);
-                    item = (char *) zhash_next (self->elemenet_ids);
+                    zsys_debug ("        %s=%s", zhash_cursor (self->element_ids), item);
+                    item = (char *) zhash_next (self->element_ids);
                 }
             }
             else
@@ -2151,47 +2151,47 @@ asset_msg_set_error_id (asset_msg_t *self, byte error_id)
 
 
 //  --------------------------------------------------------------------------
-//  Get the elemenet_ids field without transferring ownership
+//  Get the element_ids field without transferring ownership
 
 zhash_t *
-asset_msg_elemenet_ids (asset_msg_t *self)
+asset_msg_element_ids (asset_msg_t *self)
 {
     assert (self);
-    return self->elemenet_ids;
+    return self->element_ids;
 }
 
-//  Get the elemenet_ids field and transfer ownership to caller
+//  Get the element_ids field and transfer ownership to caller
 
 zhash_t *
-asset_msg_get_elemenet_ids (asset_msg_t *self)
+asset_msg_get_element_ids (asset_msg_t *self)
 {
-    zhash_t *elemenet_ids = self->elemenet_ids;
-    self->elemenet_ids = NULL;
-    return elemenet_ids;
+    zhash_t *element_ids = self->element_ids;
+    self->element_ids = NULL;
+    return element_ids;
 }
 
-//  Set the elemenet_ids field, transferring ownership from caller
+//  Set the element_ids field, transferring ownership from caller
 
 void
-asset_msg_set_elemenet_ids (asset_msg_t *self, zhash_t **elemenet_ids_p)
+asset_msg_set_element_ids (asset_msg_t *self, zhash_t **element_ids_p)
 {
     assert (self);
-    assert (elemenet_ids_p);
-    zhash_destroy (&self->elemenet_ids);
-    self->elemenet_ids = *elemenet_ids_p;
-    *elemenet_ids_p = NULL;
+    assert (element_ids_p);
+    zhash_destroy (&self->element_ids);
+    self->element_ids = *element_ids_p;
+    *element_ids_p = NULL;
 }
 
 //  --------------------------------------------------------------------------
-//  Get/set a value in the elemenet_ids dictionary
+//  Get/set a value in the element_ids dictionary
 
 const char *
-asset_msg_elemenet_ids_string (asset_msg_t *self, const char *key, const char *default_value)
+asset_msg_element_ids_string (asset_msg_t *self, const char *key, const char *default_value)
 {
     assert (self);
     const char *value = NULL;
-    if (self->elemenet_ids)
-        value = (const char *) (zhash_lookup (self->elemenet_ids, key));
+    if (self->element_ids)
+        value = (const char *) (zhash_lookup (self->element_ids, key));
     if (!value)
         value = default_value;
 
@@ -2199,13 +2199,13 @@ asset_msg_elemenet_ids_string (asset_msg_t *self, const char *key, const char *d
 }
 
 uint64_t
-asset_msg_elemenet_ids_number (asset_msg_t *self, const char *key, uint64_t default_value)
+asset_msg_element_ids_number (asset_msg_t *self, const char *key, uint64_t default_value)
 {
     assert (self);
     uint64_t value = default_value;
     char *string = NULL;
-    if (self->elemenet_ids)
-        string = (char *) (zhash_lookup (self->elemenet_ids, key));
+    if (self->element_ids)
+        string = (char *) (zhash_lookup (self->element_ids, key));
     if (string)
         value = atol (string);
 
@@ -2213,7 +2213,7 @@ asset_msg_elemenet_ids_number (asset_msg_t *self, const char *key, uint64_t defa
 }
 
 void
-asset_msg_elemenet_ids_insert (asset_msg_t *self, const char *key, const char *format, ...)
+asset_msg_element_ids_insert (asset_msg_t *self, const char *key, const char *format, ...)
 {
     //  Format into newly allocated string
     assert (self);
@@ -2223,18 +2223,18 @@ asset_msg_elemenet_ids_insert (asset_msg_t *self, const char *key, const char *f
     va_end (argptr);
 
     //  Store string in hash table
-    if (!self->elemenet_ids) {
-        self->elemenet_ids = zhash_new ();
-        zhash_autofree (self->elemenet_ids);
+    if (!self->element_ids) {
+        self->element_ids = zhash_new ();
+        zhash_autofree (self->element_ids);
     }
-    zhash_update (self->elemenet_ids, key, string);
+    zhash_update (self->element_ids, key, string);
     free (string);
 }
 
 size_t
-asset_msg_elemenet_ids_size (asset_msg_t *self)
+asset_msg_element_ids_size (asset_msg_t *self)
 {
-    return zhash_size (self->elemenet_ids);
+    return zhash_size (self->element_ids);
 }
 
 
@@ -2545,8 +2545,8 @@ asset_msg_test (bool verbose)
     assert (copy);
     asset_msg_destroy (&copy);
 
-    asset_msg_elemenet_ids_insert (self, "Name", "Brutus");
-    asset_msg_elemenet_ids_insert (self, "Age", "%d", 43);
+    asset_msg_element_ids_insert (self, "Name", "Brutus");
+    asset_msg_element_ids_insert (self, "Age", "%d", 43);
     //  Send twice from same object
     asset_msg_send_again (self, output);
     asset_msg_send (&self, output);
@@ -2556,9 +2556,9 @@ asset_msg_test (bool verbose)
         assert (self);
         assert (asset_msg_routing_id (self));
         
-        assert (asset_msg_elemenet_ids_size (self) == 2);
-        assert (streq (asset_msg_elemenet_ids_string (self, "Name", "?"), "Brutus"));
-        assert (asset_msg_elemenet_ids_number (self, "Age", 0) == 43);
+        assert (asset_msg_element_ids_size (self) == 2);
+        assert (streq (asset_msg_element_ids_string (self, "Name", "?"), "Brutus"));
+        assert (asset_msg_element_ids_number (self, "Age", 0) == 43);
         asset_msg_destroy (&self);
     }
 

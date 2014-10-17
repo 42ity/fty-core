@@ -87,7 +87,7 @@
         type                number 1    Type of the device, defined in enum somewhere
 
     RETURN_ELEMENTS - Returns elements we were asked for
-        elemenet_ids        dictionary  Unique IDs of the asset element mapped to the elements name
+        element_ids         dictionary  Unique IDs of the asset element mapped to the elements name
 */
 
 #define ASSET_MSG_VERSION                   1.0
@@ -226,7 +226,7 @@ zmsg_t *
 //  Encode the RETURN_ELEMENTS 
 zmsg_t *
     asset_msg_encode_return_elements (
-        zhash_t *elemenet_ids);
+        zhash_t *element_ids);
 
 
 //  Send the ELEMENT to the output in one step
@@ -317,7 +317,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_return_elements (void *output,
-        zhash_t *elemenet_ids);
+        zhash_t *element_ids);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -492,28 +492,28 @@ byte
 void
     asset_msg_set_error_id (asset_msg_t *self, byte error_id);
 
-//  Get/set the elemenet_ids field
+//  Get/set the element_ids field
 zhash_t *
-    asset_msg_elemenet_ids (asset_msg_t *self);
-//  Get the elemenet_ids field and transfer ownership to caller
+    asset_msg_element_ids (asset_msg_t *self);
+//  Get the element_ids field and transfer ownership to caller
 zhash_t *
-    asset_msg_get_elemenet_ids (asset_msg_t *self);
-//  Set the elemenet_ids field, transferring ownership from caller
+    asset_msg_get_element_ids (asset_msg_t *self);
+//  Set the element_ids field, transferring ownership from caller
 void
-    asset_msg_set_elemenet_ids (asset_msg_t *self, zhash_t **elemenet_ids_p);
+    asset_msg_set_element_ids (asset_msg_t *self, zhash_t **element_ids_p);
     
-//  Get/set a value in the elemenet_ids dictionary
+//  Get/set a value in the element_ids dictionary
 const char *
-    asset_msg_elemenet_ids_string (asset_msg_t *self,
+    asset_msg_element_ids_string (asset_msg_t *self,
         const char *key, const char *default_value);
 uint64_t
-    asset_msg_elemenet_ids_number (asset_msg_t *self,
+    asset_msg_element_ids_number (asset_msg_t *self,
         const char *key, uint64_t default_value);
 void
-    asset_msg_elemenet_ids_insert (asset_msg_t *self,
+    asset_msg_element_ids_insert (asset_msg_t *self,
         const char *key, const char *format, ...);
 size_t
-    asset_msg_elemenet_ids_size (asset_msg_t *self);
+    asset_msg_element_ids_size (asset_msg_t *self);
 
 //  Self test of this class
 int
