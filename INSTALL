@@ -1,13 +1,67 @@
-Build dependencies installation
- 1 Install iproute-dev development files, version "20120521", using
-   apt-get install iproute-dev
-   OR
-   zypper install libnetlink-devel 
+Configure package repositories of pre-built prerequisites for the project
+=========================================================================
+ 0 Currently BIOS relies on some Linux-specific features, so the code is
+   not expected to compile and work in other operating system platforms,
+   at least not in its entirety. It is not currently a goal of the core
+   development team to support deployment on more platforms than we can
+   handle and validate ourselves. Current target devices will be ARM boxes
+   running an embedded Linux distribution, and the developer workstations
+   run an assortment of recent PC Linux distributions. The project services
+   include an OBS-based server to automatically check out and rebuild the
+   packages with some of our and third-party code relevant for our project.
 
+ 1 The software packages built for the project can be located in OBS
+   build-result repositories, including the following Linux OS releases:
+     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
+     http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
+     http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
+   these packages include such build and/or runtime dependencies as
+   libvariant, iproute2, mariadb, zeromq and so on.
+
+ 1a. One of the Linux OSes supported automatically by our OBS service is
+   Debian 8.0 for "x86_64" and "armhf" architectures (and "all" for some
+   platform-independent code).
+
+   For a Debian-8.0 system, consider downloading the current packages into
+   some temporary storage with this script:
+[source,shell]
+---------------------------------------------------------------------
+#!/bin/sh
+for DIR in \
+    http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/{amd64,all}/ \
+; do
+    wget -l1 -np -nd -N -c -r --remove-listing --accept=.deb "$DIR"
+done
+rm -f *.html*
+---------------------------------------------------------------------
+   Then you can install the packages with "dpkg -i ..."
+
+   To fetch the sources used by OBS for a local rebuild, check this out:
+[source,shell]
+---------------------------------------------------------------------
+#!/bin/sh
+wget -l1 -np -nd -N -c -r --remove-listing \
+    --accept='.dsc,.tar.xz,.tar.gz,.tar.bz2,.tgz,.tbz,.tbz2,.txz' \
+    http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
+---------------------------------------------------------------------
+
+Build dependencies installation
+===============================
+ 1 Install iproute-dev development files, version "20120521", using
+   your configured system repositories:
+     apt-get install iproute-dev
+   OR
+     zypper install libnetlink-devel
+   (TODO: Which version should be used - same release as the current
+   Linux kernel on a given machine? Specific release? Latest release?)
+ 2 Install libVariant (from prerequisites above)
+
+Configure and build the project sources
+=======================================
 no configure
 -1 Run autoreconf -fiv
 
-else
+else (if configure script exists)
  1 Type ./configure
  2 type make
  3 type make DESTDIR=/some/path install
