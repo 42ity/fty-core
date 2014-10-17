@@ -49,6 +49,16 @@ area in the tracked files and possibly conflicting):
    git remote add upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
 
+Then the developer may create branches for work on individual issues
+and when some work is done -- push the code back to his personal fork
+on Stash for common review like this:
+----
+:; git add changedfiles* && git commit -m 'Meaningful text' && git push
+----
+...and afterwards use the Stash web-interface to initiate a pull-request
+for code review and ultimate merge of his or her changes into the common
+codebase by the gate-keepers.
+
 
 
 Configure package repositories of pre-built prerequisites for the project
