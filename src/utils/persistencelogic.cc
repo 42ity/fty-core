@@ -91,12 +91,33 @@ int nethistory_cmd_id (char cmd) {
 }
 
 bool
-process_message(const std::string& url, const netdisc_msg_t& msg)
-{
+process_message(const std::string& url, zmsg_t *msg) {
     log_open();
     log_set_level(LOG_DEBUG);
     log_set_syslog_level(LOG_DEBUG);
     log_info ("%s", "process_message() start\n");
+
+    zmsg_t *msg2;
+
+    //XXX: this is ugly, however we need to distinguish between types of messages
+    //     zccp will solve that by DIRECT message
+    msg2 = zmsg_dup(msg);
+    netdisc_msg_t *netdisc_msg = netdisc_msg_decode(&msg2);
+    if (netdisc_msg) {
+        //TODO: check the log level!
+        netdisc_msg_print(netdisc_msg);
+        return netdisc_msg_process(url, *netdisc_msg);
+    }
+
+    log_error("unsupported message type, skipped!\n");
+    log_info ("%s", "process_message() end\n");
+    log_close ();
+    return false;
+}
+
+bool
+netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
+{
 
     bool result = false;
 
@@ -196,8 +217,6 @@ process_message(const std::string& url, const netdisc_msg_t& msg)
         }
         
     }
-    log_info ("%s", "process_message() end\n");
-    log_close ();       
     return result;
 };
 
