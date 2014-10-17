@@ -50,12 +50,21 @@ struct _asset_msg_t {
     byte *ceiling;                      //  Valid upper limit for read pointer
     char *name;                         //  Name of the element
     uint32_t location;                  //  ID of the parent element
-    byte location_type;                 //  Type of the parent device, defined in enum somewhere
+    byte location_type;                 //  Type of the parent element, defined in enum somewhere
     byte type;                          //  Type of the device, defined in enum somewhere
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
+    char *device_type;                  //  Type of the device, freeform string
+    zlist_t *groups;                    //  List of IDs of groups device belongs to
+    zlist_t *powers;                    //  List of encoded link messages
+    char *ip;                           //  IP of the device
+    char *hostname;                     //  Hostname
+    char *fqdn;                         //  Fully qualified domain name
+    char *mac;                          //  MAC address of the device
+    zmsg_t *msg;                        //  Element that we are extending to the device
+    uint16_t parent_socket;             //  
+    uint16_t my_socket;                 //  
     uint32_t element_id;                //  Unique ID of the asset element
-    zmsg_t *msg;                        //  Element to be delivered, NULL if not found
     byte error_id;                      //  Type of the error, enum defined somewhere else
     zhash_t *elemenet_ids;              //  Unique IDs of the asset element mapped to the elements name
     size_t elemenet_ids_bytes;          //  Size of dictionary content
@@ -223,6 +232,15 @@ asset_msg_destroy (asset_msg_t **self_p)
         zframe_destroy (&self->routing_id);
         free (self->name);
         zhash_destroy (&self->ext);
+        free (self->device_type);
+        if (self->groups)
+            zlist_destroy (&self->groups);
+        if (self->powers)
+            zlist_destroy (&self->powers);
+        free (self->ip);
+        free (self->hostname);
+        free (self->fqdn);
+        free (self->mac);
         zmsg_destroy (&self->msg);
         zhash_destroy (&self->elemenet_ids);
 
@@ -285,6 +303,50 @@ asset_msg_decode (zmsg_t **msg_p)
             }
             break;
 
+        case ASSET_MSG_DEVICE:
+            GET_STRING (self->device_type);
+            {
+                size_t list_size;
+                GET_NUMBER4 (list_size);
+                self->groups = zlist_new ();
+                zlist_autofree (self->groups);
+                while (list_size--) {
+                    char *string;
+                    GET_LONGSTR (string);
+                    zlist_append (self->groups, string);
+                    free (string);
+                }
+            }
+            {
+                size_t list_size;
+                GET_NUMBER4 (list_size);
+                self->powers = zlist_new ();
+                zlist_autofree (self->powers);
+                while (list_size--) {
+                    char *string;
+                    GET_LONGSTR (string);
+                    zlist_append (self->powers, string);
+                    free (string);
+                }
+            }
+            GET_STRING (self->ip);
+            GET_STRING (self->hostname);
+            GET_STRING (self->fqdn);
+            GET_STRING (self->mac);
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
+        case ASSET_MSG_LINK:
+            GET_NUMBER2 (self->parent_socket);
+            GET_NUMBER2 (self->my_socket);
+            GET_NUMBER4 (self->location);
+            GET_NUMBER1 (self->location_type);
+            break;
+
         case ASSET_MSG_GET_ELEMENT:
             GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->type);
@@ -326,7 +388,6 @@ asset_msg_decode (zmsg_t **msg_p)
             break;
 
         case ASSET_MSG_FAIL:
-            GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->error_id);
             break;
 
@@ -411,6 +472,60 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size += self->ext_bytes;
             break;
             
+        case ASSET_MSG_DEVICE:
+            //  device_type is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->device_type)
+                frame_size += strlen (self->device_type);
+            //  groups is an array of strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->groups) {
+                //  Add up size of list contents
+                char *groups = (char *) zlist_first (self->groups);
+                while (groups) {
+                    frame_size += 4 + strlen (groups);
+                    groups = (char *) zlist_next (self->groups);
+                }
+            }
+            //  powers is an array of strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->powers) {
+                //  Add up size of list contents
+                char *powers = (char *) zlist_first (self->powers);
+                while (powers) {
+                    frame_size += 4 + strlen (powers);
+                    powers = (char *) zlist_next (self->powers);
+                }
+            }
+            //  ip is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->ip)
+                frame_size += strlen (self->ip);
+            //  hostname is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->hostname)
+                frame_size += strlen (self->hostname);
+            //  fqdn is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->fqdn)
+                frame_size += strlen (self->fqdn);
+            //  mac is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->mac)
+                frame_size += strlen (self->mac);
+            break;
+            
+        case ASSET_MSG_LINK:
+            //  parent_socket is a 2-byte integer
+            frame_size += 2;
+            //  my_socket is a 2-byte integer
+            frame_size += 2;
+            //  location is a 4-byte integer
+            frame_size += 4;
+            //  location_type is a 1-byte integer
+            frame_size += 1;
+            break;
+            
         case ASSET_MSG_GET_ELEMENT:
             //  element_id is a 4-byte integer
             frame_size += 4;
@@ -444,8 +559,6 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
             
         case ASSET_MSG_FAIL:
-            //  element_id is a 4-byte integer
-            frame_size += 4;
             //  error_id is a 1-byte integer
             frame_size += 1;
             break;
@@ -505,6 +618,61 @@ asset_msg_encode (asset_msg_t **self_p)
                 PUT_NUMBER4 (0);    //  Empty dictionary
             break;
 
+        case ASSET_MSG_DEVICE:
+            if (self->device_type) {
+                PUT_STRING (self->device_type);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->groups) {
+                PUT_NUMBER4 (zlist_size (self->groups));
+                char *groups = (char *) zlist_first (self->groups);
+                while (groups) {
+                    PUT_LONGSTR (groups);
+                    groups = (char *) zlist_next (self->groups);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty string array
+            if (self->powers) {
+                PUT_NUMBER4 (zlist_size (self->powers));
+                char *powers = (char *) zlist_first (self->powers);
+                while (powers) {
+                    PUT_LONGSTR (powers);
+                    powers = (char *) zlist_next (self->powers);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty string array
+            if (self->ip) {
+                PUT_STRING (self->ip);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->hostname) {
+                PUT_STRING (self->hostname);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->fqdn) {
+                PUT_STRING (self->fqdn);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->mac) {
+                PUT_STRING (self->mac);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            break;
+
+        case ASSET_MSG_LINK:
+            PUT_NUMBER2 (self->parent_socket);
+            PUT_NUMBER2 (self->my_socket);
+            PUT_NUMBER4 (self->location);
+            PUT_NUMBER1 (self->location_type);
+            break;
+
         case ASSET_MSG_GET_ELEMENT:
             PUT_NUMBER4 (self->element_id);
             PUT_NUMBER1 (self->type);
@@ -531,7 +699,6 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
 
         case ASSET_MSG_FAIL:
-            PUT_NUMBER4 (self->element_id);
             PUT_NUMBER1 (self->error_id);
             break;
 
@@ -559,6 +726,14 @@ asset_msg_encode (asset_msg_t **self_p)
         zmsg_destroy (&msg);
         asset_msg_destroy (self_p);
         return NULL;
+    }
+    //  Now send the msg field if set
+    if (self->id == ASSET_MSG_DEVICE) {
+        zframe_t *msg_part = zmsg_pop (self->msg);
+        while (msg_part) {
+            zmsg_append (msg, &msg_part);
+            msg_part = zmsg_pop (self->msg);
+        }
     }
     //  Now send the msg field if set
     if (self->id == ASSET_MSG_RETURN_ELEMENT) {
@@ -714,6 +889,55 @@ asset_msg_encode_element (
 
 
 //  --------------------------------------------------------------------------
+//  Encode DEVICE message
+
+zmsg_t * 
+asset_msg_encode_device (
+    const char *device_type,
+    zlist_t *groups,
+    zlist_t *powers,
+    const char *ip,
+    const char *hostname,
+    const char *fqdn,
+    const char *mac,
+    zmsg_t *msg)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_DEVICE);
+    asset_msg_set_device_type (self, device_type);
+    zlist_t *groups_copy = zlist_dup (groups);
+    asset_msg_set_groups (self, &groups_copy);
+    zlist_t *powers_copy = zlist_dup (powers);
+    asset_msg_set_powers (self, &powers_copy);
+    asset_msg_set_ip (self, ip);
+    asset_msg_set_hostname (self, hostname);
+    asset_msg_set_fqdn (self, fqdn);
+    asset_msg_set_mac (self, mac);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    asset_msg_set_msg (self, &msg_copy);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode LINK message
+
+zmsg_t * 
+asset_msg_encode_link (
+    uint16_t parent_socket,
+    uint16_t my_socket,
+    uint32_t location,
+    byte location_type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
+    asset_msg_set_parent_socket (self, parent_socket);
+    asset_msg_set_my_socket (self, my_socket);
+    asset_msg_set_location (self, location);
+    asset_msg_set_location_type (self, location_type);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Encode GET_ELEMENT message
 
 zmsg_t * 
@@ -807,11 +1031,9 @@ asset_msg_encode_ok (
 
 zmsg_t * 
 asset_msg_encode_fail (
-    uint32_t element_id,
     byte error_id)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_FAIL);
-    asset_msg_set_element_id (self, element_id);
     asset_msg_set_error_id (self, error_id);
     return asset_msg_encode (&self);
 }
@@ -863,6 +1085,57 @@ asset_msg_send_element (
     asset_msg_set_type (self, type);
     zhash_t *ext_copy = zhash_dup (ext);
     asset_msg_set_ext (self, &ext_copy);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the DEVICE to the socket in one step
+
+int
+asset_msg_send_device (
+    void *output,
+    const char *device_type,
+    zlist_t *groups,
+    zlist_t *powers,
+    const char *ip,
+    const char *hostname,
+    const char *fqdn,
+    const char *mac,
+    zmsg_t *msg)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_DEVICE);
+    asset_msg_set_device_type (self, device_type);
+    zlist_t *groups_copy = zlist_dup (groups);
+    asset_msg_set_groups (self, &groups_copy);
+    zlist_t *powers_copy = zlist_dup (powers);
+    asset_msg_set_powers (self, &powers_copy);
+    asset_msg_set_ip (self, ip);
+    asset_msg_set_hostname (self, hostname);
+    asset_msg_set_fqdn (self, fqdn);
+    asset_msg_set_mac (self, mac);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    asset_msg_set_msg (self, &msg_copy);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the LINK to the socket in one step
+
+int
+asset_msg_send_link (
+    void *output,
+    uint16_t parent_socket,
+    uint16_t my_socket,
+    uint32_t location,
+    byte location_type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
+    asset_msg_set_parent_socket (self, parent_socket);
+    asset_msg_set_my_socket (self, my_socket);
+    asset_msg_set_location (self, location);
+    asset_msg_set_location_type (self, location_type);
     return asset_msg_send (&self, output);
 }
 
@@ -968,11 +1241,9 @@ asset_msg_send_ok (
 int
 asset_msg_send_fail (
     void *output,
-    uint32_t element_id,
     byte error_id)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_FAIL);
-    asset_msg_set_element_id (self, element_id);
     asset_msg_set_error_id (self, error_id);
     return asset_msg_send (&self, output);
 }
@@ -1028,6 +1299,24 @@ asset_msg_dup (asset_msg_t *self)
             copy->ext = self->ext? zhash_dup (self->ext): NULL;
             break;
 
+        case ASSET_MSG_DEVICE:
+            copy->device_type = self->device_type? strdup (self->device_type): NULL;
+            copy->groups = self->groups? zlist_dup (self->groups): NULL;
+            copy->powers = self->powers? zlist_dup (self->powers): NULL;
+            copy->ip = self->ip? strdup (self->ip): NULL;
+            copy->hostname = self->hostname? strdup (self->hostname): NULL;
+            copy->fqdn = self->fqdn? strdup (self->fqdn): NULL;
+            copy->mac = self->mac? strdup (self->mac): NULL;
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case ASSET_MSG_LINK:
+            copy->parent_socket = self->parent_socket;
+            copy->my_socket = self->my_socket;
+            copy->location = self->location;
+            copy->location_type = self->location_type;
+            break;
+
         case ASSET_MSG_GET_ELEMENT:
             copy->element_id = self->element_id;
             copy->type = self->type;
@@ -1057,7 +1346,6 @@ asset_msg_dup (asset_msg_t *self)
             break;
 
         case ASSET_MSG_FAIL:
-            copy->element_id = self->element_id;
             copy->error_id = self->error_id;
             break;
 
@@ -1101,6 +1389,59 @@ asset_msg_print (asset_msg_t *self)
             }
             else
                 zsys_debug ("(NULL)");
+            break;
+            
+        case ASSET_MSG_DEVICE:
+            zsys_debug ("ASSET_MSG_DEVICE:");
+            if (self->device_type)
+                zsys_debug ("    device_type='%s'", self->device_type);
+            else
+                zsys_debug ("    device_type=");
+            zsys_debug ("    groups=");
+            if (self->groups) {
+                char *groups = (char *) zlist_first (self->groups);
+                while (groups) {
+                    zsys_debug ("        '%s'", groups);
+                    groups = (char *) zlist_next (self->groups);
+                }
+            }
+            zsys_debug ("    powers=");
+            if (self->powers) {
+                char *powers = (char *) zlist_first (self->powers);
+                while (powers) {
+                    zsys_debug ("        '%s'", powers);
+                    powers = (char *) zlist_next (self->powers);
+                }
+            }
+            if (self->ip)
+                zsys_debug ("    ip='%s'", self->ip);
+            else
+                zsys_debug ("    ip=");
+            if (self->hostname)
+                zsys_debug ("    hostname='%s'", self->hostname);
+            else
+                zsys_debug ("    hostname=");
+            if (self->fqdn)
+                zsys_debug ("    fqdn='%s'", self->fqdn);
+            else
+                zsys_debug ("    fqdn=");
+            if (self->mac)
+                zsys_debug ("    mac='%s'", self->mac);
+            else
+                zsys_debug ("    mac=");
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
+        case ASSET_MSG_LINK:
+            zsys_debug ("ASSET_MSG_LINK:");
+            zsys_debug ("    parent_socket=%ld", (long) self->parent_socket);
+            zsys_debug ("    my_socket=%ld", (long) self->my_socket);
+            zsys_debug ("    location=%ld", (long) self->location);
+            zsys_debug ("    location_type=%ld", (long) self->location_type);
             break;
             
         case ASSET_MSG_GET_ELEMENT:
@@ -1151,7 +1492,6 @@ asset_msg_print (asset_msg_t *self)
             
         case ASSET_MSG_FAIL:
             zsys_debug ("ASSET_MSG_FAIL:");
-            zsys_debug ("    element_id=%ld", (long) self->element_id);
             zsys_debug ("    error_id=%ld", (long) self->error_id);
             break;
             
@@ -1223,6 +1563,12 @@ asset_msg_command (asset_msg_t *self)
     switch (self->id) {
         case ASSET_MSG_ELEMENT:
             return ("ELEMENT");
+            break;
+        case ASSET_MSG_DEVICE:
+            return ("DEVICE");
+            break;
+        case ASSET_MSG_LINK:
+            return ("LINK");
             break;
         case ASSET_MSG_GET_ELEMENT:
             return ("GET_ELEMENT");
@@ -1421,20 +1767,281 @@ asset_msg_ext_size (asset_msg_t *self)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the element_id field
+//  Get/set the device_type field
 
-uint32_t
-asset_msg_element_id (asset_msg_t *self)
+const char *
+asset_msg_device_type (asset_msg_t *self)
 {
     assert (self);
-    return self->element_id;
+    return self->device_type;
 }
 
 void
-asset_msg_set_element_id (asset_msg_t *self, uint32_t element_id)
+asset_msg_set_device_type (asset_msg_t *self, const char *format, ...)
+{
+    //  Format device_type from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->device_type);
+    self->device_type = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the groups field, without transferring ownership
+
+zlist_t *
+asset_msg_groups (asset_msg_t *self)
 {
     assert (self);
-    self->element_id = element_id;
+    return self->groups;
+}
+
+//  Get the groups field and transfer ownership to caller
+
+zlist_t *
+asset_msg_get_groups (asset_msg_t *self)
+{
+    assert (self);
+    zlist_t *groups = self->groups;
+    self->groups = NULL;
+    return groups;
+}
+
+//  Set the groups field, transferring ownership from caller
+
+void
+asset_msg_set_groups (asset_msg_t *self, zlist_t **groups_p)
+{
+    assert (self);
+    assert (groups_p);
+    zlist_destroy (&self->groups);
+    self->groups = *groups_p;
+    *groups_p = NULL;
+}
+
+//  --------------------------------------------------------------------------
+//  Iterate through the groups field, and append a groups value
+
+const char *
+asset_msg_groups_first (asset_msg_t *self)
+{
+    assert (self);
+    if (self->groups)
+        return (char *) (zlist_first (self->groups));
+    else
+        return NULL;
+}
+
+const char *
+asset_msg_groups_next (asset_msg_t *self)
+{
+    assert (self);
+    if (self->groups)
+        return (char *) (zlist_next (self->groups));
+    else
+        return NULL;
+}
+
+void
+asset_msg_groups_append (asset_msg_t *self, const char *format, ...)
+{
+    //  Format into newly allocated string
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    char *string = zsys_vprintf (format, argptr);
+    va_end (argptr);
+
+    //  Attach string to list
+    if (!self->groups) {
+        self->groups = zlist_new ();
+        zlist_autofree (self->groups);
+    }
+    zlist_append (self->groups, string);
+    free (string);
+}
+
+size_t
+asset_msg_groups_size (asset_msg_t *self)
+{
+    return zlist_size (self->groups);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the powers field, without transferring ownership
+
+zlist_t *
+asset_msg_powers (asset_msg_t *self)
+{
+    assert (self);
+    return self->powers;
+}
+
+//  Get the powers field and transfer ownership to caller
+
+zlist_t *
+asset_msg_get_powers (asset_msg_t *self)
+{
+    assert (self);
+    zlist_t *powers = self->powers;
+    self->powers = NULL;
+    return powers;
+}
+
+//  Set the powers field, transferring ownership from caller
+
+void
+asset_msg_set_powers (asset_msg_t *self, zlist_t **powers_p)
+{
+    assert (self);
+    assert (powers_p);
+    zlist_destroy (&self->powers);
+    self->powers = *powers_p;
+    *powers_p = NULL;
+}
+
+//  --------------------------------------------------------------------------
+//  Iterate through the powers field, and append a powers value
+
+const char *
+asset_msg_powers_first (asset_msg_t *self)
+{
+    assert (self);
+    if (self->powers)
+        return (char *) (zlist_first (self->powers));
+    else
+        return NULL;
+}
+
+const char *
+asset_msg_powers_next (asset_msg_t *self)
+{
+    assert (self);
+    if (self->powers)
+        return (char *) (zlist_next (self->powers));
+    else
+        return NULL;
+}
+
+void
+asset_msg_powers_append (asset_msg_t *self, const char *format, ...)
+{
+    //  Format into newly allocated string
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    char *string = zsys_vprintf (format, argptr);
+    va_end (argptr);
+
+    //  Attach string to list
+    if (!self->powers) {
+        self->powers = zlist_new ();
+        zlist_autofree (self->powers);
+    }
+    zlist_append (self->powers, string);
+    free (string);
+}
+
+size_t
+asset_msg_powers_size (asset_msg_t *self)
+{
+    return zlist_size (self->powers);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the ip field
+
+const char *
+asset_msg_ip (asset_msg_t *self)
+{
+    assert (self);
+    return self->ip;
+}
+
+void
+asset_msg_set_ip (asset_msg_t *self, const char *format, ...)
+{
+    //  Format ip from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->ip);
+    self->ip = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the hostname field
+
+const char *
+asset_msg_hostname (asset_msg_t *self)
+{
+    assert (self);
+    return self->hostname;
+}
+
+void
+asset_msg_set_hostname (asset_msg_t *self, const char *format, ...)
+{
+    //  Format hostname from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->hostname);
+    self->hostname = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the fqdn field
+
+const char *
+asset_msg_fqdn (asset_msg_t *self)
+{
+    assert (self);
+    return self->fqdn;
+}
+
+void
+asset_msg_set_fqdn (asset_msg_t *self, const char *format, ...)
+{
+    //  Format fqdn from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->fqdn);
+    self->fqdn = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the mac field
+
+const char *
+asset_msg_mac (asset_msg_t *self)
+{
+    assert (self);
+    return self->mac;
+}
+
+void
+asset_msg_set_mac (asset_msg_t *self, const char *format, ...)
+{
+    //  Format mac from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->mac);
+    self->mac = zsys_vprintf (format, argptr);
+    va_end (argptr);
 }
 
 
@@ -1468,6 +2075,60 @@ asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p)
     zmsg_destroy (&self->msg);
     self->msg = *msg_p;
     *msg_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the parent_socket field
+
+uint16_t
+asset_msg_parent_socket (asset_msg_t *self)
+{
+    assert (self);
+    return self->parent_socket;
+}
+
+void
+asset_msg_set_parent_socket (asset_msg_t *self, uint16_t parent_socket)
+{
+    assert (self);
+    self->parent_socket = parent_socket;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the my_socket field
+
+uint16_t
+asset_msg_my_socket (asset_msg_t *self)
+{
+    assert (self);
+    return self->my_socket;
+}
+
+void
+asset_msg_set_my_socket (asset_msg_t *self, uint16_t my_socket)
+{
+    assert (self);
+    self->my_socket = my_socket;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the element_id field
+
+uint32_t
+asset_msg_element_id (asset_msg_t *self)
+{
+    assert (self);
+    return self->element_id;
+}
+
+void
+asset_msg_set_element_id (asset_msg_t *self, uint32_t element_id)
+{
+    assert (self);
+    self->element_id = element_id;
 }
 
 
@@ -1635,6 +2296,74 @@ asset_msg_test (bool verbose)
         assert (asset_msg_ext_number (self, "Age", 0) == 43);
         asset_msg_destroy (&self);
     }
+    self = asset_msg_new (ASSET_MSG_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_device_type (self, "Life is short but Now lasts for ever");
+    asset_msg_groups_append (self, "Name: %s", "Brutus");
+    asset_msg_groups_append (self, "Age: %d", 43);
+    asset_msg_powers_append (self, "Name: %s", "Brutus");
+    asset_msg_powers_append (self, "Age: %d", 43);
+    asset_msg_set_ip (self, "Life is short but Now lasts for ever");
+    asset_msg_set_hostname (self, "Life is short but Now lasts for ever");
+    asset_msg_set_fqdn (self, "Life is short but Now lasts for ever");
+    asset_msg_set_mac (self, "Life is short but Now lasts for ever");
+    zmsg_t *device_msg = zmsg_new ();
+    asset_msg_set_msg (self, &device_msg);
+    zmsg_addstr (asset_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (streq (asset_msg_device_type (self), "Life is short but Now lasts for ever"));
+        assert (asset_msg_groups_size (self) == 2);
+        assert (streq (asset_msg_groups_first (self), "Name: Brutus"));
+        assert (streq (asset_msg_groups_next (self), "Age: 43"));
+        assert (asset_msg_powers_size (self) == 2);
+        assert (streq (asset_msg_powers_first (self), "Name: Brutus"));
+        assert (streq (asset_msg_powers_next (self), "Age: 43"));
+        assert (streq (asset_msg_ip (self), "Life is short but Now lasts for ever"));
+        assert (streq (asset_msg_hostname (self), "Life is short but Now lasts for ever"));
+        assert (streq (asset_msg_fqdn (self), "Life is short but Now lasts for ever"));
+        assert (streq (asset_msg_mac (self), "Life is short but Now lasts for ever"));
+        assert (zmsg_size (asset_msg_msg (self)) == 1);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_LINK);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_parent_socket (self, 123);
+    asset_msg_set_my_socket (self, 123);
+    asset_msg_set_location (self, 123);
+    asset_msg_set_location_type (self, 123);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_parent_socket (self) == 123);
+        assert (asset_msg_my_socket (self) == 123);
+        assert (asset_msg_location (self) == 123);
+        assert (asset_msg_location_type (self) == 123);
+        asset_msg_destroy (&self);
+    }
     self = asset_msg_new (ASSET_MSG_GET_ELEMENT);
     
     //  Check that _dup works on empty message
@@ -1776,7 +2505,6 @@ asset_msg_test (bool verbose)
     assert (copy);
     asset_msg_destroy (&copy);
 
-    asset_msg_set_element_id (self, 123);
     asset_msg_set_error_id (self, 123);
     //  Send twice from same object
     asset_msg_send_again (self, output);
@@ -1787,7 +2515,6 @@ asset_msg_test (bool verbose)
         assert (self);
         assert (asset_msg_routing_id (self));
         
-        assert (asset_msg_element_id (self) == 123);
         assert (asset_msg_error_id (self) == 123);
         asset_msg_destroy (&self);
     }
