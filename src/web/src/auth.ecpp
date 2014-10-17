@@ -13,7 +13,7 @@ std::string client_id="";
 </%args>
 <%cpp>
 #ifndef VALID_FOR
-#define VALID_FOR 300
+#define VALID_FOR 3600
 #endif //VALID_FOR
 
 int valid = VALID_FOR;

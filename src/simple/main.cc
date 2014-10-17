@@ -24,9 +24,6 @@ static utils::SubProcess netmon_proc{args};
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
     log_info ("%s", "persistence_actor() start\n");
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
@@ -64,14 +61,10 @@ void persistence_actor(zsock_t *pipe, void *args) {
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
     log_info ("%s", "persistence_actor end\n");
-    log_close();
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
     log_info ("%s", "netmon_actor() start\n");
 
     const int names_len = 6;    
@@ -137,7 +130,6 @@ void netmon_actor(zsock_t *pipe, void *args) {
 
     zsock_destroy(&dbsock);
     log_info ("%s", "netmon_actor end\n");
-    log_close();
 
 }
 
@@ -151,7 +143,6 @@ int main(int argc, char **argv) {
 
     log_open();
     log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
 
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
@@ -165,6 +156,7 @@ int main(int argc, char **argv) {
 
     zactor_t *db = zactor_new (persistence_actor, NULL);
     assert(db);
+    zclock_sleep (2000);
 
     zactor_t *netmon = NULL;
 

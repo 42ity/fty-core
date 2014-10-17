@@ -1,6 +1,12 @@
 <%pre>
-#include <cxxtools/split.h>
+#include <czmq.h>
+
+#include "asset_msg.h"
+#include "data.h"
 </%pre>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
 <%cpp>
     // Check URL validity
     std::string id;
@@ -11,7 +17,10 @@
         return HTTP_BAD_REQUEST;
     }
 
-    if(false) {
+    // Get data
+    asset_msg_t *dta = asset_mgr.get_item(request.getArg("type"), id);
+
+    if(dta == NULL) {
 </%cpp>
 { "error":"item_not_found" }
 <%cpp>
@@ -19,9 +28,30 @@
     }
 
     // Prepare the reply
+    char buff[16];
 </%cpp>
 {
     "id":"<$ id $>",
-    "name":""
-    "type":"<$ request.getArg("type") $>"
+    "name":"<$ asset_msg_name(dta) $>",
+%   zhash_t *ext = asset_msg_ext(dta);
+%   sprintf(buff, "%d", asset_msg_location(dta));
+    "location":"<$ "/api/v1/" +
+                   asset_mgr.byte_to_type(asset_msg_location_type(dta)) + "/" +
+                   buff $>"<? ext != NULL ? "," ?>
+<%cpp>
+    if(ext != NULL) {
+        int count = zhash_size(ext);
+</%cpp>
+    "ext" : {
+<%cpp>
+        int i =0;
+        void *it;
+        for(i = 1, it = zhash_first(ext); it != 0;
+            i++,   it = zhash_next(ext) ) {
+</%cpp>
+        "<$ (char*)zhash_cursor(ext) $>":"<$ (char*)it $>"<? i != count ? "," ?>
+%       }
+    }
+%   }
 }
+%   asset_msg_destroy(&dta);

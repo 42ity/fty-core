@@ -1,8 +1,8 @@
-all: bios.so
+all: bios.so fake_message
 
-CXXFLAGS+=-Iinclude `for i in cxxtools libsodium libsasl2; do pkg-config $$i --cflags; done` --std=c++11
-CFLAGS+=-Iinclude -fPIC
-LDFLAGS+=-lm `for i in cxxtools libsodium libsasl2; do pkg-config $$i --libs; done`
+CXXFLAGS+=-Iinclude -I../simple `for i in cxxtools libsodium libsasl2; do pkg-config $$i --cflags; done` --std=c++11
+CFLAGS+=-Iinclude -fPIC -I../simple -g
+LDFLAGS+=-lm `for i in cxxtools libsodium libsasl2; do pkg-config $$i --libs; done` -lczmq -lzmq
 
 test: all
 	${TNTNET} tntnet.xml
@@ -10,15 +10,18 @@ test: all
 clean:
 	${RM} bios.so src/*.o
 
-bios.so: src/auth.o src/auth-verify.o src/sasl.o src/tokens.o src/time.o src/item.o src/json.o src/list.o
-	${CXX} -o $@ $^ ${LDFLAGS}
+bios.so: src/auth.o src/auth-verify.o src/sasl.o src/tokens.o src/time.o src/item.o src/json.o src/list.o src/mock.o ../simple/asset_msg.o src/data.cpp
+	${CXX} -o $@ $^ ${LDFLAGS} ${CXXFLAGS}
+
+fake_message: fake_message.o ../simple/asset_msg.o
+	${CXX} -o $@ -I../simple $^ -lczmq
 
 .SUFFIXES: .ecpp .gif .jpg .css .js .cpp
 ECPPC=/usr/bin/ecppc
 ECPPFLAGS+=-Isrc -Iinclude
 TNTNET=/usr/bin/tntnet
-CXXFLAGS+=-I/usr/include -fPIC -O2
-LDFLAGS+=-shared -L/usr/lib64 -ltntnet -lcxxtools
+CXXFLAGS+=-I/usr/include -fPIC -O0 -g
+LDFLAGS+=-shared -L/usr/lib64 -L/usr/lib -ltntnet -lcxxtools
 
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<

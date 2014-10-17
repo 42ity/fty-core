@@ -18,6 +18,7 @@
 Structure describing asset element
     <field name = "name" type = "string">Name of the element</field>
     <field name = "location" type = "number" size = "4">ID of the parent element</field>
+    <field name = "location_type" type = "number" size = "1">Type of the parent device, defined in enum somewhere</field>
     <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
 </message>
