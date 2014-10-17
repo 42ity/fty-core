@@ -81,12 +81,17 @@ NUTDevice::NUTDevice() {
     _name = "";
 }
 
-NUTDevice::NUTDevice(std::string aName) {  
+NUTDevice::NUTDevice(const char *aName) {  
     _change = false;
     name(aName);
 }
 
-void NUTDevice::name(const std::string aName) {
+NUTDevice::NUTDevice(const std::string& aName) {  
+    _change = false;
+    name(aName);
+}
+
+void NUTDevice::name(const std::string& aName) {
     _name = aName;
 }
 
@@ -102,7 +107,7 @@ void NUTDevice::changed(const bool status) {
     _change = status;
 }
 
-void NUTDevice::updatePhysics(std::string varName, float newValue) {
+void NUTDevice::updatePhysics(const std::string& varName, const float newValue) {
     // calculating round(newValue * 100) without math library
     long int newValueInt = ((newValue * 100) + 0.5);
     if( _physics.count( varName ) == 0 ) {
@@ -126,7 +131,7 @@ void NUTDevice::updatePhysics(std::string varName, float newValue) {
     }
 }
 
-void NUTDevice::updatePhysics(std::string varName, std::vector<std::string> values) {
+void NUTDevice::updatePhysics(const std::string& varName, std::vector<std::string>& values) {
     if( values.size() == 1 ) {
         // don't know how to handle multiple values
         // multiple values would be probably nonsence
@@ -137,7 +142,7 @@ void NUTDevice::updatePhysics(std::string varName, std::vector<std::string> valu
     }
 }
 
-void NUTDevice::updateInventory(std::string varName, std::vector<std::string> values) {
+void NUTDevice::updateInventory(const std::string& varName, std::vector<std::string>& values) {
     std::string inventory = "";
     for(size_t i = 0 ; i < values.size() ; ++i ) {
         inventory += values[i];
@@ -217,7 +222,7 @@ std::map<std::string,std::string> NUTDevice::properties() const {
 }
 
 
-bool NUTDevice::hasProperty(const std::string name) const {
+bool NUTDevice::hasProperty(const char *name) const {
     if( _physics.count( name ) != 0 ) {
         // this is a number and value exists
         return true;
@@ -229,7 +234,11 @@ bool NUTDevice::hasProperty(const std::string name) const {
     return false;
 }
 
-std::string NUTDevice::property(const std::string name) const {
+bool NUTDevice::hasProperty(const std::string& name) const {
+    return hasProperty(name.c_str());
+}
+
+std::string NUTDevice::property(const char *name) const {
     auto iterP = _physics.find(name);
     if( iterP != _physics.end() ) {
         // this is a number, value exists
@@ -241,6 +250,10 @@ std::string NUTDevice::property(const std::string name) const {
         return iterI->second;
     }
     return "";
+}
+
+std::string NUTDevice::property(const std::string& name) const {
+    return property(name.c_str());
 }
 
 NUTDevice::~NUTDevice() {
