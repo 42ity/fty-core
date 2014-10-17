@@ -164,15 +164,6 @@ test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 test_cidr_LDFLAGS =			-lcidr
 
 
-check_PROGRAMS += 			test-json-schemas
-test_json_schemas_SOURCES = 		tests/utils/test-json-schemas.cc \
-					tests/utils/messages/json_schemas.h
-test_json_schemas_LDADD = 		libpriv-test-run.la
-test_json_schemas_LDFLAGS =		$(LIBVARIANT_LIBS)
-test_json_schemas_CPPFLAGS =		-I $(top_srcdir)/tests/include \
-					-I $(top_srcdir)/tests/utils/messages \
-					-D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
-
 check_PROGRAMS += 			test-db
 test_db_SOURCES = 			tests/utils/test-clientinfo.cc \
 					tests/utils/test-device-discovered.cc \
@@ -204,7 +195,6 @@ netmon_SOURCES = 			src/netmon/linux \
 					src/simple/netdisc_msg.c \
 					src/netmon/netmon_msg_send.cc \
 					src/netmon/netmon_msg_send.h
-nodist_netmon_SOURCES = 		src/utils/messages/json_schemas.h
 # Consider moving zproto protocols to libpriv-...
 netmon_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
 netmon_LDADD =				libpriv-utils.la libpriv-log.la
@@ -248,8 +238,6 @@ driver_nmap_CPPFLAGS =			-I $(top_srcdir)/src/simple -I $(top_srcdir)/src/utils
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/src/utils/messages/json_schema/*.json \
-					$(top_srcdir)/tests/utils/messages/json_schema/*.json \
 					$(top_srcdir)/tools/dbpath.h.in \
 					$(top_srcdir)/simple/*_msg.xml
 
@@ -262,22 +250,8 @@ endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 
-BUILT_SOURCES +=			$(top_srcdir)/src/utils/messages/json_schemas.h \
-					$(top_srcdir)/tests/utils/messages/json_schemas.h \
-					$(top_srcdir)/tools/dbinit.h
+BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 
-CLEANFILES +=				src/utils/messages/json_schemas.h
-
-
-#----------------------------------------------------------------------
-#                        JSON validator targets
-#----------------------------------------------------------------------
-
-src/utils/messages/json_schemas.h: Makefile
-	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
-
-tests/utils/messages/json_schemas.h: Makefile
-	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
 
 #----------------------------------------------------------------------
 #                        doxygen html generation
@@ -292,7 +266,7 @@ endif
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: ${myDOXDIR}/html tests/utils/messages/json_schemas.h src/utils/messages/json_schemas.h
+all-local: ${myDOXDIR}/html
 
 
 #----------------------------------------------------------------------
