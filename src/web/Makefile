@@ -1,8 +1,8 @@
 all: bios.so fake_message
 
-CXXFLAGS+=-Iinclude -I../simple `for i in cxxtools libsodium libsasl2; do pkg-config $$i --cflags; done` --std=c++11
+CXXFLAGS+=-Iinclude -I../simple -I../utils/  -I../../tools `for i in cxxtools libsodium libsasl2; do pkg-config $$i --cflags; done` --std=c++11
 CFLAGS+=-Iinclude -fPIC -I../simple -g
-LDFLAGS+=-lm `for i in cxxtools libsodium libsasl2; do pkg-config $$i --libs; done` -lczmq -lzmq
+LDFLAGS+=-lm `for i in cxxtools libsodium libsasl2; do pkg-config $$i --libs; done` -lczmq -lzmq -ltntdb
 
 test: all
 	${TNTNET} tntnet.xml
@@ -10,7 +10,7 @@ test: all
 clean:
 	${RM} bios.so fake_message fake_message.o src/*.o
 
-bios.so: src/auth.o src/auth-verify.o src/sasl.o src/tokens.o src/time.o src/item.o src/json.o src/list.o src/mock.o ../simple/asset_msg.o src/data.cpp
+bios.so: src/auth.o src/auth-verify.o src/sasl.o src/tokens.o src/time.o src/item.o src/json.o src/list.o src/mock.o ../simple/asset_msg.o src/data.cpp ../utils/assetmsgpersistence.o ../utils/log.o
 	${CXX} -o $@ $^ ${LDFLAGS} ${CXXFLAGS}
 
 fake_message: fake_message.o ../simple/asset_msg.o src/data.o
