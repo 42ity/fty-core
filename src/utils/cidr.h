@@ -270,8 +270,7 @@ public:
    * \brief checks if networks or hosts are the same
    * \see operator==();
    *
-   * Two CIDRAddress are compared including network prefix. Contrary to == 
-   * operator 10.0.0.0/8 is not equal to 10.0.0.0/24.
+   * Two CIDRAddress are compared including network prefix.
    */
   bool equals(const CIDRAddress& address) const;
 
