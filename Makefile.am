@@ -258,6 +258,7 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #----------------------------------------------------------------------
 
 all-docs: ${myDOXDIR}/html INSTALL.html
+	( cd docs/man && $(MAKE) all )
 
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
@@ -286,6 +287,8 @@ if HAVE_DOXYGEN
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 endif
 	/bin/rm -f INSTALL.html
+	/bin/rm -f docs/man/*.?
+	( cd docs/man && $(MAKE) clean )
 
 #----------------------------------------------------------------------
 #                        astyle formating
