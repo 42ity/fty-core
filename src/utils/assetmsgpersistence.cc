@@ -1,6 +1,7 @@
 // returns: asset_msg_fail error, success - return_* / ok, in case of NULL means that nothing to send in response
 // if some id is 0 it means that in database there was a NULL-value
 // assumption: every ID is unsigned
+// Hash values must be printable strings; keys may not contain '='.
 #include <exception>
 #include <assert.h>
 
@@ -222,7 +223,7 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
     assert(msg);
 
     const unsigned int element_type_id = asset_msg_type (msg);
-    
+     
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
 
@@ -253,7 +254,7 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 
     if ( result.size()==0 )
     {
-        // elementa were not found
+        // elements were not found
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
         // TODO now there is no difference between notfound and bad group 
@@ -280,8 +281,9 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
         int id = 0;
         row[1].get(id);
         assert( id != 0);  //database is corrupted
-
-        zhash_insert(elements, &name, &id );
+        static char buff[16];
+        sprintf(buff, "%d", id);
+        zhash_insert(elements, buff , (void*)name.c_str());
     }
    
     // make ASSET_MSG_RETURN_ELEMENT
