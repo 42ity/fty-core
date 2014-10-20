@@ -87,16 +87,11 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
 {
     assert(msg);
 
-    log_info ("%s", "get_asset_element() start\n");
     const int element_id      = asset_msg_element_id (msg); 
     const int element_type_id = asset_msg_type (msg);
-    
 
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
-
-    log_info ("element_id = %d, type_id = %d \n ", element_id,element_type_id);
-    log_info ("url = %s \n ", url );
 
     // Can return one row or nothing.
     // Get basic attributes of the element
@@ -118,7 +113,6 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     }
     catch (const tntdb::NotFound &e){
         // element was not found
-        log_info ("%s \n ", "NOTHING WAS FOUND" );
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
     
@@ -128,7 +122,6 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     catch (std::exception &e)
     {
         // internal error in database 
-        log_info ("%s \n ", "INTERNAL ERROR in select from asset_element" );
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
 
@@ -137,23 +130,19 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     }
 
     // element was found
-    log_info ("%s \n ", "element was found" );
     // name, is required
     std::string name = "";
     row[0].get(name);
     assert(name != "");  //database is corrupted
-    log_info ("name = %s \n ", name.c_str() );
 
     //parent_id, is not required
     int parent_id = 0;
     row[1].get(parent_id);
-    log_info ("parend_id = %d \n ", parent_id );
 
     //parent_type_id, required, if parent_id != 0
     int parent_type_id = 0;
     row[2].get(parent_type_id);
     assert( ! ( ( parent_type_id == 0 ) && (parent_id != 0) ) ); // database is corrupted
-    log_info ("parent_type_id  = %d \n ", parent_type_id );
        
     // Get extra attributes of the element
     // Can return more than one row
@@ -207,7 +196,6 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     asset_msg_set_location_type(msgelement,parent_type_id);
     asset_msg_set_type(msgelement,element_type_id);    
     asset_msg_set_ext(msgelement, &extAttributes);
-    asset_msg_print(msgelement);
     
     //make ASSET_MSG_RETURN_ELEMENT
     resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENT);
