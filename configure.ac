@@ -43,7 +43,7 @@ PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])
 PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq 3.0 (git snapshot)])])
 PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([cannot find libnutclient >= 0.27])])
 PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
-PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 1.0.0.], [], [AC_MSG_ERROR([cannot find libsodium >= 1.0.0])])
+PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0.], [], [AC_MSG_ERROR([cannot find libsodium >= 2.1.0])])
 
 dnl ------ it was suggested by autoscan
