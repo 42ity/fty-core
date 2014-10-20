@@ -280,10 +280,17 @@ tests/utils/messages/json_schemas.h: Makefile
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
+docs: ${myDOXDIR}/html INSTALL.html
+
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
 	test -d $(top_srcdir)/${myDOXDIR}/html || $(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
-endif
+endif HAVE_DOXYGEN
+
+INSTALL.html: INSTALL
+if HAVE_ASCIIDOC
+	$(ASCIIDOC) -b html $^
+endif HAVE_ASCIIDOC
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
@@ -301,6 +308,7 @@ clean-local:
 if HAVE_DOXYGEN
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 endif
+	/bin/rm -f INSTALL.html
 
 #----------------------------------------------------------------------
 #                        astyle formating
