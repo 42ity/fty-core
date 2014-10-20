@@ -261,19 +261,20 @@ fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
 pkglib_LTLIBRARIES = bios_web.la
 bios_web_la_SOURCES = src/web/src/auth.ecpp src/web/src/auth-verify.ecpp \
                       src/web/src/data.cpp  src/web/src/item.ecpp        \
-					  src/web/src/json.ecpp src/web/src/list.ecpp        \
+                      src/web/src/json.ecpp src/web/src/list.ecpp        \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-					  src/web/src/time.ecpp src/web/src/tokens.cpp       \
-					  src/simple/asset_msg.c
-bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple \
-                       -I$(top_srcdir)/src/web/include \
+                      src/web/src/time.ecpp src/web/src/tokens.cpp       \
+                      src/simple/asset_msg.c src/utils/log.c             \
+                      src/utils/assetmsgpersistence.cc
+bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
+                       -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} ${LIBSODIUM_CFLAGS} \
                        ${LIBSASL2_CFLAGS}
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
-                      ${LIBSASL2_LIBS} -module -lm
+                      ${LIBSASL2_LIBS} -module -lm -ltntdb -ltntnet
 
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|'"\1<dir>$(top_srcdir)/src/web</dir>|" $< > $@ || rm -f $@
+	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
 
 web-test: tntnet.xml bios_web.la
 	${TNTNET} tntnet.xml
