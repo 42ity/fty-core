@@ -67,12 +67,14 @@ asset_msg_t *asset_manager::get_items(std::string type) {
         return NULL;
     }
 
-    asset_msg_t *get_elements = asset_msg_new(ASSET_MSG_GET_ELEMENT);
+    asset_msg_t *get_elements = asset_msg_new(ASSET_MSG_GET_ELEMENTS);
     asset_msg_set_type(get_elements, real_type);
+    asset_msg_print(get_elements);
 
     // Currently not needed
+    asset_msg_t * ret = asset_msg_process(url.c_str(),get_elements);
     asset_msg_destroy(&get_elements);
-
+/*
     asset_msg_t *ret = asset_msg_new(ASSET_MSG_RETURN_ELEMENTS);
     cxxtools::Directory dir("data/" + type);
     cxxtools::Regex reg("^[0-9]+$");
@@ -82,5 +84,24 @@ asset_msg_t *asset_manager::get_items(std::string type) {
             asset_msg_element_ids_insert(ret, it->c_str(), "TBD");
         }
     }
-    return ret;
+    */
+
+    asset_msg_print(ret);
+    zhash_t*  hash = asset_msg_element_ids(ret);
+    assert(hash);
+    char *item   = (char *) zhash_first (hash);   // value
+    char *keytag = (char *) zhash_cursor (hash);  // key
+
+    while ( item != NULL )
+    {
+        printf("%s - %s \n", keytag, item);
+        item   = (char *)  zhash_next(hash);
+        keytag = (char *)  zhash_cursor(hash);
+    }
+
+    if(ret != NULL) {
+        return ret;
+    }
+
+    return NULL;
 }
