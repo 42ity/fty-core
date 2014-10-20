@@ -65,3 +65,7 @@ if [ ! -s "./configure" -o ! -x "./configure" ]; then
     echo "autogen.sh: error: configure does not exist or is not executable!" 1>&2
     exit 1
 fi
+
+# Ensure that an exit at this point is "successful"
+true
+
