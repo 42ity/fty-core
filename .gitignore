@@ -12,9 +12,18 @@ config.log
 config.status
 configure
 .deps
+.libs/
 libtool
+lib*.a
+lib*.la
+lib*.so
+lib*.so.*
+INSTALL.html
 Makefile.in
 Makefile
+driver-nmap
+netmon
+simple
 
 ./netmon
 *.o
@@ -27,6 +36,10 @@ stamp-h1
 
 docs/man/*.8
 
+docs/doxygen/Doxyfile
+docs/doxygen/doxylog.txt
+docs/doxygen/html/
+
 .test.log
 .test.trs
 test-log.*
@@ -35,3 +48,7 @@ build/
 core-*.*/
 
 core-*.*.tar.?z
+
+src/utils/messages/json_schemas.h
+tools/dbpath.h
+tools/run-test-doc.sh
