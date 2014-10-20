@@ -131,7 +131,7 @@ check() const
 {
     if ((_name.length() <= this->getNamesLength()) &&
         this->check_command() && _address.valid() )
-        return true;
+        return true;        // in case of prefixlen = 0, the address would be invalid
     else
         return false;
 }

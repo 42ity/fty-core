@@ -15,6 +15,7 @@
 #include "log.h"
 #include "netdisc_msg.h"
 #include "subprocess.h"
+#include "nut-actor.h"
 
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
@@ -40,22 +41,17 @@ void persistence_actor(zsock_t *pipe, void *args) {
             break;
         }
 
-        netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        log_debug ("name='%s';ipver='%d';ipaddr='%s';prefixlen='%d';mac='%s'\n",            
-            netdisc_msg_name (msg),
-            netdisc_msg_ipver (msg),
-            netdisc_msg_ipaddr (msg),
-            netdisc_msg_prefixlen (msg),
-            netdisc_msg_mac (msg));
+        zmsg_t *msg = zmsg_recv(insock);
 
         try {
-            bool b = utils::db::process_message (url, *msg);
+            bool b = utils::db::process_message (url, msg);
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "%To resolve this problem, please see README file\n");
             log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
             break;
         }
+        zmsg_destroy(&msg);
     }
     
     zpoller_destroy(&poller);
@@ -173,8 +169,11 @@ int main(int argc, char **argv) {
             return netmon_proc.getReturnCode();
         }
     }
+
+    zactor_t *nut = zactor_new( nut_actor, NULL);
+    assert(nut);
     
-    zpoller_t *poller = zpoller_new(netmon, db, NULL);
+    zpoller_t *poller = zpoller_new(netmon, db, nut, NULL);
     assert(poller);
 
     while (!zpoller_terminated(poller)) {
@@ -190,6 +189,7 @@ int main(int argc, char **argv) {
         // with them atm
         netmon_proc.terminate();
     }
+    zactor_destroy(&nut);
     zactor_destroy(&db);
     log_info ("%s", "destroying persistence_actor\n"); 
     log_close ();

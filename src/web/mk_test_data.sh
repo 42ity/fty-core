@@ -5,7 +5,7 @@ mkdir -p data/{datacenter,room,row,rack}
 pushd data/datacenter
 "$BASEDIR"/fake_message << EOF
 1
-0
+datacenter
 test_dc
 0
 0
@@ -19,20 +19,20 @@ popd
 pushd data/room
 "$BASEDIR"/fake_message << EOF
 2
-1
+room
 alpha
 1
-0
+datacenter
 description
 Empty_room
 exit
 EOF
 "$BASEDIR"/fake_message << EOF
 3
-1
+room
 beta
 1
-0
+datacenter
 description
 Real_room
 exit
@@ -41,10 +41,10 @@ popd
 pushd data/row
 "$BASEDIR"/fake_message << EOF
 4
-2
+row
 front_one
 3
-1
+room
 description
 Real_room
 exit
@@ -53,10 +53,10 @@ popd
 pushd data/rack
 "$BASEDIR"/fake_message << EOF
 5
-3
+rack
 in_the_row
 4
-2
+row
 brand
 Eaton
 u_size
@@ -65,10 +65,10 @@ exit
 EOF
 "$BASEDIR"/fake_message << EOF
 6
-3
+rack
 sole_rack
 3
-1
+room
 brand
 APC
 u_size

@@ -23,12 +23,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef _SRC_DRIVERS_NUT_DRIVER_H_
 #define _SRC_DRIVERS_NUT_DRIVER_H_
 
-#include <czmq.h>
 #include <map>
 #include <vector>
 #include <nutclient.h>
-
-void nut_actor(zsock_t *pipe, void *args);
+#include <czmq.h>
 
 /**
  * \class NUTDevice
@@ -51,44 +49,79 @@ class NUTDevice {
      * \brief Creates new NUTDevice with empty set of values with name (name corresponds
      * with NUTs /etc/ups/ups.conf
      */
-    NUTDevice(std::string name);
+    NUTDevice(const char *name);
+    NUTDevice(const std::string& name);
 
     /**
      * \brief Method for obtaining device's name.
      */
-    const std::string name();
+    std::string name() const;
 
     /**
      * \brief Method for checking that some changes in device status happened.
      * \return bool
-     * \see statusMessage()
      *
      * Method returns true if there are some changes in device since last
      * statusMessage has been called.
      */
     bool changed() const;
-    
+
+    /**
+     * \brief Method for setting the change status.
+     */
+    void changed(const bool status);
+
     /**
      * \brief Produces a std::string with device status in JSON format.
      * \return std::string
      * \see change()
      *
-     * Method returns string with device status message. The flag _change is
-     * set to false. Method returs the actual status allways, even if there is
-     * no change.
+     * Method returns string with device status message. Method returs the
+     * actual status in json like std::string.
      *
      *    if( UPS.change() ) {
-     *        cout << UPS.statusMessage() << endl;
+     *        cout << UPS.toString() << endl;
+     *        UPS.changed(false);
      *    }
      */
-    const std::string statusMessage();
+    std::string toString() const;
+
+    /**
+     * \brief method checks whether this device reports particular property.
+     * \return bool, true if property exists
+     */
+    bool hasProperty(const char *name) const;
+    bool hasProperty(const std::string& name) const;
+
+    /**
+     * \brief method returns particular device property.
+     * \return std::string, property value as a string or empty
+     *         string ("") if property doesn't exists
+     *
+     *    if( UPS.hasProperty("voltage") ) {
+     *        cout << "voltage " << UPS.property("voltage") << "\n";
+     *    } else {
+     *        cout << "voltage unknown\n";
+     *    }
+     */
+    std::string property(const char *name) const;
+    std::string property(const std::string& name) const;
+
+    /**
+     * \brief method returns all discovered properties of device.
+     * \return std::map<std::string,std::string> property values
+     *
+     * Method transforms all properties (physical and inventory) to
+     * map. Numeric values are converted to strings using itof() method.
+     */
+    std::map<std::string,std::string> properties() const;
     ~NUTDevice();
  private:
 
     /**
      * \brief sets the device name
      */
-    void name(const std::string name);
+    void name(const std::string& name);
 
     /**
      * \brief Updates physical or measurement value (like current or load) from float.
@@ -96,7 +129,7 @@ class NUTDevice {
      * Updates the value if new value is significantly differen (>5%). Flag _change is
      * set if new value is saved.
      */
-    void updatePhysics(std::string varName, float newValue);
+    void updatePhysics(const std::string& varName, const float newValue);
 
     /**
      * \brief Updates physical or measurement value from vector.
@@ -104,7 +137,7 @@ class NUTDevice {
      * Updates the value with first value from vector (NUT returns vectors of
      * values).
      */
-    void updatePhysics(std::string varName, std::vector<std::string> values);
+    void updatePhysics(const std::string& varName, std::vector<std::string>& values);
 
     /**
      * \brief Updates inventory value.
@@ -113,7 +146,7 @@ class NUTDevice {
      * values). values are connected like "value1, value2, value3". Flag _change is
      * set if new value is different from old one.
      */
-    void updateInventory(std::string varName, std::vector<std::string> values);
+    void updateInventory(const std::string& varName, std::vector<std::string>& values);
 
     /**
      * \brief Updates all values from NUT.
@@ -133,7 +166,7 @@ class NUTDevice {
     //! \brief device name
     std::string _name;
     //! \brief Transformation of our integer (x100) back
-    std::string itof(long int);
+    std::string itof(const long int) const;
 };
 
 /**
@@ -189,5 +222,7 @@ class NUTDeviceList {
     //! \brief update status of NUT devices
     void updateDeviceStatus();
 };
+
+
 
 #endif // _SRC_DRIVERS_NUT_DRIVER_H_

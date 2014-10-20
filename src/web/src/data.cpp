@@ -3,22 +3,24 @@
 
 #include <algorithm>
 
-asset_type asset_manager::type_to_byte(std::string type) {
+byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+    byte ret = asset_type::UNKNOWN;
     if(type == "datacenter") {
-        return asset_type::DATACENTER;
+        ret = asset_type::DATACENTER;
     } else if(type == "room") {
-        return asset_type::ROOM;
+        ret = asset_type::ROOM;
     } else if(type == "row") {
-        return asset_type::ROW;
+        ret = asset_type::ROW;
     } else if(type == "rack") {
-        return asset_type::RACK;
+        ret = asset_type::RACK;
     } else if(type == "group") {
-        return asset_type::GROUP;
+        ret = asset_type::GROUP;
     }
+    return ret;
 }
 
-std::string asset_manager::byte_to_type(asset_type type) {
+std::string asset_manager::byte_to_type(byte type) {
     switch(type) {
         case asset_type::DATACENTER:
             return "datacenter";
@@ -30,5 +32,7 @@ std::string asset_manager::byte_to_type(asset_type type) {
             return "rack";
         case asset_type::GROUP:
             return "group";
+        default:
+            return "";
     }
 }

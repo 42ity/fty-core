@@ -1,6 +1,7 @@
 #ifndef UTILS_PERSISTENCELOGIC_H_
 #define UTILS_PERSISTENCELOGIC_H_
 
+#include "czmq.h"
 #include "netdisc_msg.h"
 
 namespace utils {
@@ -13,7 +14,10 @@ namespace db {
  * \return true if processing was successful and false if message was bad
  */
 bool
-process_message(const std::string& url, const netdisc_msg_t& msg);
+process_message(const std::string& url, zmsg_t *msg);
+
+bool
+netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg);
 
 } // namespace db
 

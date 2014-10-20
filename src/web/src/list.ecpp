@@ -26,7 +26,7 @@ asset_manager asset_mgr;
 {
     "<$ request.getArg("type") $>": [
 <%cpp>
-    zhash_t *ids = asset_msg_get_elemenet_ids(dta);
+    zhash_t *ids = asset_msg_get_element_ids(dta);
     if(ids != NULL) {
         int count = zhash_size(ids);
         int i = 0;
