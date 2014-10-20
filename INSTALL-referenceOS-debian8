@@ -1,0 +1,305 @@
+Basic Debian8 system installation from scratch to build $BIOS core
+==================================================================
+:Author:	Evgeny Klimov
+:Email:		<EvgenyKlimov@eaton.com>
+
+The $BIOS core project is developed and thus de-facto supported on
+only a handful of Linux distributions at the moment. Among these is
+Debian-8.0-amd64 ("testing" at the moment of this writing) that can
+work as a developer's working environment or a validator's sandbox.
+This document is a step-by step record of an installation of this OS
+with the aim of building, testing and developing the $BIOS project
+core (and probably its third-party prerequisites) in a VirtualBox VM.
+
+== Create the VM "hardware"
+The minimal installation below was performed in VirtualBox with the
+three-DVD set of 'debian-testing-amd64-DVD-{1,2,3}.iso' files as the
+installation source. The VM was configured with "Debian"/"64-bit" 
+guest OS type, 2GB RAM, 8GB HDD, a "NAT"ed network adapter (further 
+routed by the host OS) and no extras like audio, USB or graphics
+acceleration. Use CPU accelerations and multicore support as desired,
+though note that on heavily-loaded systems the VM timekeeping on
+single-CPU virtual systems is much more consistent.
+
+You may also want to add a "Virtualbox Host-only Network Adapter"
+for faster and unfiltered interconnections between your host OS and
+VM(s), and/or a "Bridged network adapter" to access an external LAN
+directly.
+
+Note that generally the "NAT network" can not be used for such VM
+interconnections since each stack is unique and isolated on the host
+and each seems the same for each guest, and the NAT network stack
+does not pass ICMP (ping, traceroute); however it automates the net
+setup greatly (especially if your host is a laptop and uses different
+network connections all the time, i.e. direct today and VPN tonight).
+
+== Install the basic Debian OS
+In the installer pass the initial questions like the locale and time
+zone (I chose American/English language with a Europe/Czech location)
+and disk setup (full HDD, all in one partition -- we aim for simplicity
+and speed of deployment here, rather than an optimized installation).
+Create the root and unprivileged user account passwords. Scan all
+(three) DVDs, if desired, so that APT knows about the readily available
+packages. Keep in mind however, that these "testing" DVDs might not
+contain *all* packages, and more may be available in the Internet
+repositories, which we will add as package sources soon after the
+initial installation.
+
+In the packaging set-up choices unselect the UI stuff like "Desktop"
+and "Laptop", leaving only "SSH server" and "Standard system" stuff.
+This should be a pretty fast and compact set-up, just under 1GB
+(initially) ;) Finally, install GRUB into '/dev/sda' when asked to, 
+eject the DVD, and reboot.
+
+When the bootup is completed, login on the console as 'root'.
+
+== Enable networked packaging
+The Debian packaging system is APT, with package sources configured
+in `/etc/apt/sources.list` file for the OS package sets and some more
+optional files under `/etc/apt/sources.list/*` usually provided by 
+the third-party package vendors (like our project, at a later stage).
+
+Currently, edit the main `/etc/apt/sources.list` file and uncomment
+the lines starting with `# deb` and pointing to HTTP or FTP servers.
+This would provide the secondary repositories such as "updates". To 
+get the actual software packages from the network, also add this link:
+----
+:; echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' \
+   >  /etc/apt/sources.list.d/debian-jessie.list
+:; echo 'deb-src http://ftp.debian.org/debian jessie main contrib non-free' \
+   >> /etc/apt/sources.list.d/debian-jessie.list
+----
+
+Then update the indexes of packages available from different sources:
+----
+:; apt-get update
+----
+
+== Increase usability (for example, with Midnight Commander, RSync or VIM)
+It may be my private preference that the MC file manager and editor
+simplifies text-mode usage... Alternately, install equivalent tools
+of your choice (note that basic `vi` editor should be available by
+default while an extended `vim` suite is not). While at it, make
+sure that `rsync` is also available.
+----
+:; apt-get install mc nano vim joe rsync
+----
+Note that if networking repositories are not enabled/available, this
+installation may ask you to insert the DVD's involved (DVD#1 for mc,
+vim or joe packages).
+
+If you do prefer Midnight Commander, amend your '~/.profile' with:
+----
+EDITOR="/usr/bin/mc -e"
+export EDITOR
+----
+
+== Configure the networks involved (optional)
+If you did install more than just the NAT network adapter, you may
+want to configure it. In the newly installed Debian system, modify
+'/etc/network/interfaces' to seem like this slightly more complicated
+example:
+----
+%
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+# labnet bridged
+allow-hotplug eth2
+iface eth2 inet dhcp
+
+# vbox host-only
+allow-hotplug eth0
+iface eth0 inet dhcp
+
+# The primary network interface
+# vbox nat
+allow-hotplug eth1
+iface eth1 inet dhcp
+----
+
+Here the addresses are assigned by DHCP in all cases, implemented
+by VirtualBox for the NAT and Host-only networks, and by external
+LAN services for the bridged networks. It is up to the DHCP servers
+here to provide the default routes on certain adapters, as well as
+to announce where a client can get the DNS services.
+
+Verify the active network adapter settings with `ifconfig -a` 
+or `ip addr list`, and available routes with `netstat -rn` or 
+`ip route list`.
+
+To enforce DHCP configuration of a specific adapter you can use:
+----
+:; NIC=eth0; ifconfig $NIC up && dhclient $NIC; ifconfig $NIC
+----
+
+Now you can connect to the VM with an SSH client such as PUTTY (for
+those of you who are Windows-based users) -- a text-based access mode
+would be more convenient than the GUI-based VM console, specifically
+making it easier to copy-paste the sample commands below ;)
+
+
+== Set up /etc/hosts on the guest and other systems
+List the convenient names of your host and other guest VMs on the
+Host-Only Network in the '/etc/hosts' file to speed up connections
+(i.e. SSH or NFS may lag due to these), following the "IP NAME[...]"
+pattern:
+----
+127.0.0.1	localhost localhost.localdomain
+192.168.56.101	debian8	debian8.my.dom
+192.168.56.1	vmhost	vmhost.my.dom
+----
+
+Likewise, make note of the IP address assigned to the new guest OS
+on the Bridged or Host-only interfaces, and add the relevant entries
+to '/etc/hosts' on interested remote systems, such as your host OS
+and other guest VMs, or to DNS on the LAN (if any and if controllable).
+
+== Set up SSH access with keys
+The SSH server itself was part of the installation choices above,
+so it should be running now, and allow login to your unprivileged
+user account with passwords.
+
+It may be convenient to generate (or copy over) the private+public
+key pair to identify your user when connecting to other systems,
+and to allow access to the new system with the keys you already use.
+It is highly recommended to not use password-less keys for such 
+access, but to set up an ssh-key-agent on your desktop and other
+systems to interactively pass through the bits needed for effortless
+logins further on (i.e. to Git over SSH).
+
+First ensure that the '~/.ssh/' configuration directory exists and
+is secure:
+----
+:; mkdir ~/.ssh ; chmod 700 ~/.ssh ; cd ~/.ssh
+----
+
+Make '~/.ssh/authorized_keys' for a list of permitted remote keys
+(one per very long line) and '~/.ssh/id_\{rsa,dsa}\{,.pub}' for the
+private+public key pair (can be generated with `ssh-keygen` or
+copied from another OS). Also files like '~/.ssh/known_hosts' can
+exist to list the fingerprints of remote hosts that we connected
+to and trusted to allow us in, and '~/.ssh/config' to configure
+the SSH client defaults when connecting to specific hosts or even
+"tags" (i.e. to set up not only custom TCP ports, compression or
+agent-forwarding, but also the very remote host and user names
+used in the shortly-named connection "tag").
+
+NOTE: Once you copy-paste the '~/.ssh/authorized_keys' including
+the public key used by your existing system (if any), you can use
+`scp` or `rsync` from it to copy the rest of these and other files
+over quickly:
+----
+user@oldLinux$ cd ~/.ssh && \
+  rsync -avPHK config id_* known_hosts debian8:.ssh/
+----
+
+== (optional) Enable privilege elevations
+ * On the console or after `su -` (either way, as 'root') run:
+----
+:; apt-get install sudo
+----
+...and add a file under '/etc/sudoers.d/' to include your user, 
+i.e. use this pattern for the most permissive setup:
+----
+:; username=jim
+:; echo "$username ALL=(ALL:ALL) NOPASSWD: ALL" > \
+   /etc/sudoers.d/$username
+----
+
+Then as the unprivileged user, add a simple command to elevate:
+----
+:; grep 'sudo su -' ~/.bash_aliases >/dev/null || \
+   echo "alias S='sudo su -'" >> ~/.bash_aliases
+----
+...now (after re-login or sourcing of this file) you can just
+type `S` to get a 'root' shell. Use `sudo` prefix however to
+run other elevated commands (such as installations).
+
+== Set up NTP client for consistent time-keeping
+Add the packages involved:
+----
+:; apt-get ntpdate ntp
+----
+
+The service should start automatically.
+
+Verify that your VM's clock offset from the world clocks is small
+(under a second) with:
+----
+:; ntpdate -q pool.ntp.org
+
+server 23.92.26.57, stratum 2, offset -0.005269, delay 0.19516
+server 69.167.160.102, stratum 3, offset -0.008056, delay 0.16730
+server 67.18.187.111, stratum 2, offset -0.003241, delay 0.16351
+server 204.235.61.9, stratum 2, offset -0.006882, delay 0.16461
+20 Oct 19:21:46 ntpdate[10229]: adjust time server 67.18.187.111 offset -0.003241 sec
+----
+
+== Add the packages generally needed for development and compilation
+Since this system will be used for building several projects, a number
+of common compilation suites and related tools should be set up. Maybe
+some of these already exist in your installation and will be quietly
+skipped:
+----
+:; apt-get install gcc bison autoconf automake make patch \
+    libgcc1 cpp binutils strace gdb \
+    doxygen perl python
+----
+
+The documentation-compilation suite may be rather heavy (needs much
+of X11 setup to support fonts, image processing and so on) but may
+be still needed to complete full builds:
+----
+:; apt-get install asciidoc
+----
+
+To access remote repositories, you will certainly need Git and may 
+optionally need CVS and SVN:
+----
+:; apt-get install git
+:; apt-get install cvs subversion
+----
+
+== Set up VM Guest Additions
+Most of the hypervisors offer specialized drivers and daemons which
+improve performance and usability of guest VMs (often after a reboot).
+On Linux/Unix systems these usually require the compiler, maybe perl,
+and kernel development/header packages to be available, since some
+of these modules typically require compilation for the specific 
+guest OS.
+
+Add the needed packages for your platform (this may also pull in some
+specific releases of GCC and other packages):
+----
+:; apt-get install linux-headers-amd64
+----
+
+In the VM GUI, "Insert Guest Additions CD image..."
+If the image is not mounted automatically, then in the guest OS run:
+----
+:; mount -o ro,exec /media/cdrom
+----
+
+When the Guest Additions installer is available, run it:
+----
+:; /media/cdrom/VBoxLinuxAdditions.run && eject
+----
+
+NOTE: We do not care about failures when "_Installing the Window System
+drivers_" since this system was installed as minimized and headless.
+The installer may also complain that "_The headers for the current
+running kernel were not found. If the following module compilation
+fails then this could be the reason._" -- but as long as the next step
+is just "_...done_", this does not matter much.
+
+You may have to reboot to completely apply these VM optimizations.
+
+== Our Project...
+See the 'link:INSTALL.html[INSTALL]' document for details on installing
+the prerequisites, checking out the source code and building the $BIOS
+project core.
