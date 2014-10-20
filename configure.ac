@@ -36,11 +36,15 @@ AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([tntdb.h],
                  [],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
+AC_CHECK_HEADER([tnt/tntnet.h], , AC_MSG_ERROR([tntnet headers not found]))
 AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
 PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq 3.0 (git snapshot)])])
 PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([cannot find libnutclient >= 0.27])])
+PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
+PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 1.0.0.], [], [AC_MSG_ERROR([cannot find libsodium >= 1.0.0])])
+PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0.], [], [AC_MSG_ERROR([cannot find libsodium >= 2.1.0])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
@@ -115,6 +119,13 @@ AC_PATH_PROGS([A2X], [a2x])
 dnl TODO  MVY is it ok?
 AM_CONDITIONAL([HAVE_ASCIIDOC], [test -n "${A2X}"])
 
+# sed is great!
+AC_CHECK_PROGS([SED], [sed])
+# TNTnet preprocesor
+AC_CHECK_PROGS([ECPPC], [ecppc])
+# TNTnet
+AC_CHECK_PROGS([TNTNET], [tntnet])
+
 # set flags CFLAGS
 my_CFLAGS="\
 -std=c11 \
@@ -153,6 +164,7 @@ Summary:
         astyle:                  ${ASTYLE:-none}
         asciidoc:                ${A2X:-none}
         doxygen:                 ${DOXYGEN:-none}
+        ecpp:                    ${ECPP:-none}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
@@ -162,12 +174,16 @@ Summary:
         LIBZMQ_LIBS:             ${LIBZMQ_LIBS}
         LIBCZMQ_CFLAGS:          ${LIBCZMQ_CFLAGS}
         LIBCZMQ_LIBS:            ${LIBCZMQ_LIBS}
-        LIBVARIANT_CFLAGS:       ${LIBVARIANT_CFLAGS}
-        LIBVARIANT_LIBS:         ${LIBVARIANT_LIBS}
         LIBCIDR_CFLAGS:          ${LIBCIDR_CFLAGS}
         LIBCIDR_LIBS:            ${LIBCIDR_LIBS}
         LIBNUTCLIENT_CFLAGS:     ${LIBNUTCLIENT_CFLAGS}
         LIBNUTCLIENT_LIBS:       ${LIBNUTCLIENT_LIBS}
+        CXXTOOLS_CFLAGS:         ${CXXTOOLS_CFLAGS}
+        CXXTOOLS_LIBS:           ${CXXTOOLS_LIBS}
+        LIBSODIUM_CFLAGS:        ${LIBSODIUM_CFLAGS}
+        LIBSODIUM_LIBS:          ${LIBSODIUM_LIBS}
+        LIBSASL2_CFLAGS:         ${LIBSASL2_CFLAGS}
+        LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
 
         debug mode:              ${enable_debug:-no}
 ])
