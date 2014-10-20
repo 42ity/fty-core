@@ -32,7 +32,7 @@ zmsg_t *nutdevice_to_powerdev_msg(const NUTDevice &dev) {
     }
     // get extra properties
     for( auto &iter : properties ) {
-        zhash_insert(otherProperties, iter.first.c_str(), (void *)( iter.second.c_str() ) );
+        zhash_insert(otherProperties, (void*)iter.first.c_str(), (void *)( iter.second.c_str() ) );
     }
     msg = powerdev_msg_encode_powerdev_status(
          dev.name().c_str(),

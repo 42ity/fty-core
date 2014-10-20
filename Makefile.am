@@ -255,6 +255,7 @@ driver_nmap_CPPFLAGS =			-I $(top_srcdir)/src/simple -I $(top_srcdir)/src/utils
 
 bin_PROGRAMS += fake_message
 fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
+fake_message_CPPFLAGS = -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools
 fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
                        src/web/fake_message.cpp
 
