@@ -273,7 +273,7 @@ endif HAVE_ASCIIDOC
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: ${myDOXDIR}/html
+all-local: docs
 
 
 #----------------------------------------------------------------------
