@@ -257,7 +257,7 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
-docs: ${myDOXDIR}/html INSTALL.html
+all-docs: ${myDOXDIR}/html INSTALL.html
 
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
@@ -273,7 +273,7 @@ endif HAVE_ASCIIDOC
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: docs
+all-local: all-docs
 
 
 #----------------------------------------------------------------------
