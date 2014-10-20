@@ -33,6 +33,6 @@ std::string asset_manager::byte_to_type(byte type) {
         case asset_type::GROUP:
             return "group";
         default:
-            return "";
+            return "unknown";
     }
 }

@@ -38,12 +38,12 @@
     ELEMENT - Structure describing asset element
         name                string      Name of the element
         location            number 4    ID of the parent element
-        location_type       number 1    Type of the parent element, defined in enum somewhere
-        type                number 1    Type of the device, defined in enum somewhere
+        location_type       number 1    Type of the parent element, defined in asset_type
+        type                number 1    Type of the device, defined in asset_type
         ext                 dictionary  Hash map of extended attributes
 
     DEVICE - Structure describing asset device
-        device_type         string      Type of the device, freeform string
+        device_type         string      Type of the device, freeform string not the thing from asset_type
         groups              strings     List of IDs of groups device belongs to
         powers              strings     List of encoded link messages
         ip                  string      IP of the device
@@ -56,38 +56,38 @@
         parent_socket       number 2    
         my_socket           number 2    
         location            number 4    ID of the parent element
-        location_type       number 1    Type of the parent element, defined in enum somewhere
+        location_type       number 1    Type of the parent element, defined in asset_type
 
     GET_ELEMENT - Ask for specific element
         element_id          number 4    Unique ID of the asset element
-        type                number 1    Type of the device, defined in enum somewhere
+        type                number 1    Type of the element defined in asset_type (includes devices)
 
     RETURN_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the asset element
-        msg                 msg         Element to be delivered
+        msg                 msg         Element (or device) to be delivered
 
     UPDATE_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the asset element
-        msg                 msg         Element to be updated
+        msg                 msg         Element (or device) to be updated
 
     INSERT_ELEMENT - Returns element we were asked for
-        msg                 msg         Element to be inserted
+        msg                 msg         Element (or device) to be inserted
 
     DELETE_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the element to be deleted
-        type                number 1    Type of the device, defined in enum somewhere
+        type                number 1    Type of the device, defined in asset_type
 
     OK - Message from database that everything was processed successfully.
         element_id          number 4    Unique ID of the element that was proccessed
 
     FAIL - Message from database that something went wrong.
-        error_id            number 1    Type of the error, enum defined somewhere else
+        error_id            number 1    Type of the error, enum defined in asset_type
 
     GET_ELEMENTS - Ask for all elements of specific type
-        type                number 1    Type of the device, defined in enum somewhere
+        type                number 1    Type of the device, defined in in asset_type
 
     RETURN_ELEMENTS - Returns elements we were asked for
-        element_ids         dictionary  Unique IDs of the asset element mapped to the elements name
+        element_ids         dictionary  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
 */
 
 #define ASSET_MSG_VERSION                   1.0
