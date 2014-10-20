@@ -33,4 +33,9 @@ A2X_MANPAGE_OPTS = --doctype manpage --format manpage
 .txt.8:
 	$(A2X) $(A2X_MANPAGE_OPTS) $<
 
-endif HAVE_A2X
+else
+
+all-local:
+	@echo "SKIP: Missing 'a2x' program, manpage generation skipped!" >&2
+
+endif
