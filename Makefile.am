@@ -129,6 +129,27 @@ libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
 libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
 #----------------------------------------------------------------------
+#                        TNTnet
+#----------------------------------------------------------------------
+
+SUFFIXES=.ecpp .gif .jpg .css .js .cpp
+
+.ecpp.cpp:
+	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
+.gif.cpp:
+	${ECPPC} ${ECPPFLAGS} -m image/gif ${ECPPFLAGS_GIF} -b -o $@ $<
+.jpg.cpp:
+	${ECPPC} ${ECPPFLAGS} -m image/jpg ${ECPPFLAGS_JPG} -b -o $@ $<
+.png.cpp:
+	${ECPPC} ${ECPPFLAGS} -m image/png ${ECPPFLAGS_PNG} -b -o $@ $<
+.ico.cpp:
+	${ECPPC} ${ECPPFLAGS} -m image/x-icon ${ECPPFLAGS_ICO} -b -o $@ $<
+.css.cpp:
+	${ECPPC} ${ECPPFLAGS} -m text/css ${ECPPFLAGS_CSS} -b -o $@ $<
+.js.cpp:
+	${ECPPC} ${ECPPFLAGS} -m application/javascript ${ECPPFLAGS_JS} -b -o $@ $<
+
+#----------------------------------------------------------------------
 #                        Unit tests
 #----------------------------------------------------------------------
 
@@ -229,9 +250,33 @@ driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 					src/simple/nmap_msg.c
 
 driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
-driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} -lcxxtools
+driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
 driver_nmap_CPPFLAGS =			-I $(top_srcdir)/src/simple -I $(top_srcdir)/src/utils
 
+bin_PROGRAMS += fake_message
+fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
+fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
+                       src/web/fake_message.cpp
+
+pkglib_LTLIBRARIES = bios_web.la
+bios_web_la_SOURCES = src/web/src/auth.ecpp src/web/src/auth-verify.ecpp \
+                      src/web/src/data.cpp  src/web/src/item.ecpp        \
+					  src/web/src/json.ecpp src/web/src/list.ecpp        \
+                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
+					  src/web/src/time.ecpp src/web/src/tokens.cpp       \
+					  src/simple/asset_msg.c
+bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple \
+                       -I$(top_srcdir)/src/web/include \
+                       ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} ${LIBSODIUM_CFLAGS} \
+                       ${LIBSASL2_CFLAGS}
+bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
+                      ${LIBSASL2_LIBS} -module -lm
+
+tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
+	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|'"\1<dir>$(top_srcdir)/src/web</dir>|" $< > $@ || rm -f $@
+
+web-test: tntnet.xml bios_web.la
+	${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
