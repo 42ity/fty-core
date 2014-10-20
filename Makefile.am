@@ -45,23 +45,6 @@ noinst_LTLIBRARIES += 		libpriv-utils.la
 libpriv_utils_la_SOURCES = 	src/utils/utils.c \
 				src/utils/utils.h
 
-noinst_LTLIBRARIES += 		libpriv-cli.la
-
-libpriv_cli_la_SOURCES = 	src/utils/utils.h \
-				src/cli/cli.h \
-				src/cli/cli-shared.c
-
-libpriv_cli_la_LIBADD = 	libpriv-utils.la
-
-noinst_LTLIBRARIES += 		libpriv-cored.la
-
-libpriv_cored_la_SOURCES = 	src/utils/zmq.hpp \
-				src/cored/mock_db.h \
-				src/cored/mock_db.cc \
-				src/cored/utilities.h \
-				src/cored/utilities.cc \
-				src/cored/utilities_zeromq.h \
-				src/cored/utilities_zeromq.cc
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -156,16 +139,6 @@ test_utils_LDADD = 			libpriv-utils.la \
 					libpriv-test-run.la
 test_utils_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-cli
-test_cli_SOURCES = 			src/cli/cli.h \
-					tests/cli/test-cli.cc
-test_cli_LDADD = 			libpriv-utils.la \
-					libpriv-cli.la \
-					libpriv-test-run.la
-test_cli_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I $(top_srcdir)/tests/include \
-					-I $(top_srcdir)/src/cli
-
 check_PROGRAMS += 			test-log
 test_log_SOURCES = 			src/utils/log.h \
 					src/utils/utils.h \
@@ -190,15 +163,6 @@ test_cidr_LDADD = 			libpriv-test-run.la
 test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) -I $(top_srcdir)/tests/include/
 test_cidr_LDFLAGS =			-lcidr
 
-
-check_PROGRAMS += 			test-json-schemas
-test_json_schemas_SOURCES = 		tests/utils/test-json-schemas.cc \
-					tests/utils/messages/json_schemas.h
-test_json_schemas_LDADD = 		libpriv-test-run.la
-test_json_schemas_LDFLAGS =		$(LIBVARIANT_LIBS)
-test_json_schemas_CPPFLAGS =		-I $(top_srcdir)/tests/include \
-					-I $(top_srcdir)/tests/utils/messages \
-					-D TEST_JSON_SCHEMAS_BINARY_PATH=\"$(top_srcdir)\"
 
 check_PROGRAMS += 			test-db
 test_db_SOURCES = 			tests/utils/test-clientinfo.cc \
@@ -231,30 +195,9 @@ netmon_SOURCES = 			src/netmon/linux \
 					src/simple/netdisc_msg.c \
 					src/netmon/netmon_msg_send.cc \
 					src/netmon/netmon_msg_send.h
-nodist_netmon_SOURCES = 		src/utils/messages/json_schemas.h
 # Consider moving zproto protocols to libpriv-...
 netmon_CPPFLAGS =			$(AM_CPPFLAGS) -I $(top_srcdir)/src/netmon -D_GNU_SOURCE -I $(top_srcdir)/src/simple
 netmon_LDADD =				libpriv-utils.la libpriv-log.la
-
-
-
-bin_PROGRAMS += 			cli
-cli_SOURCES = 				src/cli/cli.h \
-					src/cli/cli.c \
-					src/cli/cli-network.cc \
-					src/utils/messages/json_schemas.h
-nodist_cli_SOURCES = 			src/utils/messages/json_schemas.h
-cli_LDADD =				libpriv-utils.la libpriv-cli.la libpriv-log.la
-cli_LDFLAGS =				$(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
-
-bin_PROGRAMS += 			cored
-
-cored_SOURCES = 			src/cored/main.h \
-					src/cored/main.cc
-
-nodist_cored_SOURCES = 			src/utils/messages/json_schemas.h
-cored_LDADD =				libpriv-cored.la
-cored_LDFLAGS =				-pthread $(LIBZMQ_LIBS) $(LIBVARIANT_LIBS)
 
 bin_PROGRAMS += 			simple
 
@@ -295,8 +238,6 @@ driver_nmap_CPPFLAGS =			-I $(top_srcdir)/src/simple -I $(top_srcdir)/src/utils
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/src/utils/messages/json_schema/*.json \
-					$(top_srcdir)/tests/utils/messages/json_schema/*.json \
 					$(top_srcdir)/tools/dbpath.h.in \
 					$(top_srcdir)/simple/*_msg.xml
 
@@ -309,22 +250,8 @@ endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 
-BUILT_SOURCES +=			$(top_srcdir)/src/utils/messages/json_schemas.h \
-					$(top_srcdir)/tests/utils/messages/json_schemas.h \
-					$(top_srcdir)/tools/dbinit.h
+BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 
-CLEANFILES +=				src/utils/messages/json_schemas.h
-
-
-#----------------------------------------------------------------------
-#                        JSON validator targets
-#----------------------------------------------------------------------
-
-src/utils/messages/json_schemas.h: Makefile
-	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/src
-
-tests/utils/messages/json_schemas.h: Makefile
-	$(top_srcdir)/tools/gen-json-validator $(top_srcdir)/tests
 
 #----------------------------------------------------------------------
 #                        doxygen html generation
@@ -339,7 +266,7 @@ endif
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: ${myDOXDIR}/html tests/utils/messages/json_schemas.h src/utils/messages/json_schemas.h
+all-local: ${myDOXDIR}/html
 
 
 #----------------------------------------------------------------------
