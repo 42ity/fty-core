@@ -1,26 +1,33 @@
 TODO
 ====
 
-The list of known issues, which has to be addressed!
+The list of known issues, which have to be addressed!
 
-src/utils/messages
-------------------
+src/utils/messages :
+--------------------
 GCL: Major comments are same as previous on PR BIOS-347 :
--> The validation JSON file name should include the kind of message (Request, Reply, Pub, Sub..)
+-> The validation JSON file name should include the kind of message 
+   (Request, Reply, Pub, Sub...),
 -> The validation JSON file name should include the client name,
--> The validation schema should not have client module attribute name hardcoded,
+-> The validation schema should not have client module attribute
+   name hardcoded,
 -> The validation schema should have a version property,
 -> the printf calls should be remplaced by a right log API usage.
 
-see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23 for more detail.
+see http://stash.mbt.lab.etn.com/projects/BIOS/repos/core/pull-requests/23
+for more detail.
 
-src/cli/cli-network.cc
----------------------
- * Command line output does not match http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
+src/cli/cli-network.cc :
+------------------------
+ * Command line output does not match the documented definition at
+   http://kamino.mbt.lab.etn.com:8200/display/BiosWiki/rfc-10
  * cli should use cidr to perform check on input values
 
-BIOS-354:
+BIOS-354 :
+----------
 -> Write all unit tests.
--> Write documentation (3 classes are not documented properly)
--> It is hardly posible to use SQLite for testing purposes, because it database often become busy and tests are failed. It caused the simplisity of SQLite (it can'r properly work with connection-pool and concurrent threads).
-   So need to test on MariaDb.
+-> Write documentation (3 classes are not documented properly).
+-> It is hardly posible to use SQLite for testing purposes, because its
+   database often becomes busy and tests are failed. It is caused by the
+   simplicity of SQLite (it can't properly work with connection-pool and
+   concurrent threads). So we need to test on MariaDb.
