@@ -1,28 +1,27 @@
 // returns: asset_msg_fail error, success - return_* / ok, in case of NULL means that nothing to send in response
-// if some id is -1 it means that in database there was a NULL-value
+// if some id is 0 it means that in database there was a NULL-value
+// assumption: every ID is unsigned
+#include <exception>
+#include <assert.h>
+
 #include <czmq.h>
-#include "assetmsgpersistence.h"
 #include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
-#include <exception>
-#include <assert.h>
+
 #include "log.h"
+#include "assetmsgpersistence.h"
 
-#define DB_ERROR_INTERNAL 1
-#define DB_ERROR_BADINPUT 2
-#define DB_ERROR_NOTFOUND 3
+asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
+asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 
-asset_msg_t *get_asset_elements(const char *url, asset_msg_t *msg);
-asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg);
-
-asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg)
+asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
 {
     log_open();
     log_set_level(LOG_DEBUG);
     log_set_syslog_level(LOG_DEBUG);
-    log_info ("%s", "asset_msg_save() start\n");
+    log_info ("%s", "start\n");
 
     asset_msg_t *result = NULL;
 
@@ -32,7 +31,7 @@ asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg)
 
         case ASSET_MSG_GET_ELEMENT:
         {   //datacenter/room/row/rack/group
-            result = get_asset_element(url,msg);
+            result = _get_asset_element(url,msg);
             break;
         }
         case ASSET_MSG_UPDATE_ELEMENT:
@@ -52,7 +51,7 @@ asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg)
         }
         case ASSET_MSG_GET_ELEMENTS:
         {   //datacenters/rooms/rows/racks/groups
-            result = get_asset_elements(url,msg);
+            result = _get_asset_elements(url,msg);
             break;
         }
         case ASSET_MSG_ELEMENT:
@@ -75,20 +74,20 @@ asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg)
             break;       
         }
     }
-    log_info ("%s", "process_message() end\n");
+    log_info ("%s", "end\n");
     log_close ();       
     return result;
 };
 
-// element_found                element_not_found           internal_error          baddata //TODO
+// element_found                element_not_found           internal_error   
 // ASSET_MSG_RETURN_ELEMENT     ASSET_MSG_FAIL              ASSET_MSG_FAIL
 // with msg = msg               DB_ERROR_NOTFOUND           DB_ERROR_INTERNAL  
-asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
+asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
 {
     assert(msg);
 
-    const int element_id      = asset_msg_element_id (msg); 
-    const int element_type_id = asset_msg_type (msg);
+    const unsigned int element_id      = asset_msg_element_id (msg); 
+    const unsigned int element_type_id = asset_msg_type (msg);
 
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
@@ -112,14 +111,14 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
                  selectRow();
     }
     catch (const tntdb::NotFound &e){
-        // element was not found
+        // element with specified type was not found
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
     
         asset_msg_set_error_id (resultmsg, DB_ERROR_NOTFOUND);
         return resultmsg;
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         // internal error in database 
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
@@ -135,12 +134,12 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     row[0].get(name);
     assert(name != "");  //database is corrupted
 
-    //parent_id, is not required
-    int parent_id = 0;
+    // parent_id, is not required
+    unsigned int parent_id = 0;
     row[1].get(parent_id);
 
-    //parent_type_id, required, if parent_id != 0
-    int parent_type_id = 0;
+    // parent_type_id, required, if parent_id != 0
+    unsigned int parent_type_id = 0;
     row[2].get(parent_type_id);
     assert( ! ( ( parent_type_id == 0 ) && (parent_id != 0) ) ); // database is corrupted
        
@@ -153,12 +152,13 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
         " v_bios_asset_ext_attributes v"
         " where v.id_asset_element = :idelement"
         );
+
     tntdb::Result result;  
     try{
         result = st_extattr.setInt("idelement", element_id).
                             select();
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         // internal error in database
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
@@ -189,8 +189,10 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
 
         zhash_insert(extAttributes, &keytag, &value );
     }
+
     asset_msg_t *msgelement = asset_msg_new (ASSET_MSG_ELEMENT);
     assert(msgelement);
+
     asset_msg_set_name(msgelement, name.c_str());
     asset_msg_set_location(msgelement,parent_id);
     asset_msg_set_location_type(msgelement,parent_type_id);
@@ -202,8 +204,7 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
     assert(resultmsg);
     asset_msg_set_element_id (resultmsg, element_id);
 
-    zmsg_t * nmsg =  asset_msg_encode(&msgelement);
-
+    zmsg_t* nmsg =  asset_msg_encode(&msgelement);
     asset_msg_set_msg (resultmsg,&nmsg);
 
     zhash_destroy(&extAttributes);
@@ -216,11 +217,11 @@ asset_msg_t *get_asset_element(const char *url, asset_msg_t *msg)
 // element_found                element_not_found           internal_error
 // ASSET_MSG_RETURN_ELEMENTS    ASSET_MSG_RETURN_ELEMENTS   ASSET_MSG_FAIL
 // with filled dictionary       with empty dictionary       
-asset_msg_t *get_asset_elements(const char *url, asset_msg_t *msg)
+asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 {
     assert(msg);
 
-    const int element_type_id = asset_msg_type (msg);
+    const unsigned int element_type_id = asset_msg_type (msg);
     
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
@@ -241,7 +242,7 @@ asset_msg_t *get_asset_elements(const char *url, asset_msg_t *msg)
         result = st.setInt("typeid", element_type_id).
                     select();
     }
-    catch (std::exception &e)
+    catch (const std::exception &e)
     {
         // internal error in database
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
@@ -275,7 +276,7 @@ asset_msg_t *get_asset_elements(const char *url, asset_msg_t *msg)
         row[0].get(name);
         assert(name != "");  //database is corrupted
 
-        //id, is required
+        // id, is required
         int id = 0;
         row[1].get(id);
         assert( id != 0);  //database is corrupted
@@ -283,7 +284,7 @@ asset_msg_t *get_asset_elements(const char *url, asset_msg_t *msg)
         zhash_insert(elements, &name, &id );
     }
    
-    //make ASSET_MSG_RETURN_ELEMENT
+    // make ASSET_MSG_RETURN_ELEMENT
     resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
     assert(resultmsg);
     asset_msg_set_element_ids (resultmsg, &elements);

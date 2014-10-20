@@ -110,8 +110,8 @@ CREATE TABLE t_bios_asset_element_type (
 
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(25),
-  id_type           TINYINT UNSIGNED,
+  name              VARCHAR(25) NOT NULL,
+  id_type           TINYINT UNSIGNED NOT NULL,
   id_parent         int UNSIGNED,
 
   PRIMARY KEY (id_asset_element),
