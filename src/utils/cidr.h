@@ -211,14 +211,16 @@ public:
 
   /**
    * \brief compare two CIDRAddress.
-   * \see   operator>(const CIDRAddress& a2);
+   *
+   * Compares two IP addresses (networks), including prefix length.
    */
   bool operator==(const CIDRAddress &a2) const;
   bool operator!=(const CIDRAddress &a2) const;
 
   /**
    * \brief compare CIDRAddress with string.
-   * \see   operator>(const CIDRAddress& a2);
+   *
+   * Compares two IP addresses (networks), including prefix length.
    */
   bool operator==(const std::string &a2) const;
   bool operator!=(const std::string &a2) const;

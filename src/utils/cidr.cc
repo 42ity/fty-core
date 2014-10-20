@@ -293,7 +293,7 @@ std::string CIDRAddress::toString(CIDROptions opt) const {
       if( bytes1[i] < bytes2[i] ) return -1; //im smaller
       if( bytes1[i] > bytes2[i] ) return +1; //im bigger
     }
-    return 0; //we are equal
+    return 0; // we are equal
   }
   if( (proto1 == CIDR_IPV6) && (proto2 == CIDR_IPV6) ) {
     cidr_to_in6addr(_cidr, &in6addr1);
@@ -349,21 +349,21 @@ bool CIDRAddress::operator<(const CIDRAddress &a2) const {
 }
 
 bool CIDRAddress::operator==(const CIDRAddress &a2) const {
-  return (compare(a2) == 0);
+  return equals(a2);
 }
 
 bool CIDRAddress::operator!=(const CIDRAddress &a2) const {
-  return (compare(a2) != 0);
+  return ! equals(a2);
 }
 
 bool CIDRAddress::operator==(const std::string &a2) const {
   CIDRAddress ca2(a2);
-  return (compare(ca2) == 0);
+  return equals(ca2);
 }
 
 bool CIDRAddress::operator!=(const std::string &a2) const {
   CIDRAddress ca2(a2);
-  return (compare(ca2) != 0);
+  return ! equals(a2);
 }
 
 std::ostream& operator<<(std::ostream& os, const CIDRAddress& address)
