@@ -1,8 +1,8 @@
 The INSTALL document for $BIOS
 ==============================
 
-This INSTALL document is about building and installing prerequisite and
-resulting packages for the Eaton $BIOS core project.
+This INSTALL document is about building and installing prerequisites
+from source and/or as resulting packages for the Eaton $BIOS core project.
 
 To ease copy-pasting, the example commands in this document are prefixed
 with a colon+semicolon prompt `:;` which is an empty command for shell
@@ -49,7 +49,7 @@ area in the tracked files and possibly conflicting):
    git remote add upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
 
-Then the developer may create branches for work on individual issues
+Then the developer may create branches for working on individual issues
 and when some work is done -- push the code back to his personal fork
 on Stash for common review like this:
 ----
@@ -75,7 +75,13 @@ to automatically check out and rebuild the packages with some of our own
 and third-party code relevant for our project for some platforms that
 are of interest to ourselves.
 
-The software packages built for the project can be located in our OBS
+Alternately, it is possible to rebuild and install the needed packages
+from latest sources, as will be detailed below. In particular, many of
+these are either absent or critically too-old in the general OS package
+repositories, and some projects are being developed in cooperation with
+our $BIOS project, so it is essential to use their bleeding-edge as well.
+
+The software packages pre-built for the project can be located in our OBS
 build-results repositories, including the following Linux OS releases:
 
  * http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
@@ -132,10 +138,10 @@ wget -l1 -np -nd -N -c -r --remove-listing \
 
 
 
-Installation of the build dependencies
---------------------------------------
- * Install iproute-dev development files, version "20120521", using
-your configured system repositories, i.e. with Debian APT:
+Installation of the build dependencies from packages
+----------------------------------------------------
+ * Install iproute-dev development files, version "20120521" or newer,
+using your configured system repositories, i.e. with Debian APT:
 ----
 :; apt-get install iproute-dev
 ----
@@ -146,9 +152,36 @@ your configured system repositories, i.e. with Debian APT:
 
 [NOTE]
 ======
-*TODO*: Which version should be used - same release as the current
-Linux kernel on a given machine? Specific release? Latest release?)
+*TODO*: Which version of iproute *should* be used - same release as the
+current Linux kernel on a given machine? Specific release? Latest release?)
+
+It seems currently that recent Debian, unlike other distributions, renamed
+the 'iproute' package to 'iproute2' and intentionally stripped away its
+variant of the 'netlink' library (which our project currently uses, and
+which was previously part of 'iproute-dev'). Thus a private build of the
+'iproute' software from the sources is needed, and for supported systems
+our project provides it in a packaged form. We only need the library (not
+the Linux kernel-intimate components), and the API is deemed stable, so
+any recent version of 'iproute' should suffice -- the project has been
+tested with "20120521" (which is available in Debian wheezy) and that
+version is known to work and suffice for us.
 ======
+
+ * Install TNT project parts:
+----
+:; apt-get install libtntdb-dev libtntdb3 cxxtools \
+   tntnet tntnet-runtime libtntnet10 libtntnet-dev libtnt-dev
+----
+
+ * Install NUT project parts:
+----
+:; apt-get install nut libupsclient1-dev nut-client libupsclient1
+----
+
+ * Install ZeroMQ and related project parts:
+----
+:; apt-get install libsodium libzmq czmq gsl
+----
 
  * Install libVariant (from prerequisites above), i.e.:
 ----
@@ -157,9 +190,11 @@ Linux kernel on a given machine? Specific release? Latest release?)
 
 
 
-Configure and build the project sources
----------------------------------------
-If no configure script is available yet (or if it needs to be rebuilt)...
+Configure and build the $BIOS project sources
+---------------------------------------------
+(Getting the project sources is covered above in this document).
+
+If no `configure` script is available yet (or if it needs to be rebuilt):
 
  * create or update the `configure` script:
 ----
@@ -172,11 +207,45 @@ else (if configure script exists and is acceptable):
 ----
 :; ./configure
 ----
+ ** An "out-of-tree" build (i.e. to produce binaries and other build
+    results for different platforms from the same copy of the source
+    codebase) can be triggered in a way similar to this:
+----
+:; mkdir build
+:; cd build && \
+   ../configure && \
+   make
+----
  * Build the sources:
 ----
 :; make
 ----
- * Install the binaries (under a chosen destination root directory):
+ ** When the project becomes large enough, it may make sense to speed
+    up the builds using parallelization, i.e. (assuming GNU `make`):
+----
+:; make -j 4 -k ; make
+----
+ ** A quieter build can be triggered for GNU `make` with 'V=0' parameter
+    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
+    which is good at least until you hit some build errors and need more
+    verbosity), thus suggesting this command line:
+----
+:; make V=0 -j 4 -k ; make V=0
+----
+ * Install the binaries (under a chosen destination root directory
+   '/some/path', such as under a temporary filesystem or your homedir):
 ----
 :; make DESTDIR=/some/path install
 ----
+
+
+Testing the build
+-----------------
+The 'Makefile' includes some targets for automated testing, such as
+
+ * `make check` - this would trigger the compilation of all tests
+   (including 'db-tests'), and run all tests except 'db-tests'.
+ * `make test-db` - would trigger the compilation only for database
+   tests
+ * `./test-db` - would run the database tests
+
