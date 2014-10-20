@@ -50,11 +50,11 @@ struct _asset_msg_t {
     byte *ceiling;                      //  Valid upper limit for read pointer
     char *name;                         //  Name of the element
     uint32_t location;                  //  ID of the parent element
-    byte location_type;                 //  Type of the parent element, defined in enum somewhere
-    byte type;                          //  Type of the device, defined in enum somewhere
+    byte location_type;                 //  Type of the parent element, defined in asset_type
+    byte type;                          //  Type of the device, defined in asset_type
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
-    char *device_type;                  //  Type of the device, freeform string
+    char *device_type;                  //  Type of the device, freeform string not the thing from asset_type
     zlist_t *groups;                    //  List of IDs of groups device belongs to
     zlist_t *powers;                    //  List of encoded link messages
     char *ip;                           //  IP of the device
@@ -65,8 +65,8 @@ struct _asset_msg_t {
     uint16_t parent_socket;             //  
     uint16_t my_socket;                 //  
     uint32_t element_id;                //  Unique ID of the asset element
-    byte error_id;                      //  Type of the error, enum defined somewhere else
-    zhash_t *element_ids;               //  Unique IDs of the asset element mapped to the elements name
+    byte error_id;                      //  Type of the error, enum defined in asset_type
+    zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
     size_t element_ids_bytes;           //  Size of dictionary content
 };
 
