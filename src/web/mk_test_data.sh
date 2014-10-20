@@ -64,6 +64,14 @@ u_size
 exit
 EOF
 "$BASEDIR"/fake_message << EOF
+7
+rack
+yar
+4
+row
+exit
+EOF
+"$BASEDIR"/fake_message << EOF
 6
 rack
 sole_rack
