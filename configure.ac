@@ -109,11 +109,21 @@ AM_CONDITIONAL([HAVE_ASTYLE], [test -n "${ASTYLE}"])
 dnl Documentation generation
 # asciidoc
 AC_PATH_PROGS([ASCIIDOC], [asciidoc])
-
 # a2x
+dnl TODO  MVY a2x - is it ok?
 AC_PATH_PROGS([A2X], [a2x])
-dnl TODO  MVY is it ok?
-AM_CONDITIONAL([HAVE_ASCIIDOC], [test -n "${A2X}"])
+
+if test -z "$ASCIIDOC" -a -z "$A2X"; then
+  AC_MSG_NOTICE([
+  -----------------------------------------
+  No asciidoc or a2x program found - continuing
+  without ASCIIDOC documentation support.
+  -----------------------------------------
+  ])
+fi
+AM_CONDITIONAL([HAVE_ASCIIDOC],[test -n "$ASCIIDOC"])
+AM_CONDITIONAL([HAVE_A2X],[test -n "$A2X"])
+
 
 # set flags CFLAGS
 my_CFLAGS="\
@@ -150,8 +160,9 @@ Summary:
         includedir:              ${includedir}
         lib dir:                 ${libdir}
 
+        a2x:                     ${A2X:-none}
         astyle:                  ${ASTYLE:-none}
-        asciidoc:                ${A2X:-none}
+        asciidoc:                ${ASCIIDOC:-none}
         doxygen:                 ${DOXYGEN:-none}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
