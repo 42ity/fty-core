@@ -91,7 +91,7 @@ Ask for all elements of specific type
 
 <message name = "return_elements" id = "10">
 Returns elements we were asked for
-    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
+    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
 </message>
 
 </class>
