@@ -18,7 +18,7 @@ lib*.a
 lib*.la
 lib*.so
 lib*.so.*
-INSTALL.html
+INSTALL*.html
 Makefile.in
 Makefile
 driver-nmap

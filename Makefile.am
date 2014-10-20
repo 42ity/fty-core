@@ -257,7 +257,7 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html
+all-docs: ${myDOXDIR}/html INSTALL.html INSTALL-referenceOS-debian8.html
 	( cd docs/man && $(MAKE) all )
 
 ${myDOXDIR}/html:
@@ -270,8 +270,14 @@ endif
 if HAVE_ASCIIDOC
 INSTALL.html: INSTALL
 	$(ASCIIDOC) -b html $^
+
+INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
+	$(ASCIIDOC) -b html $^
 else
 INSTALL.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+
+INSTALL-referenceOS-debian8.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 endif
 
@@ -289,7 +295,7 @@ all-local: all-docs
 clean-local:
 	/bin/rm -rf $(top_builddir)/tests/junit
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-	/bin/rm -f INSTALL.html
+	/bin/rm -f INSTALL.html INSTALL-referenceOS-debian8.html
 	/bin/rm -f docs/man/*.?
 	( cd docs/man && $(MAKE) clean )
 

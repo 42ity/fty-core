@@ -91,6 +91,11 @@ build-results repositories, including the following Linux OS releases:
 These packages include such build and/or runtime dependencies as
 libvariant, iproute2, mariadb, zeromq and so on.
 
+[NOTE]
+*NOTE*: See the document 'INSTALL-referenceOS-debian8' (or its derivative
+product 'link:INSTALL-referenceOS-debian8.html[]') for a how-to detailing
+the reference installation of a Debian 8 x86_64 (VM) to build this project.
+
 Installing an APT package source for Debian 8.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 One of the Linux OSes supported automatically by our OBS service is
@@ -152,7 +157,7 @@ using your configured system repositories, i.e. with Debian APT:
 
 [NOTE]
 ======
-*TODO*: Which version of iproute *should* be used - same release as the
+*TODO*: Which version of iproute *should* be used -- same release as the
 current Linux kernel on a given machine? Specific release? Latest release?)
 
 It seems currently that recent Debian, unlike other distributions, renamed
@@ -243,9 +248,9 @@ Testing the build
 -----------------
 The 'Makefile' includes some targets for automated testing, such as
 
- * `make check` - this would trigger the compilation of all tests
+ * `make check` -- this would trigger the compilation of all tests
    (including 'db-tests'), and run all tests except 'db-tests'.
- * `make test-db` - would trigger the compilation only for database
+ * `make test-db` -- would trigger the compilation only for database
    tests
- * `./test-db` - would run the database tests
+ * `./test-db` -- would run the database tests
 
