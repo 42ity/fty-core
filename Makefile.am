@@ -263,12 +263,17 @@ all-docs: ${myDOXDIR}/html INSTALL.html
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
 	test -d $(top_srcdir)/${myDOXDIR}/html || $(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
-endif HAVE_DOXYGEN
+else
+	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
+endif
 
-INSTALL.html: INSTALL
 if HAVE_ASCIIDOC
+INSTALL.html: INSTALL
 	$(ASCIIDOC) -b html $^
-endif HAVE_ASCIIDOC
+else
+INSTALL.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+endif
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
@@ -283,9 +288,7 @@ all-local: all-docs
 
 clean-local:
 	/bin/rm -rf $(top_builddir)/tests/junit
-if HAVE_DOXYGEN
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-endif
 	/bin/rm -f INSTALL.html
 	/bin/rm -f docs/man/*.?
 	( cd docs/man && $(MAKE) clean )
