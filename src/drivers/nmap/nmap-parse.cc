@@ -7,10 +7,16 @@
 
 #include <cassert>
 
+#include <czmq.h>
+
 #include "nmap-parse.h"
+#include "nmap_msg.h"
+#include "log.h"
 
 using namespace cxxtools::xml;
 using namespace cxxtools;
+
+static const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 
 enum class ListState {
     START,
@@ -19,12 +25,18 @@ enum class ListState {
     ENDHOST
 };
 
-void parse_list_scan(std::istream& inp) {
-    
+void parse_list_scan(std::istream& inp, zsock_t *socket) {
+    assert (socket);
+    assert (zsock_is (socket));
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_info ("parse_list_scan() start\n");    
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
     std::string reason_v;
     std::string addr_v;
+    int host_state_v;
+    zhash_t *hostnames = NULL;
 
     enum ListState state = ListState::START;
 
@@ -47,9 +59,23 @@ void parse_list_scan(std::istream& inp) {
 
                 static auto state_attr = convert<String>("state");
                 const auto v = convert<std::string>(el.attribute(state_attr));
+                // host state
                 if (v == "up" || v == "unknown") {
                     state = ListState::HOST;
-
+                    // quick & dirty - to be reworked
+                    if (v.compare("up") == 0) {
+                        host_state_v = 0;
+                    }
+                    else if (v.compare("down") == 0) {
+                        host_state_v = 1;
+                    }
+                    else if (v.compare("unknown") == 0) {
+                        host_state_v = 2;
+                    }
+                    else if (v.compare("skipped") == 0) {
+                        host_state_v = 3;
+                    }
+                        
                     static auto reason = convert<String>("reason");
                     reason_v = convert<std::string>(el.attribute(reason));
                 }
@@ -60,26 +86,30 @@ void parse_list_scan(std::istream& inp) {
                 break;
 
             case ListState::HOST:
-
-                if (node_it->type() != Node::StartElement) {
-                    continue;
-                }
-                
                 {
-                const StartElement& el = static_cast<const StartElement&>(*node_it);
 
-                const auto k = convert<std::string>(el.name());
-                if (k != "address") {
-                    continue;
-                }
+                    if (node_it->type() != Node::StartElement) {
+                        continue;
+                    }
+                
+                    const StartElement& el = static_cast<const StartElement&>(*node_it);
 
-                static const auto addr = convert<String>("addr");
-                if (!el.hasAttribute(addr)) {
-                    continue;
-                }
+                    const auto k = convert<std::string>(el.name());
+                    if (k != "address") {
+                        continue;
+                    }
 
-                addr_v = convert<std::string>(el.attribute(addr));
-                state = ListState::HOSTNAME;
+                    static const auto addr = convert<String>("addr");
+                    if (!el.hasAttribute(addr)) {
+                        continue;
+                    }
+
+                    addr_v = convert<std::string>(el.attribute(addr));
+                    state = ListState::HOSTNAME;
+                    // create zhashmap
+                    assert (hostnames == NULL);
+                    hostnames = zhash_new ();
+                    assert (hostnames);
                 }
                 break;
 
@@ -88,8 +118,19 @@ void parse_list_scan(std::istream& inp) {
                 if (node_it->type() == Node::EndElement) {
                     const EndElement& el = static_cast<const EndElement&>(*node_it);
                     const auto name = convert<std::string>(el.name());
-                    if (name == "host") {
+                    if (name == "host") {                        
                         state = ListState::START;
+                        nmap_msg_t *msg = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+                        assert (msg);
+                        nmap_msg_set_addr (msg, "%s", addr_v.c_str());
+                        nmap_msg_set_host_state (msg, host_state_v);
+                        nmap_msg_set_reason (msg, "%s", reason_v.c_str());                                                
+
+                        int rv = nmap_msg_send (&msg, socket);
+                        assert (rv != -1);
+
+                        zhash_destroy (&hostnames);
+                        assert (hostnames == NULL);
                         continue;
                     }
                 }
@@ -110,21 +151,22 @@ void parse_list_scan(std::istream& inp) {
                     continue;
                 }
 
-                const auto v1 = el.attribute(name);
-                const auto v2 = el.attribute(type);
+                auto v1 = el.attribute(name);
+                auto v2 = el.attribute(type);
+            
+                assert (hostnames);
+                int rv = zhash_insert (hostnames, &v1, &v2); 
+                assert (rv == 0);
 
-                std::cout << "addr: " << addr_v << " reason: " << reason_v ;
-                std::cout << " name: " << v1 << " type: " << v2;
-                std::cout << std::endl;
                 }
                 break;
 
             case ListState::ENDHOST:
+                {
                 if (node_it->type() != Node::EndElement) {
                     continue;
-                }
+                }               
                 
-                {
                 const EndElement& el = static_cast<const EndElement&>(*node_it);
 
                 auto k = convert<std::string>(el.name());
@@ -136,11 +178,13 @@ void parse_list_scan(std::istream& inp) {
                 break;
         }
     }
+    log_info ("parse_list_scan() end\n");    
+    
 }
 
-void parse_list_scan(const std::string& inp) {
+void parse_list_scan(const std::string& inp, zsock_t *socket) {
     std::istringstream stream{inp};
-    return parse_list_scan(stream);
+    return parse_list_scan(stream, socket);
 }
 
 void parse_device_scan(std::istream& inp) {

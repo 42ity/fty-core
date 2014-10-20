@@ -45,7 +45,6 @@ AC_CHECK_HEADERS([Variant/Schema.h],
                  AC_MSG_ERROR([cannot find required header Variant/Schema.h]))
 AC_LANG_POP([C++])
 PKG_CHECK_MODULES([LIBZMQ], [libzmq >= 3.0], [], [AC_MSG_ERROR([cannot find libzmq version 3])])
-PKG_CHECK_MODULES([LIBVARIANT], [libvariant], [], [AC_MSG_ERROR([cannot find libvariant])])
 PKG_CHECK_MODULES([LIBCIDR], [libcidr], [], [AC_MSG_ERROR([cannot find libcidr])])
 PKG_CHECK_MODULES([LIBCZMQ], [libczmq >= 3.0], [], [AC_MSG_ERROR([cannot find libczmq 3.0 (git snapshot)])])
 PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([cannot find libnutclient >= 0.27])])

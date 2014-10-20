@@ -31,12 +31,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //! \brief parse results of nmap list scan -sL and return a list of ip addresses
 //
 // \param inp - input stream
-void parse_list_scan(std::istream& inp);
+void parse_list_scan(std::istream& inp, zsock_t *socket);
 
 //! \brief parse results of nmap list scan -sL and return a list of ip addresses
 //
 // \param inp - input string
-void parse_list_scan(const std::string& inp);
+void parse_list_scan(const std::string& inp, zsock_t *socket);
 
 //! \brief parse results of nmap device scan (-R -sT -sU) and print the found information
 //

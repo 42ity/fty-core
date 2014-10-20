@@ -38,8 +38,25 @@
     ELEMENT - Structure describing asset element
         name                string      Name of the element
         location            number 4    ID of the parent element
+        location_type       number 1    Type of the parent element, defined in enum somewhere
         type                number 1    Type of the device, defined in enum somewhere
         ext                 dictionary  Hash map of extended attributes
+
+    DEVICE - Structure describing asset device
+        device_type         string      Type of the device, freeform string
+        groups              strings     List of IDs of groups device belongs to
+        powers              strings     List of encoded link messages
+        ip                  string      IP of the device
+        hostname            string      Hostname
+        fqdn                string      Fully qualified domain name
+        mac                 string      MAC address of the device
+        msg                 msg         Element that we are extending to the device
+
+    LINK - Structure for describing the relations between devices
+        parent_socket       number 2    
+        my_socket           number 2    
+        location            number 4    ID of the parent element
+        location_type       number 1    Type of the parent element, defined in enum somewhere
 
     GET_ELEMENT - Ask for specific element
         element_id          number 4    Unique ID of the asset element
@@ -47,7 +64,7 @@
 
     RETURN_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the asset element
-        msg                 msg         Element to be delivered, NULL if not found
+        msg                 msg         Element to be delivered
 
     UPDATE_ELEMENT - Returns element we were asked for
         element_id          number 4    Unique ID of the asset element
@@ -64,19 +81,20 @@
         element_id          number 4    Unique ID of the element that was proccessed
 
     FAIL - Message from database that something went wrong.
-        element_id          number 4    Unique ID of the element that was being proccessed
         error_id            number 1    Type of the error, enum defined somewhere else
 
     GET_ELEMENTS - Ask for all elements of specific type
         type                number 1    Type of the device, defined in enum somewhere
 
     RETURN_ELEMENTS - Returns elements we were asked for
-        elemenet_ids        dictionary  Unique IDs of the asset element mapped to the elements name
+        element_ids         dictionary  Unique IDs of the asset element mapped to the elements name
 */
 
 #define ASSET_MSG_VERSION                   1.0
 
 #define ASSET_MSG_ELEMENT                   1
+#define ASSET_MSG_DEVICE                    11
+#define ASSET_MSG_LINK                      12
 #define ASSET_MSG_GET_ELEMENT               2
 #define ASSET_MSG_RETURN_ELEMENT            3
 #define ASSET_MSG_UPDATE_ELEMENT            4
@@ -137,8 +155,29 @@ zmsg_t *
     asset_msg_encode_element (
         const char *name,
         uint32_t location,
+        byte location_type,
         byte type,
         zhash_t *ext);
+
+//  Encode the DEVICE 
+zmsg_t *
+    asset_msg_encode_device (
+        const char *device_type,
+        zlist_t *groups,
+        zlist_t *powers,
+        const char *ip,
+        const char *hostname,
+        const char *fqdn,
+        const char *mac,
+        zmsg_t *msg);
+
+//  Encode the LINK 
+zmsg_t *
+    asset_msg_encode_link (
+        uint16_t parent_socket,
+        uint16_t my_socket,
+        uint32_t location,
+        byte location_type);
 
 //  Encode the GET_ELEMENT 
 zmsg_t *
@@ -177,7 +216,6 @@ zmsg_t *
 //  Encode the FAIL 
 zmsg_t *
     asset_msg_encode_fail (
-        uint32_t element_id,
         byte error_id);
 
 //  Encode the GET_ELEMENTS 
@@ -188,7 +226,7 @@ zmsg_t *
 //  Encode the RETURN_ELEMENTS 
 zmsg_t *
     asset_msg_encode_return_elements (
-        zhash_t *elemenet_ids);
+        zhash_t *element_ids);
 
 
 //  Send the ELEMENT to the output in one step
@@ -197,8 +235,31 @@ int
     asset_msg_send_element (void *output,
         const char *name,
         uint32_t location,
+        byte location_type,
         byte type,
         zhash_t *ext);
+    
+//  Send the DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_device (void *output,
+        const char *device_type,
+        zlist_t *groups,
+        zlist_t *powers,
+        const char *ip,
+        const char *hostname,
+        const char *fqdn,
+        const char *mac,
+        zmsg_t *msg);
+    
+//  Send the LINK to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_link (void *output,
+        uint16_t parent_socket,
+        uint16_t my_socket,
+        uint32_t location,
+        byte location_type);
     
 //  Send the GET_ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -244,7 +305,6 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_fail (void *output,
-        uint32_t element_id,
         byte error_id);
     
 //  Send the GET_ELEMENTS to the output in one step
@@ -257,7 +317,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_return_elements (void *output,
-        zhash_t *elemenet_ids);
+        zhash_t *element_ids);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -293,6 +353,12 @@ uint32_t
 void
     asset_msg_set_location (asset_msg_t *self, uint32_t location);
 
+//  Get/set the location_type field
+byte
+    asset_msg_location_type (asset_msg_t *self);
+void
+    asset_msg_set_location_type (asset_msg_t *self, byte location_type);
+
 //  Get/set the type field
 byte
     asset_msg_type (asset_msg_t *self);
@@ -322,11 +388,75 @@ void
 size_t
     asset_msg_ext_size (asset_msg_t *self);
 
-//  Get/set the element_id field
-uint32_t
-    asset_msg_element_id (asset_msg_t *self);
+//  Get/set the device_type field
+const char *
+    asset_msg_device_type (asset_msg_t *self);
 void
-    asset_msg_set_element_id (asset_msg_t *self, uint32_t element_id);
+    asset_msg_set_device_type (asset_msg_t *self, const char *format, ...);
+
+//  Get/set the groups field
+zlist_t *
+    asset_msg_groups (asset_msg_t *self);
+//  Get the groups field and transfer ownership to caller
+zlist_t *
+    asset_msg_get_groups (asset_msg_t *self);
+//  Set the groups field, transferring ownership from caller
+void
+    asset_msg_set_groups (asset_msg_t *self, zlist_t **groups_p);
+
+//  Iterate through the groups field, and append a groups value
+const char *
+    asset_msg_groups_first (asset_msg_t *self);
+const char *
+    asset_msg_groups_next (asset_msg_t *self);
+void
+    asset_msg_groups_append (asset_msg_t *self, const char *format, ...);
+size_t
+    asset_msg_groups_size (asset_msg_t *self);
+
+//  Get/set the powers field
+zlist_t *
+    asset_msg_powers (asset_msg_t *self);
+//  Get the powers field and transfer ownership to caller
+zlist_t *
+    asset_msg_get_powers (asset_msg_t *self);
+//  Set the powers field, transferring ownership from caller
+void
+    asset_msg_set_powers (asset_msg_t *self, zlist_t **powers_p);
+
+//  Iterate through the powers field, and append a powers value
+const char *
+    asset_msg_powers_first (asset_msg_t *self);
+const char *
+    asset_msg_powers_next (asset_msg_t *self);
+void
+    asset_msg_powers_append (asset_msg_t *self, const char *format, ...);
+size_t
+    asset_msg_powers_size (asset_msg_t *self);
+
+//  Get/set the ip field
+const char *
+    asset_msg_ip (asset_msg_t *self);
+void
+    asset_msg_set_ip (asset_msg_t *self, const char *format, ...);
+
+//  Get/set the hostname field
+const char *
+    asset_msg_hostname (asset_msg_t *self);
+void
+    asset_msg_set_hostname (asset_msg_t *self, const char *format, ...);
+
+//  Get/set the fqdn field
+const char *
+    asset_msg_fqdn (asset_msg_t *self);
+void
+    asset_msg_set_fqdn (asset_msg_t *self, const char *format, ...);
+
+//  Get/set the mac field
+const char *
+    asset_msg_mac (asset_msg_t *self);
+void
+    asset_msg_set_mac (asset_msg_t *self, const char *format, ...);
 
 //  Get a copy of the msg field
 zmsg_t *
@@ -338,34 +468,52 @@ zmsg_t *
 void
     asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p);
 
+//  Get/set the parent_socket field
+uint16_t
+    asset_msg_parent_socket (asset_msg_t *self);
+void
+    asset_msg_set_parent_socket (asset_msg_t *self, uint16_t parent_socket);
+
+//  Get/set the my_socket field
+uint16_t
+    asset_msg_my_socket (asset_msg_t *self);
+void
+    asset_msg_set_my_socket (asset_msg_t *self, uint16_t my_socket);
+
+//  Get/set the element_id field
+uint32_t
+    asset_msg_element_id (asset_msg_t *self);
+void
+    asset_msg_set_element_id (asset_msg_t *self, uint32_t element_id);
+
 //  Get/set the error_id field
 byte
     asset_msg_error_id (asset_msg_t *self);
 void
     asset_msg_set_error_id (asset_msg_t *self, byte error_id);
 
-//  Get/set the elemenet_ids field
+//  Get/set the element_ids field
 zhash_t *
-    asset_msg_elemenet_ids (asset_msg_t *self);
-//  Get the elemenet_ids field and transfer ownership to caller
+    asset_msg_element_ids (asset_msg_t *self);
+//  Get the element_ids field and transfer ownership to caller
 zhash_t *
-    asset_msg_get_elemenet_ids (asset_msg_t *self);
-//  Set the elemenet_ids field, transferring ownership from caller
+    asset_msg_get_element_ids (asset_msg_t *self);
+//  Set the element_ids field, transferring ownership from caller
 void
-    asset_msg_set_elemenet_ids (asset_msg_t *self, zhash_t **elemenet_ids_p);
+    asset_msg_set_element_ids (asset_msg_t *self, zhash_t **element_ids_p);
     
-//  Get/set a value in the elemenet_ids dictionary
+//  Get/set a value in the element_ids dictionary
 const char *
-    asset_msg_elemenet_ids_string (asset_msg_t *self,
+    asset_msg_element_ids_string (asset_msg_t *self,
         const char *key, const char *default_value);
 uint64_t
-    asset_msg_elemenet_ids_number (asset_msg_t *self,
+    asset_msg_element_ids_number (asset_msg_t *self,
         const char *key, uint64_t default_value);
 void
-    asset_msg_elemenet_ids_insert (asset_msg_t *self,
+    asset_msg_element_ids_insert (asset_msg_t *self,
         const char *key, const char *format, ...);
 size_t
-    asset_msg_elemenet_ids_size (asset_msg_t *self);
+    asset_msg_element_ids_size (asset_msg_t *self);
 
 //  Self test of this class
 int

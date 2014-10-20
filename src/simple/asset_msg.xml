@@ -14,12 +14,35 @@
 <!-- This is here for a purpose. DO CHANGE it if back-compatibility breaking change occurs -->
 <define name = "VERSION" value = "1.0" />
 
+<!-- Elements messages - elements are everything except devices -->
+
 <message name = "element" id = "1">
 Structure describing asset element
     <field name = "name" type = "string">Name of the element</field>
     <field name = "location" type = "number" size = "4">ID of the parent element</field>
+    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in enum somewhere</field>
     <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
+</message>
+
+<message name = "device" id = "11">
+Structure describing asset device
+    <field name = "device_type" type = "string">Type of the device, freeform string</field>
+    <field name = "groups" type = "strings">List of IDs of groups device belongs to</field>
+    <field name = "powers" type = "strings">List of encoded link messages</field>
+    <field name = "ip" type = "string">IP of the device</field>
+    <field name = "hostname" type = "string">Hostname</field>
+    <field name = "fqdn" type = "string">Fully qualified domain name</field>
+    <field name = "mac" type = "string">MAC address of the device</field>
+    <field name = "msg" type = "msg">Element that we are extending to the device</field>
+</message>
+
+<message name = "link" id = "12">
+Structure for describing the relations between devices
+    <field name = "parent_socket" type = "number" size = "2"></field>
+    <field name = "my_socket" type = "number" size = "2"></field>
+    <field name = "location" type = "number" size = "4">ID of the parent element</field>
+    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in enum somewhere</field>
 </message>
 
 <message name = "get_element" id = "2">
@@ -31,7 +54,7 @@ Ask for specific element
 <message name = "return_element" id = "3">
 Returns element we were asked for
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
-    <field name = "msg" type = "msg">Element to be delivered, NULL if not found</field>
+    <field name = "msg" type = "msg">Element to be delivered</field>
 </message>
 
 <message name = "update_element" id = "4">
@@ -58,7 +81,6 @@ Message from database that everything was processed successfully.
 
 <message name = "fail" id = "8">
 Message from database that something went wrong.
-    <field name = "element_id" type = "number" size = "4">Unique ID of the element that was being proccessed</field>
     <field name = "error_id" type = "number" size = "1">Type of the error, enum defined somewhere else</field>
 </message>
 
@@ -69,7 +91,7 @@ Ask for all elements of specific type
 
 <message name = "return_elements" id = "10">
 Returns elements we were asked for
-    <field name = "elemenet_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
+    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
 </message>
 
 </class>

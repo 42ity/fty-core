@@ -41,22 +41,17 @@ void persistence_actor(zsock_t *pipe, void *args) {
             break;
         }
 
-        netdisc_msg_t *msg = netdisc_msg_recv (insock);
-        log_debug ("name='%s';ipver='%d';ipaddr='%s';prefixlen='%d';mac='%s'\n",            
-            netdisc_msg_name (msg),
-            netdisc_msg_ipver (msg),
-            netdisc_msg_ipaddr (msg),
-            netdisc_msg_prefixlen (msg),
-            netdisc_msg_mac (msg));
+        zmsg_t *msg = zmsg_recv(insock);
 
         try {
-            bool b = utils::db::process_message (url, *msg);
+            bool b = utils::db::process_message (url, msg);
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "%To resolve this problem, please see README file\n");
             log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
             break;
         }
+        zmsg_destroy(&msg);
     }
     
     zpoller_destroy(&poller);
