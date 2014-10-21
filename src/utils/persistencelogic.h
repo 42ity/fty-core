@@ -3,6 +3,7 @@
 
 #include "czmq.h"
 #include "netdisc_msg.h"
+#include "powerdev_msg.h"
 
 namespace utils {
 
@@ -18,6 +19,9 @@ process_message(const std::string& url, zmsg_t *msg);
 
 bool
 netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg);
+
+bool
+powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);
 
 } // namespace db
 

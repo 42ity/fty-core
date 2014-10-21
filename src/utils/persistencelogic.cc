@@ -101,14 +101,25 @@ process_message(const std::string& url, zmsg_t *msg) {
 
     //XXX: this is ugly, however we need to distinguish between types of messages
     //     zccp will solve that by DIRECT message
+    zmsg_print(msg);
     msg2 = zmsg_dup(msg);
+    zmsg_pop(msg2);
+    assert(msg2);
     netdisc_msg_t *netdisc_msg = netdisc_msg_decode(&msg2);
     if (netdisc_msg) {
         //TODO: check the log level!
         netdisc_msg_print(netdisc_msg);
         return netdisc_msg_process(url, *netdisc_msg);
     }
-
+    msg2 = zmsg_dup(msg);
+    zmsg_pop(msg2);
+    assert(msg2);
+    powerdev_msg_t *powerdev_msg = powerdev_msg_decode(&msg2);
+    if (powerdev_msg) {
+        //TODO: check the log level!
+        powerdev_msg_print(powerdev_msg);
+        return powerdev_msg_process(url, *powerdev_msg);
+    }
     log_error("unsupported message type, skipped!\n");
     log_info ("%s", "process_message() end\n");
     log_close ();
@@ -219,6 +230,63 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
     }
     return result;
 };
+
+bool
+powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg)
+{
+    powerdev_msg_t& msg_c = const_cast<powerdev_msg_t&>(msg);
+    int msg_id          = powerdev_msg_id (&msg_c);
+    DeviceDiscovered  newdev(url);
+
+    switch (msg_id) {
+    case POWERDEV_MSG_POWERDEV_STATUS:
+        {
+            std::string name = std::string(powerdev_msg_deviceid(&msg_c));
+            std::string type = std::string(powerdev_msg_type(&msg_c) );
+            std::vector<DeviceDiscovered> devices = DeviceDiscovered::selectByName(url,name);
+            if( devices.size() == 0 ) {
+                //vytvor novy
+                newdev.setName(name);
+                int newtypeid = DeviceType::selectId(url,type);
+                newdev.setDeviceTypeId(newtypeid);
+                unsigned int n = newdev.dbsave();
+                assert( n == 1 );
+            } else {
+                //vem prvni
+                newdev = devices[0];
+            }
+            std::string modulename = "NUT";
+            int id = Client::selectId(url,modulename);
+            ClientInfo newInformation(url);
+            newInformation.setClientId(id);
+            newInformation.setDeviceDiscoveredId(newdev.getId());
+            
+            zmsg_t *zmsg = powerdev_msg_encode_powerdev_status(
+                 powerdev_msg_deviceid(&msg_c),
+                 powerdev_msg_model(&msg_c),
+                 powerdev_msg_manufacturer(&msg_c),
+                 powerdev_msg_serial(&msg_c),
+                 powerdev_msg_type(&msg_c),
+                 powerdev_msg_status(&msg_c),
+                 powerdev_msg_otherproperties(&msg_c)
+            );
+            assert( zmsg );
+            byte *encoded;
+            zmsg_encode( zmsg, &encoded );
+            assert(encoded);
+            if(encoded) {
+                // TODO: base64, can have zeros
+                newInformation.setBlobData((char *)encoded);
+                newInformation.dbsave();
+                free(encoded);
+            }
+            zmsg_destroy( &zmsg );
+            return true;
+        }
+    }
+    return false;
+}
+
 
 } // namespace utils
 
