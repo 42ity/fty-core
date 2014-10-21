@@ -257,7 +257,9 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html INSTALL-referenceOS-debian8.html
+all-docs: ${myDOXDIR}/html INSTALL.html INSTALL-referenceOS-debian8.html man-docs
+
+man-docs:
 	( cd docs/man && $(MAKE) all )
 
 ${myDOXDIR}/html:
@@ -292,12 +294,14 @@ all-local: all-docs
 #                        clean, what was not removed automatically
 #----------------------------------------------------------------------
 
-clean-local:
+clean-man:
+	( cd docs/man && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
+	/bin/rm -f docs/man/*.?
+
+clean-local: clean-man
 	/bin/rm -rf $(top_builddir)/tests/junit
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 	/bin/rm -f INSTALL.html INSTALL-referenceOS-debian8.html
-	/bin/rm -f docs/man/*.?
-	( cd docs/man && $(MAKE) clean )
 
 #----------------------------------------------------------------------
 #                        astyle formating
