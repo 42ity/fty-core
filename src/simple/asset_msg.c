@@ -51,7 +51,7 @@ struct _asset_msg_t {
     char *name;                         //  Name of the element
     uint32_t location;                  //  ID of the parent element
     byte location_type;                 //  Type of the parent element, defined in asset_type
-    byte type;                          //  Type of the device, defined in asset_type
+    byte type;                          //  Type of the element, defined in asset_type
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
     char *device_type;                  //  Type of the device, freeform string not the thing from asset_type
@@ -67,7 +67,7 @@ struct _asset_msg_t {
     uint32_t src_location;              //  ID of the src device
     uint32_t dst_location;              //  ID of the parent element
     uint32_t element_id;                //  Unique ID of the asset element
-    byte error_id;                      //  Type of the error, enum defined in asset_type
+    byte error_id;                      //  Type of the error, enum defined in persistence header file
     zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
     size_t element_ids_bytes;           //  Size of dictionary content
 };

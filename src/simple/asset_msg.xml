@@ -21,7 +21,7 @@ Structure describing asset element
     <field name = "name" type = "string">Name of the element</field>
     <field name = "location" type = "number" size = "4">ID of the parent element</field>
     <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in asset_type</field>
-    <field name = "type" type = "number" size = "1">Type of the device, defined in asset_type</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
 </message>
 
@@ -58,18 +58,18 @@ Returns element we were asked for
 </message>
 
 <message name = "update_element" id = "4">
-Returns element we were asked for
+Updates element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "msg" type = "msg">Element (or device) to be updated</field>
 </message>
 
 <message name = "insert_element" id = "5">
-Returns element we were asked for
+Insert element or device
     <field name = "msg" type = "msg">Element (or device) to be inserted</field>
 </message>
 
 <message name = "delete_element" id = "6">
-Returns element we were asked for
+Deletes element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
     <field name = "type" type = "number" size = "1">Type of the device, defined in asset_type</field>
 </message>
@@ -81,12 +81,12 @@ Message from database that everything was processed successfully.
 
 <message name = "fail" id = "8">
 Message from database that something went wrong.
-    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined in asset_type</field>
+    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined in persistence header file</field>
 </message>
 
 <message name = "get_elements" id = "9">
 Ask for all elements of specific type
-    <field name = "type" type = "number" size = "1">Type of the device, defined in in asset_type</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in in asset_type</field>
 </message>
 
 <message name = "return_elements" id = "10">

@@ -39,7 +39,7 @@
         name                string      Name of the element
         location            number 4    ID of the parent element
         location_type       number 1    Type of the parent element, defined in asset_type
-        type                number 1    Type of the device, defined in asset_type
+        type                number 1    Type of the element, defined in asset_type
         ext                 dictionary  Hash map of extended attributes
 
     DEVICE - Structure describing asset device
@@ -66,14 +66,14 @@
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be delivered
 
-    UPDATE_ELEMENT - Returns element we were asked for
+    UPDATE_ELEMENT - Updates element or device
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be updated
 
-    INSERT_ELEMENT - Returns element we were asked for
+    INSERT_ELEMENT - Insert element or device
         msg                 msg         Element (or device) to be inserted
 
-    DELETE_ELEMENT - Returns element we were asked for
+    DELETE_ELEMENT - Deletes element or device
         element_id          number 4    Unique ID of the element to be deleted
         type                number 1    Type of the device, defined in asset_type
 
@@ -81,10 +81,10 @@
         element_id          number 4    Unique ID of the element that was proccessed
 
     FAIL - Message from database that something went wrong.
-        error_id            number 1    Type of the error, enum defined in asset_type
+        error_id            number 1    Type of the error, enum defined in persistence header file
 
     GET_ELEMENTS - Ask for all elements of specific type
-        type                number 1    Type of the device, defined in in asset_type
+        type                number 1    Type of the element, defined in in asset_type
 
     RETURN_ELEMENTS - Returns elements we were asked for
         element_ids         dictionary  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
