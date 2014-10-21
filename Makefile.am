@@ -264,7 +264,18 @@ man-docs:
 
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
-	test -d $(top_srcdir)/${myDOXDIR}/html || $(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
+	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
+		test -d ${myDOXDIR}/html || \
+		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
+	else \
+		if [ -f $(top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
+			test -d $(top_srcdir)/${myDOXDIR}/html || \
+			$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile; \
+		else \
+			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
+			/bin/false; \
+		fi; \
+	fi
 else
 	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
 endif
