@@ -49,8 +49,11 @@ area in the tracked files and possibly conflicting):
    cd core-myfork/ && \
    git remote add \
      upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
-   git fetch --all --tags && \
-   git branch -a
+   git fetch --all --tags
+
+
+### Verify the local workspace (checked-out and available branches):
+:; git branch -a
 
 * master
   remotes/origin/HEAD -> origin/master
@@ -168,6 +171,13 @@ core can be compiled more or less easily, the project servers provide
 binary packages for most of the needed software which is either absent
 or obsolete in original OS repositories.
 
+When installing Debian 8 "testing" packages from OBS as well as from
+the upstream OS itself, don't forget to update the metadata index first
+(new builds may be available):
+----
+:; apt-get update
+----
+
 iproute (may be named iproute2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Install iproute-dev development files, version "20120521" or newer,
@@ -259,7 +269,7 @@ Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
  * Install NUT project parts needed for linking:
 ----
-:; apt-get install libupsclient-dev
+:; apt-get install libupsclient-dev libnutclient-dev
 ----
  ** Note: specifically the $BIOS core project needs 'libnutclient' version
 0.27 or newer, which is provided either by recent source of the Network
