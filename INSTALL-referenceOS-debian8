@@ -128,11 +128,20 @@ LAN services for the bridged networks. It is up to the DHCP servers
 here to provide the default routes on certain adapters, as well as
 to announce where a client can get the DNS services.
 
-Verify the active network adapter settings with `ifconfig -a` 
-or `ip addr list`, and available routes with `netstat -rn` or 
+If needed (i.e. shutdown blocks on `dhcprelease` step), you can
+disable DHCPv6 in the file above  with lines like these:
+----
+iface eth0 inet manual
+iface eth1 inet manual
+iface eth2 inet manual
+----
+
+Verify the active network adapter settings with `ifconfig -a`
+or `ip addr list`, and available routes with `netstat -rn` or
 `ip route list`.
 
-To enforce DHCP configuration of a specific adapter you can use:
+To enforce DHCP configuration of a specific adapter on command-line
+you can use:
 ----
 :; NIC=eth0; ifconfig $NIC up && dhclient $NIC; ifconfig $NIC
 ----
