@@ -125,6 +125,9 @@ AC_CHECK_PROGS([SED], [sed])
 AC_CHECK_PROGS([ECPPC], [ecppc])
 # TNTnet
 AC_CHECK_PROGS([TNTNET], [tntnet])
+AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
+  AC_MSG_ERROR([TNTnet not found!])
+])
 
 # set flags CFLAGS
 my_CFLAGS="\
@@ -164,7 +167,7 @@ Summary:
         astyle:                  ${ASTYLE:-none}
         asciidoc:                ${A2X:-none}
         doxygen:                 ${DOXYGEN:-none}
-        ecpp:                    ${ECPP:-none}
+        ecppc:                   ${ECPPC:-none}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
