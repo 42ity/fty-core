@@ -44,9 +44,18 @@ upstream repository as such, to facilitate comparisons and updates which
 were not resolved automatically (i.e. several changes applied to the same
 area in the tracked files and possibly conflicting):
 ----
-:; git clone ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git && \
-   cd core/ && \
-   git remote add upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
+:; git clone \
+     ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git core-myfork && \
+   cd core-myfork/ && \
+   git remote add \
+     upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
+   git fetch --all --tags && \
+   git branch -a
+
+* master
+  remotes/origin/HEAD -> origin/master
+  remotes/origin/master
+  remotes/upstream/master
 ----
 
 Then the developer may create branches for working on individual issues
@@ -84,6 +93,7 @@ our $BIOS project, so it is essential to use their bleeding-edge as well.
 The software packages pre-built for the project can be located in our OBS
 build-results repositories, including the following Linux OS releases:
 
+ * http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/
  * http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/
  * http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
  * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
@@ -110,9 +120,17 @@ Automatic setup of OBS as a package source for a supported Debian 8.0
 platform with APT package management should work like this (execute
 as "root"):
 ----
-:; echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
-   /etc/apt/sources.list.d/00bios-obs-deb8.list && \
-   apt-get update
+:; wget -O - \
+     http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
+     apt-key add - && \
+   echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
+     /etc/apt/sources.list.d/95bios-obs-roz-deb8.list
+:; wget -O - \
+     http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
+     apt-key add - && \
+   echo 'deb http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
+     /etc/apt/sources.list.d/95bios-obs-mbt-deb8.list
+:; apt-get update
 ----
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
@@ -145,10 +163,36 @@ wget -l1 -np -nd -N -c -r --remove-listing \
 
 Installation of the build dependencies from packages
 ----------------------------------------------------
+While most of the prerequisite software needed to build or run the $BIOS
+core can be compiled more or less easily, the project servers provide
+binary packages for most of the needed software which is either absent
+or obsolete in original OS repositories.
+
+iproute (may be named iproute2)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Install iproute-dev development files, version "20120521" or newer,
 using your configured system repositories, i.e. with Debian APT:
 ----
-:; apt-get install iproute-dev
+:; apt-get install iproute2-dev
+
+### Note that this should fetch the non-empty variant of the package
+### from OBS with uotput like this:
+
+Reading package lists... Done
+Building dependency tree
+Reading state information... Done
+The following NEW packages will be installed:
+  iproute2-dev
+0 upgraded, 1 newly installed, 0 to remove and 310 not upgraded.
+Need to get 9,662 B of archives.
+After this operation, 64.5 kB of additional disk space will be used.
+Get:1 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  iproute2-dev 3.16.0-0 [9,662 B]
+Fetched 9,662 B in 5s (1,921 B/s)
+Selecting previously unselected package iproute2-dev.
+(Reading database ... 49826 files and directories currently installed.)
+Preparing to unpack .../iproute2-dev_3.16.0-0_amd64.deb ...
+Unpacking iproute2-dev (3.16.0-0) ...
+Setting up iproute2-dev (3.16.0-0) ...
 ----
 ...or with Suse Zypper:
 ----
@@ -157,8 +201,9 @@ using your configured system repositories, i.e. with Debian APT:
 
 [NOTE]
 ======
-*TODO*: Which version of iproute *should* be used -- same release as the
-current Linux kernel on a given machine? Specific release? Latest release?)
+*TODO*: Which version of iproute *should* be used if building from source --
+same release as the current Linux kernel on a given machine? Specific fixed
+release? Latest release?)
 
 It seems currently that recent Debian, unlike other distributions, renamed
 the 'iproute' package to 'iproute2' and intentionally stripped away its
@@ -172,36 +217,138 @@ tested with "20120521" (which is available in Debian wheezy) and that
 version is known to work and suffice for us.
 ======
 
- * Install TNT project parts:
+MariaDB
+~~~~~~~
+ * Install MariaDB development and product packages from OBS:
 ----
-:; apt-get install libtntdb-dev libtntdb3 cxxtools \
-   tntnet tntnet-runtime libtntnet10 libtntnet-dev libtnt-dev
+:; apt-get install libmariadbclient-dev libmariadbd-dev \
+   mariadb-server mariadb-client mariadb-test
+
+### Pick the version needed to match the rest of the database,
+### the OBS serves 'mariadb-10.0' at the moment of this writing:
+:; apt-get install mariadb-connect-engine'*'
+----
+ ** The 'mariadb-server' installer will ask for the database's 'root'
+user new password.
+
+libCIDR and CIDRcalc
+~~~~~~~~~~~~~~~~~~~~
+ * Install libcidr and related stuff:
+----
+:; apt-get install cidrcalc libcidr'*'
+----
+ ** Note that the package-name version is numbered ('libcidr0' and
+'libcidr0-dev') at the moment of this writing, which is a bit
+inconvenient in the long term documentation support. Things may be
+different on your newer system.
+
+TNTNET, TNTDB, CXXTOOLS and friends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Install the TNT project parts:
+----
+:; apt-get install tntnet tntnet-runtime libcxxtools-dev \
+   libtntdb-dev libtntnet-dev libtnt-dev libsasl2-dev
+----
+ ** Notes: the `cxxtools` or `libcxxtools` package may be absent or differently
+named in other OS releases, and may need to be rebuilt from source completely.
+ ** The non-"dev" base packages tend to have a version number embedded,
+so it is a safer bet to request the "-dev" packages since we need them
+anyway, and they will pull in their modern base packages as needed.
+
+Network UPS Tools (NUT)
+~~~~~~~~~~~~~~~~~~~~~~~
+ * Install NUT project parts needed for linking:
+----
+:; apt-get install libupsclient-dev
+----
+ ** Note: specifically the $BIOS core project needs 'libnutclient' version
+0.27 or newer, which is provided either by recent source of the Network
+UPS Tools, or by its very recent packaging (numbered 2.7.2-2 on OBS for
+Debian).
+ ** If you need more of NUT (actual programs -- drivers, server and client
+daemons and utilities), consider adding these packages:
+----
+:; apt-get install nut-server nut-client nut
+----
+ ** Installation of 'nut-client' can complain on a `systemd`-controlled OS
+like Debian 8, because it tries to start all daemons regardless of their
+default configuration files which block startup on SysV-based systems.
+As a result, the not-yet-confiugred daemons fail and the package may end
+up not-installed. In this case review the errors following hints from the
+packaging program and fix the offending files such as '/etc/nut/upsmon.conf'
+(set 'MINSUPPLIES 0' where appropriate). The 'nut-server' package can
+complain about no configured UPS-monitoring drivers, but this is not fatal.
+See https://github.com/networkupstools/nut/issues/156 for more details.
+
+libVariant
+~~~~~~~~~~
+ * Install libVariant:
+----
+:; apt-get install libvariant-dev
 ----
 
- * Install NUT project parts:
-----
-:; apt-get install nut libupsclient1-dev nut-client libupsclient1
-----
-
+ZeroMQ and friends
+~~~~~~~~~~~~~~~~~~
  * Install ZeroMQ and related project parts:
 ----
-:; apt-get install libsodium libzmq czmq gsl
+:; apt-get install libsodium-dev libzmq3-dev libczmq-dev gsl-bin
 ----
 
- * Install libVariant (from prerequisites above), i.e.:
-----
-:; apt-get install libvariant libvariant-dev
-----
-
+ * On a rare system used to develop the ZMQ-based protocols involved 
+in the $BIOS code project (i.e. almost never) one might need 'zproto'
+and 'gsl' programs used to generate the C sources and headers further
+used by an application project like $BIOS. Both of these are available
+on Git and are easy to compile followint their READMEs, but binary
+packages are not generally needed and are not provided. If required,
+refer to these projects directly for more details:
+ ** https://github.com/zeromq/zproto
+ ** https://github.com/imatix/gsl
 
 
 Configure and build the $BIOS project sources
 ---------------------------------------------
 (Getting the project sources is covered above in this document).
 
+
+The short version
+~~~~~~~~~~~~~~~~~
+If everything goes smoothly, you just need to run this snippet in the
+base directory of your source-code checkout (details and explanations
+follow in the next chapter) for a build based in the same directory:
+----
+:; BLDARCH="`uname -s`-`uname -m`"
+:; ( ./autogen.sh && \
+     ./configure && \
+   { make -k distclean; make V=0 -j 4 -k all; make all; } && \
+   { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
+----
+
+NOTE: Currently the following pretty subdir-build fails due to `doxygen`,
+but the rest works:
+----
+:; BLDARCH="`uname -s`-`uname -m`"
+:; ( ./autogen.sh && \
+   { rm -rf build-${BLDARCH}; \
+     mkdir build-${BLDARCH}; \
+     cd build-${BLDARCH}; } && \
+   ../configure && \
+   { make -k distclean; make V=0 -j 4 -k all; make all; } && \
+   { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
+----
+
+If this simple build fails, try the longer version step-by-step and with
+more verbosity, as detailed below.
+
+The long version
+~~~~~~~~~~~~~~~~
+
 If no `configure` script is available yet (or if it needs to be rebuilt):
 
  * create or update the `configure` script:
+----
+:; ./autogen.sh
+----
+ * ...or if you need to enforce an update of the `configure` script:
 ----
 :; autoreconf -fiv
 ----
