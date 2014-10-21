@@ -39,10 +39,10 @@ Structure describing asset device
 
 <message name = "link" id = "12">
 Structure for describing the relations between devices
-    <field name = "parent_socket" type = "number" size = "2"></field>
-    <field name = "my_socket" type = "number" size = "2"></field>
-    <field name = "location" type = "number" size = "4">ID of the parent element</field>
-    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in asset_type</field>
+    <field name = "src_socket" type = "number" size = "2">Source socket</field>
+    <field name = "dst_socket" type = "number" size = "2">Destination socket</field>
+    <field name = "src_location" type = "number" size = "4">ID of the src device</field>
+    <field name = "dst_location" type = "number" size = "4">ID of the parent element</field>
 </message>
 
 <message name = "get_element" id = "2">
