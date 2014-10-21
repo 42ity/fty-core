@@ -11,15 +11,25 @@ This document is a step-by step record of an installation of this OS
 with the aim of building, testing and developing the $BIOS project
 core (and probably its third-party prerequisites) in a VirtualBox VM.
 
-== Create the VM "hardware"
 The minimal installation below was performed in VirtualBox with the
 three-DVD set of 'debian-testing-amd64-DVD-{1,2,3}.iso' files as the
-installation source. The VM was configured with "Debian"/"64-bit" 
-guest OS type, 2GB RAM, 8GB HDD, a "NAT"ed network adapter (further 
-routed by the host OS) and no extras like audio, USB or graphics
-acceleration. Use CPU accelerations and multicore support as desired,
-though note that on heavily-loaded systems the VM timekeeping on
-single-CPU virtual systems is much more consistent.
+installation source. The exact version tag was 'jessie/sid' released
+at '20140825-06:01'; since the 'testing' releases issue DVD images
+weekly or so, your software installation might vary in some details.
+Subsequent installation of packages, especially those prebuilt for
+our project and served on OBS, might require that you satisfy the
+dependencies by automatically updating from Internet repositories.
+
+== Create the VM "hardware"
+The VM was configured with "Debian"/"64-bit" guest OS type, 2GB RAM,
+8GB HDD, a "NAT"ed network adapter (further routed by the host OS)
+and a "Host-only Network Adapter" (for guest-guest and guest-host
+communications), and no extras like audio, graphics acceleration,
+or USB. Depending on your needs in debugging, you might want to use
+or skip a system console on virtual serial ports (setup not detailed 
+here). Use CPU accelerations and multicore support as desired, though
+note that on heavily-loaded systems the VM timekeeping on single-CPU
+virtual systems is generally much more consistent.
 
 You may also want to add a "Virtualbox Host-only Network Adapter"
 for faster and unfiltered interconnections between your host OS and
@@ -29,9 +39,10 @@ directly.
 Note that generally the "NAT network" can not be used for such VM
 interconnections since each stack is unique and isolated on the host
 and each seems the same for each guest, and the NAT network stack
-does not pass ICMP (ping, traceroute); however it automates the net
-setup greatly (especially if your host is a laptop and uses different
-network connections all the time, i.e. direct today and VPN tonight).
+does not pass ICMP (`ping`, `traceroute`); however it automates and
+simplifies the generic networking setup greatly (especially if your
+host system is a laptop and uses different network connections all
+the time, i.e. direct today and VPN tonight).
 
 == Install the basic Debian OS
 In the installer pass the initial questions like the locale and time
@@ -61,13 +72,14 @@ the third-party package vendors (like our project, at a later stage).
 
 Currently, edit the main `/etc/apt/sources.list` file and uncomment
 the lines starting with `# deb` and pointing to HTTP or FTP servers.
-This would provide the secondary repositories such as "updates". To 
-get the actual software packages from the network, also add this link:
+This would provide the secondary repositories such as "updates".
+
+To get the actual software packages from the network, also add this link:
 ----
-:; echo 'deb http://ftp.debian.org/debian jessie main contrib non-free' \
-   >  /etc/apt/sources.list.d/debian-jessie.list
-:; echo 'deb-src http://ftp.debian.org/debian jessie main contrib non-free' \
-   >> /etc/apt/sources.list.d/debian-jessie.list
+:; echo 'deb http://ftp.debian.org/debian testing main contrib non-free' \
+   >  /etc/apt/sources.list.d/debian-testing.list
+:; echo 'deb-src http://ftp.debian.org/debian testing main contrib non-free' \
+   >> /etc/apt/sources.list.d/debian-testing.list
 ----
 
 Then update the indexes of packages available from different sources:
@@ -268,7 +280,7 @@ some of these already exist in your installation and will be quietly
 skipped:
 ----
 :; apt-get install gcc bison autoconf automake make patch \
-    libgcc1 cpp binutils strace gdb \
+    libgcc1 cpp binutils strace gdb pkg-config \
     doxygen perl python
 ----
 
