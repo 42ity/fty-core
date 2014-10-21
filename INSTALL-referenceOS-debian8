@@ -220,10 +220,22 @@ Then as the unprivileged user, add a simple command to elevate:
 type `S` to get a 'root' shell. Use `sudo` prefix however to
 run other elevated commands (such as installations).
 
+
+== Install ACPI support
+One useful aspect is the ability to "ACPI Shutdown" your machine with a
+press of a power-button, and even more so -- by allowing a (headless) VM
+to gracefully shut down upon an ACPI event from its hypervisor. In Debian
+you need to install the acpi-related packages for this to work, which are
+not part of the generic minimized installation:
+----
+:; apt-get install acpi acpid acpi-support
+----
+
+
 == Set up NTP client for consistent time-keeping
 Add the packages involved:
 ----
-:; apt-get ntpdate ntp
+:; apt-get install ntpdate ntp
 ----
 
 The service should start automatically.
