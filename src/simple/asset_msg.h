@@ -39,7 +39,7 @@
         name                string      Name of the element
         location            number 4    ID of the parent element
         location_type       number 1    Type of the parent element, defined in asset_type
-        type                number 1    Type of the device, defined in asset_type
+        type                number 1    Type of the element, defined in asset_type
         ext                 dictionary  Hash map of extended attributes
 
     DEVICE - Structure describing asset device
@@ -53,10 +53,10 @@
         msg                 msg         Element that we are extending to the device
 
     LINK - Structure for describing the relations between devices
-        parent_socket       number 2    
-        my_socket           number 2    
-        location            number 4    ID of the parent element
-        location_type       number 1    Type of the parent element, defined in asset_type
+        src_socket          number 2    Source socket
+        dst_socket          number 2    Destination socket
+        src_location        number 4    ID of the src device
+        dst_location        number 4    ID of the parent element
 
     GET_ELEMENT - Ask for specific element
         element_id          number 4    Unique ID of the asset element
@@ -66,14 +66,14 @@
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be delivered
 
-    UPDATE_ELEMENT - Returns element we were asked for
+    UPDATE_ELEMENT - Updates element or device
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be updated
 
-    INSERT_ELEMENT - Returns element we were asked for
+    INSERT_ELEMENT - Insert element or device
         msg                 msg         Element (or device) to be inserted
 
-    DELETE_ELEMENT - Returns element we were asked for
+    DELETE_ELEMENT - Deletes element or device
         element_id          number 4    Unique ID of the element to be deleted
         type                number 1    Type of the device, defined in asset_type
 
@@ -81,10 +81,10 @@
         element_id          number 4    Unique ID of the element that was proccessed
 
     FAIL - Message from database that something went wrong.
-        error_id            number 1    Type of the error, enum defined in asset_type
+        error_id            number 1    Type of the error, enum defined in persistence header file
 
     GET_ELEMENTS - Ask for all elements of specific type
-        type                number 1    Type of the device, defined in in asset_type
+        type                number 1    Type of the element, defined in in asset_type
 
     RETURN_ELEMENTS - Returns elements we were asked for
         element_ids         dictionary  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
@@ -174,10 +174,10 @@ zmsg_t *
 //  Encode the LINK 
 zmsg_t *
     asset_msg_encode_link (
-        uint16_t parent_socket,
-        uint16_t my_socket,
-        uint32_t location,
-        byte location_type);
+        uint16_t src_socket,
+        uint16_t dst_socket,
+        uint32_t src_location,
+        uint32_t dst_location);
 
 //  Encode the GET_ELEMENT 
 zmsg_t *
@@ -256,10 +256,10 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_link (void *output,
-        uint16_t parent_socket,
-        uint16_t my_socket,
-        uint32_t location,
-        byte location_type);
+        uint16_t src_socket,
+        uint16_t dst_socket,
+        uint32_t src_location,
+        uint32_t dst_location);
     
 //  Send the GET_ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -468,17 +468,29 @@ zmsg_t *
 void
     asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p);
 
-//  Get/set the parent_socket field
+//  Get/set the src_socket field
 uint16_t
-    asset_msg_parent_socket (asset_msg_t *self);
+    asset_msg_src_socket (asset_msg_t *self);
 void
-    asset_msg_set_parent_socket (asset_msg_t *self, uint16_t parent_socket);
+    asset_msg_set_src_socket (asset_msg_t *self, uint16_t src_socket);
 
-//  Get/set the my_socket field
+//  Get/set the dst_socket field
 uint16_t
-    asset_msg_my_socket (asset_msg_t *self);
+    asset_msg_dst_socket (asset_msg_t *self);
 void
-    asset_msg_set_my_socket (asset_msg_t *self, uint16_t my_socket);
+    asset_msg_set_dst_socket (asset_msg_t *self, uint16_t dst_socket);
+
+//  Get/set the src_location field
+uint32_t
+    asset_msg_src_location (asset_msg_t *self);
+void
+    asset_msg_set_src_location (asset_msg_t *self, uint32_t src_location);
+
+//  Get/set the dst_location field
+uint32_t
+    asset_msg_dst_location (asset_msg_t *self);
+void
+    asset_msg_set_dst_location (asset_msg_t *self, uint32_t dst_location);
 
 //  Get/set the element_id field
 uint32_t

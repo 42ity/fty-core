@@ -51,7 +51,7 @@ struct _asset_msg_t {
     char *name;                         //  Name of the element
     uint32_t location;                  //  ID of the parent element
     byte location_type;                 //  Type of the parent element, defined in asset_type
-    byte type;                          //  Type of the device, defined in asset_type
+    byte type;                          //  Type of the element, defined in asset_type
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
     char *device_type;                  //  Type of the device, freeform string not the thing from asset_type
@@ -62,10 +62,12 @@ struct _asset_msg_t {
     char *fqdn;                         //  Fully qualified domain name
     char *mac;                          //  MAC address of the device
     zmsg_t *msg;                        //  Element that we are extending to the device
-    uint16_t parent_socket;             //  
-    uint16_t my_socket;                 //  
+    uint16_t src_socket;                //  Source socket
+    uint16_t dst_socket;                //  Destination socket
+    uint32_t src_location;              //  ID of the src device
+    uint32_t dst_location;              //  ID of the parent element
     uint32_t element_id;                //  Unique ID of the asset element
-    byte error_id;                      //  Type of the error, enum defined in asset_type
+    byte error_id;                      //  Type of the error, enum defined in persistence header file
     zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
     size_t element_ids_bytes;           //  Size of dictionary content
 };
@@ -341,10 +343,10 @@ asset_msg_decode (zmsg_t **msg_p)
             break;
 
         case ASSET_MSG_LINK:
-            GET_NUMBER2 (self->parent_socket);
-            GET_NUMBER2 (self->my_socket);
-            GET_NUMBER4 (self->location);
-            GET_NUMBER1 (self->location_type);
+            GET_NUMBER2 (self->src_socket);
+            GET_NUMBER2 (self->dst_socket);
+            GET_NUMBER4 (self->src_location);
+            GET_NUMBER4 (self->dst_location);
             break;
 
         case ASSET_MSG_GET_ELEMENT:
@@ -516,14 +518,14 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
             
         case ASSET_MSG_LINK:
-            //  parent_socket is a 2-byte integer
+            //  src_socket is a 2-byte integer
             frame_size += 2;
-            //  my_socket is a 2-byte integer
+            //  dst_socket is a 2-byte integer
             frame_size += 2;
-            //  location is a 4-byte integer
+            //  src_location is a 4-byte integer
             frame_size += 4;
-            //  location_type is a 1-byte integer
-            frame_size += 1;
+            //  dst_location is a 4-byte integer
+            frame_size += 4;
             break;
             
         case ASSET_MSG_GET_ELEMENT:
@@ -667,10 +669,10 @@ asset_msg_encode (asset_msg_t **self_p)
             break;
 
         case ASSET_MSG_LINK:
-            PUT_NUMBER2 (self->parent_socket);
-            PUT_NUMBER2 (self->my_socket);
-            PUT_NUMBER4 (self->location);
-            PUT_NUMBER1 (self->location_type);
+            PUT_NUMBER2 (self->src_socket);
+            PUT_NUMBER2 (self->dst_socket);
+            PUT_NUMBER4 (self->src_location);
+            PUT_NUMBER4 (self->dst_location);
             break;
 
         case ASSET_MSG_GET_ELEMENT:
@@ -923,16 +925,16 @@ asset_msg_encode_device (
 
 zmsg_t * 
 asset_msg_encode_link (
-    uint16_t parent_socket,
-    uint16_t my_socket,
-    uint32_t location,
-    byte location_type)
+    uint16_t src_socket,
+    uint16_t dst_socket,
+    uint32_t src_location,
+    uint32_t dst_location)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
-    asset_msg_set_parent_socket (self, parent_socket);
-    asset_msg_set_my_socket (self, my_socket);
-    asset_msg_set_location (self, location);
-    asset_msg_set_location_type (self, location_type);
+    asset_msg_set_src_socket (self, src_socket);
+    asset_msg_set_dst_socket (self, dst_socket);
+    asset_msg_set_src_location (self, src_location);
+    asset_msg_set_dst_location (self, dst_location);
     return asset_msg_encode (&self);
 }
 
@@ -1126,16 +1128,16 @@ asset_msg_send_device (
 int
 asset_msg_send_link (
     void *output,
-    uint16_t parent_socket,
-    uint16_t my_socket,
-    uint32_t location,
-    byte location_type)
+    uint16_t src_socket,
+    uint16_t dst_socket,
+    uint32_t src_location,
+    uint32_t dst_location)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
-    asset_msg_set_parent_socket (self, parent_socket);
-    asset_msg_set_my_socket (self, my_socket);
-    asset_msg_set_location (self, location);
-    asset_msg_set_location_type (self, location_type);
+    asset_msg_set_src_socket (self, src_socket);
+    asset_msg_set_dst_socket (self, dst_socket);
+    asset_msg_set_src_location (self, src_location);
+    asset_msg_set_dst_location (self, dst_location);
     return asset_msg_send (&self, output);
 }
 
@@ -1311,10 +1313,10 @@ asset_msg_dup (asset_msg_t *self)
             break;
 
         case ASSET_MSG_LINK:
-            copy->parent_socket = self->parent_socket;
-            copy->my_socket = self->my_socket;
-            copy->location = self->location;
-            copy->location_type = self->location_type;
+            copy->src_socket = self->src_socket;
+            copy->dst_socket = self->dst_socket;
+            copy->src_location = self->src_location;
+            copy->dst_location = self->dst_location;
             break;
 
         case ASSET_MSG_GET_ELEMENT:
@@ -1438,10 +1440,10 @@ asset_msg_print (asset_msg_t *self)
             
         case ASSET_MSG_LINK:
             zsys_debug ("ASSET_MSG_LINK:");
-            zsys_debug ("    parent_socket=%ld", (long) self->parent_socket);
-            zsys_debug ("    my_socket=%ld", (long) self->my_socket);
-            zsys_debug ("    location=%ld", (long) self->location);
-            zsys_debug ("    location_type=%ld", (long) self->location_type);
+            zsys_debug ("    src_socket=%ld", (long) self->src_socket);
+            zsys_debug ("    dst_socket=%ld", (long) self->dst_socket);
+            zsys_debug ("    src_location=%ld", (long) self->src_location);
+            zsys_debug ("    dst_location=%ld", (long) self->dst_location);
             break;
             
         case ASSET_MSG_GET_ELEMENT:
@@ -2079,38 +2081,74 @@ asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the parent_socket field
+//  Get/set the src_socket field
 
 uint16_t
-asset_msg_parent_socket (asset_msg_t *self)
+asset_msg_src_socket (asset_msg_t *self)
 {
     assert (self);
-    return self->parent_socket;
+    return self->src_socket;
 }
 
 void
-asset_msg_set_parent_socket (asset_msg_t *self, uint16_t parent_socket)
+asset_msg_set_src_socket (asset_msg_t *self, uint16_t src_socket)
 {
     assert (self);
-    self->parent_socket = parent_socket;
+    self->src_socket = src_socket;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the my_socket field
+//  Get/set the dst_socket field
 
 uint16_t
-asset_msg_my_socket (asset_msg_t *self)
+asset_msg_dst_socket (asset_msg_t *self)
 {
     assert (self);
-    return self->my_socket;
+    return self->dst_socket;
 }
 
 void
-asset_msg_set_my_socket (asset_msg_t *self, uint16_t my_socket)
+asset_msg_set_dst_socket (asset_msg_t *self, uint16_t dst_socket)
 {
     assert (self);
-    self->my_socket = my_socket;
+    self->dst_socket = dst_socket;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the src_location field
+
+uint32_t
+asset_msg_src_location (asset_msg_t *self)
+{
+    assert (self);
+    return self->src_location;
+}
+
+void
+asset_msg_set_src_location (asset_msg_t *self, uint32_t src_location)
+{
+    assert (self);
+    self->src_location = src_location;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the dst_location field
+
+uint32_t
+asset_msg_dst_location (asset_msg_t *self)
+{
+    assert (self);
+    return self->dst_location;
+}
+
+void
+asset_msg_set_dst_location (asset_msg_t *self, uint32_t dst_location)
+{
+    assert (self);
+    self->dst_location = dst_location;
 }
 
 
@@ -2345,10 +2383,10 @@ asset_msg_test (bool verbose)
     assert (copy);
     asset_msg_destroy (&copy);
 
-    asset_msg_set_parent_socket (self, 123);
-    asset_msg_set_my_socket (self, 123);
-    asset_msg_set_location (self, 123);
-    asset_msg_set_location_type (self, 123);
+    asset_msg_set_src_socket (self, 123);
+    asset_msg_set_dst_socket (self, 123);
+    asset_msg_set_src_location (self, 123);
+    asset_msg_set_dst_location (self, 123);
     //  Send twice from same object
     asset_msg_send_again (self, output);
     asset_msg_send (&self, output);
@@ -2358,10 +2396,10 @@ asset_msg_test (bool verbose)
         assert (self);
         assert (asset_msg_routing_id (self));
         
-        assert (asset_msg_parent_socket (self) == 123);
-        assert (asset_msg_my_socket (self) == 123);
-        assert (asset_msg_location (self) == 123);
-        assert (asset_msg_location_type (self) == 123);
+        assert (asset_msg_src_socket (self) == 123);
+        assert (asset_msg_dst_socket (self) == 123);
+        assert (asset_msg_src_location (self) == 123);
+        assert (asset_msg_dst_location (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_GET_ELEMENT);
