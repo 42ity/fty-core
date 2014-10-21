@@ -261,10 +261,10 @@ insert into t_bios_device_type(id_device_type,name) values (NULL,"EPDU");
 insert into t_bios_device_type(id_device_type,name) values (NULL,"SERV");
 insert into t_bios_device_type(id_device_type,name) values (NULL,"MAIN");
 
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"UPS");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"UPS");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"UPS");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"UPS");
+insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
+insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
+insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"serv");
+insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"main");
 
 insert into t_bios_asset_element_type (id_asset_element_type, name) values (1, "group");
 insert into t_bios_asset_element_type (id_asset_element_type, name) values (2, "datacenter");
