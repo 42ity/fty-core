@@ -13,6 +13,6 @@ Build-Depends: bison, debhelper (>= 8), flex, iptables-dev,
                docbook-xsl-ns, docbook-xsl, docbook-xml,
                libxml2-utils, xsltproc, libcxxtools-dev,
                libtntdb-dev, libcidr0-dev, libvariant-dev,
-               libczmq-dev, libupsclient-dev
+               libczmq-dev, libnutclient-dev
 Package-List:
  core deb net optional arch=any
