@@ -125,11 +125,11 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
             auto argv = proc->argv();
             if (std::count(argv.begin(), argv.end(), "-sL")) {
                 log_info ("PRE - parse_list_scan()\n");
-                parse_list_scan(p.first.data(), ls_router);
+                parse_list_scan(p.first, ls_router);
                 log_info ("POST - parse_list_scan()\n");
             }
             else {
-                parse_device_scan(p.first.data());
+                parse_device_scan(p.first, ls_router);
             }
         }
 
@@ -184,7 +184,7 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
                 char *next_item = NULL;
                 next_item = (char *) zlist_pop (zlargs);
                 assert (next_item);
-                log_info ("%d\n", strlen(next_item));
+                log_info ("%lu\n", strlen(next_item));
                 log_info ("%s\n", next_item);
                 args.push_back(next_item);                      
                 free (next_item);
@@ -198,14 +198,14 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
             break;
         }
         case NMAP_MSG_LIST_SCAN:
-        case NMAP_MSG_DEV_SCAN:                   
-        case NMAP_MSG_PORT_SCAN:                  
-        case NMAP_MSG_PORT_SCAN_STATE:            
-        case NMAP_MSG_PORT_SCAN_SERVICE:          
-        case NMAP_MSG_SCAN_SCRIPT:                
-        case NMAP_MSG_DEV_SCAN_PORTUSED:          
-        case NMAP_MSG_DEV_SCAN_OSMATCH:           
-        case NMAP_MSG_DEV_SCAN_OSCLASS:           
+        case NMAP_MSG_DEV_SCAN:
+        case NMAP_MSG_PORT_SCAN:
+        case NMAP_MSG_SERVICE_SCAN:
+        case NMAP_MSG_SCRIPT:
+        case NMAP_MSG_OS_SCAN:
+        case NMAP_MSG_PORTUSED:
+        case NMAP_MSG_OSMATCH:
+        case NMAP_MSG_OSCLASS:
         case NMAP_MSG_SCAN_ERROR:
         {
             log_warning ("UNEXPECTED message type received; Nmap scanner expects 'scan_command' not results of various scans.\n");

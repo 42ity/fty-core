@@ -14,37 +14,37 @@
     </mapping>
     <!-- We are getting authorized -->
     <mapping>
-      <target>auth@bios</target>
+      <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
-      <target>auth-verify@bios</target>
+      <target>auth-verify@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
     </mapping>
     <!-- Make sure everybody speaks json from now on -->
     <mapping>
-      <target>json@bios</target>
+      <target>json@bios_web</target>
     </mapping>
     <!-- API itself -->
 
     <!-- Time settings -->
     <mapping>
-      <target>time@bios</target>
+      <target>time@bios_web</target>
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
     <!-- Asset management -->
     <mapping>
-      <target>item@bios</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group)/(.*)$</url>
+      <target>item@bios_web</target>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)/(.*)$</url>
       <args>
         <id>$2</id>
         <type>$1</type>
       </args>
     </mapping>
     <mapping>
-      <target>list@bios</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group)s$</url>
+      <target>list@bios_web</target>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s$</url>
       <args>
         <type>$1</type>
       </args>
@@ -74,7 +74,7 @@
         <level>INFO</level>
       </logger>
       <logger>
-        <category>component.bios-web</category>
+        <category>component.bios_web-web</category>
         <level>INFO</level>
       </logger>
     </loggers>

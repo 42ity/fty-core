@@ -160,19 +160,24 @@ bool CIDRAddress::valid() const {
 }
 
 bool CIDRAddress::contains(const CIDRAddress& address) const {
+  if( ( ! valid() ) || ( ! address.valid() ) ) return false; 
   return (cidr_contains(_cidr,address._cidr) == 0);
 }
 
 bool CIDRAddress::in(const CIDRAddress& address) const {
+  if( ( ! valid() ) || ( ! address.valid() ) ) return false; 
   return (cidr_contains(address._cidr,_cidr) == 0);  
 }
 
 bool CIDRAddress::equals(const CIDRAddress& address) const {
+  if( ( ! valid() ) && ( ! address.valid() ) ) return true; 
+  if( ( ! valid() ) || ( ! address.valid() ) ) return false; 
   return (cidr_equals(address._cidr,_cidr) == 0);  
 }
 
 CIDRAddress CIDRAddress::hostMin() const {
   CIDRAddress result;
+  if( ! valid() ) return result;
   CIDR *host = cidr_addr_hostmin(_cidr);
   result.setCidrPtr(host);
   return result;
@@ -180,6 +185,7 @@ CIDRAddress CIDRAddress::hostMin() const {
 
 CIDRAddress CIDRAddress::hostMax() const {
   CIDRAddress result;
+  if( ! valid() ) return result;
   CIDR *host = cidr_addr_hostmax(_cidr);
   result.setCidrPtr(host);
   return result;
@@ -213,6 +219,7 @@ CIDRAddress CIDRAddress::network() const {
 
 CIDRAddress CIDRAddress::broadcast() const {
   CIDRAddress result;
+  if( ! valid() ) return result;
   CIDR *host = cidr_addr_broadcast(_cidr);
   result.setCidrPtr(host);
   return result;

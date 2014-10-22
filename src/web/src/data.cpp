@@ -16,6 +16,8 @@ byte asset_manager::type_to_byte(std::string type) {
         ret = asset_type::RACK;
     } else if(type == "group") {
         ret = asset_type::GROUP;
+    } else if(type == "device") {
+        ret = asset_type::DEVICE;
     }
     return ret;
 }
@@ -32,7 +34,9 @@ std::string asset_manager::byte_to_type(byte type) {
             return "rack";
         case asset_type::GROUP:
             return "group";
+        case asset_type::DEVICE:
+            return "device";
         default:
-            return "";
+            return "unknown";
     }
 }

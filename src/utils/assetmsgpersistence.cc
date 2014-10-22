@@ -1,6 +1,7 @@
 // returns: asset_msg_fail error, success - return_* / ok, in case of NULL means that nothing to send in response
 // if some id is 0 it means that in database there was a NULL-value
 // assumption: every ID is unsigned
+// Hash values must be printable strings; keys may not contain '='.
 #include <exception>
 #include <assert.h>
 
@@ -12,10 +13,23 @@
 
 #include "log.h"
 #include "assetmsgpersistence.h"
+#include "asset_types.h"
 
+
+// definition of internal functions, that are in charge of processing the specific type of the message
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 
+
+// different helpers
+void _removeColonMacaddress(std::string &newmac);
+const std::string _addColonMacaddress(const std::string &mac);
+bool _checkMacaddress (const std::string &mac_address);
+
+/**
+ * \brief This function is a general function to process 
+ * the asset_msg_t message
+ */
 asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
 {
     log_open();
@@ -30,7 +44,7 @@ asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
     switch (msg_id) {
 
         case ASSET_MSG_GET_ELEMENT:
-        {   //datacenter/room/row/rack/group
+        {   //datacenter/room/row/rack/group/device
             result = _get_asset_element(url,msg);
             break;
         }
@@ -79,6 +93,14 @@ asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
     return result;
 };
 
+
+//Function responsible for creating the ASSET_MSG_ELEMENT
+//Function responsible for creating hashmap for the ext attributes
+//Function responsible for creating the ASSET_MSG_DEVICE
+//Function responsible for creating the "strings" of groups
+//Function responsible for creating the "strings" of powers
+
+//Function process the get_element message
 // element_found                element_not_found           internal_error   
 // ASSET_MSG_RETURN_ELEMENT     ASSET_MSG_FAIL              ASSET_MSG_FAIL
 // with msg = msg               DB_ERROR_NOTFOUND           DB_ERROR_INTERNAL  
@@ -105,12 +127,12 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
     asset_msg_t *resultmsg = NULL;
     
     tntdb::Row row;
-    try{
+    try {
         row = st.setInt("id", element_id).
                  setInt("typeid",element_type_id).
                  selectRow();
     }
-    catch (const tntdb::NotFound &e){
+    catch (const tntdb::NotFound &e) {
         // element with specified type was not found
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
@@ -118,8 +140,7 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
         asset_msg_set_error_id (resultmsg, DB_ERROR_NOTFOUND);
         return resultmsg;
     }
-    catch (const std::exception &e)
-    {
+    catch (const std::exception &e) {
         // internal error in database 
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
@@ -154,12 +175,11 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
         );
 
     tntdb::Result result;  
-    try{
+    try {
         result = st_extattr.setInt("idelement", element_id).
                             select();
     }
-    catch (const std::exception &e)
-    {
+    catch (const std::exception &e) {
         // internal error in database
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
@@ -171,7 +191,7 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
     zhash_t *extAttributes = zhash_new();
     assert(extAttributes);
 
-    // Go through the selected extraattributes
+    // Go through the selected extra attributes
     for ( tntdb::Result::const_iterator it = result.begin();
             it != result.end(); ++it)
     {
@@ -189,24 +209,210 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
 
         zhash_insert(extAttributes, &keytag, &value );
     }
-
-    asset_msg_t *msgelement = asset_msg_new (ASSET_MSG_ELEMENT);
+    
+    asset_msg_t* msgelement = asset_msg_new (ASSET_MSG_ELEMENT);
     assert(msgelement);
-
     asset_msg_set_name(msgelement, name.c_str());
     asset_msg_set_location(msgelement,parent_id);
     asset_msg_set_location_type(msgelement,parent_type_id);
     asset_msg_set_type(msgelement,element_type_id);    
     asset_msg_set_ext(msgelement, &extAttributes);
     
+    asset_msg_t *msgdevice = NULL;
+    if ( element_type_id == asset_type::DEVICE )
+    {
+        // Get more attributes of the device
+        // Can return one row or nothing 
+        tntdb::Statement st_dev = conn.prepareCached(
+            " select"
+            " conv(v.mac,10,16) , v.ip, v.hostname , v.full_hostname , v.id_asset_device_type"
+            " from"
+            " v_bios_asset_device v"
+            " where v.id_asset_element = :idelement"
+        );
+
+        try {
+            row = st_dev.setInt("idelement", element_id).
+                         selectRow();
+        }
+        catch (const tntdb::NotFound &e) {
+            assert(false);      
+            //database is corrupted, for every device in db there should be two rows
+            //1 in asset_element
+            //2 in asset_device
+        }
+        catch (const std::exception &e) {
+            // internal error in database
+            resultmsg = asset_msg_new (ASSET_MSG_FAIL);
+            assert(resultmsg);
+    
+            asset_msg_set_error_id (resultmsg, DB_ERROR_INTERNAL);
+            return resultmsg;
+        }
+       
+        // TODO: Assumption: if data where inserted in database, then assume they are corrected
+        // mac in db is stored as a number, and without :
+        std::string mac = "";
+        row[0].get(mac);
+        if ( mac != "" )
+           mac = _addColonMacaddress(mac);
+
+        // ip
+        std::string ip = "";
+        row[1].get(ip);
+
+        // hostname
+        std::string hostname = "";
+        row[2].get(hostname);
+
+        // fullhostname
+        std::string fullhostname = "";
+        row[3].get(fullhostname);
+
+        // id_asset_device_type
+        unsigned int id_asset_device_type = 0;
+        row[4].get(id_asset_device_type);
+        assert( id_asset_device_type != 0);  //database is corrupted
+        
+        // GROUPS
+        // Get information about the groups device belongs to
+        // Can return more than one row
+        tntdb::Statement st_gr = conn.prepareCached(
+            " select"
+            " v.id_asset_group"
+            " from"
+            " v_bios_asset_group_relation v"
+            " where v.id_asset_element = :idelement"
+        );
+ 
+        try {
+            result = st_gr.setInt("idelement", element_id).
+                           select();
+        }
+        catch (const std::exception &e) {
+            // internal error in database
+            resultmsg = asset_msg_new (ASSET_MSG_FAIL);
+            assert(resultmsg);
+    
+            asset_msg_set_error_id (resultmsg, DB_ERROR_INTERNAL);
+            return resultmsg;
+        }
+        
+
+        zlist_t *groups = zlist_new();
+        assert(groups);
+        // TODO look at the possibility to add elements dirictly !!!
+        // Go through the selected groups
+        for ( tntdb::Result::const_iterator it = result.begin();
+                it != result.end(); ++it)
+        {
+            tntdb::Row row = *it;
+
+            // group_id, required
+            unsigned int group_id = 0;
+            row[0].get(group_id);
+            assert( group_id != 0 );  //database is corrupted
+
+            static char buff[16];
+            sprintf(buff, "%d", group_id);
+            zlist_push( groups, buff );
+        }
+
+        // POWERS
+        // Get information about the power chains device belongs to
+        // Can return more than one row
+        tntdb::Statement st_pow = conn.prepareCached(
+            " select"
+            " v.id_asset_device_src , v.src_out , v.dest_in"
+            " from"
+            " v_bios_asset_link v"
+            " where v.id_asset_device_dest = :idelement and v.id_asset_link_type = 1"
+        );  // TODO link type now 1 means POWER
+ 
+        try {
+            result = st_pow.setInt("idelement", element_id).
+                           select();
+        }
+        catch (const std::exception &e) {
+            // internal error in database
+            resultmsg = asset_msg_new (ASSET_MSG_FAIL);
+            assert(resultmsg);
+    
+            asset_msg_set_error_id (resultmsg, DB_ERROR_INTERNAL);
+            return resultmsg;
+        }
+
+        zlist_t *powers = zlist_new();
+        assert(powers);
+
+        // Go through the selected groups
+        for ( tntdb::Result::const_iterator it = result.begin();
+                it != result.end(); ++it)
+        {
+            tntdb::Row row = *it;
+
+            // src_out
+            unsigned int src_out = 0;
+            row[1].get(src_out);
+            
+            // dest_in
+            unsigned int dest_in = 0;
+            row[2].get(dest_in);
+
+            // src_id, required
+            unsigned int src_id = 0;
+            row[0].get(src_id);
+            assert( src_id != 0 );  //database is corrupted
+
+            asset_msg_t* link = asset_msg_new (ASSET_MSG_LINK);
+            asset_msg_set_src_socket(link, src_out);
+            asset_msg_set_dst_socket(link, dest_in);
+            asset_msg_set_src_location(link, src_id);
+            asset_msg_set_dst_location(link, element_id);
+            
+            zmsg_t* tempmsg = asset_msg_encode (&link);
+            byte* buff;
+            zmsg_encode(tempmsg,&buff);
+            zlist_push(powers, buff );
+        }
+
+        msgdevice = asset_msg_new (ASSET_MSG_DEVICE);
+        assert(msgdevice);
+
+        asset_msg_set_ip(msgdevice, ip.c_str());
+        asset_msg_set_mac(msgdevice,mac.c_str());
+        asset_msg_set_hostname(msgdevice,hostname.c_str());
+        asset_msg_set_fqdn(msgdevice,fullhostname.c_str());   
+        static char buff[16];
+        sprintf(buff, "%d", id_asset_device_type);
+        asset_msg_set_device_type(msgdevice, buff);
+        
+        zmsg_t* nnmsg = NULL;
+        nnmsg = asset_msg_encode(&msgelement);
+        asset_msg_set_msg (msgdevice, &nnmsg);
+        asset_msg_set_groups (msgdevice, &groups);
+        asset_msg_set_powers (msgdevice, &powers);
+
+        zmsg_destroy(&nnmsg);
+
+        zlist_destroy(&powers);
+        zlist_destroy(&groups);
+        // TODO POWERS
+    }
+          
     //make ASSET_MSG_RETURN_ELEMENT
     resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENT);
     assert(resultmsg);
     asset_msg_set_element_id (resultmsg, element_id);
 
-    zmsg_t* nmsg =  asset_msg_encode(&msgelement);
+    zmsg_t* nmsg = NULL;
+    if ( element_type_id == asset_type::DEVICE )
+        nmsg = asset_msg_encode(&msgdevice);
+    else
+        nmsg = asset_msg_encode(&msgelement);
     asset_msg_set_msg (resultmsg,&nmsg);
 
+    asset_msg_destroy(&msgdevice);
     zhash_destroy(&extAttributes);
     asset_msg_destroy(&msgelement);
 
@@ -222,7 +428,7 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
     assert(msg);
 
     const unsigned int element_type_id = asset_msg_type (msg);
-    
+     
     tntdb::Connection conn; 
     conn = tntdb::connectCached(url);
 
@@ -251,9 +457,9 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
         return resultmsg;
     }
 
-    if ( result.size()==0 )
+    if ( result.size() == 0 )
     {
-        // elementa were not found
+        // elements were not found
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
         // TODO now there is no difference between notfound and bad group 
@@ -277,11 +483,13 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
         assert(name != "");  //database is corrupted
 
         // id, is required
-        int id = 0;
+        unsigned int id = 0;
         row[1].get(id);
         assert( id != 0);  //database is corrupted
 
-        zhash_insert(elements, &name, &id );
+        static char buff[16];
+        sprintf(buff, "%d", id);
+        zhash_insert(elements, buff, (void*)name.c_str());
     }
    
     // make ASSET_MSG_RETURN_ELEMENT
@@ -293,3 +501,39 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 
     return resultmsg;
 }
+
+// TODO: These functions are duplicate functions from nethistory.cc
+// it is done, because we plan to get rid of classes
+
+/*Internal function for remove colons from mac address
+void
+_removeColonMacaddress(std::string &newmac)
+{
+    newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
+}
+*/
+//Internal function for add colons to mac address
+const std::string
+_addColonMacaddress(const std::string &mac)
+{
+    std::string macWithColons(mac);
+    macWithColons.insert(2,1,':');
+    macWithColons.insert(5,1,':');
+    macWithColons.insert(8,1,':');
+    macWithColons.insert(11,1,':');
+    macWithColons.insert(14,1,':');
+    return macWithColons;
+}
+
+/*Internal method:check whether the mac address has right format
+bool
+_checkMacaddress (const std::string &mac_address)
+{
+    cxxtools::Regex regex("^[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]:[0-9,a-f,A-F][0-9,a-f,A-F]$");
+    if(!regex.match(mac_address))
+        return false;
+    else
+        return true;
+}
+*/
+

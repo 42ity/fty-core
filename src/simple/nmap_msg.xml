@@ -84,7 +84,6 @@ omitted: smurf, distance, uptime, tcpsequence, ipidsequence, tcptssequence, trac
 <message name = "dev_scan" id = "3">
     Results of a device scan, this parses 'host' element. It is a high-level container, which encapsulates
     port scan results and os scan one (if enabled).
-    <field name = "addr" type = "string">IP address</field>
     <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "addresses" type = "dictionary">dictionary of address : vendor, where vendor is valid only for mac addresses</field>

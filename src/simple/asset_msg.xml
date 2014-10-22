@@ -20,14 +20,14 @@
 Structure describing asset element
     <field name = "name" type = "string">Name of the element</field>
     <field name = "location" type = "number" size = "4">ID of the parent element</field>
-    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in enum somewhere</field>
-    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in asset_type</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
 </message>
 
 <message name = "device" id = "11">
 Structure describing asset device
-    <field name = "device_type" type = "string">Type of the device, freeform string</field>
+    <field name = "device_type" type = "string">Type of the device, freeform string not the thing from asset_type</field>
     <field name = "groups" type = "strings">List of IDs of groups device belongs to</field>
     <field name = "powers" type = "strings">List of encoded link messages</field>
     <field name = "ip" type = "string">IP of the device</field>
@@ -39,39 +39,39 @@ Structure describing asset device
 
 <message name = "link" id = "12">
 Structure for describing the relations between devices
-    <field name = "parent_socket" type = "number" size = "2"></field>
-    <field name = "my_socket" type = "number" size = "2"></field>
-    <field name = "location" type = "number" size = "4">ID of the parent element</field>
-    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in enum somewhere</field>
+    <field name = "src_socket" type = "number" size = "2">Source socket</field>
+    <field name = "dst_socket" type = "number" size = "2">Destination socket</field>
+    <field name = "src_location" type = "number" size = "4">ID of the src device</field>
+    <field name = "dst_location" type = "number" size = "4">ID of the parent element</field>
 </message>
 
 <message name = "get_element" id = "2">
 Ask for specific element
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
-    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+    <field name = "type" type = "number" size = "1">Type of the element defined in asset_type (includes devices)</field>
 </message>
 
 <message name = "return_element" id = "3">
 Returns element we were asked for
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
-    <field name = "msg" type = "msg">Element to be delivered</field>
+    <field name = "msg" type = "msg">Element (or device) to be delivered</field>
 </message>
 
 <message name = "update_element" id = "4">
-Returns element we were asked for
+Updates element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
-    <field name = "msg" type = "msg">Element to be updated</field>
+    <field name = "msg" type = "msg">Element (or device) to be updated</field>
 </message>
 
 <message name = "insert_element" id = "5">
-Returns element we were asked for
-    <field name = "msg" type = "msg">Element to be inserted</field>
+Insert element or device
+    <field name = "msg" type = "msg">Element (or device) to be inserted</field>
 </message>
 
 <message name = "delete_element" id = "6">
-Returns element we were asked for
+Deletes element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
-    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+    <field name = "type" type = "number" size = "1">Type of the device, defined in asset_type</field>
 </message>
 
 <message name = "ok" id = "7">
@@ -81,17 +81,17 @@ Message from database that everything was processed successfully.
 
 <message name = "fail" id = "8">
 Message from database that something went wrong.
-    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined somewhere else</field>
+    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined in persistence header file</field>
 </message>
 
 <message name = "get_elements" id = "9">
 Ask for all elements of specific type
-    <field name = "type" type = "number" size = "1">Type of the device, defined in enum somewhere</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in in asset_type</field>
 </message>
 
 <message name = "return_elements" id = "10">
 Returns elements we were asked for
-    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element mapped to the elements name</field>
+    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
 </message>
 
 </class>
