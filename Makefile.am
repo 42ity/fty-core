@@ -263,12 +263,15 @@ fake_message_CPPFLAGS = -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/web/inclu
 fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
                        src/web/fake_message.cpp
 
+# Generated header needed for mock.cpp
+BUILT_SOURCES +=	tools/dbpath.h
+
 pkglib_LTLIBRARIES += bios_web.la
-bios_web_la_SOURCES = src/web/src/auth.ecpp src/web/src/auth-verify.ecpp \
-                      src/web/src/data.cpp  src/web/src/item.ecpp        \
-                      src/web/src/json.ecpp src/web/src/list.ecpp        \
+bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/data.cpp  src/web/src/item.cpp         \
+                      src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/time.ecpp src/web/src/tokens.cpp       \
+                      src/web/src/time.cpp  src/web/src/tokens.cpp       \
                       src/simple/asset_msg.c src/utils/log.c             \
                       src/utils/assetmsgpersistence.cc
 bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
@@ -294,18 +297,27 @@ web-test: tntnet.xml bios_web.la
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/tools/dbpath.h.in \
-					$(top_srcdir)/src/simple/*_msg.xml
+					$(top_srcdir)/tools/dbpath.h \
+					$(top_srcdir)/src/simple/*_msg.xml \
+					$(top_srcdir)/src/simple/*.h \
+					$(top_srcdir)/src/netmon/*.h \
+					$(top_srcdir)/src/netmon/*/*.h \
+					$(top_srcdir)/src/netmon/*/*/*.h \
+					$(top_srcdir)/src/drivers/*/*.h \
+					$(top_srcdir)/src/cli/*.h \
+					$(top_srcdir)/src/utils/*.h \
+					$(top_srcdir)/src/utils/*/*.h \
+					$(top_srcdir)/src/web/include/*.h
 
 CLEANFILES +=				tools/dbpath.h
-
-BUILT_SOURCES +=			tools/dbpath.h
 
 if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
 endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
-
+EXTRA_DIST +=				$(top_srcdir)/docs/man/*.txt
+EXTRA_DIST +=				$(top_srcdir)/INSTALL-referenceOS-debian8 \
+					$(top_srcdir)/INSTALL
 
 BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 
@@ -339,10 +351,10 @@ endif
 
 if HAVE_ASCIIDOC
 INSTALL.html: INSTALL
-	$(ASCIIDOC) -b html $^
+	$(ASCIIDOC) -b html -o $@ $^
 
 INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
-	$(ASCIIDOC) -b html $^
+	$(ASCIIDOC) -b html -o $@ $^
 else
 INSTALL.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
