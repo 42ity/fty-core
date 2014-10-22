@@ -42,13 +42,13 @@ void parse_list_scan(const std::string& inp, zsock_t *socket);
 //
 // \param inp - input stream
 // \return nothing \todo return structure to be defined
-void parse_device_scan(std::istream& inp);
+void parse_device_scan(std::istream& inp, zsock_t *socket);
 
 //! \brief parse results of nmap device scan (-R -sT -sU) and print the found information
 //
 // \param inp - input string
 // \return nothing \todo return structure to be defined
-void parse_device_scan(const std::string& inp);
+void parse_device_scan(const std::string& inp, zsock_t *socket);
 
 #endif //_SRC_DRIVERS_NMAP_PARSE_H_
 

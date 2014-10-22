@@ -25,6 +25,127 @@ enum class ListState {
     ENDHOST
 };
 
+static const char* HOSTSTATE_UP = "up";
+static const char* HOSTSTATE_DOWN = "down";
+static const char* HOSTSTATE_UNKNOWN = "unknown";
+static const char* HOSTSTATE_SKIPPED = "skipped";
+static const int HOSTSTATE_UP_ID = 1;
+static const int HOSTSTATE_DOWN_ID = 2;
+static const int HOSTSTATE_UNKNOWN_ID = 3;
+static const int HOSTSTATE_SKIPPED_ID = 4;
+
+byte hoststate_byte (const char *host_state) {
+    assert (host_state);
+    if (strcmp (host_state, HOSTSTATE_UP) == 0) {
+        return HOSTSTATE_UP_ID;
+    }
+    else if (strcmp (host_state, HOSTSTATE_DOWN) == 0) {
+        return HOSTSTATE_DOWN_ID;
+    }
+    else if (strcmp (host_state, HOSTSTATE_UNKNOWN) == 0) {
+        return HOSTSTATE_UNKNOWN_ID;
+    }
+    else if (strcmp (host_state, HOSTSTATE_SKIPPED) == 0) {
+        return HOSTSTATE_SKIPPED_ID;
+    }
+    else {
+        return 0;
+    }
+}
+
+const char* byte_hoststate (byte host_state) {
+    switch (host_state) {
+        case HOSTSTATE_UP_ID:
+            return HOSTSTATE_UP;
+        case HOSTSTATE_DOWN_ID:
+            return HOSTSTATE_DOWN;
+        case HOSTSTATE_UNKNOWN_ID:
+            return HOSTSTATE_UNKNOWN;
+        case HOSTSTATE_SKIPPED_ID:
+            return HOSTSTATE_SKIPPED;
+        default:
+            return NULL;            
+    }
+}
+
+// decide whether to go for c++ enum or export all od these ansi style, or at all
+#define PORT_UNKNOWN 0
+#define PORT_CLOSED 1
+#define PORT_OPEN 2
+#define PORT_FILTERED 3
+#define PORT_TESTING 4
+#define PORT_FRESH 5
+#define PORT_UNFILTERED 6
+#define PORT_OPENFILTERED 7
+#define PORT_CLOSEDFILTERED 8
+
+
+const char *state2str (int state) {
+  switch (state) {
+  case PORT_OPEN:
+    return "open";
+    break;
+  case PORT_CLOSED:
+    return "closed";
+    break;
+  case PORT_FILTERED:
+    return "filtered";
+    break;
+  case PORT_UNFILTERED:
+    return "unfiltered";
+    break;
+  case PORT_OPENFILTERED:
+    return "open|filtered";
+    break;
+  case PORT_CLOSEDFILTERED:
+    return "closed|filtered";
+    break;
+  default:
+    return "unknown";
+    break;
+  }
+  return "unknown";
+}
+
+// TODO uint8_t
+int str2state (const char *port_state) {
+    assert (port_state);
+    if (strcmp (port_state, "open") == 0) {
+        return PORT_OPEN; 
+    }
+    else if (strcmp (port_state, "closed") == 0) {
+        return PORT_CLOSED;
+    }
+    else if (strcmp (port_state, "filtered") == 0) {
+        return PORT_FILTERED;
+    } else if (strcmp (port_state, "unfiltered") == 0) {
+        return PORT_UNFILTERED;
+    } else if (strcmp (port_state, "open|filtered") == 0) {
+        return PORT_OPENFILTERED;
+    } else if (strcmp (port_state, "closed|filtered") == 0) {
+        return PORT_CLOSEDFILTERED;
+    } else {
+        return PORT_UNKNOWN;
+    }        
+    return PORT_UNKNOWN;
+}
+
+#define METHOD_NOT_SET  0
+#define METHOD_TABLE    1
+#define METHOD_PROBED   2
+int str2method (const char * method) {
+    assert (method);
+    if (strcmp (method, "table") == 0) {
+        return METHOD_TABLE;
+    }
+    else if (strcmp (method, "probed") == 0) {
+        return METHOD_PROBED;
+    }
+    else {
+        return METHOD_NOT_SET;
+    }  
+}
+
 void parse_list_scan(std::istream& inp, zsock_t *socket) {
     assert (socket);
     assert (zsock_is (socket));
@@ -179,7 +300,7 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
         }
     }
     log_info ("parse_list_scan() end\n");    
-    
+    log_close ();    
 }
 
 void parse_list_scan(const std::string& inp, zsock_t *socket) {
@@ -187,75 +308,200 @@ void parse_list_scan(const std::string& inp, zsock_t *socket) {
     return parse_list_scan(stream, socket);
 }
 
-void parse_device_scan(std::istream& inp) {
+void parse_device_scan(std::istream& inp, zsock_t *socket) {
+
+    assert (socket);
+    assert (zsock_is (socket));
+
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_info ("parse_device_scan() start\n");    
 
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
 
-    for (auto node_it = r.current(); node_it != r.end(); ++node_it ) {
+    zhash_t *addresses = zhash_new ();
+    assert (addresses);
+    zhash_t *hostnames = zhash_new ();
+    assert (hostnames);
 
-        if (node_it->type() != Node::StartElement) {
+    bool in_host = false;
+    bool in_hostnames = false;
+    bool in_ports = false;
+    std::string scan_target;
+
+    nmap_msg_t *msg = nmap_msg_new (NMAP_MSG_DEV_SCAN);
+    assert (msg);
+    
+    nmap_msg_t *port_scan = NULL;
+
+    // tntnet specific String constants; _term suffix
+    const String addr_term("addr");
+    const String address_term("address");
+    const String addrtype_term("addrtype");
+    const String conf_term("conf");
+    const String method_term("method");
+    const String name_term("name");
+
+    const String portid_term("portid");
+    const String protocol_term("protocol");
+
+
+    const String reason_term("reason");
+    const String reason_ttl_term("reason_ttl");
+    const String reason_ip_term("reason_ip");
+
+    const String state_term("state");
+    const String vendor_term("vendor");
+    const String type_term("type");    
+
+    for (auto node_it = r.current(); node_it != r.end(); ++node_it ) {
+        
+        //      START ELEMENT   // 
+        if (node_it->type() == Node::StartElement) {
+            const StartElement& el = static_cast<const StartElement&>(*node_it);
+            const String& name = el.name();
+
+            if (name.compare ("host") == 0) {
+                in_host = true;
+            }
+            else if (name.compare ("status") == 0) {
+                assert (in_host);
+                static String state = el.attribute (state_term);
+                static String reason = el.attribute (reason_term);
+
+                static byte host_state_v =
+                hoststate_byte (convert<std::string>(state).c_str());
+                assert (host_state_v != 0);
+
+                nmap_msg_set_host_state (msg, host_state_v);
+                nmap_msg_set_reason (msg, "%s", reason.c_str());
+             }
+            else if (name.compare("address") == 0) {
+                assert (in_host);                
+                static String vendor = el.attribute (vendor_term);
+                static String addr = el.attribute (addr_term);
+                // TODO vlozit do inicializovaneho zhash addresses
+                // addr, vendor        
+            }
+            else if (name.compare("hostnames") == 0) {
+                assert (in_host);
+                in_hostnames = true;
+            }
+            else if (name.compare("hostname") == 0) {
+                assert (in_host);
+                assert (in_hostnames);
+                static String name = el.attribute (vendor_term);
+                static String type = el.attribute (addr_term);
+                // TODO vlozit do inicializovaneho zhash
+                
+            }
+            else if (name.compare("ports") == 0) {
+                in_ports = true;
+            }
+            else if (name.compare("port") == 0) {
+                assert (in_host);
+                assert (in_ports);
+                static String protocol = el.attribute (protocol_term);
+                static String portid = el.attribute (portid_term);
+                assert (port_scan == NULL);
+                port_scan = nmap_msg_new (NMAP_MSG_PORT_SCAN);
+                nmap_msg_set_protocol (port_scan, "%s",
+                    convert<std::string>(protocol).c_str());
+                nmap_msg_set_portid (port_scan,
+                     std::stoi(convert<std::string>(portid)));
+
+            }
+            else if (name.compare("state") == 0) {
+                assert (in_host);
+                assert (in_ports);
+                assert (port_scan);
+                static String state = el.attribute (state_term);
+                static String reason = el.attribute (reason_term);
+                static String reason_ttl = el.attribute (reason_ttl_term);
+                static String reason_ip = el.attribute (reason_ip_term);
+                nmap_msg_set_port_state (port_scan,
+                    (byte) str2state(convert<std::string>(state).c_str()));
+                nmap_msg_set_reason (port_scan, "%s",
+                    convert<std::string>(reason).c_str());              
+                nmap_msg_set_reason_ttl (port_scan,
+                    std::stoi(convert<std::string>(reason_ttl)));              
+                nmap_msg_set_reason_ip (port_scan, "%s",
+                    convert<std::string>(reason_ip).c_str());              
+               
+            } else if (name.compare("service") == 0) {
+                // <!ELEMENT port (state , owner? , service?, script*) >
+                assert (in_host);
+                assert (in_ports);
+                assert (port_scan);
+                static String name = el.attribute (name_term);
+                static String conf = el.attribute (conf_term);
+                static String method = el.attribute (method_term);
+
+                zmsg_t *serv_msg =
+                nmap_msg_encode_service_scan (
+                    convert<std::string>(name).c_str(),
+                    (byte) std::stoi(convert<std::string>(conf)),
+                    (byte) str2method(convert<std::string>(method).c_str()),
+                    "", "", "", 0, 0, 0, 0, 0, "", "" ,"" , "", ""
+                    );
+/* TODO: rest
+                    const char *version,
+                    const char *product,
+                    const char *extrainfo,
+                    byte tunnel,
+                    byte service_proto,
+                    uint32_t rpcnum,
+                    uint32_t lowver,
+                    uint32_t highver,
+                    const char *hostname,
+                    const char *ostype,
+                    const char *devicetype,
+                    const char *servicefp,
+                    const char *cpe);             
+*/
+                nmap_msg_set_service (port_scan, &serv_msg);
+                assert (serv_msg = NULL);                
+
+            // TBD
+            } else if (name.compare ("scripts") == 0) {
+            } else if (name.compare ("script") == 0) {
+            } else if (name.compare ("os") == 0) {
+            } else if (name.compare ("os_scan") == 0) {
+            } else if (name.compare ("portused") == 0) {
+            } else if (name.compare ("osmatch") == 0) {
+            } else if (name.compare ("osclass") == 0) {
+            }
+
+        //      END ELEMENT     //
+        } else if (node_it->type() == Node::EndElement) {            
+            const EndElement& el = static_cast<const EndElement&>(*node_it);
+            const String& name = el.name();
+        
+            if (name.compare ("host") == 0) {
+                in_host = false;
+                // case: </host> reached and msg hasn't been sent
+                //       means error in our code, not invalid xml
+                assert (msg == NULL);
+            }
+            else if (name.compare ("hostnames") == 0) {
+                in_hostnames = false;
+            }
+            else if (name.compare ("ports") == 0) {
+                in_ports = false;
+            }
+        } else {
             continue;
         }
-        
-        const StartElement& el = static_cast<const StartElement&>(*node_it);
-        auto name = convert<std::string>(el.name());
 
-        if (name == "status") {
-            static auto state = convert<String>("state");
-            static auto reason = convert<String>("reason");
-            static auto reason_ttl = convert<String>("reason_ttl");
-            std::cout << "state: " << el.attribute(state) << \
-                         " reason: " << el.attribute(reason) << \
-                         " reason_ttl: " << el.attribute(reason_ttl) << std::endl;
-        }
-        else if (name == "address") {
-            static auto addr = convert<String>("addr");
-            static auto addrtype = convert<String>("addrtype");
-            static auto vendor = convert<String>("vendor");
-            std::cout << "addr: " << el.attribute(addr) << \
-                         " addrtype: " << el.attribute(addrtype);
-            if (el.hasAttribute(vendor)) {
-                std::cout << " vendor: " << el.attribute(vendor);
-            }
-            std::cout << std::endl;
-        }
-        else if (name == "hostname") {
-            static auto name = convert<String>("name");
-            static auto type = convert<String>("type");
-            std::cout << "name: " << el.attribute(name) << \
-                         " type: " << el.attribute(type);
-            std::cout << std::endl;
-        }
-        else if (name == "port") {
-            static auto protocol = convert<String>("protocol");
-            static auto portid = convert<String>("portid");
-            std::cout << "protocol: " << el.attribute(protocol) << \
-                         " portid: " << el.attribute(portid);
-            std::cout << std::endl;
-        }
-        else if (name == "state") {
-            static auto state = convert<String>("state");
-            static auto reason = convert<String>("reason");
-            static auto reason_ttl = convert<String>("reason_ttl");
-            std::cout << "state: " << el.attribute(state) << \
-                         " reason: " << el.attribute(reason) << \
-                         " reason_ttl: " << el.attribute(reason_ttl);
-            std::cout << std::endl;
-        }
-        else if (name == "service") {
-            static auto name = convert<String>("name");
-            static auto method = convert<String>("method");
-            static auto conf = convert<String>("conf");
-            std::cout << "name: " << el.attribute(name) << \
-                         " method: " << el.attribute(method) << \
-                         " conf: " << el.attribute(conf);
-            std::cout << std::endl;
-        }
     }
+    nmap_msg_destroy (&msg);
+    assert (msg == NULL);
+    log_info ("parse_device_scan() end\n");    
+    log_close ();    
 }
 
-void parse_device_scan(const std::string& inp) {
+void parse_device_scan(const std::string& inp, zsock_t *socket) {
     std::istringstream stream{inp};
-    parse_device_scan(stream);
+    parse_device_scan(stream, socket);
 }
