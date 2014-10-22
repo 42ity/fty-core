@@ -323,10 +323,10 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
             " select"
-            " v.id_device_src , v.src_out , v.dist_in"
+            " v.id_asset_device_src , v.src_out , v.dest_in"
             " from"
             " v_bios_asset_link v"
-            " where v.id_device_dist = :idelement amd v.id_asset_link_type = 1"
+            " where v.id_asset_device_dest = :idelement and v.id_asset_link_type = 1"
         );  // TODO link type now 1 means POWER
  
         try {
@@ -341,7 +341,6 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
             asset_msg_set_error_id (resultmsg, DB_ERROR_INTERNAL);
             return resultmsg;
         }
-        
 
         zlist_t *powers = zlist_new();
         assert(powers);
@@ -356,9 +355,9 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
             unsigned int src_out = 0;
             row[1].get(src_out);
             
-            // dist_in
-            unsigned int dist_in = 0;
-            row[2].get(dist_in);
+            // dest_in
+            unsigned int dest_in = 0;
+            row[2].get(dest_in);
 
             // src_id, required
             unsigned int src_id = 0;
@@ -367,7 +366,7 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
 
             asset_msg_t* link = asset_msg_new (ASSET_MSG_LINK);
             asset_msg_set_src_socket(link, src_out);
-            asset_msg_set_dst_socket(link, dist_in);
+            asset_msg_set_dst_socket(link, dest_in);
             asset_msg_set_src_location(link, src_id);
             asset_msg_set_dst_location(link, element_id);
             

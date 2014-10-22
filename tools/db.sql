@@ -188,14 +188,14 @@ CREATE TABLE t_bios_asset_link (
   id_link               INT UNSIGNED    NOT NULL AUTO_INCREMENT,
   id_asset_device_src   INT UNSIGNED    NOT NULL,
   src_out               TINYINT,
-  id_asset_device_dist  INT UNSIGNED    NOT NULL,
-  dist_in               TINYINT,
+  id_asset_device_dest  INT UNSIGNED    NOT NULL,
+  dest_in               TINYINT,
   id_asset_link_type    TINYINT,
   
   PRIMARY KEY (id_link),
   
   INDEX FK_ASSETPOWERTOPOLOGY_SRC_idx  (id_asset_device_src    ASC),
-  INDEX FK_ASSETPOWERTOPOLOGY_DIST_idx (id_asset_device_dist   ASC),
+  INDEX FK_ASSETPOWERTOPOLOGY_DIST_idx (id_asset_device_dest   ASC),
   
   CONSTRAINT FK_ASSETPOWERTOPOLOGY_SRC 
     FOREIGN KEY (id_asset_device_src)
@@ -203,7 +203,7 @@ CREATE TABLE t_bios_asset_link (
     ON DELETE RESTRICT,
 
   CONSTRAINT FK_ASSETPOWERTOPOLOGY_DIST_
-    FOREIGN KEY (id_asset_device_dist)
+    FOREIGN KEY (id_asset_device_dest)
     REFERENCES t_bios_asset_device(id_asset_device)
     ON DELETE RESTRICT
 );
@@ -293,9 +293,9 @@ insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group
 insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group, id_asset_element) values (NULL, 1,8);
 
 
-insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_dist,  id_asset_link_type, src_out, dist_in) values (NULL, 4,3,1,1,2);
-insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dist, id_asset_link_type) values (NULL, 3,2,1);
-insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dist, id_asset_link_type) values (NULL, 2,1,1);
+insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_dest,  id_asset_link_type, src_out, dist_in) values (NULL, 4,3,1,1,2);
+insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 3,2,1);
+insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 2,1,1);
 
 
 drop view if exists v_bios_device_type;
@@ -338,6 +338,7 @@ DROP view if exists v_bios_asset_element;
 DROP view if exists v_bios_asset_element_type;
 
 create view v_bios_asset_device as select * from t_bios_asset_device ;
+create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_location_topology as select * from t_bios_asset_location_topology ;
