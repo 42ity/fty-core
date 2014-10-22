@@ -36,7 +36,7 @@
     <!-- Asset management -->
     <mapping>
       <target>item@bios_web</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group)/(.*)$</url>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)/(.*)$</url>
       <args>
         <id>$2</id>
         <type>$1</type>
@@ -44,7 +44,7 @@
     </mapping>
     <mapping>
       <target>list@bios_web</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group)s$</url>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s$</url>
       <args>
         <type>$1</type>
       </args>
