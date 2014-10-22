@@ -233,7 +233,9 @@ simple_SOURCES = 			src/simple/main.cc \
 					src/utils/persistencelogic.h \
 					src/simple/powerdev_msg.c \
 					src/drivers/nut/nut-actor.cc \
-					src/drivers/nut/nut-driver.cc
+					src/drivers/nut/nut-driver.cc \
+					src/simple/nmap_msg.h \
+					src/simple/nmap_msg.c
 
 
 simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBNUTCLIENT_LIBS} -lcxxtools -ltntdb
@@ -247,8 +249,8 @@ driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 					src/drivers/nmap/nmap.cc \
 					src/drivers/nmap/nmap-parse.h \
 					src/drivers/nmap/nmap-parse.cc \
-					src/simple/nmap_msg.h \
-					src/simple/nmap_msg.c
+					src/drivers/nmap/nmap_msg.h \
+					src/drivers/nmap/nmap_msg.c
 
 driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
 driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
@@ -295,7 +297,6 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/simple/*_msg.xml
 
 CLEANFILES +=				tools/dbpath.h
-
 
 if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
