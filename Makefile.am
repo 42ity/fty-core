@@ -304,27 +304,62 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
+all-docs: ${myDOXDIR}/html INSTALL.html INSTALL-referenceOS-debian8.html man-docs
+
+man-docs:
+	( cd docs/man && $(MAKE) all )
+
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
-	test -d $(top_srcdir)/${myDOXDIR}/html || $(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile
+	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
+		test -d ${myDOXDIR}/html || \
+		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
+	else \
+		if [ -f $(top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
+			test -d $(top_srcdir)/${myDOXDIR}/html || \
+			$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile; \
+		else \
+			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
+			/bin/false; \
+		fi; \
+	fi
+else
+	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
+endif
+
+if HAVE_ASCIIDOC
+INSTALL.html: INSTALL
+	$(ASCIIDOC) -b html $^
+
+INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
+	$(ASCIIDOC) -b html $^
+else
+INSTALL.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+
+INSTALL-referenceOS-debian8.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 endif
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: ${myDOXDIR}/html
+all-local: all-docs
 
 
 #----------------------------------------------------------------------
 #                        clean, what was not removed automatically
 #----------------------------------------------------------------------
 
-clean-local:
+clean-man:
+	( cd docs/man && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
+	/bin/rm -f docs/man/*.?
+
+clean-local: clean-man
 	/bin/rm -rf $(top_builddir)/tests/junit
-if HAVE_DOXYGEN
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-endif
+	/bin/rm -f INSTALL.html INSTALL-referenceOS-debian8.html
 
 #----------------------------------------------------------------------
 #                        astyle formating
