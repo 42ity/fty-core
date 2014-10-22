@@ -298,6 +298,8 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 
 CLEANFILES +=				tools/dbpath.h
 
+BUILT_SOURCES +=			tools/dbpath.h
+
 if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
 endif
