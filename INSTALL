@@ -424,8 +424,11 @@ else (if configure script exists and is acceptable):
 ----
 :; make
 ----
- ** When the project becomes large enough, it may make sense to speed
-    up the builds using parallelization, i.e. (assuming GNU `make`):
+ ** When the project becomes large enough, it may make sense to speed up
+    the builds using parallelization, followed by a pass of sequential
+    make to reduce the impact of intemittent failures, such as those
+    caused by filesystem lags, out-of-memory issues, or by breaking
+    some unspecified dependency ordering. Assuming a GNU `make`, run:
 ----
 :; make -j 4 -k ; make
 ----
