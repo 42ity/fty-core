@@ -274,13 +274,19 @@ powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg)
             byte *encoded;
             zmsg_encode( zmsg, &encoded );
             assert(encoded);
+            unsigned int n = 0;
             if(encoded) {
                 // TODO: base64, can have zeros
                 newInformation.setBlobData((char *)encoded);
-                newInformation.dbsave();
+                n = newInformation.dbsave();
+                assert(n == 1);
                 free(encoded);
             }
             zmsg_destroy( &zmsg );
+            if( n == 0 ) {
+                log_error("%s","can't write into database\n");
+                return false;
+            }
             return true;
         }
     }
