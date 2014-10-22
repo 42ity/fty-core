@@ -1,5 +1,11 @@
 # Doxyfile 1.8.5
 
+# top_srcdir	= '@top_srcdir@'
+# srcdir	= '@srcdir@'
+# mysrcDIR	= '@mysrcDIR@'
+# myDOXDIR	= '@myDOXDIR@'
+# mydoxylog	= '@mydoxylog@'
+
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
 # 

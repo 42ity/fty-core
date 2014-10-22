@@ -1,4 +1,4 @@
-if HAVE_ASCIIDOC
+if HAVE_A2X
 # Targets manpages
 SRC_CLI_PAGES = cli.txt
 MAN_CLI_PAGES = cli.8
@@ -8,7 +8,7 @@ man8_MANS = $(MAN_CLI_PAGES)
 MAN_MANS = $(MAN_CLI_PAGES)
 
 # Generic targets
-all: $(MAN_MANS)
+all-local: $(MAN_MANS)
 
 EXTRA_DIST = $(SRC_CLI_PAGES) $(MAN_MANS)
 
@@ -33,4 +33,9 @@ A2X_MANPAGE_OPTS = --doctype manpage --format manpage
 .txt.8:
 	$(A2X) $(A2X_MANPAGE_OPTS) $<
 
-endif HAVE_ASCIIDOC
+else
+
+all-local:
+	@echo "SKIP: Missing 'a2x' program, manpage generation skipped!" >&2
+
+endif

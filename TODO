@@ -27,7 +27,7 @@ BIOS-354 :
 ----------
 -> Write all unit tests.
 -> Write documentation (3 classes are not documented properly).
--> It is hardly posible to use SQLite for testing purposes, because its
+-> It is hardly possible to use SQLite for testing purposes, because its
    database often becomes busy and tests are failed. It is caused by the
    simplicity of SQLite (it can't properly work with connection-pool and
    concurrent threads). So we need to test on MariaDb.
