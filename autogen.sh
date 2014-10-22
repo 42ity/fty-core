@@ -102,12 +102,12 @@ case "$1" in
 	# Ensure that an exit at this point is "successful"
 	true
 	;;
-    build-samedir|build)
+    build-samedir|build|make|make-samedir)
 	shift
 	buildSamedir "$@"
 	exit
 	;;
-    build-subdir)
+    build-subdir|make-subdir)
 	shift
 	buildSubdir "$@"
 	exit
@@ -124,10 +124,17 @@ case "$1" in
 	installSubdir
 	exit
 	;;
+    distclean)
+	make -k distclean
+	;;
     distcheck)
 	make -k distclean
 	./configure && \
 	make distcheck
+	;;
+    conf|configure)
+	make -k distclean
+	./configure
 	;;
     *)	echo "Usage: $0 [ { build-samedir | build-subdir | install-samedir | install-subdir } maketargets...]"
 	echo "This scrpit (re-)creates the configure script and optionally either just builds"
