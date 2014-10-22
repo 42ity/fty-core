@@ -48,6 +48,8 @@ asset_msg_t *asset_manager::get_item(std::string type, std::string id) {
     asset_msg_print(ret);
     zmsg_t *msg = NULL;
     zmsg_destroy(&msg);
+    if(asset_msg_id(ret) == ASSET_MSG_FAIL)
+        return ret;
     msg = asset_msg_get_msg(ret);
     asset_msg_destroy(&ret);
     ret = asset_msg_decode(&msg);
