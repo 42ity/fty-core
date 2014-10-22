@@ -6,6 +6,7 @@ bin_PROGRAMS =
 check_PROGRAMS =
 check_LTLIBRARIES =
 noinst_LTLIBRARIES =
+pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
 BUILT_SOURCES =
@@ -259,7 +260,7 @@ fake_message_CPPFLAGS = -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/web/inclu
 fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
                        src/web/fake_message.cpp
 
-pkglib_LTLIBRARIES = bios_web.la
+pkglib_LTLIBRARIES += bios_web.la
 bios_web_la_SOURCES = src/web/src/auth.ecpp src/web/src/auth-verify.ecpp \
                       src/web/src/data.cpp  src/web/src/item.ecpp        \
                       src/web/src/json.ecpp src/web/src/list.ecpp        \
@@ -277,6 +278,11 @@ bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
 
+tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
+	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datadir)/$(PACKAGE_NAME)-$(PACKAGE-VERSION)/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' $< > $@ || rm -f $@
+
+EXTRA_DIST += tntnet.xml.example
+
 web-test: tntnet.xml bios_web.la
 	${TNTNET} tntnet.xml
 
@@ -286,7 +292,7 @@ web-test: tntnet.xml bios_web.la
 
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/tools/dbpath.h.in \
-					$(top_srcdir)/simple/*_msg.xml
+					$(top_srcdir)/src/simple/*_msg.xml
 
 CLEANFILES +=				tools/dbpath.h
 
