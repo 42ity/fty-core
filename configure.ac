@@ -2,7 +2,7 @@
 AC_PREREQ([2.5])
 AC_INIT([core], [0.1])
 
-AC_CONFIG_SRCDIR([src/cored/main.cc])
+AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile docs/man/Makefile])
