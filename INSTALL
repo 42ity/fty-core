@@ -327,9 +327,10 @@ base directory of your source-code checkout (details and explanations
 follow in the next chapter) for a build based in the same directory:
 ----
 :; BLDARCH="`uname -s`-`uname -m`"
-:; ( ./autogen.sh && \
+:; ( make -k distclean; \
+     ./autogen.sh && \
      ./configure && \
-   { make -k distclean; make V=0 -j 4 -k all; make all; } && \
+   { make -k clean; make V=0 -j 4 -k all; make all; } && \
    { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
 ----
 
@@ -342,7 +343,7 @@ but the rest works:
      mkdir build-${BLDARCH}; \
      cd build-${BLDARCH}; } && \
    ../configure && \
-   { make -k distclean; make V=0 -j 4 -k all; make all; } && \
+   { make V=0 -j 4 -k all; make all; } && \
    { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
 ----
 
@@ -411,3 +412,6 @@ The 'Makefile' includes some targets for automated testing, such as
    tests
  * `./test-db` -- would run the database tests
 
+Note: as part of the project's automated validation the `make distcheck`
+must succeed in building and testing all targets, including a subdirectory
+build.
