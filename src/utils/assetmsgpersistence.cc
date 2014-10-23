@@ -23,7 +23,8 @@
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 
-
+// guplicates the items for zhash    
+void* void_dup(const void* a) { return strdup((char*)a); }
 // different helpers
 void _removeColonMacaddress(std::string &newmac);
 const std::string _addColonMacaddress(const std::string &mac);
@@ -96,14 +97,6 @@ asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
     return result;
 };
 
-
-//Function responsible for creating the ASSET_MSG_ELEMENT
-//Function responsible for creating hashmap for the ext attributes
-//Function responsible for creating the ASSET_MSG_DEVICE
-//Function responsible for creating the "strings" of groups
-//Function responsible for creating the "strings" of powers
-
-
 /**
  * \brief Gets data about groups the specifeid element belongs.
  *
@@ -144,17 +137,14 @@ zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
     assert(groups);
     
     // Go through the selected groups
-    for ( tntdb::Result::const_iterator it = result.begin();
-            it != result.end(); ++it)
+    for ( auto &row: result )
     {
-        tntdb::Row row = *it;
-        
         // group_id, required
         unsigned int group_id = 0;
         row[0].get(group_id);
         assert( group_id != 0 );  // database is corrupted
 
-        static char buff[16];
+        char buff[16];
         sprintf(buff, "%d", group_id);
         zlist_push( groups, buff );
     }
@@ -206,11 +196,8 @@ zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, unsi
     assert(links);
 
     // Go through the selected links
-    for ( tntdb::Result::const_iterator it = result.begin();
-             it != result.end(); ++it)
+    for ( auto &row: result )
     {
-        tntdb::Row row = *it;
-
          // src_out
          unsigned int src_out = 0;
          row[1].get(src_out);
@@ -294,13 +281,12 @@ zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_
 
     zhash_t *extAttributes = zhash_new();
     assert(extAttributes);
+    // in older versions this function is called zhash_set_item_duplicator
+    zhash_set_duplicator(extAttributes, void_dup);
 
     // Go through the selected extra attributes
-    for ( tntdb::Result::const_iterator it = result.begin();
-            it != result.end(); ++it)
+    for (  auto &row: result )
     {
-        tntdb::Row row = *it;
-
         // keytag, required
         std::string keytag = "";
         row[0].get(keytag);
@@ -411,7 +397,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
     asset_msg_set_mac(msgdevice,mac.c_str());
     asset_msg_set_hostname(msgdevice,hostname.c_str());
     asset_msg_set_fqdn(msgdevice,fullhostname.c_str());   
-    static char buff[16];
+    char buff[16];
     sprintf(buff, "%d", id_asset_device_type);
     asset_msg_set_device_type(msgdevice, buff);
      
@@ -557,6 +543,7 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
     return resultmsg;
 }
 
+
 // element_found                element_not_found           internal_error
 // ASSET_MSG_RETURN_ELEMENTS    ASSET_MSG_RETURN_ELEMENTS   ASSET_MSG_FAIL
 // with filled dictionary       with empty dictionary       
@@ -566,8 +553,7 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 
     const unsigned int element_type_id = asset_msg_type (msg);
      
-    tntdb::Connection conn; 
-    conn = tntdb::connectCached(url);
+    tntdb::Connection conn = tntdb::connectCached(url);
 
     // Can return more than one row.
     tntdb::Statement st = conn.prepareCached(
@@ -599,7 +585,7 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
         // elements were not found
         resultmsg = asset_msg_new (ASSET_MSG_FAIL);
         assert(resultmsg);
-        // TODO now there is no difference between notfound and bad group 
+        // TODO now there is no difference between notfound and bad type 
         asset_msg_set_error_id (resultmsg, DB_ERROR_NOTFOUND);
         return resultmsg;
     }
@@ -607,13 +593,12 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
     // elements was found
     zhash_t *elements = zhash_new();
     assert(elements);
+    // By default items are not duplicated
+    zhash_set_duplicator(elements, void_dup);
 
     // Go through the selected elements
-    for ( tntdb::Result::const_iterator it = result.begin();
-            it != result.end(); ++it)
+    for (  auto &row: result )
     {
-        tntdb::Row row = *it;
-
         // name, is required
         std::string name = "";
         row[0].get(name);
@@ -623,12 +608,12 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
         unsigned int id = 0;
         row[1].get(id);
         assert( id != 0);  //database is corrupted
-
-        static char buff[16];
+ 
+        char buff[16];
         sprintf(buff, "%d", id);
         zhash_insert(elements, buff, (void*)name.c_str());
     }
-   
+  
     // make ASSET_MSG_RETURN_ELEMENT
     resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
     assert(resultmsg);
