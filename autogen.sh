@@ -125,6 +125,7 @@ case "$1" in
 	exit
 	;;
     distclean)
+	./configure && \
 	make -k distclean
 	;;
     distcheck)
