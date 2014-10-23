@@ -9,8 +9,8 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-    * The XML model used for this code generation: asset_msg.xml
-    * The code generation script that built this file: zproto_codec_c
+     * The XML model used for this code generation: asset_msg.xml, or
+     * The code generation script that built this file: zproto_codec_c
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -104,6 +104,8 @@
 #define ASSET_MSG_FAIL                      8
 #define ASSET_MSG_GET_ELEMENTS              9
 #define ASSET_MSG_RETURN_ELEMENTS           10
+
+#include <czmq.h>
 
 #ifdef __cplusplus
 extern "C" {
