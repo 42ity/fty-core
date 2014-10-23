@@ -281,12 +281,13 @@ bin_PROGRAMS += fake_message
 fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
 fake_message_CPPFLAGS = 		-I$(top_srcdir)/src/simple \
 					-I$(top_srcdir)/src/web/include \
-					-I$(top_srcdir)/tools
+					-I$(top_srcdir)/tools \
+					-I$(top_builddir)/tools
 fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
                        src/web/fake_message.cpp
 
-# Generated header needed for mock.cpp
-BUILT_SOURCES +=	tools/dbpath.h
+# Generated header needed for any programs that use the database
+BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
 bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
@@ -298,6 +299,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/utils/assetmsgpersistence.cc
 bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
+		       -I$(top_builddir)/tools \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS}
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
@@ -319,7 +321,8 @@ web-test: tntnet.xml bios_web.la
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/tools/dbpath.h \
+					$(top_srcdir)/tools/dbpath.h.in \
+					$(top_builddir)/tools/dbpath.h \
 					$(top_srcdir)/src/simple/*_msg.xml \
 					$(top_srcdir)/src/simple/*.h \
 					$(top_srcdir)/src/netmon/*.h \
@@ -331,7 +334,7 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/utils/*/*.h \
 					$(top_srcdir)/src/web/include/*.h
 
-CLEANFILES +=				tools/dbpath.h
+CLEANFILES +=				$(top_builddir)/tools/dbpath.h
 
 if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
