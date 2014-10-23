@@ -9,10 +9,9 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-    * The XML model used for this code generation: asset_msg.xml
-    * The code generation script that built this file: zproto_codec_c
+     * The XML model used for this code generation: asset_msg.xml, or
+     * The code generation script that built this file: zproto_codec_c
     ************************************************************************
-    
                                                                         
     Copyright (C) 2014 Eaton                                            
                                                                         
@@ -38,7 +37,6 @@
 @end
 */
 
-#include "czmq.h"
 #include "./asset_msg.h"
 
 //  Structure of our class
@@ -466,7 +464,7 @@ asset_msg_encode (asset_msg_t **self_p)
                 //  Add up size of dictionary contents
                 char *item = (char *) zhash_first (self->ext);
                 while (item) {
-                    self->ext_bytes += 1 + strlen (zhash_cursor (self->ext));
+                    self->ext_bytes += 1 + strlen ((const char *) zhash_cursor (self->ext));
                     self->ext_bytes += 4 + strlen (item);
                     item = (char *) zhash_next (self->ext);
                 }
@@ -578,7 +576,7 @@ asset_msg_encode (asset_msg_t **self_p)
                 //  Add up size of dictionary contents
                 char *item = (char *) zhash_first (self->element_ids);
                 while (item) {
-                    self->element_ids_bytes += 1 + strlen (zhash_cursor (self->element_ids));
+                    self->element_ids_bytes += 1 + strlen ((const char *) zhash_cursor (self->element_ids));
                     self->element_ids_bytes += 4 + strlen (item);
                     item = (char *) zhash_next (self->element_ids);
                 }
@@ -611,7 +609,7 @@ asset_msg_encode (asset_msg_t **self_p)
                 PUT_NUMBER4 (zhash_size (self->ext));
                 char *item = (char *) zhash_first (self->ext);
                 while (item) {
-                    PUT_STRING (zhash_cursor (self->ext));
+                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->ext));
                     PUT_LONGSTR (item);
                     item = (char *) zhash_next (self->ext);
                 }
@@ -713,7 +711,7 @@ asset_msg_encode (asset_msg_t **self_p)
                 PUT_NUMBER4 (zhash_size (self->element_ids));
                 char *item = (char *) zhash_first (self->element_ids);
                 while (item) {
-                    PUT_STRING (zhash_cursor (self->element_ids));
+                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->element_ids));
                     PUT_LONGSTR (item);
                     item = (char *) zhash_next (self->element_ids);
                 }
@@ -729,36 +727,60 @@ asset_msg_encode (asset_msg_t **self_p)
         asset_msg_destroy (self_p);
         return NULL;
     }
-    //  Now send the msg field if set
+    //  Now send the message field if there is any
     if (self->id == ASSET_MSG_DEVICE) {
-        zframe_t *msg_part = zmsg_pop (self->msg);
-        while (msg_part) {
-            zmsg_append (msg, &msg_part);
-            msg_part = zmsg_pop (self->msg);
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
         }
     }
-    //  Now send the msg field if set
+    //  Now send the message field if there is any
     if (self->id == ASSET_MSG_RETURN_ELEMENT) {
-        zframe_t *msg_part = zmsg_pop (self->msg);
-        while (msg_part) {
-            zmsg_append (msg, &msg_part);
-            msg_part = zmsg_pop (self->msg);
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
         }
     }
-    //  Now send the msg field if set
+    //  Now send the message field if there is any
     if (self->id == ASSET_MSG_UPDATE_ELEMENT) {
-        zframe_t *msg_part = zmsg_pop (self->msg);
-        while (msg_part) {
-            zmsg_append (msg, &msg_part);
-            msg_part = zmsg_pop (self->msg);
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
         }
     }
-    //  Now send the msg field if set
+    //  Now send the message field if there is any
     if (self->id == ASSET_MSG_INSERT_ELEMENT) {
-        zframe_t *msg_part = zmsg_pop (self->msg);
-        while (msg_part) {
-            zmsg_append (msg, &msg_part);
-            msg_part = zmsg_pop (self->msg);
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
         }
     }
     //  Destroy asset_msg object
