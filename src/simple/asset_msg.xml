@@ -4,7 +4,8 @@
     title = "assets management protocol"
     script = "zproto_codec_c"
     header = "."
-    source = "."    
+    source = "."
+    package_dir= "."
     include = "czmq.h"
     >
 
