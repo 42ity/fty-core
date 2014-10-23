@@ -111,42 +111,41 @@ asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
  */
 zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
 {
-    tntdb::Connection conn = tntdb::connectCached(url);
-
-    // Get information about the groups element belongs to
-    // Can return more than one row
-    tntdb::Statement st_gr = conn.prepareCached(
-        " select"
-        " v.id_asset_group"
-        " from"
-        " v_bios_asset_group_relation v"
-        " where v.id_asset_element = :idelement"
-    );
-    
-    tntdb::Result result;
+    zlist_t* groups;
     try {
-        result = st_gr.setInt("idelement", element_id).
-                       select();
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        // Get information about the groups element belongs to
+        // Can return more than one row
+        tntdb::Statement st_gr = conn.prepareCached(
+            " select"
+            " v.id_asset_group"
+            " from"
+            " v_bios_asset_group_relation v"
+            " where v.id_asset_element = :idelement"
+        );
+    
+        tntdb::Result result = st_gr.setInt("idelement", element_id).
+                                     select(); 
+        groups = zlist_new();
+        assert(groups);
+    
+        // Go through the selected groups
+        for ( auto &row: result )
+        {
+            // group_id, required
+            unsigned int group_id = 0;
+            row[0].get(group_id);
+            assert( group_id != 0 );  // database is corrupted
+
+            char buff[16];
+            sprintf(buff, "%d", group_id);
+            zlist_push( groups, buff );
+        }
     }
     catch (const std::exception &e) {
         // internal error in database
         return NULL;
-    }
-
-    zlist_t *groups = zlist_new();
-    assert(groups);
-    
-    // Go through the selected groups
-    for ( auto &row: result )
-    {
-        // group_id, required
-        unsigned int group_id = 0;
-        row[0].get(group_id);
-        assert( group_id != 0 );  // database is corrupted
-
-        char buff[16];
-        sprintf(buff, "%d", group_id);
-        zlist_push( groups, buff );
     }
     return groups;
 }
@@ -169,61 +168,61 @@ zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
  */
 zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, unsigned int link_type_id)
 {
-    tntdb::Connection conn = tntdb::connectCached(url);
-
-    // Get information about the links the specified device belongs to
-    // Can return more than one row
-    tntdb::Statement st_pow = conn.prepareCached(
-        " select"
-        " v.id_asset_device_src , v.src_out , v.dest_in"
-        " from"
-        " v_bios_asset_link v"
-        " where v.id_asset_device_dest = :iddevice and v.id_asset_link_type = :idlinktype"
-    ); 
-    
-    tntdb::Result result;
+    log_info("%s \n","start");
+    zlist_t *links = NULL;
     try {
-        result = st_pow.setInt("iddevice", device_id).
-                        setInt("idlinktype",link_type_id).
-                        select();
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        // Get information about the links the specified device belongs to
+        // Can return more than one row
+        tntdb::Statement st_pow = conn.prepareCached(
+            " select"
+            " v.id_asset_device_src , v.src_out , v.dest_in"
+            " from"
+            " v_bios_asset_link v"
+            " where v.id_asset_device_dest = :iddevice and v.id_asset_link_type = :idlinktype"
+        ); 
+    
+        tntdb::Result result = st_pow.setInt("iddevice", device_id).
+                                      setInt("idlinktype",link_type_id).
+                                      select();
+        links = zlist_new();
+        assert(links);
+
+        // Go through the selected links
+        for ( auto &row: result )
+        {
+            // src_out
+            unsigned int src_out = 0;
+            row[1].get(src_out);
+            
+            // dest_in
+            unsigned int dest_in = 0;
+            row[2].get(dest_in);
+
+            // src_id, required
+            unsigned int src_id = 0;
+            row[0].get(src_id);
+            assert( src_id != 0 );  //database is corrupted
+
+            asset_msg_t* link = asset_msg_new (ASSET_MSG_LINK);
+            asset_msg_set_src_socket(link, src_out);
+            asset_msg_set_dst_socket(link, dest_in);
+            asset_msg_set_src_location(link, src_id);
+            asset_msg_set_dst_location(link, device_id);
+           
+            zmsg_t* tempmsg = asset_msg_encode (&link);
+            byte* buff;
+            zmsg_encode(tempmsg,&buff);
+            zlist_push(links, buff);
         }
+        
+    }
     catch (const std::exception &e) {
         // internal error in database
         return NULL;
     }
-
-    zlist_t *links = zlist_new();
-    assert(links);
-
-    // Go through the selected links
-    for ( auto &row: result )
-    {
-         // src_out
-         unsigned int src_out = 0;
-         row[1].get(src_out);
-            
-         // dest_in
-         unsigned int dest_in = 0;
-         row[2].get(dest_in);
-
-         // src_id, required
-         unsigned int src_id = 0;
-         row[0].get(src_id);
-         assert( src_id != 0 );  //database is corrupted
-
-         asset_msg_t* link = asset_msg_new (ASSET_MSG_LINK);
-         asset_msg_set_src_socket(link, src_out);
-         asset_msg_set_dst_socket(link, dest_in);
-         asset_msg_set_src_location(link, src_id);
-         asset_msg_set_dst_location(link, device_id);
-           
-         zmsg_t* tempmsg = asset_msg_encode (&link);
-         byte* buff;
-         zmsg_encode(tempmsg,&buff);
-         zlist_push(links, buff);
-         // TODO need to clear buff??
-         // destroy??
-    }
+    log_info("%s \n","end");
     return links;
 }
 
@@ -258,48 +257,47 @@ asset_msg_t* generate_fail(unsigned int errorid)
  */
 zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_id)
 {
-    tntdb::Connection conn = tntdb::connectCached(url);
+    zhash_t *extAttributes = NULL;
+    try {
+        tntdb::Connection conn = tntdb::connectCached(url);
     
-    // Can return more than one row
-    tntdb::Statement st_extattr = conn.prepareCached(
-        " select"
-        " v.keytag , v.value"
-        " from"
-        " v_bios_asset_ext_attributes v"
-        " where v.id_asset_element = :idelement"
+        // Can return more than one row
+        tntdb::Statement st_extattr = conn.prepareCached(
+            " select"
+            " v.keytag , v.value"
+            " from"
+            " v_bios_asset_ext_attributes v"
+            " where v.id_asset_element = :idelement"
         );
 
-    tntdb::Result result;  
-    try {
-        result = st_extattr.setInt("idelement", element_id).
-                            select();
+        tntdb::Result result = st_extattr.setInt("idelement", element_id).
+                                          select();
+        
+        extAttributes = zhash_new();
+        assert(extAttributes);
+        // in older versions this function is called zhash_set_item_duplicator
+        zhash_set_duplicator(extAttributes, void_dup);
+
+        // Go through the selected extra attributes
+        for (  auto &row: result )
+        {
+            // keytag, required
+            std::string keytag = "";
+            row[0].get(keytag);
+            assert( keytag != "");  //database is corrupted
+
+            // value , required
+            std::string value = "";
+            row[1].get(value);
+            assert( value != "");  //database is corrupted
+
+            zhash_insert(extAttributes, &keytag, &value );
+        }
     }
     catch (const std::exception &e) {
         // internal error in database
         return NULL;
     }
-
-    zhash_t *extAttributes = zhash_new();
-    assert(extAttributes);
-    // in older versions this function is called zhash_set_item_duplicator
-    zhash_set_duplicator(extAttributes, void_dup);
-
-    // Go through the selected extra attributes
-    for (  auto &row: result )
-    {
-        // keytag, required
-        std::string keytag = "";
-        row[0].get(keytag);
-        assert( keytag != "");  //database is corrupted
-
-        // value , required
-        std::string value = "";
-        row[1].get(value);
-        assert( value != "");  //database is corrupted
-
-        zhash_insert(extAttributes, &keytag, &value );
-    }
-    
     return extAttributes;
 }
 
@@ -318,27 +316,67 @@ zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_
  */
 asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
 {
+    log_info ("%s", "start\n");
     int msgelement_id = asset_msg_id (element);
     if ( msgelement_id != ASSET_MSG_ELEMENT )
         return NULL;
 
-    tntdb::Connection conn = tntdb::connectCached(url);
-    
-    // Get more attributes of the device
-    // Can return one row or nothing 
-    tntdb::Statement st_dev = conn.prepareCached(
-        " select"
-        " conv(v.mac,10,16) , v.ip, v.hostname , v.full_hostname , v.id_asset_device_type, v.id"
-        " from"
-        " v_bios_asset_device v"
-        " where v.id_asset_element = :idelement"
-    );
-    
-    tntdb::Row row;
-    unsigned int element_id = asset_msg_element_id(element);
+    std::string mac = "";
+    std::string ip = "";
+    std::string hostname = "";
+    std::string fullhostname = "";
+    unsigned int id_asset_device_type = 0;
+    unsigned int device_id = 0;
+    zlist_t* groups = NULL;
+    zlist_t* powers = NULL;
     try {
-        row = st_dev.setInt("idelement", element_id).
-                     selectRow();
+        tntdb::Connection conn = tntdb::connectCached(url);
+    
+        // Get more attributes of the device
+        // Can return one row or nothing 
+        tntdb::Statement st_dev = conn.prepareCached(
+            " select"
+            " conv(v.mac,10,16) , v.ip, v.hostname , v.full_hostname , v.id_asset_device_type, v.id_asset_device"
+            " from"
+            " v_bios_asset_device v"
+            " where v.id_asset_element = :idelement"
+        );
+    
+        unsigned int element_id = asset_msg_element_id(element);
+        tntdb::Row row = st_dev.setInt("idelement", element_id).
+                                selectRow();
+
+        // TODO: Assumption: if data where inserted in database, then assume they are corrected
+        // mac in db is stored as a number, and without :
+        row[0].get(mac);
+        if ( mac != "" )
+            mac = _addColonMacaddress(mac);
+
+        // ip
+        row[1].get(ip);
+
+        // hostname
+        row[2].get(hostname);
+
+        // fullhostname
+        row[3].get(fullhostname);
+
+        // id_asset_device_type
+        row[4].get(id_asset_device_type);
+        assert( id_asset_device_type != 0);  // database is corrupted
+        
+        // id of the device
+        row[5].get(device_id);
+        assert( device_id != 0);  // database is corrupted
+
+        groups = _select_asset_element_groups(url, element_id);
+        if ( groups == NULL )    // internal error in database
+            return generate_fail(DB_ERROR_INTERNAL);       
+        
+        // 1 means power chain TODO
+        powers = _select_asset_device_link(url, device_id, 1);
+        if ( powers == NULL )   // internal error in database
+            return generate_fail(DB_ERROR_INTERNAL);
     }
     catch (const tntdb::NotFound &e) {
         assert(false);      
@@ -351,45 +389,6 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
         // internal error in database
         return generate_fail(DB_ERROR_INTERNAL);
     }
-       
-    // TODO: Assumption: if data where inserted in database, then assume they are corrected
-    // mac in db is stored as a number, and without :
-    std::string mac = "";
-    row[0].get(mac);
-    if ( mac != "" )
-        mac = _addColonMacaddress(mac);
-
-    // ip
-    std::string ip = "";
-    row[1].get(ip);
-
-    // hostname
-    std::string hostname = "";
-    row[2].get(hostname);
-
-    // fullhostname
-    std::string fullhostname = "";
-    row[3].get(fullhostname);
-
-    // id_asset_device_type
-    unsigned int id_asset_device_type = 0;
-    row[4].get(id_asset_device_type);
-    assert( id_asset_device_type != 0);  // database is corrupted
-        
-    // id of the device
-    unsigned int device_id = 0;
-    row[5].get(device_id);
-    assert( device_id != 0);  // database is corrupted
-
-    zlist_t *groups = _select_asset_element_groups(url, element_id);
-    if ( groups == NULL )    // internal error in database
-        return generate_fail(DB_ERROR_INTERNAL);       
-        
-    // 1 means power chain TODO       
-    zlist_t *powers = _select_asset_device_link(url, device_id, 1);
-    if ( powers == NULL )   // internal error in database
-        return generate_fail(DB_ERROR_INTERNAL);
-
     asset_msg_t* msgdevice = asset_msg_new (ASSET_MSG_DEVICE);
     assert(msgdevice);
 
@@ -412,6 +411,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
     zlist_destroy(&powers);
     zlist_destroy(&groups);
 
+    log_info ("%s", "start\n");
     return msgdevice;
 }
 
@@ -427,59 +427,60 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
  */
 asset_msg_t* _select_asset_element(const char* url, unsigned int element_id, unsigned int element_type_id)
 {
-    tntdb::Connection conn = tntdb::connectCached(url);
+    unsigned int parent_id = 0;
+    unsigned int parent_type_id = 0;
+    std::string name = "";
 
-    // Can return one row or nothing.
-    // Get basic attributes of the element
-    tntdb::Statement st = conn.prepareCached(
-        " select"
-        " v.name , v.id_parent, v.id_parent_type"
-        " from"
-        " v_bios_asset_element v"
-        " where v.id = :id and v.id_type = :typeid"
+    try {
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        // Can return one row or nothing.
+        // Get basic attributes of the element
+        tntdb::Statement st = conn.prepareCached(
+            " select"
+            " v.name , v.id_parent, v.id_parent_type"
+            " from"
+            " v_bios_asset_element v"
+            " where v.id = :id and v.id_type = :typeid"
         );
     
-    tntdb::Row row;
-    try {
-        row = st.setInt("id", element_id).
-                 setInt("typeid",element_type_id).
-                 selectRow();
+        tntdb::Row row = st.setInt("id", element_id).
+                            setInt("typeid", element_type_id).
+                            selectRow();
+        
+        // element was found
+        // name, is required
+        row[0].get(name);
+        assert(name != "");  //database is corrupted
+
+        // parent_id
+        row[1].get(parent_id);
+
+        // parent_type_id, required, if parent_id != 0
+        row[2].get(parent_type_id);
+        assert( ! ( ( parent_type_id == 0 ) && (parent_id != 0) ) ); // database is corrupted
     }
     catch (const tntdb::NotFound &e) {
         // element with specified type was not found
-        return generate_fail(DB_ERROR_NOTFOUND);
+        return generate_fail (DB_ERROR_NOTFOUND);
     }
     catch (const std::exception &e) {
         // internal error in database 
-        return generate_fail(DB_ERROR_INTERNAL);
+        return generate_fail (DB_ERROR_INTERNAL);
     }
-
-    // element was found
-    // name, is required
-    std::string name = "";
-    row[0].get(name);
-    assert(name != "");  //database is corrupted
-
-    // parent_id, is not required
-    unsigned int parent_id = 0;
-    row[1].get(parent_id);
-
-    // parent_type_id, required, if parent_id != 0
-    unsigned int parent_type_id = 0;
-    row[2].get(parent_type_id);
-    assert( ! ( ( parent_type_id == 0 ) && (parent_id != 0) ) ); // database is corrupted
-       
-    zhash_t* extAttributes = _select_asset_element_attributes(url, element_id);
+           
+    zhash_t* extAttributes = _select_asset_element_attributes (url, element_id);
     if ( extAttributes == NULL )    // internal error in database
-        return generate_fail(DB_ERROR_INTERNAL);
+        return generate_fail (DB_ERROR_INTERNAL);
 
     asset_msg_t* msgelement = asset_msg_new (ASSET_MSG_ELEMENT);
-    assert(msgelement);
-    asset_msg_set_name(msgelement, name.c_str());
-    asset_msg_set_location(msgelement,parent_id);
-    asset_msg_set_location_type(msgelement,parent_type_id);
-    asset_msg_set_type(msgelement,element_type_id);    
-    asset_msg_set_ext(msgelement, &extAttributes);
+    assert (msgelement);
+    asset_msg_set_element_id (msgelement, element_id);
+    asset_msg_set_name (msgelement, name.c_str());
+    asset_msg_set_location (msgelement, parent_id);
+    asset_msg_set_location_type (msgelement, parent_type_id);
+    asset_msg_set_type (msgelement, element_type_id);    
+    asset_msg_set_ext (msgelement, &extAttributes);
 
     return msgelement;
 }
@@ -506,17 +507,16 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
 
     const unsigned int element_id      = asset_msg_element_id (msg); 
     const unsigned int element_type_id = asset_msg_type (msg);
-    
-    asset_msg_t* msgelement = _select_asset_element(url, element_id, element_type_id);
+      
+    asset_msg_t* msgelement = _select_asset_element (url, element_id, element_type_id);
     const unsigned int msgelement_id = asset_msg_id (msgelement);
     if ( msgelement_id == ASSET_MSG_FAIL )  // element was not found  or error occurs
         return msgelement;
     // element was found
-
     asset_msg_t* msgdevice = NULL;
     if ( element_type_id == asset_type::DEVICE )
     {
-        msgdevice = _select_asset_device(url,msgelement);
+        msgdevice = _select_asset_device(url, msgelement);
         assert (msgdevice);
         if ( asset_msg_id (msgelement) == ASSET_MSG_FAIL )
             return msgdevice;
@@ -525,19 +525,19 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
           
     //make ASSET_MSG_RETURN_ELEMENT
     asset_msg_t* resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENT);
-    assert(resultmsg);
+    assert (resultmsg);
     asset_msg_set_element_id (resultmsg, element_id);
 
     zmsg_t* nmsg = NULL;
     if ( element_type_id == asset_type::DEVICE )
-        nmsg = asset_msg_encode(&msgdevice);
+        nmsg = asset_msg_encode (&msgdevice);
     else
-        nmsg = asset_msg_encode(&msgelement);
+        nmsg = asset_msg_encode (&msgelement);
     assert (nmsg);
-    asset_msg_set_msg (resultmsg,&nmsg);
+    asset_msg_set_msg (resultmsg, &nmsg);
 
-    asset_msg_destroy(&msgdevice);
-    asset_msg_destroy(&msgelement);
+    asset_msg_destroy (&msgdevice);
+    asset_msg_destroy (&msgelement);
 
     log_info ("%s", "end\n");
     return resultmsg;
@@ -550,77 +550,62 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 {
     assert(msg);
-
-    const unsigned int element_type_id = asset_msg_type (msg);
+    zhash_t *elements = NULL;
+    try{
+        const unsigned int element_type_id = asset_msg_type (msg);
      
-    tntdb::Connection conn = tntdb::connectCached(url);
+        tntdb::Connection conn = tntdb::connectCached(url);
 
-    // Can return more than one row.
-    tntdb::Statement st = conn.prepareCached(
-        " select"
-        " v.name , v.id"
-        " from"
-        " v_bios_asset_element v"
-        " where v.id_type = :typeid"
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached(
+            " select"
+            " v.name, v.id"
+            " from"
+            " v_bios_asset_element v"
+            " where v.id_type = :typeid"
         );
     
-    asset_msg_t *resultmsg = NULL;
-    
-    tntdb::Result result; 
-    try{
-        result = st.setInt("typeid", element_type_id).
+        tntdb::Result result = st.setInt("typeid", element_type_id).
                     select();
+        if ( result.size() == 0 )  // elements were not found
+            return generate_fail(DB_ERROR_NOTFOUND);
+
+        // elements was found
+        elements = zhash_new();
+        assert(elements);
+        // By default items are not duplicated
+        zhash_set_duplicator(elements, void_dup);
+
+        // Go through the selected elements
+        for ( auto &row: result )
+        {
+            // name, is required
+            std::string name = "";
+            row[0].get(name);
+            assert(name != "");  // database is corrupted
+
+            // id, is required
+            unsigned int id = 0;
+            row[1].get(id);
+            assert( id != 0);    // database is corrupted
+    
+            char buff[16];
+            sprintf(buff, "%d", id);
+            zhash_insert(elements, buff, (void*)name.c_str());
+        }
     }
     catch (const std::exception &e)
     {
         // internal error in database
-        resultmsg = asset_msg_new (ASSET_MSG_FAIL);
-        assert(resultmsg);
-        asset_msg_set_error_id (resultmsg, DB_ERROR_INTERNAL);
-        return resultmsg;
-    }
-
-    if ( result.size() == 0 )
-    {
-        // elements were not found
-        resultmsg = asset_msg_new (ASSET_MSG_FAIL);
-        assert(resultmsg);
-        // TODO now there is no difference between notfound and bad type 
-        asset_msg_set_error_id (resultmsg, DB_ERROR_NOTFOUND);
-        return resultmsg;
-    }
-
-    // elements was found
-    zhash_t *elements = zhash_new();
-    assert(elements);
-    // By default items are not duplicated
-    zhash_set_duplicator(elements, void_dup);
-
-    // Go through the selected elements
-    for (  auto &row: result )
-    {
-        // name, is required
-        std::string name = "";
-        row[0].get(name);
-        assert(name != "");  //database is corrupted
-
-        // id, is required
-        unsigned int id = 0;
-        row[1].get(id);
-        assert( id != 0);  //database is corrupted
- 
-        char buff[16];
-        sprintf(buff, "%d", id);
-        zhash_insert(elements, buff, (void*)name.c_str());
+        return generate_fail(DB_ERROR_INTERNAL);
     }
   
     // make ASSET_MSG_RETURN_ELEMENT
-    resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
+    asset_msg_t *resultmsg = asset_msg_new (ASSET_MSG_RETURN_ELEMENTS);
     assert(resultmsg);
     asset_msg_set_element_ids (resultmsg, &elements);
 
     zhash_destroy(&elements);
-
     return resultmsg;
 }
 

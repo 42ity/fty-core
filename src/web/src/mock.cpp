@@ -26,7 +26,6 @@ asset_msg_t *asset_manager::get_item(std::string type, std::string id) {
 
     // Currently not needed
     asset_msg_t * ret = asset_msg_process(url.c_str(),get_element);
-
     asset_msg_destroy(&get_element);
 /*
     FILE *fl = fopen(("data/" + type + "/" + id).c_str(), "r");
