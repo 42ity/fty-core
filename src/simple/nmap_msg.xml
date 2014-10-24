@@ -88,9 +88,9 @@ omitted: smurf, distance, uptime, tcpsequence, ipidsequence, tcptssequence, trac
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "addresses" type = "dictionary">dictionary of address : vendor, where vendor is valid only for mac addresses</field>
     <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
-    <field name = "ports" type = "msg" >List of port_scan results. Each frame is nmap_msg_port_scan_t</field>
-    <field name = "os"    type = "msg" >List of os_scan results. Each frame is nmap_msg_os_scan_t</field>
-    <field name = "scripts" type = "msg" >List of script results. Each frame is nmap_msg_script_t</field>
+    <field name = "ports" type = "frame" >List of port_scan results. List of 'port_scan' messages</field>
+    <field name = "os"    type = "frame" >List of os_scan results. List of 'os_scan' messages</field>
+    <field name = "scripts" type = "frame" >List of script results. List of 'script' messages</field>
 </message>
 
 <!--
@@ -128,8 +128,8 @@ omitted:    owner
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "reason_ttl" type = "number" size="1">reason_ttl</field>
     <field name = "reason_ip" type = "string">reason_ip (optional)</field>
-    <field name = "service" type = "msg">Service detected on a port (optional, nmap_msg_service_scan_t)</field>
-    <field name = "scripts" type = "msg" >List of script results. Each frame is nmap_msg_script_t</field>
+    <field name = "service" type = "frame">Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages</field>
+    <field name = "scripts" type = "frame" >List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages</field>
 </message>
 
 
@@ -188,9 +188,9 @@ to be implemented cpe
 
 <message name = "os_scan" id = "7">
     Operating system scan results (if available)
-    <field name = "portused" type = "msg" >List of portused results. Each frame is nmap_msg_portused_t</field>
-    <field name = "osmatch" type = "msg" >List of osmatch results. Each frame is nmap_msg_osmatch_t</field>
-    <field name = "osclass" type = "msg" >List of osclass results. Each frame is nmap_msg_osscan_t</field>
+    <field name = "portused" type = "frame" >List of portused results. Encapsulated list of 'portused' messages.</field>
+    <field name = "osmatch" type = "frame" >List of osmatch results. Encapsulated list of 'osmatch' messages</field>
+    <field name = "osfingerprints" type = "strings">List of OS fingerprints</field>
 </message>
 
 <!--
@@ -206,7 +206,6 @@ to be implemented cpe
     <field name = "port_state" type = "number" size="1">Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str</field>
     <field name = "proto" type = "string">Protocol name</field>
     <field name = "portid" type = "number" size="2">Port number (1-65535), uint16_t</field>
-    <field name = "osfingerprints" type = "strings">List of OS fingerprints</field>
 </message>
 
 <!--
@@ -223,6 +222,7 @@ to be implemented cpe
     Content of element 'os/osmatch', see nmap dtd ELEMENT portused
     <field name = "name" type = "string">OS name</field>
     <field name = "accuracy" type = "number" size="1">Match accuracy, uint16_t</field>
+    <field name = "osclass" type = "frame" >List of osclass results. Encapsulated list of 'osclass' messages</field>
 </message>
 
 <!--
