@@ -45,6 +45,7 @@ docs/doxygen/html/
 test-log.*
 
 build/
+build-*/
 core-*.*/
 
 core-*.*.tar.?z
@@ -52,3 +53,13 @@ core-*.*.tar.?z
 src/utils/messages/json_schemas.h
 tools/dbpath.h
 tools/run-test-doc.sh
+
+src/web/src/auth-verify.cpp
+src/web/src/auth.cpp
+src/web/src/item.cpp
+src/web/src/json.cpp
+src/web/src/list.cpp
+src/web/src/time.cpp
+tntnet.xml.example
+tools/run-test-doc.sh.log
+tools/run-test-doc.sh.trs

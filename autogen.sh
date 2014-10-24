@@ -66,6 +66,81 @@ if [ ! -s "./configure" -o ! -x "./configure" ]; then
     exit 1
 fi
 
-# Ensure that an exit at this point is "successful"
-true
+[ x"$BLDARCH" = x ] && BLDARCH="`uname -s`-`uname -m`"
+[ x"$DESTDIR" = x ] && DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
 
+buildSamedir() {
+	make -k distclean
+	./configure && \
+	{ make -k clean; \
+	  echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	  echo "=== SEQMAKE:"; make "$@"; }
+}
+
+buildSubdir() {
+	make -k distclean
+	( { rm -rf build-${BLDARCH}; \
+	  mkdir build-${BLDARCH}; \
+	  cd build-${BLDARCH}; } && \
+	../configure && \
+	{ echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	  echo "=== SEQMAKE:"; make "$@"; } && \
+	{ make DESTDIR=${DESTDIR} install; } )
+}
+
+installSamedir() {
+	{ make DESTDIR=${DESTDIR} install; }
+}
+
+installSubdir() {
+	( cd build-${BLDARCH} && \
+	  make DESTDIR=${DESTDIR} install )
+}
+
+case "$1" in
+    "")
+	# Ensure that an exit at this point is "successful"
+	true
+	;;
+    build-samedir|build|make|make-samedir)
+	shift
+	buildSamedir "$@"
+	exit
+	;;
+    build-subdir|make-subdir)
+	shift
+	buildSubdir "$@"
+	exit
+	;;
+    install-samedir|install)
+	shift
+	buildSamedir "$@" && \
+	installSamedir
+	exit
+	;;
+    install-subdir)
+	shift
+	buildSubdir "$@" && \
+	installSubdir
+	exit
+	;;
+    distclean)
+	./configure && \
+	make -k distclean
+	;;
+    distcheck)
+	make -k distclean
+	./configure && \
+	make distcheck
+	;;
+    conf|configure)
+	make -k distclean
+	./configure
+	;;
+    *)	echo "Usage: $0 [ { build-samedir | build-subdir | install-samedir | install-subdir } maketargets...]"
+	echo "This scrpit (re-)creates the configure script and optionally either just builds"
+	echo "or builds and installs into a DESTDIR the requested project targets."
+	echo "Usage: $0 distcheck	- execute the configure and make distcheck"
+	exit 2
+	;;
+esac
