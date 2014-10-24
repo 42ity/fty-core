@@ -73,7 +73,7 @@ buildSamedir() {
 	make -k distclean
 	./configure && \
 	{ make -k clean; \
-	  echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	  if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; }
 }
 
@@ -83,7 +83,7 @@ buildSubdir() {
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
 	../configure && \
-	{ echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	{ if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; } && \
 	{ make DESTDIR=${DESTDIR} install; } )
 }
@@ -137,9 +137,10 @@ case "$1" in
 	make -k distclean
 	./configure
 	;;
-    *)	echo "Usage: $0 [ { build-samedir | build-subdir | install-samedir | install-subdir } maketargets...]"
-	echo "This scrpit (re-)creates the configure script and optionally either just builds"
+    *)	echo "Usage: $0 [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
+	echo "This script (re-)creates the configure script and optionally either just builds"
 	echo "or builds and installs into a DESTDIR the requested project targets."
+	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
 	echo "Usage: $0 distcheck	- execute the configure and make distcheck"
 	exit 2
 	;;
