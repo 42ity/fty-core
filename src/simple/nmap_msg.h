@@ -46,24 +46,28 @@
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
         hostnames           dictionary  dictionary of hostname : type, where type is a type of hostname (user, PTR)
 
-    DEV_SCAN - Results of a device scan, this parses 'host' element, see ELEMENT host in nmap DTD
-        addr                string      IP address
+    DEV_SCAN - Results of a device scan, this parses 'host' element. It is a high-level container, which encapsulates
+port scan results and os scan one (if enabled).
         host_state          number 1     Status of a host (up|down|unknown|skipped)
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
         addresses           dictionary  dictionary of address : vendor, where vendor is valid only for mac addresses
         hostnames           dictionary  dictionary of hostname : type, where type is a type of hostname (user, PTR)
+        ports               frame       List of port_scan results. List of 'port_scan' messages
+        os                  frame       List of os_scan results. List of 'os_scan' messages
+        scripts             frame       List of script results. List of 'script' messages
 
-    PORT_SCAN - Results of a device scan, this parses 'port' element, see ELEMENT port in nmap DTD
+    PORT_SCAN - Results of a device scan, this parses 'port' + 'port/state' elements. It encapsulates informations
+about service(s) running on port and result of scan scripts if any.
         protocol            string      Name of protocol
         portid              number 2    Port number (1-65535), uint16_t
-
-    PORT_SCAN_STATE - State of port (see <port ... <state in xml output)
         port_state          number 1    Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
         reason_ttl          number 1    reason_ttl
         reason_ip           string      reason_ip (optional)
+        service             frame       Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages
+        scripts             frame       List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages
 
-    PORT_SCAN_SERVICE - Service running on a port (see <port ... <service in xml output)
+    SERVICE_SCAN - Service running on a port (see <port ... <service in xml output)
         name                string      Name of a service
         conf                number 1    confidence in result's correcntess (0-10)
         method              number 1    How nmap got it (table|probed)
@@ -81,21 +85,26 @@
         servicefp           string      servicefp (optional)
         cpe                 string      cpe (optional)
 
-    SCAN_SCRIPT - Output of NSE script
+    SCRIPT - Output of NSE script
         script_id           string      Name of a script (like ssh-hostkeys)
         data                chunk       Data - raw XML
 
-    DEV_SCAN_PORTUSED - Content of element 'os/portused', see nmap dtd ELEMENT portused
+    OS_SCAN - Operating system scan results (if available)
+        portused            frame       List of portused results. Encapsulated list of 'portused' messages.
+        osmatch             frame       List of osmatch results. Encapsulated list of 'osmatch' messages
+        osfingerprints      strings     List of OS fingerprints
+
+    PORTUSED - Content of element 'os/portused', see nmap dtd ELEMENT portused
         port_state          number 1    Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
         proto               string      Protocol name
         portid              number 2    Port number (1-65535), uint16_t
-        osfingerprints      strings     List of OS fingerprints
 
-    DEV_SCAN_OSMATCH - Content of element 'os/osmatch', see nmap dtd ELEMENT portused
+    OSMATCH - Content of element 'os/osmatch', see nmap dtd ELEMENT portused
         name                string      OS name
         accuracy            number 1    Match accuracy, uint16_t
+        osclass             frame       List of osclass results. Encapsulated list of 'osclass' messages
 
-    DEV_SCAN_OSCLASS - Content of element 'os/osmatch/osclass', see nmap dtd ELEMENT portused
+    OSCLASS - Content of element 'os/osmatch/osclass', see nmap dtd ELEMENT portused
         vendor              string      Vendor name
         osgen               string      OS generation (optional)
         type                string      OS type (optional)
@@ -115,12 +124,12 @@
 #define NMAP_MSG_LIST_SCAN                  2
 #define NMAP_MSG_DEV_SCAN                   3
 #define NMAP_MSG_PORT_SCAN                  4
-#define NMAP_MSG_PORT_SCAN_STATE            5
-#define NMAP_MSG_PORT_SCAN_SERVICE          6
-#define NMAP_MSG_SCAN_SCRIPT                7
-#define NMAP_MSG_DEV_SCAN_PORTUSED          9
-#define NMAP_MSG_DEV_SCAN_OSMATCH           10
-#define NMAP_MSG_DEV_SCAN_OSCLASS           11
+#define NMAP_MSG_SERVICE_SCAN               5
+#define NMAP_MSG_SCRIPT                     6
+#define NMAP_MSG_OS_SCAN                    7
+#define NMAP_MSG_PORTUSED                   8
+#define NMAP_MSG_OSMATCH                    9
+#define NMAP_MSG_OSCLASS                    10
 #define NMAP_MSG_SCAN_ERROR                 42
 
 #include <czmq.h>
@@ -188,29 +197,29 @@ zmsg_t *
 //  Encode the DEV_SCAN 
 zmsg_t *
     nmap_msg_encode_dev_scan (
-        const char *addr,
         byte host_state,
         const char *reason,
         zhash_t *addresses,
-        zhash_t *hostnames);
+        zhash_t *hostnames,
+        zframe_t *ports,
+        zframe_t *os,
+        zframe_t *scripts);
 
 //  Encode the PORT_SCAN 
 zmsg_t *
     nmap_msg_encode_port_scan (
         const char *protocol,
-        uint16_t portid);
-
-//  Encode the PORT_SCAN_STATE 
-zmsg_t *
-    nmap_msg_encode_port_scan_state (
+        uint16_t portid,
         byte port_state,
         const char *reason,
         byte reason_ttl,
-        const char *reason_ip);
+        const char *reason_ip,
+        zframe_t *service,
+        zframe_t *scripts);
 
-//  Encode the PORT_SCAN_SERVICE 
+//  Encode the SERVICE_SCAN 
 zmsg_t *
-    nmap_msg_encode_port_scan_service (
+    nmap_msg_encode_service_scan (
         const char *name,
         byte conf,
         byte method,
@@ -228,29 +237,36 @@ zmsg_t *
         const char *servicefp,
         const char *cpe);
 
-//  Encode the SCAN_SCRIPT 
+//  Encode the SCRIPT 
 zmsg_t *
-    nmap_msg_encode_scan_script (
+    nmap_msg_encode_script (
         const char *script_id,
         zchunk_t *data);
 
-//  Encode the DEV_SCAN_PORTUSED 
+//  Encode the OS_SCAN 
 zmsg_t *
-    nmap_msg_encode_dev_scan_portused (
-        byte port_state,
-        const char *proto,
-        uint16_t portid,
+    nmap_msg_encode_os_scan (
+        zframe_t *portused,
+        zframe_t *osmatch,
         zlist_t *osfingerprints);
 
-//  Encode the DEV_SCAN_OSMATCH 
+//  Encode the PORTUSED 
 zmsg_t *
-    nmap_msg_encode_dev_scan_osmatch (
-        const char *name,
-        byte accuracy);
+    nmap_msg_encode_portused (
+        byte port_state,
+        const char *proto,
+        uint16_t portid);
 
-//  Encode the DEV_SCAN_OSCLASS 
+//  Encode the OSMATCH 
 zmsg_t *
-    nmap_msg_encode_dev_scan_osclass (
+    nmap_msg_encode_osmatch (
+        const char *name,
+        byte accuracy,
+        zframe_t *osclass);
+
+//  Encode the OSCLASS 
+zmsg_t *
+    nmap_msg_encode_osclass (
         const char *vendor,
         const char *osgen,
         const char *type,
@@ -287,32 +303,31 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     nmap_msg_send_dev_scan (void *output,
-        const char *addr,
         byte host_state,
         const char *reason,
         zhash_t *addresses,
-        zhash_t *hostnames);
+        zhash_t *hostnames,
+        zframe_t *ports,
+        zframe_t *os,
+        zframe_t *scripts);
     
 //  Send the PORT_SCAN to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     nmap_msg_send_port_scan (void *output,
         const char *protocol,
-        uint16_t portid);
-    
-//  Send the PORT_SCAN_STATE to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    nmap_msg_send_port_scan_state (void *output,
+        uint16_t portid,
         byte port_state,
         const char *reason,
         byte reason_ttl,
-        const char *reason_ip);
+        const char *reason_ip,
+        zframe_t *service,
+        zframe_t *scripts);
     
-//  Send the PORT_SCAN_SERVICE to the output in one step
+//  Send the SERVICE_SCAN to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    nmap_msg_send_port_scan_service (void *output,
+    nmap_msg_send_service_scan (void *output,
         const char *name,
         byte conf,
         byte method,
@@ -330,33 +345,41 @@ int
         const char *servicefp,
         const char *cpe);
     
-//  Send the SCAN_SCRIPT to the output in one step
+//  Send the SCRIPT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    nmap_msg_send_scan_script (void *output,
+    nmap_msg_send_script (void *output,
         const char *script_id,
         zchunk_t *data);
     
-//  Send the DEV_SCAN_PORTUSED to the output in one step
+//  Send the OS_SCAN to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    nmap_msg_send_dev_scan_portused (void *output,
-        byte port_state,
-        const char *proto,
-        uint16_t portid,
+    nmap_msg_send_os_scan (void *output,
+        zframe_t *portused,
+        zframe_t *osmatch,
         zlist_t *osfingerprints);
     
-//  Send the DEV_SCAN_OSMATCH to the output in one step
+//  Send the PORTUSED to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    nmap_msg_send_dev_scan_osmatch (void *output,
-        const char *name,
-        byte accuracy);
+    nmap_msg_send_portused (void *output,
+        byte port_state,
+        const char *proto,
+        uint16_t portid);
     
-//  Send the DEV_SCAN_OSCLASS to the output in one step
+//  Send the OSMATCH to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    nmap_msg_send_dev_scan_osclass (void *output,
+    nmap_msg_send_osmatch (void *output,
+        const char *name,
+        byte accuracy,
+        zframe_t *osclass);
+    
+//  Send the OSCLASS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    nmap_msg_send_osclass (void *output,
         const char *vendor,
         const char *osgen,
         const char *type,
@@ -507,6 +530,36 @@ void
 size_t
     nmap_msg_addresses_size (nmap_msg_t *self);
 
+//  Get a copy of the ports field
+zframe_t *
+    nmap_msg_ports (nmap_msg_t *self);
+//  Get the ports field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_ports (nmap_msg_t *self);
+//  Set the ports field, transferring ownership from caller
+void
+    nmap_msg_set_ports (nmap_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the os field
+zframe_t *
+    nmap_msg_os (nmap_msg_t *self);
+//  Get the os field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_os (nmap_msg_t *self);
+//  Set the os field, transferring ownership from caller
+void
+    nmap_msg_set_os (nmap_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the scripts field
+zframe_t *
+    nmap_msg_scripts (nmap_msg_t *self);
+//  Get the scripts field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_scripts (nmap_msg_t *self);
+//  Set the scripts field, transferring ownership from caller
+void
+    nmap_msg_set_scripts (nmap_msg_t *self, zframe_t **frame_p);
+
 //  Get/set the protocol field
 const char *
     nmap_msg_protocol (nmap_msg_t *self);
@@ -536,6 +589,16 @@ const char *
     nmap_msg_reason_ip (nmap_msg_t *self);
 void
     nmap_msg_set_reason_ip (nmap_msg_t *self, const char *format, ...);
+
+//  Get a copy of the service field
+zframe_t *
+    nmap_msg_service (nmap_msg_t *self);
+//  Get the service field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_service (nmap_msg_t *self);
+//  Set the service field, transferring ownership from caller
+void
+    nmap_msg_set_service (nmap_msg_t *self, zframe_t **frame_p);
 
 //  Get/set the name field
 const char *
@@ -649,11 +712,25 @@ zchunk_t *
 void
     nmap_msg_set_data (nmap_msg_t *self, zchunk_t **chunk_p);
 
-//  Get/set the proto field
-const char *
-    nmap_msg_proto (nmap_msg_t *self);
+//  Get a copy of the portused field
+zframe_t *
+    nmap_msg_portused (nmap_msg_t *self);
+//  Get the portused field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_portused (nmap_msg_t *self);
+//  Set the portused field, transferring ownership from caller
 void
-    nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_portused (nmap_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the osmatch field
+zframe_t *
+    nmap_msg_osmatch (nmap_msg_t *self);
+//  Get the osmatch field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_osmatch (nmap_msg_t *self);
+//  Set the osmatch field, transferring ownership from caller
+void
+    nmap_msg_set_osmatch (nmap_msg_t *self, zframe_t **frame_p);
 
 //  Get/set the osfingerprints field
 zlist_t *
@@ -675,11 +752,27 @@ void
 size_t
     nmap_msg_osfingerprints_size (nmap_msg_t *self);
 
+//  Get/set the proto field
+const char *
+    nmap_msg_proto (nmap_msg_t *self);
+void
+    nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...);
+
 //  Get/set the accuracy field
 byte
     nmap_msg_accuracy (nmap_msg_t *self);
 void
     nmap_msg_set_accuracy (nmap_msg_t *self, byte accuracy);
+
+//  Get a copy of the osclass field
+zframe_t *
+    nmap_msg_osclass (nmap_msg_t *self);
+//  Get the osclass field and transfer ownership to caller
+zframe_t *
+    nmap_msg_get_osclass (nmap_msg_t *self);
+//  Set the osclass field, transferring ownership from caller
+void
+    nmap_msg_set_osclass (nmap_msg_t *self, zframe_t **frame_p);
 
 //  Get/set the vendor field
 const char *

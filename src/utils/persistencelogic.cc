@@ -49,14 +49,17 @@ char nethistory_id_cmd (int id) {
     switch (id)
     {
         case NETDISC_MSG_AUTO_ADD:
+        case NETDISC_MSG_AUTO_DEL:
         {
             return NETHISTORY_AUTO_CMD;
         }
         case NETDISC_MSG_MAN_ADD:
+        case NETDISC_MSG_MAN_DEL:
         {
             return NETHISTORY_MAN_CMD;
         }
         case NETDISC_MSG_EXCL_ADD:
+        case NETDISC_MSG_EXCL_DEL:
         {
             return NETHISTORY_EXCL_CMD;
         }
@@ -134,52 +137,53 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
 
     // cast away the const - zproto generated methods dont' have const
     netdisc_msg_t& msg_nc = const_cast<netdisc_msg_t&>(msg);
- 
-    int msg_id          = netdisc_msg_id (&msg_nc);    
+
+    int msg_id          = netdisc_msg_id (&msg_nc);
     const char *name    = netdisc_msg_name (&msg_nc); 
     const int ipver     = static_cast<int>(netdisc_msg_ipver (&msg_nc));
     const char *ipaddr  = netdisc_msg_ipaddr (&msg_nc);
     int prefixlen       = static_cast<int>(netdisc_msg_prefixlen (&msg_nc));
     std::string mac (netdisc_msg_mac (&msg_nc));
     char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
+    assert(command);    // fail on unsupported type
     CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
 
     utils::db::NetHistory nethistory(url);
     nethistory.setAddress(address);
-    nethistory.setCommand(command);      
+    nethistory.setCommand(command);
     nethistory.setName(name);
     nethistory.setMac(mac);
-     
+
     int id_unique = nethistory.checkUnique();
 
     switch (msg_id) {
 
         case NETDISC_MSG_AUTO_ADD:
-        {  
-            if (id_unique == -1) 
-            { 
+        {
+            if (id_unique == -1)
+            {
                 rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);            
+                assert (rows_affected == 1);
             }
             result = true;
             break;
         }
         case NETDISC_MSG_AUTO_DEL:
-        {           
-            if (id_unique != -1)  
-            {           
+        {
+            if (id_unique != -1)
+            {
                 rows_affected = nethistory.deleteById (id_unique);
                 assert (rows_affected == 1);
             }
             result = true;
             break;
-         
+
         }
         case NETDISC_MSG_MAN_ADD:
         {
-            if (id_unique == -1) { 
+            if (id_unique == -1) {
                 rows_affected = nethistory.dbsave();
                 assert (rows_affected == 1);
             }
@@ -188,7 +192,7 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
         }
         case NETDISC_MSG_MAN_DEL:
         {
-            if (id_unique != -1) { 
+            if (id_unique != -1) {
                 rows_affected = nethistory.deleteById(id_unique);
                 assert (rows_affected == 1);
             }
