@@ -69,11 +69,11 @@ CREATE TABLE t_bios_client(
 ) AUTO_INCREMENT = 2;
 
 CREATE TABLE t_bios_client_info(
-    id_client_info BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    id_client TINYINT UNSIGNED NOT NULL,
-    id_discovered_device SMALLINT UNSIGNED,
-    timestamp datetime NOT NULL,
-    ext BLOB,
+    id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    id_client               TINYINT UNSIGNED    NOT NULL,
+    id_discovered_device    SMALLINT UNSIGNED,
+    timestamp               datetime            NOT NULL,
+    ext                     BLOB,
 
     PRIMARY KEY(id_client_info),
 
@@ -104,13 +104,16 @@ CREATE TABLE t_bios_asset_element_type (
   id_asset_element_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name                  VARCHAR(25)      NOT NULL,
   
-  PRIMARY KEY (id_asset_element_type)
+  PRIMARY KEY (id_asset_element_type),
+  
+  UNIQUE INDEX `UI_t_bios_asset_element_type` (`name` ASC)
+
 ) AUTO_INCREMENT = 6;
 
 CREATE TABLE t_bios_asset_element (
-  id_asset_element  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(25) NOT NULL,
-  id_type           TINYINT UNSIGNED NOT NULL,
+  id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+  name              VARCHAR(25)         NOT NULL,
+  id_type           TINYINT UNSIGNED    NOT NULL,
   id_parent         int UNSIGNED,
 
   PRIMARY KEY (id_asset_element),
@@ -155,7 +158,9 @@ CREATE TABLE t_bios_asset_device_type(
   id_asset_device_type TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
   name                 VARCHAR(25)        NOT NULL,
   
-  PRIMARY KEY (id_asset_device_type)
+  PRIMARY KEY (id_asset_device_type),
+  UNIQUE INDEX `UI_t_bios_asset_device_type` (`name` ASC)
+
 );
 
 
@@ -164,8 +169,8 @@ CREATE TABLE t_bios_asset_device (
   id_asset_element      INT UNSIGNED     NOT NULL,
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
-  ip                    VARCHAR(19),
-  mac                   BIGINT,
+  ip                    CHAR(19),
+  mac                   BIGINT UNSIGNED,
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
@@ -188,7 +193,9 @@ CREATE TABLE t_bios_asset_link_type(
   id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
   name                 VARCHAR(25)        NOT NULL,
   
-  PRIMARY KEY (id_asset_link_type)
+  PRIMARY KEY (id_asset_link_type),
+  UNIQUE INDEX `UI_t_bios_asset_link_type_name` (`name` ASC)
+
 );
 
 CREATE TABLE t_bios_asset_link (
@@ -224,8 +231,8 @@ CREATE TABLE t_bios_asset_link (
 
 CREATE TABLE t_bios_asset_ext_attributes(
   id_asset_ext_attribute    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  keytag                    VARCHAR(25),
-  value                     VARCHAR(255),
+  keytag                    VARCHAR(25)  NOT NULL,
+  value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
   
   PRIMARY KEY (id_asset_ext_attribute),
@@ -247,11 +254,11 @@ insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) v
 
 insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");
+insert into t_bios_client(id_client,name) values(NULL,"NUT");
 
-insert into t_bios_device_type(id_device_type,name) values (NULL,"UPS");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"EPDU");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"SERV");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"MAIN");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
 
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
