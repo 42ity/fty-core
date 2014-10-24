@@ -334,6 +334,9 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/utils/*/*.h \
 					$(top_srcdir)/src/web/include/*.h
 
+# add CI tests to dist
+EXTRA_DIST +=				$(top_srcdir)/tests/CI
+
 CLEANFILES +=				$(top_builddir)/tools/dbpath.h
 
 if HAVE_DOXYGEN
