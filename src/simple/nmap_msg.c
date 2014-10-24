@@ -57,11 +57,15 @@ struct _nmap_msg_t {
     size_t hostnames_bytes;             //  Size of dictionary content
     zhash_t *addresses;                 //  dictionary of address : vendor, where vendor is valid only for mac addresses
     size_t addresses_bytes;             //  Size of dictionary content
+    zframe_t *ports;                    //  List of port_scan results. List of 'port_scan' messages
+    zframe_t *os;                       //  List of os_scan results. List of 'os_scan' messages
+    zframe_t *scripts;                  //  List of script results. List of 'script' messages
     char *protocol;                     //  Name of protocol
     uint16_t portid;                    //  Port number (1-65535), uint16_t
     byte port_state;                    //  Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
     byte reason_ttl;                    //  reason_ttl
     char *reason_ip;                    //  reason_ip (optional)
+    zframe_t *service;                  //  Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages
     char *name;                         //  Name of a service
     byte conf;                          //  confidence in result's correcntess (0-10)
     byte method;                        //  How nmap got it (table|probed)
@@ -80,9 +84,12 @@ struct _nmap_msg_t {
     char *cpe;                          //  cpe (optional)
     char *script_id;                    //  Name of a script (like ssh-hostkeys)
     zchunk_t *data;                     //  Data - raw XML
-    char *proto;                        //  Protocol name
+    zframe_t *portused;                 //  List of portused results. Encapsulated list of 'portused' messages.
+    zframe_t *osmatch;                  //  List of osmatch results. Encapsulated list of 'osmatch' messages
     zlist_t *osfingerprints;            //  List of OS fingerprints
+    char *proto;                        //  Protocol name
     byte accuracy;                      //  Match accuracy, uint16_t
+    zframe_t *osclass;                  //  List of osclass results. Encapsulated list of 'osclass' messages
     char *vendor;                       //  Vendor name
     char *osgen;                        //  OS generation (optional)
     char *osaccuracy;                   //  accuracy
@@ -260,8 +267,12 @@ nmap_msg_destroy (nmap_msg_t **self_p)
         free (self->reason);
         zhash_destroy (&self->hostnames);
         zhash_destroy (&self->addresses);
+        zframe_destroy (&self->ports);
+        zframe_destroy (&self->os);
+        zframe_destroy (&self->scripts);
         free (self->protocol);
         free (self->reason_ip);
+        zframe_destroy (&self->service);
         free (self->name);
         free (self->version);
         free (self->product);
@@ -273,9 +284,12 @@ nmap_msg_destroy (nmap_msg_t **self_p)
         free (self->cpe);
         free (self->script_id);
         zchunk_destroy (&self->data);
-        free (self->proto);
+        zframe_destroy (&self->portused);
+        zframe_destroy (&self->osmatch);
         if (self->osfingerprints)
             zlist_destroy (&self->osfingerprints);
+        free (self->proto);
+        zframe_destroy (&self->osclass);
         free (self->vendor);
         free (self->osgen);
         free (self->osaccuracy);
@@ -373,7 +387,6 @@ nmap_msg_decode (zmsg_t **msg_p)
             break;
 
         case NMAP_MSG_DEV_SCAN:
-            GET_STRING (self->addr);
             GET_NUMBER1 (self->host_state);
             GET_STRING (self->reason);
             {
@@ -404,21 +417,53 @@ nmap_msg_decode (zmsg_t **msg_p)
                     free (value);
                 }
             }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *ports = zmsg_pop (msg);
+                if (!ports)
+                    goto malformed;
+                self->ports = ports;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *os = zmsg_pop (msg);
+                if (!os)
+                    goto malformed;
+                self->os = os;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *scripts = zmsg_pop (msg);
+                if (!scripts)
+                    goto malformed;
+                self->scripts = scripts;
+            }
             break;
 
         case NMAP_MSG_PORT_SCAN:
             GET_STRING (self->protocol);
             GET_NUMBER2 (self->portid);
-            break;
-
-        case NMAP_MSG_PORT_SCAN_STATE:
             GET_NUMBER1 (self->port_state);
             GET_STRING (self->reason);
             GET_NUMBER1 (self->reason_ttl);
             GET_STRING (self->reason_ip);
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *service = zmsg_pop (msg);
+                if (!service)
+                    goto malformed;
+                self->service = service;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *scripts = zmsg_pop (msg);
+                if (!scripts)
+                    goto malformed;
+                self->scripts = scripts;
+            }
             break;
 
-        case NMAP_MSG_PORT_SCAN_SERVICE:
+        case NMAP_MSG_SERVICE_SCAN:
             GET_STRING (self->name);
             GET_NUMBER1 (self->conf);
             GET_NUMBER1 (self->method);
@@ -437,7 +482,7 @@ nmap_msg_decode (zmsg_t **msg_p)
             GET_STRING (self->cpe);
             break;
 
-        case NMAP_MSG_SCAN_SCRIPT:
+        case NMAP_MSG_SCRIPT:
             GET_STRING (self->script_id);
             {
                 size_t chunk_size;
@@ -449,10 +494,21 @@ nmap_msg_decode (zmsg_t **msg_p)
             }
             break;
 
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            GET_NUMBER1 (self->port_state);
-            GET_STRING (self->proto);
-            GET_NUMBER2 (self->portid);
+        case NMAP_MSG_OS_SCAN:
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *portused = zmsg_pop (msg);
+                if (!portused)
+                    goto malformed;
+                self->portused = portused;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *osmatch = zmsg_pop (msg);
+                if (!osmatch)
+                    goto malformed;
+                self->osmatch = osmatch;
+            }
             {
                 size_t list_size;
                 GET_NUMBER4 (list_size);
@@ -467,12 +523,25 @@ nmap_msg_decode (zmsg_t **msg_p)
             }
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
-            GET_STRING (self->name);
-            GET_NUMBER1 (self->accuracy);
+        case NMAP_MSG_PORTUSED:
+            GET_NUMBER1 (self->port_state);
+            GET_STRING (self->proto);
+            GET_NUMBER2 (self->portid);
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
+        case NMAP_MSG_OSMATCH:
+            GET_STRING (self->name);
+            GET_NUMBER1 (self->accuracy);
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *osclass = zmsg_pop (msg);
+                if (!osclass)
+                    goto malformed;
+                self->osclass = osclass;
+            }
+            break;
+
+        case NMAP_MSG_OSCLASS:
             GET_STRING (self->vendor);
             GET_STRING (self->osgen);
             GET_STRING (self->type);
@@ -600,10 +669,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
             break;
             
         case NMAP_MSG_DEV_SCAN:
-            //  addr is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->addr)
-                frame_size += strlen (self->addr);
             //  host_state is a 1-byte integer
             frame_size += 1;
             //  reason is a string with 1-byte length
@@ -645,9 +710,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 frame_size += strlen (self->protocol);
             //  portid is a 2-byte integer
             frame_size += 2;
-            break;
-            
-        case NMAP_MSG_PORT_SCAN_STATE:
             //  port_state is a 1-byte integer
             frame_size += 1;
             //  reason is a string with 1-byte length
@@ -662,7 +724,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 frame_size += strlen (self->reason_ip);
             break;
             
-        case NMAP_MSG_PORT_SCAN_SERVICE:
+        case NMAP_MSG_SERVICE_SCAN:
             //  name is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->name)
@@ -715,7 +777,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 frame_size += strlen (self->cpe);
             break;
             
-        case NMAP_MSG_SCAN_SCRIPT:
+        case NMAP_MSG_SCRIPT:
             //  script_id is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->script_id)
@@ -726,15 +788,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 frame_size += zchunk_size (self->data);
             break;
             
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            //  port_state is a 1-byte integer
-            frame_size += 1;
-            //  proto is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->proto)
-                frame_size += strlen (self->proto);
-            //  portid is a 2-byte integer
-            frame_size += 2;
+        case NMAP_MSG_OS_SCAN:
             //  osfingerprints is an array of strings
             frame_size += 4;    //  Size is 4 octets
             if (self->osfingerprints) {
@@ -747,7 +801,18 @@ nmap_msg_encode (nmap_msg_t **self_p)
             }
             break;
             
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
+        case NMAP_MSG_PORTUSED:
+            //  port_state is a 1-byte integer
+            frame_size += 1;
+            //  proto is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->proto)
+                frame_size += strlen (self->proto);
+            //  portid is a 2-byte integer
+            frame_size += 2;
+            break;
+            
+        case NMAP_MSG_OSMATCH:
             //  name is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->name)
@@ -756,7 +821,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
+        case NMAP_MSG_OSCLASS:
             //  vendor is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->vendor)
@@ -875,11 +940,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
             break;
 
         case NMAP_MSG_DEV_SCAN:
-            if (self->addr) {
-                PUT_STRING (self->addr);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
             PUT_NUMBER1 (self->host_state);
             if (self->reason) {
                 PUT_STRING (self->reason);
@@ -917,9 +977,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
             else
                 PUT_NUMBER1 (0);    //  Empty string
             PUT_NUMBER2 (self->portid);
-            break;
-
-        case NMAP_MSG_PORT_SCAN_STATE:
             PUT_NUMBER1 (self->port_state);
             if (self->reason) {
                 PUT_STRING (self->reason);
@@ -934,7 +991,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 PUT_NUMBER1 (0);    //  Empty string
             break;
 
-        case NMAP_MSG_PORT_SCAN_SERVICE:
+        case NMAP_MSG_SERVICE_SCAN:
             if (self->name) {
                 PUT_STRING (self->name);
             }
@@ -989,7 +1046,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 PUT_NUMBER1 (0);    //  Empty string
             break;
 
-        case NMAP_MSG_SCAN_SCRIPT:
+        case NMAP_MSG_SCRIPT:
             if (self->script_id) {
                 PUT_STRING (self->script_id);
             }
@@ -1006,14 +1063,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 PUT_NUMBER4 (0);    //  Empty chunk
             break;
 
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            PUT_NUMBER1 (self->port_state);
-            if (self->proto) {
-                PUT_STRING (self->proto);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER2 (self->portid);
+        case NMAP_MSG_OS_SCAN:
             if (self->osfingerprints) {
                 PUT_NUMBER4 (zlist_size (self->osfingerprints));
                 char *osfingerprints = (char *) zlist_first (self->osfingerprints);
@@ -1026,7 +1076,17 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 PUT_NUMBER4 (0);    //  Empty string array
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
+        case NMAP_MSG_PORTUSED:
+            PUT_NUMBER1 (self->port_state);
+            if (self->proto) {
+                PUT_STRING (self->proto);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            PUT_NUMBER2 (self->portid);
+            break;
+
+        case NMAP_MSG_OSMATCH:
             if (self->name) {
                 PUT_STRING (self->name);
             }
@@ -1035,7 +1095,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
             PUT_NUMBER1 (self->accuracy);
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
+        case NMAP_MSG_OSCLASS:
             if (self->vendor) {
                 PUT_STRING (self->vendor);
             }
@@ -1099,6 +1159,82 @@ nmap_msg_encode (nmap_msg_t **self_p)
         nmap_msg_destroy (self_p);
         return NULL;
     }
+    //  Now send any frame fields, in order
+    if (self->id == NMAP_MSG_DEV_SCAN) {
+        //  If ports isn't set, send an empty frame
+        if (!self->ports)
+            self->ports = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->ports)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If os isn't set, send an empty frame
+        if (!self->os)
+            self->os = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->os)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If scripts isn't set, send an empty frame
+        if (!self->scripts)
+            self->scripts = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->scripts)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+    }
+    //  Now send any frame fields, in order
+    if (self->id == NMAP_MSG_PORT_SCAN) {
+        //  If service isn't set, send an empty frame
+        if (!self->service)
+            self->service = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->service)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If scripts isn't set, send an empty frame
+        if (!self->scripts)
+            self->scripts = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->scripts)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+    }
+    //  Now send any frame fields, in order
+    if (self->id == NMAP_MSG_OS_SCAN) {
+        //  If portused isn't set, send an empty frame
+        if (!self->portused)
+            self->portused = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->portused)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If osmatch isn't set, send an empty frame
+        if (!self->osmatch)
+            self->osmatch = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->osmatch)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+    }
+    //  Now send any frame fields, in order
+    if (self->id == NMAP_MSG_OSMATCH) {
+        //  If osclass isn't set, send an empty frame
+        if (!self->osclass)
+            self->osclass = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->osclass)) {
+            zmsg_destroy (&msg);
+            nmap_msg_destroy (self_p);
+            return NULL;
+        }
+    }
     //  Destroy nmap_msg object
     nmap_msg_destroy (self_p);
     return msg;
@@ -1116,6 +1252,7 @@ nmap_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1143,6 +1280,7 @@ nmap_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1250,20 +1388,27 @@ nmap_msg_encode_list_scan (
 
 zmsg_t * 
 nmap_msg_encode_dev_scan (
-    const char *addr,
     byte host_state,
     const char *reason,
     zhash_t *addresses,
-    zhash_t *hostnames)
+    zhash_t *hostnames,
+    zframe_t *ports,
+    zframe_t *os,
+    zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN);
-    nmap_msg_set_addr (self, addr);
     nmap_msg_set_host_state (self, host_state);
     nmap_msg_set_reason (self, reason);
     zhash_t *addresses_copy = zhash_dup (addresses);
     nmap_msg_set_addresses (self, &addresses_copy);
     zhash_t *hostnames_copy = zhash_dup (hostnames);
     nmap_msg_set_hostnames (self, &hostnames_copy);
+    zframe_t *ports_copy = zframe_dup (ports);
+    nmap_msg_set_ports (self, &ports_copy);
+    zframe_t *os_copy = zframe_dup (os);
+    nmap_msg_set_os (self, &os_copy);
+    zframe_t *scripts_copy = zframe_dup (scripts);
+    nmap_msg_set_scripts (self, &scripts_copy);
     return nmap_msg_encode (&self);
 }
 
@@ -1274,39 +1419,34 @@ nmap_msg_encode_dev_scan (
 zmsg_t * 
 nmap_msg_encode_port_scan (
     const char *protocol,
-    uint16_t portid)
+    uint16_t portid,
+    byte port_state,
+    const char *reason,
+    byte reason_ttl,
+    const char *reason_ip,
+    zframe_t *service,
+    zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN);
     nmap_msg_set_protocol (self, protocol);
     nmap_msg_set_portid (self, portid);
-    return nmap_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode PORT_SCAN_STATE message
-
-zmsg_t * 
-nmap_msg_encode_port_scan_state (
-    byte port_state,
-    const char *reason,
-    byte reason_ttl,
-    const char *reason_ip)
-{
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN_STATE);
     nmap_msg_set_port_state (self, port_state);
     nmap_msg_set_reason (self, reason);
     nmap_msg_set_reason_ttl (self, reason_ttl);
     nmap_msg_set_reason_ip (self, reason_ip);
+    zframe_t *service_copy = zframe_dup (service);
+    nmap_msg_set_service (self, &service_copy);
+    zframe_t *scripts_copy = zframe_dup (scripts);
+    nmap_msg_set_scripts (self, &scripts_copy);
     return nmap_msg_encode (&self);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Encode PORT_SCAN_SERVICE message
+//  Encode SERVICE_SCAN message
 
 zmsg_t * 
-nmap_msg_encode_port_scan_service (
+nmap_msg_encode_service_scan (
     const char *name,
     byte conf,
     byte method,
@@ -1324,7 +1464,7 @@ nmap_msg_encode_port_scan_service (
     const char *servicefp,
     const char *cpe)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN_SERVICE);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
     nmap_msg_set_name (self, name);
     nmap_msg_set_conf (self, conf);
     nmap_msg_set_method (self, method);
@@ -1346,14 +1486,14 @@ nmap_msg_encode_port_scan_service (
 
 
 //  --------------------------------------------------------------------------
-//  Encode SCAN_SCRIPT message
+//  Encode SCRIPT message
 
 zmsg_t * 
-nmap_msg_encode_scan_script (
+nmap_msg_encode_script (
     const char *script_id,
     zchunk_t *data)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SCAN_SCRIPT);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SCRIPT);
     nmap_msg_set_script_id (self, script_id);
     zchunk_t *data_copy = zchunk_dup (data);
     nmap_msg_set_data (self, &data_copy);
@@ -1362,19 +1502,19 @@ nmap_msg_encode_scan_script (
 
 
 //  --------------------------------------------------------------------------
-//  Encode DEV_SCAN_PORTUSED message
+//  Encode OS_SCAN message
 
 zmsg_t * 
-nmap_msg_encode_dev_scan_portused (
-    byte port_state,
-    const char *proto,
-    uint16_t portid,
+nmap_msg_encode_os_scan (
+    zframe_t *portused,
+    zframe_t *osmatch,
     zlist_t *osfingerprints)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_PORTUSED);
-    nmap_msg_set_port_state (self, port_state);
-    nmap_msg_set_proto (self, proto);
-    nmap_msg_set_portid (self, portid);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OS_SCAN);
+    zframe_t *portused_copy = zframe_dup (portused);
+    nmap_msg_set_portused (self, &portused_copy);
+    zframe_t *osmatch_copy = zframe_dup (osmatch);
+    nmap_msg_set_osmatch (self, &osmatch_copy);
     zlist_t *osfingerprints_copy = zlist_dup (osfingerprints);
     nmap_msg_set_osfingerprints (self, &osfingerprints_copy);
     return nmap_msg_encode (&self);
@@ -1382,25 +1522,45 @@ nmap_msg_encode_dev_scan_portused (
 
 
 //  --------------------------------------------------------------------------
-//  Encode DEV_SCAN_OSMATCH message
+//  Encode PORTUSED message
 
 zmsg_t * 
-nmap_msg_encode_dev_scan_osmatch (
-    const char *name,
-    byte accuracy)
+nmap_msg_encode_portused (
+    byte port_state,
+    const char *proto,
+    uint16_t portid)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSMATCH);
-    nmap_msg_set_name (self, name);
-    nmap_msg_set_accuracy (self, accuracy);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORTUSED);
+    nmap_msg_set_port_state (self, port_state);
+    nmap_msg_set_proto (self, proto);
+    nmap_msg_set_portid (self, portid);
     return nmap_msg_encode (&self);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Encode DEV_SCAN_OSCLASS message
+//  Encode OSMATCH message
 
 zmsg_t * 
-nmap_msg_encode_dev_scan_osclass (
+nmap_msg_encode_osmatch (
+    const char *name,
+    byte accuracy,
+    zframe_t *osclass)
+{
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSMATCH);
+    nmap_msg_set_name (self, name);
+    nmap_msg_set_accuracy (self, accuracy);
+    zframe_t *osclass_copy = zframe_dup (osclass);
+    nmap_msg_set_osclass (self, &osclass_copy);
+    return nmap_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode OSCLASS message
+
+zmsg_t * 
+nmap_msg_encode_osclass (
     const char *vendor,
     const char *osgen,
     const char *type,
@@ -1408,7 +1568,7 @@ nmap_msg_encode_dev_scan_osclass (
     const char *osfamily,
     zlist_t *cpes)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSCLASS);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSCLASS);
     nmap_msg_set_vendor (self, vendor);
     nmap_msg_set_osgen (self, osgen);
     nmap_msg_set_type (self, type);
@@ -1485,20 +1645,27 @@ nmap_msg_send_list_scan (
 int
 nmap_msg_send_dev_scan (
     void *output,
-    const char *addr,
     byte host_state,
     const char *reason,
     zhash_t *addresses,
-    zhash_t *hostnames)
+    zhash_t *hostnames,
+    zframe_t *ports,
+    zframe_t *os,
+    zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN);
-    nmap_msg_set_addr (self, addr);
     nmap_msg_set_host_state (self, host_state);
     nmap_msg_set_reason (self, reason);
     zhash_t *addresses_copy = zhash_dup (addresses);
     nmap_msg_set_addresses (self, &addresses_copy);
     zhash_t *hostnames_copy = zhash_dup (hostnames);
     nmap_msg_set_hostnames (self, &hostnames_copy);
+    zframe_t *ports_copy = zframe_dup (ports);
+    nmap_msg_set_ports (self, &ports_copy);
+    zframe_t *os_copy = zframe_dup (os);
+    nmap_msg_set_os (self, &os_copy);
+    zframe_t *scripts_copy = zframe_dup (scripts);
+    nmap_msg_set_scripts (self, &scripts_copy);
     return nmap_msg_send (&self, output);
 }
 
@@ -1510,40 +1677,34 @@ int
 nmap_msg_send_port_scan (
     void *output,
     const char *protocol,
-    uint16_t portid)
+    uint16_t portid,
+    byte port_state,
+    const char *reason,
+    byte reason_ttl,
+    const char *reason_ip,
+    zframe_t *service,
+    zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN);
     nmap_msg_set_protocol (self, protocol);
     nmap_msg_set_portid (self, portid);
-    return nmap_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the PORT_SCAN_STATE to the socket in one step
-
-int
-nmap_msg_send_port_scan_state (
-    void *output,
-    byte port_state,
-    const char *reason,
-    byte reason_ttl,
-    const char *reason_ip)
-{
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN_STATE);
     nmap_msg_set_port_state (self, port_state);
     nmap_msg_set_reason (self, reason);
     nmap_msg_set_reason_ttl (self, reason_ttl);
     nmap_msg_set_reason_ip (self, reason_ip);
+    zframe_t *service_copy = zframe_dup (service);
+    nmap_msg_set_service (self, &service_copy);
+    zframe_t *scripts_copy = zframe_dup (scripts);
+    nmap_msg_set_scripts (self, &scripts_copy);
     return nmap_msg_send (&self, output);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Send the PORT_SCAN_SERVICE to the socket in one step
+//  Send the SERVICE_SCAN to the socket in one step
 
 int
-nmap_msg_send_port_scan_service (
+nmap_msg_send_service_scan (
     void *output,
     const char *name,
     byte conf,
@@ -1562,7 +1723,7 @@ nmap_msg_send_port_scan_service (
     const char *servicefp,
     const char *cpe)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN_SERVICE);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
     nmap_msg_set_name (self, name);
     nmap_msg_set_conf (self, conf);
     nmap_msg_set_method (self, method);
@@ -1584,15 +1745,15 @@ nmap_msg_send_port_scan_service (
 
 
 //  --------------------------------------------------------------------------
-//  Send the SCAN_SCRIPT to the socket in one step
+//  Send the SCRIPT to the socket in one step
 
 int
-nmap_msg_send_scan_script (
+nmap_msg_send_script (
     void *output,
     const char *script_id,
     zchunk_t *data)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SCAN_SCRIPT);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SCRIPT);
     nmap_msg_set_script_id (self, script_id);
     zchunk_t *data_copy = zchunk_dup (data);
     nmap_msg_set_data (self, &data_copy);
@@ -1601,20 +1762,20 @@ nmap_msg_send_scan_script (
 
 
 //  --------------------------------------------------------------------------
-//  Send the DEV_SCAN_PORTUSED to the socket in one step
+//  Send the OS_SCAN to the socket in one step
 
 int
-nmap_msg_send_dev_scan_portused (
+nmap_msg_send_os_scan (
     void *output,
-    byte port_state,
-    const char *proto,
-    uint16_t portid,
+    zframe_t *portused,
+    zframe_t *osmatch,
     zlist_t *osfingerprints)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_PORTUSED);
-    nmap_msg_set_port_state (self, port_state);
-    nmap_msg_set_proto (self, proto);
-    nmap_msg_set_portid (self, portid);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OS_SCAN);
+    zframe_t *portused_copy = zframe_dup (portused);
+    nmap_msg_set_portused (self, &portused_copy);
+    zframe_t *osmatch_copy = zframe_dup (osmatch);
+    nmap_msg_set_osmatch (self, &osmatch_copy);
     zlist_t *osfingerprints_copy = zlist_dup (osfingerprints);
     nmap_msg_set_osfingerprints (self, &osfingerprints_copy);
     return nmap_msg_send (&self, output);
@@ -1622,26 +1783,47 @@ nmap_msg_send_dev_scan_portused (
 
 
 //  --------------------------------------------------------------------------
-//  Send the DEV_SCAN_OSMATCH to the socket in one step
+//  Send the PORTUSED to the socket in one step
 
 int
-nmap_msg_send_dev_scan_osmatch (
+nmap_msg_send_portused (
     void *output,
-    const char *name,
-    byte accuracy)
+    byte port_state,
+    const char *proto,
+    uint16_t portid)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSMATCH);
-    nmap_msg_set_name (self, name);
-    nmap_msg_set_accuracy (self, accuracy);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORTUSED);
+    nmap_msg_set_port_state (self, port_state);
+    nmap_msg_set_proto (self, proto);
+    nmap_msg_set_portid (self, portid);
     return nmap_msg_send (&self, output);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Send the DEV_SCAN_OSCLASS to the socket in one step
+//  Send the OSMATCH to the socket in one step
 
 int
-nmap_msg_send_dev_scan_osclass (
+nmap_msg_send_osmatch (
+    void *output,
+    const char *name,
+    byte accuracy,
+    zframe_t *osclass)
+{
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSMATCH);
+    nmap_msg_set_name (self, name);
+    nmap_msg_set_accuracy (self, accuracy);
+    zframe_t *osclass_copy = zframe_dup (osclass);
+    nmap_msg_set_osclass (self, &osclass_copy);
+    return nmap_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the OSCLASS to the socket in one step
+
+int
+nmap_msg_send_osclass (
     void *output,
     const char *vendor,
     const char *osgen,
@@ -1650,7 +1832,7 @@ nmap_msg_send_dev_scan_osclass (
     const char *osfamily,
     zlist_t *cpes)
 {
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSCLASS);
+    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSCLASS);
     nmap_msg_set_vendor (self, vendor);
     nmap_msg_set_osgen (self, osgen);
     nmap_msg_set_type (self, type);
@@ -1708,26 +1890,27 @@ nmap_msg_dup (nmap_msg_t *self)
             break;
 
         case NMAP_MSG_DEV_SCAN:
-            copy->addr = self->addr? strdup (self->addr): NULL;
             copy->host_state = self->host_state;
             copy->reason = self->reason? strdup (self->reason): NULL;
             copy->addresses = self->addresses? zhash_dup (self->addresses): NULL;
             copy->hostnames = self->hostnames? zhash_dup (self->hostnames): NULL;
+            copy->ports = self->ports? zframe_dup (self->ports): NULL;
+            copy->os = self->os? zframe_dup (self->os): NULL;
+            copy->scripts = self->scripts? zframe_dup (self->scripts): NULL;
             break;
 
         case NMAP_MSG_PORT_SCAN:
             copy->protocol = self->protocol? strdup (self->protocol): NULL;
             copy->portid = self->portid;
-            break;
-
-        case NMAP_MSG_PORT_SCAN_STATE:
             copy->port_state = self->port_state;
             copy->reason = self->reason? strdup (self->reason): NULL;
             copy->reason_ttl = self->reason_ttl;
             copy->reason_ip = self->reason_ip? strdup (self->reason_ip): NULL;
+            copy->service = self->service? zframe_dup (self->service): NULL;
+            copy->scripts = self->scripts? zframe_dup (self->scripts): NULL;
             break;
 
-        case NMAP_MSG_PORT_SCAN_SERVICE:
+        case NMAP_MSG_SERVICE_SCAN:
             copy->name = self->name? strdup (self->name): NULL;
             copy->conf = self->conf;
             copy->method = self->method;
@@ -1746,24 +1929,30 @@ nmap_msg_dup (nmap_msg_t *self)
             copy->cpe = self->cpe? strdup (self->cpe): NULL;
             break;
 
-        case NMAP_MSG_SCAN_SCRIPT:
+        case NMAP_MSG_SCRIPT:
             copy->script_id = self->script_id? strdup (self->script_id): NULL;
             copy->data = self->data? zchunk_dup (self->data): NULL;
             break;
 
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            copy->port_state = self->port_state;
-            copy->proto = self->proto? strdup (self->proto): NULL;
-            copy->portid = self->portid;
+        case NMAP_MSG_OS_SCAN:
+            copy->portused = self->portused? zframe_dup (self->portused): NULL;
+            copy->osmatch = self->osmatch? zframe_dup (self->osmatch): NULL;
             copy->osfingerprints = self->osfingerprints? zlist_dup (self->osfingerprints): NULL;
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
-            copy->name = self->name? strdup (self->name): NULL;
-            copy->accuracy = self->accuracy;
+        case NMAP_MSG_PORTUSED:
+            copy->port_state = self->port_state;
+            copy->proto = self->proto? strdup (self->proto): NULL;
+            copy->portid = self->portid;
             break;
 
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
+        case NMAP_MSG_OSMATCH:
+            copy->name = self->name? strdup (self->name): NULL;
+            copy->accuracy = self->accuracy;
+            copy->osclass = self->osclass? zframe_dup (self->osclass): NULL;
+            break;
+
+        case NMAP_MSG_OSCLASS:
             copy->vendor = self->vendor? strdup (self->vendor): NULL;
             copy->osgen = self->osgen? strdup (self->osgen): NULL;
             copy->type = self->type? strdup (self->type): NULL;
@@ -1842,10 +2031,6 @@ nmap_msg_print (nmap_msg_t *self)
             
         case NMAP_MSG_DEV_SCAN:
             zsys_debug ("NMAP_MSG_DEV_SCAN:");
-            if (self->addr)
-                zsys_debug ("    addr='%s'", self->addr);
-            else
-                zsys_debug ("    addr=");
             zsys_debug ("    host_state=%ld", (long) self->host_state);
             if (self->reason)
                 zsys_debug ("    reason='%s'", self->reason);
@@ -1871,6 +2056,21 @@ nmap_msg_print (nmap_msg_t *self)
             }
             else
                 zsys_debug ("(NULL)");
+            zsys_debug ("    ports=");
+            if (self->ports)
+                zframe_print (self->ports, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    os=");
+            if (self->os)
+                zframe_print (self->os, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    scripts=");
+            if (self->scripts)
+                zframe_print (self->scripts, NULL);
+            else
+                zsys_debug ("(NULL)");
             break;
             
         case NMAP_MSG_PORT_SCAN:
@@ -1880,10 +2080,6 @@ nmap_msg_print (nmap_msg_t *self)
             else
                 zsys_debug ("    protocol=");
             zsys_debug ("    portid=%ld", (long) self->portid);
-            break;
-            
-        case NMAP_MSG_PORT_SCAN_STATE:
-            zsys_debug ("NMAP_MSG_PORT_SCAN_STATE:");
             zsys_debug ("    port_state=%ld", (long) self->port_state);
             if (self->reason)
                 zsys_debug ("    reason='%s'", self->reason);
@@ -1894,10 +2090,20 @@ nmap_msg_print (nmap_msg_t *self)
                 zsys_debug ("    reason_ip='%s'", self->reason_ip);
             else
                 zsys_debug ("    reason_ip=");
+            zsys_debug ("    service=");
+            if (self->service)
+                zframe_print (self->service, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    scripts=");
+            if (self->scripts)
+                zframe_print (self->scripts, NULL);
+            else
+                zsys_debug ("(NULL)");
             break;
             
-        case NMAP_MSG_PORT_SCAN_SERVICE:
-            zsys_debug ("NMAP_MSG_PORT_SCAN_SERVICE:");
+        case NMAP_MSG_SERVICE_SCAN:
+            zsys_debug ("NMAP_MSG_SERVICE_SCAN:");
             if (self->name)
                 zsys_debug ("    name='%s'", self->name);
             else
@@ -1943,8 +2149,8 @@ nmap_msg_print (nmap_msg_t *self)
                 zsys_debug ("    cpe=");
             break;
             
-        case NMAP_MSG_SCAN_SCRIPT:
-            zsys_debug ("NMAP_MSG_SCAN_SCRIPT:");
+        case NMAP_MSG_SCRIPT:
+            zsys_debug ("NMAP_MSG_SCRIPT:");
             if (self->script_id)
                 zsys_debug ("    script_id='%s'", self->script_id);
             else
@@ -1952,14 +2158,18 @@ nmap_msg_print (nmap_msg_t *self)
             zsys_debug ("    data=[ ... ]");
             break;
             
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            zsys_debug ("NMAP_MSG_DEV_SCAN_PORTUSED:");
-            zsys_debug ("    port_state=%ld", (long) self->port_state);
-            if (self->proto)
-                zsys_debug ("    proto='%s'", self->proto);
+        case NMAP_MSG_OS_SCAN:
+            zsys_debug ("NMAP_MSG_OS_SCAN:");
+            zsys_debug ("    portused=");
+            if (self->portused)
+                zframe_print (self->portused, NULL);
             else
-                zsys_debug ("    proto=");
-            zsys_debug ("    portid=%ld", (long) self->portid);
+                zsys_debug ("(NULL)");
+            zsys_debug ("    osmatch=");
+            if (self->osmatch)
+                zframe_print (self->osmatch, NULL);
+            else
+                zsys_debug ("(NULL)");
             zsys_debug ("    osfingerprints=");
             if (self->osfingerprints) {
                 char *osfingerprints = (char *) zlist_first (self->osfingerprints);
@@ -1970,17 +2180,32 @@ nmap_msg_print (nmap_msg_t *self)
             }
             break;
             
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
-            zsys_debug ("NMAP_MSG_DEV_SCAN_OSMATCH:");
+        case NMAP_MSG_PORTUSED:
+            zsys_debug ("NMAP_MSG_PORTUSED:");
+            zsys_debug ("    port_state=%ld", (long) self->port_state);
+            if (self->proto)
+                zsys_debug ("    proto='%s'", self->proto);
+            else
+                zsys_debug ("    proto=");
+            zsys_debug ("    portid=%ld", (long) self->portid);
+            break;
+            
+        case NMAP_MSG_OSMATCH:
+            zsys_debug ("NMAP_MSG_OSMATCH:");
             if (self->name)
                 zsys_debug ("    name='%s'", self->name);
             else
                 zsys_debug ("    name=");
             zsys_debug ("    accuracy=%ld", (long) self->accuracy);
+            zsys_debug ("    osclass=");
+            if (self->osclass)
+                zframe_print (self->osclass, NULL);
+            else
+                zsys_debug ("(NULL)");
             break;
             
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
-            zsys_debug ("NMAP_MSG_DEV_SCAN_OSCLASS:");
+        case NMAP_MSG_OSCLASS:
+            zsys_debug ("NMAP_MSG_OSCLASS:");
             if (self->vendor)
                 zsys_debug ("    vendor='%s'", self->vendor);
             else
@@ -2087,23 +2312,23 @@ nmap_msg_command (nmap_msg_t *self)
         case NMAP_MSG_PORT_SCAN:
             return ("PORT_SCAN");
             break;
-        case NMAP_MSG_PORT_SCAN_STATE:
-            return ("PORT_SCAN_STATE");
+        case NMAP_MSG_SERVICE_SCAN:
+            return ("SERVICE_SCAN");
             break;
-        case NMAP_MSG_PORT_SCAN_SERVICE:
-            return ("PORT_SCAN_SERVICE");
+        case NMAP_MSG_SCRIPT:
+            return ("SCRIPT");
             break;
-        case NMAP_MSG_SCAN_SCRIPT:
-            return ("SCAN_SCRIPT");
+        case NMAP_MSG_OS_SCAN:
+            return ("OS_SCAN");
             break;
-        case NMAP_MSG_DEV_SCAN_PORTUSED:
-            return ("DEV_SCAN_PORTUSED");
+        case NMAP_MSG_PORTUSED:
+            return ("PORTUSED");
             break;
-        case NMAP_MSG_DEV_SCAN_OSMATCH:
-            return ("DEV_SCAN_OSMATCH");
+        case NMAP_MSG_OSMATCH:
+            return ("OSMATCH");
             break;
-        case NMAP_MSG_DEV_SCAN_OSCLASS:
-            return ("DEV_SCAN_OSCLASS");
+        case NMAP_MSG_OSCLASS:
+            return ("OSCLASS");
             break;
         case NMAP_MSG_SCAN_ERROR:
             return ("SCAN_ERROR");
@@ -2546,6 +2771,105 @@ nmap_msg_addresses_size (nmap_msg_t *self)
 
 
 //  --------------------------------------------------------------------------
+//  Get the ports field without transferring ownership
+
+zframe_t *
+nmap_msg_ports (nmap_msg_t *self)
+{
+    assert (self);
+    return self->ports;
+}
+
+//  Get the ports field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_ports (nmap_msg_t *self)
+{
+    zframe_t *ports = self->ports;
+    self->ports = NULL;
+    return ports;
+}
+
+//  Set the ports field, transferring ownership from caller
+
+void
+nmap_msg_set_ports (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->ports);
+    self->ports = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the os field without transferring ownership
+
+zframe_t *
+nmap_msg_os (nmap_msg_t *self)
+{
+    assert (self);
+    return self->os;
+}
+
+//  Get the os field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_os (nmap_msg_t *self)
+{
+    zframe_t *os = self->os;
+    self->os = NULL;
+    return os;
+}
+
+//  Set the os field, transferring ownership from caller
+
+void
+nmap_msg_set_os (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->os);
+    self->os = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the scripts field without transferring ownership
+
+zframe_t *
+nmap_msg_scripts (nmap_msg_t *self)
+{
+    assert (self);
+    return self->scripts;
+}
+
+//  Get the scripts field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_scripts (nmap_msg_t *self)
+{
+    zframe_t *scripts = self->scripts;
+    self->scripts = NULL;
+    return scripts;
+}
+
+//  Set the scripts field, transferring ownership from caller
+
+void
+nmap_msg_set_scripts (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->scripts);
+    self->scripts = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get/set the protocol field
 
 const char *
@@ -2642,6 +2966,39 @@ nmap_msg_set_reason_ip (nmap_msg_t *self, const char *format, ...)
     free (self->reason_ip);
     self->reason_ip = zsys_vprintf (format, argptr);
     va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the service field without transferring ownership
+
+zframe_t *
+nmap_msg_service (nmap_msg_t *self)
+{
+    assert (self);
+    return self->service;
+}
+
+//  Get the service field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_service (nmap_msg_t *self)
+{
+    zframe_t *service = self->service;
+    self->service = NULL;
+    return service;
+}
+
+//  Set the service field, transferring ownership from caller
+
+void
+nmap_msg_set_service (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->service);
+    self->service = *frame_p;
+    *frame_p = NULL;
 }
 
 
@@ -3035,25 +3392,68 @@ nmap_msg_set_data (nmap_msg_t *self, zchunk_t **chunk_p)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the proto field
+//  Get the portused field without transferring ownership
 
-const char *
-nmap_msg_proto (nmap_msg_t *self)
+zframe_t *
+nmap_msg_portused (nmap_msg_t *self)
 {
     assert (self);
-    return self->proto;
+    return self->portused;
 }
 
-void
-nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...)
+//  Get the portused field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_portused (nmap_msg_t *self)
 {
-    //  Format proto from provided arguments
+    zframe_t *portused = self->portused;
+    self->portused = NULL;
+    return portused;
+}
+
+//  Set the portused field, transferring ownership from caller
+
+void
+nmap_msg_set_portused (nmap_msg_t *self, zframe_t **frame_p)
+{
     assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->proto);
-    self->proto = zsys_vprintf (format, argptr);
-    va_end (argptr);
+    assert (frame_p);
+    zframe_destroy (&self->portused);
+    self->portused = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the osmatch field without transferring ownership
+
+zframe_t *
+nmap_msg_osmatch (nmap_msg_t *self)
+{
+    assert (self);
+    return self->osmatch;
+}
+
+//  Get the osmatch field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_osmatch (nmap_msg_t *self)
+{
+    zframe_t *osmatch = self->osmatch;
+    self->osmatch = NULL;
+    return osmatch;
+}
+
+//  Set the osmatch field, transferring ownership from caller
+
+void
+nmap_msg_set_osmatch (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->osmatch);
+    self->osmatch = *frame_p;
+    *frame_p = NULL;
 }
 
 
@@ -3140,6 +3540,29 @@ nmap_msg_osfingerprints_size (nmap_msg_t *self)
 
 
 //  --------------------------------------------------------------------------
+//  Get/set the proto field
+
+const char *
+nmap_msg_proto (nmap_msg_t *self)
+{
+    assert (self);
+    return self->proto;
+}
+
+void
+nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...)
+{
+    //  Format proto from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->proto);
+    self->proto = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get/set the accuracy field
 
 byte
@@ -3154,6 +3577,39 @@ nmap_msg_set_accuracy (nmap_msg_t *self, byte accuracy)
 {
     assert (self);
     self->accuracy = accuracy;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the osclass field without transferring ownership
+
+zframe_t *
+nmap_msg_osclass (nmap_msg_t *self)
+{
+    assert (self);
+    return self->osclass;
+}
+
+//  Get the osclass field and transfer ownership to caller
+
+zframe_t *
+nmap_msg_get_osclass (nmap_msg_t *self)
+{
+    zframe_t *osclass = self->osclass;
+    self->osclass = NULL;
+    return osclass;
+}
+
+//  Set the osclass field, transferring ownership from caller
+
+void
+nmap_msg_set_osclass (nmap_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->osclass);
+    self->osclass = *frame_p;
+    *frame_p = NULL;
 }
 
 
@@ -3465,13 +3921,18 @@ nmap_msg_test (bool verbose)
     assert (copy);
     nmap_msg_destroy (&copy);
 
-    nmap_msg_set_addr (self, "Life is short but Now lasts for ever");
     nmap_msg_set_host_state (self, 123);
     nmap_msg_set_reason (self, "Life is short but Now lasts for ever");
     nmap_msg_addresses_insert (self, "Name", "Brutus");
     nmap_msg_addresses_insert (self, "Age", "%d", 43);
     nmap_msg_hostnames_insert (self, "Name", "Brutus");
     nmap_msg_hostnames_insert (self, "Age", "%d", 43);
+    zframe_t *dev_scan_ports = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_ports (self, &dev_scan_ports);
+    zframe_t *dev_scan_os = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_os (self, &dev_scan_os);
+    zframe_t *dev_scan_scripts = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_scripts (self, &dev_scan_scripts);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -3481,7 +3942,6 @@ nmap_msg_test (bool verbose)
         assert (self);
         assert (nmap_msg_routing_id (self));
         
-        assert (streq (nmap_msg_addr (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_host_state (self) == 123);
         assert (streq (nmap_msg_reason (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_addresses_size (self) == 2);
@@ -3490,6 +3950,9 @@ nmap_msg_test (bool verbose)
         assert (nmap_msg_hostnames_size (self) == 2);
         assert (streq (nmap_msg_hostnames_string (self, "Name", "?"), "Brutus"));
         assert (nmap_msg_hostnames_number (self, "Age", 0) == 43);
+        assert (zframe_streq (nmap_msg_ports (self), "Captcha Diem"));
+        assert (zframe_streq (nmap_msg_os (self), "Captcha Diem"));
+        assert (zframe_streq (nmap_msg_scripts (self), "Captcha Diem"));
         nmap_msg_destroy (&self);
     }
     self = nmap_msg_new (NMAP_MSG_PORT_SCAN);
@@ -3501,6 +3964,14 @@ nmap_msg_test (bool verbose)
 
     nmap_msg_set_protocol (self, "Life is short but Now lasts for ever");
     nmap_msg_set_portid (self, 123);
+    nmap_msg_set_port_state (self, 123);
+    nmap_msg_set_reason (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_reason_ttl (self, 123);
+    nmap_msg_set_reason_ip (self, "Life is short but Now lasts for ever");
+    zframe_t *port_scan_service = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_service (self, &port_scan_service);
+    zframe_t *port_scan_scripts = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_scripts (self, &port_scan_scripts);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -3512,35 +3983,15 @@ nmap_msg_test (bool verbose)
         
         assert (streq (nmap_msg_protocol (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_portid (self) == 123);
-        nmap_msg_destroy (&self);
-    }
-    self = nmap_msg_new (NMAP_MSG_PORT_SCAN_STATE);
-    
-    //  Check that _dup works on empty message
-    copy = nmap_msg_dup (self);
-    assert (copy);
-    nmap_msg_destroy (&copy);
-
-    nmap_msg_set_port_state (self, 123);
-    nmap_msg_set_reason (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_reason_ttl (self, 123);
-    nmap_msg_set_reason_ip (self, "Life is short but Now lasts for ever");
-    //  Send twice from same object
-    nmap_msg_send_again (self, output);
-    nmap_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = nmap_msg_recv (input);
-        assert (self);
-        assert (nmap_msg_routing_id (self));
-        
         assert (nmap_msg_port_state (self) == 123);
         assert (streq (nmap_msg_reason (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_reason_ttl (self) == 123);
         assert (streq (nmap_msg_reason_ip (self), "Life is short but Now lasts for ever"));
+        assert (zframe_streq (nmap_msg_service (self), "Captcha Diem"));
+        assert (zframe_streq (nmap_msg_scripts (self), "Captcha Diem"));
         nmap_msg_destroy (&self);
     }
-    self = nmap_msg_new (NMAP_MSG_PORT_SCAN_SERVICE);
+    self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
     
     //  Check that _dup works on empty message
     copy = nmap_msg_dup (self);
@@ -3590,7 +4041,7 @@ nmap_msg_test (bool verbose)
         assert (streq (nmap_msg_cpe (self), "Life is short but Now lasts for ever"));
         nmap_msg_destroy (&self);
     }
-    self = nmap_msg_new (NMAP_MSG_SCAN_SCRIPT);
+    self = nmap_msg_new (NMAP_MSG_SCRIPT);
     
     //  Check that _dup works on empty message
     copy = nmap_msg_dup (self);
@@ -3598,8 +4049,8 @@ nmap_msg_test (bool verbose)
     nmap_msg_destroy (&copy);
 
     nmap_msg_set_script_id (self, "Life is short but Now lasts for ever");
-    zchunk_t *scan_script_data = zchunk_new ("Captcha Diem", 12);
-    nmap_msg_set_data (self, &scan_script_data);
+    zchunk_t *script_data = zchunk_new ("Captcha Diem", 12);
+    nmap_msg_set_data (self, &script_data);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -3613,7 +4064,36 @@ nmap_msg_test (bool verbose)
         assert (memcmp (zchunk_data (nmap_msg_data (self)), "Captcha Diem", 12) == 0);
         nmap_msg_destroy (&self);
     }
-    self = nmap_msg_new (NMAP_MSG_DEV_SCAN_PORTUSED);
+    self = nmap_msg_new (NMAP_MSG_OS_SCAN);
+    
+    //  Check that _dup works on empty message
+    copy = nmap_msg_dup (self);
+    assert (copy);
+    nmap_msg_destroy (&copy);
+
+    zframe_t *os_scan_portused = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_portused (self, &os_scan_portused);
+    zframe_t *os_scan_osmatch = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_osmatch (self, &os_scan_osmatch);
+    nmap_msg_osfingerprints_append (self, "Name: %s", "Brutus");
+    nmap_msg_osfingerprints_append (self, "Age: %d", 43);
+    //  Send twice from same object
+    nmap_msg_send_again (self, output);
+    nmap_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = nmap_msg_recv (input);
+        assert (self);
+        assert (nmap_msg_routing_id (self));
+        
+        assert (zframe_streq (nmap_msg_portused (self), "Captcha Diem"));
+        assert (zframe_streq (nmap_msg_osmatch (self), "Captcha Diem"));
+        assert (nmap_msg_osfingerprints_size (self) == 2);
+        assert (streq (nmap_msg_osfingerprints_first (self), "Name: Brutus"));
+        assert (streq (nmap_msg_osfingerprints_next (self), "Age: 43"));
+        nmap_msg_destroy (&self);
+    }
+    self = nmap_msg_new (NMAP_MSG_PORTUSED);
     
     //  Check that _dup works on empty message
     copy = nmap_msg_dup (self);
@@ -3623,8 +4103,6 @@ nmap_msg_test (bool verbose)
     nmap_msg_set_port_state (self, 123);
     nmap_msg_set_proto (self, "Life is short but Now lasts for ever");
     nmap_msg_set_portid (self, 123);
-    nmap_msg_osfingerprints_append (self, "Name: %s", "Brutus");
-    nmap_msg_osfingerprints_append (self, "Age: %d", 43);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -3637,12 +4115,9 @@ nmap_msg_test (bool verbose)
         assert (nmap_msg_port_state (self) == 123);
         assert (streq (nmap_msg_proto (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_portid (self) == 123);
-        assert (nmap_msg_osfingerprints_size (self) == 2);
-        assert (streq (nmap_msg_osfingerprints_first (self), "Name: Brutus"));
-        assert (streq (nmap_msg_osfingerprints_next (self), "Age: 43"));
         nmap_msg_destroy (&self);
     }
-    self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSMATCH);
+    self = nmap_msg_new (NMAP_MSG_OSMATCH);
     
     //  Check that _dup works on empty message
     copy = nmap_msg_dup (self);
@@ -3651,6 +4126,8 @@ nmap_msg_test (bool verbose)
 
     nmap_msg_set_name (self, "Life is short but Now lasts for ever");
     nmap_msg_set_accuracy (self, 123);
+    zframe_t *osmatch_osclass = zframe_new ("Captcha Diem", 12);
+    nmap_msg_set_osclass (self, &osmatch_osclass);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -3662,9 +4139,10 @@ nmap_msg_test (bool verbose)
         
         assert (streq (nmap_msg_name (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_accuracy (self) == 123);
+        assert (zframe_streq (nmap_msg_osclass (self), "Captcha Diem"));
         nmap_msg_destroy (&self);
     }
-    self = nmap_msg_new (NMAP_MSG_DEV_SCAN_OSCLASS);
+    self = nmap_msg_new (NMAP_MSG_OSCLASS);
     
     //  Check that _dup works on empty message
     copy = nmap_msg_dup (self);
