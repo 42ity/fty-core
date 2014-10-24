@@ -10,16 +10,19 @@ drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
 CREATE TABLE t_bios_device_type(
-    id_device_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(25) NOT NULL,
+    id_device_type      TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name                VARCHAR(25)      NOT NULL,
+
     PRIMARY KEY(id_device_type),
+
     UNIQUE INDEX `UI_t_bios_device_type_name` (`name` ASC)
+
 )AUTO_INCREMENT = 2;
 
 CREATE TABLE t_bios_discovered_device(
-    id_discovered_device SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(25),
-    id_device_type TINYINT UNSIGNED NOT NULL,
+    id_discovered_device    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    name                    VARCHAR(25)       NOT NULL,
+    id_device_type          TINYINT UNSIGNED  NOT NULL,
 
     PRIMARY KEY(id_discovered_device),
     
@@ -27,35 +30,31 @@ CREATE TABLE t_bios_discovered_device(
     
     FOREIGN KEY(id_device_type)
 	REFERENCES t_bios_device_type(id_device_type)
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_discovered_ip(
-    id_ip INT UNSIGNED NOT NULL  AUTO_INCREMENT,
-    ipl BIGINT UNSIGNED,
-    iph BIGINT UNSIGNED,
-    id_discovered_device SMALLINT UNSIGNED,
-    timestamp datetime NOT NULL,
-    ip char(19),
+    id_ip                   INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
+    id_discovered_device    SMALLINT UNSIGNED,
+    timestamp               datetime            NOT NULL,
+    ip                      char(19)            NOT NULL,
     PRIMARY KEY(id_ip),
 
     INDEX(id_discovered_device),
 
     FOREIGN KEY (id_discovered_device)
         REFERENCES t_bios_discovered_device(id_discovered_device)
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_net_history(
-    id_net_history INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    command CHAR(1),
-    mac BIGINT UNSIGNED,
-    mask TINYINT UNSIGNED,
-    ipl BIGINT UNSIGNED,
-    iph BIGINT UNSIGNED,
-    ip CHAR(19),
-    name VARCHAR(25),
-    timestamp datetime NOT NULL,
+    id_net_history  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+    command         CHAR(1)             NOT NULL,
+    mac             BIGINT UNSIGNED,
+    mask            TINYINT UNSIGNED    NOT NULL,
+    ip              CHAR(19)            NOT NULL,
+    name            VARCHAR(25),
+    timestamp       datetime            NOT NULL,
 
     PRIMARY KEY(id_net_history)
 );
@@ -70,11 +69,11 @@ CREATE TABLE t_bios_client(
 ) AUTO_INCREMENT = 2;
 
 CREATE TABLE t_bios_client_info(
-    id_client_info BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    id_client TINYINT UNSIGNED NOT NULL,
-    id_discovered_device SMALLINT UNSIGNED,
-    timestamp datetime NOT NULL,
-    ext BLOB,
+    id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    id_client               TINYINT UNSIGNED    NOT NULL,
+    id_discovered_device    SMALLINT UNSIGNED,
+    timestamp               datetime            NOT NULL,
+    ext                     BLOB,
 
     PRIMARY KEY(id_client_info),
 
@@ -83,18 +82,18 @@ CREATE TABLE t_bios_client_info(
 
     FOREIGN KEY (id_discovered_device)
         REFERENCEs t_bios_discovered_device(id_discovered_device)
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
 
     FOREIGN KEY (id_client)
         REFERENCES t_bios_client(id_client)
-        ON DELETE CASCADE
+        ON DELETE RESTRICT
 );
 
 DROP TABLE if exists t_bios_asset_link;
+DROP TABLE if exists t_bios_asset_link_type;
 DROP TABLE if exists t_bios_asset_device;
 DROP TABLE if exists t_bios_asset_device_type;
 DROP TABLE if exists t_bios_asset_ext_attributes;
-DROP TABLE if exists t_bios_asset_location_topology;
 DROP TABLE if exists t_bios_asset_group_relation;
 DROP TABLE if exists t_bios_asset_group;
 DROP TABLE if exists t_bios_asset_group_type;
@@ -105,13 +104,16 @@ CREATE TABLE t_bios_asset_element_type (
   id_asset_element_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name                  VARCHAR(25)      NOT NULL,
   
-  PRIMARY KEY (id_asset_element_type)
+  PRIMARY KEY (id_asset_element_type),
+  
+  UNIQUE INDEX `UI_t_bios_asset_element_type` (`name` ASC)
+
 ) AUTO_INCREMENT = 6;
 
 CREATE TABLE t_bios_asset_element (
-  id_asset_element  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(25) NOT NULL,
-  id_type           TINYINT UNSIGNED NOT NULL,
+  id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+  name              VARCHAR(25)         NOT NULL,
+  id_type           TINYINT UNSIGNED    NOT NULL,
   id_parent         int UNSIGNED,
 
   PRIMARY KEY (id_asset_element),
@@ -153,20 +155,23 @@ CREATE TABLE t_bios_asset_group_relation (
 
 
 CREATE TABLE t_bios_asset_device_type(
-  id_asset_device_type INT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  name                 VARCHAR(25)    NOT NULL,
+  id_asset_device_type TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  name                 VARCHAR(25)        NOT NULL,
   
-  PRIMARY KEY (id_asset_device_type)
+  PRIMARY KEY (id_asset_device_type),
+  UNIQUE INDEX `UI_t_bios_asset_device_type` (`name` ASC)
+
 );
 
+
 CREATE TABLE t_bios_asset_device (
-  id_asset_device       INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  id_asset_element      INT UNSIGNED NOT NULL,
+  id_asset_device       INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+  id_asset_element      INT UNSIGNED     NOT NULL,
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
-  ip                    VARCHAR(25),
-  mac                   BIGINT,
-  id_asset_device_type  INT UNSIGNED NOT NULL,
+  ip                    CHAR(19),
+  mac                   BIGINT UNSIGNED,
+  id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
 
@@ -184,34 +189,50 @@ CREATE TABLE t_bios_asset_device (
     ON DELETE RESTRICT
 );
 
+CREATE TABLE t_bios_asset_link_type(
+  id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  name                 VARCHAR(25)        NOT NULL,
+  
+  PRIMARY KEY (id_asset_link_type),
+  UNIQUE INDEX `UI_t_bios_asset_link_type_name` (`name` ASC)
+
+);
+
 CREATE TABLE t_bios_asset_link (
-  id_link               INT UNSIGNED    NOT NULL AUTO_INCREMENT,
-  id_asset_device_src   INT UNSIGNED    NOT NULL,
+  id_link               INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+  id_asset_device_src   INT UNSIGNED        NOT NULL,
   src_out               TINYINT,
-  id_asset_device_dest  INT UNSIGNED    NOT NULL,
+  id_asset_device_dest  INT UNSIGNED        NOT NULL,
   dest_in               TINYINT,
-  id_asset_link_type    TINYINT,
+  id_asset_link_type    TINYINT UNSIGNED    NOT NULL,
   
   PRIMARY KEY (id_link),
   
-  INDEX FK_ASSETPOWERTOPOLOGY_SRC_idx  (id_asset_device_src    ASC),
-  INDEX FK_ASSETPOWERTOPOLOGY_DIST_idx (id_asset_device_dest   ASC),
+  INDEX FK_ASSETLINK_SRC_idx  (id_asset_device_src    ASC),
+  INDEX FK_ASSETLINK_DEST_idx (id_asset_device_dest   ASC),
+  INDEX FK_ASSETLINK_TYPE_idx (id_asset_link_type     ASC),
   
-  CONSTRAINT FK_ASSETPOWERTOPOLOGY_SRC 
+  CONSTRAINT FK_ASSETLINK_SRC 
     FOREIGN KEY (id_asset_device_src)
     REFERENCES t_bios_asset_device(id_asset_device)
     ON DELETE RESTRICT,
 
-  CONSTRAINT FK_ASSETPOWERTOPOLOGY_DIST_
+  CONSTRAINT FK_ASSETLINK_DEST
     FOREIGN KEY (id_asset_device_dest)
     REFERENCES t_bios_asset_device(id_asset_device)
+    ON DELETE RESTRICT,
+
+  CONSTRAINT FK_ASSETLINK_TYPEEE
+    FOREIGN KEY (id_asset_link_type)
+    REFERENCES t_bios_asset_link_type(id_asset_link_type)
     ON DELETE RESTRICT
+    
 );
 
 CREATE TABLE t_bios_asset_ext_attributes(
   id_asset_ext_attribute    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  keytag                    VARCHAR(25),
-  value                     VARCHAR(250),
+  keytag                    VARCHAR(25)  NOT NULL,
+  value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
   
   PRIMARY KEY (id_asset_ext_attribute),
@@ -223,29 +244,7 @@ CREATE TABLE t_bios_asset_ext_attributes(
     REFERENCES t_bios_asset_element (id_asset_element)
     ON DELETE RESTRICT
 );
-
-CREATE TABLE t_bios_asset_location_topology (
-  id_location_topology  INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  parent_id             INT UNSIGNED NOT NULL,
-  child_id              INT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (id_location_topology),
-
-  INDEX FK_TOPOLOGYLOCATION_CHILD_idx  (child_id  ASC),
-  INDEX FK_TOPOLOGYLOCATION_PARENT_idx (parent_id ASC),
-
-  CONSTRAINT FK_TOPOLOGYLOCATION_PARENT
-    FOREIGN KEY (parent_id)
-    REFERENCES t_bios_asset_element (id_asset_element)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT FK_TOPOLOGYLOCATION_CHILD
-    FOREIGN KEY (child_id)
-    REFERENCES t_bios_asset_element (id_asset_element)
-    ON DELETE RESTRICT
-);
-
-
+insert into t_bios_asset_link_type (id_asset_link_type, name) values (NULL, "power chain");
 
 insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
 insert into t_bios_client (id_client, name) values (1, "nmap");
@@ -255,11 +254,11 @@ insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) v
 
 insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");
+insert into t_bios_client(id_client,name) values(NULL,"NUT");
 
-insert into t_bios_device_type(id_device_type,name) values (NULL,"UPS");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"EPDU");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"SERV");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"MAIN");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
 
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
@@ -293,7 +292,7 @@ insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group
 insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group, id_asset_element) values (NULL, 1,8);
 
 
-insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_dest,  id_asset_link_type, src_out, dist_in) values (NULL, 4,3,1,1,2);
+insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_dest,  id_asset_link_type, src_out, dest_in) values (NULL, 4,3,1,1,2);
 insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 3,2,1);
 insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 2,1,1);
 
@@ -313,35 +312,32 @@ create view v_bios_client as select id_client id, name from t_bios_client;
 
 create view v_bios_client_info as select id_client_info id, id_discovered_device , ext , timestamp , id_client from t_bios_client_info;
 
-create view v_bios_discovered_ip as select id_ip id, iph,ipl, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
+create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
 
-create view v_bios_net_history as select id_net_history id, ipl,iph, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
+create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
 
-create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device, iph, ipl, ip,id from v_bios_discovered_ip group by ipl, iph;
+create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
 create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client,id from v_bios_client_info  group by id_discovered_device, id_client;
 
 
 
-DROP view if exists v_bios_asset_power_topology;
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
 DROP view if exists v_bios_asset_ext_attributes;
-DROP view if exists v_bios_asset_location_topology;
 DROP view if exists v_bios_asset_group_relation;
-DROP view if exists v_bios_asset_group;
-DROP view if exists v_bios_asset_group_type;
 DROP view if exists v_bios_asset_element;
 DROP view if exists v_bios_asset_element_type;
+DROP view if exists v_bios_asset_link_type;
+DROP view if exists v_bios_asset_link;
 
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
-create view v_bios_asset_location_topology as select * from t_bios_asset_location_topology ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
