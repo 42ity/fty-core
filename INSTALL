@@ -376,13 +376,13 @@ and also you can use only the slower sequential `make` procedure whose
 output is ordered and thus it is more informative and coherent for this
 job, i.e.:
 ----
-:; CFLAGS="-Wno-unused-variable -Wno-unused-parameter" \
-   CXXFLAGS="-Wno-unused-variable -Wno-unused-parameter" \
+:; CFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
+   CXXFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
    NOPARMAKE=Y ./autogen.sh build
 ----
 
-If this simple build fails, try the longer version step-by-step and with
-more verbosity, as detailed below.
+If this simple automated build procedure fails, try the longer version
+step-by-step and with more verbosity, as detailed below.
 
 
 
