@@ -1,0 +1,87 @@
+<!-- see https://github.com/zeromq/zproto/blob/master/src/zproto_example.xml -->
+<class
+    name = "common_msg"
+    signature = "9"
+    title = "common messages"
+    script = "zproto_codec_c"
+    header = "."
+    source = "."
+    package_dir= "."
+    include = "czmq.h"
+    >
+
+<include filename = "license.xml" />
+
+<define name = "VERSION" value = "1.0" />
+
+<message name = "db_fail" id = "301">
+    A failed message indicates that during the work with db some error occures
+    <field name = "errorno"     type = "number" size = "1"> An error number</field>
+</message>
+
+<message name = "db_ok" id = "302">
+    An ok message indicates that during the work with db no error occures
+    <field name = "thisid"          type = "number" size = "4"> Id of the row processed</field>
+</message>
+
+<message name = "client" id = "303">
+    Structure describing client
+    <field name = "name"        type = "string"> Name of the client</field>
+</message>
+
+<message name = "insert_client" id = "304">
+    Insert a client
+    <field name = "msg"         type = "msg"> Client to be inserted</field>
+</message>
+
+<message name = "update_client" id = "305">
+    Update a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be updated</field>
+    <field name = "msg"         type = "msg"> Client to be updated</field>
+</message>
+
+<message name = "delete_client" id = "306">
+    Delete a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be deleted</field>
+</message>
+
+<message name = "return_client" id = "307">
+    Return a client we were asked for
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client</field>
+    <field name = "msg"         type = "msg"> Client</field>
+</message>
+
+
+<message name = "client_info" id = "308">
+    Structure describing client info
+    <field name = "client_id"   type = "number" size = "4"> A client id</field>
+    <field name = "device_id"   type = "number" size = "4"> A device id</field>
+    <field name = "info"        type = "string"> Information about device gathered by client</field>
+    <field name = "date"        type = "number" size = "4"> Date when this information was gathered</field>
+</message>
+
+<message name = "insert_cinfo" id = "309">
+    Insert a client info
+    <field name = "msg"         type = "msg"> Client info to be inserted</field>
+</message>
+
+<!-- updating is for now forbidden
+<message name = "update_cinfo" id = "303">
+    Update a client info
+    <field name = "cinfo_id"    type = "number"> Unique ID of the client info to be updated</field>
+    <field name = "msg"         type = "msg"> Client info to be updated</field>
+</message>
+-->
+
+<message name = "delete_cinfo" id = "310">
+    Delete a client info
+    <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info to be deleted</field>
+</message>
+
+<message name = "return_cinfo" id = "311">
+    Return a client info we were asked for
+    <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info</field>
+    <field name = "msg"         type = "msg"> Client info</field>
+</message>
+
+</class>
