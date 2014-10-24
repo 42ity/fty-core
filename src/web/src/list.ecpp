@@ -24,7 +24,7 @@ asset_manager asset_mgr;
     // Prepare the reply
 </%cpp>
 {
-    "<$ request.getArg("type") $>": [
+    "<$ request.getArg("type") $>s": [
 <%cpp>
     zhash_t *ids = asset_msg_get_element_ids(dta);
     if(ids != NULL) {
