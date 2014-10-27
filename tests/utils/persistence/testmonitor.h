@@ -1,0 +1,16 @@
+common_msg_t* _generate_db_fail(unsigned int errorid,  const char* errmsg,  zhash_t* erraux);
+common_msg_t* _generate_ok(unsigned int rowid);
+common_msg_t* _generate_client(const char* name);
+common_msg_t* _generate_return_client(unsigned int clientid, common_msg_t** client);
+common_msg_t* select_client(const char* url, const char* name);
+common_msg_t* select_client(const char* url, unsigned int id);
+common_msg_t* insert_client(const char* url,const char* name);
+common_msg_t* delete_client(const char* url, unsigned int id_client);
+common_msg_t* update_client(const char* url, common_msg_t* client);
+common_msg_t* update_client(const char* url, common_msg_t* client);
+common_msg_t* _generate_client_info(unsigned int id, unsigned int client_id, unsigned int device_id,time_t mytime, const char* data, unsigned int size);
+common_msg_t* _insert_client_info (const char* url, unsigned int device_id, unsigned int client_id, const char* info, unsigned int infolen);
+common_msg_t* _delete_client_info (const char* url, unsigned int id);
+common_msg_t* _update_client_info (const char* url, common_msg_t* newclientinfo);
+common_msg_t* select_client_info_last(const char* url, unsigned int client_id, unsigned int device_id);
+common_msg_t* _select_client_info(const char* url, unsigned int id);
