@@ -51,7 +51,7 @@ struct _common_msg_t {
     char *errmsg;                       //   A user visible error string
     zhash_t *erraux;                    //   An optional additional information about occured error
     size_t erraux_bytes;                //  Size of dictionary content
-    uint32_t thisid;                    //   Id of the row processed
+    uint32_t rowid;                     //   Id of the row processed
     char *name;                         //   Name of the client
     zmsg_t *msg;                        //   Client to be inserted
     uint32_t client_id;                 //   Unique ID of the client to be updated
@@ -286,7 +286,7 @@ common_msg_decode (zmsg_t **msg_p)
             break;
 
         case COMMON_MSG_DB_OK:
-            GET_NUMBER4 (self->thisid);
+            GET_NUMBER4 (self->rowid);
             break;
 
         case COMMON_MSG_CLIENT:
@@ -410,7 +410,7 @@ common_msg_encode (common_msg_t **self_p)
             break;
             
         case COMMON_MSG_DB_OK:
-            //  thisid is a 4-byte integer
+            //  rowid is a 4-byte integer
             frame_size += 4;
             break;
             
@@ -499,7 +499,7 @@ common_msg_encode (common_msg_t **self_p)
             break;
 
         case COMMON_MSG_DB_OK:
-            PUT_NUMBER4 (self->thisid);
+            PUT_NUMBER4 (self->rowid);
             break;
 
         case COMMON_MSG_CLIENT:
@@ -756,10 +756,10 @@ common_msg_encode_fail (
 
 zmsg_t * 
 common_msg_encode_db_ok (
-    uint32_t thisid)
+    uint32_t rowid)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DB_OK);
-    common_msg_set_thisid (self, thisid);
+    common_msg_set_rowid (self, rowid);
     return common_msg_encode (&self);
 }
 
@@ -925,10 +925,10 @@ common_msg_send_fail (
 int
 common_msg_send_db_ok (
     void *output,
-    uint32_t thisid)
+    uint32_t rowid)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DB_OK);
-    common_msg_set_thisid (self, thisid);
+    common_msg_set_rowid (self, rowid);
     return common_msg_send (&self, output);
 }
 
@@ -1097,7 +1097,7 @@ common_msg_dup (common_msg_t *self)
             break;
 
         case COMMON_MSG_DB_OK:
-            copy->thisid = self->thisid;
+            copy->rowid = self->rowid;
             break;
 
         case COMMON_MSG_CLIENT:
@@ -1177,7 +1177,7 @@ common_msg_print (common_msg_t *self)
             
         case COMMON_MSG_DB_OK:
             zsys_debug ("COMMON_MSG_DB_OK:");
-            zsys_debug ("    thisid=%ld", (long) self->thisid);
+            zsys_debug ("    rowid=%ld", (long) self->rowid);
             break;
             
         case COMMON_MSG_CLIENT:
@@ -1489,20 +1489,20 @@ common_msg_erraux_size (common_msg_t *self)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the thisid field
+//  Get/set the rowid field
 
 uint32_t
-common_msg_thisid (common_msg_t *self)
+common_msg_rowid (common_msg_t *self)
 {
     assert (self);
-    return self->thisid;
+    return self->rowid;
 }
 
 void
-common_msg_set_thisid (common_msg_t *self, uint32_t thisid)
+common_msg_set_rowid (common_msg_t *self, uint32_t rowid)
 {
     assert (self);
-    self->thisid = thisid;
+    self->rowid = rowid;
 }
 
 
@@ -1720,7 +1720,7 @@ common_msg_test (bool verbose)
     assert (copy);
     common_msg_destroy (&copy);
 
-    common_msg_set_thisid (self, 123);
+    common_msg_set_rowid (self, 123);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -1730,7 +1730,7 @@ common_msg_test (bool verbose)
         assert (self);
         assert (common_msg_routing_id (self));
         
-        assert (common_msg_thisid (self) == 123);
+        assert (common_msg_rowid (self) == 123);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_CLIENT);

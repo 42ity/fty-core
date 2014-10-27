@@ -21,9 +21,8 @@
  * \return a common_msg_t message of the type COMMON_MSG_DB_FAIL.
  *
  * TODO the codes are now defined as define. May be need to have enum
- * TODO if we want to destroy zhash ourselves or leave it to the user?
  */
-common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, const zhash_t* erraux)
+common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, zhash_t* erraux)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert(resultmsg);
@@ -32,26 +31,26 @@ common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, const 
     common_msg_set_errmsg  (resultmsg, errmsg);
     common_msg_set_erraux  (resultmsg, &erraux);
     // Check if it always works ok with hash
-    // HOW DOES IT WORK with NULL parameters
+    zhash_destroy(&erraux);
     return resultmsg;
 }
 
 /**
- * \brief Generates an COMMON_MSG_DB_OK message and specifies a processed id
+ * \brief Generates an COMMON_MSG_DB_OK message and specifies an id of row that was processed
  *
  * \param id - an id of the processed row
  *
- * \return an common_msg_t message of the type COMMON_MSG_DB_OK
+ * \return a common_msg_t message of the type COMMON_MSG_DB_OK
  */
-common_msg_t* _generate_ok(unsigned int id)
+common_msg_t* _generate_ok(unsigned int rowid)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     assert(resultmsg);
-//    common_msg_set_id (resultmsg, id);
+    common_msg_set_rowid (resultmsg, rowid);
     return resultmsg;
 }
 
-common_msg_t* _generate_client(unsigned int id, const char* name)
+common_msg_t* _generate_client(const char* name)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT);
     assert(resultmsg);
@@ -59,7 +58,26 @@ common_msg_t* _generate_client(unsigned int id, const char* name)
     return resultmsg;
 }
 
-common_msg_t* select_client(const char* url,const char* name)
+common_msg_t* _generate_return_client(unsigned int clientid, common_msg_t** client)
+{
+    assert ( common_msg_id(*client) == COMMON_MSG_CLIENT );
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CLIENT);
+    assert ( resultmsg );
+    assert ( common_msg_id (resultmsg) == COMMON_MSG_RETURN_CLIENT );
+    
+    common_msg_set_client_id (resultmsg, clientid);
+    assert ( common_msg_client_id (resultmsg) == clientid );
+    // TODO there is some issue with encode. It destroys the message, but didn't nullifies the pointer!!!!!
+    zmsg_t* nnmsg = common_msg_encode(client);
+    assert (nnmsg != NULL);
+    assert (zmsg_is (nnmsg));
+    assert (*client == NULL);
+    common_msg_set_msg (resultmsg, &nnmsg);
+    assert (nnmsg == NULL);
+    return resultmsg;
+}
+
+common_msg_t* select_client(const char* url, const char* name)
 {
     assert(strlen(name)>0);
 
@@ -86,7 +104,11 @@ common_msg_t* select_client(const char* url,const char* name)
         // internal error in database
         return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    return _generate_client(id_client,name);
+    common_msg_t* client = _generate_client(name);
+    common_msg_t* result = _generate_return_client(id_client,&client);
+
+    //common_msg_destroy(&client);
+    return result;
 }
 
 common_msg_t* select_client(const char* url, unsigned int id)
@@ -113,7 +135,8 @@ common_msg_t* select_client(const char* url, unsigned int id)
     catch (const std::exception &e) {
         return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    return _generate_client(id,name.c_str());
+    common_msg_t* nn = _generate_client(name.c_str());
+    return _generate_return_client(id, &nn);
 }
 
 common_msg_t* insert_client(const char* url,const char* name)

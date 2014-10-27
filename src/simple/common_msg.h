@@ -42,7 +42,7 @@
         erraux              dictionary   An optional additional information about occured error
 
     DB_OK - An ok message indicates that during the work with db no error had occured
-        thisid              number 4     Id of the row processed
+        rowid               number 4     Id of the row processed
 
     CLIENT - Structure describing client
         name                string       Name of the client
@@ -91,7 +91,9 @@
 #define COMMON_MSG_INSERT_CINFO             309
 #define COMMON_MSG_DELETE_CINFO             310
 #define COMMON_MSG_RETURN_CINFO             311
+
 #include <czmq.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -148,7 +150,7 @@ zmsg_t *
 //  Encode the DB_OK 
 zmsg_t *
     common_msg_encode_db_ok (
-        uint32_t thisid);
+        uint32_t rowid);
 
 //  Encode the CLIENT 
 zmsg_t *
@@ -215,7 +217,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_db_ok (void *output,
-        uint32_t thisid);
+        uint32_t rowid);
     
 //  Send the CLIENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -340,11 +342,11 @@ void
 size_t
     common_msg_erraux_size (common_msg_t *self);
 
-//  Get/set the thisid field
+//  Get/set the rowid field
 uint32_t
-    common_msg_thisid (common_msg_t *self);
+    common_msg_rowid (common_msg_t *self);
 void
-    common_msg_set_thisid (common_msg_t *self, uint32_t thisid);
+    common_msg_set_rowid (common_msg_t *self, uint32_t rowid);
 
 //  Get/set the name field
 const char *
