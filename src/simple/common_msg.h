@@ -9,7 +9,7 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-     * The XML model used for this code generation: commom_msg.xml, or
+     * The XML model used for this code generation: common_msg.xml, or
      * The code generation script that built this file: zproto_codec_c
     ************************************************************************
                                                                         
@@ -35,10 +35,13 @@
 
 /*  These are the common_msg messages:
 
-    DB_FAIL - A failed message indicates that during the work with db some error occures
-        errorno             number 1     An error number
+    FAIL - A failed message indicates that some error had occured
+        errtype             number 1     An error type, defined in enum somewhere
+        errorno             number 2     An error id
+        errmsg              string       A user visible error string
+        erraux              dictionary   An optional additional information about occured error
 
-    DB_OK - An ok message indicates that during the work with db no error occures
+    DB_OK - An ok message indicates that during the work with db no error had occured
         thisid              number 4     Id of the row processed
 
     CLIENT - Structure describing client
@@ -77,7 +80,7 @@
 
 #define COMMON_MSG_VERSION                  1.0
 
-#define COMMON_MSG_DB_FAIL                  301
+#define COMMON_MSG_FAIL                     301
 #define COMMON_MSG_DB_OK                    302
 #define COMMON_MSG_CLIENT                   303
 #define COMMON_MSG_INSERT_CLIENT            304
@@ -88,7 +91,7 @@
 #define COMMON_MSG_INSERT_CINFO             309
 #define COMMON_MSG_DELETE_CINFO             310
 #define COMMON_MSG_RETURN_CINFO             311
-
+#include <czmq.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -134,10 +137,13 @@ int
 int
     common_msg_send_again (common_msg_t *self, void *output);
 
-//  Encode the DB_FAIL 
+//  Encode the FAIL 
 zmsg_t *
-    common_msg_encode_db_fail (
-        byte errorno);
+    common_msg_encode_fail (
+        byte errtype,
+        uint16_t errorno,
+        const char *errmsg,
+        zhash_t *erraux);
 
 //  Encode the DB_OK 
 zmsg_t *
@@ -196,11 +202,14 @@ zmsg_t *
         zmsg_t *msg);
 
 
-//  Send the DB_FAIL to the output in one step
+//  Send the FAIL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
-    common_msg_send_db_fail (void *output,
-        byte errorno);
+    common_msg_send_fail (void *output,
+        byte errtype,
+        uint16_t errorno,
+        const char *errmsg,
+        zhash_t *erraux);
     
 //  Send the DB_OK to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -290,11 +299,46 @@ void
 const char *
     common_msg_command (common_msg_t *self);
 
-//  Get/set the errorno field
+//  Get/set the errtype field
 byte
+    common_msg_errtype (common_msg_t *self);
+void
+    common_msg_set_errtype (common_msg_t *self, byte errtype);
+
+//  Get/set the errorno field
+uint16_t
     common_msg_errorno (common_msg_t *self);
 void
-    common_msg_set_errorno (common_msg_t *self, byte errorno);
+    common_msg_set_errorno (common_msg_t *self, uint16_t errorno);
+
+//  Get/set the errmsg field
+const char *
+    common_msg_errmsg (common_msg_t *self);
+void
+    common_msg_set_errmsg (common_msg_t *self, const char *format, ...);
+
+//  Get/set the erraux field
+zhash_t *
+    common_msg_erraux (common_msg_t *self);
+//  Get the erraux field and transfer ownership to caller
+zhash_t *
+    common_msg_get_erraux (common_msg_t *self);
+//  Set the erraux field, transferring ownership from caller
+void
+    common_msg_set_erraux (common_msg_t *self, zhash_t **erraux_p);
+    
+//  Get/set a value in the erraux dictionary
+const char *
+    common_msg_erraux_string (common_msg_t *self,
+        const char *key, const char *default_value);
+uint64_t
+    common_msg_erraux_number (common_msg_t *self,
+        const char *key, uint64_t default_value);
+void
+    common_msg_erraux_insert (common_msg_t *self,
+        const char *key, const char *format, ...);
+size_t
+    common_msg_erraux_size (common_msg_t *self);
 
 //  Get/set the thisid field
 uint32_t

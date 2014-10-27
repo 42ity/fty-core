@@ -8,7 +8,7 @@
 #define DB_ERROR_NOTFOUND 3
 #define DB_ERROR_UNKNOWN 4
 #define DB_ERROR_NOTIMPLEMENTED 5
-
+#define ERROR_DB 1
 asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg);
 
 #endif

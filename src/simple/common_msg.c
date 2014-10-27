@@ -9,7 +9,7 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-     * The XML model used for this code generation: commom_msg.xml, or
+     * The XML model used for this code generation: common_msg.xml, or
      * The code generation script that built this file: zproto_codec_c
     ************************************************************************
                                                                         
@@ -46,7 +46,11 @@ struct _common_msg_t {
     int id;                             //  common_msg message ID
     byte *needle;                       //  Read/write pointer for serialization
     byte *ceiling;                      //  Valid upper limit for read pointer
-    byte errorno;                       //   An error number
+    byte errtype;                       //   An error type, defined in enum somewhere
+    uint16_t errorno;                   //   An error id
+    char *errmsg;                       //   A user visible error string
+    zhash_t *erraux;                    //   An optional additional information about occured error
+    size_t erraux_bytes;                //  Size of dictionary content
     uint32_t thisid;                    //   Id of the row processed
     char *name;                         //   Name of the client
     zmsg_t *msg;                        //   Client to be inserted
@@ -217,6 +221,8 @@ common_msg_destroy (common_msg_t **self_p)
 
         //  Free class properties
         zframe_destroy (&self->routing_id);
+        free (self->errmsg);
+        zhash_destroy (&self->erraux);
         free (self->name);
         zmsg_destroy (&self->msg);
         free (self->info);
@@ -259,8 +265,24 @@ common_msg_decode (zmsg_t **msg_p)
     GET_NUMBER1 (self->id);
 
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
-            GET_NUMBER1 (self->errorno);
+        case COMMON_MSG_FAIL:
+            GET_NUMBER1 (self->errtype);
+            GET_NUMBER2 (self->errorno);
+            GET_STRING (self->errmsg);
+            {
+                size_t hash_size;
+                GET_NUMBER4 (hash_size);
+                self->erraux = zhash_new ();
+                zhash_autofree (self->erraux);
+                while (hash_size--) {
+                    char *key, *value;
+                    GET_STRING (key);
+                    GET_LONGSTR (value);
+                    zhash_insert (self->erraux, key, value);
+                    free (key);
+                    free (value);
+                }
+            }
             break;
 
         case COMMON_MSG_DB_OK:
@@ -363,9 +385,28 @@ common_msg_encode (common_msg_t **self_p)
 
     size_t frame_size = 2 + 1;          //  Signature and message ID
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
-            //  errorno is a 1-byte integer
+        case COMMON_MSG_FAIL:
+            //  errtype is a 1-byte integer
             frame_size += 1;
+            //  errorno is a 2-byte integer
+            frame_size += 2;
+            //  errmsg is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->errmsg)
+                frame_size += strlen (self->errmsg);
+            //  erraux is an array of key=value strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->erraux) {
+                self->erraux_bytes = 0;
+                //  Add up size of dictionary contents
+                char *item = (char *) zhash_first (self->erraux);
+                while (item) {
+                    self->erraux_bytes += 1 + strlen ((const char *) zhash_cursor (self->erraux));
+                    self->erraux_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->erraux);
+                }
+            }
+            frame_size += self->erraux_bytes;
             break;
             
         case COMMON_MSG_DB_OK:
@@ -436,8 +477,25 @@ common_msg_encode (common_msg_t **self_p)
     PUT_NUMBER1 (self->id);
 
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
-            PUT_NUMBER1 (self->errorno);
+        case COMMON_MSG_FAIL:
+            PUT_NUMBER1 (self->errtype);
+            PUT_NUMBER2 (self->errorno);
+            if (self->errmsg) {
+                PUT_STRING (self->errmsg);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->erraux) {
+                PUT_NUMBER4 (zhash_size (self->erraux));
+                char *item = (char *) zhash_first (self->erraux);
+                while (item) {
+                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->erraux));
+                    PUT_LONGSTR (item);
+                    item = (char *) zhash_next (self->erraux);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty dictionary
             break;
 
         case COMMON_MSG_DB_OK:
@@ -674,14 +732,21 @@ common_msg_send_again (common_msg_t *self, void *output)
 
 
 //  --------------------------------------------------------------------------
-//  Encode DB_FAIL message
+//  Encode FAIL message
 
 zmsg_t * 
-common_msg_encode_db_fail (
-    byte errorno)
+common_msg_encode_fail (
+    byte errtype,
+    uint16_t errorno,
+    const char *errmsg,
+    zhash_t *erraux)
 {
-    common_msg_t *self = common_msg_new (COMMON_MSG_DB_FAIL);
+    common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
+    common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
+    common_msg_set_errmsg (self, errmsg);
+    zhash_t *erraux_copy = zhash_dup (erraux);
+    common_msg_set_erraux (self, &erraux_copy);
     return common_msg_encode (&self);
 }
 
@@ -834,15 +899,22 @@ common_msg_encode_return_cinfo (
 
 
 //  --------------------------------------------------------------------------
-//  Send the DB_FAIL to the socket in one step
+//  Send the FAIL to the socket in one step
 
 int
-common_msg_send_db_fail (
+common_msg_send_fail (
     void *output,
-    byte errorno)
+    byte errtype,
+    uint16_t errorno,
+    const char *errmsg,
+    zhash_t *erraux)
 {
-    common_msg_t *self = common_msg_new (COMMON_MSG_DB_FAIL);
+    common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
+    common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
+    common_msg_set_errmsg (self, errmsg);
+    zhash_t *erraux_copy = zhash_dup (erraux);
+    common_msg_set_erraux (self, &erraux_copy);
     return common_msg_send (&self, output);
 }
 
@@ -1017,8 +1089,11 @@ common_msg_dup (common_msg_t *self)
     if (self->routing_id)
         copy->routing_id = zframe_dup (self->routing_id);
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
+        case COMMON_MSG_FAIL:
+            copy->errtype = self->errtype;
             copy->errorno = self->errorno;
+            copy->errmsg = self->errmsg? strdup (self->errmsg): NULL;
+            copy->erraux = self->erraux? zhash_dup (self->erraux): NULL;
             break;
 
         case COMMON_MSG_DB_OK:
@@ -1080,9 +1155,24 @@ common_msg_print (common_msg_t *self)
 {
     assert (self);
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
-            zsys_debug ("COMMON_MSG_DB_FAIL:");
+        case COMMON_MSG_FAIL:
+            zsys_debug ("COMMON_MSG_FAIL:");
+            zsys_debug ("    errtype=%ld", (long) self->errtype);
             zsys_debug ("    errorno=%ld", (long) self->errorno);
+            if (self->errmsg)
+                zsys_debug ("    errmsg='%s'", self->errmsg);
+            else
+                zsys_debug ("    errmsg=");
+            zsys_debug ("    erraux=");
+            if (self->erraux) {
+                char *item = (char *) zhash_first (self->erraux);
+                while (item) {
+                    zsys_debug ("        %s=%s", zhash_cursor (self->erraux), item);
+                    item = (char *) zhash_next (self->erraux);
+                }
+            }
+            else
+                zsys_debug ("(NULL)");
             break;
             
         case COMMON_MSG_DB_OK:
@@ -1214,8 +1304,8 @@ common_msg_command (common_msg_t *self)
 {
     assert (self);
     switch (self->id) {
-        case COMMON_MSG_DB_FAIL:
-            return ("DB_FAIL");
+        case COMMON_MSG_FAIL:
+            return ("FAIL");
             break;
         case COMMON_MSG_DB_OK:
             return ("DB_OK");
@@ -1252,9 +1342,27 @@ common_msg_command (common_msg_t *self)
 }
 
 //  --------------------------------------------------------------------------
-//  Get/set the errorno field
+//  Get/set the errtype field
 
 byte
+common_msg_errtype (common_msg_t *self)
+{
+    assert (self);
+    return self->errtype;
+}
+
+void
+common_msg_set_errtype (common_msg_t *self, byte errtype)
+{
+    assert (self);
+    self->errtype = errtype;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the errorno field
+
+uint16_t
 common_msg_errorno (common_msg_t *self)
 {
     assert (self);
@@ -1262,10 +1370,121 @@ common_msg_errorno (common_msg_t *self)
 }
 
 void
-common_msg_set_errorno (common_msg_t *self, byte errorno)
+common_msg_set_errorno (common_msg_t *self, uint16_t errorno)
 {
     assert (self);
     self->errorno = errorno;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the errmsg field
+
+const char *
+common_msg_errmsg (common_msg_t *self)
+{
+    assert (self);
+    return self->errmsg;
+}
+
+void
+common_msg_set_errmsg (common_msg_t *self, const char *format, ...)
+{
+    //  Format errmsg from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->errmsg);
+    self->errmsg = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the erraux field without transferring ownership
+
+zhash_t *
+common_msg_erraux (common_msg_t *self)
+{
+    assert (self);
+    return self->erraux;
+}
+
+//  Get the erraux field and transfer ownership to caller
+
+zhash_t *
+common_msg_get_erraux (common_msg_t *self)
+{
+    zhash_t *erraux = self->erraux;
+    self->erraux = NULL;
+    return erraux;
+}
+
+//  Set the erraux field, transferring ownership from caller
+
+void
+common_msg_set_erraux (common_msg_t *self, zhash_t **erraux_p)
+{
+    assert (self);
+    assert (erraux_p);
+    zhash_destroy (&self->erraux);
+    self->erraux = *erraux_p;
+    *erraux_p = NULL;
+}
+
+//  --------------------------------------------------------------------------
+//  Get/set a value in the erraux dictionary
+
+const char *
+common_msg_erraux_string (common_msg_t *self, const char *key, const char *default_value)
+{
+    assert (self);
+    const char *value = NULL;
+    if (self->erraux)
+        value = (const char *) (zhash_lookup (self->erraux, key));
+    if (!value)
+        value = default_value;
+
+    return value;
+}
+
+uint64_t
+common_msg_erraux_number (common_msg_t *self, const char *key, uint64_t default_value)
+{
+    assert (self);
+    uint64_t value = default_value;
+    char *string = NULL;
+    if (self->erraux)
+        string = (char *) (zhash_lookup (self->erraux, key));
+    if (string)
+        value = atol (string);
+
+    return value;
+}
+
+void
+common_msg_erraux_insert (common_msg_t *self, const char *key, const char *format, ...)
+{
+    //  Format into newly allocated string
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    char *string = zsys_vprintf (format, argptr);
+    va_end (argptr);
+
+    //  Store string in hash table
+    if (!self->erraux) {
+        self->erraux = zhash_new ();
+        zhash_autofree (self->erraux);
+    }
+    zhash_update (self->erraux, key, string);
+    free (string);
+}
+
+size_t
+common_msg_erraux_size (common_msg_t *self)
+{
+    return zhash_size (self->erraux);
 }
 
 
@@ -1465,14 +1684,18 @@ common_msg_test (bool verbose)
     //  Encode/send/decode and verify each message type
     int instance;
     common_msg_t *copy;
-    self = common_msg_new (COMMON_MSG_DB_FAIL);
+    self = common_msg_new (COMMON_MSG_FAIL);
     
     //  Check that _dup works on empty message
     copy = common_msg_dup (self);
     assert (copy);
     common_msg_destroy (&copy);
 
+    common_msg_set_errtype (self, 123);
     common_msg_set_errorno (self, 123);
+    common_msg_set_errmsg (self, "Life is short but Now lasts for ever");
+    common_msg_erraux_insert (self, "Name", "Brutus");
+    common_msg_erraux_insert (self, "Age", "%d", 43);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -1482,7 +1705,12 @@ common_msg_test (bool verbose)
         assert (self);
         assert (common_msg_routing_id (self));
         
+        assert (common_msg_errtype (self) == 123);
         assert (common_msg_errorno (self) == 123);
+        assert (streq (common_msg_errmsg (self), "Life is short but Now lasts for ever"));
+        assert (common_msg_erraux_size (self) == 2);
+        assert (streq (common_msg_erraux_string (self, "Name", "?"), "Brutus"));
+        assert (common_msg_erraux_number (self, "Age", 0) == 43);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_DB_OK);

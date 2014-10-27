@@ -6,20 +6,33 @@
 #include <tntdb/value.h>
 #include "assetmsgpersistence.h"
 #include "databasetimeobject.h"
+
 /**
- * \brief Generates an COMMON_MSG_DB_FAIL message with a specified code
+ * \brief Generates a COMMON_MSG_FAIL message.
+ * 
+ * Generates a COMMON_MSG_FAIL with error type ERROR_DB , with a specified code, 
+ * errormessage and optional parameters.
+ * If errmsg is NULL, then it would be "".
  *
- * \param errorid - an id of the error
+ * \param errorid - an id of the error.
+ * \param errmsg  - a detailed message about the error.
+ * \param erraux  - optional information.
  *
- * \return an common_msg_t message of the type COMMON_MSG_DB_FAIL with the specified error number
+ * \return a common_msg_t message of the type COMMON_MSG_DB_FAIL.
  *
  * TODO the codes are now defined as define. May be need to have enum
+ * TODO if we want to destroy zhash ourselves or leave it to the user?
  */
-common_msg_t* _generate_fail(unsigned int errorid)
+common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, const zhash_t* erraux)
 {
-    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_FAIL);
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert(resultmsg);
+    common_msg_set_errtype (resultmsg, ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
+    common_msg_set_errmsg  (resultmsg, errmsg);
+    common_msg_set_erraux  (resultmsg, &erraux);
+    // Check if it always works ok with hash
+    // HOW DOES IT WORK with NULL parameters
     return resultmsg;
 }
 
@@ -38,7 +51,13 @@ common_msg_t* _generate_ok(unsigned int id)
     return resultmsg;
 }
 
-common_msg_t* _generate_client(unsigned int id, const char* name);
+common_msg_t* _generate_client(unsigned int id, const char* name)
+{
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT);
+    assert(resultmsg);
+    common_msg_set_name (resultmsg, name);
+    return resultmsg;
+}
 
 common_msg_t* select_client(const char* url,const char* name)
 {
@@ -61,11 +80,11 @@ common_msg_t* select_client(const char* url,const char* name)
         val.get(id_client); 
     }
     catch (const tntdb::NotFound &e){
-        return _generate_fail(DB_ERROR_NOTFOUND);
+        return _generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
         // internal error in database
-        return _generate_fail(DB_ERROR_INTERNAL);
+        return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
     return _generate_client(id_client,name);
 }
@@ -89,10 +108,10 @@ common_msg_t* select_client(const char* url, unsigned int id)
         assert(name != "");
     }
     catch (const tntdb::NotFound &e){
-        return _generate_fail(DB_ERROR_NOTFOUND);
+        return _generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_fail(DB_ERROR_INTERNAL);
+        return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
     return _generate_client(id,name.c_str());
 }
@@ -117,12 +136,12 @@ common_msg_t* insert_client(const char* url,const char* name)
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
         return _generate_ok (newid);
     else
-        return _generate_fail (DB_ERROR_BADINPUT);
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 common_msg_t* delete_client(const char* url, unsigned int id_client)
@@ -140,12 +159,12 @@ common_msg_t* delete_client(const char* url, unsigned int id_client)
         n  = st.setInt("id", id_client).execute();
     } 
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
         return _generate_ok( id_client);
     else
-        return _generate_fail(DB_ERROR_BADINPUT);
+        return _generate_db_fail(DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 common_msg_t* update_client(const char* url, common_msg_t* client)
@@ -169,19 +188,30 @@ common_msg_t* update_client(const char* url, common_msg_t* client)
                 execute();
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
         return _generate_ok(id);
     else
-        return _generate_fail(DB_ERROR_UNKNOWN);
+        return _generate_db_fail(DB_ERROR_UNKNOWN, NULL, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
 // client info//////////
 // //////////////////////////////
-common_msg_t* _generate_client_info(unsigned int id, unsigned int client_id, unsigned int device_id,time_t mytime, const char* data, unsigned int size);
+common_msg_t* _generate_client_info(unsigned int id, unsigned int client_id, unsigned int device_id,time_t mytime, const char* data, unsigned int size)
+{
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT_INFO);
+    assert(resultmsg);
+    common_msg_set_client_id (resultmsg, client_id);
+    common_msg_set_device_id (resultmsg, device_id);
+    common_msg_set_info (resultmsg,data);
+    common_msg_set_date (resultmsg,555); // TODO time
+    return resultmsg;
+    
+
+}
 /**
  * \brief Inserts into the table t_bios_client_info new row.
  *
@@ -220,12 +250,12 @@ common_msg_t* _insert_client_info (const char* url, unsigned int device_id, unsi
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
         return _generate_ok (newid);
     else
-        return _generate_fail (DB_ERROR_BADINPUT);
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -251,12 +281,12 @@ common_msg_t* _delete_client_info (const char* url, unsigned int id)
         n  = st.setInt("id", id).execute();
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
         return _generate_ok ( id);
     else
-        return _generate_fail (DB_ERROR_BADINPUT);
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -269,7 +299,7 @@ common_msg_t* _delete_client_info (const char* url, unsigned int id)
  */
 common_msg_t* _update_client_info (const char* url, common_msg_t* newclientinfo)
 {
-    return _generate_fail (DB_ERROR_NOTIMPLEMENTED);  // TODO NOT INMPLEMENTED
+    return _generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
 }
 
 /**
@@ -316,10 +346,10 @@ common_msg_t* select_client_info_last(const char* url, unsigned int client_id, u
         assert(isNotNull);
     }
     catch (const tntdb::NotFound &e) {
-        return _generate_fail (DB_ERROR_NOTFOUND);
+        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     time_t mytime = utils::db::convertToCTime(mydatetime);
     return _generate_client_info(id, client_id, device_id, mytime, myBlob.data(), myBlob.size());
@@ -360,10 +390,10 @@ common_msg_t* _select_client_info(const char* url, unsigned int id)
         assert(device_id);
     }
     catch (const tntdb::NotFound &e) {
-        return _generate_fail (DB_ERROR_NOTFOUND);
+        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_fail (DB_ERROR_INTERNAL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     time_t mytime = utils::db::convertToCTime(mydatetime);
     return _generate_client_info(id, client_id, device_id, mytime, myBlob.data(), myBlob.size());

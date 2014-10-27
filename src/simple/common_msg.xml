@@ -14,14 +14,17 @@
 
 <define name = "VERSION" value = "1.0" />
 
-<message name = "db_fail" id = "301">
-    A failed message indicates that during the work with db some error occures
-    <field name = "errorno"     type = "number" size = "1"> An error number</field>
+<message name = "fail" id = "301">
+    A failed message indicates that some error had occured
+    <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
+    <field name = "errorno"       type = "number" size = "2"> An error id</field>
+    <field name = "errmsg"      type = "string"> A user visible error string</field>
+    <field name = "erraux"      type = "dictionary"> An optional additional information about occured error</field>
 </message>
 
 <message name = "db_ok" id = "302">
-    An ok message indicates that during the work with db no error occures
-    <field name = "thisid"          type = "number" size = "4"> Id of the row processed</field>
+    An ok message indicates that during the work with db no error had occured
+    <field name = "thisid"      type = "number" size = "4"> Id of the row processed</field>
 </message>
 
 <message name = "client" id = "303">
