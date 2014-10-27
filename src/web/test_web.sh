@@ -36,6 +36,12 @@ api_auth_post() {
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+# fixture ini
+if [ ! /usr/bin/systemctl is-active -q saslauthd.service ]; then
+    echo "saslauthd does not run, please entrer a root password to run it"
+    /usr/bin/sudo /usr/bin/systemctl start saslauthd.service || exit $?
+fi
+
 # Check getting token
 echo "Testing login:"
 TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
