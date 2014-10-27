@@ -6,17 +6,20 @@ TOTAL=0
 USER="morbo"
 PASSWD="iwilldestroyyou"
 
-BASE_URL="http://127.0.0.1:8000/api/1.0"
+BASE_URL="http://127.0.0.1:8000/api/v1"
 
 print_result() {
+    _ret=0
     if [ "$1" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
         echo " * FAILED"
+        _ret=1
     fi
     TOTAL="`expr $TOTAL + 1`"
     echo
+    return $_ret
 }
 
 api_get() {
@@ -28,7 +31,7 @@ api_post() {
 }
 
 api_auth_post() {
-    TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
+    TOKEN="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
             sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
@@ -39,6 +42,10 @@ TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
 [ "$TOKEN" ]
 print_result $?
+if [ $? -ne 0 ]; then
+    echo "FATAL: access token test must not fail, otherwise it does not makes a sense to continue"
+    exit 1
+fi
 
 # Check not getting token
 echo "Testing wrong login:"
