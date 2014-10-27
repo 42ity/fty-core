@@ -301,7 +301,8 @@ bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
 		       -I$(top_builddir)/tools \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
-                       ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS}
+                       ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
+					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX}
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
                       ${LIBSASL2_LIBS} -module -lm -ltntdb -ltntnet
 

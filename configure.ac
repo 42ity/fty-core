@@ -139,6 +139,8 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
   AC_MSG_ERROR([TNTnet not found!])
 ])
 
+BS_CHECK_SASLAUTHD_MUX
+
 # set flags CFLAGS
 my_CFLAGS="\
 -std=c11 \
@@ -198,6 +200,7 @@ Summary:
         LIBSODIUM_LIBS:          ${LIBSODIUM_LIBS}
         LIBSASL2_CFLAGS:         ${LIBSASL2_CFLAGS}
         LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
+        SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
 
         debug mode:              ${enable_debug:-no}
 ])
