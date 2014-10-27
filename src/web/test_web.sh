@@ -42,6 +42,16 @@ if [ ! /usr/bin/systemctl is-active -q saslauthd.service ]; then
     /usr/bin/sudo /usr/bin/systemctl start saslauthd.service || exit $?
 fi
 
+# check the user morbo in system
+# I expects SASL uses Linux PAM, therefor getent will tell us it all
+if ! getent passwd "${USER}"; then
+    echo "User ${USER} is not known to system administrative database"
+    echo "To add it locally, run: "
+    echo "    sudo /usr/sbin/useradd --comment "BIOS REST API testing user" --groups nobody --no-create-home --no-user-group ${USER}"
+    echo "and don't forget the password '${PASSWD}'"
+    exit 2
+fi
+
 # Check getting token
 echo "Testing login:"
 TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
