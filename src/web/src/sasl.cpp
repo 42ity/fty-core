@@ -137,7 +137,7 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
     const char *p = NULL;
 
     if (!service) {
-        service = "imap";
+        service = "bios";
     }
     if (!userid || !passwd) {
         return false;
