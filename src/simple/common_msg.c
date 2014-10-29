@@ -47,7 +47,7 @@ struct _common_msg_t {
     byte *needle;                       //  Read/write pointer for serialization
     byte *ceiling;                      //  Valid upper limit for read pointer
     byte errtype;                       //   An error type, defined in enum somewhere
-    uint16_t errorno;                   //   An error id
+    uint32_t errorno;                   //   An error id
     char *errmsg;                       //   A user visible error string
     zhash_t *erraux;                    //   An optional additional information about occured error
     size_t erraux_bytes;                //  Size of dictionary content
@@ -267,7 +267,7 @@ common_msg_decode (zmsg_t **msg_p)
     switch (self->id) {
         case COMMON_MSG_FAIL:
             GET_NUMBER1 (self->errtype);
-            GET_NUMBER2 (self->errorno);
+            GET_NUMBER4 (self->errorno);
             GET_STRING (self->errmsg);
             {
                 size_t hash_size;
@@ -388,8 +388,8 @@ common_msg_encode (common_msg_t **self_p)
         case COMMON_MSG_FAIL:
             //  errtype is a 1-byte integer
             frame_size += 1;
-            //  errorno is a 2-byte integer
-            frame_size += 2;
+            //  errorno is a 4-byte integer
+            frame_size += 4;
             //  errmsg is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->errmsg)
@@ -479,7 +479,7 @@ common_msg_encode (common_msg_t **self_p)
     switch (self->id) {
         case COMMON_MSG_FAIL:
             PUT_NUMBER1 (self->errtype);
-            PUT_NUMBER2 (self->errorno);
+            PUT_NUMBER4 (self->errorno);
             if (self->errmsg) {
                 PUT_STRING (self->errmsg);
             }
@@ -737,7 +737,7 @@ common_msg_send_again (common_msg_t *self, void *output)
 zmsg_t * 
 common_msg_encode_fail (
     byte errtype,
-    uint16_t errorno,
+    uint32_t errorno,
     const char *errmsg,
     zhash_t *erraux)
 {
@@ -905,7 +905,7 @@ int
 common_msg_send_fail (
     void *output,
     byte errtype,
-    uint16_t errorno,
+    uint32_t errorno,
     const char *errmsg,
     zhash_t *erraux)
 {
@@ -1362,7 +1362,7 @@ common_msg_set_errtype (common_msg_t *self, byte errtype)
 //  --------------------------------------------------------------------------
 //  Get/set the errorno field
 
-uint16_t
+uint32_t
 common_msg_errorno (common_msg_t *self)
 {
     assert (self);
@@ -1370,7 +1370,7 @@ common_msg_errorno (common_msg_t *self)
 }
 
 void
-common_msg_set_errorno (common_msg_t *self, uint16_t errorno)
+common_msg_set_errorno (common_msg_t *self, uint32_t errorno)
 {
     assert (self);
     self->errorno = errorno;

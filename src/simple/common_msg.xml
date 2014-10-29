@@ -14,48 +14,48 @@
 
 <define name = "VERSION" value = "1.0" />
 
-<message name = "fail" id = "301">
+<message name = "fail" id = "201">
     A failed message indicates that some error had occured
     <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
-    <field name = "errorno"     type = "number" size = "2"> An error id</field>
+    <field name = "errorno"     type = "number" size = "4"> An error id</field>
     <field name = "errmsg"      type = "string"> A user visible error string</field>
     <field name = "erraux"      type = "dictionary"> An optional additional information about occured error</field>
 </message>
 
-<message name = "db_ok" id = "302">
+<message name = "db_ok" id = "202">
     An ok message indicates that during the work with db no error had occured
     <field name = "rowid"      type = "number" size = "4"> Id of the row processed</field>
 </message>
 
-<message name = "client" id = "303">
+<message name = "client" id = "203">
     Structure describing client
     <field name = "name"        type = "string"> Name of the client</field>
 </message>
 
-<message name = "insert_client" id = "304">
+<message name = "insert_client" id = "204">
     Insert a client
     <field name = "msg"         type = "msg"> Client to be inserted</field>
 </message>
 
-<message name = "update_client" id = "305">
+<message name = "update_client" id = "205">
     Update a client
     <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be updated</field>
     <field name = "msg"         type = "msg"> Client to be updated</field>
 </message>
 
-<message name = "delete_client" id = "306">
+<message name = "delete_client" id = "206">
     Delete a client
     <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be deleted</field>
 </message>
 
-<message name = "return_client" id = "307">
+<message name = "return_client" id = "207">
     Return a client we were asked for
     <field name = "client_id"   type = "number" size = "4"> Unique ID of the client</field>
     <field name = "msg"         type = "msg"> Client</field>
 </message>
 
 
-<message name = "client_info" id = "308">
+<message name = "client_info" id = "208">
     Structure describing client info
     <field name = "client_id"   type = "number" size = "4"> A client id</field>
     <field name = "device_id"   type = "number" size = "4"> A device id</field>
@@ -63,7 +63,7 @@
     <field name = "date"        type = "number" size = "4"> Date when this information was gathered</field>
 </message>
 
-<message name = "insert_cinfo" id = "309">
+<message name = "insert_cinfo" id = "209">
     Insert a client info
     <field name = "msg"         type = "msg"> Client info to be inserted</field>
 </message>
@@ -76,12 +76,12 @@
 </message>
 -->
 
-<message name = "delete_cinfo" id = "310">
+<message name = "delete_cinfo" id = "210">
     Delete a client info
     <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info to be deleted</field>
 </message>
 
-<message name = "return_cinfo" id = "311">
+<message name = "return_cinfo" id = "211">
     Return a client info we were asked for
     <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info</field>
     <field name = "msg"         type = "msg"> Client info</field>

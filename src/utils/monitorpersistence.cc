@@ -22,7 +22,7 @@
  *
  * TODO the codes are now defined as define. May be need to have enum
  */
-common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, zhash_t* erraux)
+common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* erraux)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert(resultmsg);
@@ -42,7 +42,7 @@ common_msg_t* _generate_db_fail(unsigned int errorid, const char* errmsg, zhash_
  *
  * \return a common_msg_t message of the type COMMON_MSG_DB_OK
  */
-common_msg_t* _generate_ok(unsigned int rowid)
+common_msg_t* _generate_ok(uint32_t rowid)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     assert(resultmsg);
@@ -57,23 +57,17 @@ common_msg_t* _generate_client(const char* name)
     common_msg_set_name (resultmsg, name);
     return resultmsg;
 }
-
-common_msg_t* _generate_return_client(unsigned int clientid, common_msg_t** client)
+//it shoud destriy the client
+common_msg_t* _generate_return_client(uint32_t clientid, common_msg_t** client)
 {
     assert ( common_msg_id(*client) == COMMON_MSG_CLIENT );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CLIENT);
     assert ( resultmsg );
-    assert ( common_msg_id (resultmsg) == COMMON_MSG_RETURN_CLIENT );
-    
     common_msg_set_client_id (resultmsg, clientid);
-    assert ( common_msg_client_id (resultmsg) == clientid );
     // TODO there is some issue with encode. It destroys the message, but didn't nullifies the pointer!!!!!
     zmsg_t* nnmsg = common_msg_encode(client);
-    assert (nnmsg != NULL);
-    assert (zmsg_is (nnmsg));
-    assert (*client == NULL);
+    assert (nnmsg);
     common_msg_set_msg (resultmsg, &nnmsg);
-    assert (nnmsg == NULL);
     return resultmsg;
 }
 
@@ -87,42 +81,38 @@ common_msg_t* select_client(const char* url, const char* name)
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " select "
+            " SELECT "
             " v.id"
-            " from"
+            " FROM"
             " v_bios_client v"
-            " where v.name = :name"
+            " WHERE v.name = :name"
         );
           
         tntdb::Value val = st.setString("name", name).selectValue();
         val.get(id_client); 
     }
     catch (const tntdb::NotFound &e){
-        return _generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
+        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        // internal error in database
-        return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client = _generate_client(name);
-    common_msg_t* result = _generate_return_client(id_client,&client);
-
-    //common_msg_destroy(&client);
-    return result;
+    common_msg_t* client = _generate_client (name);
+    return _generate_return_client (id_client, &client);
 }
 
-common_msg_t* select_client(const char* url, unsigned int id)
+common_msg_t* select_client(const char* url, uint32_t id)
 {
     std::string name = "";
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " select "
+            " SELECT "
             " v.name"
-            " from"
+            " FROM"
             " v_bios_client v"
-            " where v.id = :id"
+            " WHERE v.id = :id"
         );
           
         tntdb::Value val = st.setInt("id", id).selectValue();
@@ -135,24 +125,26 @@ common_msg_t* select_client(const char* url, unsigned int id)
     catch (const std::exception &e) {
         return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* nn = _generate_client(name.c_str());
-    return _generate_return_client(id, &nn);
+    common_msg_t* client = _generate_client (name.c_str());
+    return _generate_return_client (id, &client);
 }
 
 common_msg_t* insert_client(const char* url,const char* name)
 {
-    assert (strlen(name) > 0);
+    uint32_t length = strlen(name);
+    if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
+        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
 
-    unsigned int n = 0;
-    unsigned int newid = 0;
+    uint32_t n = 0;
+    uint32_t newid = 0;
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " insert into"
+            " INSERT INTO"
             " v_bios_client (id,name)"
-            " values (NULL,:name)"
+            " VALUES (NULL,:name)"
         );
     
         n  = st.setString("name", name).execute();
@@ -167,16 +159,16 @@ common_msg_t* insert_client(const char* url,const char* name)
         return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
-common_msg_t* delete_client(const char* url, unsigned int id_client)
+common_msg_t* delete_client(const char* url, uint32_t id_client)
 {
-    unsigned int n = 0;
+    uint32_t n = 0;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " delete from"
+            " DELETE FROM"
             " v_bios_client "
-            " where id = :id"
+            " WHERE id = :id"
         );
     
         n  = st.setInt("id", id_client).execute();
@@ -185,25 +177,32 @@ common_msg_t* delete_client(const char* url, unsigned int id_client)
         return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok( id_client);
+        return _generate_ok ( id_client);
     else
-        return _generate_db_fail(DB_ERROR_BADINPUT, NULL, NULL);
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
-
-common_msg_t* update_client(const char* url, common_msg_t* client)
+// should destroy client
+common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 {
-    const char* name = common_msg_name(client);
-    unsigned int id = common_msg_id(client);
-    unsigned int n = 0;
+    assert ( common_msg_id(*client) == COMMON_MSG_CLIENT );
+    const char* name = common_msg_name(*client);
+    uint32_t length = strlen(name);
+    if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
+    {
+        common_msg_destroy(client);
+        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
+    }
+
+    uint32_t n = 0;
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " update"
+            " UPDATE"
             " v_bios_client"
-            " set name = :name"
-            " where id = :id"
+            " SET name = :name"
+            " WHERE id = :id"
         );
     
         n  = st.setString("name", name).
@@ -211,19 +210,22 @@ common_msg_t* update_client(const char* url, common_msg_t* client)
                 execute();
     }
     catch (const std::exception &e) {
+        common_msg_destroy(client);
         return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
+    common_msg_destroy(client);
     if ( n == 1 )
-        return _generate_ok(id);
+        return _generate_ok (id);
     else
-        return _generate_db_fail(DB_ERROR_UNKNOWN, NULL, NULL);
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////
-// client info//////////
-// //////////////////////////////
-common_msg_t* _generate_client_info(unsigned int id, unsigned int client_id, unsigned int device_id,time_t mytime, const char* data, unsigned int size)
+// client info///////////////////
+/////////////////////////////////
+
+common_msg_t* _generate_client_info(uint32_t id, uint32_t client_id, uint32_t device_id,time_t mytime, const char* data, uint32_t size)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT_INFO);
     assert(resultmsg);
@@ -246,14 +248,14 @@ common_msg_t* _generate_client_info(unsigned int id, unsigned int client_id, uns
  * \return COMMON_MSG_DB_FAIL if inserting failed
  *         COMMON_MSG_DB_OK   if inserting was successful
  */
-common_msg_t* _insert_client_info (const char* url, unsigned int device_id, unsigned int client_id, const char* info, unsigned int infolen)
+common_msg_t* _insert_client_info (const char* url, uint32_t device_id, uint32_t client_id, const char* info, uint32_t infolen)
 {
     assert(device_id);  // is required
     assert(client_id);  // is required
     assert(infolen);    // is required
 
-    unsigned int n = 0; // number of rows affected
-    unsigned int newid = 0;
+    uint32_t n = 0; // number of rows affected
+    uint32_t newid = 0;
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -289,16 +291,16 @@ common_msg_t* _insert_client_info (const char* url, unsigned int device_id, unsi
  * \return COMMON_MSG_DB_FAIL if delete failed
  *         COMMON_MSG_DB_OK   if delete was successful
  */
-common_msg_t* _delete_client_info (const char* url, unsigned int id)
+common_msg_t* _delete_client_info (const char* url, uint32_t id)
 {
-   unsigned int n = 0;
+   uint32_t n = 0;
    try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " delete from"
+            " DELETE FROM"
             " v_bios_client_info "
-            " where id = :id"
+            " WHERE id = :id"
         );
     
         n  = st.setInt("id", id).execute();
@@ -333,12 +335,12 @@ common_msg_t* _update_client_info (const char* url, common_msg_t* newclientinfo)
  * \return COMMON_MSG_DB_FAIL if update failed
  *         COMMON_MSG_DB_OK   if update was successful
  */
-common_msg_t* select_client_info_last(const char* url, unsigned int client_id, unsigned int device_id)
+common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint32_t device_id)
 {
     assert(client_id);  // is required
     assert(device_id);  // is required
 
-    unsigned int id = 0;
+    uint32_t id = 0;
     tntdb::Blob myBlob;
     tntdb::Datetime mydatetime;
 
@@ -346,11 +348,11 @@ common_msg_t* select_client_info_last(const char* url, unsigned int client_id, u
         tntdb::Connection conn = tntdb::connectCached(url); 
 
         tntdb::Statement st = conn.prepareCached(
-            " select "
+            " SELECT "
             " v.id, v.datum, v.info"
-            " from"
+            " FROM"
             " v_bios_client_info_last v"
-            " where v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
+            " WHERE v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
         );
 
         // Should return one row or nothing.
@@ -378,12 +380,12 @@ common_msg_t* select_client_info_last(const char* url, unsigned int client_id, u
     return _generate_client_info(id, client_id, device_id, mytime, myBlob.data(), myBlob.size());
 }
 
-common_msg_t* _select_client_info(const char* url, unsigned int id)
+common_msg_t* _select_client_info(const char* url, uint32_t id)
 {
     assert (id);
 
-    unsigned int client_id = 0;
-    unsigned int device_id = 0;
+    uint32_t client_id = 0;
+    uint32_t device_id = 0;
     tntdb::Datetime mydatetime;
     tntdb::Blob myBlob;
 
@@ -391,11 +393,11 @@ common_msg_t* _select_client_info(const char* url, unsigned int id)
         tntdb::Connection conn = tntdb::connectCached(url); 
 
         tntdb::Statement st = conn.prepareCached(
-            " select "
+            " SELECT "
             " v.timestamp, v.ext, v.id_client , v.id_discovered_device"
-            " from"
+            " FROM"
             " v_bios_client_info v"
-            " where v.id = :id"
+            " WHERE v.id = :id"
         );
         
         tntdb::Row row = st.setInt("id", id).selectRow();

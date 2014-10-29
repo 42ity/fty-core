@@ -37,7 +37,7 @@
 
     FAIL - A failed message indicates that some error had occured
         errtype             number 1     An error type, defined in enum somewhere
-        errorno             number 2     An error id
+        errorno             number 4     An error id
         errmsg              string       A user visible error string
         erraux              dictionary   An optional additional information about occured error
 
@@ -80,17 +80,17 @@
 
 #define COMMON_MSG_VERSION                  1.0
 
-#define COMMON_MSG_FAIL                     301
-#define COMMON_MSG_DB_OK                    302
-#define COMMON_MSG_CLIENT                   303
-#define COMMON_MSG_INSERT_CLIENT            304
-#define COMMON_MSG_UPDATE_CLIENT            305
-#define COMMON_MSG_DELETE_CLIENT            306
-#define COMMON_MSG_RETURN_CLIENT            307
-#define COMMON_MSG_CLIENT_INFO              308
-#define COMMON_MSG_INSERT_CINFO             309
-#define COMMON_MSG_DELETE_CINFO             310
-#define COMMON_MSG_RETURN_CINFO             311
+#define COMMON_MSG_FAIL                     201
+#define COMMON_MSG_DB_OK                    202
+#define COMMON_MSG_CLIENT                   203
+#define COMMON_MSG_INSERT_CLIENT            204
+#define COMMON_MSG_UPDATE_CLIENT            205
+#define COMMON_MSG_DELETE_CLIENT            206
+#define COMMON_MSG_RETURN_CLIENT            207
+#define COMMON_MSG_CLIENT_INFO              208
+#define COMMON_MSG_INSERT_CINFO             209
+#define COMMON_MSG_DELETE_CINFO             210
+#define COMMON_MSG_RETURN_CINFO             211
 
 #include <czmq.h>
 
@@ -143,7 +143,7 @@ int
 zmsg_t *
     common_msg_encode_fail (
         byte errtype,
-        uint16_t errorno,
+        uint32_t errorno,
         const char *errmsg,
         zhash_t *erraux);
 
@@ -209,7 +209,7 @@ zmsg_t *
 int
     common_msg_send_fail (void *output,
         byte errtype,
-        uint16_t errorno,
+        uint32_t errorno,
         const char *errmsg,
         zhash_t *erraux);
     
@@ -308,10 +308,10 @@ void
     common_msg_set_errtype (common_msg_t *self, byte errtype);
 
 //  Get/set the errorno field
-uint16_t
+uint32_t
     common_msg_errorno (common_msg_t *self);
 void
-    common_msg_set_errorno (common_msg_t *self, uint16_t errorno);
+    common_msg_set_errorno (common_msg_t *self, uint32_t errorno);
 
 //  Get/set the errmsg field
 const char *
