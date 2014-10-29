@@ -58,13 +58,13 @@
         client_id           number 4     Unique ID of the client to be deleted
 
     RETURN_CLIENT - Return a client we were asked for
-        client_id           number 4     Unique ID of the client
+        rowid               number 4     Unique ID of the client
         msg                 msg          Client
 
     CLIENT_INFO - Structure describing client info
         client_id           number 4     A client id
         device_id           number 4     A device id
-        info                string       Information about device gathered by client
+        info                chunk        Information about device gathered by client (data+ its size)
         date                number 4     Date when this information was gathered
 
     INSERT_CINFO - Insert a client info
@@ -74,7 +74,7 @@
         cinfo_id            number 4     Unique ID of the client info to be deleted
 
     RETURN_CINFO - Return a client info we were asked for
-        cinfo_id            number 4     Unique ID of the client info
+        rowid               number 4     Unique ID of the client info
         msg                 msg          Client info
 */
 
@@ -176,7 +176,7 @@ zmsg_t *
 //  Encode the RETURN_CLIENT 
 zmsg_t *
     common_msg_encode_return_client (
-        uint32_t client_id,
+        uint32_t rowid,
         zmsg_t *msg);
 
 //  Encode the CLIENT_INFO 
@@ -184,7 +184,7 @@ zmsg_t *
     common_msg_encode_client_info (
         uint32_t client_id,
         uint32_t device_id,
-        const char *info,
+        zchunk_t *info,
         uint32_t date);
 
 //  Encode the INSERT_CINFO 
@@ -200,7 +200,7 @@ zmsg_t *
 //  Encode the RETURN_CINFO 
 zmsg_t *
     common_msg_encode_return_cinfo (
-        uint32_t cinfo_id,
+        uint32_t rowid,
         zmsg_t *msg);
 
 
@@ -248,7 +248,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_return_client (void *output,
-        uint32_t client_id,
+        uint32_t rowid,
         zmsg_t *msg);
     
 //  Send the CLIENT_INFO to the output in one step
@@ -257,7 +257,7 @@ int
     common_msg_send_client_info (void *output,
         uint32_t client_id,
         uint32_t device_id,
-        const char *info,
+        zchunk_t *info,
         uint32_t date);
     
 //  Send the INSERT_CINFO to the output in one step
@@ -276,7 +276,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_return_cinfo (void *output,
-        uint32_t cinfo_id,
+        uint32_t rowid,
         zmsg_t *msg);
     
 //  Duplicate the common_msg message
@@ -376,11 +376,15 @@ uint32_t
 void
     common_msg_set_device_id (common_msg_t *self, uint32_t device_id);
 
-//  Get/set the info field
-const char *
+//  Get a copy of the info field
+zchunk_t *
     common_msg_info (common_msg_t *self);
+//  Get the info field and transfer ownership to caller
+zchunk_t *
+    common_msg_get_info (common_msg_t *self);
+//  Set the info field, transferring ownership from caller
 void
-    common_msg_set_info (common_msg_t *self, const char *format, ...);
+    common_msg_set_info (common_msg_t *self, zchunk_t **chunk_p);
 
 //  Get/set the date field
 uint32_t

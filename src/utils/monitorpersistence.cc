@@ -50,6 +50,10 @@ common_msg_t* _generate_ok(uint32_t rowid)
     return resultmsg;
 }
 
+////////////////////////////////////////////////////////////////////
+///////            CLIENT                    ///////////////////////
+////////////////////////////////////////////////////////////////////
+
 common_msg_t* _generate_client(const char* name)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT);
@@ -63,7 +67,7 @@ common_msg_t* _generate_return_client(uint32_t clientid, common_msg_t** client)
     assert ( common_msg_id(*client) == COMMON_MSG_CLIENT );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CLIENT);
     assert ( resultmsg );
-    common_msg_set_client_id (resultmsg, clientid);
+    common_msg_set_rowid (resultmsg, clientid);
     // TODO there is some issue with encode. It destroys the message, but didn't nullifies the pointer!!!!!
     zmsg_t* nnmsg = common_msg_encode(client);
     assert (nnmsg);
@@ -221,62 +225,66 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 }
 
 ////////////////////////////////////////////////////////////////////////
+/////////////////           CLIENT INFO              ///////////////////
 ////////////////////////////////////////////////////////////////////////
-// client info///////////////////
-/////////////////////////////////
 
-common_msg_t* _generate_client_info(uint32_t id, uint32_t client_id, uint32_t device_id,time_t mytime, const char* data, uint32_t size)
+common_msg_t* _generate_client_info
+    (uint32_t client_id, uint32_t device_id, time_t mytime, byte* data, uint32_t datasize)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT_INFO);
     assert(resultmsg);
     common_msg_set_client_id (resultmsg, client_id);
     common_msg_set_device_id (resultmsg, device_id);
-    common_msg_set_info (resultmsg,data);
-    common_msg_set_date (resultmsg,555); // TODO time
+    zchunk_t* blob = zchunk_new (data, datasize);
+    common_msg_set_info (resultmsg, &blob);
+    common_msg_set_date (resultmsg, 555); // TODO time
     return resultmsg;
-    
-
 }
+
 /**
  * \brief Inserts into the table t_bios_client_info new row.
  *
+ * blob would be destroyed.
+ *
  * \param device_id - id of the device information is about
  * \param client_id - id of the module that gathered this information
- * \param info      - an information as a flow of bytes
- * \param infolen   - the size of info
+ * \param blob      - an information as a flow of bytes
  *
  * \return COMMON_MSG_DB_FAIL if inserting failed
  *         COMMON_MSG_DB_OK   if inserting was successful
  */
-common_msg_t* _insert_client_info (const char* url, uint32_t device_id, uint32_t client_id, const char* info, uint32_t infolen)
+common_msg_t* _insert_client_info
+    (const char* url, uint32_t device_id, uint32_t client_id, zchunk_t** blob)
 {
     assert(device_id);  // is required
     assert(client_id);  // is required
-    assert(infolen);    // is required
+    assert(*blob);      // is required
 
-    uint32_t n = 0; // number of rows affected
+    uint32_t n = 0;     // number of rows affected
     uint32_t newid = 0;
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
-            " insert into"
+            " INSERT INTO"
             " v_bios_client_info (id, id_client, id_discovered_device, ext, timestamp)"
-            " values (NULL, :idclient, :iddiscovereddevice, :ext, NOW())"
+            " VALUES (NULL, :idclient, :iddiscovereddevice, :ext, NOW())"
         );          // time is the time of inserting into database
-    
-        tntdb::Blob blobData(info,infolen);
+   // TODO type convert 
+        tntdb::Blob blobData((const char*)zchunk_data(*blob), zchunk_size(*blob));
 
         n = st.setInt("idclient", client_id).
-                            setInt("iddiscovereddevice",device_id).
-                            setBlob("ext", blobData).
-                            execute();
+               setInt("iddiscovereddevice",device_id).
+               setBlob("ext", blobData).
+               execute();
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
+        zchunk_destroy (blob);
         return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
+    zchunk_destroy (blob);
     if ( n == 1 )
         return _generate_ok (newid);
     else
@@ -352,7 +360,7 @@ common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint3
             " v.id, v.datum, v.info"
             " FROM"
             " v_bios_client_info_last v"
-            " WHERE v.id_discovered_device = :id_devicediscovered and v.id_client = :id_client"
+            " WHERE v.id_discovered_device = :id_devicediscovered AND v.id_client = :id_client"
         );
 
         // Should return one row or nothing.
@@ -377,12 +385,27 @@ common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint3
         return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     time_t mytime = utils::db::convertToCTime(mydatetime);
-    return _generate_client_info(id, client_id, device_id, mytime, myBlob.data(), myBlob.size());
+    //TODO type convert
+    return _generate_client_info(client_id, device_id, mytime, (byte*)myBlob.data(), myBlob.size());
 }
 
-common_msg_t* _select_client_info(const char* url, uint32_t id)
+//it shoud destroy the client_info
+common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info)
 {
-    assert (id);
+    assert ( common_msg_id(*client_info) == COMMON_MSG_CLIENT_INFO );
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CINFO);
+    assert ( resultmsg );
+    common_msg_set_rowid (resultmsg, client_info_id);
+    zmsg_t* nnmsg = common_msg_encode(client_info);
+    assert (nnmsg);
+    common_msg_set_msg (resultmsg, &nnmsg);
+
+    return resultmsg;
+}
+
+common_msg_t* _select_client_info(const char* url, uint32_t id_client_info)
+{
+    assert (id_client_info);
 
     uint32_t client_id = 0;
     uint32_t device_id = 0;
@@ -400,7 +423,7 @@ common_msg_t* _select_client_info(const char* url, uint32_t id)
             " WHERE v.id = :id"
         );
         
-        tntdb::Row row = st.setInt("id", id).selectRow();
+        tntdb::Row row = st.setInt("id", id_client_info).selectRow();
           
         bool isNotNull = row[0].get(mydatetime);
         assert (isNotNull);
@@ -421,5 +444,8 @@ common_msg_t* _select_client_info(const char* url, uint32_t id)
         return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     time_t mytime = utils::db::convertToCTime(mydatetime);
-    return _generate_client_info(id, client_id, device_id, mytime, myBlob.data(), myBlob.size());
+    //TODO type convert
+    common_msg_t* client_info = _generate_client_info(client_id, device_id, mytime, (byte*)myBlob.data(), myBlob.size());
+    return _generate_return_client_info ( id_client_info, &client_info);
 }
+

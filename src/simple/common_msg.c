@@ -56,7 +56,7 @@ struct _common_msg_t {
     zmsg_t *msg;                        //   Client to be inserted
     uint32_t client_id;                 //   Unique ID of the client to be updated
     uint32_t device_id;                 //   A device id
-    char *info;                         //   Information about device gathered by client
+    zchunk_t *info;                     //   Information about device gathered by client (data+ its size)
     uint32_t date;                      //   Date when this information was gathered
     uint32_t cinfo_id;                  //   Unique ID of the client info to be deleted
 };
@@ -225,7 +225,7 @@ common_msg_destroy (common_msg_t **self_p)
         zhash_destroy (&self->erraux);
         free (self->name);
         zmsg_destroy (&self->msg);
-        free (self->info);
+        zchunk_destroy (&self->info);
 
         //  Free object itself
         free (self);
@@ -315,7 +315,7 @@ common_msg_decode (zmsg_t **msg_p)
             break;
 
         case COMMON_MSG_RETURN_CLIENT:
-            GET_NUMBER4 (self->client_id);
+            GET_NUMBER4 (self->rowid);
             //  Get zero or more remaining frames, leaving current
             //  frame untouched
             self->msg = zmsg_new ();
@@ -326,7 +326,14 @@ common_msg_decode (zmsg_t **msg_p)
         case COMMON_MSG_CLIENT_INFO:
             GET_NUMBER4 (self->client_id);
             GET_NUMBER4 (self->device_id);
-            GET_STRING (self->info);
+            {
+                size_t chunk_size;
+                GET_NUMBER4 (chunk_size);
+                if (self->needle + chunk_size > (self->ceiling))
+                    goto malformed;
+                self->info = zchunk_new (self->needle, chunk_size);
+                self->needle += chunk_size;
+            }
             GET_NUMBER4 (self->date);
             break;
 
@@ -343,7 +350,7 @@ common_msg_decode (zmsg_t **msg_p)
             break;
 
         case COMMON_MSG_RETURN_CINFO:
-            GET_NUMBER4 (self->cinfo_id);
+            GET_NUMBER4 (self->rowid);
             //  Get zero or more remaining frames, leaving current
             //  frame untouched
             self->msg = zmsg_new ();
@@ -435,7 +442,7 @@ common_msg_encode (common_msg_t **self_p)
             break;
             
         case COMMON_MSG_RETURN_CLIENT:
-            //  client_id is a 4-byte integer
+            //  rowid is a 4-byte integer
             frame_size += 4;
             break;
             
@@ -444,10 +451,10 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             //  device_id is a 4-byte integer
             frame_size += 4;
-            //  info is a string with 1-byte length
-            frame_size++;       //  Size is one octet
+            //  info is a chunk with 4-byte length
+            frame_size += 4;
             if (self->info)
-                frame_size += strlen (self->info);
+                frame_size += zchunk_size (self->info);
             //  date is a 4-byte integer
             frame_size += 4;
             break;
@@ -461,7 +468,7 @@ common_msg_encode (common_msg_t **self_p)
             break;
             
         case COMMON_MSG_RETURN_CINFO:
-            //  cinfo_id is a 4-byte integer
+            //  rowid is a 4-byte integer
             frame_size += 4;
             break;
             
@@ -522,17 +529,21 @@ common_msg_encode (common_msg_t **self_p)
             break;
 
         case COMMON_MSG_RETURN_CLIENT:
-            PUT_NUMBER4 (self->client_id);
+            PUT_NUMBER4 (self->rowid);
             break;
 
         case COMMON_MSG_CLIENT_INFO:
             PUT_NUMBER4 (self->client_id);
             PUT_NUMBER4 (self->device_id);
             if (self->info) {
-                PUT_STRING (self->info);
+                PUT_NUMBER4 (zchunk_size (self->info));
+                memcpy (self->needle,
+                        zchunk_data (self->info),
+                        zchunk_size (self->info));
+                self->needle += zchunk_size (self->info);
             }
             else
-                PUT_NUMBER1 (0);    //  Empty string
+                PUT_NUMBER4 (0);    //  Empty chunk
             PUT_NUMBER4 (self->date);
             break;
 
@@ -544,7 +555,7 @@ common_msg_encode (common_msg_t **self_p)
             break;
 
         case COMMON_MSG_RETURN_CINFO:
-            PUT_NUMBER4 (self->cinfo_id);
+            PUT_NUMBER4 (self->rowid);
             break;
 
     }
@@ -825,11 +836,11 @@ common_msg_encode_delete_client (
 
 zmsg_t * 
 common_msg_encode_return_client (
-    uint32_t client_id,
+    uint32_t rowid,
     zmsg_t *msg)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_CLIENT);
-    common_msg_set_client_id (self, client_id);
+    common_msg_set_rowid (self, rowid);
     zmsg_t *msg_copy = zmsg_dup (msg);
     common_msg_set_msg (self, &msg_copy);
     return common_msg_encode (&self);
@@ -843,13 +854,14 @@ zmsg_t *
 common_msg_encode_client_info (
     uint32_t client_id,
     uint32_t device_id,
-    const char *info,
+    zchunk_t *info,
     uint32_t date)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_CLIENT_INFO);
     common_msg_set_client_id (self, client_id);
     common_msg_set_device_id (self, device_id);
-    common_msg_set_info (self, info);
+    zchunk_t *info_copy = zchunk_dup (info);
+    common_msg_set_info (self, &info_copy);
     common_msg_set_date (self, date);
     return common_msg_encode (&self);
 }
@@ -887,11 +899,11 @@ common_msg_encode_delete_cinfo (
 
 zmsg_t * 
 common_msg_encode_return_cinfo (
-    uint32_t cinfo_id,
+    uint32_t rowid,
     zmsg_t *msg)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_CINFO);
-    common_msg_set_cinfo_id (self, cinfo_id);
+    common_msg_set_rowid (self, rowid);
     zmsg_t *msg_copy = zmsg_dup (msg);
     common_msg_set_msg (self, &msg_copy);
     return common_msg_encode (&self);
@@ -999,11 +1011,11 @@ common_msg_send_delete_client (
 int
 common_msg_send_return_client (
     void *output,
-    uint32_t client_id,
+    uint32_t rowid,
     zmsg_t *msg)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_CLIENT);
-    common_msg_set_client_id (self, client_id);
+    common_msg_set_rowid (self, rowid);
     zmsg_t *msg_copy = zmsg_dup (msg);
     common_msg_set_msg (self, &msg_copy);
     return common_msg_send (&self, output);
@@ -1018,13 +1030,14 @@ common_msg_send_client_info (
     void *output,
     uint32_t client_id,
     uint32_t device_id,
-    const char *info,
+    zchunk_t *info,
     uint32_t date)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_CLIENT_INFO);
     common_msg_set_client_id (self, client_id);
     common_msg_set_device_id (self, device_id);
-    common_msg_set_info (self, info);
+    zchunk_t *info_copy = zchunk_dup (info);
+    common_msg_set_info (self, &info_copy);
     common_msg_set_date (self, date);
     return common_msg_send (&self, output);
 }
@@ -1065,11 +1078,11 @@ common_msg_send_delete_cinfo (
 int
 common_msg_send_return_cinfo (
     void *output,
-    uint32_t cinfo_id,
+    uint32_t rowid,
     zmsg_t *msg)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_CINFO);
-    common_msg_set_cinfo_id (self, cinfo_id);
+    common_msg_set_rowid (self, rowid);
     zmsg_t *msg_copy = zmsg_dup (msg);
     common_msg_set_msg (self, &msg_copy);
     return common_msg_send (&self, output);
@@ -1118,14 +1131,14 @@ common_msg_dup (common_msg_t *self)
             break;
 
         case COMMON_MSG_RETURN_CLIENT:
-            copy->client_id = self->client_id;
+            copy->rowid = self->rowid;
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
 
         case COMMON_MSG_CLIENT_INFO:
             copy->client_id = self->client_id;
             copy->device_id = self->device_id;
-            copy->info = self->info? strdup (self->info): NULL;
+            copy->info = self->info? zchunk_dup (self->info): NULL;
             copy->date = self->date;
             break;
 
@@ -1138,7 +1151,7 @@ common_msg_dup (common_msg_t *self)
             break;
 
         case COMMON_MSG_RETURN_CINFO:
-            copy->cinfo_id = self->cinfo_id;
+            copy->rowid = self->rowid;
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
 
@@ -1214,7 +1227,7 @@ common_msg_print (common_msg_t *self)
             
         case COMMON_MSG_RETURN_CLIENT:
             zsys_debug ("COMMON_MSG_RETURN_CLIENT:");
-            zsys_debug ("    client_id=%ld", (long) self->client_id);
+            zsys_debug ("    rowid=%ld", (long) self->rowid);
             zsys_debug ("    msg=");
             if (self->msg)
                 zmsg_print (self->msg);
@@ -1226,10 +1239,7 @@ common_msg_print (common_msg_t *self)
             zsys_debug ("COMMON_MSG_CLIENT_INFO:");
             zsys_debug ("    client_id=%ld", (long) self->client_id);
             zsys_debug ("    device_id=%ld", (long) self->device_id);
-            if (self->info)
-                zsys_debug ("    info='%s'", self->info);
-            else
-                zsys_debug ("    info=");
+            zsys_debug ("    info=[ ... ]");
             zsys_debug ("    date=%ld", (long) self->date);
             break;
             
@@ -1249,7 +1259,7 @@ common_msg_print (common_msg_t *self)
             
         case COMMON_MSG_RETURN_CINFO:
             zsys_debug ("COMMON_MSG_RETURN_CINFO:");
-            zsys_debug ("    cinfo_id=%ld", (long) self->cinfo_id);
+            zsys_debug ("    rowid=%ld", (long) self->rowid);
             zsys_debug ("    msg=");
             if (self->msg)
                 zmsg_print (self->msg);
@@ -1599,25 +1609,35 @@ common_msg_set_device_id (common_msg_t *self, uint32_t device_id)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the info field
+//  Get the info field without transferring ownership
 
-const char *
+zchunk_t *
 common_msg_info (common_msg_t *self)
 {
     assert (self);
     return self->info;
 }
 
-void
-common_msg_set_info (common_msg_t *self, const char *format, ...)
+//  Get the info field and transfer ownership to caller
+
+zchunk_t *
+common_msg_get_info (common_msg_t *self)
 {
-    //  Format info from provided arguments
+    zchunk_t *info = self->info;
+    self->info = NULL;
+    return info;
+}
+
+//  Set the info field, transferring ownership from caller
+
+void
+common_msg_set_info (common_msg_t *self, zchunk_t **chunk_p)
+{
     assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->info);
-    self->info = zsys_vprintf (format, argptr);
-    va_end (argptr);
+    assert (chunk_p);
+    zchunk_destroy (&self->info);
+    self->info = *chunk_p;
+    *chunk_p = NULL;
 }
 
 
@@ -1826,7 +1846,7 @@ common_msg_test (bool verbose)
     assert (copy);
     common_msg_destroy (&copy);
 
-    common_msg_set_client_id (self, 123);
+    common_msg_set_rowid (self, 123);
     zmsg_t *return_client_msg = zmsg_new ();
     common_msg_set_msg (self, &return_client_msg);
     zmsg_addstr (common_msg_msg (self), "Hello, World");
@@ -1839,7 +1859,7 @@ common_msg_test (bool verbose)
         assert (self);
         assert (common_msg_routing_id (self));
         
-        assert (common_msg_client_id (self) == 123);
+        assert (common_msg_rowid (self) == 123);
         assert (zmsg_size (common_msg_msg (self)) == 1);
         common_msg_destroy (&self);
     }
@@ -1852,7 +1872,8 @@ common_msg_test (bool verbose)
 
     common_msg_set_client_id (self, 123);
     common_msg_set_device_id (self, 123);
-    common_msg_set_info (self, "Life is short but Now lasts for ever");
+    zchunk_t *client_info_info = zchunk_new ("Captcha Diem", 12);
+    common_msg_set_info (self, &client_info_info);
     common_msg_set_date (self, 123);
     //  Send twice from same object
     common_msg_send_again (self, output);
@@ -1865,7 +1886,7 @@ common_msg_test (bool verbose)
         
         assert (common_msg_client_id (self) == 123);
         assert (common_msg_device_id (self) == 123);
-        assert (streq (common_msg_info (self), "Life is short but Now lasts for ever"));
+        assert (memcmp (zchunk_data (common_msg_info (self)), "Captcha Diem", 12) == 0);
         assert (common_msg_date (self) == 123);
         common_msg_destroy (&self);
     }
@@ -1918,7 +1939,7 @@ common_msg_test (bool verbose)
     assert (copy);
     common_msg_destroy (&copy);
 
-    common_msg_set_cinfo_id (self, 123);
+    common_msg_set_rowid (self, 123);
     zmsg_t *return_cinfo_msg = zmsg_new ();
     common_msg_set_msg (self, &return_cinfo_msg);
     zmsg_addstr (common_msg_msg (self), "Hello, World");
@@ -1931,7 +1952,7 @@ common_msg_test (bool verbose)
         assert (self);
         assert (common_msg_routing_id (self));
         
-        assert (common_msg_cinfo_id (self) == 123);
+        assert (common_msg_rowid (self) == 123);
         assert (zmsg_size (common_msg_msg (self)) == 1);
         common_msg_destroy (&self);
     }

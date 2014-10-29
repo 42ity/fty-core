@@ -5,7 +5,7 @@ testing:
 	g++ -I./../../include ./../../test-run.cc -c -o testing.o
 
 go: common.o testing.o monitor.o totime.o databaseobject.o
-	g++ -I../../include -I../../../src/utils -I../../../tools -I../../../src/simple test-monitor.cc testing.o common.o monitor.o totime.o databaseobject.o -lczmq -ltntdb  -lcxxtools  -o gotest
+	g++ -I../../include -I../../../src/utils -I../../../tools -I../../../src/simple test-monitor.cc -I../../../src/simple test-monitor-clientinfo.cc  testing.o common.o monitor.o totime.o databaseobject.o -lczmq -ltntdb  -lcxxtools  -o gotest
 
 common: 
 	g++ ../../../src/simple/common_msg.c -c -o common.o

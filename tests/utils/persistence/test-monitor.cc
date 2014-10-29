@@ -110,7 +110,7 @@ TEST_CASE("Common messages: _generate_return_client","[common][generate][return_
     
 //    common_msg_print (msgreturnclient);
     REQUIRE ( common_msg_id (msgreturnclient) == COMMON_MSG_RETURN_CLIENT );
-    REQUIRE ( common_msg_client_id (msgreturnclient) == client_id );
+    REQUIRE ( common_msg_rowid (msgreturnclient) == client_id );
 
     zmsg_t* newmsg = common_msg_get_msg (msgreturnclient);
     REQUIRE ( newmsg != NULL );
@@ -132,7 +132,7 @@ TEST_CASE("Common messages: select_client","[common][select][client][byName]")
     common_msg_t* newreturn = select_client (url.c_str(), name);
     // this row shold be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CLIENT );
-    REQUIRE ( common_msg_client_id (newreturn) == 4 ); 
+    REQUIRE ( common_msg_rowid (newreturn) == 4 ); 
     // it is inserted during the db creation  and must have 4
     
 //    common_msg_print (newreturn);
@@ -162,7 +162,7 @@ TEST_CASE("Common messages: select_client2","[common][select][client][byId]")
     common_msg_t* newreturn = select_client (url.c_str(), id);
     // this row shold be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CLIENT );
-    REQUIRE ( common_msg_client_id (newreturn) == 4 ); 
+    REQUIRE ( common_msg_rowid (newreturn) == 4 ); 
     
 //    common_msg_print (newreturn);
     zmsg_t* newmsg = common_msg_get_msg (newreturn);
@@ -207,7 +207,6 @@ TEST_CASE("Common messages: insert_client/delete_client","[common][insert][delet
     common_msg_destroy (&response);
     common_msg_destroy (&response2);
 }
-
 
 TEST_CASE("Common messages: insert_client/delete_client fail","[common][insert][delete][client]")
 {
@@ -277,6 +276,7 @@ TEST_CASE("Common messages: update_client1","[common][update][client]")
     REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
     common_msg_destroy (&response);
 }
+
 TEST_CASE("Common messages: update_client2 fail","[common][update][client]")
 {
     char name[] = "insert_for_update8";
