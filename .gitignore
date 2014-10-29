@@ -11,6 +11,7 @@ config.h.in~
 config.log
 config.status
 configure
+!configure.ac
 .deps
 .libs/
 libtool
@@ -21,11 +22,16 @@ lib*.so.*
 INSTALL*.html
 Makefile.in
 Makefile
+!Makefile.am
 driver-nmap
 netmon
+!src/netmon
 simple
+!src/simple
+bios_web.la
+fake_message
+!src/web/fake_message
 
-./netmon
 *.o
 *.lo
 
@@ -37,6 +43,7 @@ stamp-h1
 docs/man/*.8
 
 docs/doxygen/Doxyfile
+!docs/doxygen/Doxyfile.in
 docs/doxygen/doxylog.txt
 docs/doxygen/html/
 
@@ -63,3 +70,4 @@ src/web/src/time.cpp
 tntnet.xml.example
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
+
