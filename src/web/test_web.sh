@@ -52,6 +52,11 @@ if ! getent passwd "${USER}"; then
     exit 2
 fi
 
+if ! testsaslauthd -u "${USER}" -p "${PASSWD}" -s bios; then
+    echo "SASL autentification for user '${USER}' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
+    exit 3
+fi
+
 # Check getting token
 echo "Testing login:"
 TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
