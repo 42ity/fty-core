@@ -6,17 +6,20 @@ TOTAL=0
 USER="morbo"
 PASSWD="iwilldestroyyou"
 
-BASE_URL="http://127.0.0.1:8000/api/1.0"
+BASE_URL="http://127.0.0.1:8000/api/v1"
 
 print_result() {
+    _ret=0
     if [ "$1" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
         echo " * FAILED"
+        _ret=1
     fi
     TOTAL="`expr $TOTAL + 1`"
     echo
+    return $_ret
 }
 
 api_get() {
@@ -28,21 +31,46 @@ api_post() {
 }
 
 api_auth_post() {
-    TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
+    TOKEN="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
             sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+# fixture ini
+if [ ! /usr/bin/systemctl is-active -q saslauthd.service ]; then
+    echo "saslauthd does not run, please entrer a root password to run it"
+    /usr/bin/sudo /usr/bin/systemctl start saslauthd.service || exit $?
+fi
+
+# check the user morbo in system
+# I expects SASL uses Linux PAM, therefor getent will tell us it all
+if ! getent passwd "${USER}"; then
+    echo "User ${USER} is not known to system administrative database"
+    echo "To add it locally, run: "
+    echo "    sudo /usr/sbin/useradd --comment "BIOS REST API testing user" --groups nobody --no-create-home --no-user-group ${USER}"
+    echo "and don't forget the password '${PASSWD}'"
+    exit 2
+fi
+
+if ! testsaslauthd -u "${USER}" -p "${PASSWD}" -s bios; then
+    echo "SASL autentification for user '${USER}' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
+    exit 3
+fi
+
 # Check getting token
 echo "Testing login:"
-TOKEN="`api_get "/token?username=$USER&password=$PASSWD&grant_type=password" | \
+TOKEN="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
         sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
 [ "$TOKEN" ]
 print_result $?
+if [ $? -ne 0 ]; then
+    echo "FATAL: access token test must not fail, otherwise it does not makes a sense to continue"
+    exit 1
+fi
 
 # Check not getting token
 echo "Testing wrong login:"
-[ "`api_get "/token?username=$USER&password=not$PASSWD&grant_type=password" | \
+[ "`api_get "/oauth2/token?username=$USER&password=not$PASSWD&grant_type=password" | \
     grep "HTTP/1.1 401 Unauthorized"`" ]
 print_result $?
 

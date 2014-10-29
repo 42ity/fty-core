@@ -10,6 +10,17 @@
 #include <unistd.h>
 #include <stdexcept>
 
+// TODO: move to some common header
+// https://gcc.gnu.org/onlinedocs/cpp/Stringification.html
+#define xstr(a) str(a)
+#define str(a) #a
+
+#ifndef SASLAUTHD_MUX
+#error Build with -DSASLAUTHD_MUX=/path/to/saslauthd/mux
+#else
+#define SASLAUTHD_MUX_PATH xstr(SASLAUTHD_MUX)
+#endif
+
 /**************************************************************
  * I/O wrapper to attempt to write out the specified vector.
  * data, without any guarantees. If the function returns
@@ -126,13 +137,13 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
     const char *p = NULL;
 
     if (!service) {
-        service = "imap";
+        service = "bios";
     }
     if (!userid || !passwd) {
         return false;
     }
 
-    strcpy(pwpath, "/var/run/saslauthd/mux");
+    strcpy(pwpath, SASLAUTHD_MUX_PATH);
 
     /*
      * build request of the form:
@@ -226,6 +237,7 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
         if (!strncmp(response, "OK", 2)) {
             return true;
         }
+        fprintf(stderr, "saslauthd authentication failed: '%s'\n", response);
 
     }
     return false;
