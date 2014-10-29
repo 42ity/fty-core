@@ -39,6 +39,12 @@ AM_CXXFLAGS =			${my_CXXFLAGS} \
 AM_LDFLAGS = 			-Wl,--gc-sections \
 				-Wl,--as-needed
 
+# ----------------------------------------------------------------------
+# List of header files. The purpose of this list is not dependency
+# tracking (which is automatic), but to ensure these files are
+# distributed by "make dist" although not "installed".
+
+dist_noinst_HEADERS = 
 
 #----------------------------------------------------------------------
 noinst_LTLIBRARIES += 		libpriv-utils.la
@@ -263,6 +269,13 @@ simple_LDADD =				libpriv-db.la \
 					libpriv-log.la \
 					libpriv-subprocess.la
 
+dist_noinst_HEADERS +=			src/simple/asset_msg.h \
+					src/simple/asset_types.h \
+					src/simple/powerdev_msg.h \
+					src/drivers/nut/nut-actor.h \
+					src/drivers/nut/nut-driver.h
+
+
 bin_PROGRAMS += 			driver-nmap
 
 driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
@@ -304,6 +317,12 @@ bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS}
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
                       ${LIBSASL2_LIBS} -module -lm -ltntdb -ltntnet
+
+dist_noinst_HEADERS +=	src/web/include/data.h \
+			src/web/include/sasl.h \
+			src/web/include/tokens.h \
+			src/utils/assetmsgpersistence.h \
+			tools/dbpath.h
 
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
