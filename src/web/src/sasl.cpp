@@ -237,6 +237,7 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
         if (!strncmp(response, "OK", 2)) {
             return true;
         }
+        fprintf(stderr, "saslauthd authentication failed: '%s'\n", response);
 
     }
     return false;
