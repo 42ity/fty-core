@@ -79,12 +79,13 @@ mkdir -p "$LOG_DIR" || exit 4
 cd web/commands
 [ "$1" ] || set *
 while [ "$1" ]; do
-    NAME="$1"
-    . ./"$1" 5> "$LOG_DIR/$1".log
-    if [ -r "../results/$1".res ]; then
-        diff -Naru "../results/$1".res "$LOG_DIR/$1".log
+    for NAME in *$1*; do
+    . ./"$NAME" 5> "$LOG_DIR/$NAME".log
+    if [ -r "../results/$NAME".res ]; then
+        diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
         print_result $?
     fi
+    done
     shift
 done
 
