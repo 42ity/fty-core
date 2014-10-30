@@ -91,7 +91,14 @@ libpriv_db_la_SOURCES = 	src/utils/persistence.h \
 				src/utils/persistence/ip.cc \
 				src/utils/persistence/ip.h \
 				src/utils/persistence/nethistory.cc \
-				src/utils/persistence/nethistory.h
+				src/utils/persistence/nethistory.h \
+				src/utils/assetmsgpersistence.cc \
+				src/utils/assetmsgpersistence.h \
+				src/utils/persistencelogic.cc \
+				src/utils/persistencelogic.h \
+				src/utils/monitorpersistence.cc \
+				src/utils/monitorpersistence.h
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple/ -I$(top_srcdir)/src/utils/persistence
 
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
@@ -214,6 +221,18 @@ test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_builddir)/tools
 test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
 
+check_PROGRAMS += 			test-db2
+test_db2_SOURCES = 			tests/utils/test-persistence.cc
+test_db2_LDADD = 			libpriv-db.la \
+					libpriv-cidr.la \
+					libpriv-test-run.la
+test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
+					-I$(top_srcdir)/tests/include/ \
+					-I$(top_srcdir)/src/utils/persistence \
+					-I$(top_srcdir)/tools \
+					-I$(top_builddir)/tools
+test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr
+
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 
@@ -245,8 +264,6 @@ simple_SOURCES = 			src/simple/main.cc \
 					src/utils/persistence.h \
 					src/simple/netdisc_msg.c \
 					src/simple/netdisc_msg.h \
-					src/utils/persistencelogic.cc \
-					src/utils/persistencelogic.h \
 					src/simple/powerdev_msg.c \
 					src/drivers/nut/nut-actor.cc \
 					src/drivers/nut/nut-driver.cc \
@@ -308,8 +325,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/simple/asset_msg.c src/utils/log.c             \
-                      src/utils/assetmsgpersistence.cc
+                      src/simple/asset_msg.c src/utils/log.c
 bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
 		       -I$(top_builddir)/tools \
@@ -318,6 +334,7 @@ bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
 					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX}
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
                       ${LIBSASL2_LIBS} -module -lm -ltntdb -ltntnet
+bios_web_la_LIBADD = libpriv-db.la
 
 dist_noinst_HEADERS +=	src/web/include/data.h \
 			src/web/include/sasl.h \
