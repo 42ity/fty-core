@@ -379,7 +379,6 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
             return generate_fail(DB_ERROR_INTERNAL);
     }
     catch (const tntdb::NotFound &e) {
-        assert(false);      
         //database is corrupted, for every device in db there should be two rows
         //1 in asset_element
         //2 in asset_device
