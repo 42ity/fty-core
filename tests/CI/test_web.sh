@@ -82,7 +82,7 @@ while [ "$1" ]; do
     NAME="$1"
     . ./"$1" 5> "$LOG_DIR/$1".log
     if [ -r "../results/$1".res ]; then
-        diff -Naru "../results/$1".res "$LOG_DIR/$1".log | sed 's|^|\ \ \ |'
+        diff -Naru "../results/$1".res "$LOG_DIR/$1".log
         print_result $?
     fi
     shift
