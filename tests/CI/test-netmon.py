@@ -15,6 +15,7 @@ import time
 import re
 import MySQLdb
 import sys
+import copy
 
 def parse_ip_a_s(out):
     """
@@ -32,9 +33,10 @@ def parse_ip_a_s(out):
         if line and line[0] != ' ':
             state = "start"
             header = list()
-            nic_name = line.split(':')[1].strip()
-            if nic_name == 'lo':
+            if not "state UP" in line:
                 continue
+            header = list()
+            nic_name = line.split(':')[1].strip()
             header.append(nic_name)
             state = "read-mac"
             continue
@@ -116,74 +118,86 @@ def compare_entries(ipentry, dbentry):
             maci == macd
     
 def compare_results(ipres, dbres):
-    """using O(n^2) algorithm compare results from ip a s and database"""
-    if len(ipres) != len(dbres):
-        return False
+    """using O(n^2) algorithm compare results from ip a s and database, return the diff between those two"""
+
+    ret = copy.copy(ipres)
+    ret.extend(copy.copy(dbres))
 
     for ipentry in ipres:
-        found = False
         for dbentry in dbres:
             if compare_entries(ipentry, dbentry):
-                found = True
-                break
-        if not found:
-            return False
+                if ipentry in ret:
+                    ret.remove(ipentry)
+                if dbentry in ret:
+                    ret.remove(dbentry)
 
-    return True
+    return ret
+
 
 #### fixture ini ####
 
-# restart simple
-subprocess.call(["/usr/bin/killall", "-9", "simple", "netmon"])
-# restart mysql daemon
-ret = subprocess.call(["/usr/bin/sudo", "/bin/systemctl", "restart", "mysql.service"])
-assert(ret == 0), "Can't run mysql database, skipping"
-simple_proc = subprocess.Popen(["./simple"])
-time.sleep(1)
-ret = simple_proc.poll()
-assert(ret is None), "./simple does not run, skipping"
-
-time.sleep(3) # to give things enough time to start
-
+# check all deamons running
+for daemon in ("simple", "netmon", "mysqld"):
+    ret = subprocess.call(["/bin/pidof", daemon])
+    assert (ret == 0), "%s does not running!" % (daemon, )
 
 #### MAIN ####
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
 
+# to create some dummy interface?
+nic_name = ipres[0][0]
+assert nic_name, "Name of network card is empty!"
+
 assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
 
 db = MySQLdb.connect(host="localhost", user="root", db="box_utf8")
 dbres = read_db(db)
+try:
+    df = compare_results(ipres, dbres)
+    assert df == [], "01-initial-check: results of ip addr SHOULD equals with database results"
+except AssertionError as e:
+    print(df)
+    raise e
 
-assert compare_results(ipres, dbres), "results of ip addr show is not equal with database results"
-
-nic_name = ipres[0][0]
-assert nic_name, "Name of network card is empty!"
-
-subprocess.check_call(["/usr/bin/sudo", "/bin/ip", "link", "set", nic_name, "down"])
-time.sleep(10)
+subprocess.check_call(["/usr/bin/sudo", "/bin/ip", "addr", "add", "203.0.113.42/24", "dev", nic_name])
+time.sleep(4)
 
 db.commit() #WTF WTF
 dbres = read_db(db)
-assert not compare_results(ipres, dbres), "%s got changed, ipres should not be equal to dbres" % nic_name
+try:
+    df = compare_results(ipres, dbres)
+    assert df != [], "02-added-TEST-NET-3: results of ip addr show SHOULD NOT equals with database results"
+except AssertionError as e:
+    print(df)
+    raise e
 
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
-assert compare_results(ipres, dbres), "results of ip addr show is not equal with database results"
+try:
+    df = compare_results(ipres, dbres)
+    assert df == [], "03-added-TEST-NET-3: results of ip addr show SHOULD equals with database results"
+except AssertionError as e:
+    print(df)
+    raise e
 
-subprocess.check_call(["/usr/bin/sudo", "/bin/ip", "link", "set", nic_name, "up"])
-time.sleep(10)
+subprocess.check_call(["/usr/bin/sudo", "/bin/ip", "addr", "del", "203.0.113.42/24", "dev", nic_name])
+time.sleep(3)
 
 db.commit()
 dbres = read_db(db)
-assert not compare_results(ipres, dbres), "%s got changed, ipres should not be equal to dbres" % nic_name
+try:
+    df = compare_results(ipres, dbres)
+    assert df != [], "04-deleted-TEST-NET-3: results of ip addr show SHOULD NOT equals with database results"
+except AssertionError as e:
+    print(df)
+    raise e
 
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
-assert compare_results(ipres, dbres), "results of ip addr show is not equal with database results"
-
-#### fixture fini ######
-
-simple_proc.kill()
-time.sleep(0.5)
-simple_proc.terminate()
+try:
+    df = compare_results(ipres, dbres)
+    assert df == [], "05-deleted-TEST-NET-3: results of ip addr show SHOULD equals with database results"
+except AssertionError as e:
+    print(df)
+    raise e
