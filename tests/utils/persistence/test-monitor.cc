@@ -119,6 +119,7 @@ TEST_CASE("Common messages: _generate_return_client","[common][generate][return_
     common_msg_t* newclient = common_msg_decode (&newmsg);
     REQUIRE ( newmsg == NULL );
     REQUIRE ( newclient != NULL );
+    REQUIRE ( common_msg_id (newclient) == COMMON_MSG_CLIENT );
     REQUIRE ( streq(common_msg_name (newclient), name) );
 
     common_msg_destroy (&msgreturnclient);

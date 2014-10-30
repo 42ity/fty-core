@@ -14,7 +14,7 @@ TEST_CASE("Common messages: _generate_client_info","[common][generate][client_in
 {
     uint32_t client_id = 1;
     uint32_t device_id = 2;
-    time_t mytime;
+    uint32_t mytime = 4294967295;
     byte data[] = "1234567890";
     uint32_t datasize = 10;
     common_msg_t* msgclient_info = _generate_client_info (client_id, device_id, mytime, data, datasize);
@@ -26,28 +26,29 @@ TEST_CASE("Common messages: _generate_client_info","[common][generate][client_in
     zchunk_t* info = common_msg_info (msgclient_info);
     REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
     REQUIRE ( zchunk_size(info) == datasize );
-//  TODO TIME
+    REQUIRE ( mytime == common_msg_date (msgclient_info) );
 
     common_msg_destroy (&msgclient_info);
     REQUIRE ( msgclient_info == NULL );
 }
-/*
+
 TEST_CASE("Common messages: _generate_return_client_info","[common][generate][return_client_info]")
 {
-    char name[]= "TestGenerateReturnclient_info";
-    common_msg_t* msgclient_info = _generate_client_info (name);
+    uint32_t client_id = 1;
+    uint32_t device_id = 2;
+    uint32_t mytime = 4294967295;
+    byte data[] = "1234567890";
+    uint32_t datasize = 10;
+    common_msg_t* msgclient_info = _generate_client_info (client_id, device_id, mytime, data, datasize);
     REQUIRE ( msgclient_info );
-
-//    common_msg_print (msgclient_info);
-    uint32_t client_info_id = 4;
-    
+    uint32_t client_info_id = 77;
     common_msg_t* msgreturnclient_info = _generate_return_client_info (client_info_id, &msgclient_info);
     REQUIRE ( msgreturnclient_info != NULL );
     REQUIRE ( msgclient_info == NULL );
     
 //    common_msg_print (msgreturnclient_info);
-    REQUIRE ( common_msg_id (msgreturnclient_info) == COMMON_MSG_RETURN_client_info );
-    REQUIRE ( common_msg_client_info_id (msgreturnclient_info) == client_info_id );
+    REQUIRE ( common_msg_id (msgreturnclient_info) == COMMON_MSG_RETURN_CINFO );
+    REQUIRE ( common_msg_rowid (msgreturnclient_info) == client_info_id );
 
     zmsg_t* newmsg = common_msg_get_msg (msgreturnclient_info);
     REQUIRE ( newmsg != NULL );
@@ -56,13 +57,21 @@ TEST_CASE("Common messages: _generate_return_client_info","[common][generate][re
     common_msg_t* newclient_info = common_msg_decode (&newmsg);
     REQUIRE ( newmsg == NULL );
     REQUIRE ( newclient_info != NULL );
-    REQUIRE ( streq(common_msg_name (newclient_info), name) );
+    REQUIRE ( common_msg_id (newclient_info) == COMMON_MSG_CLIENT_INFO );
 
+    REQUIRE ( client_id == common_msg_client_id (newclient_info) );
+    REQUIRE ( device_id == common_msg_device_id (newclient_info) );
+    zchunk_t* info = common_msg_info (newclient_info);
+    REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
+    REQUIRE ( zchunk_size(info) == datasize );
+    REQUIRE ( mytime == common_msg_date (newclient_info) );
+    
     common_msg_destroy (&msgreturnclient_info);
     REQUIRE ( msgreturnclient_info == NULL );   
     common_msg_destroy (&newclient_info); 
+    REQUIRE ( newclient_info == NULL );
 }
-
+/*
 TEST_CASE("Common messages: select_client_info","[common][select][client_info][byName]")
 {
     char name[] = "NUT";
