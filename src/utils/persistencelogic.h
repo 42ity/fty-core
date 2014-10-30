@@ -4,6 +4,7 @@
 #include "czmq.h"
 #include "netdisc_msg.h"
 #include "powerdev_msg.h"
+#include "common_msg.h"
 
 namespace utils {
 
