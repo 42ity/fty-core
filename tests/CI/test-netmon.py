@@ -136,18 +136,10 @@ def compare_results(ipres, dbres):
 
 #### fixture ini ####
 
-# restart simple
-subprocess.call(["/usr/bin/killall", "-9", "simple", "netmon"])
-# restart mysql daemon
-ret = subprocess.call(["/usr/bin/sudo", "/bin/systemctl", "restart", "mysql.service"])
-assert(ret == 0), "Can't run mysql database, skipping"
-simple_proc = subprocess.Popen(["./simple"])
-time.sleep(1)
-ret = simple_proc.poll()
-assert(ret is None), "./simple does not run, skipping"
-
-time.sleep(5) # to give things enough time to start
-
+# check all deamons running
+for daemon in ("simple", "netmon", "mysqld"):
+    ret = subprocess.call(["/bin/pidof", daemon])
+    assert (ret == 0), "%s does not running!" % (daemon, )
 
 #### MAIN ####
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
@@ -209,9 +201,3 @@ try:
 except AssertionError as e:
     print(df)
     raise e
-
-#### fixture fini ######
-
-simple_proc.kill()
-time.sleep(0.5)
-simple_proc.terminate()
