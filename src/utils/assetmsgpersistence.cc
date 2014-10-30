@@ -23,7 +23,7 @@
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 
-// guplicates the items for zhash    
+// duplicates the items for zlist/zhash
 void* void_dup(const void* a) { return strdup((char*)a); }
 // different helpers
 void _removeColonMacaddress(std::string &newmac);
@@ -129,6 +129,7 @@ zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
                                      select(); 
         groups = zlist_new();
         assert(groups);
+        zlist_set_duplicator(groups, void_dup);
     
         // Go through the selected groups
         for ( auto &row: result )
