@@ -23,7 +23,7 @@
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 
-// guplicates the items for zhash    
+// duplicates the items for zlist/zhash
 void* void_dup(const void* a) { return strdup((char*)a); }
 // different helpers
 void _removeColonMacaddress(std::string &newmac);
@@ -129,6 +129,7 @@ zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
                                      select(); 
         groups = zlist_new();
         assert(groups);
+        zlist_set_duplicator(groups, void_dup);
     
         // Go through the selected groups
         for ( auto &row: result )
@@ -188,6 +189,8 @@ zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, unsi
                                       select();
         links = zlist_new();
         assert(links);
+        zlist_set_duplicator(links, void_dup);
+        char buff[512];
 
         // Go through the selected links
         for ( auto &row: result )
@@ -205,15 +208,7 @@ zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, unsi
             row[0].get(src_id);
             assert( src_id != 0 );  //database is corrupted
 
-            asset_msg_t* link = asset_msg_new (ASSET_MSG_LINK);
-            asset_msg_set_src_socket(link, src_out);
-            asset_msg_set_dst_socket(link, dest_in);
-            asset_msg_set_src_location(link, src_id);
-            asset_msg_set_dst_location(link, device_id);
-           
-            zmsg_t* tempmsg = asset_msg_encode (&link);
-            byte* buff;
-            zmsg_encode(tempmsg,&buff);
+            sprintf(buff, "%d:%d:%d:%d", src_out, src_id, dest_in, device_id);
             zlist_push(links, buff);
         }
         
@@ -379,7 +374,6 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
             return generate_fail(DB_ERROR_INTERNAL);
     }
     catch (const tntdb::NotFound &e) {
-        assert(false);      
         //database is corrupted, for every device in db there should be two rows
         //1 in asset_element
         //2 in asset_device
