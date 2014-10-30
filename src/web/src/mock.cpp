@@ -4,6 +4,7 @@
 
 #include "data.h"
 #include "asset_msg.h"
+#include "log.h"
 
 #include <cxxtools/directory.h>
 #include <cxxtools/regex.h>
@@ -25,41 +26,39 @@ asset_msg_t *asset_manager::get_item(std::string type, std::string id) {
     asset_msg_print(get_element);
 
     // Currently not needed
-    asset_msg_t * ret = asset_msg_process(url.c_str(),get_element);
+    asset_msg_t *ret = asset_msg_process(url.c_str(), get_element);
     asset_msg_destroy(&get_element);
-/*
-    FILE *fl = fopen(("data/" + type + "/" + id).c_str(), "r");
-    asset_msg_t *ret;
+    /*
+        FILE *fl = fopen(("data/" + type + "/" + id).c_str(), "r");
+        asset_msg_t *ret;
 
-    if(fl == NULL) {
-        return NULL;
-    }
-    zmsg_t *msg = zmsg_load(NULL, fl);
-    fclose(fl);
+        if(fl == NULL) {
+            return NULL;
+        }
+        zmsg_t *msg = zmsg_load(NULL, fl);
+        fclose(fl);
 
-    if(msg == NULL) {
-        return NULL;
-    }
+        if(msg == NULL) {
+            return NULL;
+        }
 
-    ret = asset_msg_decode(&msg);
-*/
+        ret = asset_msg_decode(&msg);
+    */
     //vratim return_element anebo fail
     asset_msg_print(ret);
     zmsg_t *msg = NULL;
     zmsg_destroy(&msg);
-    if(asset_msg_id(ret) == ASSET_MSG_FAIL)
+    assert(ret != NULL);
+    if(asset_msg_id(ret) == ASSET_MSG_FAIL) {
         return ret;
+    }
     msg = asset_msg_get_msg(ret);
     asset_msg_destroy(&ret);
+    assert(msg != NULL);
     ret = asset_msg_decode(&msg);
     zmsg_destroy(&msg);
 
-    if(ret != NULL) {
-        return ret;
-    }
-
-    zmsg_destroy(&msg);
-    return NULL;
+    return ret;
 }
 
 asset_msg_t *asset_manager::get_items(std::string type) {
@@ -73,36 +72,20 @@ asset_msg_t *asset_manager::get_items(std::string type) {
     asset_msg_print(get_elements);
 
     // Currently not needed
-    asset_msg_t * ret = asset_msg_process(url.c_str(),get_elements);
+    asset_msg_t *ret = asset_msg_process(url.c_str(), get_elements);
     asset_msg_destroy(&get_elements);
-/*
-    asset_msg_t *ret = asset_msg_new(ASSET_MSG_RETURN_ELEMENTS);
-    cxxtools::Directory dir("data/" + type);
-    cxxtools::Regex reg("^[0-9]+$");
+    /*
+        asset_msg_t *ret = asset_msg_new(ASSET_MSG_RETURN_ELEMENTS);
+        cxxtools::Directory dir("data/" + type);
+        cxxtools::Regex reg("^[0-9]+$");
 
-    for(auto it = dir.begin(); it != dir.end(); ++it) {
-        if(reg.match(*it)) {
-            asset_msg_element_ids_insert(ret, it->c_str(), "TBD");
+        for(auto it = dir.begin(); it != dir.end(); ++it) {
+            if(reg.match(*it)) {
+                asset_msg_element_ids_insert(ret, it->c_str(), "TBD");
+            }
         }
-    }
-    */
+        */
 
     asset_msg_print(ret);
-    zhash_t*  hash = asset_msg_element_ids(ret);
-    assert(hash);
-    char *item   = (char *) zhash_first (hash);   // value
-    char *keytag = (char *) zhash_cursor (hash);  // key
-
-    while ( item != NULL )
-    {
-        printf("%s - %s \n", keytag, item);
-        item   = (char *)  zhash_next(hash);
-        keytag = (char *)  zhash_cursor(hash);
-    }
-
-    if(ret != NULL) {
-        return ret;
-    }
-
-    return NULL;
+    return ret;
 }
