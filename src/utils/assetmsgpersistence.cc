@@ -314,10 +314,10 @@ zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_
  *         an asset_msg_t message of the type ASSET_MSG_DEVICE in case of success.
  *         NULL if the passed message is not a message of the type ASSET_MSG_ELEMENT
  */
-asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
+asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
 {
     log_info ("%s", "start\n");
-    int msgelement_id = asset_msg_id (element);
+    int msgelement_id = asset_msg_id (*element);
     if ( msgelement_id != ASSET_MSG_ELEMENT )
         return NULL;
 
@@ -342,7 +342,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
             " where v.id_asset_element = :idelement"
         );
     
-        unsigned int element_id = asset_msg_element_id(element);
+        unsigned int element_id = asset_msg_element_id(*element);
         tntdb::Row row = st_dev.setInt("idelement", element_id).
                                 selectRow();
 
@@ -401,7 +401,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t* element)
     asset_msg_set_device_type(msgdevice, buff);
      
     zmsg_t* nnmsg = NULL;
-    nnmsg = asset_msg_encode(&element);
+    nnmsg = asset_msg_encode(element);
     asset_msg_set_msg (msgdevice, &nnmsg);
     asset_msg_set_groups (msgdevice, &groups);
     asset_msg_set_powers (msgdevice, &powers);
@@ -516,9 +516,9 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg)
     asset_msg_t* msgdevice = NULL;
     if ( element_type_id == asset_type::DEVICE )
     {
-        msgdevice = _select_asset_device(url, msgelement);
+        msgdevice = _select_asset_device(url, &msgelement);
         assert (msgdevice);
-        if ( asset_msg_id (msgelement) == ASSET_MSG_FAIL )
+        if ( asset_msg_id (msgdevice) == ASSET_MSG_FAIL )
             return msgdevice;
         // device was found
     }
