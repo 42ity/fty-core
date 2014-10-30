@@ -90,7 +90,10 @@ while [ "$1" ]; do
 done
 
 echo "Testing completed, $PASS/$TOTAL tests passed"
+[ -z "$FAILED" ] && exit 0
+
 echo "Following tests failed:"
 for i in $FAILED; do
     echo " * $i"
 done
+exit 1
