@@ -45,18 +45,12 @@
     DEVICE - Structure describing asset device
         device_type         string      Type of the device, freeform string not the thing from asset_type
         groups              strings     List of IDs of groups device belongs to
-        powers              strings     List of encoded link messages
+        powers              strings     List of link messages in form src_socket:src_id:dst_socket:dst_id
         ip                  string      IP of the device
         hostname            string      Hostname
         fqdn                string      Fully qualified domain name
         mac                 string      MAC address of the device
         msg                 msg         Element that we are extending to the device
-
-    LINK - Structure for describing the relations between devices
-        src_socket          number 2    Source socket
-        dst_socket          number 2    Destination socket
-        src_location        number 4    ID of the src device
-        dst_location        number 4    ID of the parent element
 
     GET_ELEMENT - Ask for specific element
         element_id          number 4    Unique ID of the asset element
@@ -94,7 +88,6 @@
 
 #define ASSET_MSG_ELEMENT                   1
 #define ASSET_MSG_DEVICE                    11
-#define ASSET_MSG_LINK                      12
 #define ASSET_MSG_GET_ELEMENT               2
 #define ASSET_MSG_RETURN_ELEMENT            3
 #define ASSET_MSG_UPDATE_ELEMENT            4
@@ -173,14 +166,6 @@ zmsg_t *
         const char *mac,
         zmsg_t *msg);
 
-//  Encode the LINK 
-zmsg_t *
-    asset_msg_encode_link (
-        uint16_t src_socket,
-        uint16_t dst_socket,
-        uint32_t src_location,
-        uint32_t dst_location);
-
 //  Encode the GET_ELEMENT 
 zmsg_t *
     asset_msg_encode_get_element (
@@ -253,15 +238,6 @@ int
         const char *fqdn,
         const char *mac,
         zmsg_t *msg);
-    
-//  Send the LINK to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    asset_msg_send_link (void *output,
-        uint16_t src_socket,
-        uint16_t dst_socket,
-        uint32_t src_location,
-        uint32_t dst_location);
     
 //  Send the GET_ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -469,30 +445,6 @@ zmsg_t *
 //  Set the msg field, transferring ownership from caller
 void
     asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p);
-
-//  Get/set the src_socket field
-uint16_t
-    asset_msg_src_socket (asset_msg_t *self);
-void
-    asset_msg_set_src_socket (asset_msg_t *self, uint16_t src_socket);
-
-//  Get/set the dst_socket field
-uint16_t
-    asset_msg_dst_socket (asset_msg_t *self);
-void
-    asset_msg_set_dst_socket (asset_msg_t *self, uint16_t dst_socket);
-
-//  Get/set the src_location field
-uint32_t
-    asset_msg_src_location (asset_msg_t *self);
-void
-    asset_msg_set_src_location (asset_msg_t *self, uint32_t src_location);
-
-//  Get/set the dst_location field
-uint32_t
-    asset_msg_dst_location (asset_msg_t *self);
-void
-    asset_msg_set_dst_location (asset_msg_t *self, uint32_t dst_location);
 
 //  Get/set the element_id field
 uint32_t
