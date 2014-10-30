@@ -76,6 +76,33 @@
     RETURN_CINFO - Return a client info we were asked for
         rowid               number 4     Unique ID of the client info
         msg                 msg          Client info
+
+    DEVICE - Structure describing device
+        devicetype_id       number 4     A devicetype id
+        name                string       Device name
+
+    INSERT_DEVICE - Insert a
+        msg                 msg          Device info to be inserted
+
+    DELETE_DEVICE - Delete a device
+        device_id           number 4     Unique ID of the device to be deleted
+
+    RETURN_DEVICE - Return a device we were asked for
+        rowid               number 4     Unique ID of the device
+        msg                 msg          Device
+
+    DEVICE_TYPE - Structure describing device_type
+        name                string       Device type name
+
+    INSERT_DEVTYPE - Insert a device type
+        msg                 msg          Device type to be inserted
+
+    DELETE_DEVTYPE - Delete a device type
+        devicetype_id       number 4     Unique ID of the device type to be deleted
+
+    RETURN_DEVTYPE - Return a device type we were asked for
+        rowid               number 4     Unique ID of the device type
+        msg                 msg          Device type
 */
 
 #define COMMON_MSG_VERSION                  1.0
@@ -91,6 +118,14 @@
 #define COMMON_MSG_INSERT_CINFO             209
 #define COMMON_MSG_DELETE_CINFO             210
 #define COMMON_MSG_RETURN_CINFO             211
+#define COMMON_MSG_DEVICE                   212
+#define COMMON_MSG_INSERT_DEVICE            213
+#define COMMON_MSG_DELETE_DEVICE            215
+#define COMMON_MSG_RETURN_DEVICE            216
+#define COMMON_MSG_DEVICE_TYPE              217
+#define COMMON_MSG_INSERT_DEVTYPE           218
+#define COMMON_MSG_DELETE_DEVTYPE           220
+#define COMMON_MSG_RETURN_DEVTYPE           221
 
 #include <czmq.h>
 
@@ -203,6 +238,49 @@ zmsg_t *
         uint32_t rowid,
         zmsg_t *msg);
 
+//  Encode the DEVICE 
+zmsg_t *
+    common_msg_encode_device (
+        uint32_t devicetype_id,
+        const char *name);
+
+//  Encode the INSERT_DEVICE 
+zmsg_t *
+    common_msg_encode_insert_device (
+        zmsg_t *msg);
+
+//  Encode the DELETE_DEVICE 
+zmsg_t *
+    common_msg_encode_delete_device (
+        uint32_t device_id);
+
+//  Encode the RETURN_DEVICE 
+zmsg_t *
+    common_msg_encode_return_device (
+        uint32_t rowid,
+        zmsg_t *msg);
+
+//  Encode the DEVICE_TYPE 
+zmsg_t *
+    common_msg_encode_device_type (
+        const char *name);
+
+//  Encode the INSERT_DEVTYPE 
+zmsg_t *
+    common_msg_encode_insert_devtype (
+        zmsg_t *msg);
+
+//  Encode the DELETE_DEVTYPE 
+zmsg_t *
+    common_msg_encode_delete_devtype (
+        uint32_t devicetype_id);
+
+//  Encode the RETURN_DEVTYPE 
+zmsg_t *
+    common_msg_encode_return_devtype (
+        uint32_t rowid,
+        zmsg_t *msg);
+
 
 //  Send the FAIL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -276,6 +354,57 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_return_cinfo (void *output,
+        uint32_t rowid,
+        zmsg_t *msg);
+    
+//  Send the DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_device (void *output,
+        uint32_t devicetype_id,
+        const char *name);
+    
+//  Send the INSERT_DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_insert_device (void *output,
+        zmsg_t *msg);
+    
+//  Send the DELETE_DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_delete_device (void *output,
+        uint32_t device_id);
+    
+//  Send the RETURN_DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_device (void *output,
+        uint32_t rowid,
+        zmsg_t *msg);
+    
+//  Send the DEVICE_TYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_device_type (void *output,
+        const char *name);
+    
+//  Send the INSERT_DEVTYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_insert_devtype (void *output,
+        zmsg_t *msg);
+    
+//  Send the DELETE_DEVTYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_delete_devtype (void *output,
+        uint32_t devicetype_id);
+    
+//  Send the RETURN_DEVTYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_devtype (void *output,
         uint32_t rowid,
         zmsg_t *msg);
     
@@ -397,6 +526,12 @@ uint32_t
     common_msg_cinfo_id (common_msg_t *self);
 void
     common_msg_set_cinfo_id (common_msg_t *self, uint32_t cinfo_id);
+
+//  Get/set the devicetype_id field
+uint32_t
+    common_msg_devicetype_id (common_msg_t *self);
+void
+    common_msg_set_devicetype_id (common_msg_t *self, uint32_t devicetype_id);
 
 //  Self test of this class
 int

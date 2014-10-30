@@ -59,6 +59,7 @@ struct _common_msg_t {
     zchunk_t *info;                     //   Information about device gathered by client (data+ its size)
     uint32_t date;                      //   Date when this information was gathered
     uint32_t cinfo_id;                  //   Unique ID of the client info to be deleted
+    uint32_t devicetype_id;             //   A devicetype id
 };
 
 //  --------------------------------------------------------------------------
@@ -358,6 +359,57 @@ common_msg_decode (zmsg_t **msg_p)
                 zmsg_add (self->msg, zmsg_pop (msg));
             break;
 
+        case COMMON_MSG_DEVICE:
+            GET_NUMBER4 (self->devicetype_id);
+            GET_STRING (self->name);
+            break;
+
+        case COMMON_MSG_INSERT_DEVICE:
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
+        case COMMON_MSG_DELETE_DEVICE:
+            GET_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_RETURN_DEVICE:
+            GET_NUMBER4 (self->rowid);
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
+        case COMMON_MSG_DEVICE_TYPE:
+            GET_STRING (self->name);
+            break;
+
+        case COMMON_MSG_INSERT_DEVTYPE:
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
+        case COMMON_MSG_DELETE_DEVTYPE:
+            GET_NUMBER4 (self->devicetype_id);
+            break;
+
+        case COMMON_MSG_RETURN_DEVTYPE:
+            GET_NUMBER4 (self->rowid);
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
         default:
             goto malformed;
     }
@@ -472,6 +524,48 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             break;
             
+        case COMMON_MSG_DEVICE:
+            //  devicetype_id is a 4-byte integer
+            frame_size += 4;
+            //  name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->name)
+                frame_size += strlen (self->name);
+            break;
+            
+        case COMMON_MSG_INSERT_DEVICE:
+            break;
+            
+        case COMMON_MSG_DELETE_DEVICE:
+            //  device_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_RETURN_DEVICE:
+            //  rowid is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_DEVICE_TYPE:
+            //  name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->name)
+                frame_size += strlen (self->name);
+            break;
+            
+        case COMMON_MSG_INSERT_DEVTYPE:
+            break;
+            
+        case COMMON_MSG_DELETE_DEVTYPE:
+            //  devicetype_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_RETURN_DEVTYPE:
+            //  rowid is a 4-byte integer
+            frame_size += 4;
+            break;
+            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -558,6 +652,45 @@ common_msg_encode (common_msg_t **self_p)
             PUT_NUMBER4 (self->rowid);
             break;
 
+        case COMMON_MSG_DEVICE:
+            PUT_NUMBER4 (self->devicetype_id);
+            if (self->name) {
+                PUT_STRING (self->name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            break;
+
+        case COMMON_MSG_INSERT_DEVICE:
+            break;
+
+        case COMMON_MSG_DELETE_DEVICE:
+            PUT_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_RETURN_DEVICE:
+            PUT_NUMBER4 (self->rowid);
+            break;
+
+        case COMMON_MSG_DEVICE_TYPE:
+            if (self->name) {
+                PUT_STRING (self->name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            break;
+
+        case COMMON_MSG_INSERT_DEVTYPE:
+            break;
+
+        case COMMON_MSG_DELETE_DEVTYPE:
+            PUT_NUMBER4 (self->devicetype_id);
+            break;
+
+        case COMMON_MSG_RETURN_DEVTYPE:
+            PUT_NUMBER4 (self->rowid);
+            break;
+
     }
     //  Now send the data frame
     if (zmsg_append (msg, &frame)) {
@@ -623,6 +756,62 @@ common_msg_encode (common_msg_t **self_p)
     }
     //  Now send the message field if there is any
     if (self->id == COMMON_MSG_RETURN_CINFO) {
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
+        }
+    }
+    //  Now send the message field if there is any
+    if (self->id == COMMON_MSG_INSERT_DEVICE) {
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
+        }
+    }
+    //  Now send the message field if there is any
+    if (self->id == COMMON_MSG_RETURN_DEVICE) {
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
+        }
+    }
+    //  Now send the message field if there is any
+    if (self->id == COMMON_MSG_INSERT_DEVTYPE) {
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
+        }
+    }
+    //  Now send the message field if there is any
+    if (self->id == COMMON_MSG_RETURN_DEVTYPE) {
         if (self->msg) {
             zframe_t *frame = zmsg_pop (self->msg);
             while (frame) {
@@ -911,6 +1100,120 @@ common_msg_encode_return_cinfo (
 
 
 //  --------------------------------------------------------------------------
+//  Encode DEVICE message
+
+zmsg_t * 
+common_msg_encode_device (
+    uint32_t devicetype_id,
+    const char *name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    common_msg_set_name (self, name);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode INSERT_DEVICE message
+
+zmsg_t * 
+common_msg_encode_insert_device (
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_DEVICE);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode DELETE_DEVICE message
+
+zmsg_t * 
+common_msg_encode_delete_device (
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_DEVICE);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode RETURN_DEVICE message
+
+zmsg_t * 
+common_msg_encode_return_device (
+    uint32_t rowid,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_DEVICE);
+    common_msg_set_rowid (self, rowid);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode DEVICE_TYPE message
+
+zmsg_t * 
+common_msg_encode_device_type (
+    const char *name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE_TYPE);
+    common_msg_set_name (self, name);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode INSERT_DEVTYPE message
+
+zmsg_t * 
+common_msg_encode_insert_devtype (
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_DEVTYPE);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode DELETE_DEVTYPE message
+
+zmsg_t * 
+common_msg_encode_delete_devtype (
+    uint32_t devicetype_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_DEVTYPE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode RETURN_DEVTYPE message
+
+zmsg_t * 
+common_msg_encode_return_devtype (
+    uint32_t rowid,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_DEVTYPE);
+    common_msg_set_rowid (self, rowid);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the FAIL to the socket in one step
 
 int
@@ -1090,6 +1393,128 @@ common_msg_send_return_cinfo (
 
 
 //  --------------------------------------------------------------------------
+//  Send the DEVICE to the socket in one step
+
+int
+common_msg_send_device (
+    void *output,
+    uint32_t devicetype_id,
+    const char *name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    common_msg_set_name (self, name);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the INSERT_DEVICE to the socket in one step
+
+int
+common_msg_send_insert_device (
+    void *output,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_DEVICE);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the DELETE_DEVICE to the socket in one step
+
+int
+common_msg_send_delete_device (
+    void *output,
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_DEVICE);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the RETURN_DEVICE to the socket in one step
+
+int
+common_msg_send_return_device (
+    void *output,
+    uint32_t rowid,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_DEVICE);
+    common_msg_set_rowid (self, rowid);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the DEVICE_TYPE to the socket in one step
+
+int
+common_msg_send_device_type (
+    void *output,
+    const char *name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE_TYPE);
+    common_msg_set_name (self, name);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the INSERT_DEVTYPE to the socket in one step
+
+int
+common_msg_send_insert_devtype (
+    void *output,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_DEVTYPE);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the DELETE_DEVTYPE to the socket in one step
+
+int
+common_msg_send_delete_devtype (
+    void *output,
+    uint32_t devicetype_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_DEVTYPE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the RETURN_DEVTYPE to the socket in one step
+
+int
+common_msg_send_return_devtype (
+    void *output,
+    uint32_t rowid,
+    zmsg_t *msg)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_DEVTYPE);
+    common_msg_set_rowid (self, rowid);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    common_msg_set_msg (self, &msg_copy);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Duplicate the common_msg message
 
 common_msg_t *
@@ -1151,6 +1576,41 @@ common_msg_dup (common_msg_t *self)
             break;
 
         case COMMON_MSG_RETURN_CINFO:
+            copy->rowid = self->rowid;
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case COMMON_MSG_DEVICE:
+            copy->devicetype_id = self->devicetype_id;
+            copy->name = self->name? strdup (self->name): NULL;
+            break;
+
+        case COMMON_MSG_INSERT_DEVICE:
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case COMMON_MSG_DELETE_DEVICE:
+            copy->device_id = self->device_id;
+            break;
+
+        case COMMON_MSG_RETURN_DEVICE:
+            copy->rowid = self->rowid;
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case COMMON_MSG_DEVICE_TYPE:
+            copy->name = self->name? strdup (self->name): NULL;
+            break;
+
+        case COMMON_MSG_INSERT_DEVTYPE:
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case COMMON_MSG_DELETE_DEVTYPE:
+            copy->devicetype_id = self->devicetype_id;
+            break;
+
+        case COMMON_MSG_RETURN_DEVTYPE:
             copy->rowid = self->rowid;
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
@@ -1267,6 +1727,71 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("(NULL)");
             break;
             
+        case COMMON_MSG_DEVICE:
+            zsys_debug ("COMMON_MSG_DEVICE:");
+            zsys_debug ("    devicetype_id=%ld", (long) self->devicetype_id);
+            if (self->name)
+                zsys_debug ("    name='%s'", self->name);
+            else
+                zsys_debug ("    name=");
+            break;
+            
+        case COMMON_MSG_INSERT_DEVICE:
+            zsys_debug ("COMMON_MSG_INSERT_DEVICE:");
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
+        case COMMON_MSG_DELETE_DEVICE:
+            zsys_debug ("COMMON_MSG_DELETE_DEVICE:");
+            zsys_debug ("    device_id=%ld", (long) self->device_id);
+            break;
+            
+        case COMMON_MSG_RETURN_DEVICE:
+            zsys_debug ("COMMON_MSG_RETURN_DEVICE:");
+            zsys_debug ("    rowid=%ld", (long) self->rowid);
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
+        case COMMON_MSG_DEVICE_TYPE:
+            zsys_debug ("COMMON_MSG_DEVICE_TYPE:");
+            if (self->name)
+                zsys_debug ("    name='%s'", self->name);
+            else
+                zsys_debug ("    name=");
+            break;
+            
+        case COMMON_MSG_INSERT_DEVTYPE:
+            zsys_debug ("COMMON_MSG_INSERT_DEVTYPE:");
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
+        case COMMON_MSG_DELETE_DEVTYPE:
+            zsys_debug ("COMMON_MSG_DELETE_DEVTYPE:");
+            zsys_debug ("    devicetype_id=%ld", (long) self->devicetype_id);
+            break;
+            
+        case COMMON_MSG_RETURN_DEVTYPE:
+            zsys_debug ("COMMON_MSG_RETURN_DEVTYPE:");
+            zsys_debug ("    rowid=%ld", (long) self->rowid);
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
     }
 }
 
@@ -1346,6 +1871,30 @@ common_msg_command (common_msg_t *self)
             break;
         case COMMON_MSG_RETURN_CINFO:
             return ("RETURN_CINFO");
+            break;
+        case COMMON_MSG_DEVICE:
+            return ("DEVICE");
+            break;
+        case COMMON_MSG_INSERT_DEVICE:
+            return ("INSERT_DEVICE");
+            break;
+        case COMMON_MSG_DELETE_DEVICE:
+            return ("DELETE_DEVICE");
+            break;
+        case COMMON_MSG_RETURN_DEVICE:
+            return ("RETURN_DEVICE");
+            break;
+        case COMMON_MSG_DEVICE_TYPE:
+            return ("DEVICE_TYPE");
+            break;
+        case COMMON_MSG_INSERT_DEVTYPE:
+            return ("INSERT_DEVTYPE");
+            break;
+        case COMMON_MSG_DELETE_DEVTYPE:
+            return ("DELETE_DEVTYPE");
+            break;
+        case COMMON_MSG_RETURN_DEVTYPE:
+            return ("RETURN_DEVTYPE");
             break;
     }
     return "?";
@@ -1677,6 +2226,24 @@ common_msg_set_cinfo_id (common_msg_t *self, uint32_t cinfo_id)
 }
 
 
+//  --------------------------------------------------------------------------
+//  Get/set the devicetype_id field
+
+uint32_t
+common_msg_devicetype_id (common_msg_t *self)
+{
+    assert (self);
+    return self->devicetype_id;
+}
+
+void
+common_msg_set_devicetype_id (common_msg_t *self, uint32_t devicetype_id)
+{
+    assert (self);
+    self->devicetype_id = devicetype_id;
+}
+
+
 
 //  --------------------------------------------------------------------------
 //  Selftest
@@ -1942,6 +2509,180 @@ common_msg_test (bool verbose)
     common_msg_set_rowid (self, 123);
     zmsg_t *return_cinfo_msg = zmsg_new ();
     common_msg_set_msg (self, &return_cinfo_msg);
+    zmsg_addstr (common_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_rowid (self) == 123);
+        assert (zmsg_size (common_msg_msg (self)) == 1);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_devicetype_id (self, 123);
+    common_msg_set_name (self, "Life is short but Now lasts for ever");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_devicetype_id (self) == 123);
+        assert (streq (common_msg_name (self), "Life is short but Now lasts for ever"));
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_INSERT_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    zmsg_t *insert_device_msg = zmsg_new ();
+    common_msg_set_msg (self, &insert_device_msg);
+    zmsg_addstr (common_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (zmsg_size (common_msg_msg (self)) == 1);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_DELETE_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_device_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_device_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_RETURN_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_rowid (self, 123);
+    zmsg_t *return_device_msg = zmsg_new ();
+    common_msg_set_msg (self, &return_device_msg);
+    zmsg_addstr (common_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_rowid (self) == 123);
+        assert (zmsg_size (common_msg_msg (self)) == 1);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_DEVICE_TYPE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_name (self, "Life is short but Now lasts for ever");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (streq (common_msg_name (self), "Life is short but Now lasts for ever"));
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_INSERT_DEVTYPE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    zmsg_t *insert_devtype_msg = zmsg_new ();
+    common_msg_set_msg (self, &insert_devtype_msg);
+    zmsg_addstr (common_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (zmsg_size (common_msg_msg (self)) == 1);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_DELETE_DEVTYPE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_devicetype_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_devicetype_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_RETURN_DEVTYPE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_rowid (self, 123);
+    zmsg_t *return_devtype_msg = zmsg_new ();
+    common_msg_set_msg (self, &return_devtype_msg);
     zmsg_addstr (common_msg_msg (self), "Hello, World");
     //  Send twice from same object
     common_msg_send_again (self, output);

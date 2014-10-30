@@ -236,36 +236,76 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
 };
 
 bool
-powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg)
+powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
 {
     powerdev_msg_t& msg_c = const_cast<powerdev_msg_t&>(msg);
-    int msg_id          = powerdev_msg_id (&msg_c);
-    DeviceDiscovered  newdev(url);
+    int msg_id            = powerdev_msg_id (&msg_c);
 
     switch (msg_id) {
-    case POWERDEV_MSG_POWERDEV_STATUS:
+        
+        case POWERDEV_MSG_POWERDEV_STATUS:
         {
-            std::string name = std::string(powerdev_msg_deviceid(&msg_c));
-            std::string type = std::string(powerdev_msg_type(&msg_c) );
-            std::vector<DeviceDiscovered> devices = DeviceDiscovered::selectByName(url,name);
-            if( devices.size() == 0 ) {
-                //vytvor novy
-                newdev.setName(name);
-                int newtypeid = DeviceType::selectId(url,type);
-                newdev.setDeviceTypeId(newtypeid);
-                unsigned int n = newdev.dbsave();
-                assert( n == 1 );
-            } else {
-                //vem prvni
-                newdev = devices[0];
-            }
-            std::string modulename = "NUT";
-            int id = Client::selectId(url,modulename);
-            ClientInfo newInformation(url);
-            newInformation.setClientId(id);
-            newInformation.setDeviceDiscoveredId(newdev.getId());
+            char* devicename = powerdev_msg_deviceid (&ms_c);
+            char* devicetype = powerdev_msg_type (&msg_c);
             
-            zmsg_t *zmsg = powerdev_msg_encode_powerdev_status(
+            char modulename[] = "NUT";  // TODO hardcoded constant           
+            
+            // look for a client 
+            common_msg_t* retClient = select_client(url, modulename);
+
+            uint32_t client_id = 0;
+            uint32_t msgid = common_msg_id (retClient);
+
+            if ( msgid  == COMMON_MSG_FAIL )
+            {
+                // the client was not found
+                // TODO
+                assert (false);
+            }
+            else if ( msgid == COMMON_MSG_RETURN_CLIENT )
+            {
+                client_id = common_msg_rowid (retClient); // the client was found
+            }
+            else
+                assert (false); // unknown response
+
+            // look for a device
+            // device is indicated by devicename and devicetype
+            common_msg_t* retDevice = select_device(url, devicename, devicetype);
+            
+            uint32_t device_id = 0;
+            msgid = common_msg_id (retDevice);
+            
+            if ( msgid == COMMON_MSG_FAIL )
+            {
+                // the device was not found, then insert new device
+                common_msg_t* newDevice = insert_device(url, devicename, devicetype);
+                
+                uint32_t newmsgid = common_msg_id (newDevice);
+
+                if ( msgid  == COMMON_MSG_FAIL )
+                {
+                    // the device was not inserted
+                    // TODO
+                    assert (false);
+                }
+                else if ( msgid == COMMON_MSG_DB_OK )
+                {
+                    device_id = common_msg_rowid ( newDevice ); // the device was inserted
+                }
+                else
+                    assert (false); // unknown response
+            }
+            else if ( msgid == COMMON_MSG_RETURN_DEVICE )
+            {
+                // the device was found
+                device_id = common_msg_rowid (retDevice);
+            }
+            else
+                assert (false); // unknown response
+            
+            // create blob information
+            zmsg_t *zmsg = powerdev_msg_encode_powerdev_status (
                  powerdev_msg_deviceid(&msg_c),
                  powerdev_msg_model(&msg_c),
                  powerdev_msg_manufacturer(&msg_c),
@@ -274,26 +314,35 @@ powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg)
                  powerdev_msg_status(&msg_c),
                  powerdev_msg_otherproperties(&msg_c)
             );
-            assert( zmsg );
+            assert (zmsg);
             byte *encoded;
-            zmsg_encode( zmsg, &encoded );
-            assert(encoded);
-            unsigned int n = 0;
-            if(encoded) {
+            size_t infolen = zmsg_encode (zmsg, &encoded);
+            
+            // inserting into client_info
+            if (encoded)  // ale je to ukazatel
+            {
                 // TODO: base64, can have zeros
-                newInformation.setBlobData((char *)encoded);
-                n = newInformation.dbsave();
-                assert(n == 1);
+                
+                common_msg_t* newClientInfo = insert_client_info(url, device_id, client_id, encoded, infolen);
+                if ( common_msg_id (newClientInfo) == COMMON_MSG_FAIL )
+                {
+                   // the info was not inserted
+                }
+                else if ( msgid == COMMON_MSG_DB_OK )
+                {
+                    // the info was inserted
+                }
+                else
+                    assert (false); // unknown response
+                
                 free(encoded);
             }
+
             zmsg_destroy( &zmsg );
-            if( n == 0 ) {
-                log_error("%s","can't write into database\n");
-                return false;
-            }
             return true;
-        }
-    }
+        }   // end case
+
+    } // end switch
     return false;
 }
 
