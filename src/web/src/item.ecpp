@@ -1,5 +1,6 @@
 <%pre>
 #include <czmq.h>
+#include <cxxtools/split.h>
 
 #include "asset_msg.h"
 #include "data.h"
@@ -124,15 +125,15 @@ asset_manager asset_mgr;
 <%cpp>
             for(it = zlist_first(power); it != 0;
                 it = zlist_next(power) ) {
-                zmsg_t *pwr_msg = zmsg_decode((byte*)it, strlen((char*)it));
-                if(pwr_msg == NULL) continue;
-                asset_msg_t *pwr_a_msg = asset_msg_decode(&pwr_msg);
-                if(pwr_a_msg == NULL) continue;
+                std::vector<std::string> tokens;
+                cxxtools::split(':', std::string((char*)it), std::back_inserter(tokens));
+
+                if(tokens.size() != 4) continue;
 </%cpp>
         {
-            "src_socket":"<$ asset_msg_src_socket(pwr_a_msg) $>",
-            "src_uri":"/api/v1/asset/device/<$ asset_msg_src_location(pwr_a_msg) $>",
-            "dst_socket":"<$ asset_msg_dst_socket(pwr_a_msg) $>"
+            "src_socket":"<$ tokens[0] $>",
+            "src_uri":"/api/v1/asset/device/<$ tokens[1] $>",
+            "dst_socket":"<$ tokens[2] $>"
         }<? it != last ? "," ?>
 %           }
         ]

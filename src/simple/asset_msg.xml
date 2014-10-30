@@ -30,20 +30,12 @@ Structure describing asset element
 Structure describing asset device
     <field name = "device_type" type = "string">Type of the device, freeform string not the thing from asset_type</field>
     <field name = "groups" type = "strings">List of IDs of groups device belongs to</field>
-    <field name = "powers" type = "strings">List of encoded link messages</field>
+    <field name = "powers" type = "strings">List of link messages in form src_socket:src_id:dst_socket:dst_id</field>
     <field name = "ip" type = "string">IP of the device</field>
     <field name = "hostname" type = "string">Hostname</field>
     <field name = "fqdn" type = "string">Fully qualified domain name</field>
     <field name = "mac" type = "string">MAC address of the device</field>
     <field name = "msg" type = "msg">Element that we are extending to the device</field>
-</message>
-
-<message name = "link" id = "12">
-Structure for describing the relations between devices
-    <field name = "src_socket" type = "number" size = "2">Source socket</field>
-    <field name = "dst_socket" type = "number" size = "2">Destination socket</field>
-    <field name = "src_location" type = "number" size = "4">ID of the src device</field>
-    <field name = "dst_location" type = "number" size = "4">ID of the parent element</field>
 </message>
 
 <message name = "get_element" id = "2">
