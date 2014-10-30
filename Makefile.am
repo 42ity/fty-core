@@ -98,7 +98,7 @@ libpriv_db_la_SOURCES = 	src/utils/persistence.h \
 				src/utils/persistencelogic.h \
 				src/utils/monitorpersistence.cc \
 				src/utils/monitorpersistence.h
-libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple/ -I$(top_srcdir)/src/utils/persistence
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/utils/persistence -I$(top_srcdir)/src/utils
 
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
@@ -206,14 +206,17 @@ test_cidr_LDFLAGS =			-lcidr
 
 
 check_PROGRAMS += 			test-db
+
 test_db_SOURCES = 			tests/utils/test-clientinfo.cc \
 					tests/utils/test-device-discovered.cc \
 					tests/utils/test-devicetype.cc \
 					tests/utils/test-client.cc \
 					tests/utils/test-nethistory.cc
+
 test_db_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
 					libpriv-test-run.la
+
 test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
 					-I$(top_srcdir)/src/utils/persistence \
@@ -222,16 +225,22 @@ test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
 test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
 
 check_PROGRAMS += 			test-db2
-test_db2_SOURCES = 			tests/utils/test-persistence.cc
+
+test_db2_SOURCES = 			tests/utils/persistence/test-monitor.cc \
+				 			tests/utils/persistence/test-monitor-clientinfo.cc \
+							src/simple/common_msg.c \
+							src/simple/common_msg.h
+
 test_db2_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
 					libpriv-test-run.la
 test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
 					-I$(top_srcdir)/src/utils/persistence \
+					-I$(top_srcdir)/src/simple \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
-test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr
+test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lczmq
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
@@ -265,6 +274,8 @@ simple_SOURCES = 			src/simple/main.cc \
 					src/simple/netdisc_msg.c \
 					src/simple/netdisc_msg.h \
 					src/simple/powerdev_msg.c \
+					src/simple/common_msg.c \
+					src/simple/common_msg.h \
 					src/drivers/nut/nut-actor.cc \
 					src/drivers/nut/nut-driver.cc \
 					src/simple/nmap_msg.h \
