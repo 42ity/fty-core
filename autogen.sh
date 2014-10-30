@@ -68,12 +68,16 @@ fi
 
 [ x"$BLDARCH" = x ] && BLDARCH="`uname -s`-`uname -m`"
 [ x"$DESTDIR" = x ] && DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
+[ x"$NCPUS" = x ] && { NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || NCPUS=1; }
+[ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
+[ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
+[ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
 buildSamedir() {
 	make -k distclean
 	./configure && \
 	{ make -k clean; \
-	  echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	  if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; }
 }
 
@@ -83,7 +87,7 @@ buildSubdir() {
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
 	../configure && \
-	{ echo "=== PARMAKE:"; make V=0 -j 4 -k "$@"; \
+	{ if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; } && \
 	{ make DESTDIR=${DESTDIR} install; } )
 }
@@ -96,6 +100,19 @@ installSubdir() {
 	( cd build-${BLDARCH} && \
 	  make DESTDIR=${DESTDIR} install )
 }
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	    "--warnless-unused")
+		shift
+		CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+		CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+		export CFLAGS CXXFLAGS
+		echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+		;;
+	    *)	break ;;
+	esac
+done
 
 case "$1" in
     "")
@@ -137,10 +154,14 @@ case "$1" in
 	make -k distclean
 	./configure
 	;;
-    *)	echo "Usage: $0 [ { build-samedir | build-subdir | install-samedir | install-subdir } maketargets...]"
-	echo "This scrpit (re-)creates the configure script and optionally either just builds"
+    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
+	echo "This script (re-)creates the configure script and optionally either just builds"
 	echo "or builds and installs into a DESTDIR the requested project targets."
-	echo "Usage: $0 distcheck	- execute the configure and make distcheck"
+	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
+	echo "Some uses without further parameters:"
+	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
+	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
+	echo "Usage: $0 distclean	- execute the distclean step and exit"
 	exit 2
 	;;
 esac

@@ -356,7 +356,9 @@ for the `autogen.sh` script if nothing has been defined by the user):
 :; DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH}
 :; export BLDARCH DESTDIR
 ----
- * run a (re)build based in the same directory:
+ * run a (re)build based in the same directory (note that by default
+this first does a pass of parallel building, then revisits with the
+sequential build of the same codebase, to speed up the overall process):
 ----
 :; ./autogen.sh build
 ----
@@ -365,9 +367,22 @@ install the products under 'DESTDIR':
 ----
 :; ./autogen.sh install
 ----
+ * optionally, if you are into debugging the 'Makefile' itself, or into
+fixing the problems discovered with compiler warnings, then for a quieter
+build (so that "real" compiler warnings are not obscured by dozens of
+arguably less important ones about unused items in the auto-generated
+code), you can define the relevant compiler flags before `configure`;
+and also you can use only the slower sequential `make` procedure whose
+output is ordered and thus it is more informative and coherent for this
+job, i.e.:
+----
+:; CFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
+   CXXFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
+   NOPARMAKE=Y ./autogen.sh build
+----
 
-If this simple build fails, try the longer version step-by-step and with
-more verbosity, as detailed below.
+If this simple automated build procedure fails, try the longer version
+step-by-step and with more verbosity, as detailed below.
 
 
 
