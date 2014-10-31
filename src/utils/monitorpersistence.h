@@ -1,4 +1,4 @@
-common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* erraux);
+common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux);
 
 common_msg_t* _generate_ok(uint32_t rowid);
 ////////////////////////////////////////////////////////////////////

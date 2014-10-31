@@ -103,6 +103,18 @@
     RETURN_DEVTYPE - Return a device type we were asked for
         rowid               number 4     Unique ID of the device type
         msg                 msg          Device type
+
+    GET_CLIENT - Ask for a client
+        client_id           number 4     Unique ID of the client
+
+    GET_CINFO - Ask for a client info
+        cinfo_id            number 4     Unique ID of the client info
+
+    GET_DEVICE - Ask for  a device
+        device_id           number 4     Unique ID of the device
+
+    GET_DEVTYPE - Ask for a device type
+        devicetype_id       number 4     Unique ID of the device type
 */
 
 #define COMMON_MSG_VERSION                  1.0
@@ -126,6 +138,10 @@
 #define COMMON_MSG_INSERT_DEVTYPE           218
 #define COMMON_MSG_DELETE_DEVTYPE           220
 #define COMMON_MSG_RETURN_DEVTYPE           221
+#define COMMON_MSG_GET_CLIENT               223
+#define COMMON_MSG_GET_CINFO                224
+#define COMMON_MSG_GET_DEVICE               225
+#define COMMON_MSG_GET_DEVTYPE              226
 
 #include <czmq.h>
 
@@ -281,6 +297,26 @@ zmsg_t *
         uint32_t rowid,
         zmsg_t *msg);
 
+//  Encode the GET_CLIENT 
+zmsg_t *
+    common_msg_encode_get_client (
+        uint32_t client_id);
+
+//  Encode the GET_CINFO 
+zmsg_t *
+    common_msg_encode_get_cinfo (
+        uint32_t cinfo_id);
+
+//  Encode the GET_DEVICE 
+zmsg_t *
+    common_msg_encode_get_device (
+        uint32_t device_id);
+
+//  Encode the GET_DEVTYPE 
+zmsg_t *
+    common_msg_encode_get_devtype (
+        uint32_t devicetype_id);
+
 
 //  Send the FAIL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -407,6 +443,30 @@ int
     common_msg_send_return_devtype (void *output,
         uint32_t rowid,
         zmsg_t *msg);
+    
+//  Send the GET_CLIENT to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_client (void *output,
+        uint32_t client_id);
+    
+//  Send the GET_CINFO to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_cinfo (void *output,
+        uint32_t cinfo_id);
+    
+//  Send the GET_DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_device (void *output,
+        uint32_t device_id);
+    
+//  Send the GET_DEVTYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_devtype (void *output,
+        uint32_t devicetype_id);
     
 //  Duplicate the common_msg message
 common_msg_t *

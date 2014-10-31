@@ -410,6 +410,22 @@ common_msg_decode (zmsg_t **msg_p)
                 zmsg_add (self->msg, zmsg_pop (msg));
             break;
 
+        case COMMON_MSG_GET_CLIENT:
+            GET_NUMBER4 (self->client_id);
+            break;
+
+        case COMMON_MSG_GET_CINFO:
+            GET_NUMBER4 (self->cinfo_id);
+            break;
+
+        case COMMON_MSG_GET_DEVICE:
+            GET_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_GET_DEVTYPE:
+            GET_NUMBER4 (self->devicetype_id);
+            break;
+
         default:
             goto malformed;
     }
@@ -566,6 +582,26 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             break;
             
+        case COMMON_MSG_GET_CLIENT:
+            //  client_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_GET_CINFO:
+            //  cinfo_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_GET_DEVICE:
+            //  device_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_GET_DEVTYPE:
+            //  devicetype_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -689,6 +725,22 @@ common_msg_encode (common_msg_t **self_p)
 
         case COMMON_MSG_RETURN_DEVTYPE:
             PUT_NUMBER4 (self->rowid);
+            break;
+
+        case COMMON_MSG_GET_CLIENT:
+            PUT_NUMBER4 (self->client_id);
+            break;
+
+        case COMMON_MSG_GET_CINFO:
+            PUT_NUMBER4 (self->cinfo_id);
+            break;
+
+        case COMMON_MSG_GET_DEVICE:
+            PUT_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_GET_DEVTYPE:
+            PUT_NUMBER4 (self->devicetype_id);
             break;
 
     }
@@ -1214,6 +1266,58 @@ common_msg_encode_return_devtype (
 
 
 //  --------------------------------------------------------------------------
+//  Encode GET_CLIENT message
+
+zmsg_t * 
+common_msg_encode_get_client (
+    uint32_t client_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_CLIENT);
+    common_msg_set_client_id (self, client_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode GET_CINFO message
+
+zmsg_t * 
+common_msg_encode_get_cinfo (
+    uint32_t cinfo_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_CINFO);
+    common_msg_set_cinfo_id (self, cinfo_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode GET_DEVICE message
+
+zmsg_t * 
+common_msg_encode_get_device (
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_DEVICE);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode GET_DEVTYPE message
+
+zmsg_t * 
+common_msg_encode_get_devtype (
+    uint32_t devicetype_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_DEVTYPE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the FAIL to the socket in one step
 
 int
@@ -1515,6 +1619,62 @@ common_msg_send_return_devtype (
 
 
 //  --------------------------------------------------------------------------
+//  Send the GET_CLIENT to the socket in one step
+
+int
+common_msg_send_get_client (
+    void *output,
+    uint32_t client_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_CLIENT);
+    common_msg_set_client_id (self, client_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the GET_CINFO to the socket in one step
+
+int
+common_msg_send_get_cinfo (
+    void *output,
+    uint32_t cinfo_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_CINFO);
+    common_msg_set_cinfo_id (self, cinfo_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the GET_DEVICE to the socket in one step
+
+int
+common_msg_send_get_device (
+    void *output,
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_DEVICE);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the GET_DEVTYPE to the socket in one step
+
+int
+common_msg_send_get_devtype (
+    void *output,
+    uint32_t devicetype_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_DEVTYPE);
+    common_msg_set_devicetype_id (self, devicetype_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Duplicate the common_msg message
 
 common_msg_t *
@@ -1613,6 +1773,22 @@ common_msg_dup (common_msg_t *self)
         case COMMON_MSG_RETURN_DEVTYPE:
             copy->rowid = self->rowid;
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case COMMON_MSG_GET_CLIENT:
+            copy->client_id = self->client_id;
+            break;
+
+        case COMMON_MSG_GET_CINFO:
+            copy->cinfo_id = self->cinfo_id;
+            break;
+
+        case COMMON_MSG_GET_DEVICE:
+            copy->device_id = self->device_id;
+            break;
+
+        case COMMON_MSG_GET_DEVTYPE:
+            copy->devicetype_id = self->devicetype_id;
             break;
 
     }
@@ -1792,6 +1968,26 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("(NULL)");
             break;
             
+        case COMMON_MSG_GET_CLIENT:
+            zsys_debug ("COMMON_MSG_GET_CLIENT:");
+            zsys_debug ("    client_id=%ld", (long) self->client_id);
+            break;
+            
+        case COMMON_MSG_GET_CINFO:
+            zsys_debug ("COMMON_MSG_GET_CINFO:");
+            zsys_debug ("    cinfo_id=%ld", (long) self->cinfo_id);
+            break;
+            
+        case COMMON_MSG_GET_DEVICE:
+            zsys_debug ("COMMON_MSG_GET_DEVICE:");
+            zsys_debug ("    device_id=%ld", (long) self->device_id);
+            break;
+            
+        case COMMON_MSG_GET_DEVTYPE:
+            zsys_debug ("COMMON_MSG_GET_DEVTYPE:");
+            zsys_debug ("    devicetype_id=%ld", (long) self->devicetype_id);
+            break;
+            
     }
 }
 
@@ -1895,6 +2091,18 @@ common_msg_command (common_msg_t *self)
             break;
         case COMMON_MSG_RETURN_DEVTYPE:
             return ("RETURN_DEVTYPE");
+            break;
+        case COMMON_MSG_GET_CLIENT:
+            return ("GET_CLIENT");
+            break;
+        case COMMON_MSG_GET_CINFO:
+            return ("GET_CINFO");
+            break;
+        case COMMON_MSG_GET_DEVICE:
+            return ("GET_DEVICE");
+            break;
+        case COMMON_MSG_GET_DEVTYPE:
+            return ("GET_DEVTYPE");
             break;
     }
     return "?";
@@ -2695,6 +2903,86 @@ common_msg_test (bool verbose)
         
         assert (common_msg_rowid (self) == 123);
         assert (zmsg_size (common_msg_msg (self)) == 1);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_GET_CLIENT);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_client_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_client_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_GET_CINFO);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_cinfo_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_cinfo_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_GET_DEVICE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_device_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_device_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_GET_DEVTYPE);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_devicetype_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_devicetype_id (self) == 123);
         common_msg_destroy (&self);
     }
 
