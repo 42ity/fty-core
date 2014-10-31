@@ -76,18 +76,10 @@ libpriv_cidr_la_SOURCES = 	src/utils/cidr.h \
 noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = 	src/utils/persistence.h \
-				src/utils/persistence/client.cc \
-				src/utils/persistence/client.h \
-				src/utils/persistence/clientinfo.cc \
-				src/utils/persistence/clientinfo.h \
 				src/utils/persistence/databaseobject.cc \
 				src/utils/persistence/databaseobject.h \
 				src/utils/persistence/databasetimeobject.cc \
 				src/utils/persistence/databasetimeobject.h \
-				src/utils/persistence/device_discovered.cc \
-				src/utils/persistence/device_discovered.h \
-				src/utils/persistence/devicetype.cc \
-				src/utils/persistence/devicetype.h \
 				src/utils/persistence/ip.cc \
 				src/utils/persistence/ip.h \
 				src/utils/persistence/nethistory.cc \
@@ -207,11 +199,7 @@ test_cidr_LDFLAGS =			-lcidr
 
 check_PROGRAMS += 			test-db
 
-test_db_SOURCES = 			tests/utils/test-clientinfo.cc \
-					tests/utils/test-device-discovered.cc \
-					tests/utils/test-devicetype.cc \
-					tests/utils/test-client.cc \
-					tests/utils/test-nethistory.cc
+test_db_SOURCES = 	tests/utils/test-nethistory.cc
 
 test_db_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
