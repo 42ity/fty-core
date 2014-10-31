@@ -18,19 +18,58 @@ meaning for shells and can adversely influence copy-pasted commands).
 
 Get the source
 --------------
-If you are reading this file, you probably have some version of the
-$BIOS core project source code already. It might not be the most fresh
+If you are reading this file, you probably have _some_ version of the
+$BIOS core project source code already. It might not be the _most fresh_
 version, however, so to stay on the bleeding edge of development you
 might want to clone the source-code repository onto your development
 system.
 
-Checkout of the main upstream repository itself is more of interest to
+Alternately, if you don't have access to the project's Stash, copy a
+tarball of the repository (or do a `git clone`) from a fellow developer.
+
+Overview of the source-code tracking in the project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The common baseline of the code is tracked in an 'upstream' repository,
+while each developer has at least one forked repository on the Stash
+and one or more branches there to track development on separate issues.
+Stash usually replicates the code-commits merged into the 'upstream'
+repository onto the personal forks derived from it. When a piece of
+work by a developer is baked enough for integration into the common
+code, the developer issues a "pull request" and the team can review
+and comment on these changes, and the developer follows up by adding
+some improvements... after some back-and-forth, such collectively
+reviewed and approved changesets are merged into the 'upstream'.
+
+While the Stash server is used to publish and cross-pollinate different
+lines of development, the actual work by developers, validators, build
+systems and so on, is done in local clones of the relevant repository
+stored on the workstation, and results of the work are `git push`ed
+back to the relevant 'origin' repository.
+
+Note that in Git every cloned repository is self-sufficient and does
+not require networked or other means of access to other repositories,
+except when actual transfer of changesets is desired. As a corollary,
+every workspace for some particular work (i.e. for different branches
+that track development on different issues, for builds separate from
+coding, etc.) is a complete cloned repository, where a `git checkout`
+was done to select a particular branch. While complex hierarchies
+can be built, it is usually convenient to directly use the Stash'ed
+personal fork as the 'origin' for all such working clones.
+
+Atlassian has published a good tutorial about Git for those who need
+to get started with the concepts and tools of this technology, see:
+ * https://www.atlassian.com/git/tutorials/
+
+Checking out the code with Git
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Checkout of the main 'upstream' repository itself is more of interest to
 those responsible for building the current project state into binaries
 for validation or redistribution. Code should not be "pushed" into this
 repository directly except after review by the source code gate-keepers.
-The upstream $BIOS core project repository can be cloned with the command
-below (proper access to the project infrastructure server is required)
-over SSH (keys should be uploaded to the user's Stash account first):
+The 'upstream' $BIOS core project Git repository can be cloned with the
+command below (proper access to the project infrastructure server is
+required) over SSH (your keys should be uploaded to the user's Stash
+account first):
 ----
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
@@ -41,13 +80,13 @@ special characters may need URL percent-encoding which is inconvenient):
 ----
 
 The project workflow for actual development implies that one should first
-"fork" the upstream repository in the Stash web-interface into a private
+"fork" the 'upstream' repository in the Stash web-interface into a private
 namespace (named like E1234567 below) with automatic application of updates
-from the upstream repo, then `git clone` this private repository onto his
-or her PC for actual coding; it is convenient to also register the common
-upstream repository as such, to facilitate comparisons and updates which
-were not resolved automatically (i.e. several changes applied to the same
-area in the tracked files and possibly conflicting):
+from the 'upstream' repo, then `git clone` this private 'origin' repository
+onto his or her PC for actual coding; it is convenient to also register the
+common 'upstream' repository as such, to facilitate comparisons and updates
+which were not resolved automatically (i.e. when several changes are applied
+to the same area in the tracked files and so are possibly conflicting):
 ----
 :; git clone \
      ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git core-myfork && \
@@ -55,9 +94,10 @@ area in the tracked files and possibly conflicting):
    git remote add \
      upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
    git fetch --all --tags
+----
 
-
-### Verify the local workspace (checked-out and available branches):
+Verify the local workspace (list the checked-out and available branches):
+----
 :; git branch -a
 
 * master
@@ -122,7 +162,7 @@ platform-independent code). This is currently a "testing" variant of
 Debian and a moving target in terms of formal support (although seems
 recently "frozen" and heading to official stable supported release).
 However, automatic dependency handling in OBS should handle refreshed
-source code coming from upstream for us.
+source code coming from some project's upstream for us.
 
 Automatic setup of OBS as a package source for a supported Debian 8.0
 platform with APT package management should work like this (execute
