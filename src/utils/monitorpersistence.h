@@ -1,6 +1,13 @@
+common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* erraux);
+
+common_msg_t* _generate_ok(uint32_t rowid);
 ////////////////////////////////////////////////////////////////////
 ///////            CLIENT                    ///////////////////////
 ////////////////////////////////////////////////////////////////////
+
+common_msg_t* _generate_client(const char* name);
+
+common_msg_t* _generate_return_client(uint32_t clientid, common_msg_t** client);
 
 common_msg_t* select_client(const char* url, const char* name);
 
@@ -15,6 +22,12 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 ////////////////////////////////////////////////////////////////////////
 /////////////////           CLIENT INFO              ///////////////////
 ////////////////////////////////////////////////////////////////////////
+
+common_msg_t* _generate_client_info
+    (uint32_t client_id, uint32_t device_id, uint32_t mytime, byte* data, uint32_t datasize);
+
+common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info);
+
 /**
  * \brief Inserts into the table t_bios_client_info new row.
  *
@@ -32,6 +45,7 @@ common_msg_t* insert_client_info
 
 common_msg_t* insert_client_info
     (const char* url, uint32_t device_id, uint32_t client_id, byte* blobdata, uint32_t blobsize);
+
 /**
  * \brief Delets from the table t_bios_client_info row by id.
  *
@@ -41,6 +55,7 @@ common_msg_t* insert_client_info
  *         COMMON_MSG_DB_OK   if delete was successful
  */
 common_msg_t* delete_client_info (const char* url, uint32_t id);
+
 /**
  * \brief Updates in the table t_bios_client_info row by id.
  *
@@ -60,11 +75,16 @@ common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
  *         COMMON_MSG_DB_OK   if update was successful
  */
 common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint32_t device_id);
+
 common_msg_t* select_client_info(const char* url, uint32_t id_client_info);
 
 ///////////////////////////////////////////////////////////////////
 ///////            DEVICE TYPE              ///////////////////////
 ///////////////////////////////////////////////////////////////////
+
+common_msg_t* _generate_device_type(const char* name);
+
+common_msg_t* _generate_return_device_type(uint32_t devicetype_id, common_msg_t** device_type);
 
 common_msg_t* select_device_type(const char* url, const char* name);
 
@@ -79,6 +99,10 @@ common_msg_t* update_device_type(const char* url, uint32_t id, common_msg_t** de
 ////////////////////////////////////////////////////////////////////////
 /////////////////           DEVICE                   ///////////////////
 ////////////////////////////////////////////////////////////////////////
+
+common_msg_t* _generate_device(const char* name, uint32_t devicetype_id);
+
+common_msg_t* _generate_return_device(uint32_t device_id, common_msg_t** device);
 
 common_msg_t* _generate_device(const char* name, uint32_t devicetype_id);
 //it shoud destroy the device
