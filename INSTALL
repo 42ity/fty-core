@@ -7,7 +7,8 @@ from source and/or as resulting packages for the Eaton $BIOS core project.
 Also keep in mind that the $BIOS core project auto-configuration procdure
 relies on `pkg-config` information (including the library versions), so
 it should be available (as the installed subsystem of the OS as well as
-the *.pc files as part of packaged or privately-built prerequisite software).
+the '*.pc' files as part of packaged or privately-built prerequisite
+software).
 
 To ease copy-pasting, the example commands in this document are prefixed
 with a colon+semicolon prompt `:;` which is an empty command for shell
@@ -58,6 +59,7 @@ personal fork as the 'origin' for all such working clones.
 
 Atlassian has published a good tutorial about Git for those who need
 to get started with the concepts and tools of this technology, see:
+
  * https://www.atlassian.com/git/tutorials/
 
 Checking out the code with Git
@@ -521,3 +523,4 @@ Note: as part of the project's automated validation the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
 build. An `./autogen.sh distcheck` method exists to automate this into a
 single-command routine to configure-build-check.
+
