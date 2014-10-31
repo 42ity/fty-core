@@ -12,7 +12,7 @@
 /**
  * \brief Generates a COMMON_MSG_FAIL message.
  * 
- * Generates a COMMON_MSG_FAIL with error type ERROR_DB , with a specified code, 
+ * Generates a COMMON_MSG_FAIL with error type BIOS_ERROR_DB , with a specified code, 
  * errormessage and optional parameters.
  * If errmsg is NULL, then it would be "".
  *
@@ -20,7 +20,7 @@
  * \param errmsg  - a detailed message about the error.
  * \param erraux  - optional information.
  *
- * \return a common_msg_t message of the type COMMON_MSG_DB_FAIL.
+ * \return a common_msg_t message of the type COMMON_MSG_FAIL.
  *
  * TODO the codes are now defined as define. May be need to have enum
  */
@@ -38,11 +38,11 @@ common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* e
 }
 
 /**
- * \brief Generates an COMMON_MSG_DB_OK message and specifies an id of row that was processed
+ * \brief Generates an COMMON_MSG_DB_OK message and specifies an id of row that was processed.
  *
- * \param id - an id of the processed row
+ * \param id - an id of the processed row.
  *
- * \return a common_msg_t message of the type COMMON_MSG_DB_OK
+ * \return a common_msg_t message of the type COMMON_MSG_DB_OK.
  */
 common_msg_t* _generate_ok(uint32_t rowid)
 {
@@ -229,7 +229,7 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 /////////////////           CLIENT INFO              ///////////////////
 ////////////////////////////////////////////////////////////////////////
 
-// Date is always UTC time as UNIX_timestamp
+// Date is always UTC time as UNIX_timestamp.
 //
 
 common_msg_t* _generate_client_info
@@ -246,7 +246,7 @@ common_msg_t* _generate_client_info
     return resultmsg;
 }
 
-//it shoud destroy the client_info
+//it shoud destroy the client_info.
 common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info)
 {
     assert ( common_msg_id (*client_info) == COMMON_MSG_CLIENT_INFO );
@@ -269,7 +269,7 @@ common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t
  * \param client_id - id of the module that gathered this information
  * \param blob      - an information as a flow of bytes
  *
- * \return COMMON_MSG_DB_FAIL if inserting failed
+ * \return COMMON_MSG_FAIL if inserting failed
  *         COMMON_MSG_DB_OK   if inserting was successful
  */
 common_msg_t* insert_client_info
@@ -324,10 +324,10 @@ common_msg_t* insert_client_info
 /**
  * \brief Delets from the table t_bios_client_info row by id.
  *
- * \param id - id of the row to be deleted
+ * \param id - id of the row to be deleted.
  *
- * \return COMMON_MSG_DB_FAIL if delete failed
- *         COMMON_MSG_DB_OK   if delete was successful
+ * \return COMMON_MSG_FAIL    if delete failed.
+ *         COMMON_MSG_DB_OK   if delete was successful.
  */
 common_msg_t* delete_client_info (const char* url, uint32_t id)
 {
@@ -355,10 +355,10 @@ common_msg_t* delete_client_info (const char* url, uint32_t id)
 /**
  * \brief Updates in the table t_bios_client_info row by id.
  *
- * \param common_msg_t - message with new information
+ * \param common_msg_t - message with new information.
  *
- * \return COMMON_MSG_DB_FAIL if update failed
- *         COMMON_MSG_DB_OK   if update was successful
+ * \return COMMON_MSG_FAIL    if update failed.
+ *         COMMON_MSG_DB_OK   if update was successful.
  */
 common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
 {
@@ -368,10 +368,10 @@ common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
 /**
  * \brief Selects the last row the table t_bios_client_info row by id.
  *
- * \param common_msg_t - message with new information
+ * \param common_msg_t - message with new information.
  *
- * \return COMMON_MSG_DB_FAIL if update failed
- *         COMMON_MSG_DB_OK   if update was successful
+ * \return COMMON_MSG_FAIL    if update failed.
+ *         COMMON_MSG_DB_OK   if update was successful.
  */
 common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint32_t device_id)
 {
@@ -667,19 +667,19 @@ common_msg_t* _generate_return_device(uint32_t device_id, common_msg_t** device)
 /**
  * \brief Inserts into the table t_bios_discovered_device new row.
  *
- * \param url           - connection url to database
- * \param devicetype_id - id of the device type
- * \param name          - name of the device
+ * \param url           - connection url to database.
+ * \param devicetype_id - id of the device type.
+ * \param name          - name of the device.
  *
- * \return COMMON_MSG_DB_FAIL if inserting failed
- *         COMMON_MSG_DB_OK   if inserting was successful
+ * \return COMMON_MSG_FAIL    if inserting failed.
+ *         COMMON_MSG_DB_OK   if inserting was successful.
  */
 common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char* name)
 {
     assert ( devicetype_id ); // is required
     assert ( strlen(name) );  // is required
 
-    uint32_t n = 0;     // number of rows affected
+    uint32_t n = 0;     // number of rows affected.
     uint32_t newid = 0;
 
     try{
@@ -710,10 +710,10 @@ common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char*
 /**
  * \brief Deletes from the table t_bios_discovered_device row by id.
  *
- * \param id - id of the row to be deleted
+ * \param id - id of the row to be deleted.
  *
- * \return COMMON_MSG_DB_FAIL if delete failed
- *         COMMON_MSG_DB_OK   if delete was successful
+ * \return COMMON_MSG_FAIL    if delete failed.
+ *         COMMON_MSG_DB_OK   if delete was successful.
  */
 common_msg_t* delete_device (const char* url, uint32_t device_id)
 {
@@ -741,10 +741,10 @@ common_msg_t* delete_device (const char* url, uint32_t device_id)
 /**
  * \brief Updates in the table t_bios_discovered_device row by id.
  *
- * \param newdevice - message with new information
+ * \param newdevice - message with new information.
  *
- * \return COMMON_MSG_DB_FAIL if update failed
- *         COMMON_MSG_DB_OK   if update was successful
+ * \return COMMON_MSG_FAIL if update failed.
+ *         COMMON_MSG_DB_OK   if update was successful.
  */
 common_msg_t* update_device (const char* url, common_msg_t** newdevice)
 {
