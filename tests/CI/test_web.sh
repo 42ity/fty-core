@@ -73,6 +73,11 @@ if ! testsaslauthd -u "${USER}" -p "${PASSWD}" -s bios > /dev/null; then
     exit 3
 fi
 
+if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
+    echo "Webserver is not running, please start it first!"
+    exit 4
+fi
+
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
@@ -90,7 +95,10 @@ while [ "$1" ]; do
 done
 
 echo "Testing completed, $PASS/$TOTAL tests passed"
+[ -z "$FAILED" ] && exit 0
+
 echo "Following tests failed:"
 for i in $FAILED; do
     echo " * $i"
 done
+exit 1
