@@ -282,8 +282,8 @@ driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 					src/drivers/nmap/nmap.cc \
 					src/drivers/nmap/nmap-parse.h \
 					src/drivers/nmap/nmap-parse.cc \
-					src/drivers/nmap/nmap_msg.h \
-					src/drivers/nmap/nmap_msg.c
+					src/simple/nmap_msg.h \
+					src/simple/nmap_msg.c
 
 driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
 driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
