@@ -25,9 +25,12 @@ src/cli/cli-network.cc :
 
 BIOS-354 :
 ----------
--> Write all unit tests.
--> Write documentation (3 classes are not documented properly).
 -> It is hardly possible to use SQLite for testing purposes, because its
    database often becomes busy and tests are failed. It is caused by the
    simplicity of SQLite (it can't properly work with connection-pool and
    concurrent threads). So we need to test on MariaDb.
+-> In database is already stored an UTC_TIMESPAMP.
+-> In monitorpersistence.cc a date is extracted as UNIX_TIME (with the 
+   database function). Problem would appear with dates after 2038.
+   Solution: 1. wait until in database would be implemented a 64-bit version
+   of this function. 2. In case of need write our own PL/SQL function.
