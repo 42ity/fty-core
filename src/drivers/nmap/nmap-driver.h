@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 // TODO autoconf friendly way
 #define NMAP_BIN "/usr/bin/nmap"
-#define SUDO_BIN "/ust/bin/sudo"
+#define SUDO_BIN "/usr/bin/sudo"
 
 #define SCAN_CMDTYPE_DEFAULT_LIST   "defaultlistscan"
 #define SCAN_CMDTYPE_DEFAULT_DEVICE   "defaultdevicescan"

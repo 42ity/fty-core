@@ -64,26 +64,23 @@ about service(s) running on port and result of scan scripts if any.
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
         reason_ttl          number 1    reason_ttl
         reason_ip           string      reason_ip (optional)
-        service             frame       Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages
-        scripts             frame       List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages
-
-    SERVICE_SCAN - Service running on a port (see <port ... <service in xml output)
-        name                string      Name of a service
-        conf                number 1    confidence in result's correcntess (0-10)
-        method              number 1    How nmap got it (table|probed)
-        version             string      version (optional)
-        product             string      product (optional)
-        extrainfo           string      product (optional)
-        tunnel              number 1    tunnel (ssl) (optional)
+        service_name        string      Name of a service
+        service_conf        number 1    confidence in result's correcntess (0-10)
+        service_method      number 1    How nmap got it (table|probed)
+        service_version     string      version (optional)
+        service_product     string      product (optional)
+        service_extrainfo   string      product (optional)
+        service_tunnel      number 1    tunnel (ssl) (optional)
         service_proto       number 1    proto  (rpc) (optional)
-        rpcnum              number 4    rpcnum (optional)
-        lowver              number 4    lowver (optional)
-        highver             number 4    highver (optional)
-        hostname            string      hostname (optional)
-        ostype              string      ostype (optional)
-        devicetype          string      devicetype (optional)
-        servicefp           string      servicefp (optional)
-        cpe                 string      cpe (optional)
+        service_rpcnum      number 4    rpcnum (optional)
+        service_lowver      number 4    lowver (optional)
+        service_highver     number 4    highver (optional)
+        service_hostname    string      hostname (optional)
+        service_ostype      string      ostype (optional)
+        service_devicetype  string      devicetype (optional)
+        service_servicefp   string      servicefp (optional)
+        service_cpes        strings     List of CPE(optional)
+        scripts             frame       List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages
 
     SCRIPT - Output of NSE script
         script_id           string      Name of a script (like ssh-hostkeys)
@@ -103,6 +100,7 @@ about service(s) running on port and result of scan scripts if any.
         name                string      OS name
         accuracy            number 1    Match accuracy, uint16_t
         osclass             frame       List of osclass results. Encapsulated list of 'osclass' messages
+        line                number 4    ?
 
     OSCLASS - Content of element 'os/osmatch/osclass', see nmap dtd ELEMENT portused
         vendor              string      Vendor name
@@ -124,7 +122,6 @@ about service(s) running on port and result of scan scripts if any.
 #define NMAP_MSG_LIST_SCAN                  2
 #define NMAP_MSG_DEV_SCAN                   3
 #define NMAP_MSG_PORT_SCAN                  4
-#define NMAP_MSG_SERVICE_SCAN               5
 #define NMAP_MSG_SCRIPT                     6
 #define NMAP_MSG_OS_SCAN                    7
 #define NMAP_MSG_PORTUSED                   8
@@ -214,28 +211,23 @@ zmsg_t *
         const char *reason,
         byte reason_ttl,
         const char *reason_ip,
-        zframe_t *service,
-        zframe_t *scripts);
-
-//  Encode the SERVICE_SCAN 
-zmsg_t *
-    nmap_msg_encode_service_scan (
-        const char *name,
-        byte conf,
-        byte method,
-        const char *version,
-        const char *product,
-        const char *extrainfo,
-        byte tunnel,
+        const char *service_name,
+        byte service_conf,
+        byte service_method,
+        const char *service_version,
+        const char *service_product,
+        const char *service_extrainfo,
+        byte service_tunnel,
         byte service_proto,
-        uint32_t rpcnum,
-        uint32_t lowver,
-        uint32_t highver,
-        const char *hostname,
-        const char *ostype,
-        const char *devicetype,
-        const char *servicefp,
-        const char *cpe);
+        uint32_t service_rpcnum,
+        uint32_t service_lowver,
+        uint32_t service_highver,
+        const char *service_hostname,
+        const char *service_ostype,
+        const char *service_devicetype,
+        const char *service_servicefp,
+        zlist_t *service_cpes,
+        zframe_t *scripts);
 
 //  Encode the SCRIPT 
 zmsg_t *
@@ -262,7 +254,8 @@ zmsg_t *
     nmap_msg_encode_osmatch (
         const char *name,
         byte accuracy,
-        zframe_t *osclass);
+        zframe_t *osclass,
+        uint32_t line);
 
 //  Encode the OSCLASS 
 zmsg_t *
@@ -321,29 +314,23 @@ int
         const char *reason,
         byte reason_ttl,
         const char *reason_ip,
-        zframe_t *service,
-        zframe_t *scripts);
-    
-//  Send the SERVICE_SCAN to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    nmap_msg_send_service_scan (void *output,
-        const char *name,
-        byte conf,
-        byte method,
-        const char *version,
-        const char *product,
-        const char *extrainfo,
-        byte tunnel,
+        const char *service_name,
+        byte service_conf,
+        byte service_method,
+        const char *service_version,
+        const char *service_product,
+        const char *service_extrainfo,
+        byte service_tunnel,
         byte service_proto,
-        uint32_t rpcnum,
-        uint32_t lowver,
-        uint32_t highver,
-        const char *hostname,
-        const char *ostype,
-        const char *devicetype,
-        const char *servicefp,
-        const char *cpe);
+        uint32_t service_rpcnum,
+        uint32_t service_lowver,
+        uint32_t service_highver,
+        const char *service_hostname,
+        const char *service_ostype,
+        const char *service_devicetype,
+        const char *service_servicefp,
+        zlist_t *service_cpes,
+        zframe_t *scripts);
     
 //  Send the SCRIPT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -374,7 +361,8 @@ int
     nmap_msg_send_osmatch (void *output,
         const char *name,
         byte accuracy,
-        zframe_t *osclass);
+        zframe_t *osclass,
+        uint32_t line);
     
 //  Send the OSCLASS to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -590,57 +578,47 @@ const char *
 void
     nmap_msg_set_reason_ip (nmap_msg_t *self, const char *format, ...);
 
-//  Get a copy of the service field
-zframe_t *
-    nmap_msg_service (nmap_msg_t *self);
-//  Get the service field and transfer ownership to caller
-zframe_t *
-    nmap_msg_get_service (nmap_msg_t *self);
-//  Set the service field, transferring ownership from caller
-void
-    nmap_msg_set_service (nmap_msg_t *self, zframe_t **frame_p);
-
-//  Get/set the name field
+//  Get/set the service_name field
 const char *
-    nmap_msg_name (nmap_msg_t *self);
+    nmap_msg_service_name (nmap_msg_t *self);
 void
-    nmap_msg_set_name (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_name (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the conf field
+//  Get/set the service_conf field
 byte
-    nmap_msg_conf (nmap_msg_t *self);
+    nmap_msg_service_conf (nmap_msg_t *self);
 void
-    nmap_msg_set_conf (nmap_msg_t *self, byte conf);
+    nmap_msg_set_service_conf (nmap_msg_t *self, byte service_conf);
 
-//  Get/set the method field
+//  Get/set the service_method field
 byte
-    nmap_msg_method (nmap_msg_t *self);
+    nmap_msg_service_method (nmap_msg_t *self);
 void
-    nmap_msg_set_method (nmap_msg_t *self, byte method);
+    nmap_msg_set_service_method (nmap_msg_t *self, byte service_method);
 
-//  Get/set the version field
+//  Get/set the service_version field
 const char *
-    nmap_msg_version (nmap_msg_t *self);
+    nmap_msg_service_version (nmap_msg_t *self);
 void
-    nmap_msg_set_version (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_version (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the product field
+//  Get/set the service_product field
 const char *
-    nmap_msg_product (nmap_msg_t *self);
+    nmap_msg_service_product (nmap_msg_t *self);
 void
-    nmap_msg_set_product (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_product (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the extrainfo field
+//  Get/set the service_extrainfo field
 const char *
-    nmap_msg_extrainfo (nmap_msg_t *self);
+    nmap_msg_service_extrainfo (nmap_msg_t *self);
 void
-    nmap_msg_set_extrainfo (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_extrainfo (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the tunnel field
+//  Get/set the service_tunnel field
 byte
-    nmap_msg_tunnel (nmap_msg_t *self);
+    nmap_msg_service_tunnel (nmap_msg_t *self);
 void
-    nmap_msg_set_tunnel (nmap_msg_t *self, byte tunnel);
+    nmap_msg_set_service_tunnel (nmap_msg_t *self, byte service_tunnel);
 
 //  Get/set the service_proto field
 byte
@@ -648,53 +626,67 @@ byte
 void
     nmap_msg_set_service_proto (nmap_msg_t *self, byte service_proto);
 
-//  Get/set the rpcnum field
+//  Get/set the service_rpcnum field
 uint32_t
-    nmap_msg_rpcnum (nmap_msg_t *self);
+    nmap_msg_service_rpcnum (nmap_msg_t *self);
 void
-    nmap_msg_set_rpcnum (nmap_msg_t *self, uint32_t rpcnum);
+    nmap_msg_set_service_rpcnum (nmap_msg_t *self, uint32_t service_rpcnum);
 
-//  Get/set the lowver field
+//  Get/set the service_lowver field
 uint32_t
-    nmap_msg_lowver (nmap_msg_t *self);
+    nmap_msg_service_lowver (nmap_msg_t *self);
 void
-    nmap_msg_set_lowver (nmap_msg_t *self, uint32_t lowver);
+    nmap_msg_set_service_lowver (nmap_msg_t *self, uint32_t service_lowver);
 
-//  Get/set the highver field
+//  Get/set the service_highver field
 uint32_t
-    nmap_msg_highver (nmap_msg_t *self);
+    nmap_msg_service_highver (nmap_msg_t *self);
 void
-    nmap_msg_set_highver (nmap_msg_t *self, uint32_t highver);
+    nmap_msg_set_service_highver (nmap_msg_t *self, uint32_t service_highver);
 
-//  Get/set the hostname field
+//  Get/set the service_hostname field
 const char *
-    nmap_msg_hostname (nmap_msg_t *self);
+    nmap_msg_service_hostname (nmap_msg_t *self);
 void
-    nmap_msg_set_hostname (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_hostname (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the ostype field
+//  Get/set the service_ostype field
 const char *
-    nmap_msg_ostype (nmap_msg_t *self);
+    nmap_msg_service_ostype (nmap_msg_t *self);
 void
-    nmap_msg_set_ostype (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_ostype (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the devicetype field
+//  Get/set the service_devicetype field
 const char *
-    nmap_msg_devicetype (nmap_msg_t *self);
+    nmap_msg_service_devicetype (nmap_msg_t *self);
 void
-    nmap_msg_set_devicetype (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_devicetype (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the servicefp field
+//  Get/set the service_servicefp field
 const char *
-    nmap_msg_servicefp (nmap_msg_t *self);
+    nmap_msg_service_servicefp (nmap_msg_t *self);
 void
-    nmap_msg_set_servicefp (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_servicefp (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the cpe field
-const char *
-    nmap_msg_cpe (nmap_msg_t *self);
+//  Get/set the service_cpes field
+zlist_t *
+    nmap_msg_service_cpes (nmap_msg_t *self);
+//  Get the service_cpes field and transfer ownership to caller
+zlist_t *
+    nmap_msg_get_service_cpes (nmap_msg_t *self);
+//  Set the service_cpes field, transferring ownership from caller
 void
-    nmap_msg_set_cpe (nmap_msg_t *self, const char *format, ...);
+    nmap_msg_set_service_cpes (nmap_msg_t *self, zlist_t **service_cpes_p);
+
+//  Iterate through the service_cpes field, and append a service_cpes value
+const char *
+    nmap_msg_service_cpes_first (nmap_msg_t *self);
+const char *
+    nmap_msg_service_cpes_next (nmap_msg_t *self);
+void
+    nmap_msg_service_cpes_append (nmap_msg_t *self, const char *format, ...);
+size_t
+    nmap_msg_service_cpes_size (nmap_msg_t *self);
 
 //  Get/set the script_id field
 const char *
@@ -758,6 +750,12 @@ const char *
 void
     nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...);
 
+//  Get/set the name field
+const char *
+    nmap_msg_name (nmap_msg_t *self);
+void
+    nmap_msg_set_name (nmap_msg_t *self, const char *format, ...);
+
 //  Get/set the accuracy field
 byte
     nmap_msg_accuracy (nmap_msg_t *self);
@@ -773,6 +771,12 @@ zframe_t *
 //  Set the osclass field, transferring ownership from caller
 void
     nmap_msg_set_osclass (nmap_msg_t *self, zframe_t **frame_p);
+
+//  Get/set the line field
+uint32_t
+    nmap_msg_line (nmap_msg_t *self);
+void
+    nmap_msg_set_line (nmap_msg_t *self, uint32_t line);
 
 //  Get/set the vendor field
 const char *
