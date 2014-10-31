@@ -63,7 +63,7 @@ fi
 if ! getent passwd "${USER}" > /dev/null; then
     echo "User ${USER} is not known to system administrative database"
     echo "To add it locally, run: "
-    echo "    sudo /usr/sbin/useradd --comment "BIOS REST API testing user" --groups nobody --no-create-home --no-user-group ${USER}"
+    echo "    sudo /usr/sbin/useradd --comment \"BIOS REST API testing user\" --groups nobody --no-create-home --no-user-group ${USER}"
     echo "and don't forget the password '${PASSWD}'"
     exit 2
 fi
