@@ -200,7 +200,6 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
         case NMAP_MSG_LIST_SCAN:
         case NMAP_MSG_DEV_SCAN:
         case NMAP_MSG_PORT_SCAN:
-        case NMAP_MSG_SERVICE_SCAN:
         case NMAP_MSG_SCRIPT:
         case NMAP_MSG_OS_SCAN:
         case NMAP_MSG_PORTUSED:
@@ -289,10 +288,13 @@ int main() {
 
     nmap_msg_t * msg = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
     assert (msg);
-    nmap_msg_set_type (msg, "%s", "defaultlistscan", NULL);
+//    nmap_msg_set_type (msg, "%s", "defaultlistscan", NULL);
+    nmap_msg_set_type (msg, "%s", "defaultdevicescan", NULL);
     zlist_t *zl = zlist_new ();
-    char * hv = "10.130.38.200";
+
+    char * hv = "10.130.38.200/32";
     zlist_append (zl, hv);
+
     nmap_msg_set_args (msg, &zl);
     zlist_destroy (&zl);
     log_info ("sending message\n");

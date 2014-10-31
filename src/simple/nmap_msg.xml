@@ -128,7 +128,7 @@ omitted:    owner
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
     <field name = "reason_ttl" type = "number" size="1">reason_ttl</field>
     <field name = "reason_ip" type = "string">reason_ip (optional)</field>
-    <field name = "service" type = "frame">Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages</field>
+    <field name = "service" type = "service_scan">Service detected on a port (optional)</field>
     <field name = "scripts" type = "frame" >List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages</field>
 </message>
 
@@ -150,13 +150,13 @@ omitted:    owner
             hostname    CDATA           #IMPLIED
             ostype      CDATA           #IMPLIED
             devicetype  CDATA           #IMPLIED
-            servicefp   CDATA           #IMPLIED
+            servicefp   CDATA           #IMPLIED            
 
-to be implemented cpe
+cpe implemented as newline delimited list of string
 >
 -->
 
-<message name = "service_scan" id = "5">
+<type name = "service_scan">
     Service running on a port (see &lt;port ... &lt;service in xml output)
     <field name = "name" type = "string">Name of a service</field>
     <field name = "conf" type = "number" size="1">confidence in result's correcntess (0-10)</field>
@@ -165,7 +165,7 @@ to be implemented cpe
     <field name = "product" type = "string">product (optional)</field>
     <field name = "extrainfo" type = "string">product (optional)</field>
     <field name = "tunnel" type = "number" size="1">tunnel (ssl) (optional)</field>
-    <field name = "service_proto" type = "number" size="1">proto  (rpc) (optional)</field>
+    <field name = "proto" type = "number" size="1">proto  (rpc) (optional)</field>
     <field name = "rpcnum" type = "number" size="4">rpcnum (optional)</field>
     <field name = "lowver" type = "number" size="4">lowver (optional)</field>
     <field name = "highver" type = "number" size="4">highver (optional)</field>
@@ -173,8 +173,8 @@ to be implemented cpe
     <field name = "ostype" type = "string">ostype (optional)</field>
     <field name = "devicetype" type = "string">devicetype (optional)</field>
     <field name = "servicefp" type = "string">servicefp (optional)</field>
-    <field name = "cpe" type = "string">cpe (optional)</field>
-</message>
+    <field name = "cpes" type = "strings">List of CPE(optional)</field>
+</type>
 
 <message name = "script" id = "6">
     Output of NSE script
@@ -220,9 +220,10 @@ to be implemented cpe
 -->
 <message name = "osmatch" id = "9">
     Content of element 'os/osmatch', see nmap dtd ELEMENT portused
-    <field name = "name" type = "string">OS name</field>
+    <field name = "name"     type = "string">OS name</field>
     <field name = "accuracy" type = "number" size="1">Match accuracy, uint16_t</field>
-    <field name = "osclass" type = "frame" >List of osclass results. Encapsulated list of 'osclass' messages</field>
+    <field name = "osclass"  type = "frame" >List of osclass results. Encapsulated list of 'osclass' messages</field>
+    <field name = "line"     type = "number" size = "4">?</field>
 </message>
 
 <!--
@@ -245,6 +246,8 @@ to be implemented cpe
     <field name = "cpes" type = "strings">List of CPE</field>
 </message>
 
+<!-- TODO common error -->
+<!-- TODO return code size 1 -->
 <message name = "scan_error" id = "42">
     Nmap fails with an error
     <field name = "return_code" type = "number" size = "2">Return code of a program</field>

@@ -1,0 +1,135 @@
+The following ABNF grammar defines the nmap scan results:
+
+    nmap_msg        = *( SCAN-COMMAND | LIST-SCAN | DEV-SCAN | PORT-SCAN | SCRIPT | OS-SCAN | PORTUSED | OSMATCH | OSCLASS | SCAN-ERROR )
+
+    ;  Command for scanning                                                  
+
+    SCAN-COMMAND    = signature %d1 type headers args
+    signature       = %xAA %xA1             ; two octets
+    type            = string                ; Type of a scan - default list scan, device scan, ...
+    headers         = dictionary            ; Aditional parameters for scanning, not used right now
+    args            = strings               ; Arguments for scanning, usually list of ip addresses
+
+    ;  Results of a list scan, this parses 'host' element with a limited set 
+    ;  of fields, see ELEMENT host in nmap DTD                               
+
+    LIST-SCAN       = signature %d2 addr host_state reason hostnames
+    addr            = string                ; IP address
+    host_state      = number-1              ;  Status of a host (up|down|unknown|skipped)
+    reason          = string                ; Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
+    hostnames       = dictionary            ; dictionary of hostname : type, where type is a type of hostname (user, PTR)
+
+    ;  Results of a device scan, this parses 'host' element. It is a         
+    ;  high-level container, which encapsulates port scan results and os scan
+    ;  one (if enabled).                                                     
+
+    DEV-SCAN        = signature %d3 host_state reason addresses hostnames ports os scripts
+    host_state      = number-1              ;  Status of a host (up|down|unknown|skipped)
+    reason          = string                ; Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
+    addresses       = dictionary            ; dictionary of address : vendor, where vendor is valid only for mac addresses
+    hostnames       = dictionary            ; dictionary of hostname : type, where type is a type of hostname (user, PTR)
+    ports           = frame                 ; List of port_scan results. List of 'port_scan' messages
+    os              = frame                 ; List of os_scan results. List of 'os_scan' messages
+    scripts         = frame                 ; List of script results. List of 'script' messages
+
+    ;  Results of a device scan, this parses 'port' + 'port/state' elements. 
+    ;  It encapsulates informations about service(s) running on port and     
+    ;  result of scan scripts if any.                                        
+
+    PORT-SCAN       = signature %d4 protocol portid port_state reason reason_ttl reason_ip service scripts
+    protocol        = string                ; Name of protocol
+    portid          = number-2              ; Port number (1-65535), uint16_t
+    port_state      = number-1              ; Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
+    reason          = string                ; Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
+    reason_ttl      = number-1              ; reason_ttl
+    reason_ip       = string                ; reason_ip (optional)
+    service         = service_scan          ; Service detected on a port (optional)
+    scripts         = frame                 ; List of script results. Each frame is nmap_msg_script_t. Encapsulated list of 'script' messages
+    service_scan    = name conf method version product extrainfo tunnel proto rpcnum lowver highver hostname ostype devicetype servicefp cpes
+    name            = string                ; Name of a service
+    conf            = number-1              ; confidence in result's correcntess (0-10)
+    method          = number-1              ; How nmap got it (table|probed)
+    version         = string                ; version (optional)
+    product         = string                ; product (optional)
+    extrainfo       = string                ; product (optional)
+    tunnel          = number-1              ; tunnel (ssl) (optional)
+    proto           = number-1              ; proto  (rpc) (optional)
+    rpcnum          = number-4              ; rpcnum (optional)
+    lowver          = number-4              ; lowver (optional)
+    highver         = number-4              ; highver (optional)
+    hostname        = string                ; hostname (optional)
+    ostype          = string                ; ostype (optional)
+    devicetype      = string                ; devicetype (optional)
+    servicefp       = string                ; servicefp (optional)
+    cpes            = strings               ; List of CPE(optional)
+
+    ;  Output of NSE script                                                  
+
+    SCRIPT          = signature %d6 script_id data
+    script_id       = string                ; Name of a script (like ssh-hostkeys)
+    data            = chunk                 ; Data - raw XML
+
+    ;  Operating system scan results (if available)                          
+
+    OS-SCAN         = signature %d7 portused osmatch osfingerprints
+    portused        = frame                 ; List of portused results. Encapsulated list of 'portused' messages.
+    osmatch         = frame                 ; List of osmatch results. Encapsulated list of 'osmatch' messages
+    osfingerprints  = strings               ; List of OS fingerprints
+
+    ;  Content of element 'os/portused', see nmap dtd ELEMENT portused       
+
+    PORTUSED        = signature %d8 port_state proto portid
+    port_state      = number-1              ; Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
+    proto           = string                ; Protocol name
+    portid          = number-2              ; Port number (1-65535), uint16_t
+
+    ;  Content of element 'os/osmatch', see nmap dtd ELEMENT portused        
+
+    OSMATCH         = signature %d9 name accuracy osclass line
+    name            = string                ; OS name
+    accuracy        = number-1              ; Match accuracy, uint16_t
+    osclass         = frame                 ; List of osclass results. Encapsulated list of 'osclass' messages
+    line            = number-4              ; ?
+
+    ;  Content of element 'os/osmatch/osclass', see nmap dtd ELEMENT portused
+
+    OSCLASS         = signature %d10 vendor osgen type osaccuracy osfamily cpes
+    vendor          = string                ; Vendor name
+    osgen           = string                ; OS generation (optional)
+    type            = string                ; OS type (optional)
+    osaccuracy      = string                ; accuracy
+    osfamily        = string                ; osfamily
+    cpes            = strings               ; List of CPE
+
+    ;  Nmap fails with an error                                              
+
+    SCAN-ERROR      = signature %d42 return_code args stderr
+    return_code     = number-2              ; Return code of a program
+    args            = strings               ; Program command line
+    stderr          = longstr               ; Program's standard error output
+
+    ; A list of string values
+    strings         = strings-count *strings-value
+    strings-count   = number-4
+    strings-value   = longstr
+
+    ; A list of name/value pairs
+    dictionary      = dict-count *( dict-name dict-value )
+    dict-count      = number-4
+    dict-value      = longstr
+    dict-name       = string
+
+    ; A chunk has 4-octet length + binary contents
+    chunk           = number-4 *OCTET
+
+    ; A frame is zero or more octets encoded as a ZeroMQ frame
+    frame           = *OCTET
+
+    ; Strings are always length + text contents
+    string          = number-1 *VCHAR
+    longstr         = number-4 *VCHAR
+
+    ; Numbers are unsigned integers in network byte order
+    number-1        = 1OCTET
+    number-2        = 2OCTET
+    number-4        = 4OCTET
