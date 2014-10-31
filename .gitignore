@@ -20,6 +20,7 @@ lib*.la
 lib*.so
 lib*.so.*
 INSTALL*.html
+CONTRIB*.html
 Makefile.in
 Makefile
 !Makefile.am
