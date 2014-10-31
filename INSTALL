@@ -41,13 +41,20 @@ and comment on these changes, and the developer follows up by adding
 some improvements... after some back-and-forth, such collectively
 reviewed and approved changesets are merged into the 'upstream'.
 
-While the Stash server is used to publish and cross-pollinate different
-lines of development, the actual work by developers, validators, build
-systems and so on, is done in local clones of the relevant repository
-stored on the workstation, and results of the work are `git push`ed
-back to the relevant 'origin' repository.
+Some changesets might mark an accomplishment worth remembering, such
+as a coherent set of source-code deemed ready for a wider release --
+in this case `git tag` can be used to place a named mark useful for
+later reference (i.e. to retrieve the source code state "as of" some
+specific release).
 
-Note that in Git every cloned repository is self-sufficient and does
+While the Stash server is used to centrally store, publish and help
+cross-pollinate different lines of development, the actual work by
+developers, validators, build systems and so on, is done in local
+clones of the relevant 'origin' repository which are stored on the
+workstation, and results of the work are, if needed, `git push`ed
+back to their 'origin'.
+
+Note that in Git, every cloned repository is self-sufficient and does
 not require networked or other means of access to other repositories,
 except when actual transfer of changesets is desired. As a corollary,
 every workspace for some particular work (i.e. for different branches
@@ -75,7 +82,7 @@ account first):
 ----
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
-...or over HTTP (plaintext password may be required which is not good, and
+...or over HTTP (plaintext password may be required which is not secure, and
 special characters may need URL percent-encoding which is inconvenient):
 ----
 :; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
