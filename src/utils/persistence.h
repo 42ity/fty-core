@@ -1,6 +1,2 @@
-#include "persistence/clientinfo.h"
-#include "persistence/client.h"
-#include "persistence/device_discovered.h"
 #include "persistence/nethistory.h"
 #include "persistence/ip.h"
-#include "persistence/devicetype.h"

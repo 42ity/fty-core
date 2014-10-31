@@ -161,7 +161,7 @@ db_insert()
     tntdb::Statement st = conn.prepareCached(
         " insert into"
         " v_bios_net_history (id,command,mask,mac,timestamp,ip,name)"
-        " values (NULL,:command,:mask, conv(:mac, 16, 10), NOW(),:ip, :name)"
+        " values (NULL,:command,:mask, conv(:mac, 16, 10), UTC_TIMESTAMP(),:ip, :name)"
         );
     
     // Insert one row or nothing
