@@ -275,6 +275,31 @@ int main() {
     log_open();
     log_set_level(LOG_DEBUG);
 
+    const char *target = getenv("NMAP_SCANNER_TARGET");
+    if (target == NULL ||
+        strlen (target) == 0) {
+        log_critical ("Environment variable %s not set\n", "NMAP_SCANNER_TARGET");
+        return 1;
+    }
+
+    const char *which = getenv("NMAP_SCANNER_TYPE");
+    if (which == NULL ||
+        strlen(which) == 0) {
+        log_critical ("Environment variable %s not set\n", "NMAP_SCANNER_TYPE");
+        return 1;
+    }
+    if (strcmp(which, "defaultlistscan") != 0 &&
+        strcmp(which, "defaultdevicescan") != 0) {
+        log_critical ("Environment variable %s must ne either \n %s OR\n%s\n",
+                      "NMAP_SCANNER_TYPE",
+                       "defaultlistscan",
+                       "defaultdevicescan");
+        return 1;
+    }
+
+    log_info ("environment variable NMAP_SCANNER_TARGET = '%s'\n", target);
+    log_info ("environment variable NMAP_SCANNER_TYPE = '%s'\n", which);
+
     zactor_t *nmap = zactor_new (nmap_actor, NULL);
     assert (nmap);
    
@@ -288,15 +313,13 @@ int main() {
 
     nmap_msg_t * msg = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
     assert (msg);
-//    nmap_msg_set_type (msg, "%s", "defaultlistscan", NULL);
-    nmap_msg_set_type (msg, "%s", "defaultdevicescan", NULL);
+    nmap_msg_set_type (msg, "%s", which, NULL);
+
     zlist_t *zl = zlist_new ();
-
-    char * hv = "10.130.38.200/32";
-    zlist_append (zl, hv);
-
+    zlist_append (zl, (void *) target);
     nmap_msg_set_args (msg, &zl);
     zlist_destroy (&zl);
+
     log_info ("sending message\n");
     nmap_msg_send (&msg, dealer);
     log_info ("message send\n");
