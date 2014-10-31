@@ -68,7 +68,7 @@
 </message>
 
 <!-- updating is for now forbidden
-<message name = "update_cinfo" id = "303">
+<message name = "update_cinfo" id = "222">
     Update a client info
     <field name = "cinfo_id"    type = "number"> Unique ID of the client info to be updated</field>
     <field name = "msg"         type = "msg"> Client info to be updated</field>

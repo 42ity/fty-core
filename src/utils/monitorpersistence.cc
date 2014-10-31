@@ -28,7 +28,7 @@ common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* e
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert ( resultmsg );
-    common_msg_set_errtype (resultmsg, ERROR_DB);
+    common_msg_set_errtype (resultmsg, BIOS_ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
     common_msg_set_errmsg  (resultmsg, errmsg);
     common_msg_set_erraux  (resultmsg, &erraux);
@@ -676,7 +676,6 @@ common_msg_t* _generate_return_device(uint32_t device_id, common_msg_t** device)
  */
 common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char* name)
 {
-    log_info("%s\n","started");
     assert ( devicetype_id ); // is required
     assert ( strlen(name) );  // is required
 
@@ -697,7 +696,6 @@ common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char*
                 setInt("iddevicetype", devicetype_id).
                 execute();
 
-        log_info("n = %d\n",n);
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
