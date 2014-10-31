@@ -1,7 +1,7 @@
 Installing the source-code for $BIOS
 ====================================
 
-This 'INSTALL-sources' document is about receiving and properly managing
+This 'CONTRIBUTING' document is about receiving and properly managing
 the source code stored in a Git repository server based on Atlassian Stash
 for teamwork and collaboration with the Eaton $BIOS core project.
 

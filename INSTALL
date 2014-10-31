@@ -50,8 +50,8 @@ If you also contribute to the project, the checkout procedure is similar,
 but there are more nuances to know and some general rules to follow.
 
 An overview of the source-code tracking in the $BIOS project and deeper
-details on code checkout are given in the 'INSTALL-sources' document
-('link:INSTALL-sources.html[]'). The short example below assumes you
+details on code checkout are given in the 'CONTRIBUTING' document
+('link:CONTRIBUTING.html[]'). The short example below assumes you
 have enough access to check your your personal fork of the code as an
 'origin' from Stash, and reference the 'upstream' repository as well:
 ----
