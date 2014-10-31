@@ -150,7 +150,7 @@ TEST_CASE("Common messages: select_client","[common][select][client][byName]")
     // this row shold not be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
     
-    REQUIRE ( common_msg_errtype(newreturn) == ERROR_DB );
+    REQUIRE ( common_msg_errtype(newreturn) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
 
     common_msg_destroy (&newreturn);
@@ -179,7 +179,7 @@ TEST_CASE("Common messages: select_client2","[common][select][client][byId]")
     // this row shold not be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
     
-    REQUIRE ( common_msg_errtype(newreturn) == ERROR_DB );
+    REQUIRE ( common_msg_errtype(newreturn) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
 
     common_msg_destroy (&newreturn);
