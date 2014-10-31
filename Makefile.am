@@ -365,6 +365,7 @@ endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 EXTRA_DIST +=				$(top_srcdir)/docs/man/*.txt
 EXTRA_DIST +=			$(top_srcdir)/INSTALL-referenceOS-debian8 \
+					$(top_srcdir)/CONTRIBUTING \
 					$(top_srcdir)/INSTALL
 
 BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
@@ -374,7 +375,8 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html INSTALL-referenceOS-debian8.html man-docs
+all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
+		INSTALL-referenceOS-debian8.html man-docs
 
 man-docs:
 	( cd docs/man && $(MAKE) all )
@@ -401,10 +403,16 @@ if HAVE_ASCIIDOC
 INSTALL.html: INSTALL
 	$(ASCIIDOC) -b html -o $@ $^
 
+CONTRIBUTING.html: CONTRIBUTING
+	$(ASCIIDOC) -b html -o $@ $^
+
 INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
 	$(ASCIIDOC) -b html -o $@ $^
 else
 INSTALL.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+
+CONTRIBUTING.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 
 INSTALL-referenceOS-debian8.html:
@@ -429,7 +437,9 @@ clean-man:
 clean-local: clean-man
 	/bin/rm -rf $(top_builddir)/tests/junit
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-	/bin/rm -f INSTALL.html INSTALL-referenceOS-debian8.html
+	/bin/rm -f INSTALL.html
+	/bin/rm -f CONTRIBUTING.html
+	/bin/rm -f INSTALL-referenceOS-debian8.html
 
 #----------------------------------------------------------------------
 #                        astyle formating
