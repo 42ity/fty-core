@@ -54,16 +54,12 @@ struct _asset_msg_t {
     size_t ext_bytes;                   //  Size of dictionary content
     char *device_type;                  //  Type of the device, freeform string not the thing from asset_type
     zlist_t *groups;                    //  List of IDs of groups device belongs to
-    zlist_t *powers;                    //  List of encoded link messages
+    zlist_t *powers;                    //  List of link messages in form src_socket:src_id:dst_socket:dst_id
     char *ip;                           //  IP of the device
     char *hostname;                     //  Hostname
     char *fqdn;                         //  Fully qualified domain name
     char *mac;                          //  MAC address of the device
     zmsg_t *msg;                        //  Element that we are extending to the device
-    uint16_t src_socket;                //  Source socket
-    uint16_t dst_socket;                //  Destination socket
-    uint32_t src_location;              //  ID of the src device
-    uint32_t dst_location;              //  ID of the parent element
     uint32_t element_id;                //  Unique ID of the asset element
     byte error_id;                      //  Type of the error, enum defined in persistence header file
     zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
@@ -340,13 +336,6 @@ asset_msg_decode (zmsg_t **msg_p)
                 zmsg_add (self->msg, zmsg_pop (msg));
             break;
 
-        case ASSET_MSG_LINK:
-            GET_NUMBER2 (self->src_socket);
-            GET_NUMBER2 (self->dst_socket);
-            GET_NUMBER4 (self->src_location);
-            GET_NUMBER4 (self->dst_location);
-            break;
-
         case ASSET_MSG_GET_ELEMENT:
             GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->type);
@@ -515,17 +504,6 @@ asset_msg_encode (asset_msg_t **self_p)
                 frame_size += strlen (self->mac);
             break;
             
-        case ASSET_MSG_LINK:
-            //  src_socket is a 2-byte integer
-            frame_size += 2;
-            //  dst_socket is a 2-byte integer
-            frame_size += 2;
-            //  src_location is a 4-byte integer
-            frame_size += 4;
-            //  dst_location is a 4-byte integer
-            frame_size += 4;
-            break;
-            
         case ASSET_MSG_GET_ELEMENT:
             //  element_id is a 4-byte integer
             frame_size += 4;
@@ -664,13 +642,6 @@ asset_msg_encode (asset_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            break;
-
-        case ASSET_MSG_LINK:
-            PUT_NUMBER2 (self->src_socket);
-            PUT_NUMBER2 (self->dst_socket);
-            PUT_NUMBER4 (self->src_location);
-            PUT_NUMBER4 (self->dst_location);
             break;
 
         case ASSET_MSG_GET_ELEMENT:
@@ -943,25 +914,6 @@ asset_msg_encode_device (
 
 
 //  --------------------------------------------------------------------------
-//  Encode LINK message
-
-zmsg_t * 
-asset_msg_encode_link (
-    uint16_t src_socket,
-    uint16_t dst_socket,
-    uint32_t src_location,
-    uint32_t dst_location)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
-    asset_msg_set_src_socket (self, src_socket);
-    asset_msg_set_dst_socket (self, dst_socket);
-    asset_msg_set_src_location (self, src_location);
-    asset_msg_set_dst_location (self, dst_location);
-    return asset_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Encode GET_ELEMENT message
 
 zmsg_t * 
@@ -1145,26 +1097,6 @@ asset_msg_send_device (
 
 
 //  --------------------------------------------------------------------------
-//  Send the LINK to the socket in one step
-
-int
-asset_msg_send_link (
-    void *output,
-    uint16_t src_socket,
-    uint16_t dst_socket,
-    uint32_t src_location,
-    uint32_t dst_location)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_LINK);
-    asset_msg_set_src_socket (self, src_socket);
-    asset_msg_set_dst_socket (self, dst_socket);
-    asset_msg_set_src_location (self, src_location);
-    asset_msg_set_dst_location (self, dst_location);
-    return asset_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Send the GET_ELEMENT to the socket in one step
 
 int
@@ -1334,13 +1266,6 @@ asset_msg_dup (asset_msg_t *self)
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
 
-        case ASSET_MSG_LINK:
-            copy->src_socket = self->src_socket;
-            copy->dst_socket = self->dst_socket;
-            copy->src_location = self->src_location;
-            copy->dst_location = self->dst_location;
-            break;
-
         case ASSET_MSG_GET_ELEMENT:
             copy->element_id = self->element_id;
             copy->type = self->type;
@@ -1458,14 +1383,6 @@ asset_msg_print (asset_msg_t *self)
                 zmsg_print (self->msg);
             else
                 zsys_debug ("(NULL)");
-            break;
-            
-        case ASSET_MSG_LINK:
-            zsys_debug ("ASSET_MSG_LINK:");
-            zsys_debug ("    src_socket=%ld", (long) self->src_socket);
-            zsys_debug ("    dst_socket=%ld", (long) self->dst_socket);
-            zsys_debug ("    src_location=%ld", (long) self->src_location);
-            zsys_debug ("    dst_location=%ld", (long) self->dst_location);
             break;
             
         case ASSET_MSG_GET_ELEMENT:
@@ -1590,9 +1507,6 @@ asset_msg_command (asset_msg_t *self)
             break;
         case ASSET_MSG_DEVICE:
             return ("DEVICE");
-            break;
-        case ASSET_MSG_LINK:
-            return ("LINK");
             break;
         case ASSET_MSG_GET_ELEMENT:
             return ("GET_ELEMENT");
@@ -2103,78 +2017,6 @@ asset_msg_set_msg (asset_msg_t *self, zmsg_t **msg_p)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the src_socket field
-
-uint16_t
-asset_msg_src_socket (asset_msg_t *self)
-{
-    assert (self);
-    return self->src_socket;
-}
-
-void
-asset_msg_set_src_socket (asset_msg_t *self, uint16_t src_socket)
-{
-    assert (self);
-    self->src_socket = src_socket;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the dst_socket field
-
-uint16_t
-asset_msg_dst_socket (asset_msg_t *self)
-{
-    assert (self);
-    return self->dst_socket;
-}
-
-void
-asset_msg_set_dst_socket (asset_msg_t *self, uint16_t dst_socket)
-{
-    assert (self);
-    self->dst_socket = dst_socket;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the src_location field
-
-uint32_t
-asset_msg_src_location (asset_msg_t *self)
-{
-    assert (self);
-    return self->src_location;
-}
-
-void
-asset_msg_set_src_location (asset_msg_t *self, uint32_t src_location)
-{
-    assert (self);
-    self->src_location = src_location;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the dst_location field
-
-uint32_t
-asset_msg_dst_location (asset_msg_t *self)
-{
-    assert (self);
-    return self->dst_location;
-}
-
-void
-asset_msg_set_dst_location (asset_msg_t *self, uint32_t dst_location)
-{
-    assert (self);
-    self->dst_location = dst_location;
-}
-
-
-//  --------------------------------------------------------------------------
 //  Get/set the element_id field
 
 uint32_t
@@ -2396,32 +2238,6 @@ asset_msg_test (bool verbose)
         assert (streq (asset_msg_fqdn (self), "Life is short but Now lasts for ever"));
         assert (streq (asset_msg_mac (self), "Life is short but Now lasts for ever"));
         assert (zmsg_size (asset_msg_msg (self)) == 1);
-        asset_msg_destroy (&self);
-    }
-    self = asset_msg_new (ASSET_MSG_LINK);
-    
-    //  Check that _dup works on empty message
-    copy = asset_msg_dup (self);
-    assert (copy);
-    asset_msg_destroy (&copy);
-
-    asset_msg_set_src_socket (self, 123);
-    asset_msg_set_dst_socket (self, 123);
-    asset_msg_set_src_location (self, 123);
-    asset_msg_set_dst_location (self, 123);
-    //  Send twice from same object
-    asset_msg_send_again (self, output);
-    asset_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = asset_msg_recv (input);
-        assert (self);
-        assert (asset_msg_routing_id (self));
-        
-        assert (asset_msg_src_socket (self) == 123);
-        assert (asset_msg_dst_socket (self) == 123);
-        assert (asset_msg_src_location (self) == 123);
-        assert (asset_msg_dst_location (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_GET_ELEMENT);
