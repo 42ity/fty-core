@@ -286,7 +286,7 @@ zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_
             row[1].get(value);
             assert( value != "");  //database is corrupted
 
-            zhash_insert(extAttributes, &keytag, &value );
+            zhash_insert(extAttributes, (void*)keytag.c_str(), (void*)value.c_str() );
         }
     }
     catch (const std::exception &e) {
