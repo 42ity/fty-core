@@ -30,6 +30,55 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
 
+# Get the Git repository metadata, if available
+HAVE_PACKAGE_GIT=0
+PACKAGE_GIT_ORIGIN=""
+PACKAGE_GIT_BRANCH=""
+PACKAGE_GIT_TSTAMP=""
+PACKAGE_GIT_HASH_S=""
+PACKAGE_GIT_HASH_L=""
+AC_PATH_PROGS([GIT], [git])
+if test ! -z "$GIT" -a -x "$GIT" ; then
+	echo "Getting Git workspace attributes..."
+	PACKAGE_GIT_ORIGIN="`$GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_BRANCH="`$GIT rev-parse --abbrev-ref HEAD`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`$GIT log -n 1 --format='%ct'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_S="`$GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_L="`$GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
+fi
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   ["$HAVE_PACKAGE_GIT"],   [Packaging metadata: Is Git metadata available?])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging metadata: Git branch in the build workspace repository])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP], ["$PACKAGE_GIT_TSTAMP"], [Packaging metadata: Git timestamp of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S], ["$PACKAGE_GIT_HASH_S"], [Packaging metadata: Git short-hash of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L], ["$PACKAGE_GIT_HASH_L"], [Packaging metadata: Git long-hash of the commit used for the build])
+
+AC_PATH_PROGS([UNAME], [uname])
+HAVE_PACKAGE_BUILD_HOST=0
+PACKAGE_BUILD_HOST_UNAME=""
+PACKAGE_BUILD_HOST_NAME=""
+PACKAGE_BUILD_HOST_OS=""
+if test ! -z "$UNAME" -a -x "$UNAME" ; then
+	echo "Getting buildhost attributes..."
+	PACKAGE_BUILD_HOST_UNAME="`$UNAME -a`"		&& HAVE_PACKAGE_BUILD_HOST=1
+	PACKAGE_BUILD_HOST_NAME="`$UNAME -n`"		&& HAVE_PACKAGE_BUILD_HOST=1
+	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v`"	&& HAVE_PACKAGE_BUILD_HOST=1
+fi
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  ["$HAVE_PACKAGE_BUILD_HOST"],  [Packaging metadata: Are build-host details available?])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME], ["$PACKAGE_BUILD_HOST_UNAME"], [Packaging metadata: Full 'uname -a' of the building host])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],  ["$PACKAGE_BUILD_HOST_NAME"],  [Packaging metadata: Hostname of the building host])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],    ["$PACKAGE_BUILD_HOST_OS"],    [Packaging metadata: OS/kernel of the building host])
+
+AC_PATH_PROGS([DATE], [gdate date])
+HAVE_PACKAGE_BUILD_TSTAMP=0
+PACKAGE_BUILD_TSTAMP=""
+if test ! -z "$DATE" -a -x "$DATE" ; then
+	echo "Recording the configuration timestamp..."
+	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s'`"		&& HAVE_PACKAGE_BUILD_TSTAMP=1
+fi
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	["$HAVE_PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Is the build-host timestamp available?])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Current timestamp at the build host (as of configuration)])
+
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_LANG_PUSH([C++])
@@ -169,6 +218,17 @@ AC_MSG_NOTICE([
 Summary:
 
         $PACKAGE_NAME $VERSION
+
+        Git origin URL:          ${PACKAGE_GIT_ORIGIN}
+        Git branch:              ${PACKAGE_GIT_BRANCH}
+        Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
+        Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
+        Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
+
+        Build-host 'uname -a':   ${PACKAGE_BUILD_HOST_UNAME}
+        Build-host system name:  ${PACKAGE_BUILD_HOST_NAME}
+        Build-host OS/kernel:    ${PACKAGE_BUILD_HOST_OS}
+        Build-host timestamp:    ${PACKAGE_BUILD_TSTAMP}
 
         prefix:                  ${prefix}
         sysconf dir:             ${sysconfdir}
