@@ -46,7 +46,7 @@ if test ! -z "$GIT" -a -x "$GIT" ; then
 	PACKAGE_GIT_HASH_S="`$GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_HASH_L="`$GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
 fi
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   ["$HAVE_PACKAGE_GIT"],   [Packaging metadata: Is Git metadata available?])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging metadata: Git branch in the build workspace repository])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP], ["$PACKAGE_GIT_TSTAMP"], [Packaging metadata: Git timestamp of the commit used for the build])
@@ -64,7 +64,7 @@ if test ! -z "$UNAME" -a -x "$UNAME" ; then
 	PACKAGE_BUILD_HOST_NAME="`$UNAME -n`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v`"	&& HAVE_PACKAGE_BUILD_HOST=1
 fi
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  ["$HAVE_PACKAGE_BUILD_HOST"],  [Packaging metadata: Are build-host details available?])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  [$HAVE_PACKAGE_BUILD_HOST],    [Packaging metadata: Are build-host details available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME], ["$PACKAGE_BUILD_HOST_UNAME"], [Packaging metadata: Full 'uname -a' of the building host])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],  ["$PACKAGE_BUILD_HOST_NAME"],  [Packaging metadata: Hostname of the building host])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],    ["$PACKAGE_BUILD_HOST_OS"],    [Packaging metadata: OS/kernel of the building host])
@@ -76,7 +76,7 @@ if test ! -z "$DATE" -a -x "$DATE" ; then
 	echo "Recording the configuration timestamp..."
 	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s'`"		&& HAVE_PACKAGE_BUILD_TSTAMP=1
 fi
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	["$HAVE_PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Is the build-host timestamp available?])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	[$HAVE_PACKAGE_BUILD_TSTAMP],	[Packaging metadata: Is the build-host timestamp available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Current timestamp at the build host (as of configuration)])
 
 # Checks for the header files
