@@ -1,4 +1,7 @@
-common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* erraux);
+#ifndef UTILS_MONITORPERSISTENCE_H_
+#define UTILS_MONITORPERSISTENCE_H_
+
+common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux);
 
 common_msg_t* _generate_ok(uint32_t rowid);
 ////////////////////////////////////////////////////////////////////
@@ -143,3 +146,5 @@ common_msg_t* select_device (const char* url, uint32_t devicetype_id, const char
 common_msg_t* select_device (const char* url, const char* devicetype_name, const char* name);
 
 common_msg_t* insert_device(const char* url, const char* devicetype_name, const char* name);
+
+#endif

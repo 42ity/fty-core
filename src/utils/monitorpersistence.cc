@@ -24,16 +24,16 @@
  *
  * TODO the codes are now defined as define. May be need to have enum
  */
-common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t* erraux)
+common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert ( resultmsg );
     common_msg_set_errtype (resultmsg, BIOS_ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
     common_msg_set_errmsg  (resultmsg, errmsg);
-    common_msg_set_erraux  (resultmsg, &erraux);
+    common_msg_set_erraux  (resultmsg, erraux);
     // Check if it always works ok with hash
-    zhash_destroy (&erraux);
+    zhash_destroy (erraux);
     return resultmsg;
 }
 

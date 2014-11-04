@@ -145,4 +145,25 @@
     <field name = "msg"         type = "msg"> Device type</field>
 </message>
 
+<message name = "get_client" id = "223">
+    Ask for a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client</field>
+</message>
+
+<message name = "get_cinfo"  id = "224">
+    Ask for a client info
+    <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info</field>
+</message>
+
+<message name = "get_device"  id = "225">
+    Ask for  a device
+    <field name = "device_id"    type = "number" size = "4"> Unique ID of the device</field>
+</message>
+
+<message name = "get_devtype"  id = "226">
+    Ask for a device type
+    <field name = "devicetype_id"    type = "number" size = "4"> Unique ID of the device type</field>
+</message>
+
+
 </class>
