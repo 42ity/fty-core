@@ -4,10 +4,11 @@ The INSTALL document for $BIOS
 This INSTALL document is about building and installing prerequisites
 from source and/or as resulting packages for the Eaton $BIOS core project.
 
-Also keep in mind that the $BIOS core project auto-configuration procdure
+Also keep in mind that the $BIOS core project auto-configuration procedure
 relies on `pkg-config` information (including the library versions), so
 it should be available (as the installed subsystem of the OS as well as
-the *.pc files as part of packaged or privately-built prerequisite software).
+the '*.pc' files as part of packaged or privately-built prerequisite
+software).
 
 To ease copy-pasting, the example commands in this document are prefixed
 with a colon+semicolon prompt `:;` which is an empty command for shell
@@ -16,38 +17,43 @@ meaning for shells and can adversely influence copy-pasted commands).
 
 
 
-Get the source
---------------
-If you are reading this file, you probably have some version of the
-$BIOS core project source code already. It might not be the most fresh
+Get the source to build and/or develop
+--------------------------------------
+If you are reading this file, you probably have _some_ version of the
+$BIOS core project source code already. It might not be the _most fresh_
 version, however, so to stay on the bleeding edge of development you
 might want to clone the source-code repository onto your development
 system.
 
-Checkout of the main upstream repository itself is more of interest to
-those responsible for building the current project state into binaries
-for validation or redistribution. Code should not be "pushed" into this
-repository directly except after review by the source code gate-keepers.
-The upstream $BIOS core project repository can be cloned with the command
-below (proper access to the project infrastructure server is required)
-over SSH (keys should be uploaded to the user's Stash account first):
+Sources for building
+~~~~~~~~~~~~~~~~~~~~
+To just build the project, get a hold of its common 'upstream' repository.
+The 'upstream' $BIOS core project Git repository can be cloned with the
+command below (proper access to the project infrastructure server is
+required) over SSH (your keys should be uploaded to the user's Stash
+account first):
 ----
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
-...or over HTTP (plaintext password may be required which is not good, and
+...or over HTTP (plaintext password may be required which is not secure, and
 special characters may need URL percent-encoding which is inconvenient):
 ----
 :; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
 ----
 
-The project workflow for actual development implies that one should first
-"fork" the upstream repository in the Stash web-interface into a private
-namespace (named like E1234567 below) with automatic application of updates
-from the upstream repo, then `git clone` this private repository onto his
-or her PC for actual coding; it is convenient to also register the common
-upstream repository as such, to facilitate comparisons and updates which
-were not resolved automatically (i.e. several changes applied to the same
-area in the tracked files and possibly conflicting):
+Alternately, if you don't have access to the project's Stash, you can copy
+a tarball of the repository (or do a `git clone`) from a fellow developer.
+
+Sources for collaboration
+~~~~~~~~~~~~~~~~~~~~~~~~~
+If you also contribute to the project, the checkout procedure is similar,
+but there are more nuances to know and some general rules to follow.
+
+An overview of the source-code tracking in the $BIOS project and deeper
+details on code checkout are given in the 'CONTRIBUTING' document
+('link:CONTRIBUTING.html[]'). The short example below assumes you
+have enough access to check your your personal fork of the code as an
+'origin' from Stash, and reference the 'upstream' repository as well:
 ----
 :; git clone \
      ssh://git@stash.mbt.lab.etn.com:7999/~E1234567/core.git core-myfork && \
@@ -55,9 +61,10 @@ area in the tracked files and possibly conflicting):
    git remote add \
      upstream ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git && \
    git fetch --all --tags
+----
 
-
-### Verify the local workspace (checked-out and available branches):
+Verify the local workspace (list the checked-out and available branches):
+----
 :; git branch -a
 
 * master
@@ -122,7 +129,7 @@ platform-independent code). This is currently a "testing" variant of
 Debian and a moving target in terms of formal support (although seems
 recently "frozen" and heading to official stable supported release).
 However, automatic dependency handling in OBS should handle refreshed
-source code coming from upstream for us.
+source code coming from some project's upstream for us.
 
 Automatic setup of OBS as a package source for a supported Debian 8.0
 platform with APT package management should work like this (execute
@@ -481,3 +488,4 @@ Note: as part of the project's automated validation the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
 build. An `./autogen.sh distcheck` method exists to automate this into a
 single-command routine to configure-build-check.
+

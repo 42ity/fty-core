@@ -65,31 +65,32 @@ struct _nmap_msg_t {
     byte port_state;                    //  Port status (open, filtered, unfiltered, closed, open|filtered, closed|filtered, unknown), see nmap.cc:statenum2str
     byte reason_ttl;                    //  reason_ttl
     char *reason_ip;                    //  reason_ip (optional)
-    zframe_t *service;                  //  Service detected on a port (optional, nmap_msg_service_scan_t). Encapsulated list of 'service_scan' messages
-    char *name;                         //  Name of a service
-    byte conf;                          //  confidence in result's correcntess (0-10)
-    byte method;                        //  How nmap got it (table|probed)
-    char *version;                      //  version (optional)
-    char *product;                      //  product (optional)
-    char *extrainfo;                    //  product (optional)
-    byte tunnel;                        //  tunnel (ssl) (optional)
+    char *service_name;                 //  Name of a service
+    byte service_conf;                  //  confidence in result's correcntess (0-10)
+    byte service_method;                //  How nmap got it (table|probed)
+    char *service_version;              //  version (optional)
+    char *service_product;              //  product (optional)
+    char *service_extrainfo;            //  product (optional)
+    byte service_tunnel;                //  tunnel (ssl) (optional)
     byte service_proto;                 //  proto  (rpc) (optional)
-    uint32_t rpcnum;                    //  rpcnum (optional)
-    uint32_t lowver;                    //  lowver (optional)
-    uint32_t highver;                   //  highver (optional)
-    char *hostname;                     //  hostname (optional)
-    char *ostype;                       //  ostype (optional)
-    char *devicetype;                   //  devicetype (optional)
-    char *servicefp;                    //  servicefp (optional)
-    char *cpe;                          //  cpe (optional)
+    uint32_t service_rpcnum;            //  rpcnum (optional)
+    uint32_t service_lowver;            //  lowver (optional)
+    uint32_t service_highver;           //  highver (optional)
+    char *service_hostname;             //  hostname (optional)
+    char *service_ostype;               //  ostype (optional)
+    char *service_devicetype;           //  devicetype (optional)
+    char *service_servicefp;            //  servicefp (optional)
+    zlist_t *service_cpes;              //  List of CPE(optional)
     char *script_id;                    //  Name of a script (like ssh-hostkeys)
     zchunk_t *data;                     //  Data - raw XML
     zframe_t *portused;                 //  List of portused results. Encapsulated list of 'portused' messages.
     zframe_t *osmatch;                  //  List of osmatch results. Encapsulated list of 'osmatch' messages
     zlist_t *osfingerprints;            //  List of OS fingerprints
     char *proto;                        //  Protocol name
+    char *name;                         //  OS name
     byte accuracy;                      //  Match accuracy, uint16_t
     zframe_t *osclass;                  //  List of osclass results. Encapsulated list of 'osclass' messages
+    uint32_t line;                      //  ?
     char *vendor;                       //  Vendor name
     char *osgen;                        //  OS generation (optional)
     char *osaccuracy;                   //  accuracy
@@ -272,16 +273,16 @@ nmap_msg_destroy (nmap_msg_t **self_p)
         zframe_destroy (&self->scripts);
         free (self->protocol);
         free (self->reason_ip);
-        zframe_destroy (&self->service);
-        free (self->name);
-        free (self->version);
-        free (self->product);
-        free (self->extrainfo);
-        free (self->hostname);
-        free (self->ostype);
-        free (self->devicetype);
-        free (self->servicefp);
-        free (self->cpe);
+        free (self->service_name);
+        free (self->service_version);
+        free (self->service_product);
+        free (self->service_extrainfo);
+        free (self->service_hostname);
+        free (self->service_ostype);
+        free (self->service_devicetype);
+        free (self->service_servicefp);
+        if (self->service_cpes)
+            zlist_destroy (&self->service_cpes);
         free (self->script_id);
         zchunk_destroy (&self->data);
         zframe_destroy (&self->portused);
@@ -289,6 +290,7 @@ nmap_msg_destroy (nmap_msg_t **self_p)
         if (self->osfingerprints)
             zlist_destroy (&self->osfingerprints);
         free (self->proto);
+        free (self->name);
         zframe_destroy (&self->osclass);
         free (self->vendor);
         free (self->osgen);
@@ -447,12 +449,32 @@ nmap_msg_decode (zmsg_t **msg_p)
             GET_STRING (self->reason);
             GET_NUMBER1 (self->reason_ttl);
             GET_STRING (self->reason_ip);
+            GET_STRING (self->service_name);
+            GET_NUMBER1 (self->service_conf);
+            GET_NUMBER1 (self->service_method);
+            GET_STRING (self->service_version);
+            GET_STRING (self->service_product);
+            GET_STRING (self->service_extrainfo);
+            GET_NUMBER1 (self->service_tunnel);
+            GET_NUMBER1 (self->service_proto);
+            GET_NUMBER4 (self->service_rpcnum);
+            GET_NUMBER4 (self->service_lowver);
+            GET_NUMBER4 (self->service_highver);
+            GET_STRING (self->service_hostname);
+            GET_STRING (self->service_ostype);
+            GET_STRING (self->service_devicetype);
+            GET_STRING (self->service_servicefp);
             {
-                //  Get next frame, leave current untouched
-                zframe_t *service = zmsg_pop (msg);
-                if (!service)
-                    goto malformed;
-                self->service = service;
+                size_t list_size;
+                GET_NUMBER4 (list_size);
+                self->service_cpes = zlist_new ();
+                zlist_autofree (self->service_cpes);
+                while (list_size--) {
+                    char *string;
+                    GET_LONGSTR (string);
+                    zlist_append (self->service_cpes, string);
+                    free (string);
+                }
             }
             {
                 //  Get next frame, leave current untouched
@@ -461,25 +483,6 @@ nmap_msg_decode (zmsg_t **msg_p)
                     goto malformed;
                 self->scripts = scripts;
             }
-            break;
-
-        case NMAP_MSG_SERVICE_SCAN:
-            GET_STRING (self->name);
-            GET_NUMBER1 (self->conf);
-            GET_NUMBER1 (self->method);
-            GET_STRING (self->version);
-            GET_STRING (self->product);
-            GET_STRING (self->extrainfo);
-            GET_NUMBER1 (self->tunnel);
-            GET_NUMBER1 (self->service_proto);
-            GET_NUMBER4 (self->rpcnum);
-            GET_NUMBER4 (self->lowver);
-            GET_NUMBER4 (self->highver);
-            GET_STRING (self->hostname);
-            GET_STRING (self->ostype);
-            GET_STRING (self->devicetype);
-            GET_STRING (self->servicefp);
-            GET_STRING (self->cpe);
             break;
 
         case NMAP_MSG_SCRIPT:
@@ -539,6 +542,7 @@ nmap_msg_decode (zmsg_t **msg_p)
                     goto malformed;
                 self->osclass = osclass;
             }
+            GET_NUMBER4 (self->line);
             break;
 
         case NMAP_MSG_OSCLASS:
@@ -722,59 +726,62 @@ nmap_msg_encode (nmap_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->reason_ip)
                 frame_size += strlen (self->reason_ip);
-            break;
-            
-        case NMAP_MSG_SERVICE_SCAN:
-            //  name is a string with 1-byte length
+            //  service_name is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->name)
-                frame_size += strlen (self->name);
-            //  conf is a 1-byte integer
+            if (self->service_name)
+                frame_size += strlen (self->service_name);
+            //  service_conf is a 1-byte integer
             frame_size += 1;
-            //  method is a 1-byte integer
+            //  service_method is a 1-byte integer
             frame_size += 1;
-            //  version is a string with 1-byte length
+            //  service_version is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->version)
-                frame_size += strlen (self->version);
-            //  product is a string with 1-byte length
+            if (self->service_version)
+                frame_size += strlen (self->service_version);
+            //  service_product is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->product)
-                frame_size += strlen (self->product);
-            //  extrainfo is a string with 1-byte length
+            if (self->service_product)
+                frame_size += strlen (self->service_product);
+            //  service_extrainfo is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->extrainfo)
-                frame_size += strlen (self->extrainfo);
-            //  tunnel is a 1-byte integer
+            if (self->service_extrainfo)
+                frame_size += strlen (self->service_extrainfo);
+            //  service_tunnel is a 1-byte integer
             frame_size += 1;
             //  service_proto is a 1-byte integer
             frame_size += 1;
-            //  rpcnum is a 4-byte integer
+            //  service_rpcnum is a 4-byte integer
             frame_size += 4;
-            //  lowver is a 4-byte integer
+            //  service_lowver is a 4-byte integer
             frame_size += 4;
-            //  highver is a 4-byte integer
+            //  service_highver is a 4-byte integer
             frame_size += 4;
-            //  hostname is a string with 1-byte length
+            //  service_hostname is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->hostname)
-                frame_size += strlen (self->hostname);
-            //  ostype is a string with 1-byte length
+            if (self->service_hostname)
+                frame_size += strlen (self->service_hostname);
+            //  service_ostype is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->ostype)
-                frame_size += strlen (self->ostype);
-            //  devicetype is a string with 1-byte length
+            if (self->service_ostype)
+                frame_size += strlen (self->service_ostype);
+            //  service_devicetype is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->devicetype)
-                frame_size += strlen (self->devicetype);
-            //  servicefp is a string with 1-byte length
+            if (self->service_devicetype)
+                frame_size += strlen (self->service_devicetype);
+            //  service_servicefp is a string with 1-byte length
             frame_size++;       //  Size is one octet
-            if (self->servicefp)
-                frame_size += strlen (self->servicefp);
-            //  cpe is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->cpe)
-                frame_size += strlen (self->cpe);
+            if (self->service_servicefp)
+                frame_size += strlen (self->service_servicefp);
+            //  service_cpes is an array of strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->service_cpes) {
+                //  Add up size of list contents
+                char *service_cpes = (char *) zlist_first (self->service_cpes);
+                while (service_cpes) {
+                    frame_size += 4 + strlen (service_cpes);
+                    service_cpes = (char *) zlist_next (self->service_cpes);
+                }
+            }
             break;
             
         case NMAP_MSG_SCRIPT:
@@ -819,6 +826,8 @@ nmap_msg_encode (nmap_msg_t **self_p)
                 frame_size += strlen (self->name);
             //  accuracy is a 1-byte integer
             frame_size += 1;
+            //  line is a 4-byte integer
+            frame_size += 4;
             break;
             
         case NMAP_MSG_OSCLASS:
@@ -989,61 +998,63 @@ nmap_msg_encode (nmap_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            break;
-
-        case NMAP_MSG_SERVICE_SCAN:
-            if (self->name) {
-                PUT_STRING (self->name);
+            if (self->service_name) {
+                PUT_STRING (self->service_name);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER1 (self->conf);
-            PUT_NUMBER1 (self->method);
-            if (self->version) {
-                PUT_STRING (self->version);
+            PUT_NUMBER1 (self->service_conf);
+            PUT_NUMBER1 (self->service_method);
+            if (self->service_version) {
+                PUT_STRING (self->service_version);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->product) {
-                PUT_STRING (self->product);
+            if (self->service_product) {
+                PUT_STRING (self->service_product);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->extrainfo) {
-                PUT_STRING (self->extrainfo);
+            if (self->service_extrainfo) {
+                PUT_STRING (self->service_extrainfo);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER1 (self->tunnel);
+            PUT_NUMBER1 (self->service_tunnel);
             PUT_NUMBER1 (self->service_proto);
-            PUT_NUMBER4 (self->rpcnum);
-            PUT_NUMBER4 (self->lowver);
-            PUT_NUMBER4 (self->highver);
-            if (self->hostname) {
-                PUT_STRING (self->hostname);
+            PUT_NUMBER4 (self->service_rpcnum);
+            PUT_NUMBER4 (self->service_lowver);
+            PUT_NUMBER4 (self->service_highver);
+            if (self->service_hostname) {
+                PUT_STRING (self->service_hostname);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->ostype) {
-                PUT_STRING (self->ostype);
+            if (self->service_ostype) {
+                PUT_STRING (self->service_ostype);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->devicetype) {
-                PUT_STRING (self->devicetype);
+            if (self->service_devicetype) {
+                PUT_STRING (self->service_devicetype);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->servicefp) {
-                PUT_STRING (self->servicefp);
+            if (self->service_servicefp) {
+                PUT_STRING (self->service_servicefp);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->cpe) {
-                PUT_STRING (self->cpe);
+            if (self->service_cpes) {
+                PUT_NUMBER4 (zlist_size (self->service_cpes));
+                char *service_cpes = (char *) zlist_first (self->service_cpes);
+                while (service_cpes) {
+                    PUT_LONGSTR (service_cpes);
+                    service_cpes = (char *) zlist_next (self->service_cpes);
+                }
             }
             else
-                PUT_NUMBER1 (0);    //  Empty string
+                PUT_NUMBER4 (0);    //  Empty string array
             break;
 
         case NMAP_MSG_SCRIPT:
@@ -1093,6 +1104,7 @@ nmap_msg_encode (nmap_msg_t **self_p)
             else
                 PUT_NUMBER1 (0);    //  Empty string
             PUT_NUMBER1 (self->accuracy);
+            PUT_NUMBER4 (self->line);
             break;
 
         case NMAP_MSG_OSCLASS:
@@ -1188,14 +1200,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
     }
     //  Now send any frame fields, in order
     if (self->id == NMAP_MSG_PORT_SCAN) {
-        //  If service isn't set, send an empty frame
-        if (!self->service)
-            self->service = zframe_new (NULL, 0);
-        if (zmsg_append (msg, &self->service)) {
-            zmsg_destroy (&msg);
-            nmap_msg_destroy (self_p);
-            return NULL;
-        }
         //  If scripts isn't set, send an empty frame
         if (!self->scripts)
             self->scripts = zframe_new (NULL, 0);
@@ -1424,7 +1428,22 @@ nmap_msg_encode_port_scan (
     const char *reason,
     byte reason_ttl,
     const char *reason_ip,
-    zframe_t *service,
+    const char *service_name,
+    byte service_conf,
+    byte service_method,
+    const char *service_version,
+    const char *service_product,
+    const char *service_extrainfo,
+    byte service_tunnel,
+    byte service_proto,
+    uint32_t service_rpcnum,
+    uint32_t service_lowver,
+    uint32_t service_highver,
+    const char *service_hostname,
+    const char *service_ostype,
+    const char *service_devicetype,
+    const char *service_servicefp,
+    zlist_t *service_cpes,
     zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN);
@@ -1434,53 +1453,25 @@ nmap_msg_encode_port_scan (
     nmap_msg_set_reason (self, reason);
     nmap_msg_set_reason_ttl (self, reason_ttl);
     nmap_msg_set_reason_ip (self, reason_ip);
-    zframe_t *service_copy = zframe_dup (service);
-    nmap_msg_set_service (self, &service_copy);
+    nmap_msg_set_service_name (self, service_name);
+    nmap_msg_set_service_conf (self, service_conf);
+    nmap_msg_set_service_method (self, service_method);
+    nmap_msg_set_service_version (self, service_version);
+    nmap_msg_set_service_product (self, service_product);
+    nmap_msg_set_service_extrainfo (self, service_extrainfo);
+    nmap_msg_set_service_tunnel (self, service_tunnel);
+    nmap_msg_set_service_proto (self, service_proto);
+    nmap_msg_set_service_rpcnum (self, service_rpcnum);
+    nmap_msg_set_service_lowver (self, service_lowver);
+    nmap_msg_set_service_highver (self, service_highver);
+    nmap_msg_set_service_hostname (self, service_hostname);
+    nmap_msg_set_service_ostype (self, service_ostype);
+    nmap_msg_set_service_devicetype (self, service_devicetype);
+    nmap_msg_set_service_servicefp (self, service_servicefp);
+    zlist_t *service_cpes_copy = zlist_dup (service_cpes);
+    nmap_msg_set_service_cpes (self, &service_cpes_copy);
     zframe_t *scripts_copy = zframe_dup (scripts);
     nmap_msg_set_scripts (self, &scripts_copy);
-    return nmap_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode SERVICE_SCAN message
-
-zmsg_t * 
-nmap_msg_encode_service_scan (
-    const char *name,
-    byte conf,
-    byte method,
-    const char *version,
-    const char *product,
-    const char *extrainfo,
-    byte tunnel,
-    byte service_proto,
-    uint32_t rpcnum,
-    uint32_t lowver,
-    uint32_t highver,
-    const char *hostname,
-    const char *ostype,
-    const char *devicetype,
-    const char *servicefp,
-    const char *cpe)
-{
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
-    nmap_msg_set_name (self, name);
-    nmap_msg_set_conf (self, conf);
-    nmap_msg_set_method (self, method);
-    nmap_msg_set_version (self, version);
-    nmap_msg_set_product (self, product);
-    nmap_msg_set_extrainfo (self, extrainfo);
-    nmap_msg_set_tunnel (self, tunnel);
-    nmap_msg_set_service_proto (self, service_proto);
-    nmap_msg_set_rpcnum (self, rpcnum);
-    nmap_msg_set_lowver (self, lowver);
-    nmap_msg_set_highver (self, highver);
-    nmap_msg_set_hostname (self, hostname);
-    nmap_msg_set_ostype (self, ostype);
-    nmap_msg_set_devicetype (self, devicetype);
-    nmap_msg_set_servicefp (self, servicefp);
-    nmap_msg_set_cpe (self, cpe);
     return nmap_msg_encode (&self);
 }
 
@@ -1545,13 +1536,15 @@ zmsg_t *
 nmap_msg_encode_osmatch (
     const char *name,
     byte accuracy,
-    zframe_t *osclass)
+    zframe_t *osclass,
+    uint32_t line)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSMATCH);
     nmap_msg_set_name (self, name);
     nmap_msg_set_accuracy (self, accuracy);
     zframe_t *osclass_copy = zframe_dup (osclass);
     nmap_msg_set_osclass (self, &osclass_copy);
+    nmap_msg_set_line (self, line);
     return nmap_msg_encode (&self);
 }
 
@@ -1682,7 +1675,22 @@ nmap_msg_send_port_scan (
     const char *reason,
     byte reason_ttl,
     const char *reason_ip,
-    zframe_t *service,
+    const char *service_name,
+    byte service_conf,
+    byte service_method,
+    const char *service_version,
+    const char *service_product,
+    const char *service_extrainfo,
+    byte service_tunnel,
+    byte service_proto,
+    uint32_t service_rpcnum,
+    uint32_t service_lowver,
+    uint32_t service_highver,
+    const char *service_hostname,
+    const char *service_ostype,
+    const char *service_devicetype,
+    const char *service_servicefp,
+    zlist_t *service_cpes,
     zframe_t *scripts)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_PORT_SCAN);
@@ -1692,54 +1700,25 @@ nmap_msg_send_port_scan (
     nmap_msg_set_reason (self, reason);
     nmap_msg_set_reason_ttl (self, reason_ttl);
     nmap_msg_set_reason_ip (self, reason_ip);
-    zframe_t *service_copy = zframe_dup (service);
-    nmap_msg_set_service (self, &service_copy);
+    nmap_msg_set_service_name (self, service_name);
+    nmap_msg_set_service_conf (self, service_conf);
+    nmap_msg_set_service_method (self, service_method);
+    nmap_msg_set_service_version (self, service_version);
+    nmap_msg_set_service_product (self, service_product);
+    nmap_msg_set_service_extrainfo (self, service_extrainfo);
+    nmap_msg_set_service_tunnel (self, service_tunnel);
+    nmap_msg_set_service_proto (self, service_proto);
+    nmap_msg_set_service_rpcnum (self, service_rpcnum);
+    nmap_msg_set_service_lowver (self, service_lowver);
+    nmap_msg_set_service_highver (self, service_highver);
+    nmap_msg_set_service_hostname (self, service_hostname);
+    nmap_msg_set_service_ostype (self, service_ostype);
+    nmap_msg_set_service_devicetype (self, service_devicetype);
+    nmap_msg_set_service_servicefp (self, service_servicefp);
+    zlist_t *service_cpes_copy = zlist_dup (service_cpes);
+    nmap_msg_set_service_cpes (self, &service_cpes_copy);
     zframe_t *scripts_copy = zframe_dup (scripts);
     nmap_msg_set_scripts (self, &scripts_copy);
-    return nmap_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the SERVICE_SCAN to the socket in one step
-
-int
-nmap_msg_send_service_scan (
-    void *output,
-    const char *name,
-    byte conf,
-    byte method,
-    const char *version,
-    const char *product,
-    const char *extrainfo,
-    byte tunnel,
-    byte service_proto,
-    uint32_t rpcnum,
-    uint32_t lowver,
-    uint32_t highver,
-    const char *hostname,
-    const char *ostype,
-    const char *devicetype,
-    const char *servicefp,
-    const char *cpe)
-{
-    nmap_msg_t *self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
-    nmap_msg_set_name (self, name);
-    nmap_msg_set_conf (self, conf);
-    nmap_msg_set_method (self, method);
-    nmap_msg_set_version (self, version);
-    nmap_msg_set_product (self, product);
-    nmap_msg_set_extrainfo (self, extrainfo);
-    nmap_msg_set_tunnel (self, tunnel);
-    nmap_msg_set_service_proto (self, service_proto);
-    nmap_msg_set_rpcnum (self, rpcnum);
-    nmap_msg_set_lowver (self, lowver);
-    nmap_msg_set_highver (self, highver);
-    nmap_msg_set_hostname (self, hostname);
-    nmap_msg_set_ostype (self, ostype);
-    nmap_msg_set_devicetype (self, devicetype);
-    nmap_msg_set_servicefp (self, servicefp);
-    nmap_msg_set_cpe (self, cpe);
     return nmap_msg_send (&self, output);
 }
 
@@ -1808,13 +1787,15 @@ nmap_msg_send_osmatch (
     void *output,
     const char *name,
     byte accuracy,
-    zframe_t *osclass)
+    zframe_t *osclass,
+    uint32_t line)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_OSMATCH);
     nmap_msg_set_name (self, name);
     nmap_msg_set_accuracy (self, accuracy);
     zframe_t *osclass_copy = zframe_dup (osclass);
     nmap_msg_set_osclass (self, &osclass_copy);
+    nmap_msg_set_line (self, line);
     return nmap_msg_send (&self, output);
 }
 
@@ -1906,27 +1887,23 @@ nmap_msg_dup (nmap_msg_t *self)
             copy->reason = self->reason? strdup (self->reason): NULL;
             copy->reason_ttl = self->reason_ttl;
             copy->reason_ip = self->reason_ip? strdup (self->reason_ip): NULL;
-            copy->service = self->service? zframe_dup (self->service): NULL;
-            copy->scripts = self->scripts? zframe_dup (self->scripts): NULL;
-            break;
-
-        case NMAP_MSG_SERVICE_SCAN:
-            copy->name = self->name? strdup (self->name): NULL;
-            copy->conf = self->conf;
-            copy->method = self->method;
-            copy->version = self->version? strdup (self->version): NULL;
-            copy->product = self->product? strdup (self->product): NULL;
-            copy->extrainfo = self->extrainfo? strdup (self->extrainfo): NULL;
-            copy->tunnel = self->tunnel;
+            copy->service_name = self->service_name? strdup (self->service_name): NULL;
+            copy->service_conf = self->service_conf;
+            copy->service_method = self->service_method;
+            copy->service_version = self->service_version? strdup (self->service_version): NULL;
+            copy->service_product = self->service_product? strdup (self->service_product): NULL;
+            copy->service_extrainfo = self->service_extrainfo? strdup (self->service_extrainfo): NULL;
+            copy->service_tunnel = self->service_tunnel;
             copy->service_proto = self->service_proto;
-            copy->rpcnum = self->rpcnum;
-            copy->lowver = self->lowver;
-            copy->highver = self->highver;
-            copy->hostname = self->hostname? strdup (self->hostname): NULL;
-            copy->ostype = self->ostype? strdup (self->ostype): NULL;
-            copy->devicetype = self->devicetype? strdup (self->devicetype): NULL;
-            copy->servicefp = self->servicefp? strdup (self->servicefp): NULL;
-            copy->cpe = self->cpe? strdup (self->cpe): NULL;
+            copy->service_rpcnum = self->service_rpcnum;
+            copy->service_lowver = self->service_lowver;
+            copy->service_highver = self->service_highver;
+            copy->service_hostname = self->service_hostname? strdup (self->service_hostname): NULL;
+            copy->service_ostype = self->service_ostype? strdup (self->service_ostype): NULL;
+            copy->service_devicetype = self->service_devicetype? strdup (self->service_devicetype): NULL;
+            copy->service_servicefp = self->service_servicefp? strdup (self->service_servicefp): NULL;
+            copy->service_cpes = self->service_cpes? zlist_dup (self->service_cpes): NULL;
+            copy->scripts = self->scripts? zframe_dup (self->scripts): NULL;
             break;
 
         case NMAP_MSG_SCRIPT:
@@ -1950,6 +1927,7 @@ nmap_msg_dup (nmap_msg_t *self)
             copy->name = self->name? strdup (self->name): NULL;
             copy->accuracy = self->accuracy;
             copy->osclass = self->osclass? zframe_dup (self->osclass): NULL;
+            copy->line = self->line;
             break;
 
         case NMAP_MSG_OSCLASS:
@@ -2090,63 +2068,58 @@ nmap_msg_print (nmap_msg_t *self)
                 zsys_debug ("    reason_ip='%s'", self->reason_ip);
             else
                 zsys_debug ("    reason_ip=");
-            zsys_debug ("    service=");
-            if (self->service)
-                zframe_print (self->service, NULL);
+            if (self->service_name)
+                zsys_debug ("    service_name='%s'", self->service_name);
             else
-                zsys_debug ("(NULL)");
+                zsys_debug ("    service_name=");
+            zsys_debug ("    service_conf=%ld", (long) self->service_conf);
+            zsys_debug ("    service_method=%ld", (long) self->service_method);
+            if (self->service_version)
+                zsys_debug ("    service_version='%s'", self->service_version);
+            else
+                zsys_debug ("    service_version=");
+            if (self->service_product)
+                zsys_debug ("    service_product='%s'", self->service_product);
+            else
+                zsys_debug ("    service_product=");
+            if (self->service_extrainfo)
+                zsys_debug ("    service_extrainfo='%s'", self->service_extrainfo);
+            else
+                zsys_debug ("    service_extrainfo=");
+            zsys_debug ("    service_tunnel=%ld", (long) self->service_tunnel);
+            zsys_debug ("    service_proto=%ld", (long) self->service_proto);
+            zsys_debug ("    service_rpcnum=%ld", (long) self->service_rpcnum);
+            zsys_debug ("    service_lowver=%ld", (long) self->service_lowver);
+            zsys_debug ("    service_highver=%ld", (long) self->service_highver);
+            if (self->service_hostname)
+                zsys_debug ("    service_hostname='%s'", self->service_hostname);
+            else
+                zsys_debug ("    service_hostname=");
+            if (self->service_ostype)
+                zsys_debug ("    service_ostype='%s'", self->service_ostype);
+            else
+                zsys_debug ("    service_ostype=");
+            if (self->service_devicetype)
+                zsys_debug ("    service_devicetype='%s'", self->service_devicetype);
+            else
+                zsys_debug ("    service_devicetype=");
+            if (self->service_servicefp)
+                zsys_debug ("    service_servicefp='%s'", self->service_servicefp);
+            else
+                zsys_debug ("    service_servicefp=");
+            zsys_debug ("    service_cpes=");
+            if (self->service_cpes) {
+                char *service_cpes = (char *) zlist_first (self->service_cpes);
+                while (service_cpes) {
+                    zsys_debug ("        '%s'", service_cpes);
+                    service_cpes = (char *) zlist_next (self->service_cpes);
+                }
+            }
             zsys_debug ("    scripts=");
             if (self->scripts)
                 zframe_print (self->scripts, NULL);
             else
                 zsys_debug ("(NULL)");
-            break;
-            
-        case NMAP_MSG_SERVICE_SCAN:
-            zsys_debug ("NMAP_MSG_SERVICE_SCAN:");
-            if (self->name)
-                zsys_debug ("    name='%s'", self->name);
-            else
-                zsys_debug ("    name=");
-            zsys_debug ("    conf=%ld", (long) self->conf);
-            zsys_debug ("    method=%ld", (long) self->method);
-            if (self->version)
-                zsys_debug ("    version='%s'", self->version);
-            else
-                zsys_debug ("    version=");
-            if (self->product)
-                zsys_debug ("    product='%s'", self->product);
-            else
-                zsys_debug ("    product=");
-            if (self->extrainfo)
-                zsys_debug ("    extrainfo='%s'", self->extrainfo);
-            else
-                zsys_debug ("    extrainfo=");
-            zsys_debug ("    tunnel=%ld", (long) self->tunnel);
-            zsys_debug ("    service_proto=%ld", (long) self->service_proto);
-            zsys_debug ("    rpcnum=%ld", (long) self->rpcnum);
-            zsys_debug ("    lowver=%ld", (long) self->lowver);
-            zsys_debug ("    highver=%ld", (long) self->highver);
-            if (self->hostname)
-                zsys_debug ("    hostname='%s'", self->hostname);
-            else
-                zsys_debug ("    hostname=");
-            if (self->ostype)
-                zsys_debug ("    ostype='%s'", self->ostype);
-            else
-                zsys_debug ("    ostype=");
-            if (self->devicetype)
-                zsys_debug ("    devicetype='%s'", self->devicetype);
-            else
-                zsys_debug ("    devicetype=");
-            if (self->servicefp)
-                zsys_debug ("    servicefp='%s'", self->servicefp);
-            else
-                zsys_debug ("    servicefp=");
-            if (self->cpe)
-                zsys_debug ("    cpe='%s'", self->cpe);
-            else
-                zsys_debug ("    cpe=");
             break;
             
         case NMAP_MSG_SCRIPT:
@@ -2202,6 +2175,7 @@ nmap_msg_print (nmap_msg_t *self)
                 zframe_print (self->osclass, NULL);
             else
                 zsys_debug ("(NULL)");
+            zsys_debug ("    line=%ld", (long) self->line);
             break;
             
         case NMAP_MSG_OSCLASS:
@@ -2311,9 +2285,6 @@ nmap_msg_command (nmap_msg_t *self)
             break;
         case NMAP_MSG_PORT_SCAN:
             return ("PORT_SCAN");
-            break;
-        case NMAP_MSG_SERVICE_SCAN:
-            return ("SERVICE_SCAN");
             break;
         case NMAP_MSG_SCRIPT:
             return ("SCRIPT");
@@ -2970,181 +2941,148 @@ nmap_msg_set_reason_ip (nmap_msg_t *self, const char *format, ...)
 
 
 //  --------------------------------------------------------------------------
-//  Get the service field without transferring ownership
-
-zframe_t *
-nmap_msg_service (nmap_msg_t *self)
-{
-    assert (self);
-    return self->service;
-}
-
-//  Get the service field and transfer ownership to caller
-
-zframe_t *
-nmap_msg_get_service (nmap_msg_t *self)
-{
-    zframe_t *service = self->service;
-    self->service = NULL;
-    return service;
-}
-
-//  Set the service field, transferring ownership from caller
-
-void
-nmap_msg_set_service (nmap_msg_t *self, zframe_t **frame_p)
-{
-    assert (self);
-    assert (frame_p);
-    zframe_destroy (&self->service);
-    self->service = *frame_p;
-    *frame_p = NULL;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the name field
+//  Get/set the service_name field
 
 const char *
-nmap_msg_name (nmap_msg_t *self)
+nmap_msg_service_name (nmap_msg_t *self)
 {
     assert (self);
-    return self->name;
+    return self->service_name;
 }
 
 void
-nmap_msg_set_name (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_name (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format name from provided arguments
+    //  Format service_name from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->name);
-    self->name = zsys_vprintf (format, argptr);
+    free (self->service_name);
+    self->service_name = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the conf field
+//  Get/set the service_conf field
 
 byte
-nmap_msg_conf (nmap_msg_t *self)
+nmap_msg_service_conf (nmap_msg_t *self)
 {
     assert (self);
-    return self->conf;
+    return self->service_conf;
 }
 
 void
-nmap_msg_set_conf (nmap_msg_t *self, byte conf)
+nmap_msg_set_service_conf (nmap_msg_t *self, byte service_conf)
 {
     assert (self);
-    self->conf = conf;
+    self->service_conf = service_conf;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the method field
+//  Get/set the service_method field
 
 byte
-nmap_msg_method (nmap_msg_t *self)
+nmap_msg_service_method (nmap_msg_t *self)
 {
     assert (self);
-    return self->method;
+    return self->service_method;
 }
 
 void
-nmap_msg_set_method (nmap_msg_t *self, byte method)
+nmap_msg_set_service_method (nmap_msg_t *self, byte service_method)
 {
     assert (self);
-    self->method = method;
+    self->service_method = service_method;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the version field
+//  Get/set the service_version field
 
 const char *
-nmap_msg_version (nmap_msg_t *self)
+nmap_msg_service_version (nmap_msg_t *self)
 {
     assert (self);
-    return self->version;
+    return self->service_version;
 }
 
 void
-nmap_msg_set_version (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_version (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format version from provided arguments
+    //  Format service_version from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->version);
-    self->version = zsys_vprintf (format, argptr);
+    free (self->service_version);
+    self->service_version = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the product field
+//  Get/set the service_product field
 
 const char *
-nmap_msg_product (nmap_msg_t *self)
+nmap_msg_service_product (nmap_msg_t *self)
 {
     assert (self);
-    return self->product;
+    return self->service_product;
 }
 
 void
-nmap_msg_set_product (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_product (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format product from provided arguments
+    //  Format service_product from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->product);
-    self->product = zsys_vprintf (format, argptr);
+    free (self->service_product);
+    self->service_product = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the extrainfo field
+//  Get/set the service_extrainfo field
 
 const char *
-nmap_msg_extrainfo (nmap_msg_t *self)
+nmap_msg_service_extrainfo (nmap_msg_t *self)
 {
     assert (self);
-    return self->extrainfo;
+    return self->service_extrainfo;
 }
 
 void
-nmap_msg_set_extrainfo (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_extrainfo (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format extrainfo from provided arguments
+    //  Format service_extrainfo from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->extrainfo);
-    self->extrainfo = zsys_vprintf (format, argptr);
+    free (self->service_extrainfo);
+    self->service_extrainfo = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the tunnel field
+//  Get/set the service_tunnel field
 
 byte
-nmap_msg_tunnel (nmap_msg_t *self)
+nmap_msg_service_tunnel (nmap_msg_t *self)
 {
     assert (self);
-    return self->tunnel;
+    return self->service_tunnel;
 }
 
 void
-nmap_msg_set_tunnel (nmap_msg_t *self, byte tunnel)
+nmap_msg_set_service_tunnel (nmap_msg_t *self, byte service_tunnel)
 {
     assert (self);
-    self->tunnel = tunnel;
+    self->service_tunnel = service_tunnel;
 }
 
 
@@ -3167,171 +3105,230 @@ nmap_msg_set_service_proto (nmap_msg_t *self, byte service_proto)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the rpcnum field
+//  Get/set the service_rpcnum field
 
 uint32_t
-nmap_msg_rpcnum (nmap_msg_t *self)
+nmap_msg_service_rpcnum (nmap_msg_t *self)
 {
     assert (self);
-    return self->rpcnum;
+    return self->service_rpcnum;
 }
 
 void
-nmap_msg_set_rpcnum (nmap_msg_t *self, uint32_t rpcnum)
+nmap_msg_set_service_rpcnum (nmap_msg_t *self, uint32_t service_rpcnum)
 {
     assert (self);
-    self->rpcnum = rpcnum;
+    self->service_rpcnum = service_rpcnum;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the lowver field
+//  Get/set the service_lowver field
 
 uint32_t
-nmap_msg_lowver (nmap_msg_t *self)
+nmap_msg_service_lowver (nmap_msg_t *self)
 {
     assert (self);
-    return self->lowver;
+    return self->service_lowver;
 }
 
 void
-nmap_msg_set_lowver (nmap_msg_t *self, uint32_t lowver)
+nmap_msg_set_service_lowver (nmap_msg_t *self, uint32_t service_lowver)
 {
     assert (self);
-    self->lowver = lowver;
+    self->service_lowver = service_lowver;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the highver field
+//  Get/set the service_highver field
 
 uint32_t
-nmap_msg_highver (nmap_msg_t *self)
+nmap_msg_service_highver (nmap_msg_t *self)
 {
     assert (self);
-    return self->highver;
+    return self->service_highver;
 }
 
 void
-nmap_msg_set_highver (nmap_msg_t *self, uint32_t highver)
+nmap_msg_set_service_highver (nmap_msg_t *self, uint32_t service_highver)
 {
     assert (self);
-    self->highver = highver;
+    self->service_highver = service_highver;
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the hostname field
+//  Get/set the service_hostname field
 
 const char *
-nmap_msg_hostname (nmap_msg_t *self)
+nmap_msg_service_hostname (nmap_msg_t *self)
 {
     assert (self);
-    return self->hostname;
+    return self->service_hostname;
 }
 
 void
-nmap_msg_set_hostname (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_hostname (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format hostname from provided arguments
+    //  Format service_hostname from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->hostname);
-    self->hostname = zsys_vprintf (format, argptr);
+    free (self->service_hostname);
+    self->service_hostname = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the ostype field
+//  Get/set the service_ostype field
 
 const char *
-nmap_msg_ostype (nmap_msg_t *self)
+nmap_msg_service_ostype (nmap_msg_t *self)
 {
     assert (self);
-    return self->ostype;
+    return self->service_ostype;
 }
 
 void
-nmap_msg_set_ostype (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_ostype (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format ostype from provided arguments
+    //  Format service_ostype from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->ostype);
-    self->ostype = zsys_vprintf (format, argptr);
+    free (self->service_ostype);
+    self->service_ostype = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the devicetype field
+//  Get/set the service_devicetype field
 
 const char *
-nmap_msg_devicetype (nmap_msg_t *self)
+nmap_msg_service_devicetype (nmap_msg_t *self)
 {
     assert (self);
-    return self->devicetype;
+    return self->service_devicetype;
 }
 
 void
-nmap_msg_set_devicetype (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_devicetype (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format devicetype from provided arguments
+    //  Format service_devicetype from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->devicetype);
-    self->devicetype = zsys_vprintf (format, argptr);
+    free (self->service_devicetype);
+    self->service_devicetype = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the servicefp field
+//  Get/set the service_servicefp field
 
 const char *
-nmap_msg_servicefp (nmap_msg_t *self)
+nmap_msg_service_servicefp (nmap_msg_t *self)
 {
     assert (self);
-    return self->servicefp;
+    return self->service_servicefp;
 }
 
 void
-nmap_msg_set_servicefp (nmap_msg_t *self, const char *format, ...)
+nmap_msg_set_service_servicefp (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format servicefp from provided arguments
+    //  Format service_servicefp from provided arguments
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->servicefp);
-    self->servicefp = zsys_vprintf (format, argptr);
+    free (self->service_servicefp);
+    self->service_servicefp = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the cpe field
+//  Get the service_cpes field, without transferring ownership
 
-const char *
-nmap_msg_cpe (nmap_msg_t *self)
+zlist_t *
+nmap_msg_service_cpes (nmap_msg_t *self)
 {
     assert (self);
-    return self->cpe;
+    return self->service_cpes;
+}
+
+//  Get the service_cpes field and transfer ownership to caller
+
+zlist_t *
+nmap_msg_get_service_cpes (nmap_msg_t *self)
+{
+    assert (self);
+    zlist_t *service_cpes = self->service_cpes;
+    self->service_cpes = NULL;
+    return service_cpes;
+}
+
+//  Set the service_cpes field, transferring ownership from caller
+
+void
+nmap_msg_set_service_cpes (nmap_msg_t *self, zlist_t **service_cpes_p)
+{
+    assert (self);
+    assert (service_cpes_p);
+    zlist_destroy (&self->service_cpes);
+    self->service_cpes = *service_cpes_p;
+    *service_cpes_p = NULL;
+}
+
+//  --------------------------------------------------------------------------
+//  Iterate through the service_cpes field, and append a service_cpes value
+
+const char *
+nmap_msg_service_cpes_first (nmap_msg_t *self)
+{
+    assert (self);
+    if (self->service_cpes)
+        return (char *) (zlist_first (self->service_cpes));
+    else
+        return NULL;
+}
+
+const char *
+nmap_msg_service_cpes_next (nmap_msg_t *self)
+{
+    assert (self);
+    if (self->service_cpes)
+        return (char *) (zlist_next (self->service_cpes));
+    else
+        return NULL;
 }
 
 void
-nmap_msg_set_cpe (nmap_msg_t *self, const char *format, ...)
+nmap_msg_service_cpes_append (nmap_msg_t *self, const char *format, ...)
 {
-    //  Format cpe from provided arguments
+    //  Format into newly allocated string
     assert (self);
     va_list argptr;
     va_start (argptr, format);
-    free (self->cpe);
-    self->cpe = zsys_vprintf (format, argptr);
+    char *string = zsys_vprintf (format, argptr);
     va_end (argptr);
+
+    //  Attach string to list
+    if (!self->service_cpes) {
+        self->service_cpes = zlist_new ();
+        zlist_autofree (self->service_cpes);
+    }
+    zlist_append (self->service_cpes, string);
+    free (string);
+}
+
+size_t
+nmap_msg_service_cpes_size (nmap_msg_t *self)
+{
+    return zlist_size (self->service_cpes);
 }
 
 
@@ -3563,6 +3560,29 @@ nmap_msg_set_proto (nmap_msg_t *self, const char *format, ...)
 
 
 //  --------------------------------------------------------------------------
+//  Get/set the name field
+
+const char *
+nmap_msg_name (nmap_msg_t *self)
+{
+    assert (self);
+    return self->name;
+}
+
+void
+nmap_msg_set_name (nmap_msg_t *self, const char *format, ...)
+{
+    //  Format name from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->name);
+    self->name = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get/set the accuracy field
 
 byte
@@ -3610,6 +3630,24 @@ nmap_msg_set_osclass (nmap_msg_t *self, zframe_t **frame_p)
     zframe_destroy (&self->osclass);
     self->osclass = *frame_p;
     *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the line field
+
+uint32_t
+nmap_msg_line (nmap_msg_t *self)
+{
+    assert (self);
+    return self->line;
+}
+
+void
+nmap_msg_set_line (nmap_msg_t *self, uint32_t line)
+{
+    assert (self);
+    self->line = line;
 }
 
 
@@ -3968,8 +4006,23 @@ nmap_msg_test (bool verbose)
     nmap_msg_set_reason (self, "Life is short but Now lasts for ever");
     nmap_msg_set_reason_ttl (self, 123);
     nmap_msg_set_reason_ip (self, "Life is short but Now lasts for ever");
-    zframe_t *port_scan_service = zframe_new ("Captcha Diem", 12);
-    nmap_msg_set_service (self, &port_scan_service);
+    nmap_msg_set_service_name (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_conf (self, 123);
+    nmap_msg_set_service_method (self, 123);
+    nmap_msg_set_service_version (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_product (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_extrainfo (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_tunnel (self, 123);
+    nmap_msg_set_service_proto (self, 123);
+    nmap_msg_set_service_rpcnum (self, 123);
+    nmap_msg_set_service_lowver (self, 123);
+    nmap_msg_set_service_highver (self, 123);
+    nmap_msg_set_service_hostname (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_ostype (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_devicetype (self, "Life is short but Now lasts for ever");
+    nmap_msg_set_service_servicefp (self, "Life is short but Now lasts for ever");
+    nmap_msg_service_cpes_append (self, "Name: %s", "Brutus");
+    nmap_msg_service_cpes_append (self, "Age: %d", 43);
     zframe_t *port_scan_scripts = zframe_new ("Captcha Diem", 12);
     nmap_msg_set_scripts (self, &port_scan_scripts);
     //  Send twice from same object
@@ -3987,58 +4040,25 @@ nmap_msg_test (bool verbose)
         assert (streq (nmap_msg_reason (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_reason_ttl (self) == 123);
         assert (streq (nmap_msg_reason_ip (self), "Life is short but Now lasts for ever"));
-        assert (zframe_streq (nmap_msg_service (self), "Captcha Diem"));
-        assert (zframe_streq (nmap_msg_scripts (self), "Captcha Diem"));
-        nmap_msg_destroy (&self);
-    }
-    self = nmap_msg_new (NMAP_MSG_SERVICE_SCAN);
-    
-    //  Check that _dup works on empty message
-    copy = nmap_msg_dup (self);
-    assert (copy);
-    nmap_msg_destroy (&copy);
-
-    nmap_msg_set_name (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_conf (self, 123);
-    nmap_msg_set_method (self, 123);
-    nmap_msg_set_version (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_product (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_extrainfo (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_tunnel (self, 123);
-    nmap_msg_set_service_proto (self, 123);
-    nmap_msg_set_rpcnum (self, 123);
-    nmap_msg_set_lowver (self, 123);
-    nmap_msg_set_highver (self, 123);
-    nmap_msg_set_hostname (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_ostype (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_devicetype (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_servicefp (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_cpe (self, "Life is short but Now lasts for ever");
-    //  Send twice from same object
-    nmap_msg_send_again (self, output);
-    nmap_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = nmap_msg_recv (input);
-        assert (self);
-        assert (nmap_msg_routing_id (self));
-        
-        assert (streq (nmap_msg_name (self), "Life is short but Now lasts for ever"));
-        assert (nmap_msg_conf (self) == 123);
-        assert (nmap_msg_method (self) == 123);
-        assert (streq (nmap_msg_version (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_product (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_extrainfo (self), "Life is short but Now lasts for ever"));
-        assert (nmap_msg_tunnel (self) == 123);
+        assert (streq (nmap_msg_service_name (self), "Life is short but Now lasts for ever"));
+        assert (nmap_msg_service_conf (self) == 123);
+        assert (nmap_msg_service_method (self) == 123);
+        assert (streq (nmap_msg_service_version (self), "Life is short but Now lasts for ever"));
+        assert (streq (nmap_msg_service_product (self), "Life is short but Now lasts for ever"));
+        assert (streq (nmap_msg_service_extrainfo (self), "Life is short but Now lasts for ever"));
+        assert (nmap_msg_service_tunnel (self) == 123);
         assert (nmap_msg_service_proto (self) == 123);
-        assert (nmap_msg_rpcnum (self) == 123);
-        assert (nmap_msg_lowver (self) == 123);
-        assert (nmap_msg_highver (self) == 123);
-        assert (streq (nmap_msg_hostname (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_ostype (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_devicetype (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_servicefp (self), "Life is short but Now lasts for ever"));
-        assert (streq (nmap_msg_cpe (self), "Life is short but Now lasts for ever"));
+        assert (nmap_msg_service_rpcnum (self) == 123);
+        assert (nmap_msg_service_lowver (self) == 123);
+        assert (nmap_msg_service_highver (self) == 123);
+        assert (streq (nmap_msg_service_hostname (self), "Life is short but Now lasts for ever"));
+        assert (streq (nmap_msg_service_ostype (self), "Life is short but Now lasts for ever"));
+        assert (streq (nmap_msg_service_devicetype (self), "Life is short but Now lasts for ever"));
+        assert (streq (nmap_msg_service_servicefp (self), "Life is short but Now lasts for ever"));
+        assert (nmap_msg_service_cpes_size (self) == 2);
+        assert (streq (nmap_msg_service_cpes_first (self), "Name: Brutus"));
+        assert (streq (nmap_msg_service_cpes_next (self), "Age: 43"));
+        assert (zframe_streq (nmap_msg_scripts (self), "Captcha Diem"));
         nmap_msg_destroy (&self);
     }
     self = nmap_msg_new (NMAP_MSG_SCRIPT);
@@ -4128,6 +4148,7 @@ nmap_msg_test (bool verbose)
     nmap_msg_set_accuracy (self, 123);
     zframe_t *osmatch_osclass = zframe_new ("Captcha Diem", 12);
     nmap_msg_set_osclass (self, &osmatch_osclass);
+    nmap_msg_set_line (self, 123);
     //  Send twice from same object
     nmap_msg_send_again (self, output);
     nmap_msg_send (&self, output);
@@ -4140,6 +4161,7 @@ nmap_msg_test (bool verbose)
         assert (streq (nmap_msg_name (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_accuracy (self) == 123);
         assert (zframe_streq (nmap_msg_osclass (self), "Captcha Diem"));
+        assert (nmap_msg_line (self) == 123);
         nmap_msg_destroy (&self);
     }
     self = nmap_msg_new (NMAP_MSG_OSCLASS);
