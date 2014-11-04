@@ -296,6 +296,22 @@ insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_des
 insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 3,2,1);
 insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 2,1,1);
 
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "DC2",2, NULL);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM2",3,10);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM3",3,10);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM4",3,NULL);
+
+insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "total_facility_load","2",10);
+insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "contact","mike@nn.com",10);
+
+insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "description","room is very cute",13);
+insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "flowers","yes, in this room there are only flowers",13);
+
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW4",4, NULL);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW2",4, 11);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW3",4, 12);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW5",4, 12);
+insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW6",4, 10);
 
 drop view if exists v_bios_device_type;
 drop view if exists v_bios_discovered_device;
