@@ -50,7 +50,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
     char     value[]     = "myvalue";
     zhash_insert (errauxnew, &keytag, &value);
 
-    fail = _generate_db_fail (errnonew, errmsgnew, errauxnew);
+    fail = _generate_db_fail (errnonew, errmsgnew, &errauxnew);
     REQUIRE ( fail );
     REQUIRE ( common_msg_id(fail) == COMMON_MSG_FAIL );
     // REQUIRE ( errauxnew == NULL );  // this doesn't work
