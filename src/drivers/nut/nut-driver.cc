@@ -6,6 +6,11 @@
 
 using namespace std;
 
+namespace drivers
+{
+namespace nut
+{
+
 static const std::vector<std::string> physicsNUT {
     "ups.temperature",
     "ups.load",
@@ -293,7 +298,7 @@ void NUTDeviceList::updateDeviceList() {
 void NUTDeviceList::updateDeviceStatus() {
     try {
         for(auto &device : _devices ) {
-            nut::Device nutDevice = nutClient.getDevice(device.first);
+            nutclient::Device nutDevice = nutClient.getDevice(device.first);
             device.second.update( nutDevice.getVariableValues());
         }
     } catch (...) {}
@@ -348,3 +353,5 @@ NUTDeviceList::~NUTDeviceList() {
     disconnect();
 }
 
+} // namespace drivers::nut
+} // namespace drivers

@@ -4,6 +4,11 @@
 #include "defs.h"
 #include "log.h"
 
+namespace drivers
+{
+namespace nut
+{
+
 // basic powerdev properties
 static const std::vector<std::string> basicProperties {
     "model",
@@ -82,3 +87,7 @@ void nut_actor(zsock_t *pipe, void *args) {
     zsock_destroy(&dbsock);
     log_info ("%s", "nut_actor end\n");
 }
+
+} // namespace drivers::nut
+} // namespace drivers
+

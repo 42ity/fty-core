@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    zactor_t *nut = zactor_new( nut_actor, NULL);
+    zactor_t *nut = zactor_new (drivers::nut::nut_actor, NULL);
     assert(nut);
     
     zpoller_t *poller = zpoller_new(netmon, db, nut, NULL);
