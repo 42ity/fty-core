@@ -22,6 +22,18 @@ AS_IF([test "x$enable_debug" != "xyes"], [
     AC_DEFINE(NDEBUG, [1], [Define disabling debugging])
 ])
 
+# display source/build paths of interest to us
+echo "Value of srcdir...        '$srcdir'"
+echo "Value of current dir...   '`pwd`'"
+case "$srcdir" in
+    /*)	_srcdir_abs="$srcdir" ;;
+    *)  _srcdir_abs="`pwd`/$srcdir"
+	if test -d "$_srcdir_abs" ; then
+	    _srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
+	fi ;;
+esac
+echo "Value of _srcdir_abs...   '$_srcdir_abs'"
+
 # toolchain
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -38,13 +50,13 @@ PACKAGE_GIT_TSTAMP=""
 PACKAGE_GIT_HASH_S=""
 PACKAGE_GIT_HASH_L=""
 AC_PATH_PROGS([GIT], [git])
-if test ! -z "$GIT" -a -x "$GIT" ; then
+if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
 	echo "Getting Git workspace attributes..."
-	PACKAGE_GIT_ORIGIN="`$GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_BRANCH="`$GIT rev-parse --abbrev-ref HEAD`"		&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_TSTAMP="`$GIT log -n 1 --format='%ct'`"		&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_HASH_S="`$GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_HASH_L="`$GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
 fi
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
@@ -263,6 +275,10 @@ Summary:
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
 
         debug mode:              ${enable_debug:-no}
+
+	absolute SRC DIR:        ${_srcdir_abs}
 ])
+
+unset _srcdir_abs
 
 AC_OUTPUT
