@@ -9,18 +9,18 @@ print_result $?
 
 # Check setting time as unprivileged user
 test_it "unauth_time_set"
-[ "`api_post "/admin/time" "1970-01-01T00:00:00Z" | \
+[ "`api_post "/admin/time" '{ "time":"1970-01-01T00:00:00Z" }' | \
     grep "HTTP/1.1 401 Unauthorized"`" ]
 print_result $?
 
 # Check setting time as privileged user
 test_it "auth_time_set"
 TIME_NOW="`date --utc +%FT%TZ`"
-TIME="`api_auth_post "/admin/time" "1970-01-01T00:00:00Z" | \
+TIME="`api_auth_post "/admin/time" '{ "time":"1970-01-01T00:00:00Z" }' | \
        sed -n 's|.*"time"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
-api_auth_post "/admin/time" "$TIME_NOW" > /dev/null
+api_auth_post "/admin/time" '{ "time":"'"$TIME_NOW"'" }' > /dev/null
 TIME_S="`date -d"$TIME" +%s 2> /dev/null`"
-[ "$TIME_S" -lt 10 ]
+[ "$TIME_S" ] && [ "$TIME_S" -lt 10 ]
 print_result $?
 
 # Check setting nonsense
