@@ -42,8 +42,8 @@ Example:
 */  
     
     
-#ifndef UTILS_CIDR_H_
-#define UTILS_CIDR_H_
+#ifndef SRC_UTILS_CIDR_H_
+#define SRC_UTILS_CIDR_H_
 
 extern "C" {
 #include <libcidr.h>
@@ -525,5 +525,5 @@ private:
 
 } // namespace utils
 
-#endif // UTILS_CIDR_H_
+#endif // SRC_UTILS_CIDR_H_
 
