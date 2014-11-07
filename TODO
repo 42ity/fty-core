@@ -94,7 +94,8 @@ I suggest to remove this file
 
 ==== src/utils/messages  ====
 I propose to drop content of this directory; not the directory itself
--> after the rename to src/shared/messages this directory should contain .xml + generated .c & .h files from src/simple
+-> after the rename move zproto files to src/shared/messages;
+-> generated .c & .h files will go into src/include
 
 ==== src/web ====
 Because I haven't seen the contents of (or worked with) this directory before,
@@ -109,7 +110,7 @@ if anything is needed to be done here.
 
 ==== tests/* ====
 -> rename utils to shared, to reflect the change
--> QUESTION: drop the cli?
+-> do not drop the cli
 
 ==== src/simple ====
 -> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
