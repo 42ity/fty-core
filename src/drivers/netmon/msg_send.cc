@@ -27,7 +27,7 @@ References: BIOS-406
 #include <czmq.h>
 
 #include "netdisc_msg.h"
-#include "netmon_msg_send.h"
+#include "msg_send.h"
 
 void
 netmon_msg_send(

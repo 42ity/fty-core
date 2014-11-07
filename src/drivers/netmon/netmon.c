@@ -51,7 +51,7 @@ TODO: Resolve ctrl-c unresponsiveness
 
 #include "log.h"
 #include "defs.h"
-#include "netmon_msg_send.h"
+#include "msg_send.h"
 
 // include/utils.h
 #define SPRINT_BSIZE 64

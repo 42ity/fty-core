@@ -22,8 +22,8 @@ Author(s): Karol Hrdina <karolhrdina@eaton.com>
 Description: Encapsulate message sending from netmon into zproto generated api
 References: BIOS-406
 */
-#ifndef NETMON_NETMON_MSG_SEND_H_
-#define NETMON_NETMON_MSG_SEND_H_
+#ifndef SRC_DRIVERS_NETMON_MSG_SEND_H_
+#define SRC_DRIVERS_NETMON_MSG_SEND_H_
 
 #define NETDISC_IPVER_IPV4  0
 #define NETDISC_IPVER_IPV6  1
@@ -53,6 +53,5 @@ netmon_msg_send (
 }
 #endif
 
-#endif // NETMON_NETMON_MSG_SEND_H_
- 
+#endif // SRC_DRIVERS_NETMON_MSG_SEND_H_
 
