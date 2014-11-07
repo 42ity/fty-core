@@ -234,7 +234,7 @@ test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/src/simple \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
-test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lczmq
+test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
