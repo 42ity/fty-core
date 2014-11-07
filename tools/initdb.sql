@@ -4,10 +4,20 @@ use box_utf8;
 
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
+drop table if exists t_bios_client_info_measurements;
+drop table if exists t_bios_measurements;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
+
+CREATE TABLE t_bios_measurements(
+    id_measurement   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    keytag           VARCHAR(25),
+    scale            DECIMAL(5,5),
+
+    PRIMARY KEY(id_measurement)
+);
 
 CREATE TABLE t_bios_device_type(
     id_device_type      TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -244,74 +254,34 @@ CREATE TABLE t_bios_asset_ext_attributes(
     REFERENCES t_bios_asset_element (id_asset_element)
     ON DELETE RESTRICT
 );
-insert into t_bios_asset_link_type (id_asset_link_type, name) values (NULL, "power chain");
 
-insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
-insert into t_bios_client (id_client, name) values (1, "nmap");
+CREATE TABLE t_bios_client_info_measurements(
+    id_measurements         BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    id_client               TINYINT UNSIGNED    NOT NULL,
+    id_discovered_device    SMALLINT UNSIGNED,
+    timestamp               datetime            NOT NULL,
+    id_measurement          SMALLINT UNSIGNED        NOT NULL,
+    subkeytag               INT UNSIGNED,
+    value                   INT                 NOT NULL,
 
-insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
-insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
+    PRIMARY KEY(id_measurements),
 
-insert into t_bios_client(id_client,name) values(NULL,"mymodule");
-insert into t_bios_client(id_client,name) values(NULL,"admin");
-insert into t_bios_client(id_client,name) values(NULL,"NUT");
+    INDEX(id_discovered_device),
+    INDEX(id_measurement),
+    INDEX(id_client),
 
-insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
+    FOREIGN KEY (id_measurement)
+        REFERENCEs t_bios_measurements(id_measurement)
+        ON DELETE RESTRICT,
+    
+    FOREIGN KEY (id_discovered_device)
+        REFERENCEs t_bios_discovered_device(id_discovered_device)
+        ON DELETE RESTRICT,
 
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"serv");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"main");
-
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (1, "group");
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (2, "datacenter");
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (3, "room");
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (4, "row");
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (5, "rack");
-insert into t_bios_asset_element_type (id_asset_element_type, name) values (6, "device");
-
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "DC1",2,NULL);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM1",3,1);
-
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ROW1",4,2);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "RACK1",5,3);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "serv1",6,4);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, conv("112233445566",16,10));
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "epdu",6,2);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 6,2);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ups",6,2);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 7,1);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "main",6,1);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 8,4);
-
-insert into t_bios_asset_element (id_asset_element, name , id_type,id_parent)     values (NULL, "group1",1,NULL);
-insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group, id_asset_element) values (NULL, 1,6);
-insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group, id_asset_element) values (NULL, 1,7);
-insert into t_bios_asset_group_relation (id_asset_group_relation, id_asset_group, id_asset_element) values (NULL, 1,8);
-
-
-insert into t_bios_asset_link (id_link, id_asset_device_src, id_asset_device_dest,  id_asset_link_type, src_out, dest_in) values (NULL, 4,3,1,1,2);
-insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 3,2,1);
-insert into t_bios_asset_link (id_link,id_asset_device_src,id_asset_device_dest, id_asset_link_type) values (NULL, 2,1,1);
-
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "DC2",2, NULL);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM2",3,10);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM3",3,10);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROOM4",3,NULL);
-
-insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "total_facility_load","2",10);
-insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "contact","mike@nn.com",10);
-
-insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "description","room is very cute",13);
-insert into t_bios_asset_ext_attributes (id_asset_ext_attribute, keytag, value, id_asset_element) values (NULL, "flowers","yes, in this room there are only flowers",13);
-
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW4",4, NULL);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW2",4, 11);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW3",4, 12);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW5",4, 12);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW6",4, 10);
+    FOREIGN KEY (id_client)
+        REFERENCES t_bios_client(id_client)
+        ON DELETE RESTRICT
+);
 
 drop view if exists v_bios_device_type;
 drop view if exists v_bios_discovered_device;
@@ -319,6 +289,7 @@ drop view if exists v_bios_client;
 drop view if exists v_bios_client_info;
 drop view if exists v_bios_discovered_ip;
 drop view if exists v_bios_net_history;
+drop view if exists v_bios_client_info_measurements;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -332,14 +303,15 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
+create view v_bios_client_info_measurements as select  id_measurements, id_client , id_discovered_device, timestamp , id_measurement  ,  subkeytag , value from t_bios_client_info_measurements;
+
+
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
 
 create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
 create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client,id from v_bios_client_info  group by id_discovered_device, id_client;
-
-
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
@@ -349,6 +321,7 @@ DROP view if exists v_bios_asset_element;
 DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
+DROP view if exists v_bios_client_info_measurements_last;
 
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
@@ -358,3 +331,4 @@ create view v_bios_asset_group_relation as select * from t_bios_asset_group_rela
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
 
+create view v_bios_client_info_measurements_last as select max(timestamp), id_client, id_discovered_device, id_measurement , value from v_bios_client_info_measurements group by id_client, id_discovered_device, id_measurement, subkeytag; 
