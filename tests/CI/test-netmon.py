@@ -66,7 +66,7 @@ def decode_mac(mac_i):
 
     mac = ""
     for i in range(6):
-        mac = "%x:%s" % (0xff & mac_i, mac)
+        mac = "%02x:%s" % (0xff & mac_i, mac)
         mac_i = mac_i >> 8
     return mac[:-1]
 
