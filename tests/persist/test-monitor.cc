@@ -4,8 +4,8 @@
 #include <czmq.h>
 
 #include "common_msg.h"
-#include "monitorpersistence.h"
-#include "assetmsgpersistence.h"
+#include "monitor.h"
+#include "assetmsg.h"
 
 #include "dbpath.h"
 
