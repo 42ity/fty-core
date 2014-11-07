@@ -75,28 +75,29 @@ libpriv_cidr_la_SOURCES = 	src/utils/cidr.h \
 
 noinst_LTLIBRARIES += 		libpriv-db.la
 
-libpriv_db_la_SOURCES = 	src/utils/persistence.h \
-				src/utils/persistence/databaseobject.cc \
-				src/utils/persistence/databaseobject.h \
-				src/utils/persistence/databasetimeobject.cc \
-				src/utils/persistence/databasetimeobject.h \
-				src/utils/persistence/ip.cc \
-				src/utils/persistence/ip.h \
-				src/utils/persistence/nethistory.cc \
-				src/utils/persistence/nethistory.h \
-				src/utils/assetmsgpersistence.cc \
-				src/utils/assetmsgpersistence.h \
-				src/utils/persistencelogic.cc \
-				src/utils/persistencelogic.h \
+libpriv_db_la_SOURCES = 	src/persist/persistence.h \
+				src/persist/databaseobject.cc \
+				src/persist/databaseobject.h \
+				src/persist/databasetimeobject.cc \
+				src/persist/databasetimeobject.h \
+				src/persist/ip.cc \
+				src/persist/ip.h \
+				src/persist/nethistory.cc \
+				src/persist/nethistory.h \
+				src/persist/assetmsg.cc \
+				src/persist/assetmsg.h \
+				src/persist/persistencelogic.cc \
+				src/persist/persistencelogic.h \
+				src/persist/monitor.cc \
+				src/persist/monitor.h \
 				src/simple/common_msg.c \
 				src/simple/common_msg.h \
 				src/simple/netdisc_msg.c \
 				src/simple/netdisc_msg.h \
 				src/simple/powerdev_msg.c \
-				src/simple/powerdev_msg.h \
-				src/utils/monitorpersistence.cc \
-				src/utils/monitorpersistence.h
-libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/utils/persistence -I$(top_srcdir)/src/utils
+				src/simple/powerdev_msg.h
+
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/utils
 
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
@@ -283,6 +284,7 @@ simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} \
 simple_CPPFLAGS =			-I$(top_srcdir)/tools/ \
 					-I$(top_builddir)/tools/ \
 					-I$(top_srcdir)/src/utils/ \
+					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple/ \
 					-I$(top_srcdir)/src/drivers/nut
 simple_LDADD =				libpriv-db.la \
@@ -332,7 +334,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/simple/asset_msg.c src/utils/log.c
 bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
-		       -I$(top_builddir)/tools \
+		       -I$(top_builddir)/tools -I$(top_srcdir)/src/persist \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX}
@@ -343,7 +345,7 @@ bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la
 dist_noinst_HEADERS +=	src/web/include/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
-			src/utils/assetmsgpersistence.h \
+			src/persist/assetmsg.h \
 			tools/dbpath.h
 
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
