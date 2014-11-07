@@ -206,7 +206,7 @@ test_cidr_LDFLAGS =			-lcidr
 
 check_PROGRAMS += 			test-db
 
-test_db_SOURCES = 	tests/utils/test-nethistory.cc
+test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
 test_db_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
@@ -214,15 +214,15 @@ test_db_LDADD = 			libpriv-db.la \
 
 test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/utils/persistence \
+					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
 test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
 
 check_PROGRAMS += 			test-db2
 
-test_db2_SOURCES = 			tests/utils/persistence/test-monitor.cc \
-				 			tests/utils/persistence/test-monitor-clientinfo.cc \
+test_db2_SOURCES = 			tests/persist/test-monitor.cc \
+				 			tests/persist/test-monitor-clientinfo.cc \
 							src/simple/common_msg.h
 
 test_db2_LDADD = 			libpriv-db.la \
@@ -230,7 +230,7 @@ test_db2_LDADD = 			libpriv-db.la \
 					libpriv-test-run.la
 test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/utils/persistence \
+					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
