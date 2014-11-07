@@ -1,15 +1,30 @@
 <%pre>
+#include <iostream>
+#include <sstream>
 #include <cxxtools/regex.h>
+#include <cxxtools/jsondeserializer.h>
 </%pre>
 <%cpp>
     if(!request.isMethodGET()) {
 </%cpp>
 <%cpp>
-	    const std::string& body = request.getBody();
-	    cxxtools::Regex regex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+		std::stringstream input(request.getBody(), std::ios_base::in);
+		cxxtools::SerializationInfo si;
+		cxxtools::JsonDeserializer deserializer(input);
+		std::string time;
+		try {
+			deserializer.deserialize(si);
+			si.getMember("time") >>= time;
+		} catch (const std::exception& e) {
+			time = "";
+		}
 
-	    if(!regex.match(body) ||
-	        system((std::string("sudo date -s ") + body).c_str()) != 0) {
+	    static cxxtools::Regex regex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+
+		printf("\n%s\n", time.c_str());
+
+	    if(!regex.match(time) ||
+	        system((std::string("sudo date -s ") + time).c_str()) != 0) {
 </%cpp>
 { "error":"invalid_format" }
 <%cpp>
