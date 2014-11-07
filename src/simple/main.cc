@@ -44,7 +44,7 @@ void persistence_actor(zsock_t *pipe, void *args) {
         zmsg_t *msg = zmsg_recv(insock);
 
         try {
-            bool b = utils::db::process_message (url, msg);
+            bool b = persist::process_message (url, msg);
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "%To resolve this problem, please see README file\n");

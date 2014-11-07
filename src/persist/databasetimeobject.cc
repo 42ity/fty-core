@@ -25,14 +25,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */ 
  
 #include <string.h>
+#include <ctime>
+#include <iomanip>
 
 #include "databasetimeobject.h"
 #include "log.h"
-#include <iomanip>
-#include <ctime>
-namespace utils {
 
-namespace db {
+namespace persist {
 
 time_t convertToCTime(const tntdb::Datetime &datetime)
 {
@@ -149,7 +148,5 @@ setTimestamp(time_t timestamp)
     _timestamp = timestamp;
 }
 
-} // namespace db
-
-} // end namespace utils
+} // namespace persist
 

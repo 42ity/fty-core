@@ -23,15 +23,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
     
-#ifndef UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_
-#define UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_
+#ifndef SRC_PERSIST_DATABASETIMEOBJECT_H_
+#define SRC_PERSIST_DATABASETIMEOBJECT_H_
 
 #include "databaseobject.h"
 #include <string>
 #include <tntdb/datetime.h>
-namespace utils {
 
-namespace db { 
+namespace persist {
 
 /**
  * \brief Helper for transformation from tntdb::Datetime to time_t
@@ -175,8 +174,7 @@ class DataBaseTimeObject: public DataBaseObject
 
 }; // end of the class
 
-} // namespace db
+} // namespace persist
 
-}  // end of namespace utils
+#endif // SRC_PERSIST_DATABASETIMEOBJECT_H_
 
-#endif // UTILS_PERSISTENCE_DATABASETIMEOBJECT_H_

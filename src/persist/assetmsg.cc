@@ -15,7 +15,7 @@
 #include <tntdb/error.h>
 
 #include "log.h"
-#include "assetmsgpersistence.h"
+#include "assetmsg.h"
 #include "asset_types.h"
 
 

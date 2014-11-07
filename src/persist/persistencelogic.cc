@@ -34,16 +34,14 @@ References: BIOS-397
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
-#include "monitorpersistence.h"
+#include "monitor.h"
 #include "log.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
 #define NETHISTORY_EXCL_CMD     'e'
 
-namespace utils {
-
-namespace db {
+namespace persist {
 
 char nethistory_id_cmd (int id) {
     assert (id != 0);
@@ -147,11 +145,11 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
     std::string mac (netdisc_msg_mac (&msg_nc));
     char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
     assert(command);    // fail on unsupported type
-    CIDRAddress address (ipaddr, prefixlen);
+    utils::CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
 
-    utils::db::NetHistory nethistory(url);
+    persist::NetHistory nethistory(url);
     nethistory.setAddress(address);
     nethistory.setCommand(command);
     nethistory.setName(name);
@@ -365,7 +363,5 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
     return result;
 }
 
-} // namespace utils
-
-} // namespace db
+} // namespace persist
 

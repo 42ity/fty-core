@@ -1,14 +1,12 @@
-#ifndef UTILS_PERSISTENCELOGIC_H_
-#define UTILS_PERSISTENCELOGIC_H_
+#ifndef SRC_PERSIST_PERSISTENCELOGIC_H_
+#define SRC_PERSIST_PERSISTENCELOGIC_H_
 
 #include "czmq.h"
 #include "netdisc_msg.h"
 #include "powerdev_msg.h"
 #include "common_msg.h"
 
-namespace utils {
-
-namespace db {
+namespace persist {
 
 /**
  * \brief Processes the network discovery messages.
@@ -24,9 +22,7 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg);
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);
 
-} // namespace db
+} // namespace persist
 
-} // namespace utils
-
-#endif // UTILS_PERSISTENCELOGIC_H_
+#endif // SRC_PERSIST_PERSISTENCELOGIC_H_
 

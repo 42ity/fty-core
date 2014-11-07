@@ -22,17 +22,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
 
-#ifndef UTILS_PERSISTENCE_IP_H_
-#define UTILS_PERSISTENCE_IP_H_
+#ifndef SRC_PERSIST_IP_H_
+#define SRC_PERSIST_IP_H_
 
 #include "cidr.h"
 #include "databasetimeobject.h"
 
+
 class DeviceDiscovered;
 
-namespace utils {
-
-namespace db {
+namespace persist {
     
 /*
  * \brief IP is a class for representing a database entity
@@ -71,9 +70,9 @@ class Ip :public DataBaseTimeObject
 
         std::string getIp();
 
-        CIDRAddress getIpCIRD();
+        utils::CIDRAddress getIpCIRD();
 
-        void setIp(CIDRAddress ip);
+        void setIp(utils::CIDRAddress ip);
 
         void setDeviceDiscoveredId(int deviceDiscoveredId);
 
@@ -100,13 +99,13 @@ class Ip :public DataBaseTimeObject
 
         static std::vector<DeviceDiscovered> getIpHistory(std::string ip, dateType date_type, time_t date, time_t date2 = time(NULL));
 
-        static std::vector<DeviceDiscovered> getIpHistory(CIDRAddress ip, dateType date_type, time_t date, time_t date2 = time(NULL));
+        static std::vector<DeviceDiscovered> getIpHistory(utils::CIDRAddress ip, dateType date_type, time_t date, time_t date2 = time(NULL));
 
         std::vector<DeviceDiscovered> getIpHistory(int n = 0);
 
         static std::vector<DeviceDiscovered> getIpHistory(std::string ip, int n = 0);
 
-        static std::vector<DeviceDiscovered> getIpHistory(CIDRAddress ip, int n = 0);
+        static std::vector<DeviceDiscovered> getIpHistory(utils::CIDRAddress ip, int n = 0);
 
     protected:
         /**
@@ -149,15 +148,13 @@ class Ip :public DataBaseTimeObject
          */
         void clear_this();
         
-        CIDRAddress _ip;
+        utils::CIDRAddress _ip;
 
         int _deviceDiscoveredId;
 
 }; // end of the class
 
+} // namespace persist
 
-} // namespace db
+#endif // SRC_PERSIST_IP_H_
 
-}  // namespace utils
-
-#endif // UTILS_PERSISTENCE_IP_H_

@@ -1,5 +1,5 @@
-#ifndef UTILS_MONITORPERSISTENCE_H_
-#define UTILS_MONITORPERSISTENCE_H_
+#ifndef SRC_PERSIST_MONITOR_H_
+#define SRC_PERSIST_MONITOR_H_
 
 common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux);
 
@@ -147,4 +147,5 @@ common_msg_t* select_device (const char* url, const char* devicetype_name, const
 
 common_msg_t* insert_device(const char* url, const char* devicetype_name, const char* name);
 
-#endif
+#endif // SRC_PERSIST_MONITOR_H_
+

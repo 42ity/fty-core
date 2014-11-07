@@ -36,10 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nethistory.h"
 
  
-namespace utils {
-
-namespace db {
-
+namespace persist {
 
 //-----------------------------------------------------------
 
@@ -80,7 +77,7 @@ NetHistory::
 clear_this()
 {
     _mac =  "";
-    _address = CIDRAddress();
+    _address = utils::CIDRAddress();
     _command = 'z';
     _name = "";
 }
@@ -120,7 +117,7 @@ NetHistory::
 getMac() const
 {
     if (_mac != "")    
-        return utils::db::_addColonMac(_mac);
+        return persist::_addColonMac(_mac);
     else
         return "";
 }
@@ -168,7 +165,7 @@ db_insert()
     unsigned int n  = st.setChar("command", _command).
                          setInt("mask",_address.prefix()).
                          setString("mac",_mac).
-                         setString("ip",_address.toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                         setString("ip",_address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
                          setString("name",_name).
                          execute();
     
@@ -219,7 +216,7 @@ db_update()
         );
     
     // update one row or nothing
-    unsigned int n  = st.setString("ip", _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+    unsigned int n  = st.setString("ip", _address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
                          setInt("mask",_address.prefix()).
                          setString("mac", _mac).
                          setChar("command",_command).
@@ -263,7 +260,7 @@ selectById(int id)
         row[1].get(tmp_i);
 
         //address
-        _address = CIDRAddress(tmp_ip,tmp_i);
+        _address = utils::CIDRAddress(tmp_ip,tmp_i);
         _address = _address.network(); // put in network format, to be sure it is in network format
 
         //mac
@@ -276,7 +273,7 @@ selectById(int id)
         tntdb::Datetime mydatetime;
         bool isNotNull = row[4].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(utils::db::convertToCTime(mydatetime));
+            this->setTimestamp(persist::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -325,7 +322,7 @@ setMac(const std::string& mac_address)
     if (checkMac(mac_address))
     {
         std::string macc(mac_address);
-        utils::db::_removeColonMac(macc);
+        persist::_removeColonMac(macc);
     
         if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
             && ( this->getState() != ObjectState::OS_INSERTED ) )
@@ -348,10 +345,10 @@ setMac(const std::string& mac_address)
 
 void
 NetHistory::
-setAddress(const CIDRAddress& cidr_address)
+setAddress(const utils::CIDRAddress& cidr_address)
 {
     // We are not sure, if the passed address is in a network format, so convert it now
-    CIDRAddress newaddr = cidr_address.network();  
+    utils::CIDRAddress newaddr = cidr_address.network();  
     if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) 
         && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
@@ -416,7 +413,7 @@ db_select_timestamp()
         tntdb::Datetime mydatetime;
         bool isNotNull = value.get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(utils::db::convertToCTime(mydatetime));
+            this->setTimestamp(persist::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -471,7 +468,7 @@ checkUniqueManual() const
     //It must be called only for commands 'e' and  'm'
     tntdb::Result result = st.setChar("command", _command).
                               setString("ip", _address.
-                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
                               select();
     if (result.empty()) {
@@ -503,7 +500,7 @@ checkUniqueAuto() const
     //It must be called only for commands 'a'
     tntdb::Result result = st.setChar("command", _command).
                               setString("ip", _address.
-                              toString(CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
                               setString("mac",_mac).
                               setString("name",_name).
@@ -573,7 +570,7 @@ getHistory(const std::string& url)
             row[4].get(tmp_i);
 
             //address
-            CIDRAddress address = CIDRAddress(tmp_s,tmp_i);
+            utils::CIDRAddress address = utils::CIDRAddress(tmp_s,tmp_i);
             // put in network format, to be sure it is in network format
             address = address.network();
             newNetHistory->setAddress(address);
@@ -588,7 +585,7 @@ getHistory(const std::string& url)
             tntdb::Datetime mydatetime;
             bool isNotNull = row[6].get(mydatetime);
             if (isNotNull)
-                newNetHistory->setTimestamp(utils::db::convertToCTime(mydatetime));
+                newNetHistory->setTimestamp(persist::convertToCTime(mydatetime));
             else
             {
                 //TODO
@@ -607,6 +604,5 @@ getHistory(const std::string& url)
     return history;
 }
 
-} // namespace db
+} // namespace persist
 
-} //end of namespace utils

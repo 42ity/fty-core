@@ -25,9 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "databaseobject.h"
 #include "log.h"
 
-namespace utils {
-
-namespace db {
+namespace persist {
 
 void 
 DataBaseObject::
@@ -209,7 +207,5 @@ objectStatetoString(ObjectState objectstate)
     }
 }
 
-} // namespace db
-
-} // end namespace utils
+} // namespace persist
 

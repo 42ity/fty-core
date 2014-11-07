@@ -4,7 +4,7 @@
 
 #include "asset_msg.h"
 #include "data.h"
-#include "assetmsgpersistence.h"
+#include "assetmsg.h"
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;

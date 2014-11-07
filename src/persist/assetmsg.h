@@ -1,5 +1,5 @@
-#ifndef UTILS_ASSETMSGPERSISTENCE_H_
-#define UTILS_ASSETMSGPERSISTENCE_H_
+#ifndef SRC_PERSIST_ASSETMSG_H_
+#define SRC_PERSIST_ASSETMSG_H_
 
 #include "asset_msg.h"
 
@@ -11,7 +11,9 @@
 #define BIOS_ERROR_DB 1
 
 #define MAX_NAME_LENGTH 25 // For now it the maximum length of all fields nam
-# define MAX_DESCRIPTION_LENGTH 255
+#define MAX_DESCRIPTION_LENGTH 255
+
 asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg);
 
-#endif
+#endif // SRC_PERSIST_ASSETMSG_H_
+

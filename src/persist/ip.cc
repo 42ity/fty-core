@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  
     \author Alena Chernikava <alenachernikava@eaton.com>
 */ 
-#include "ip.h"
 #include <tntdb/connect.h>
 #include <tntdb/connection.h>
 
@@ -31,9 +30,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 #include <tntdb/error.h>
 
-namespace utils{
+#include "ip.h"
 
-namespace db {
+namespace persist {
 
 bool
 Ip::
@@ -146,7 +145,7 @@ selectById(int id)
         //ip
         std::string tmp_str="";
         row[0].get(tmp_str);
-        _ip = CIDRAddress(tmp_str);
+        _ip = utils::CIDRAddress(tmp_str);
     
         //id_discovereddevice
         _deviceDiscoveredId = -1;       //if NULL value was read
@@ -156,7 +155,7 @@ selectById(int id)
         tntdb::Datetime mydatetime;
         bool isNotNull = row[1].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(utils::db::convertToCTime(mydatetime));
+            this->setTimestamp(persist::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -221,7 +220,7 @@ Ip::getLastInfo(std::string url, std::string ip)
         tntdb::Datetime mydatetime;
         bool isNotNull = row[2].get(mydatetime);
         if (isNotNull)
-            newIp->setTimestamp(utils::db::convertToCTime(mydatetime));
+            newIp->setTimestamp(persist::convertToCTime(mydatetime));
         else
         {
             //TODO
@@ -254,13 +253,13 @@ void
 Ip::
 setIp(std::string ip)
 {
-    CIDRAddress newaddress(ip);
+    utils::CIDRAddress newaddress(ip);
     this->setIp(newaddress);
 }
 
 void 
 Ip::
-setIp(CIDRAddress ip)
+setIp(utils::CIDRAddress ip)
 {
    if ( (_ip != ip) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
     {
@@ -312,14 +311,14 @@ Ip(const std::string &url, const std::string &ip)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
-    _ip = CIDRAddress(ip);
+    _ip = utils::CIDRAddress(ip);
 }
 
 void
 Ip::
 clear_this()
 {
-    _ip = CIDRAddress("");
+    _ip = utils::CIDRAddress("");
 }
 
 void
@@ -330,8 +329,5 @@ clear()
     this->clear_this();
 }
 
-} // namespace db
-
-} // namespace utils
-
+} // namespace persist
 

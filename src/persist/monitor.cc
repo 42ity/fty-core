@@ -6,7 +6,7 @@
 #include <tntdb/result.h>
 
 #include "log.h"
-#include "assetmsgpersistence.h"
+#include "assetmsg.h"
 #include "common_msg.h"
 
 /**

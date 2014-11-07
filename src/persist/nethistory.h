@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */  
-#ifndef UTILS_PERSISTENCE_NETHISTORY_H_
-#define UTILS_PERSISTENCE_NETHISTORY_H_
+#ifndef SRC_PERSIST_NETHISTORY_H_
+#define SRC_PERSIST_NETHISTORY_H_
 
 #include <string>
 #include <ctime>
@@ -33,9 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cidr.h"
 #include "databasetimeobject.h"
 
-namespace utils {
-
-namespace db {
+namespace persist {
 
 bool checkMac (const std::string &mac_address);
 
@@ -92,7 +90,7 @@ class NetHistory : public DataBaseTimeObject
          *
          * \param cidr_address - new address.
          */    
-        void setAddress(const CIDRAddress& cidr_address);
+        void setAddress(const utils::CIDRAddress& cidr_address);
         
         /**
          * \brief Sets a new command address for the object.
@@ -122,13 +120,13 @@ class NetHistory : public DataBaseTimeObject
         
         int getMask() const { return _address.prefix(); };
         
-        std::string getIp() const { return _address.toString(CIDROptions::CIDR_WITHOUT_PREFIX); };
+        std::string getIp() const { return _address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX); };
         
         char getCommand() const { return _command; };
         
         const std::string& getName() const { return _name; };
         
-        const CIDRAddress& getAddress() const { return _address; };
+        const utils::CIDRAddress& getAddress() const { return _address; };
     
         unsigned int selectById(int id);
         
@@ -203,7 +201,7 @@ class NetHistory : public DataBaseTimeObject
 
         std::string _mac;
 
-        CIDRAddress _address;
+        utils::CIDRAddress _address;
 
         char _command;
 
@@ -211,9 +209,7 @@ class NetHistory : public DataBaseTimeObject
 
 }; // class NetHistory
 
-} // namespace db
+} // namespace persist
 
-}  // end of namespace utils
-
-#endif // UTILS_PERSISTENCE_NETHISTORY_H_
+#endif // SRC_PERSIST_NETHISTORY_H_
 
