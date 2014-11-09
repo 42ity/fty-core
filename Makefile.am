@@ -379,7 +379,6 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/drivers/*/*.h \
 					$(top_srcdir)/src/cli/*.h \
 					$(top_srcdir)/src/utils/*.h \
-					$(top_srcdir)/src/utils/*/*.h \
 					$(top_srcdir)/src/web/include/*.h
 
 # add CI tests to dist
