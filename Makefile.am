@@ -265,7 +265,7 @@ bin_PROGRAMS += 			simple
 simple_SOURCES = 			src/simple/main.cc \
 					src/simple/defs.h \
 					$(top_srcdir)/tools/dbinit.h \
-					src/utils/persistence.h \
+					src/persist/persistence.h \
 					src/simple/netdisc_msg.c \
 					src/simple/netdisc_msg.h \
 					src/simple/powerdev_msg.c \
@@ -369,9 +369,9 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_builddir)/tools/dbpath.h \
 					$(top_srcdir)/src/simple/*_msg.xml \
 					$(top_srcdir)/src/simple/*.h \
-					$(top_srcdir)/src/netmon/*.h \
-					$(top_srcdir)/src/netmon/*/*.h \
-					$(top_srcdir)/src/netmon/*/*/*.h \
+					$(top_srcdir)/src/drivers/netmon/*.h \
+					$(top_srcdir)/src/drivers/netmon/*/*.h \
+					$(top_srcdir)/src/drivers/netmon/*/*/*.h \
 					$(top_srcdir)/src/drivers/*/*.h \
 					$(top_srcdir)/src/cli/*.h \
 					$(top_srcdir)/src/utils/*.h \
