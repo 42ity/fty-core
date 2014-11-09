@@ -256,6 +256,7 @@ netmon_SOURCES = 			src/drivers/netmon/linux \
 # Consider moving zproto protocols to libpriv-...
 netmon_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/src/drivers/netmon \
+					-I$(top_srcdir)/src/include \
 					-D_GNU_SOURCE \
 					-I$(top_srcdir)/src/simple
 netmon_LDADD =				libpriv-utils.la libpriv-log.la
@@ -263,7 +264,7 @@ netmon_LDADD =				libpriv-utils.la libpriv-log.la
 bin_PROGRAMS += 			simple
 
 simple_SOURCES = 			src/simple/main.cc \
-					src/simple/defs.h \
+					src/include/defs.h \
 					$(top_srcdir)/tools/dbinit.h \
 					src/persist/persistence.h \
 					src/simple/netdisc_msg.c \
@@ -287,6 +288,7 @@ simple_CPPFLAGS =			-I$(top_srcdir)/tools/ \
 					-I$(top_srcdir)/src/utils/ \
 					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple/ \
+					-I$(top_srcdir)/src/include/ \
 					-I$(top_srcdir)/src/drivers/nut
 simple_LDADD =				libpriv-db.la \
 					libpriv-cidr.la \
