@@ -33,8 +33,6 @@
 #ifndef __POWERDEV_MSG_H_INCLUDED__
 #define __POWERDEV_MSG_H_INCLUDED__
 
-#include <czmq.h>
-
 /*  These are the powerdev_msg messages:
 
     POWERDEV_STATUS - Actual device status. Values, that allows UPS identification, are specified individually, rest is a dictionary
@@ -50,6 +48,8 @@
 #define POWERDEV_MSG_VERSION                1.0
 
 #define POWERDEV_MSG_POWERDEV_STATUS        201
+
+#include <czmq.h>
 
 #ifdef __cplusplus
 extern "C" {

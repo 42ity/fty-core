@@ -3,9 +3,7 @@
     signature = "1"
     title = "nmap scan results"
     script = "zproto_codec_c"
-    header = "."
-    source = "."
-    package_dir= "."
+    package_dir = "."
     include = "czmq.h"
     >
 

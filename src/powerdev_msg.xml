@@ -4,9 +4,7 @@
     signature = "2"
     title = "power device message"
     script = "zproto_codec_c"
-    header = "."
-    source = "."
-    package_dir= "."
+    package_dir = "."
     include = "czmq.h"
     >
 

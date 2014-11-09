@@ -9,8 +9,8 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-    * The XML model used for this code generation: netdisc_msg.xml
-    * The code generation script that built this file: zproto_codec_c
+     * The XML model used for this code generation: netdisc_msg.xml, or
+     * The code generation script that built this file: zproto_codec_c
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -78,6 +78,8 @@
 #define NETDISC_MSG_MAN_DEL                 4
 #define NETDISC_MSG_EXCL_ADD                5
 #define NETDISC_MSG_EXCL_DEL                6
+
+#include <czmq.h>
 
 #ifdef __cplusplus
 extern "C" {

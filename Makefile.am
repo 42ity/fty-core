@@ -90,14 +90,14 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/persistencelogic.h \
 				src/persist/monitor.cc \
 				src/persist/monitor.h \
-				src/simple/common_msg.c \
-				src/simple/common_msg.h \
-				src/simple/netdisc_msg.c \
-				src/simple/netdisc_msg.h \
-				src/simple/powerdev_msg.c \
-				src/simple/powerdev_msg.h
+				src/include/common_msg.c \
+				src/include/common_msg.h \
+				src/include/netdisc_msg.c \
+				src/include/netdisc_msg.h \
+				src/include/powerdev_msg.c \
+				src/include/powerdev_msg.h
 
-libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/simple -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/utils
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/simple
 
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
@@ -223,7 +223,7 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = 			tests/persist/test-monitor.cc \
 				 			tests/persist/test-monitor-clientinfo.cc \
-							src/simple/common_msg.h
+							src/include/common_msg.h
 
 test_db2_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
@@ -232,6 +232,7 @@ test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
 					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple \
+					-I$(top_srcdir)/src/include \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
 test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
@@ -250,10 +251,9 @@ netmon_SOURCES = 			src/drivers/netmon/linux \
 					src/drivers/netmon/netmon.c \
 					src/drivers/netmon/msg_send.cc \
 					src/drivers/netmon/msg_send.h \
-					src/simple/netdisc_msg.h \
-					src/simple/netdisc_msg.c
+					src/include/netdisc_msg.h \
+					src/include/netdisc_msg.c
 
-# Consider moving zproto protocols to libpriv-...
 netmon_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/src/drivers/netmon \
 					-I$(top_srcdir)/src/include \
@@ -267,15 +267,15 @@ simple_SOURCES = 			src/simple/main.cc \
 					src/include/defs.h \
 					$(top_srcdir)/tools/dbinit.h \
 					src/persist/persistence.h \
-					src/simple/netdisc_msg.c \
-					src/simple/netdisc_msg.h \
-					src/simple/powerdev_msg.c \
-					src/simple/common_msg.c \
-					src/simple/common_msg.h \
+					src/include/netdisc_msg.c \
+					src/include/netdisc_msg.h \
+					src/include/powerdev_msg.c \
+					src/include/common_msg.c \
+					src/include/common_msg.h \
 					src/drivers/nut/nut-actor.cc \
 					src/drivers/nut/nut-driver.cc \
-					src/simple/nmap_msg.h \
-					src/simple/nmap_msg.c
+					src/include/nmap_msg.h \
+					src/include/nmap_msg.c
 
 
 simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} \
@@ -295,9 +295,9 @@ simple_LDADD =				libpriv-db.la \
 					libpriv-log.la \
 					libpriv-subprocess.la
 
-dist_noinst_HEADERS +=			src/simple/asset_msg.h \
+dist_noinst_HEADERS +=			src/include/asset_msg.h \
 					src/simple/asset_types.h \
-					src/simple/powerdev_msg.h \
+					src/include/powerdev_msg.h \
 					src/drivers/nut/nut-actor.h \
 					src/drivers/nut/nut-driver.h
 
@@ -308,12 +308,12 @@ driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 					src/drivers/nmap/nmap.cc \
 					src/drivers/nmap/nmap-parse.h \
 					src/drivers/nmap/nmap-parse.cc \
-					src/simple/nmap_msg.h \
-					src/simple/nmap_msg.c
+					src/include/nmap_msg.h \
+					src/include/nmap_msg.c
 
 driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
 driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
-driver_nmap_CPPFLAGS =			-I$(top_srcdir)/src/simple \
+driver_nmap_CPPFLAGS =			-I$(top_srcdir)/src/simple -I$(top_srcdir)/src/include \
 					-I$(top_srcdir)/src/utils
 
 bin_PROGRAMS += fake_message
@@ -321,8 +321,9 @@ fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
 fake_message_CPPFLAGS = 		-I$(top_srcdir)/src/simple \
 					-I$(top_srcdir)/src/web/include \
 					-I$(top_srcdir)/tools \
+					-I$(top_srcdir)/src/include \
 					-I$(top_builddir)/tools
-fake_message_SOURCES = src/simple/asset_msg.c src/web/src/data.cpp \
+fake_message_SOURCES = src/include/asset_msg.c src/web/src/data.cpp \
                        src/web/fake_message.cpp
 
 # Generated header needed for any programs that use the database
@@ -334,10 +335,10 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/simple/asset_msg.c src/utils/log.c
+                      src/include/asset_msg.c src/utils/log.c
 bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
-		       -I$(top_builddir)/tools -I$(top_srcdir)/src/persist \
+		       -I$(top_builddir)/tools -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX}
@@ -369,7 +370,7 @@ web-test: tntnet.xml bios_web.la
 EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/tools/dbpath.h.in \
 					$(top_builddir)/tools/dbpath.h \
-					$(top_srcdir)/src/simple/*_msg.xml \
+					$(top_srcdir)/src/*_msg.xml \
 					$(top_srcdir)/src/simple/*.h \
 					$(top_srcdir)/src/drivers/netmon/*.h \
 					$(top_srcdir)/src/drivers/netmon/*/*.h \

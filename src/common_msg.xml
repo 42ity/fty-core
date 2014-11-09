@@ -4,9 +4,7 @@
     signature = "9"
     title = "common messages"
     script = "zproto_codec_c"
-    header = "."
-    source = "."
-    package_dir= "."
+    package_dir = "."
     include = "czmq.h"
     >
 

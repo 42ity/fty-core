@@ -3,8 +3,7 @@
     signature = "0"
     title = "network discovery protocol"
     script = "zproto_codec_c"
-    header = "."
-    source = "."    
+    package_dir = "."
     include = "czmq.h"
     >
 
