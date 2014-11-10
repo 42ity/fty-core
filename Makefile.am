@@ -16,11 +16,11 @@ TESTS =
 
 SUBDIRS = docs/man
 
-AM_CPPFLAGS = 			-include $(top_builddir)/config.h \
-				-I$(top_srcdir)/src/shared \
-				-I$(top_srcdir)/src/shared/messages \
-				-DDEBUG \
-				-DDEVEL
+AM_CPPFLAGS = -include $(top_builddir)/config.h \
+			  -I$(top_srcdir)/src/shared \
+			  -I$(top_srcdir)/src/include \
+			  -DDEBUG \
+			  -DDEVEL
 
 
 AM_CFLAGS =			${my_CFLAGS} \
@@ -212,29 +212,31 @@ test_db_LDADD = 			libpriv-db.la \
 					libpriv-cidr.la \
 					libpriv-test-run.la
 
-test_db_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+test_db_CPPFLAGS = $(AM_CPPFLAGS) \
+				   -I$(top_srcdir)/tests/include/ \
+				   -I$(top_srcdir)/src/persist \
+				   -I$(top_srcdir)/tools \
+				   -I$(top_builddir)/tools
+
 test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
 
 check_PROGRAMS += 			test-db2
 
-test_db2_SOURCES = 			tests/persist/test-monitor.cc \
-				 			tests/persist/test-monitor-clientinfo.cc \
-							src/include/common_msg.h
+test_db2_SOURCES = tests/persist/test-monitor.cc \
+				   tests/persist/test-monitor-clientinfo.cc \
+				   src/include/common_msg.h
 
-test_db2_LDADD = 			libpriv-db.la \
-					libpriv-cidr.la \
-					libpriv-test-run.la
-test_db2_CPPFLAGS =			$(AM_CPPFLAGS) \
+test_db2_LDADD = libpriv-db.la \
+				 libpriv-cidr.la \
+				 libpriv-test-run.la
+
+test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \
 					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/src/include \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
+
 test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
 
 TESTS += $(check_PROGRAMS)
@@ -247,74 +249,74 @@ TESTS += $(check_SCRIPTS)
 bin_PROGRAMS += 			netmon
 netmon_LDFLAGS =			-lnetlink $(LIBZMQ_LIBS) \
 					${LIBCZMQ_LIBS}
-netmon_SOURCES = 			src/drivers/netmon/linux \
-					src/drivers/netmon/netmon.c \
-					src/drivers/netmon/msg_send.cc \
-					src/drivers/netmon/msg_send.h \
-					src/include/netdisc_msg.h \
-					src/include/netdisc_msg.c
+netmon_SOURCES = src/drivers/netmon/linux \
+				 src/drivers/netmon/netmon.c \
+				 src/drivers/netmon/msg_send.cc \
+				 src/drivers/netmon/msg_send.h \
+				 src/include/netdisc_msg.h \
+				 src/include/netdisc_msg.c
 
-netmon_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/src/drivers/netmon \
-					-I$(top_srcdir)/src/include \
-					-D_GNU_SOURCE \
-					-I$(top_srcdir)/src/simple
-netmon_LDADD =				libpriv-utils.la libpriv-log.la
+netmon_CPPFLAGS = $(AM_CPPFLAGS) \
+				  -I$(top_srcdir)/src/drivers/netmon \
+				  -D_GNU_SOURCE \
+				  -I$(top_srcdir)/src/simple
 
-bin_PROGRAMS += 			simple
+netmon_LDADD = libpriv-utils.la libpriv-log.la
 
-simple_SOURCES = 			src/simple/main.cc \
-					src/include/defs.h \
-					$(top_srcdir)/tools/dbinit.h \
-					src/persist/persistence.h \
-					src/include/netdisc_msg.c \
-					src/include/netdisc_msg.h \
-					src/include/powerdev_msg.c \
-					src/include/common_msg.c \
-					src/include/common_msg.h \
-					src/drivers/nut/nut-actor.cc \
-					src/drivers/nut/nut-driver.cc \
-					src/include/nmap_msg.h \
-					src/include/nmap_msg.c
+bin_PROGRAMS += simple
+
+simple_SOURCES = src/simple/main.cc \
+				 src/include/defs.h \
+				 $(top_srcdir)/tools/dbinit.h \
+				 src/persist/persistence.h \
+				 src/include/netdisc_msg.c \
+				 src/include/netdisc_msg.h \
+				 src/include/powerdev_msg.c \
+				 src/include/common_msg.c \
+				 src/include/common_msg.h \
+				 src/drivers/nut/nut-actor.cc \
+				 src/drivers/nut/nut-driver.cc \
+				 src/include/nmap_msg.h \
+				 src/include/nmap_msg.c
+
+simple_LDFLAGS = -lcidr \
+				 ${LIBCZMQ_LIBS} \
+				 ${LIBNUTCLIENT_LIBS} \
+				 -lcxxtools \
+				 -ltntdb
+
+simple_CPPFLAGS = $(AM_CPPFLAGS) \
+				  -I$(top_srcdir)/tools/ \
+				  -I$(top_builddir)/tools/ \
+				  -I$(top_srcdir)/src/persist \
+				  -I$(top_srcdir)/src/simple/ \
+				  -I$(top_srcdir)/src/drivers/nut
+
+simple_LDADD = libpriv-db.la \
+			   libpriv-cidr.la \
+			   libpriv-log.la \
+			   libpriv-subprocess.la
+
+dist_noinst_HEADERS += src/include/asset_msg.h \
+					   src/simple/asset_types.h \
+					   src/include/powerdev_msg.h \
+					   src/drivers/nut/nut-actor.h \
+					   src/drivers/nut/nut-driver.h
 
 
-simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} \
-					${LIBNUTCLIENT_LIBS} \
-					-lcxxtools -ltntdb
-#simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} ${LIBZMQ_LIBS} \
-#					-lcxxtools -ltntdb
-simple_CPPFLAGS =			-I$(top_srcdir)/tools/ \
-					-I$(top_builddir)/tools/ \
-					-I$(top_srcdir)/src/shared/ \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/simple/ \
-					-I$(top_srcdir)/src/include/ \
-					-I$(top_srcdir)/src/drivers/nut
-simple_LDADD =				libpriv-db.la \
-					libpriv-cidr.la \
-					libpriv-log.la \
-					libpriv-subprocess.la
+bin_PROGRAMS += driver-nmap
 
-dist_noinst_HEADERS +=			src/include/asset_msg.h \
-					src/simple/asset_types.h \
-					src/include/powerdev_msg.h \
-					src/drivers/nut/nut-actor.h \
-					src/drivers/nut/nut-driver.h
+driver_nmap_SOURCES = src/drivers/nmap/nmap-driver.h \
+					  src/drivers/nmap/nmap.cc \
+					  src/drivers/nmap/nmap-parse.h \
+					  src/drivers/nmap/nmap-parse.cc \
+					  src/include/nmap_msg.h \
+					  src/include/nmap_msg.c
 
-
-bin_PROGRAMS += 			driver-nmap
-
-driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
-					src/drivers/nmap/nmap.cc \
-					src/drivers/nmap/nmap-parse.h \
-					src/drivers/nmap/nmap-parse.cc \
-					src/include/nmap_msg.h \
-					src/include/nmap_msg.c
-
-driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
-driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
-driver_nmap_CPPFLAGS =			-I$(top_srcdir)/src/simple -I$(top_srcdir)/src/include \
-					-I$(top_srcdir)/src/shared
+driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la
+driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
+driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
+			   		   -I$(top_srcdir)/src/simple
 
 bin_PROGRAMS += fake_message
 fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
@@ -336,14 +338,19 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
                       src/include/asset_msg.c src/shared/log.c
-bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/shared \
-                       -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
-		       -I$(top_builddir)/tools -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist \
+bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
-					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX}
-bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBSODIUM_LIBS} \
-                      ${LIBSASL2_LIBS} -module -lm -ltntdb -ltntnet -lcidr
+					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
+					   -I$(top_srcdir)/src/simple \
+				   	   -I$(top_srcdir)/src/web/include \
+					   -I$(top_srcdir)/tools \
+				   	   -I$(top_builddir)/tools \
+					   -I$(top_srcdir)/src/persist
+
+bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
+					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
+					  -module -lm -ltntdb -ltntnet -lcidr
 bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la
 
 dist_noinst_HEADERS +=	src/web/include/data.h \
