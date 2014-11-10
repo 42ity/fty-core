@@ -145,7 +145,7 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
     std::string mac (netdisc_msg_mac (&msg_nc));
     char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
     assert(command);    // fail on unsupported type
-    utils::CIDRAddress address (ipaddr, prefixlen);
+    shared::CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
 

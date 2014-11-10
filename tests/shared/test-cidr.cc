@@ -1,7 +1,7 @@
 #include <catch.hpp>
 #include <cidr.h>
 
-using namespace utils;
+using namespace shared;
 
 TEST_CASE("CIDR Operators","[cidr][operators]") {
   CIDRAddress a4small("127.0.0.1"),a4big("127.0.0.2"),a6small("::1"),a6big("::2");

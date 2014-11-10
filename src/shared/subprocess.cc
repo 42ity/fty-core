@@ -28,7 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <time.h>
 
-namespace utils {
+namespace shared {
 
 // forward declaration of helper functions
 // TODO: move somewhere else
@@ -374,4 +374,5 @@ std::size_t _argv_hash(Argv args) {
     return ret;
 }
 
-} //namespace utils
+} //namespace shared
+

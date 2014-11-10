@@ -90,7 +90,7 @@ class NetHistory : public DataBaseTimeObject
          *
          * \param cidr_address - new address.
          */    
-        void setAddress(const utils::CIDRAddress& cidr_address);
+        void setAddress(const shared::CIDRAddress& cidr_address);
         
         /**
          * \brief Sets a new command address for the object.
@@ -120,13 +120,13 @@ class NetHistory : public DataBaseTimeObject
         
         int getMask() const { return _address.prefix(); };
         
-        std::string getIp() const { return _address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX); };
+        std::string getIp() const { return _address.toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX); };
         
         char getCommand() const { return _command; };
         
         const std::string& getName() const { return _name; };
         
-        const utils::CIDRAddress& getAddress() const { return _address; };
+        const shared::CIDRAddress& getAddress() const { return _address; };
     
         unsigned int selectById(int id);
         
@@ -201,7 +201,7 @@ class NetHistory : public DataBaseTimeObject
 
         std::string _mac;
 
-        utils::CIDRAddress _address;
+        shared::CIDRAddress _address;
 
         char _command;
 

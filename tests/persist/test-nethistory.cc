@@ -30,7 +30,7 @@ TEST_CASE("net history getters","[dbnethistory][constructor1][toString] \\
     REQUIRE( dbnethistory.getName() == "" );
     REQUIRE( dbnethistory.getTimestamp() == tmp_t );
     REQUIRE( dbnethistory.toString() == expected );
-    utils::CIDRAddress nn();
+    shared::CIDRAddress nn();
     //TODO doesn't work
     //REQUIRE( dbnethistory.getAddress() == nn );
 }
@@ -38,7 +38,7 @@ TEST_CASE("net history getters","[dbnethistory][constructor1][toString] \\
 TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
     persist::NetHistory dbnethistory(url);
     std::string newname = "insert_delete";
-    utils::CIDRAddress newaddress("1.1.1.1",8);
+    shared::CIDRAddress newaddress("1.1.1.1",8);
     std::string newmac = "12:34:56:78:91:11";
     dbnethistory.setName(newname);
     dbnethistory.setAddress(newaddress);
@@ -91,7 +91,7 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
     
     persist::NetHistory dbnethistory(url);
     std::string newname = "selectById";
-    utils::CIDRAddress newaddress("1.2.3.4",8);
+    shared::CIDRAddress newaddress("1.2.3.4",8);
     std::string newmac = "11:22:33:AA:91:11";
     dbnethistory.setName(newname);
     dbnethistory.setAddress(newaddress);

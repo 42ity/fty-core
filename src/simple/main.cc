@@ -20,8 +20,8 @@
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
 
-static const utils::Argv args{"./netmon"};
-static utils::SubProcess netmon_proc{args};
+static const shared::Argv args{"./netmon"};
+static shared::SubProcess netmon_proc{args};
 
 void persistence_actor(zsock_t *pipe, void *args) {
 

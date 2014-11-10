@@ -145,7 +145,7 @@ selectById(int id)
         //ip
         std::string tmp_str="";
         row[0].get(tmp_str);
-        _ip = utils::CIDRAddress(tmp_str);
+        _ip = shared::CIDRAddress(tmp_str);
     
         //id_discovereddevice
         _deviceDiscoveredId = -1;       //if NULL value was read
@@ -253,13 +253,13 @@ void
 Ip::
 setIp(std::string ip)
 {
-    utils::CIDRAddress newaddress(ip);
+    shared::CIDRAddress newaddress(ip);
     this->setIp(newaddress);
 }
 
 void 
 Ip::
-setIp(utils::CIDRAddress ip)
+setIp(shared::CIDRAddress ip)
 {
    if ( (_ip != ip) && (this->getState() != ObjectState::OS_DELETED)&&(this->getState() != ObjectState::OS_INSERTED)  )
     {
@@ -311,14 +311,14 @@ Ip(const std::string &url, const std::string &ip)
     :DataBaseTimeObject(url)
 {
     this->clear_this();
-    _ip = utils::CIDRAddress(ip);
+    _ip = shared::CIDRAddress(ip);
 }
 
 void
 Ip::
 clear_this()
 {
-    _ip = utils::CIDRAddress("");
+    _ip = shared::CIDRAddress("");
 }
 
 void

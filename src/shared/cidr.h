@@ -42,8 +42,8 @@ Example:
 */  
     
     
-#ifndef SRC_UTILS_CIDR_H_
-#define SRC_UTILS_CIDR_H_
+#ifndef SRC_SHARED_CIDR_H_
+#define SRC_SHARED_CIDR_H_
 
 extern "C" {
 #include <libcidr.h>
@@ -52,7 +52,7 @@ extern "C" {
 #include <string>
 #include <iostream>
 
-namespace utils {
+namespace shared {
 
 /**
  * \enum CIDROptions
@@ -523,7 +523,7 @@ private:
 };
 
 
-} // namespace utils
+} // namespace shared
 
-#endif // SRC_UTILS_CIDR_H_
+#endif // SRC_SHARED_CIDR_H_
 

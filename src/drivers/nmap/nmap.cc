@@ -36,10 +36,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nmap-parse.h"
 #include "log.h"
 
-typedef utils::ProcessQue ProcessQue;
-typedef utils::SubProcess SubProcess;
-typedef utils::Argv Argv;
-typedef utils::ProcCacheMap ProcCacheMap;
+typedef shared::ProcessQue ProcessQue;
+typedef shared::SubProcess SubProcess;
+typedef shared::Argv Argv;
+typedef shared::ProcCacheMap ProcCacheMap;
 
 // TODO move to defs.h
 static const char* DRIVER_NMAP_SOCK = "ipc://@/bios/driver/nmap";

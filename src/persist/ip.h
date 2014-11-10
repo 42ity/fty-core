@@ -70,9 +70,9 @@ class Ip :public DataBaseTimeObject
 
         std::string getIp();
 
-        utils::CIDRAddress getIpCIRD();
+        shared::CIDRAddress getIpCIRD();
 
-        void setIp(utils::CIDRAddress ip);
+        void setIp(shared::CIDRAddress ip);
 
         void setDeviceDiscoveredId(int deviceDiscoveredId);
 
@@ -99,13 +99,13 @@ class Ip :public DataBaseTimeObject
 
         static std::vector<DeviceDiscovered> getIpHistory(std::string ip, dateType date_type, time_t date, time_t date2 = time(NULL));
 
-        static std::vector<DeviceDiscovered> getIpHistory(utils::CIDRAddress ip, dateType date_type, time_t date, time_t date2 = time(NULL));
+        static std::vector<DeviceDiscovered> getIpHistory(shared::CIDRAddress ip, dateType date_type, time_t date, time_t date2 = time(NULL));
 
         std::vector<DeviceDiscovered> getIpHistory(int n = 0);
 
         static std::vector<DeviceDiscovered> getIpHistory(std::string ip, int n = 0);
 
-        static std::vector<DeviceDiscovered> getIpHistory(utils::CIDRAddress ip, int n = 0);
+        static std::vector<DeviceDiscovered> getIpHistory(shared::CIDRAddress ip, int n = 0);
 
     protected:
         /**
@@ -148,7 +148,7 @@ class Ip :public DataBaseTimeObject
          */
         void clear_this();
         
-        utils::CIDRAddress _ip;
+        shared::CIDRAddress _ip;
 
         int _deviceDiscoveredId;
 

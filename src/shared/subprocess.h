@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Michal Vyskocil <michalvyskocil@eaton.com>
  */
 
-#ifndef _SRC_UTILS_SUBPROCESS_H
-#define _SRC_UTILS_SUBPROCESS_H
+#ifndef _SRC_SHARED_SUBPROCESS_H
+#define _SRC_SHARED_SUBPROCESS_H
 
 #include <cxxtools/posix/fork.h>
 
@@ -71,7 +71,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * processes run and poll'ed in parallel.
  */
 
-namespace utils {
+namespace shared {
 
 //! \brief list of arguments    
 typedef std::vector<std::string> Argv;
@@ -316,7 +316,7 @@ class ProcCacheMap {
 };
 
 
-} //namespace utils
+} //namespace shared
 
-#endif //_SRC_UTILS_SUBPROCESS_H
+#endif //_SRC_SHARED_SUBPROCESS_H
 

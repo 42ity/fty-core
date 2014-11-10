@@ -2,7 +2,7 @@
 #include <cstdio>
 #include <stdlib.h>
 
-namespace utils {
+namespace shared {
 
 CIDRAddress::CIDRAddress() {
   _cidr = NULL;
@@ -581,4 +581,5 @@ CIDRList::~CIDRList(){
 
 }
 
-} // namespace utils
+} // namespace shared
+

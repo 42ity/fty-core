@@ -77,7 +77,7 @@ NetHistory::
 clear_this()
 {
     _mac =  "";
-    _address = utils::CIDRAddress();
+    _address = shared::CIDRAddress();
     _command = 'z';
     _name = "";
 }
@@ -165,7 +165,7 @@ db_insert()
     unsigned int n  = st.setChar("command", _command).
                          setInt("mask",_address.prefix()).
                          setString("mac",_mac).
-                         setString("ip",_address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
+                         setString("ip",_address.toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX)).
                          setString("name",_name).
                          execute();
     
@@ -216,7 +216,7 @@ db_update()
         );
     
     // update one row or nothing
-    unsigned int n  = st.setString("ip", _address.toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
+    unsigned int n  = st.setString("ip", _address.toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX)).
                          setInt("mask",_address.prefix()).
                          setString("mac", _mac).
                          setChar("command",_command).
@@ -260,7 +260,7 @@ selectById(int id)
         row[1].get(tmp_i);
 
         //address
-        _address = utils::CIDRAddress(tmp_ip,tmp_i);
+        _address = shared::CIDRAddress(tmp_ip,tmp_i);
         _address = _address.network(); // put in network format, to be sure it is in network format
 
         //mac
@@ -345,10 +345,10 @@ setMac(const std::string& mac_address)
 
 void
 NetHistory::
-setAddress(const utils::CIDRAddress& cidr_address)
+setAddress(const shared::CIDRAddress& cidr_address)
 {
     // We are not sure, if the passed address is in a network format, so convert it now
-    utils::CIDRAddress newaddr = cidr_address.network();  
+    shared::CIDRAddress newaddr = cidr_address.network();  
     if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) 
         && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
@@ -468,7 +468,7 @@ checkUniqueManual() const
     //It must be called only for commands 'e' and  'm'
     tntdb::Result result = st.setChar("command", _command).
                               setString("ip", _address.
-                              toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
                               select();
     if (result.empty()) {
@@ -500,7 +500,7 @@ checkUniqueAuto() const
     //It must be called only for commands 'a'
     tntdb::Result result = st.setChar("command", _command).
                               setString("ip", _address.
-                              toString(utils::CIDROptions::CIDR_WITHOUT_PREFIX)).
+                              toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX)).
                               setInt("mask",_address.prefix()).
                               setString("mac",_mac).
                               setString("name",_name).
@@ -570,7 +570,7 @@ getHistory(const std::string& url)
             row[4].get(tmp_i);
 
             //address
-            utils::CIDRAddress address = utils::CIDRAddress(tmp_s,tmp_i);
+            shared::CIDRAddress address = shared::CIDRAddress(tmp_s,tmp_i);
             // put in network format, to be sure it is in network format
             address = address.network();
             newNetHistory->setAddress(address);

@@ -7,7 +7,7 @@
 
 #include "subprocess.h"
 
-using namespace utils;
+using namespace shared;
 
 TEST_CASE("subprocess-wait-true", "[subprocess][wait]") {
 
