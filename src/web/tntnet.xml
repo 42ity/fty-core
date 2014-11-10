@@ -49,6 +49,12 @@
         <type>$1</type>
       </args>
     </mapping>
+
+    <!-- Network list -->
+    <mapping>
+      <target>networks@bios_web</target>
+      <url>^/api/v1/admin/networks.*$</url>
+    </mapping>
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
