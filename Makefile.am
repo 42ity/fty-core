@@ -17,8 +17,8 @@ TESTS =
 SUBDIRS = docs/man
 
 AM_CPPFLAGS = 			-include $(top_builddir)/config.h \
-				-I$(top_srcdir)/src/utils \
-				-I$(top_srcdir)/src/utils/messages \
+				-I$(top_srcdir)/src/shared \
+				-I$(top_srcdir)/src/shared/messages \
 				-DDEBUG \
 				-DDEVEL
 
@@ -49,29 +49,29 @@ dist_noinst_HEADERS =
 #----------------------------------------------------------------------
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
-libpriv_utils_la_SOURCES = 	src/utils/utils.c \
-				src/utils/utils.h
+libpriv_utils_la_SOURCES = 	src/shared/utils.c \
+				src/shared/utils.h
 
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
-libpriv_log_la_SOURCES = 	src/utils/log.h \
-				src/utils/log.c
+libpriv_log_la_SOURCES = 	src/shared/log.h \
+				src/shared/log.c
 
 libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
 
-libpriv_subprocess_la_SOURCES = src/utils/subprocess.h \
-				src/utils/subprocess.cc
+libpriv_subprocess_la_SOURCES = src/shared/subprocess.h \
+				src/shared/subprocess.cc
 
 libpriv_subprocess_la_LIBADD = -lcxxtools
 
 noinst_LTLIBRARIES += 		libpriv-cidr.la
 
-libpriv_cidr_la_SOURCES = 	src/utils/cidr.h \
-				src/utils/cidr.cc
+libpriv_cidr_la_SOURCES = 	src/shared/cidr.h \
+				src/shared/cidr.cc
 
 noinst_LTLIBRARIES += 		libpriv-db.la
 
@@ -97,7 +97,7 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/include/powerdev_msg.c \
 				src/include/powerdev_msg.h
 
-libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/utils -I$(top_srcdir)/src/simple
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/shared -I$(top_srcdir)/src/simple
 
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
@@ -169,17 +169,17 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 #----------------------------------------------------------------------
 
 check_PROGRAMS += 			test-utils
-test_utils_SOURCES = 			src/utils/utils.h \
-					tests/utils/test-utils.cc
+test_utils_SOURCES = 			src/shared/utils.h \
+					tests/shared/test-utils.cc
 test_utils_LDADD = 			libpriv-utils.la \
 					libpriv-test-run.la
 test_utils_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-log
-test_log_SOURCES = 			src/utils/log.h \
-					src/utils/utils.h \
-					tests/utils/test-log.cc
+test_log_SOURCES = 			src/shared/log.h \
+					src/shared/utils.h \
+					tests/shared/test-log.cc
 test_log_LDADD = 			libpriv-log.la \
 					libpriv-utils.la \
 					libpriv-test-run.la
@@ -187,8 +187,8 @@ test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-subprocess
-test_subprocess_SOURCES = 		src/utils/subprocess.h \
-					tests/utils/test-subprocess.cc
+test_subprocess_SOURCES = 		src/shared/subprocess.h \
+					tests/shared/test-subprocess.cc
 test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
@@ -196,8 +196,8 @@ test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
 test_subprocess_LDFLAGS =		-lcxxtools -lcidr
 
 check_PROGRAMS += 			test-cidr
-test_cidr_SOURCES = 			src/utils/cidr.cc \
-					tests/utils/test-cidr.cc
+test_cidr_SOURCES = 			src/shared/cidr.cc \
+					tests/shared/test-cidr.cc
 test_cidr_LDADD = 			libpriv-test-run.la
 test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
@@ -285,7 +285,7 @@ simple_LDFLAGS =			-lcidr ${LIBCZMQ_LIBS} \
 #					-lcxxtools -ltntdb
 simple_CPPFLAGS =			-I$(top_srcdir)/tools/ \
 					-I$(top_builddir)/tools/ \
-					-I$(top_srcdir)/src/utils/ \
+					-I$(top_srcdir)/src/shared/ \
 					-I$(top_srcdir)/src/persist \
 					-I$(top_srcdir)/src/simple/ \
 					-I$(top_srcdir)/src/include/ \
@@ -314,7 +314,7 @@ driver_nmap_SOURCES = 			src/drivers/nmap/nmap-driver.h \
 driver_nmap_LDADD =			libpriv-subprocess.la libpriv-log.la
 driver_nmap_LDFLAGS =			${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
 driver_nmap_CPPFLAGS =			-I$(top_srcdir)/src/simple -I$(top_srcdir)/src/include \
-					-I$(top_srcdir)/src/utils
+					-I$(top_srcdir)/src/shared
 
 bin_PROGRAMS += fake_message
 fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
@@ -335,8 +335,8 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/include/asset_msg.c src/utils/log.c
-bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/utils \
+                      src/include/asset_msg.c src/shared/log.c
+bios_web_la_CPPFLAGS = -I$(top_srcdir)/src/simple  -I$(top_srcdir)/src/shared \
                        -I$(top_srcdir)/src/web/include -I$(top_srcdir)/tools \
 		       -I$(top_builddir)/tools -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
@@ -378,7 +378,7 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 					$(top_srcdir)/src/drivers/netmon/*/*/*.h \
 					$(top_srcdir)/src/drivers/*/*.h \
 					$(top_srcdir)/src/cli/*.h \
-					$(top_srcdir)/src/utils/*.h \
+					$(top_srcdir)/src/shared/*.h \
 					$(top_srcdir)/src/web/include/*.h
 
 # add CI tests to dist
