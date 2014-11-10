@@ -9,7 +9,7 @@
 #include <cxxtools/directory.h>
 #include <cxxtools/regex.h>
 #include "dbpath.h"
-#include "assetmsgpersistence.h"
+#include "assetmsg.h"
 
 asset_msg_t *asset_manager::get_item(std::string type, std::string id) {
     byte real_type = asset_manager::type_to_byte(type);

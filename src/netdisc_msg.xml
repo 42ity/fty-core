@@ -1,0 +1,62 @@
+<class
+    name = "netdisc_msg"
+    signature = "0"
+    title = "network discovery protocol"
+    script = "zproto_codec_c"
+    package_dir = "."
+    include = "czmq.h"
+    >
+
+<!-- this includes our Eaton license into the generated header and source files -->
+<include filename = "license.xml" />
+
+<!-- This is here for a purpose. DO CHANGE it if back-compatibility breaking change occurs -->
+<define name = "VERSION" value = "1.0" />
+
+<message name = "auto_add" id = "1">
+Add automatically discovered network.
+    <field name = "name" type = "string">network interface name</field>
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+    <field name = "mac" type = "string">mac address</field>
+</message>
+
+<message name = "auto_del" id = "2">
+Remove automatically discovered netowork.
+    <field name = "name" type = "string">network interface name</field>
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+    <field name = "mac" type = "string">mac address</field>
+</message>
+
+<message name = "man_add" id = "3">
+Manually added network.
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+</message>
+
+<message name = "man_del" id = "4">
+Manually excluded network.
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+</message>
+
+<message name = "excl_add" id = "5">
+Revert manually added network.
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+</message>
+
+<message name = "excl_del" id = "6">
+Revert manually excluded network.
+    <field name = "ipver" type = "number" size = "1">ip version; 0 - IPV4, 1 - IPV6</field>
+    <field name = "ipaddr" type = "string">ip address</field>
+    <field name = "prefixlen" type = "number" size = "1">ip prefix length</field>
+</message>
+
+</class>

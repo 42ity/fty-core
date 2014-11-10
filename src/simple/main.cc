@@ -20,8 +20,8 @@
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
 
-static const utils::Argv args{"./netmon"};
-static utils::SubProcess netmon_proc{args};
+static const shared::Argv args{"./netmon"};
+static shared::SubProcess netmon_proc{args};
 
 void persistence_actor(zsock_t *pipe, void *args) {
 
@@ -44,7 +44,7 @@ void persistence_actor(zsock_t *pipe, void *args) {
         zmsg_t *msg = zmsg_recv(insock);
 
         try {
-            bool b = utils::db::process_message (url, msg);
+            bool b = persist::process_message (url, msg);
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "%To resolve this problem, please see README file\n");
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    zactor_t *nut = zactor_new( nut_actor, NULL);
+    zactor_t *nut = zactor_new (drivers::nut::nut_actor, NULL);
     assert(nut);
     
     zpoller_t *poller = zpoller_new(netmon, db, nut, NULL);

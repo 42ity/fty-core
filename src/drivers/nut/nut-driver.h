@@ -20,14 +20,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Tomas Halman <tomashalman@eaton.com>
 */
 
-#ifndef _SRC_DRIVERS_NUT_DRIVER_H_
-#define _SRC_DRIVERS_NUT_DRIVER_H_
+#ifndef SRC_DRIVERS_NUT_NUT_DRIVER_H_
+#define SRC_DRIVERS_NUT_NUT_DRIVER_H_
 
 #include <map>
 #include <vector>
 #include <nutclient.h>
 #include <czmq.h>
 
+namespace nutclient = nut;
+
+namespace drivers
+{
+namespace nut
+{
 /**
  * \class NUTDevice
  *
@@ -205,7 +211,7 @@ class NUTDeviceList {
     ~NUTDeviceList();
  private:
     //! \brief Connection to NUT daemon
-    nut::TcpClient nutClient;
+    nutclient::TcpClient nutClient;
 
     //! \brief list of NUT devices
     std::map<std::string, NUTDevice> _devices;  
@@ -223,6 +229,8 @@ class NUTDeviceList {
     void updateDeviceStatus();
 };
 
+} // namespace drivers::nut
+} // namespace drivers
 
+#endif // SRC_DRIVERS_NUT_NUT_DRIVER_H_
 
-#endif // _SRC_DRIVERS_NUT_DRIVER_H_

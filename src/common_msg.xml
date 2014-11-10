@@ -1,0 +1,167 @@
+<!-- see https://github.com/zeromq/zproto/blob/master/src/zproto_example.xml -->
+<class
+    name = "common_msg"
+    signature = "9"
+    title = "common messages"
+    script = "zproto_codec_c"
+    package_dir = "."
+    include = "czmq.h"
+    >
+
+<include filename = "license.xml" />
+
+<define name = "VERSION" value = "1.0" />
+
+<message name = "fail"          id = "201">
+    A failed message indicates that some error had occured
+    <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
+    <field name = "errorno"     type = "number" size = "4"> An error id</field>
+    <field name = "errmsg"      type = "string"> A user visible error string</field>
+    <field name = "erraux"      type = "dictionary"> An optional additional information about occured error</field>
+</message>
+
+<message name = "db_ok"         id = "202">
+    An ok message indicates that during the work with db no error had occured
+    <field name = "rowid"       type = "number" size = "4"> Id of the row processed</field>
+</message>
+
+<message name = "client"        id = "203">
+    Structure describing client
+    <field name = "name"        type = "string"> Name of the client</field>
+</message>
+
+<message name = "insert_client" id = "204">
+    Insert a client
+    <field name = "msg"         type = "msg"> Client to be inserted</field>
+</message>
+
+<message name = "update_client" id = "205">
+    Update a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be updated</field>
+    <field name = "msg"         type = "msg"> Client to be updated</field>
+</message>
+
+<message name = "delete_client" id = "206">
+    Delete a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client to be deleted</field>
+</message>
+
+<message name = "return_client" id = "207">
+    Return a client we were asked for
+    <field name = "rowid"       type = "number" size = "4"> Unique ID of the client</field>
+    <field name = "msg"         type = "msg"> Client</field>
+</message>
+
+<message name = "client_info"   id = "208">
+    Structure describing client info
+    <field name = "client_id"   type = "number" size = "4"> A client id</field>
+    <field name = "device_id"   type = "number" size = "4"> A device id</field>
+    <field name = "info"        type = "chunk"> Information about device gathered by client (data+ its size)</field>
+    <field name = "date"        type = "number" size = "4"> Date when this information was gathered</field>
+</message>
+
+<message name = "insert_cinfo"  id = "209">
+    Insert a client info
+    <field name = "msg"         type = "msg"> Client info to be inserted</field>
+</message>
+
+<!-- updating is for now forbidden
+<message name = "update_cinfo" id = "222">
+    Update a client info
+    <field name = "cinfo_id"    type = "number"> Unique ID of the client info to be updated</field>
+    <field name = "msg"         type = "msg"> Client info to be updated</field>
+</message>
+-->
+
+<message name = "delete_cinfo"  id = "210">
+    Delete a client info
+    <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info to be deleted</field>
+</message>
+
+<message name = "return_cinfo"  id = "211">
+    Return a client info we were asked for
+    <field name = "rowid"       type = "number" size = "4"> Unique ID of the client info</field>
+    <field name = "msg"         type = "msg"> Client info</field>
+</message>
+
+<message name = "device"        id = "212">
+    Structure describing device
+    <field name = "devicetype_id"   type = "number" size = "4"> A devicetype id</field>
+    <field name = "name"        type = "string"> Device name</field>
+</message>
+
+<message name = "insert_device"  id = "213">
+    Insert a 
+    <field name = "msg"         type = "msg"> Device info to be inserted</field>
+</message>
+
+<!-- updating is for now forbidden
+<message name = "update_device" id = "214">
+    Update a device
+    <field name = "device_id"   type = "number"> Unique ID of the device to be updated</field>
+    <field name = "msg"         type = "msg"> Device to be updated</field>
+</message>
+-->
+
+<message name = "delete_device"  id = "215">
+    Delete a device
+    <field name = "device_id"    type = "number" size = "4"> Unique ID of the device to be deleted</field>
+</message>
+
+<message name = "return_device"  id = "216">
+    Return a device we were asked for
+    <field name = "rowid"       type = "number" size = "4"> Unique ID of the device</field>
+    <field name = "msg"         type = "msg"> Device</field>
+</message>
+
+<message name = "device_type"    id = "217">
+    Structure describing device_type
+    <field name = "name"        type = "string"> Device type name</field>
+</message>
+
+<message name = "insert_devtype"  id = "218">
+    Insert a device type
+    <field name = "msg"         type = "msg"> Device type to be inserted</field>
+</message>
+
+<!-- updating is for now forbidden
+<message name = "update_device" id = "219">
+    Update a device
+    <field name = "device_id"   type = "number"> Unique ID of the device to be updated</field>
+    <field name = "msg"         type = "msg"> Device to be updated</field>
+</message>
+-->
+
+<message name = "delete_devtype"  id = "220">
+    Delete a device type
+    <field name = "devicetype_id"    type = "number" size = "4"> Unique ID of the device type to be deleted</field>
+</message>
+
+<message name = "return_devtype"  id = "221">
+    Return a device type we were asked for
+    <field name = "rowid"       type = "number" size = "4"> Unique ID of the device type</field>
+    <field name = "msg"         type = "msg"> Device type</field>
+</message>
+
+<message name = "get_client" id = "223">
+    Ask for a client
+    <field name = "client_id"   type = "number" size = "4"> Unique ID of the client</field>
+</message>
+
+<message name = "get_cinfo"  id = "224">
+    Ask for a client info
+    <field name = "cinfo_id"    type = "number" size = "4"> Unique ID of the client info</field>
+</message>
+
+<message name = "get_device"  id = "225">
+    Ask for  a device
+    <field name = "device_id"    type = "number" size = "4"> Unique ID of the device</field>
+</message>
+
+<message name = "get_devtype"  id = "226">
+    Ask for a device type
+    <field name = "devicetype_id"    type = "number" size = "4"> Unique ID of the device type</field>
+</message>
+
+
+</class>
