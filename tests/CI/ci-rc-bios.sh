@@ -1,9 +1,27 @@
 #!/bin/sh -e
 
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Tomas Halman <TomasHalman@eaton.com>,
+#
+# Description: starts or stops the simple daemon installed in $HOME
+
 start(){
-stop
    set -x
-   cd ~/bin &&
+   cd ~/bin
    /bin/rm -rf ~/simple.log
    nohup ./simple >~/simple.log 2>&1 &
    sleep 5
@@ -17,7 +35,11 @@ stop(){
 }
 
 usage(){
-    echo "usage: $(basename $0) [options]"
+    echo "usage: $(basename $0) [options]
+options:
+    --stop       stop simple
+    --start      start simple
+    --help|-h    print this help"
 }
 
 if [ "x$1" == "x" ] ; then
@@ -25,36 +47,36 @@ if [ "x$1" == "x" ] ; then
     exit 1
 fi
 
-while [ "x$1" != "x" ] ; do
+while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)
-            usage
-            exit 1
+	    OPERATION=help
             ;;
         --start)
             OPERATION=start
-            shift
             ;;
         --stop)
             OPERATION=stop
-            shift
             ;;
         *)
-            echo "Invalit option $1" 1>&2
+            echo "Invalid option $1" 1>&2
+	    usage
             exit 1
             ;;
     esac
+    shift
 done
 
 case "$OPERATION" in
     start)
+	stop
         start
         ;;
     stop)
         stop
         ;;
-    *)
-        echo "invalid operation/not specified"
+    help)
+	usage
         exit 1
         ;;
 esac
