@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
-#            Tomas Halman <TomasHalman@eaton.com>,
+# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
+#            Tomas Halman <TomasHalman@eaton.com>
 #
 # Description: Destroys VM latest, deploy new one and starts it
 

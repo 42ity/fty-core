@@ -16,7 +16,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Author(s): Tomas Halman <TomasHalman@eaton.com>
-#            
 #
 # Description: tests restapi
 
