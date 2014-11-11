@@ -14,6 +14,8 @@ test_it "unauth_time_set"
 print_result $?
 
 # Check setting time as privileged user
+# NOTE: Doesn't work within lxc
+if [ -z "`systemd-detect-virt | grep lxc`" ]; then
 test_it "auth_time_set"
 TIME_NOW="`date --utc +%FT%TZ`"
 TIME="`api_auth_post "/admin/time" '{ "time":"1970-01-01T00:00:00Z" }' | \
@@ -22,6 +24,7 @@ api_auth_post "/admin/time" '{ "time":"'"$TIME_NOW"'" }' > /dev/null
 TIME_S="`date -d"$TIME" +%s 2> /dev/null`"
 [ "$TIME_S" ] && [ "$TIME_S" -lt 10 ]
 print_result $?
+fi
 
 # Check setting nonsense
 test_it "wrong_time"
