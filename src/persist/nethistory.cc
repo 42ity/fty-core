@@ -40,26 +40,6 @@ namespace persist {
 
 //-----------------------------------------------------------
 
-//Internal function for remove colons from mac address
-void
-_removeColonMac(std::string &newmac)
-{
-    newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
-}
-
-//Internal function for add colons to mac address
-const std::string
-_addColonMac(const std::string &mac)
-{
-    std::string macWithColons(mac);
-    macWithColons.insert(2,1,':');
-    macWithColons.insert(5,1,':');
-    macWithColons.insert(8,1,':');
-    macWithColons.insert(11,1,':');
-    macWithColons.insert(14,1,':');
-    return macWithColons;
-}
-
 //Internal method:check whether the mac address has right format
 bool
 checkMac (const std::string &mac_address)
@@ -116,10 +96,7 @@ const std::string
 NetHistory::
 getMac() const
 {
-    if (_mac != "")    
-        return persist::_addColonMac(_mac);
-    else
-        return "";
+    return _mac;
 }
 
 bool
@@ -321,18 +298,15 @@ setMac(const std::string& mac_address)
 {
     if (checkMac(mac_address))
     {
-        std::string macc(mac_address);
-        persist::_removeColonMac(macc);
-    
-        if ( ( _mac != macc ) && ( this->getState() != ObjectState::OS_DELETED ) 
-            && ( this->getState() != ObjectState::OS_INSERTED ) )
+        if (( this->getState() != ObjectState::OS_DELETED ) 
+            && ( this->getState() != ObjectState::OS_INSERTED ))
         {
             switch (this->getState()){
                 case ObjectState::OS_SELECTED:
                     this->setState(ObjectState::OS_UPDATED);
                 case ObjectState::OS_UPDATED:
                 case ObjectState::OS_NEW:
-                     _mac = macc;
+                     _mac = mac_address;
                      break;
                 default:
                     // TODO log this should never happen
@@ -494,7 +468,7 @@ checkUniqueAuto() const
         " from"
         " v_bios_net_history v"
         " where v.command = :command and v.ip = :ip and v.mask = :mask"
-        "       and  v.mac = conv(:mac, 16, 10) and v.name = :name"
+        "       and  v.mac = :mac and v.name = :name"
         );
 
     //It must be called only for commands 'a'
@@ -525,7 +499,7 @@ getHistory(const std::string& url)
 
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " v.id, v.name , conv(v.mac,10,16), v.ip , v.mask, v.command , v.timestamp"
+        " v.id, v.name , v.mac, v.ip , v.mask, v.command , v.timestamp"
         " from"
         " v_bios_net_history v"
         );
@@ -558,8 +532,7 @@ getHistory(const std::string& url)
             //mac
             tmp_s = "";
             row[2].getString(tmp_s);
-            //TODO check if mac is ok
-            newNetHistory->setMac(_addColonMac(tmp_s));
+            newNetHistory->setMac(tmp_s);
                     
             //ip
             tmp_s = "";
