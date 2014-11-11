@@ -42,15 +42,12 @@ options:
     --help|-h    print this help"
 }
 
-if [ "x$1" == "x" ] ; then
-    usage
-    exit 1
-fi
+OPERATION=help
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         -h|--help)
-	    OPERATION=help
+            OPERATION=help
             ;;
         --start)
             OPERATION=start
@@ -60,7 +57,7 @@ while [ $# -gt 0 ] ; do
             ;;
         *)
             echo "Invalid option $1" 1>&2
-	    usage
+            usage
             exit 1
             ;;
     esac
@@ -69,14 +66,14 @@ done
 
 case "$OPERATION" in
     start)
-	stop
+        stop
         start
         ;;
     stop)
         stop
         ;;
     help)
-	usage
+        usage
         exit 1
         ;;
 esac
