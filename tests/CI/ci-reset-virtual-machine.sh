@@ -20,13 +20,23 @@
 #
 # Description: Destroys VM latest, deploy new one and starts it
 
+#
+# TODO:
+# * OBS parameter? [ x"$OBS_IMAGES" = x ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
+# * should latest be a variable
+# * more VM instances support?
+# * set debian proxy from parameter or $http_proxy
+#
+
 die() {
 	echo "$1"
 	exit 1
 }
 
 # Make sure we have a loop
-modprobe loop
+modprobe loop # TODO: die on failure?
+
+
 
 # Do we have overlayfs?
 if [ "`gzip -cd /proc/config.gz 2> /dev/null | grep OVERLAY`" ]; then
