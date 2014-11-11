@@ -55,6 +55,15 @@
       <target>networks@bios_web</target>
       <url>^/api/v1/admin/networks.*$</url>
     </mapping>
+
+    <!-- Network POST/DELETE -->
+    <mapping>
+      <target>network@bios_web</target>
+      <url>^/api/v1/admin/network.*$</url>
+    </mapping>
+      <args>
+        <type>$1</type>
+      </args>
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
