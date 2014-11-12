@@ -58,6 +58,9 @@ export LANG LC_ALL
 	USER_PASS="$DEF_USER_PASS" && \
 	USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
 	echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
+# (Optional) additional groups, a space-separated list
+[ x"$USER_ADD_GROUPS" = x ] &&	USER_ADD_GROUPS="sasl"
+[ x"$USER_ADD_GROUPS" = x- ] &&	USER_ADD_GROUPS=""
 
 # TODO: Perhaps check if "pwgen" is installed and use it to generate
 # long and random passwords not to be used by humans?.. `pwgen -sncy 32 1`
@@ -245,6 +248,14 @@ genUser() {
 	12)  RES_U=0 ;; # can't create home directory
 	*)   CODE=$RES_U die "Error during 'useradd $USER_NAME' ($RES_U)" ;;
     esac
+
+    # Try to add the account into secondary groups such as "sasl",
+    # but don't die if this fails
+    for G in $USER_ADD_GROUPS ; do
+	echo "INFO: Try to add '$G' as a secondary group for '$USER_NAME' (may fail)..."
+	$RUNAS usermod -G "$G" "$USER_NAME"
+    done
+
     return $RES_U
 }
 
