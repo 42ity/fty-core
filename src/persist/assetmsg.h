@@ -14,6 +14,6 @@
 #define MAX_DESCRIPTION_LENGTH 255
 
 asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg);
-
+void* void_dup(const void* a); 
 #endif // SRC_PERSIST_ASSETMSG_H_
 

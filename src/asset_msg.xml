@@ -24,7 +24,7 @@ Structure describing asset element
     <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
 </message>
 
-<message name = "device" id = "11">
+<message name = "device" id = "2">
 Structure describing asset device
     <field name = "device_type" type = "string">Type of the device, freeform string not the thing from asset_type</field>
     <field name = "groups" type = "strings">List of IDs of groups device belongs to</field>
@@ -36,53 +36,65 @@ Structure describing asset device
     <field name = "msg" type = "msg">Element that we are extending to the device</field>
 </message>
 
-<message name = "get_element" id = "2">
+<message name = "get_element" id = "3">
 Ask for specific element
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "type" type = "number" size = "1">Type of the element defined in asset_type (includes devices)</field>
 </message>
 
-<message name = "return_element" id = "3">
+<message name = "return_element" id = "4">
 Returns element we were asked for
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "msg" type = "msg">Element (or device) to be delivered</field>
 </message>
 
-<message name = "update_element" id = "4">
+<message name = "update_element" id = "5">
 Updates element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "msg" type = "msg">Element (or device) to be updated</field>
 </message>
 
-<message name = "insert_element" id = "5">
+<message name = "insert_element" id = "6">
 Insert element or device
     <field name = "msg" type = "msg">Element (or device) to be inserted</field>
 </message>
 
-<message name = "delete_element" id = "6">
+<message name = "delete_element" id = "7">
 Deletes element or device
     <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
     <field name = "type" type = "number" size = "1">Type of the device, defined in asset_type</field>
 </message>
 
-<message name = "ok" id = "7">
+<message name = "ok" id = "8">
 Message from database that everything was processed successfully.
     <field name = "element_id" type = "number" size = "4">Unique ID of the element that was proccessed</field>
 </message>
 
-<message name = "fail" id = "8">
+<message name = "fail" id = "9">
 Message from database that something went wrong.
     <field name = "error_id" type = "number" size = "1">Type of the error, enum defined in persistence header file</field>
 </message>
 
-<message name = "get_elements" id = "9">
+<message name = "get_elements" id = "10">
 Ask for all elements of specific type
     <field name = "type" type = "number" size = "1">Type of the element, defined in in asset_type</field>
 </message>
 
-<message name = "return_elements" id = "10">
+<message name = "return_elements" id = "11">
 Returns elements we were asked for
     <field name = "element_ids" type = "dictionary">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
 </message>
+
+<message name = "get_last_measurements"   id = "12">
+Request for the last measurements about the device with asset_element_id
+    <field name = "element_id"   type = "number" size = "4"> An asset_element_id of the device</field>
+</message>
+
+<message name = "return_last_measurements"   id = "13">
+The last measurements about the device with asset_element_id
+    <field name = "element_id"    type = "number" size = "4"> An asset_element_id of the device</field>
+    <field name = "measurements"  type = "strings"> A list of string values "keytagid:subkeytagid:value:scale"</field>
+</message>
+
 
 </class>
