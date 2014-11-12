@@ -270,13 +270,18 @@ TNTNET, TNTDB, CXXTOOLS and friends
  * Install the TNT project parts:
 ----
 :; apt-get install tntnet tntnet-runtime libcxxtools-dev \
-   libtntdb-dev libtntnet-dev libtnt-dev libsasl2-dev
+   libtntdb-dev libtntnet-dev libtnt-dev libsasl2-dev sasl2-bin
 ----
  ** Notes: the `cxxtools` or `libcxxtools` package may be absent or differently
 named in other OS releases, and may need to be rebuilt from source completely.
  ** The non-"dev" base packages tend to have a version number embedded,
 so it is a safer bet to request the "-dev" packages since we need them
 anyway, and they will pull in their modern base packages as needed.
+ ** The SASL daemon should be running in order for `test_web.sh` to work.
+Ensure this by running:
+----
+:; /etc/init.d/saslauthd restart
+----
 
 Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
