@@ -35,10 +35,18 @@ account first):
 ----
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
-...or over HTTP (plaintext password may be required which is not secure, and
-special characters may need URL percent-encoding which is inconvenient):
+...or over HTTP with common '~/.netrc' set up to store the cleartext login
+(note that 'machine', 'login' and 'password' are NETRC syntax keywords):
 ----
-:; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
+:; echo "machine stash.mbt.lab.etn.com login E1234567 password p@ssW0rd!" >> ~/.netrc
+:; chmod 600 ~/.netrc
+:; git clone http://stash.mbt.lab.etn.com/scm/bios/core.git
+----
+...or over HTTP with explicit login information (plaintext password may
+be required which is not secure, and special characters may need URL
+percent-encoding which is inconvenient):
+----
+:; git clone http://E1234567:p%40ssW0rd%21@stash.mbt.lab.etn.com/scm/bios/core.git
 ----
 
 Alternately, if you don't have access to the project's Stash, you can copy
