@@ -59,6 +59,9 @@ export LANG LC_ALL
 	USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
 	echo "INFO: Using the default hardcoded password (or rather its hardcoded hash)"
 
+# TODO: Perhaps check if "pwgen" is installed and use it to generate
+# long and random passwords not to be used by humans?.. `pwgen -sncy 32 1`
+
 die() {
     [ x"$CODE" = x ] && CODE=1
     echo "FATAL: `date`: $0: $@" >&2
