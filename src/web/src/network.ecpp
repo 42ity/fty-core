@@ -3,8 +3,10 @@
 #include "dbpath.h"
 #include "cidr.h"
 #include <cctype>
+#include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
 </%pre>
@@ -17,16 +19,17 @@
 <%cpp>
         return HTTP_METHOD_NOT_ALLOWED;
     }
-    
-    std::stringstream input(request.getBody(), std::ios_base::in);
-    cxxtools::SerializationInfo si;
-    cxxtools::JsonDeserializer deserializer(input);
-    
+
     if(meth == "POST") {
         shared::CIDRAddress cidr;
         std::string net;
         char type;
         int ret;
+
+        std::stringstream input(request.getBody(), std::ios_base::in);
+        cxxtools::SerializationInfo si;
+        cxxtools::JsonDeserializer deserializer(input);
+
         try {
             deserializer.deserialize(si);
             si.getMember("net") >>= net;
@@ -34,42 +37,83 @@
             si.getMember("type") >>= type;
             type = (char)::toupper(type);
         } catch (const std::exception& e) {
-            type = '?';
             net = "";
+            type = '?';
         }
 
-        if (net == "" || ! cidr.valid()) {
+        if ((net == "" || ! cidr.valid()) || (type != 'M' && type != 'E')) {
 </%cpp>
-{ "error" : "invalid network" }
-<%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-        else if(type != 'M' && type != 'E') {
-</%cpp>
-{ "error" : "invalid type, must be 'M' or 'E'" }
+{ "error" : "invalid network or type" }
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
 
         persist::NetHistory nh(url);
-        nh.setCommand(type);
+        nh.setCommand((char)::tolower(type));
         nh.setAddress(cidr);
+        //FIXME: prevents selectById from throwing an exception
+        nh.setMac("");
 
-        ret = nh.dbsave();
-        if (ret == 0) {
+        ret = nh.checkUnique();
+        if (ret == -1) {
+            ret = nh.dbsave();
+            if (ret == 0) {
 </%cpp>
 { "error" : "DB INSERT error" }
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
 </%cpp>
 { "id" : "<$ nh.getId() $>" }
 <%cpp>
     } else {
+
+        const std::string sid = request.getArg("id");
+        int ret = -1;
+        int id = -1;
+
+        try {
+            //TODO: differs between 32 and 64bit
+            id = std::stoi(sid);
+
+        } catch (const std::out_of_range& oor) {
 </%cpp>
-{ "error" : "not implemented" }
+{ "error" : "Given id is out of range for int" }
 <%cpp>
-        return HTTP_NOT_IMPLEMENTED;
+            return HTTP_BAD_REQUEST;
+
+        } catch (const std::invalid_argument& oor) {
+</%cpp>
+{ "error" : "Not numeric ID" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        persist::NetHistory nh(url);
+        //FIXME!: selectById might exception!
+        try {
+            ret = nh.selectById(id);
+        } catch (const std::exception &e) {
+</%cpp>
+{ "error" : "DB access error", "reason" : "<$ (const char*)e.what() $>" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+
+        if (ret == 0) {
+</%cpp>
+{ "error" : "Network id does not exists", "id" : "<$ id $>" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        ret = nh.dbdelete();
+        if (ret == 0) {
+</%cpp>
+{ "error" : "DB DELETE error" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
     }
 </%cpp>
-
