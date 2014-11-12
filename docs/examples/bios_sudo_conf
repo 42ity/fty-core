@@ -1,0 +1,61 @@
+# Description: This file is a configuration module for "sudo"
+# and it contains definition of some command lines, list of
+# usernames and/or %groupnames allowed to elevate privileges,
+# and a list of usernames with whose credentials we can run as,
+# which is overall needed for the $BIOS project. This config
+# was verified for Debian 8 "testing", but should be generally
+# portable among different moderately recent "sudo" releases.
+# To use, just copy this file into /etc/sudoers.d/ (note that
+# the filename should NOT contain "." dots) or append contents
+# to /etc/sudoers on older OSes, and maybe adapt if required.
+# See also the script to generate these needed $BIOS accounts:
+#    tools/init-os-accounts.sh
+#
+# Some required legalese follows:
+#
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+# Inspired by Iain "ibuclaw" examples from Ubuntu Forums (C) 2009:
+#    http://ubuntuforums.org/showthread.php?t=1132821
+#
+
+# Shorthands to reference the specific commands or command-line (shell
+# globs generally) which we may be interested in:
+
+### Change date on this device:
+Cmnd_Alias DATE_MANUAL  = /usr/bin/date,/bin/date
+Cmnd_Alias DATE_HWCLOCK	= /sbin/hwclock
+Cmnd_Alias DATE_NTP	= /usr/sbin/ntpdate,/etc/init.d/ntp
+Cmnd_Alias DATE_CLOCK	= /usr/bin/rdate
+Cmnd_Alias DATE		= DATE_MANUAL,DATE_HWCLOCK,DATE_NTP,DATE_CLOCK
+
+### Scan available network hosts:
+Cmnd_Alias NMAP         = /usr/bin/nmap
+
+### Update firmware on this device (disabled by default):
+Cmnd_Alias APT          = /usr/bin/apt-get update,/usr/bin/apt-get upgrade
+
+# Overall, what is currently allowed with different privileges?
+Cmnd_Alias BIOS_PROGS   = DATE,NMAP
+
+# Who is allowed to elevate?
+User_Alias BIOS_USERS   = bios,%bios
+# With whose privileges can this be executed?
+Runas_Alias BIOS_RUNAS  = root
+
+BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
+
