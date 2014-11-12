@@ -20,12 +20,90 @@
 #define MSG_T_NETMON  1
 #define randof(num)  (int) ((float) (num) * random () / (RAND_MAX + 1.0))
 
-static const shared::Argv args{"./netmon"};
-static shared::SubProcess netmon_proc{args};
+// netmon child process
+static const shared::Argv netmon_args{"./netmon"};
+static shared::SubProcess netmon_proc{netmon_args};
+// nmap scanner child process
+static const shared::Argv nmap_args{"./driver-nmap"};
+static shared::SubProcess nmap_proc{nmap_args};
+
+//  netmon 
+void filip_actor (zsock_t *pipe, void *args) {
+    log_info ("start\n");
+
+    zsock_t * incoming = zsock_new_router (FILIP_SOCK);
+    assert (incoming);
+
+    zsock_t * dbsock = zsock_new_dealer (DB_SOCK);
+    assert (dbsock);
+
+    zsock_t * nmap  = zsock_new_dealer (DRIVER_NMAP_SOCK);
+    assert (nmap);
+
+    zsock_t * nmap_reply = zsock_new_router (DRIVER_NMAP_REPLY);
+    assert (nmap_reply);
+
+    zpoller_t *poller = zpoller_new (incoming, nmap_reply, pipe, NULL);
+    assert (poller);
+
+    zsock_signal(pipe, 0);
+
+    while(!zpoller_terminated(poller)) {
+        zsock_t *which = (zsock_t *) zpoller_wait(poller, -1);
+        if (which == pipe) {
+            break;
+        }
+        else if (which == incoming) {
+            log_debug ("socket INCOMING received a message\n");    
+            netdisc_msg_t *msg = netdisc_msg_recv (incoming);  
+            assert (msg);
+            if (netdisc_msg_ipaddr (msg) == NULL) {
+                    log_warning ("Field 'ipaddr' is empty!\n");
+                    netdisc_msg_destroy (&msg);
+                    continue;
+            }
+            shared::CIDRAddress addr (netdisc_msg_ipaddr (msg),
+                                      std::to_string (netdisc_msg_prefixlen (msg)));
+            shared::CIDRAddress newaddr = addr.network ();
+            std::string target (newaddr.toString (shared::CIDROptions::CIDR_WITHOUT_PREFIX));
+            target.append ("/");
+            target.append (std::to_string (newaddr.prefix ()));
+
+            // construct the nmap scan_command
+            nmap_msg_t * scan_command = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
+            assert (scan_command);
+            nmap_msg_set_type (scan_command, "%s", "defaultlistscan", NULL);
+
+            zlist_t *zl = zlist_new ();
+            zlist_append (zl, (void *) target.c_str());
+            nmap_msg_set_args (scan_command, &zl);
+            zlist_destroy (&zl);
+
+            // send 
+            nmap_msg_send (&scan_command, nmap); 
+
+            netdisc_msg_destroy (&msg);
+        }
+        else if (which == nmap_reply) {
+            log_debug ("socket NMAP_REPLY received a message\n");    
+            nmap_msg_t *msg = nmap_msg_recv (nmap_reply);
+            assert (msg);
+            nmap_msg_send (&msg, dbsock);
+            assert (msg == NULL);
+        }
+    }
+
+    zpoller_destroy (&poller);
+    zsock_destroy (&incoming);
+    zsock_destroy (&dbsock);
+    zsock_destroy (&nmap);
+    zsock_destroy (&nmap_reply);
+
+    log_info ("end\n");
+}
 
 void persistence_actor(zsock_t *pipe, void *args) {
-
-    log_info ("%s", "persistence_actor() start\n");
+    log_info ("start\n");
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
@@ -40,14 +118,14 @@ void persistence_actor(zsock_t *pipe, void *args) {
         if (which == pipe) {
             break;
         }
-
+        log_debug ("message received\n");
         zmsg_t *msg = zmsg_recv(insock);
 
         try {
             bool b = persist::process_message (url, msg);
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
-            fprintf (stderr, "%To resolve this problem, please see README file\n");
+            fprintf (stderr, "To resolve this problem, please see README file\n");
             log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
             break;
         }
@@ -56,12 +134,12 @@ void persistence_actor(zsock_t *pipe, void *args) {
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
-    log_info ("%s", "persistence_actor end\n");
+    log_info ("end\n");
 }
  
 void netmon_actor(zsock_t *pipe, void *args) {
 
-    log_info ("%s", "netmon_actor() start\n");
+    log_info ("start\n");
 
     const int names_len = 6;    
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
@@ -125,13 +203,16 @@ void netmon_actor(zsock_t *pipe, void *args) {
     }
 
     zsock_destroy(&dbsock);
-    log_info ("%s", "netmon_actor end\n");
+    log_info ("end\n");
 
 }
 
-void term_netmon(void) {
+void term_children (void) {
     if (netmon_proc.isRunning()) {
         netmon_proc.terminate();
+    }
+    if (nmap_proc.isRunning()) {
+        nmap_proc.terminate();
     }
 }
 
@@ -140,19 +221,27 @@ int main(int argc, char **argv) {
     log_open();
     log_set_level(LOG_DEBUG);
 
+    log_info ("==========================================\n");
+    log_info ("==========        SIMPLE        ==========\n");
+
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
 
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
-        log_info ("%s", "Test Mode: Running mocked netmon_actor instead of netmon.\n");
+        log_info ("= %s =", "TEST MODE: Running netmon_actor() instead of netmon.\n");
     }
+    log_info ("==========================================\n");
 
-    atexit(term_netmon);
+    atexit(term_children);
 
     zactor_t *db = zactor_new (persistence_actor, NULL);
     assert(db);
     zclock_sleep (2000);
+
+    zactor_t *filip = zactor_new (filip_actor, NULL);
+    assert(filip);
+    zclock_sleep (1000);
 
     zactor_t *netmon = NULL;
 
@@ -160,20 +249,37 @@ int main(int argc, char **argv) {
         netmon = zactor_new (netmon_actor, NULL);
         assert(netmon);
     } else {
+        // nmap
+        nmap_proc.run();
+        zclock_sleep(100);  //process handling is tricky - this ensures child has been started
+
+        nmap_proc.poll();
+        if (!nmap_proc.isRunning()) {
+            log_error ("driver-nmap did not start, exitcode: '%d'\n", nmap_proc.getReturnCode());
+            return nmap_proc.getReturnCode();
+        }
+        else {
+            log_info ("driver-nmap is running\n");
+        }
+           
+        // netmon
         netmon_proc.run();
         zclock_sleep(100);  //process handling is tricky - this ensures child has been started
 
         netmon_proc.poll();
         if (!netmon_proc.isRunning()) {
-            fprintf(stderr, "ERROR: netmon does not run, exitcode: %d\n", netmon_proc.getReturnCode());
+            log_error ("netmon did not start; exitcode: '%d'\n", netmon_proc.getReturnCode());
             return netmon_proc.getReturnCode();
         }
-    }
+        else {
+            log_info ("netmon is running\n");
+        }
+     }
 
     zactor_t *nut = zactor_new (drivers::nut::nut_actor, NULL);
     assert(nut);
     
-    zpoller_t *poller = zpoller_new(netmon, db, nut, NULL);
+    zpoller_t *poller = zpoller_new(netmon, db, nut, filip,  NULL);
     assert(poller);
 
     while (!zpoller_terminated(poller)) {
@@ -188,10 +294,12 @@ int main(int argc, char **argv) {
         // normally kill() would be enough, but netmon can't cope
         // with them atm
         netmon_proc.terminate();
+        nmap_proc.terminate();
     }
     zactor_destroy(&nut);
     zactor_destroy(&db);
-    log_info ("%s", "destroying persistence_actor\n"); 
+    zactor_destroy(&filip);
+    log_info ("END\n"); 
     log_close ();
     return EXIT_SUCCESS;
 }

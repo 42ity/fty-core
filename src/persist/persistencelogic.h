@@ -5,6 +5,7 @@
 #include "netdisc_msg.h"
 #include "powerdev_msg.h"
 #include "common_msg.h"
+#include "nmap_msg.h"
 
 namespace persist {
 
@@ -21,6 +22,10 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg);
 
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);
+
+// TODO doxy; proxy and destroy the message
+void
+nmap_msg_process (const char *url, nmap_msg_t *msg);
 
 } // namespace persist
 

@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*! \file nmap-parse.h
     \brief Parsing code for nmap XML output
     \author Michal Vyskocil <michalvyskocil@eaton.com>
+            Karol Hrdina    <karolhrdina@eaton.com>
  */
 
 #ifndef _SRC_DRIVERS_NMAP_PARSE_H_

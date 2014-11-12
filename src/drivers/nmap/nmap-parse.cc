@@ -200,13 +200,12 @@ int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame ) {
     }
 }
 
-
 void parse_list_scan(std::istream& inp, zsock_t *socket) {
     assert (socket);
     assert (zsock_is (socket));
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_info ("parse_list_scan() start\n");    
+
+    log_info ("start\n");
+        
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
     std::string reason_v;
@@ -296,14 +295,22 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                     const auto name = convert<std::string>(el.name());
                     if (name == "host") {                        
                         state = ListState::START;
-                        nmap_msg_t *msg = nmap_msg_new (NMAP_MSG_LIST_SCAN);
-                        assert (msg);
-                        nmap_msg_set_addr (msg, "%s", addr_v.c_str());
-                        nmap_msg_set_host_state (msg, host_state_v);
-                        nmap_msg_set_reason (msg, "%s", reason_v.c_str());                                                
+                        // don't send <host> entries that don't have
+                        // any <hostname> elements inside <hostnames></...> specified
+                        if (hostnames != NULL && zhash_size (hostnames) != 0) {
+                            nmap_msg_t *msg = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+                            assert (msg);
+                            nmap_msg_set_addr (msg, "%s", addr_v.c_str());
+                            nmap_msg_set_host_state (msg, host_state_v);
+                            nmap_msg_set_reason (msg, "%s", reason_v.c_str());                                                
 
-                        int rv = nmap_msg_send (&msg, socket);
-                        assert (rv != -1);
+                            int rv = nmap_msg_send (&msg, socket);
+                            assert (rv != -1);
+                            log_debug ("msg sent.\n,");
+                        } else {
+                            log_debug ("host doesn't have <hostnames>\n");
+                        }
+
 
                         zhash_destroy (&hostnames);
                         assert (hostnames == NULL);
@@ -354,7 +361,7 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                 break;
         }
     }
-    log_info ("parse_list_scan() end\n");    
+    log_info ("end\n");    
     log_close ();    
 }
 
@@ -370,7 +377,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("parse_device_scan() start\n");    
+    log_info ("start\n");    
 
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
@@ -1045,7 +1052,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
     }
 
     assert (devscan == NULL);
-    log_info ("parse_device_scan() end\n");    
+    log_info ("end\n");    
     log_close ();    
 }
 

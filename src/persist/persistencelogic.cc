@@ -28,8 +28,9 @@ References: BIOS-397
 */
 
 #include <assert.h>
-
 #include <czmq.h>
+#include <tntdb/connect.h>
+#include <tntdb/error.h>
 
 #include "cidr.h"
 #include "persistence.h"
@@ -94,10 +95,6 @@ int nethistory_cmd_id (char cmd) {
 
 bool
 process_message(const std::string& url, zmsg_t *msg) {
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
-    log_info ("%s", "process_message() start\n");
 
     zmsg_t *msg2;
 
@@ -122,10 +119,85 @@ process_message(const std::string& url, zmsg_t *msg) {
         powerdev_msg_print(powerdev_msg);
         return powerdev_msg_process(url, *powerdev_msg);
     }
+    msg2 = zmsg_dup(msg);
+    zmsg_pop(msg2);
+    assert(msg2);
+    nmap_msg_t *nmap_msg = nmap_msg_decode(&msg2);
+    if (nmap_msg) {
+        //TODO: check the log level!
+        // powerdev_msg_print(powerdev_msg);
+        log_info ("Processing nmap message\n");
+        nmap_msg_process(url.c_str(), nmap_msg);
+        return true; // fine until next PR
+    }
+
     log_error("unsupported message type, skipped!\n");
-    log_info ("%s", "process_message() end\n");
-    log_close ();
     return false;
+}
+
+void
+//nmap_msg_process (const char *url, nmap_msg_t **msg)
+nmap_msg_process (const char *url, nmap_msg_t *msg)
+{
+
+    assert (url);
+    assert (msg);
+
+//    if (*msg) {
+        int msg_id = nmap_msg_id (msg);
+        assert (msg_id != 0);
+
+        switch (msg_id) {
+            case NMAP_MSG_LIST_SCAN:
+            {
+                // data checks           
+                const char *ip = nmap_msg_addr (msg);
+                if (ip == NULL) {
+                    log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received\n");
+                    break;
+                }
+                // prepare sql statement
+                std::string statement;
+                statement.append ("insert into t_bios_discovered_ip ");
+                statement.append ("(timestamp, ip) ");
+                statement.append ("VALUES (NOW(), '");
+                statement.append (ip);
+                statement.append ("')");
+
+                // establish connection && execute
+                try
+                {
+                    tntdb::Connection connection = tntdb::connectCached (url);
+                    connection.execute (statement);
+                }
+                catch (const std::exception& e)
+                {
+                    log_error ("tntdb::connectCached(%s) failed: %s\n", url, e.what ());
+                }
+                catch (...)
+                {
+                    log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.\n", url);
+                }
+                break;
+            }
+
+            case NMAP_MSG_DEV_SCAN:
+            {
+                log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.\n");
+                break;
+            }
+
+            default:
+            {
+                log_warning ("Unexpected message type received; message id = '%d'\n", msg_id);        
+                break;
+            }
+        }
+        
+// TODO: next time we'll rework the process message to take ownership ...
+//        nmap_msg_destroy (msg);
+//        assert (*msg == NULL);
+//    }
 }
 
 bool

@@ -66,8 +66,16 @@ SubProcess::~SubProcess() {
     errno = _saved_errno;
 }
 
-const Argv SubProcess::argv() const {
-    return _cxx_argv;
+std::string SubProcess::argvString() const
+{
+    std::string ret;
+    for (std::size_t i = 0, l = _cxx_argv.size();
+         i < l;
+         ++i) {
+        ret.assign (_cxx_argv.at(i));
+        ret.assign (" ");
+    }
+    return ret;
 }
 
 bool SubProcess::run() {
