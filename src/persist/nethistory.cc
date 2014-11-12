@@ -135,7 +135,7 @@ db_insert()
     tntdb::Statement st = conn.prepareCached(
         " insert into"
         " v_bios_net_history (id,command,mask,mac,timestamp,ip,name)"
-        " values (NULL,:command,:mask, conv(:mac, 16, 10), UTC_TIMESTAMP(),:ip, :name)"
+        " values (NULL,:command,:mask, :mac, UTC_TIMESTAMP(),:ip, :name)"
         );
     
     // Insert one row or nothing
@@ -188,7 +188,7 @@ db_update()
     tntdb::Statement st = conn.prepareCached(
         " update"
         " v_bios_net_history"
-        " set ip = :ip, mac = conv(:mac,16,10) , mask = :mask , command = :command , name = :name"     //, aaa = :aa
+        " set ip = :ip, mac = :mac, mask = :mask , command = :command , name = :name"     //, aaa = :aa
         " where id = :id"
         );
     
@@ -213,7 +213,7 @@ selectById(int id)
     
     tntdb::Statement st = conn.prepareCached(
         " select"
-        " ip,mask,conv(mac,10,16),command,timestamp,name"
+        " ip,mask,mac,command,timestamp,name"
         " from"
         " v_bios_net_history v"
         " where v.id = :id"
@@ -406,15 +406,18 @@ db_select_timestamp()
 }
 int
 NetHistory::
-checkUnique() const
+checkUnique()
 {
+    int ret = -1;
     if ( _command == 'a' )
-        return this->checkUniqueAuto();
+        ret = this->checkUniqueAuto();
     else if ( _command == 'm' )
-        return this->checkUniqueManual();
+        ret = this->checkUniqueManual();
     else if ( _command == 'e' )
-        return this->checkUniqueExclude();
-    return -1;
+        ret = this->checkUniqueExclude();
+    if (ret != -1)
+        this->setId(ret);
+    return ret;
 }
 
 

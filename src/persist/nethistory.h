@@ -132,9 +132,9 @@ class NetHistory : public DataBaseTimeObject
         unsigned int selectById(int id);
         
         /**
-         * \brief Check for the existing duplicate rows
+         * \brief Check for the existing duplicate rows, set the internal id if found
          */
-        int checkUnique() const;
+        int checkUnique();
 
         static std::vector<NetHistory> getHistory(const std::string & url);
 
