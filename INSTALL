@@ -36,7 +36,9 @@ account first):
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
 ...or over HTTP with common '~/.netrc' set up to store the cleartext login
-(note that 'machine', 'login' and 'password' are NETRC syntax keywords):
+(note that 'machine', 'login' and 'password' are NETRC syntax keywords;
+google for details about further securing NETRC with GPG or chaining other
+storage methods with newer `git config --global credential.helper`):
 ----
 :; echo "machine stash.mbt.lab.etn.com login E1234567 password p@ssW0rd!" >> ~/.netrc
 :; chmod 600 ~/.netrc
