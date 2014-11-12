@@ -3,8 +3,8 @@
 PASS=0
 TOTAL=0
 
-USER="morbo"
-PASSWD="iwilldestroyyou"
+USER="bios"
+PASSWD="nosoup4u"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
