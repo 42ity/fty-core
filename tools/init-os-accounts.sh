@@ -23,6 +23,7 @@
 # files needed for the user management programs to perform (i.e. to
 # generate the snippets in a temporary directory and later copy them
 # elsewhere as part of the image generation or installation procedure).
+# The CREATE_HOME=yes envvar or setting in logins.def is honoured.
 # See also: tests/CI/test_web.sh
 # See the variables set below. Can also use DEBUG=Y for more output
 # including sensitive data (like the password or its hash).
@@ -47,6 +48,7 @@ export LANG LC_ALL
 
 # Currently we support one user and group, but the script is modularized
 # to possibly easily generate more accounts in a loop, later...
+# Also note that (currently) specific numeric ID's are not enforced.
 [ x"$GROUP_NAME" = x ] &&	GROUP_NAME="bios"
 [ x"$USER_NAME" = x ] &&	USER_NAME="bios"
 [ x"$USER_GECOS" = x ] && 	USER_GECOS="User for BIOS processes"
@@ -94,7 +96,7 @@ EOF
 	    # Make a best-effort with these files, though they are not strictly required
 	    cd /etc
 	    cp -prf login.defs default/useradd \
-		ldap* pam* secur* selinux* \
+		ldap* pam* secur* selinux* skel \
 		"$ALTROOT/etc/"
 	} )
 
@@ -209,13 +211,26 @@ genUser() {
 	echo "INFO: Creating user:group '$USER_NAME:$GROUP_NAME'" || \
 	echo "INFO: Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
 
-    if [ x"$ALTROOT_MAKEFAKE" = xY -a -d "$ALTROOT" -a x"$ALTROOT" != x/ ]; then
-	$RUNAS mkdir -p "$ALTROOT/`dirname "$USER_HOME"`"
+    MKHOME_FLAG=""
+    [ -f "$ALTROOT/etc/login.defs" ] && \
+	egrep '^CREATE_HOME ([Yy]|[Yy][Ee][Ss]|true|on)$' \
+	    "$ALTROOT/etc/login.defs" > /dev/null && \
+	MKHOME_FLAG="-m"
+
+    case "$CREATE_HOME" in
+	[Yy]|[Yy][Ee][Ss]|true|on)	MKHOME_FLAG="-m" ;;
+    esac
+
+    if [ x"$ALTROOT_MAKEFAKE" = xY -a -d "$ALTROOT" -a \
+	 x"$ALTROOT" != x/ -a x"$MKHOME_FLAG" != x ]; then
+	_HOME_BASE="$ALTROOT/`dirname "$USER_HOME"`"
+	[ -d "$_HOME_BASE" ] || \
+	    $RUNAS mkdir -p "$_HOME_BASE"
     fi
 
     $RUNAS useradd -g "$GROUP_NAME" -s "$USER_SHELL" \
 	-R "$ALTROOT" -c "$USER_GECOS" \
-	-m -d "$USER_HOME" \
+	$MKHOME_FLAG -d "$USER_HOME" \
 	-p "$USER_PASS_HASH" \
 	"$USER_NAME"
     RES_U=$?
@@ -224,19 +239,32 @@ genUser() {
 	4|9) RES_U=0
 	     echo "WARNING: Account '$USER_NAME' already exists, information (including password) not replaced now!" >&2
 	     ;;	# not unique name or number
+	12)  RES_U=0 ;; # can't create home directory
 	*)   CODE=$RES_U die "Error during 'useradd $USER_NAME' ($RES_U)" ;;
     esac
     return $RES_U
 }
 
 verifyGU() {
-    echo "INFO: Verifying group account:"
-    getent group "$GROUP_NAME" || echo "FAIL"
+    RES=1
 
-    echo "INFO: Verifying user account:"
-    getent passwd "$USER_NAME" || echo "FAIL"
-    finger "$USER_NAME" 2>/dev/null
-    id "$USER_NAME" && echo "OK"
+    if [ "$ALTROOT" = / ]; then
+	echo "INFO: Verifying group account:"
+	getent group "$GROUP_NAME" || echo "FAIL"
+
+	echo "INFO: Verifying user account:"
+	getent passwd "$USER_NAME" || echo "FAIL" && RES=0
+	finger "$USER_NAME" 2>/dev/null
+	id "$USER_NAME" && echo "OK" && RES=0
+    else
+	echo "INFO: Verifying group account (in ALTROOT):"
+	egrep "^$GROUP_NAME" "$ALTROOT/etc/group" || echo "FAIL"
+
+	echo "INFO: Verifying user account (in ALTROOT):"
+	egrep "^$USER_NAME" "$ALTROOT/etc/passwd" || echo "FAIL" && RES=0
+    fi
+
+    return $RES
 }
 
 genGroup
