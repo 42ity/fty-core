@@ -31,9 +31,11 @@ common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** 
     common_msg_set_errtype (resultmsg, BIOS_ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
     common_msg_set_errmsg  (resultmsg, errmsg);
-    common_msg_set_erraux  (resultmsg, erraux);
-    // Check if it always works ok with hash
-    zhash_destroy (erraux);
+    if ( erraux != NULL )
+    {
+        common_msg_set_erraux  (resultmsg, erraux);
+        zhash_destroy (erraux);
+    }
     return resultmsg;
 }
 
@@ -59,13 +61,16 @@ common_msg_t* _generate_ok(uint32_t rowid)
 common_msg_t* _generate_client(const char* name)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT);
-    assert(resultmsg);
+    assert ( resultmsg );
     common_msg_set_name (resultmsg, name);
     return resultmsg;
 }
-//it shoud destriy the client
+
+//it shoud destroy the client
 common_msg_t* _generate_return_client(uint32_t clientid, common_msg_t** client)
 {
+    assert ( client );
+    assert ( *client );
     assert ( common_msg_id (*client) == COMMON_MSG_CLIENT );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CLIENT);
     assert ( resultmsg );
@@ -189,6 +194,9 @@ common_msg_t* delete_client(const char* url, uint32_t id_client)
 // should destroy client
 common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 {
+    assert ( client );
+    assert ( *client );
+
     assert ( common_msg_id (*client) == COMMON_MSG_CLIENT );
     const char* name = common_msg_name (*client);
     uint32_t length = strlen(name);
@@ -228,10 +236,6 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 ////////////////////////////////////////////////////////////////////////
 /////////////////           CLIENT INFO              ///////////////////
 ////////////////////////////////////////////////////////////////////////
-//
-
-    // TODO COPY this  stuff for metrics and rewrite selects./ messages
-
 
 // Date is always UTC time as UNIX_timestamp.
 //
@@ -253,6 +257,9 @@ common_msg_t* _generate_client_info
 //it shoud destroy the client_info.
 common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info)
 {
+    assert ( client_info );
+    assert ( *client_info );
+
     assert ( common_msg_id (*client_info) == COMMON_MSG_CLIENT_INFO );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CINFO);
     assert ( resultmsg );
@@ -281,6 +288,7 @@ common_msg_t* insert_client_info
 {
     assert ( device_id );  // is required
     assert ( client_id );  // is required
+    assert ( blob );
     assert ( *blob );      // is required
 
     uint32_t n = 0;     // number of rows affected
@@ -479,6 +487,9 @@ common_msg_t* _generate_device_type(const char* name)
 //it should destroy the device type
 common_msg_t* _generate_return_device_type(uint32_t devicetype_id, common_msg_t** device_type)
 {
+
+    assert ( device_type );
+    assert ( *device_type );
     assert ( common_msg_id (*device_type) == COMMON_MSG_DEVICE_TYPE );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_DEVTYPE);
     assert ( resultmsg );

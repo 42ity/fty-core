@@ -23,7 +23,7 @@ CREATE TABLE t_bios_measure_key(
 CREATE TABLE t_bios_measure_subkey(
     id_subkey   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
     subkeytag   VARCHAR(25),
-    scale       DECIMAL(5,5),
+    scale       TINYINT,
 
     PRIMARY KEY(id_subkey)
 );
@@ -370,7 +370,10 @@ DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
+DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
+DROP VIEW IF EXISTS v_bios_measure_subkey;
 
+create view v_bios_measure_subkey as select * from t_bios_measure_subkey ;
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
@@ -378,6 +381,7 @@ create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attrib
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
+create view v_bios_monitor_asset_relation as select * from t_bios_asset_element_type;
 create view v_bios_measurements_lastdate as SELECT p.id_key, max(p.timestamp) maxdate, p.id_subkey, p.id_discovered_device FROM v_bios_client_info_measurements p  GROUP BY p.id_key, p.id_subkey, p.id_discovered_device;
 
 create view v_bios_client_info_measurements_last as
@@ -386,10 +390,13 @@ SELECT  v.id,
         v.id_key,
         v.id_subkey,
         v.value,
-        v.timestamp
+        v.timestamp,
+        sk.scale
 FROM    v_bios_client_info_measurements v
         INNER JOIN v_bios_measurements_lastdate grp 
               ON v.id_key = grp.id_key AND
                  v.id_subkey = grp.id_subkey AND
                  v.timestamp = grp.maxdate  AND
-                 v.id_discovered_device = grp.id_discovered_device;
+                 v.id_discovered_device = grp.id_discovered_device
+        INNER JOIN v_bios_measure_subkey sk
+                ON v.id_subkey = sk.id_subkey;

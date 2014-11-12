@@ -170,17 +170,22 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 #----------------------------------------------------------------------
 
 check_PROGRAMS += 			test-utils
-test_utils_SOURCES = 			src/shared/utils.h \
-					tests/shared/test-utils.cc
-test_utils_LDADD = 			libpriv-utils.la \
-					libpriv-test-run.la
-test_utils_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+
+test_utils_SOURCES = 	src/shared/utils.h \
+						tests/shared/test-utils.cc
+
+test_utils_LDADD = 		libpriv-utils.la \
+						libpriv-test-run.la
+
+test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
+						-I$(top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-log
-test_log_SOURCES = 			src/shared/log.h \
-					src/shared/utils.h \
-					tests/shared/test-log.cc
+
+test_log_SOURCES = 		src/shared/log.h \
+						src/shared/utils.h \
+						tests/shared/test-log.cc
+
 test_log_LDADD = 			libpriv-log.la \
 					libpriv-utils.la \
 					libpriv-test-run.la
@@ -225,11 +230,14 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   src/include/common_msg.h
+				   tests/persist/test-asset.cc \
+				   src/include/common_msg.h 
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
-				 libpriv-test-run.la
+				 libpriv-test-run.la \
+				 libpriv-log.la
+
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/ \

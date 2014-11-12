@@ -112,9 +112,10 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
 
 TEST_CASE("net history select all","[dbnethistory][select][getHistory]"){
     std::vector<persist::NetHistory> history = persist::NetHistory::getHistory(url);
-    INFO(history.size());
+    bool result = true;
     for ( auto i = history.begin(); i != history.end(); i++ ) {
-        std::cout<< ((*i).toString()) << std::endl;
+        result = result && !( ((*i).getIp()).compare("1.2.3.4"));
     }
+    REQUIRE (result);
     REQUIRE (history.size() > 0);
 }
