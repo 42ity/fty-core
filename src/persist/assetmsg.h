@@ -15,5 +15,26 @@
 
 asset_msg_t *asset_msg_process(const char *url, asset_msg_t *msg);
 void* void_dup(const void* a); 
+
+
+//---------------
+//internal functions for processing the asset_messages
+
+zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id);
+
+zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, unsigned int link_type_id);
+asset_msg_t* generate_fail(unsigned int errorid);
+
+zhash_t* _select_asset_element_attributes(const char* url, unsigned int element_id);
+asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element);
+asset_msg_t* _select_asset_element(const char* url, unsigned int element_id, unsigned int element_type_id);
+asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
+asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
+uint32_t convert_asset_to_monitor(const char* url, uint32_t asset_element_id);
+uint32_t convert_monitor_to_asset(const char* url, uint32_t discovered_device_id);
+asset_msg_t* _generate_return_measurements (uint32_t device_id, zlist_t** measurements);
+zlist_t* select_last_measurements(const char* url, uint32_t device_id);
+asset_msg_t* _get_last_measurements(const char* url, asset_msg_t* msg);
+//
 #endif // SRC_PERSIST_ASSETMSG_H_
 
