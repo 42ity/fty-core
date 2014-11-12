@@ -23,7 +23,7 @@ CREATE TABLE t_bios_measure_key(
 CREATE TABLE t_bios_measure_subkey(
     id_subkey   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
     subkeytag   VARCHAR(25),
-    scale       DECIMAL(5,5),
+    scale       TINYINT,
 
     PRIMARY KEY(id_subkey)
 );
