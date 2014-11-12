@@ -6,26 +6,28 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_client_info_measurements;
-drop table if exists t_bios_measure_key;
-drop table if exists t_bios_measure_subkey;
+drop table if exists t_bios_measurement_types;
+drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
-CREATE TABLE t_bios_measure_key(
-    id_key   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    keytag   VARCHAR(25),
-
-    PRIMARY KEY(id_key)
+CREATE TABLE t_bios_measurement_types(
+    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    name             VARCHAR(25),
+    PRIMARY KEY(id)
 );
 
-CREATE TABLE t_bios_measure_subkey(
-    id_subkey   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    subkeytag   VARCHAR(25),
-    scale       DECIMAL(5,5),
-
-    PRIMARY KEY(id_subkey)
+CREATE TABLE t_bios_measurement_subtypes(
+    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    type_id          SMALLINT UNSIGNED  NOT NULL,
+    name             VARCHAR(25),
+    scale            TINYINT,
+    PRIMARY KEY(id, type_id)
+    FOREIGN KEY(type_id)
+	REFERENCES t_bios_measurement_types(id)
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_device_type(
@@ -281,11 +283,11 @@ CREATE TABLE t_bios_client_info_measurements(
     INDEX(id_client),
 
     FOREIGN KEY (id_key)
-        REFERENCEs t_bios_measure_key(id_key)
+        REFERENCEs t_bios_measure_types(id)
         ON DELETE RESTRICT,
     
     FOREIGN KEY (id_subkey)
-        REFERENCEs t_bios_measure_subkey(id_subkey)
+        REFERENCEs t_bios_measure_subtypes(id)
         ON DELETE RESTRICT,
     
     FOREIGN KEY (id_discovered_device)
