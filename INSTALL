@@ -401,6 +401,15 @@ there.
 :; /etc/init.d/saslauthd restart
 ----
 
+ * If SASL was installed after the initial creation of the $BIOS project
+user accounts, you need to explicitly add the 'bios' user account to the
+'sasl' group so it has access to the SASL configuration and database (it
+is needed for the client programs to work, and should be done as part of
+the `init-os-accounts.sh` script's job in favorable conditions):
+----
+:; adduser bios sasl
+----
+
 
 Other packages
 ~~~~~~~~~~~~~~
