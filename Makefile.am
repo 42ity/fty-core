@@ -95,8 +95,9 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/include/netdisc_msg.c \
 				src/include/netdisc_msg.h \
 				src/include/powerdev_msg.c \
-				src/include/powerdev_msg.h
-
+				src/include/powerdev_msg.h \
+				src/include/asset_msg.c
+#                src/include/asset_msg.h 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/shared -I$(top_srcdir)/src/simple
 
 
@@ -337,7 +338,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/include/asset_msg.c src/shared/log.c
+                      src/shared/log.c
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
