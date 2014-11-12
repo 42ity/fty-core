@@ -3,7 +3,7 @@
     name = "common_msg"
     signature = "9"
     title = "common messages"
-    script = "zproto_codec_c"
+    script = "zproto_codec_c_v1"
     package_dir = "."
     include = "czmq.h"
     >
@@ -12,12 +12,42 @@
 
 <define name = "VERSION" value = "1.0" />
 
+<message name = "get_measure_type_i">
+    <field name="mt_id" type="number" size="2">Measurement type id</field>
+</message>
+
+<message name = "get_measure_type_s">
+    <field name="mt_name" type="string">Measurement type name</field>
+</message>
+
+<message name = "get_measure_subtype_i">
+    <field name="mt_id" type="number" size="2">Measurement type id</field>
+    <field name="mts_id" type="number" size="2">Measurement subtype id</field>
+</message>
+
+<message name = "get_measure_subtype_s">
+    <field name="mt_id" type="number" size="2">Measurement type id</field>
+    <field name="mts_name" type="string">Measurement subtype name</field>
+</message>
+
+<message name = "return_measure_type">
+    <field name="mt_id" type="number" size="2">Measurement type id</field>
+    <field name="mt_name" type="string">Measurement type name</field>
+</message>
+
+<message name = "return_measure_subtype">
+    <field name="mts_id" type="number" size="2">Measurement subtype id</field>
+    <field name="mt_id" type="number" size="2">Measurement type id</field>
+    <field name="mts_scale" type="number" size="1">Measurement subtype scale</field>
+    <field name="mts_name" type="string">Measurement subtype name</field>
+</message>
+
 <message name = "fail"          id = "201">
     A failed message indicates that some error had occured
     <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
     <field name = "errorno"     type = "number" size = "4"> An error id</field>
     <field name = "errmsg"      type = "string"> A user visible error string</field>
-    <field name = "erraux"      type = "dictionary"> An optional additional information about occured error</field>
+    <field name = "erraux"      type = "hash"> An optional additional information about occured error</field>
 </message>
 
 <message name = "db_ok"         id = "202">
