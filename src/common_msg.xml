@@ -52,6 +52,45 @@
     <field name = "msg"         type = "msg"> Client</field>
 </message>
 
+<message name = "key"        id = "227">
+    Structure describing keys
+    <field name = "keyname"      type = "string"> Name of the client</field>
+    <field name = "scale"        type = "number" size = "4"> Scale TODO</field>
+</message>
+
+<message name = "insert_key" id = "228">
+    Insert a key
+    <field name = "msg"         type = "msg"> Key to be inserted</field>
+</message>
+
+<message name = "delete_key" id = "230">
+    Delete a key
+    <field name = "rowid"   type = "number" size = "4"> Unique ID of the key to be deleted</field>
+</message>
+
+<message name = "return_key" id = "231">
+    Return a key we were asked for
+    <field name = "keytagid"       type = "number" size = "4"> Unique ID of the key</field>
+    <field name = "msg"         type = "msg"> Key </field>
+</message>
+
+<message name = "get_key"  id = "229">
+    Ask for a key
+    <field name = "rowid"   type = "number" size = "4"> Unique ID of the key</field>
+</message>
+
+
+<message name = "new_measurement" id = "239">
+    New measurment
+    <field name = "client_name" type = "string"> Name of the client</field>
+    <field name = "device_name" type = "string"> device name </field>
+    <field name = "device_type" type = "string"> device type </field>
+    <field name = "keytagname"  type = "string"> key </field>
+    <field name = "subkeytag"   type = "number" size = "4"> subkey </field>
+    <field name = "value"       type = "number" size = "8"> measurement value </field>
+</message>
+
+
 <message name = "client_info"   id = "208">
     Structure describing client info
     <field name = "client_id"   type = "number" size = "4"> A client id</field>
