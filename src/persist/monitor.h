@@ -149,8 +149,5 @@ common_msg_t* insert_device(const char* url, const char* devicetype_name, const 
 
 common_msg_t* select_key (const char* url, const char* keytagname);
 common_msg_t* insert_measurement(const char* url,uint32_t client_id,uint32_t device_id,uint32_t keytag_id,uint32_t subkeytag, uint64_t value);
-common_msg_t* select_last_measurements(const char* url, uint32_t device_id);
-uint32_t convert_asset_to_monitor(const char* url, uint32_t asset_element_id);
-uint32_t convert_monitor_to_asset(const char* url, uint32_t monitor_element_id);
 #endif // SRC_PERSIST_MONITOR_H_
 
