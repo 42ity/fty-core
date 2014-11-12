@@ -337,15 +337,28 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
-create view v_bios_client_info_measurements as select  id_measurements, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
+create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
 
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
+drop view if exists v_bios_info_lastdate;
 
 create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
-create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client,id from v_bios_client_info  group by id_discovered_device, id_client;
+create view v_bios_info_lastdate as SELECT max(p.timestamp) maxdate, p.id_discovered_device, p.id_client FROM v_bios_client_info p  GROUP BY p.id_discovered_device, p.id_client;
+
+create view v_bios_client_info_last as
+SELECT  v.id,
+        v.id_discovered_device,
+        v.id_client,
+        v.ext,
+        v.timestamp
+FROM    v_bios_client_info v
+        INNER JOIN v_bios_info_lastdate grp 
+              ON v.id_client = grp.id_client AND
+                 v.timestamp = grp.maxdate  AND
+                 v.id_discovered_device = grp.id_discovered_device;
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
@@ -356,6 +369,7 @@ DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
+DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
@@ -364,5 +378,18 @@ create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attrib
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
+create view v_bios_measurements_lastdate as SELECT p.id_key, max(p.timestamp) maxdate, p.id_subkey, p.id_discovered_device FROM v_bios_client_info_measurements p  GROUP BY p.id_key, p.id_subkey, p.id_discovered_device;
 
-create view v_bios_client_info_measurements_last as select max(timestamp), id_client, id_discovered_device, id_key, id_subkey, value from v_bios_client_info_measurements group by id_client, id_discovered_device, id_key, id_subkey; 
+create view v_bios_client_info_measurements_last as
+SELECT  v.id,
+        v.id_discovered_device,
+        v.id_key,
+        v.id_subkey,
+        v.value,
+        v.timestamp
+FROM    v_bios_client_info_measurements v
+        INNER JOIN v_bios_measurements_lastdate grp 
+              ON v.id_key = grp.id_key AND
+                 v.id_subkey = grp.id_subkey AND
+                 v.timestamp = grp.maxdate  AND
+                 v.id_discovered_device = grp.id_discovered_device;
