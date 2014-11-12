@@ -19,6 +19,10 @@
 #
 # Description: This script adds the group and user accounts used by
 # the $BIOS project, and should work under relocated $ALTROOT dir too.
+# You can export ALTROOT_MAKEFAKE=Y to have the script prepare some
+# files needed for the user management programs to perform (i.e. to
+# generate the snippets in a temporary directory and later copy them
+# elsewhere as part of the image generation or installation procedure).
 # See also: tests/CI/test_web.sh
 # See the variables set below. Can also use DEBUG=Y for more output
 # including sensitive data (like the password or its hash).
@@ -47,6 +51,7 @@ export LANG LC_ALL
 [ x"$USER_NAME" = x ] &&	USER_NAME="bios"
 [ x"$USER_GECOS" = x ] && 	USER_GECOS="User for BIOS processes"
 [ x"$USER_SHELL" = x ] && 	USER_SHELL="/bin/sh"
+[ x"$USER_HOME" = x ] &&	USER_HOME="/home/$USER_NAME"
 [ x"$USER_PASS" = x -a x"$USER_PASS_HASH" = x ] && \
 	USER_PASS="$DEF_USER_PASS" && \
 	USER_PASS_HASH="$DEF_USER_PASS_HASH" && \
@@ -58,8 +63,59 @@ die() {
     exit $CODE
 }
 
+# Simply prepend "sudo" if current "id -n" is not "0" (moderately portable)?
+# A more elaborate solution if needed later can be ported from vboxsvc:
+# http://sourceforge.net/p/vboxsvc/code/HEAD/tree/lib/svc/method/vbox.sh#l337
+# http://sourceforge.net/p/vboxsvc/code/HEAD/tree/lib/svc/method/vbox.sh#l1887
+RUNAS=""
+CURID="`id -u`" || CURID=""
+[ "$CURID" = 0 ] || RUNAS="sudo"
+
 # An alternate image based at ALTROOT may be modified instead of the running OS
 [ x"$ALTROOT" = x ] &&		ALTROOT="/"
+
+# Note this creation of fake root only works if ALTROOT dir is not initialized
+if [ x"$ALTROOT_MAKEFAKE" = xY -a x"$ALTROOT" != x/ ]; then
+    if [ ! -d "$ALTROOT/etc" ]; then
+	echo "INFO: Trying to make a fake altroot structure in '$ALTROOT' as requested..."
+	mkdir -p "$ALTROOT/etc"
+        ( cd "$ALTROOT/etc" && {
+	    mkdir -p default
+	    touch passwd shadow group gshadow login.defs default/useradd nsswitch.conf
+	    chmod 600 shadow gshadow
+
+	    cat <<EOF>nsswitch.conf
+passwd:  files
+group:   files
+shadow:  files
+gshadow: files
+EOF
+
+	    # Make a best-effort with these files, though they are not strictly required
+	    cd /etc
+	    cp -prf login.defs default/useradd \
+		ldap* pam* secur* selinux* \
+		"$ALTROOT/etc/"
+	} )
+
+	if [ ! -d "$ALTROOT/lib" ]; then
+	    mkdir -p "$ALTROOT/lib"
+	    ( cd /lib && { \
+		    find . -name 'libnss*.so*'; \
+		    find . -name 'libnsl*.so*'; \
+		    find . -name 'libc*.so*'; \
+	      } | while read F; do
+		D="`dirname "$F"`"
+		mkdir -p "$ALTROOT/lib/$D"
+		cp -pf "$F" "$ALTROOT/lib/$D/"
+	      done )
+	fi
+
+    else
+	echo "WARNING: Requested to make a fake altroot structure in '$ALTROOT' but it seems to exist, skipped step"
+    fi
+fi
+
 [ -d "$ALTROOT" -a -d "$ALTROOT/etc" ] || \
 	die "Alternate (chroot) OS-image directory requested but not available: '$ALTROOT'"
 
@@ -70,14 +126,6 @@ die() {
   -f "$ALTROOT/etc/default/useradd" -a \
   -f "$ALTROOT/etc/login.defs" -a -f "$ALTROOT/etc/nsswitch.conf" ] || \
 	echo "WARNING: Alternate (chroot) OS-image directory '$ALTROOT' does not contain all expected files: local authentication database manipulation can fail during processing below"
-
-# Simply prepend "sudo" if current "id -n" is not "0" (moderately portable)?
-# A more elaborate solution if needed later can be ported from vboxsvc:
-# http://sourceforge.net/p/vboxsvc/code/HEAD/tree/lib/svc/method/vbox.sh#l337
-# http://sourceforge.net/p/vboxsvc/code/HEAD/tree/lib/svc/method/vbox.sh#l1887
-RUNAS=""
-CURID="`id -u`" || CURID=""
-[ "$CURID" = 0 ] || RUNAS="sudo"
 
 hashPasswd() {
     # Creates a UNIX password hash using $MKPASSWD or $OPENSSL and the
@@ -161,9 +209,13 @@ genUser() {
 	echo "INFO: Creating user:group '$USER_NAME:$GROUP_NAME'" || \
 	echo "INFO: Using password hash '$USER_PASS_HASH' for user:group '$USER_NAME:$GROUP_NAME'"
 
+    if [ x"$ALTROOT_MAKEFAKE" = xY -a -d "$ALTROOT" -a x"$ALTROOT" != x/ ]; then
+	$RUNAS mkdir -p "$ALTROOT/`dirname "$USER_HOME"`"
+    fi
+
     $RUNAS useradd -g "$GROUP_NAME" -s "$USER_SHELL" \
 	-R "$ALTROOT" -c "$USER_GECOS" \
-	-m -d "/home/$USER_NAME" \
+	-m -d "$USER_HOME" \
 	-p "$USER_PASS_HASH" \
 	"$USER_NAME"
     RES_U=$?
