@@ -13,7 +13,7 @@
  * message type names.
  *
  * @param msg Message to process
- * @return Reply to the message, error or NULL
+ * @return Reply to the message (either correct one or error one)
  *
  */
 zmsg_t* process_measures_meta(zmsg_t** msg);
@@ -25,7 +25,7 @@ zmsg_t* process_measures_meta(zmsg_t** msg);
  * message type names.
  *
  * @param msg Message to process
- * @return Reply to the message, error or NULL
+ * @return Reply to the message (either correct one or error one)
  *
  */
 zmsg_t* process_measures_meta(common_msg_t** msg);
