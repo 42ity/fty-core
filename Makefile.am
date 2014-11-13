@@ -14,7 +14,7 @@ CLEANFILES =
 DISTCLEANFILES =
 TESTS =
 
-SUBDIRS = docs/man
+SUBDIRS = docs/man docs/examples tools
 
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
