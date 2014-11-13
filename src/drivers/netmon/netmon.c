@@ -284,6 +284,8 @@ print_addrinfo (const struct sockaddr_nl *who, struct nlmsghdr *n,
     }
     */
     
+    // two sends; one for DB_SOCK, one for FILIP_SOCK (because DEALER)
+    netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
     netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
 	return 0;
 }
@@ -488,14 +490,15 @@ int main(int argc, char **argv) {
         fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented, use kill -9 for now\n");
     }
 
-//    zsys_catch_interrupts ();
-//    zsys_handler_set (&interrupt);
-
     unsigned groups = ~RTMGRP_TC;
 	const char *prog = *argv; 
 
-    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
-    assert(dbsock);
+    zsock_t * dbsock = zsock_new (ZMQ_DEALER);
+    assert (dbsock);
+    int rv = zsock_connect (dbsock, DB_SOCK);
+    assert (rv != -1);
+    rv = zsock_connect (dbsock, FILIP_SOCK);
+    assert (rv != -1);
 
     rtnl_close(&rth);
     argc--;	argv++;

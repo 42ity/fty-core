@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*! \file nmap.cc
     \brief Nmap driver - react on incomming queue and parse results
     \author Michal Vyskocil <michalvyskocil@eaton.com>
+            Karol Hrdina    <karolhrdina@eaton.com>
  */
 
 #include <set>
@@ -36,6 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nmap-parse.h"
 #include "log.h"
 #include "defs.h"
+#include "cidr.h"
 
 typedef shared::ProcessQue ProcessQue;
 typedef shared::SubProcess SubProcess;
@@ -45,7 +47,7 @@ typedef shared::ProcCacheMap ProcCacheMap;
 static ProcessQue _que{4};
 static ProcCacheMap _pcmap{};
 static std::set<int> _fd_set;
-static zsock_t *ls_router = NULL;
+static zsock_t *outgoing = NULL;
 
 static std::map<NmapMethod, Argv> _map = {
     {NmapMethod::DefaultListScan, {NMAP_BIN, "-oX", "-", "-sL"}},
@@ -115,18 +117,18 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
         std::pair<std::string, std::string> p = _pcmap.pop(proc->getPid());
 
         if (proc->getReturnCode() != 0) {
-            //\todo how to report scan fail?
+            // scan has failed
+            log_error ("scan failed! return code: %d; cmd line: '%s'\n",
+                       proc->getReturnCode(), proc->argvString().c_str());
         }
         else {
             //\todo make it nicer! There needs to be code mapping argv to NmapMethod
             auto argv = proc->argv();
             if (std::count(argv.begin(), argv.end(), "-sL")) {
-                log_info ("PRE - parse_list_scan()\n");
-                parse_list_scan(p.first, ls_router);
-                log_info ("POST - parse_list_scan()\n");
+                parse_list_scan(p.first, outgoing);
             }
             else {
-                parse_device_scan(p.first, ls_router);
+                parse_device_scan(p.first, outgoing);
             }
         }
 
@@ -148,6 +150,7 @@ static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
 }
 
 static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
+    log_info ("start\n");
 
     nmap_msg_t *msg = nmap_msg_recv (reader);
     assert (msg);
@@ -163,11 +166,13 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
 
             // field: args
             enum NmapMethod method;
-            if (streq (command, SCAN_CMDTYPE_DEFAULT_LIST)) {
+            if (streq (command, SCAN_CMDTYPE_DEFAULT_LIST)) {                
                 method = NmapMethod::DefaultListScan;
+                log_debug ("default list scan\n");
             }
             else if (streq (command, SCAN_CMDTYPE_DEFAULT_DEVICE)) {
                 method = NmapMethod::DefaultDeviceScan;
+                log_debug ("default device scan\n");
             }
             else {
                 log_error ("message of type 'scan_command' can not have field 'type' empty;\n");        
@@ -186,12 +191,25 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
                 args.push_back(next_item);                      
                 free (next_item);
             }
-    
+
+            // check for IPV6 address 
+            shared::CIDRAddress check_ipv6 (args[args.size() - 1]);
+            if (check_ipv6.protocol() == 6) {
+                log_warning ("IPV6 functionality is not implemented yet. Skipping.\n");
+                break;
+            }
+            else if (check_ipv6.protocol() == 0) {
+                // maybe assert in front of this if-construct would have sufficed
+                log_error ("An invalid ip address has been supplied: '%s'\n", args[args.size() - 1].c_str());
+                break;
+            }
+ 
             // field: headers
             // Headers are not being used at the moment
 
             // Add the prepared command+arguments to the queue
             _que.add(args);                                     
+            log_debug ("added to queue.\n");
             break;
         }
         case NMAP_MSG_LIST_SCAN:
@@ -217,17 +235,16 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     }
 
     nmap_msg_destroy (&msg);
+    log_info ("end\n");
     return 0;
 }
 
 void nmap_actor (zsock_t *pipe, void *args) {
 
-    log_info ("%s", "nmap_actor() start\n");
+    log_info ("start\n");
 
     zsock_t *cmdfd = zsock_new_router (DRIVER_NMAP_SOCK);
     assert (cmdfd);
-    ls_router = zsock_new_dealer (DRIVER_NMAP_REPLY);
-    assert (ls_router);
 
     zpoller_t *poller = zpoller_new (cmdfd, pipe, NULL);
     assert (poller);
@@ -246,7 +263,11 @@ void nmap_actor (zsock_t *pipe, void *args) {
     zpoller_destroy (&poller);
     zsock_destroy (&cmdfd);
 
-    log_info ("%s", "nmap_actor() end\n");
+    assert (loop == NULL);
+    assert (poller == NULL);
+    assert (cmdfd == NULL);
+
+    log_info ("end\n");
 }
 
 void nmap_stdout (zsock_t *pipe, void *args) {
@@ -267,78 +288,113 @@ void nmap_stdout (zsock_t *pipe, void *args) {
 */
 }
 
-int main() {
+int main (int argc, char **argv) {
 
     log_open();
     log_set_level(LOG_DEBUG);
+    log_info ("nmap daemon start\n");
+
+    bool test_mode = false;
 
     const char *target = getenv("NMAP_SCANNER_TARGET");
-    if (target == NULL ||
-        strlen (target) == 0) {
-        log_critical ("Environment variable %s not set\n", "NMAP_SCANNER_TARGET");
-        return 1;
-    }
-
     const char *which = getenv("NMAP_SCANNER_TYPE");
-    if (which == NULL ||
-        strlen(which) == 0) {
-        log_critical ("Environment variable %s not set\n", "NMAP_SCANNER_TYPE");
-        return 1;
-    }
-    if (strcmp(which, "defaultlistscan") != 0 &&
-        strcmp(which, "defaultdevicescan") != 0) {
-        log_critical ("Environment variable %s must ne either \n %s OR\n%s\n",
-                      "NMAP_SCANNER_TYPE",
-                       "defaultlistscan",
-                       "defaultdevicescan");
-        return 1;
+    if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
+        test_mode = true;
+        fprintf (stderr, "Test Mode:\n\
+Nmap scanner expects environment variables '%s' and '%s' to be set. The first \
+variable sets the scan target (i.e. 10.130.38.100/30), the second variable \
+sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
+        "NMAP_SCANNER_TARGET", "NMAP_SCANNER_TYPE",
+        "defaultlistscan", "defaultdevicescan");
+        if (target == NULL ||
+            strlen (target) == 0) {
+            log_critical ("Environment variable %s not set.\n", "NMAP_SCANNER_TARGET");
+            log_critical ("You have to set this variable when in --test-mode\n");
+            return EXIT_FAILURE;
+        }
+        if (which == NULL ||
+            strlen(which) == 0) {
+            log_critical ("Environment variable %s not set.\n", "NMAP_SCANNER_TYPE");
+            log_critical ("You have to set this variable when in --test-mode\n");
+            return EXIT_FAILURE;
+        }
+        if (strcmp(which, "defaultlistscan") != 0 &&
+            strcmp(which, "defaultdevicescan") != 0) {
+            log_critical ("Environment variable '%s' must be either '%s' OR '%s'\n",
+                          "NMAP_SCANNER_TYPE", "defaultlistscan", "defaultdevicescan");
+            return EXIT_FAILURE;
+        }
+       
     }
 
-    log_info ("environment variable NMAP_SCANNER_TARGET = '%s'\n", target);
-    log_info ("environment variable NMAP_SCANNER_TYPE = '%s'\n", which);
-
+    //
     zactor_t *nmap = zactor_new (nmap_actor, NULL);
     assert (nmap);
-   
-    // TODO connect here is ok, the other connects (inside actors) should be binds
-    zsock_t *dealer = zsock_new_dealer (DRIVER_NMAP_SOCK);
-    assert (dealer);
-    zsock_t *router = zsock_new_router (DRIVER_NMAP_REPLY);
-    assert (router);
-    ls_router = zsock_new_dealer (DRIVER_NMAP_REPLY);
-    assert (ls_router);
+    zclock_sleep (1000);
 
-    nmap_msg_t * msg = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
-    assert (msg);
-    nmap_msg_set_type (msg, "%s", which, NULL);
+    zsock_t *incoming = zsock_new_dealer (DRIVER_NMAP_SOCK);
+    assert (incoming);
+    outgoing = zsock_new_dealer (DRIVER_NMAP_REPLY);
+    assert (outgoing);
 
-    zlist_t *zl = zlist_new ();
-    zlist_append (zl, (void *) target);
-    nmap_msg_set_args (msg, &zl);
-    zlist_destroy (&zl);
+    zpoller_t *poller = NULL;
 
-    log_info ("sending message\n");
-    nmap_msg_send (&msg, dealer);
-    log_info ("message send\n");
-    
-    // TODO - same thing with uninterupability;
-    // until next commit, please don't bash me for this
-    while (1) {
-        zclock_sleep (1000);
-        nmap_msg_t *msg = nmap_msg_recv (router);
+    if (test_mode == true) {
+        log_debug ("environment variable NMAP_SCANNER_TARGET = '%s'\n", target);
+        log_debug ("environment variable NMAP_SCANNER_TYPE = '%s'\n", which);
+         
+        zsock_t *router = zsock_new_router (DRIVER_NMAP_REPLY);
+        assert (router);
+        // construct the nmap scan_command
+        nmap_msg_t * msg = nmap_msg_new (NMAP_MSG_SCAN_COMMAND);
         assert (msg);
-        int msg_id = nmap_msg_id (msg);
-        nmap_msg_print (msg);
-        //log_critical ("GOT IT! '%d'\n", msg_id);
-        nmap_msg_destroy (&msg);
+        nmap_msg_set_type (msg, "%s", which, NULL);
+
+        zlist_t *zl = zlist_new ();
+        zlist_append (zl, (void *) target);
+        nmap_msg_set_args (msg, &zl);
+        zlist_destroy (&zl);
+       
+        nmap_msg_send (&msg, incoming);
+
+        poller = zpoller_new (router);
+        assert (poller);
+
+        while (!zpoller_terminated (poller)) {
+            // don't care about which socket, only one is being polled            
+            zpoller_wait (poller, -1);
+            if (zpoller_terminated (poller)) {
+                log_info ("SIGINT received. Quitting.\n");
+                break;
+            }
+            // get the result and print it
+            nmap_msg_t *msg = nmap_msg_recv (router);
+            assert (msg != NULL);
+            int msg_id = nmap_msg_id (msg);
+            nmap_msg_print (msg);
+            nmap_msg_destroy (&msg);
+
+        }
+        zsock_destroy (&router);        
+        assert (router == NULL);
+    } else {
+        poller = zpoller_new (nmap, NULL);
+        assert (poller);
+
+        while (!zpoller_terminated (poller)) {
+            zsock_t *which = (zsock_t *) zpoller_wait (poller, -1);
+            if (zpoller_terminated (poller)) {            
+                log_info ("SIGINT received. Quitting.\n");
+            }
+        }
     }
 
+    zpoller_destroy (&poller);
     zactor_destroy(&nmap);
-    //  zactor_destroy(&nmap2);
-    zsock_destroy (&dealer);
-    zsock_destroy (&router);
-    zsock_destroy (&ls_router);
-    log_info ("%s", "destroying nmap_actor\n");
+    zsock_destroy (&incoming);
+    zsock_destroy (&outgoing);
+
+    log_info ("nmap daemon stop\n");
     log_close ();
-    return 0;
+    return EXIT_SUCCESS;
 }
