@@ -429,6 +429,11 @@ the `init-os-accounts.sh` script's job in favorable conditions):
 :; adduser bios sasl
 ----
 
+ * Also note that the path to the SASL MUX socket is (currently) compiled
+into the binary code, so the building user must either have access to the
+socket (`adduser builder sasl`) or an explicit '--with-saslauthd-mux=...'
+option must be passed to `configure`.
+
 
 Other packages
 ~~~~~~~~~~~~~~
