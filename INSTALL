@@ -35,10 +35,20 @@ account first):
 ----
 :; git clone ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git
 ----
-...or over HTTP (plaintext password may be required which is not secure, and
-special characters may need URL percent-encoding which is inconvenient):
+...or over HTTP with common '~/.netrc' set up to store the cleartext login
+(note that 'machine', 'login' and 'password' are NETRC syntax keywords;
+google for details about further securing NETRC with GPG or chaining other
+storage methods with newer `git config --global credential.helper`):
 ----
-:; git clone http://E1234567:MyPass@stash.mbt.lab.etn.com/scm/bios/core.git
+:; echo "machine stash.mbt.lab.etn.com login E1234567 password p@ssW0rd!" >> ~/.netrc
+:; chmod 600 ~/.netrc
+:; git clone http://stash.mbt.lab.etn.com/scm/bios/core.git
+----
+...or over HTTP with explicit login information (plaintext password may
+be required which is not secure, and special characters may need URL
+percent-encoding which is inconvenient):
+----
+:; git clone http://E1234567:p%40ssW0rd%21@stash.mbt.lab.etn.com/scm/bios/core.git
 ----
 
 Alternately, if you don't have access to the project's Stash, you can copy
@@ -114,7 +124,7 @@ build-results repositories, including the following Linux OS releases:
  * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
 These packages include such build and/or runtime dependencies as
-libvariant, iproute2, mariadb, zeromq and so on.
+libvariant, iproute2, mariadb, zeromq, nmap and so on.
 
 [NOTE]
 *NOTE*: See the document 'INSTALL-referenceOS-debian8' (or its derivative
@@ -196,7 +206,7 @@ iproute (may be named iproute2)
  * Install iproute-dev development files, version "20120521" or newer,
 using your configured system repositories, i.e. with Debian APT:
 ----
-:; apt-get install iproute2-dev
+:; apt-get install -y iproute2-dev
 
 ### Note that this should fetch the non-empty variant of the package
 ### from OBS with uotput like this:
@@ -244,21 +254,40 @@ MariaDB
 ~~~~~~~
  * Install MariaDB development and product packages from OBS:
 ----
-:; apt-get install libmariadbclient-dev libmariadbd-dev \
+:; apt-get install -y libmariadbclient-dev libmariadbd-dev \
    mariadb-server mariadb-client mariadb-test
 
 ### Pick the version needed to match the rest of the database,
 ### the OBS serves 'mariadb-10.0' at the moment of this writing:
-:; apt-get install mariadb-connect-engine'*'
+:; apt-get install -y mariadb-connect-engine'*'
 ----
- ** The 'mariadb-server' installer will ask for the database's 'root'
-user new password.
+
+ ** The 'mariadb-server' installer can ask for the database's 'root'
+user new password (otherwise, you'll enter one per documentation
+for setup of the database engine). You might benefit from saving it
+into a standard configuration file used by the MySQL-related tools:
+----
+:; [ -s ~/.my.cnf ] || { \
+	touch ~/.my.cnf; \
+	chmod 600 ~/.my.cnf; \
+	cat <<EOF> ~/.my.cnf
+[client]
+user=root
+password=biosroot
+EOF
+----
+
+ ** To enable the database service run (note: legacy-named 'mysql'):
+----
+:; systemctl enable mysql
+:; systemctl restart mysql
+----
 
 libCIDR and CIDRcalc
 ~~~~~~~~~~~~~~~~~~~~
  * Install libcidr and related stuff:
 ----
-:; apt-get install cidrcalc libcidr'*'
+:; apt-get install -y cidrcalc libcidr'*'
 ----
  ** Note that the package-name version is numbered ('libcidr0' and
 'libcidr0-dev') at the moment of this writing, which is a bit
@@ -269,7 +298,7 @@ TNTNET, TNTDB, CXXTOOLS and friends
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * Install the TNT project parts:
 ----
-:; apt-get install tntnet tntnet-runtime libcxxtools-dev \
+:; apt-get install -y tntnet tntnet-runtime libcxxtools-dev \
    libtntdb-dev libtntnet-dev libtnt-dev libsasl2-dev
 ----
  ** Notes: the `cxxtools` or `libcxxtools` package may be absent or differently
@@ -282,7 +311,7 @@ Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
  * Install NUT project parts needed for linking:
 ----
-:; apt-get install libupsclient-dev libnutclient-dev
+:; apt-get install -y libupsclient-dev libnutclient-dev
 ----
  ** Note: specifically the $BIOS core project needs 'libnutclient' version
 0.27 or newer, which is provided either by recent source of the Network
@@ -291,7 +320,7 @@ Debian).
  ** If you need more of NUT (actual programs -- drivers, server and client
 daemons and utilities), consider adding these packages:
 ----
-:; apt-get install nut-server nut-client nut
+:; apt-get install -y nut-server nut-client nut
 ----
  ** Installation of 'nut-client' can complain on a `systemd`-controlled OS
 like Debian 8, because it tries to start all daemons regardless of their
@@ -307,14 +336,14 @@ libVariant
 ~~~~~~~~~~
  * Install libVariant:
 ----
-:; apt-get install libvariant-dev
+:; apt-get install -y libvariant-dev
 ----
 
 ZeroMQ and friends
 ~~~~~~~~~~~~~~~~~~
  * Install ZeroMQ and related project parts:
 ----
-:; apt-get install libsodium-dev libzmq3-dev libczmq-dev gsl-bin
+:; apt-get install -y libsodium-dev libzmq3-dev libczmq-dev gsl-bin
 ----
 
  * On a rare system used to develop the ZMQ-based protocols involved 
@@ -328,6 +357,96 @@ refer to these projects directly for more details:
  ** https://github.com/imatix/gsl
 
 
+Install run-time dependencies
+-----------------------------
+Some third-party projects are required at run-time (to validate or
+actually use various components of the $BIOS project) rather than
+to just compile its code.
+
+Group and user accounts
+~~~~~~~~~~~~~~~~~~~~~~~
+For added security, the daemons run as unprivileged users. For those few
+known operations which require more privileges than are normally available,
+elevation is configured as detailed below.
+
+To create the local group and user accounts needed for $BIOS, run the script
+`tools/init-os-accounts.sh` as 'root':
+----
+:; CREATE_HOME=yes tools/init-os-accounts.sh
+----
+
+The script allows much customization intended for image construction and 
+other advanced non-default applications; for now see the comments in its
+code for details on further configuration.
+
+
+The SUDO program
+~~~~~~~~~~~~~~~~
+The standard Unix `sudo` program is used to allow elevations for the $BIOS
+project accounts to execute many specific tasks.
+
+* Make sure it is available:
+----
+:; apt-get install -y sudo
+----
+
+* Inspect and copy the sample $BIOS project configuration file into your
+'sudo' installation:
+----
+:; cp docs/examples/bios_sudo_conf /etc/sudoers.d/
+----
+(Consult that file regarding the matters of what it sets, why and how).
+
+
+SASL2 daemon and PAM
+~~~~~~~~~~~~~~~~~~~~
+The SASL daemon should be running in order for `test_web.sh` (and other cases
+of the REST API) to work with the $BIOS unprivileged user account(s).
+
+ * Install the SASL daemon and additional PAM modules:
+----
+:; apt-get install -y sasl2-bin libpam-runtime libpam-modules-bin \
+    libpam-modules libpam-cracklib
+----
+
+ * Enable it to auto-start by editing '/etc/default/saslauthd' and setting:
+----
+START=yes
+----
+there.
+
+ * Ensure that it works now by running:
+----
+:; /etc/init.d/saslauthd restart
+----
+
+ * If SASL was installed after the initial creation of the $BIOS project
+user accounts, you need to explicitly add the 'bios' user account to the
+'sasl' group so it has access to the SASL configuration and database (it
+is needed for the client programs to work, and should be done as part of
+the `init-os-accounts.sh` script's job in favorable conditions):
+----
+:; adduser bios sasl
+----
+
+ * Also note that the path to the SASL MUX socket is (currently) compiled
+into the binary code, so the building user must either have access to the
+socket (`adduser builder sasl`) or an explicit '--with-saslauthd-mux=...'
+option must be passed to `configure`.
+
+Beside the setup discussed above, no extra configuration for SASL and PAM
+is needed on the target Debian 8 platform -- everything is pre-integrated
+by the OS.
+
+
+
+Other packages
+~~~~~~~~~~~~~~
+----
+:; apt-get install -y nmap
+----
+
+
 Configure and build the $BIOS project sources
 ---------------------------------------------
 (Getting the project sources is covered above in this document).
@@ -336,6 +455,7 @@ The autogen.sh script
 ~~~~~~~~~~~~~~~~~~~~~
 The project includes an `autogen.sh` script which currently defines the
 following methods (selected by first attribute on the command-line):
+
  * (no attributes) Recreate the `configure` script if needed, and exit
  * 'build' or 'build-samedir' -- (re)create `configure` if needed, run it
 in the project root directory, execute a parallel (for speed) and then a
@@ -356,6 +476,7 @@ The short version
 If everything goes smoothly, you just need to run this snippet in the
 base directory of your source-code checkout (details and explanations
 follow in the next chapter) for a (re)build of the $BIOS core codebase:
+
  * set up the paths (optionally -- the values shown below are the defaults
 for the `autogen.sh` script if nothing has been defined by the user):
 ----
@@ -476,7 +597,11 @@ else (if configure script exists and is acceptable):
 
 Testing the build
 -----------------
-The 'Makefile' includes some targets for automated testing, such as
+Before testing the REST API with `test_web.sh`, make sure to configure
+the OS properly (including the user accounts and runtime dependencies
+described above).
+
+The 'Makefile' includes some targets for automated testing, such as:
 
  * `make check` -- this would trigger the compilation of all tests
    (including 'db-tests'), and run all tests except 'db-tests'.
@@ -488,4 +613,3 @@ Note: as part of the project's automated validation the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
 build. An `./autogen.sh distcheck` method exists to automate this into a
 single-command routine to configure-build-check.
-
