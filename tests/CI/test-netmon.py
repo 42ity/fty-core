@@ -60,16 +60,6 @@ def parse_ip_a_s(out):
             ret.append((name, ipver, ipaddr, int(prefixlen), mac))
     return ret
 
-# why?
-def decode_mac(mac_i):
-    """Decode DB number back to string ..."""
-
-    mac = ""
-    for i in range(6):
-        mac = "%02x:%s" % (0xff & mac_i, mac)
-        mac_i = mac_i >> 8
-    return mac[:-1]
-
 def read_db(db):
     """
     read content from db
@@ -83,7 +73,7 @@ def read_db(db):
 
     try:
         cur.execute("SELECT name, ip, mask, mac FROM v_bios_net_history WHERE command = 'a'")
-        ret = [(name, "inet" if "." in ip else "inet6", ip, mask, decode_mac(mac)) for 
+        ret = [(name, "inet" if "." in ip else "inet6", ip, mask, mac.lower()) for 
             name, ip, mask, mac in cur.fetchall()]
     except Exception as e:
         raise e
