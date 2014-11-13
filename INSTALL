@@ -261,8 +261,22 @@ MariaDB
 ### the OBS serves 'mariadb-10.0' at the moment of this writing:
 :; apt-get install -y mariadb-connect-engine'*'
 ----
- ** The 'mariadb-server' installer will ask for the database's 'root'
-user new password.
+
+ ** The 'mariadb-server' installer can ask for the database's 'root'
+user new password (otherwise, you'll enter one per documentation
+for setup of the database engine). You might benefit from saving it
+into a standard configuration file used by the MySQL-related tools:
+----
+:; [ -s ~/.my.cnf ] || { \
+	touch ~/.my.cnf; \
+	chmod 600 ~/.my.cnf; \
+	cat <<EOF> ~/.my.cnf
+[client]
+user=root
+password=biosroot
+EOF
+----
+
  ** To enable the database service run (note: legacy-named 'mysql'):
 ----
 :; systemctl enable mysql
