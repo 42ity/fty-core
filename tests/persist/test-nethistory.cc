@@ -114,7 +114,7 @@ TEST_CASE("net history select all","[dbnethistory][select][getHistory]"){
     std::vector<persist::NetHistory> history = persist::NetHistory::getHistory(url);
     bool result = true;
     for ( auto i = history.begin(); i != history.end(); i++ ) {
-        result = result && !( ((*i).getIp()).compare("1.2.3.4"));
+        result = result && ( (*i).getId() >= 7 ) && ( (*i).getId() <=10 ) ;
     }
     REQUIRE (result);
     REQUIRE (history.size() > 0);
