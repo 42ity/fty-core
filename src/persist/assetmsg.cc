@@ -375,7 +375,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         // Can return one row or nothing 
         tntdb::Statement st_dev = conn.prepareCached(
             " select"
-            " conv(v.mac,10,16) , v.ip, v.hostname , v.full_hostname "
+            " v.mac, v.ip, v.hostname , v.full_hostname "
             "   , v.id_asset_device_type, v.id_asset_device"
             " from"
             " v_bios_asset_device v"
