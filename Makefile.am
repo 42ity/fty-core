@@ -318,8 +318,8 @@ driver_nmap_SOURCES = src/drivers/nmap/nmap-driver.h \
 					  src/include/nmap_msg.h \
 					  src/include/nmap_msg.c
 
-driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la
-driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS}
+driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la libpriv-cidr.la
+driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 			   		   -I$(top_srcdir)/src/simple
 
