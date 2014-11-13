@@ -6,8 +6,8 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_client_info_measurements;
-drop table if exists t_bios_measurement_types;
 drop table if exists t_bios_measurement_subtypes;
+drop table if exists t_bios_measurement_types;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
@@ -24,7 +24,11 @@ CREATE TABLE t_bios_measurement_subtypes(
     type_id          SMALLINT UNSIGNED  NOT NULL,
     name             VARCHAR(25) NOT NULL,
     scale            TINYINT NOT NULL,
-    PRIMARY KEY(id, type_id)
+
+    PRIMARY KEY(id, type_id),
+
+    INDEX(id, type_id),
+
     FOREIGN KEY(type_id)
 	REFERENCES t_bios_measurement_types(id)
         ON DELETE RESTRICT
@@ -271,33 +275,28 @@ CREATE TABLE t_bios_client_info_measurements(
     id_client               TINYINT UNSIGNED    NOT NULL,
     id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
-    id_key                  SMALLINT UNSIGNED   NOT NULL,
     id_subkey               SMALLINT UNSIGNED   NOT NULL,
+    id_key                  SMALLINT UNSIGNED   NOT NULL,
     value                   INT                 NOT NULL,
 
     PRIMARY KEY(id_measurements),
 
     INDEX(id_discovered_device),
-    INDEX(id_key),
-    INDEX(id_key, id_subkey),
+    INDEX(id_subkey, id_key),
     INDEX(id_client),
 
-    FOREIGN KEY (id_key)
-        REFERENCEs t_bios_measure_types(id)
-        ON DELETE RESTRICT,
-    
-    FOREIGN KEY (id_key, id_subkey)
-        REFERENCEs t_bios_measure_subtypes(id, type_id)
+    FOREIGN KEY (id_subkey, id_key)
+        REFERENCES t_bios_measurement_subtypes(id, type_id)
         ON DELETE RESTRICT,
     
     FOREIGN KEY (id_discovered_device)
-        REFERENCEs t_bios_discovered_device(id_discovered_device)
+        REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT,
 
     FOREIGN KEY (id_client)
         REFERENCES t_bios_client(id_client)
         ON DELETE RESTRICT
-);
+) ENGINE=INNODB;
 
 CREATE TABLE t_bios_monitor_asset_relation(
     id_ma_relation        INT UNSIGNED      NOT NULL AUTO_INCREMENT,
