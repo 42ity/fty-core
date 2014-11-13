@@ -2,21 +2,30 @@ create database IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_c
 
 use box_utf8;
 
+DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_client_info_measurements;
-drop table if exists t_bios_measurements;
+drop table if exists t_bios_measure_key;
+drop table if exists t_bios_measure_subkey;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
-CREATE TABLE t_bios_measurements(
-    id_measurement   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    keytag           VARCHAR(25),
-    scale            DECIMAL(5,5),
+CREATE TABLE t_bios_measure_key(
+    id_key   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    keytag   VARCHAR(25),
 
-    PRIMARY KEY(id_measurement)
+    PRIMARY KEY(id_key)
+);
+
+CREATE TABLE t_bios_measure_subkey(
+    id_subkey   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    subkeytag   VARCHAR(25),
+    scale       TINYINT,
+
+    PRIMARY KEY(id_subkey)
 );
 
 CREATE TABLE t_bios_device_type(
@@ -60,7 +69,7 @@ CREATE TABLE t_bios_discovered_ip(
 CREATE TABLE t_bios_net_history(
     id_net_history  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
     command         CHAR(1)             NOT NULL,
-    mac             BIGINT UNSIGNED,
+    mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
     ip              CHAR(19)            NOT NULL,
     name            VARCHAR(25),
@@ -180,7 +189,7 @@ CREATE TABLE t_bios_asset_device (
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
   ip                    CHAR(19),
-  mac                   BIGINT UNSIGNED,
+  mac                   CHAR(17),
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
@@ -258,20 +267,25 @@ CREATE TABLE t_bios_asset_ext_attributes(
 CREATE TABLE t_bios_client_info_measurements(
     id_measurements         BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED,
+    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
-    id_measurement          SMALLINT UNSIGNED        NOT NULL,
-    subkeytag               INT UNSIGNED,
+    id_key                  SMALLINT UNSIGNED   NOT NULL,
+    id_subkey               SMALLINT UNSIGNED   NOT NULL,
     value                   INT                 NOT NULL,
 
     PRIMARY KEY(id_measurements),
 
     INDEX(id_discovered_device),
-    INDEX(id_measurement),
+    INDEX(id_key),
+    INDEX(id_subkey),
     INDEX(id_client),
 
-    FOREIGN KEY (id_measurement)
-        REFERENCEs t_bios_measurements(id_measurement)
+    FOREIGN KEY (id_key)
+        REFERENCEs t_bios_measure_key(id_key)
+        ON DELETE RESTRICT,
+    
+    FOREIGN KEY (id_subkey)
+        REFERENCEs t_bios_measure_subkey(id_subkey)
         ON DELETE RESTRICT,
     
     FOREIGN KEY (id_discovered_device)
@@ -281,6 +295,26 @@ CREATE TABLE t_bios_client_info_measurements(
     FOREIGN KEY (id_client)
         REFERENCES t_bios_client(id_client)
         ON DELETE RESTRICT
+);
+
+CREATE TABLE t_bios_monitor_asset_relation(
+    id_ma_relation        INT UNSIGNED      NOT NULL AUTO_INCREMENT,
+    id_discovered_device  SMALLINT UNSIGNED NOT NULL,
+    id_asset_element      INT UNSIGNED      NOT NULL,
+
+    PRIMARY KEY(id_ma_relation),
+    
+    INDEX(id_discovered_device),
+    INDEX(id_asset_element),
+
+    FOREIGN KEY (id_discovered_device)
+        REFERENCEs t_bios_discovered_device(id_discovered_device)
+        ON DELETE RESTRICT,
+
+    FOREIGN KEY (id_asset_element)
+        REFERENCEs t_bios_asset_element(id_asset_element)
+        ON DELETE RESTRICT
+
 );
 
 drop view if exists v_bios_device_type;
@@ -303,15 +337,28 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
-create view v_bios_client_info_measurements as select  id_measurements, id_client , id_discovered_device, timestamp , id_measurement  ,  subkeytag , value from t_bios_client_info_measurements;
+create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
 
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
+drop view if exists v_bios_info_lastdate;
 
 create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
-create view v_bios_client_info_last as select max(timestamp) datum, ext, id_discovered_device, id_client,id from v_bios_client_info  group by id_discovered_device, id_client;
+create view v_bios_info_lastdate as SELECT max(p.timestamp) maxdate, p.id_discovered_device, p.id_client FROM v_bios_client_info p  GROUP BY p.id_discovered_device, p.id_client;
+
+create view v_bios_client_info_last as
+SELECT  v.id,
+        v.id_discovered_device,
+        v.id_client,
+        v.ext,
+        v.timestamp
+FROM    v_bios_client_info v
+        INNER JOIN v_bios_info_lastdate grp 
+              ON v.id_client = grp.id_client AND
+                 v.timestamp = grp.maxdate  AND
+                 v.id_discovered_device = grp.id_discovered_device;
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
@@ -322,6 +369,7 @@ DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
+DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
@@ -330,5 +378,18 @@ create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attrib
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
+create view v_bios_measurements_lastdate as SELECT p.id_key, max(p.timestamp) maxdate, p.id_subkey, p.id_discovered_device FROM v_bios_client_info_measurements p  GROUP BY p.id_key, p.id_subkey, p.id_discovered_device;
 
-create view v_bios_client_info_measurements_last as select max(timestamp), id_client, id_discovered_device, id_measurement , value from v_bios_client_info_measurements group by id_client, id_discovered_device, id_measurement, subkeytag; 
+create view v_bios_client_info_measurements_last as
+SELECT  v.id,
+        v.id_discovered_device,
+        v.id_key,
+        v.id_subkey,
+        v.value,
+        v.timestamp
+FROM    v_bios_client_info_measurements v
+        INNER JOIN v_bios_measurements_lastdate grp 
+              ON v.id_key = grp.id_key AND
+                 v.id_subkey = grp.id_subkey AND
+                 v.timestamp = grp.maxdate  AND
+                 v.id_discovered_device = grp.id_discovered_device;

@@ -82,21 +82,30 @@
 
     RETURN_ELEMENTS - Returns elements we were asked for
         element_ids         dictionary  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
+
+    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with asset_element_id
+        element_id          number 4     An asset_element_id of the device
+
+    RETURN_LAST_MEASUREMENTS - The last measurements about the device with asset_element_id
+        element_id          number 4     An asset_element_id of the device
+        measurements        strings      A map of keytags on values
 */
 
 #define ASSET_MSG_VERSION                   1.0
 
 #define ASSET_MSG_ELEMENT                   1
-#define ASSET_MSG_DEVICE                    11
-#define ASSET_MSG_GET_ELEMENT               2
-#define ASSET_MSG_RETURN_ELEMENT            3
-#define ASSET_MSG_UPDATE_ELEMENT            4
-#define ASSET_MSG_INSERT_ELEMENT            5
-#define ASSET_MSG_DELETE_ELEMENT            6
-#define ASSET_MSG_OK                        7
-#define ASSET_MSG_FAIL                      8
-#define ASSET_MSG_GET_ELEMENTS              9
-#define ASSET_MSG_RETURN_ELEMENTS           10
+#define ASSET_MSG_DEVICE                    2
+#define ASSET_MSG_GET_ELEMENT               3
+#define ASSET_MSG_RETURN_ELEMENT            4
+#define ASSET_MSG_UPDATE_ELEMENT            5
+#define ASSET_MSG_INSERT_ELEMENT            6
+#define ASSET_MSG_DELETE_ELEMENT            7
+#define ASSET_MSG_OK                        8
+#define ASSET_MSG_FAIL                      9
+#define ASSET_MSG_GET_ELEMENTS              10
+#define ASSET_MSG_RETURN_ELEMENTS           11
+#define ASSET_MSG_GET_LAST_MEASUREMENTS     12
+#define ASSET_MSG_RETURN_LAST_MEASUREMENTS  13
 
 #include <czmq.h>
 
@@ -215,6 +224,17 @@ zmsg_t *
     asset_msg_encode_return_elements (
         zhash_t *element_ids);
 
+//  Encode the GET_LAST_MEASUREMENTS 
+zmsg_t *
+    asset_msg_encode_get_last_measurements (
+        uint32_t element_id);
+
+//  Encode the RETURN_LAST_MEASUREMENTS 
+zmsg_t *
+    asset_msg_encode_return_last_measurements (
+        uint32_t element_id,
+        zlist_t *measurements);
+
 
 //  Send the ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -296,6 +316,19 @@ int
 int
     asset_msg_send_return_elements (void *output,
         zhash_t *element_ids);
+    
+//  Send the GET_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_last_measurements (void *output,
+        uint32_t element_id);
+    
+//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_return_last_measurements (void *output,
+        uint32_t element_id,
+        zlist_t *measurements);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -480,6 +513,26 @@ void
         const char *key, const char *format, ...);
 size_t
     asset_msg_element_ids_size (asset_msg_t *self);
+
+//  Get/set the measurements field
+zlist_t *
+    asset_msg_measurements (asset_msg_t *self);
+//  Get the measurements field and transfer ownership to caller
+zlist_t *
+    asset_msg_get_measurements (asset_msg_t *self);
+//  Set the measurements field, transferring ownership from caller
+void
+    asset_msg_set_measurements (asset_msg_t *self, zlist_t **measurements_p);
+
+//  Iterate through the measurements field, and append a measurements value
+const char *
+    asset_msg_measurements_first (asset_msg_t *self);
+const char *
+    asset_msg_measurements_next (asset_msg_t *self);
+void
+    asset_msg_measurements_append (asset_msg_t *self, const char *format, ...);
+size_t
+    asset_msg_measurements_size (asset_msg_t *self);
 
 //  Self test of this class
 int
