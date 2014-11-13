@@ -39,12 +39,12 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                     "where id = :mt_id");
 
                 row = st.setInt("mt_id", common_msg_mt_id(*msg)).selectRow();
-                common_msg_destroy(msg);
                 ret = common_msg_encode_return_measure_type(
                     row.getInt(0), row.getString(1).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
+            break;
 
         case COMMON_MSG_GET_MEASURE_TYPE_S:
             try {
@@ -54,12 +54,12 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
 
                 row = st.setString("name", common_msg_mt_name(*msg)).
                       selectRow();
-                common_msg_destroy(msg);
                 ret = common_msg_encode_return_measure_type(
                     row.getInt(0), row.getString(1).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
+            break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
             try {
@@ -68,13 +68,13 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                     "from t_bios_measurement_subtypes where id = :mts_id");
 
                 row = st.setInt("mts_id", common_msg_mts_id(*msg)).selectRow();
-                common_msg_destroy(msg);
                 ret = common_msg_encode_return_measure_subtype(
                     row.getInt(0), row.getShort(1), row.getShort(2),
                     row.getString(3).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
+            break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             try {
@@ -84,16 +84,17 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
 
                 row = st.setString("name", common_msg_mts_name(*msg)).
                       selectRow();
-                common_msg_destroy(msg);
                 ret = common_msg_encode_return_measure_subtype(
                     row.getInt(0), row.getShort(1), row.getShort(2),
                     row.getString(3).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
+            break;
 
         default:
             ret = common_msg_encode_fail(0,0,"invalid message",NULL);
+            break;
     }
 
     common_msg_destroy(msg);
