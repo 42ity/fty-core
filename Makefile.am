@@ -14,7 +14,7 @@ CLEANFILES =
 DISTCLEANFILES =
 TESTS =
 
-SUBDIRS = docs/man
+SUBDIRS = docs/man docs/examples tools
 
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
@@ -398,7 +398,7 @@ EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
 # add CI tests to dist
 EXTRA_DIST +=				$(top_srcdir)/tests/CI
 
-CLEANFILES +=				$(top_builddir)/tools/dbpath.h
+DISTCLEANFILES +=			$(top_builddir)/tools/dbpath.h
 
 if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
@@ -421,6 +421,11 @@ all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
 
 man-docs:
 	( cd docs/man && $(MAKE) all )
+
+CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
+			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
+			${myDOXDIR}/doxygen_sqlite3.db \
+			${myDOXDIR}/${mydoxylog}
 
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
