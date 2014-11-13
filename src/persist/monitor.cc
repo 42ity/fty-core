@@ -228,6 +228,10 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 ////////////////////////////////////////////////////////////////////////
 /////////////////           CLIENT INFO              ///////////////////
 ////////////////////////////////////////////////////////////////////////
+//
+
+    // TODO COPY this  stuff for metrics and rewrite selects./ messages
+
 
 // Date is always UTC time as UNIX_timestamp.
 //
@@ -834,4 +838,119 @@ common_msg_t* insert_device(const char* url, const char* devicetype_name, const 
         assert (false); // unknown return type
     return NULL;
 }
+
+common_msg_t* _generate_key(const char* keytagname, uint32_t scale)
+{
+    assert ( scale );
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_KEY);
+    assert ( resultmsg );
+    common_msg_set_keytagname (resultmsg, keytagname);
+    common_msg_set_scale (resultmsg, scale);
+
+    return resultmsg;
+}
+
+//it should destroy the key
+common_msg_t* _generate_return_key(uint32_t keytag_id, common_msg_t** key)
+{
+    assert ( common_msg_id (*key) == COMMON_MSG_KEY );
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_KEY);
+    assert ( resultmsg );
+    common_msg_set_rowid (resultmsg, keytag_id);
+    zmsg_t* nnmsg = common_msg_encode (key);
+    assert ( nnmsg );
+    common_msg_set_msg (resultmsg, &nnmsg);
+
+    return resultmsg;
+}
+
+common_msg_t* select_key (const char* url, const char* keytagname)
+{
+    assert ( strlen(keytagname) > 0 );
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url); 
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            " v.id , v.scale"
+            " FROM"
+            " v_bios_measurements v"
+            " WHERE v.keytag = :name"
+        );
+        
+        tntdb::Row row = st.setString("name", keytagname).
+                            selectRow();
+        
+        uint32_t rowid = 0;
+        row[0].get(rowid);
+
+        uint32_t scale = 0;
+        row[1].get(scale);      // HOW to work with double? or it would be integer too?
+
+        common_msg_t* key = _generate_key (keytagname, scale);
+        return _generate_return_key (rowid, &key);
+    }
+    catch (const tntdb::NotFound &e){
+        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    return NULL;
+}
+
+/**
+ * \brief Inserts into the table t_bios_client_measurements new row.
+ *
+ * \param url          - connection url to database.
+ * \param client_id    - id of the client that get measure.
+ * \param device_id    - id of the device that was measured.
+ * \param keytag_id    - id of the keytag, that indicates the measurement
+ * \param subkeytag_id - id of the subkeytag, number that indikates the hierarchie
+ * \param value        - value of measurement
+ *
+ * \return COMMON_MSG_FAIL    if inserting failed.
+ *         COMMON_MSG_DB_OK   if inserting was successful.
+ */
+common_msg_t* insert_measurement(const char* url, uint32_t client_id, 
+                                 uint32_t device_id, uint32_t keytag_id, 
+                                 uint32_t subkeytag_id, uint64_t value)
+{
+    assert ( client_id );    // is required
+    assert ( device_id );    // is required (if not device was measured, then use "dummy_monitor_device")
+    assert ( keytag_id );    // is required
+    assert ( subkeytag_id ); // is required
+
+    uint32_t n = 0;     // number of rows affected.
+    uint32_t newid = 0;
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " INSERT INTO"
+            " v_bios_client_info_measurements (id, id_client, id_device, id_key , id_subkey, value, timestamp)"
+            " VALUES (NULL, :clientid, :deviceid, :keytagid, :subkeytagid , :val, UTC_TIMESTAMP())"
+        );
+    
+        // Insert one row or nothing
+        n  = st.setInt("clientid", client_id).
+                setInt("deviceid", device_id).
+                setInt("keytagid", keytag_id).
+                setInt("subkeytagid", subkeytag_id).
+                setInt("val", value).
+                execute();
+
+        newid = conn.lastInsertId();
+    }
+    catch (const std::exception &e) {
+        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    if ( n == 1 )
+        return _generate_ok (newid);
+    else
+        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+}
+
 

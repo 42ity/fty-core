@@ -147,5 +147,7 @@ common_msg_t* select_device (const char* url, const char* devicetype_name, const
 
 common_msg_t* insert_device(const char* url, const char* devicetype_name, const char* name);
 
+common_msg_t* select_key (const char* url, const char* keytagname);
+common_msg_t* insert_measurement(const char* url,uint32_t client_id,uint32_t device_id,uint32_t keytag_id,uint32_t subkeytag, uint64_t value);
 #endif // SRC_PERSIST_MONITOR_H_
 
