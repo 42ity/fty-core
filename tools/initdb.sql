@@ -20,7 +20,7 @@ CREATE TABLE t_bios_measurement_types(
 );
 
 CREATE TABLE t_bios_measurement_subtypes(
-    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    id               SMALLINT UNSIGNED  NOT NULL,
     type_id          SMALLINT UNSIGNED  NOT NULL,
     name             VARCHAR(25),
     scale            TINYINT,
