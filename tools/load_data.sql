@@ -77,15 +77,14 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW6",4, 10);
 
 insert into t_bios_discovered_device(id_discovered_device, id_device_type , name) values (NULL, 1, "measures");
-insert into t_bios_measure_key (id_key, keytag) values (NULL, "key-tempetarure");
-insert into t_bios_measure_key (id_key, keytag) values (NULL, "key-width");
-insert into t_bios_measure_subkey (id_subkey , subkeytag, scale ) values (NULL, "top-left", 1);
-insert into t_bios_measure_subkey (id_subkey , subkeytag, scale ) values (NULL, "bottom-center", -2);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,1,3, "2014-11-12 09:45:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,1,32, "2014-11-12 09:46:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,1,31, "2014-11-12 09:47:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,2,12, "2014-11-12 09:48:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,2,142,"2014-11-12 09:49:59", 1, 1);
+
+insert into t_bios_measurement_types (id, name) values (1, "temperature");
+insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (1, 1, "default", -2);
 
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (7,  "a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (8,  "m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());

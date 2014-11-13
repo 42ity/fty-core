@@ -96,7 +96,10 @@ class SubProcess {
         virtual ~SubProcess();
 
         // \brief return the commandline
-        const Argv argv() const;
+        const Argv& argv() const { return _cxx_argv; }
+
+        // \brief return the commandline as a space delimited string
+        std::string argvString() const;
         
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
