@@ -56,7 +56,12 @@ def jobParams = [
 ]
 
 // Running critical jobs, no sense to continue on error
-for( jobName in [ "test_make_check", "test_deploy_database" ]){
+for(
+    jobName in [
+        "test_make_check",
+        "test_deploy_database"
+    ]
+){
     println "=== Starting $jobName ===";
     startJob(jobName, jobParams);
     result = waitForJob(jobName);
@@ -71,7 +76,15 @@ for( jobName in [ "test_make_check", "test_deploy_database" ]){
 }
 
 // Running other tests, it make sense to continue if some of them fails
-for( jobName in [ "start_bios","test_netmon", "test_restapi", "stop_bios"]){
+for(
+    jobName in [
+        "start_bios",
+        "test_db_tests",
+        "test_netmon",
+        "test_restapi",
+        "stop_bios"
+    ]
+){
     println "=== Starting $jobName ===";
     startJob(jobName, jobParams);
     result = waitForJob(jobName);
