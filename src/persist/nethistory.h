@@ -121,6 +121,7 @@ class NetHistory : public DataBaseTimeObject
         int getMask() const { return _address.prefix(); };
         
         std::string getIp() const { return _address.toString(shared::CIDROptions::CIDR_WITHOUT_PREFIX); };
+        std::string getIpWithPrefix() const { return _address.toString(shared::CIDROptions::CIDR_WITH_PREFIX); };
         
         char getCommand() const { return _command; };
         
@@ -131,9 +132,9 @@ class NetHistory : public DataBaseTimeObject
         unsigned int selectById(int id);
         
         /**
-         * \brief Check for the existing duplicate rows
+         * \brief Check for the existing duplicate rows, set the internal id if found
          */
-        int checkUnique() const;
+        int checkUnique();
 
         static std::vector<NetHistory> getHistory(const std::string & url);
 

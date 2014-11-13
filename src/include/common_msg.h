@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: common_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -35,11 +35,35 @@
 
 /*  These are the common_msg messages:
 
+    GET_MEASURE_TYPE_I - 
+        mt_id               number 2    Measurement type id
+
+    GET_MEASURE_TYPE_S - 
+        mt_name             string      Measurement type name
+
+    GET_MEASURE_SUBTYPE_I - 
+        mt_id               number 2    Measurement type id
+        mts_id              number 2    Measurement subtype id
+
+    GET_MEASURE_SUBTYPE_S - 
+        mt_id               number 2    Measurement type id
+        mts_name            string      Measurement subtype name
+
+    RETURN_MEASURE_TYPE - 
+        mt_id               number 2    Measurement type id
+        mt_name             string      Measurement type name
+
+    RETURN_MEASURE_SUBTYPE - 
+        mts_id              number 2    Measurement subtype id
+        mt_id               number 2    Measurement type id
+        mts_scale           number 1    Measurement subtype scale
+        mts_name            string      Measurement subtype name
+
     FAIL - A failed message indicates that some error had occured
         errtype             number 1     An error type, defined in enum somewhere
         errorno             number 4     An error id
         errmsg              string       A user visible error string
-        erraux              dictionary   An optional additional information about occured error
+        erraux              hash         An optional additional information about occured error
 
     DB_OK - An ok message indicates that during the work with db no error had occured
         rowid               number 4     Id of the row processed
@@ -151,6 +175,12 @@
 
 #define COMMON_MSG_VERSION                  1.0
 
+#define COMMON_MSG_GET_MEASURE_TYPE_I       1
+#define COMMON_MSG_GET_MEASURE_TYPE_S       2
+#define COMMON_MSG_GET_MEASURE_SUBTYPE_I    3
+#define COMMON_MSG_GET_MEASURE_SUBTYPE_S    4
+#define COMMON_MSG_RETURN_MEASURE_TYPE      5
+#define COMMON_MSG_RETURN_MEASURE_SUBTYPE   6
 #define COMMON_MSG_FAIL                     201
 #define COMMON_MSG_DB_OK                    202
 #define COMMON_MSG_CLIENT                   203
@@ -190,7 +220,10 @@ extern "C" {
 #endif
 
 //  Opaque class structure
+#ifndef COMMON_MSG_T_DEFINED
 typedef struct _common_msg_t common_msg_t;
+#define COMMON_MSG_T_DEFINED
+#endif
 
 //  @interface
 //  Create a new common_msg
@@ -200,6 +233,11 @@ common_msg_t *
 //  Destroy the common_msg
 void
     common_msg_destroy (common_msg_t **self_p);
+
+//  Parse a zmsg_t and decides whether it is common_msg. Returns
+//  true if it is, false otherwise.
+bool
+    is_common_msg (zmsg_t *msg_p);
 
 //  Parse a common_msg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 
@@ -229,6 +267,42 @@ int
 //  Send the common_msg to the output, and do not destroy it
 int
     common_msg_send_again (common_msg_t *self, void *output);
+
+//  Encode the GET_MEASURE_TYPE_I 
+zmsg_t *
+    common_msg_encode_get_measure_type_i (
+        uint16_t mt_id);
+
+//  Encode the GET_MEASURE_TYPE_S 
+zmsg_t *
+    common_msg_encode_get_measure_type_s (
+        const char *mt_name);
+
+//  Encode the GET_MEASURE_SUBTYPE_I 
+zmsg_t *
+    common_msg_encode_get_measure_subtype_i (
+        uint16_t mt_id,
+        uint16_t mts_id);
+
+//  Encode the GET_MEASURE_SUBTYPE_S 
+zmsg_t *
+    common_msg_encode_get_measure_subtype_s (
+        uint16_t mt_id,
+        const char *mts_name);
+
+//  Encode the RETURN_MEASURE_TYPE 
+zmsg_t *
+    common_msg_encode_return_measure_type (
+        uint16_t mt_id,
+        const char *mt_name);
+
+//  Encode the RETURN_MEASURE_SUBTYPE 
+zmsg_t *
+    common_msg_encode_return_measure_subtype (
+        uint16_t mts_id,
+        uint16_t mt_id,
+        byte mts_scale,
+        const char *mts_name);
 
 //  Encode the FAIL 
 zmsg_t *
@@ -406,6 +480,48 @@ zmsg_t *
         uint32_t devicetype_id);
 
 
+//  Send the GET_MEASURE_TYPE_I to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_measure_type_i (void *output,
+        uint16_t mt_id);
+    
+//  Send the GET_MEASURE_TYPE_S to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_measure_type_s (void *output,
+        const char *mt_name);
+    
+//  Send the GET_MEASURE_SUBTYPE_I to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_measure_subtype_i (void *output,
+        uint16_t mt_id,
+        uint16_t mts_id);
+    
+//  Send the GET_MEASURE_SUBTYPE_S to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_measure_subtype_s (void *output,
+        uint16_t mt_id,
+        const char *mts_name);
+    
+//  Send the RETURN_MEASURE_TYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_measure_type (void *output,
+        uint16_t mt_id,
+        const char *mt_name);
+    
+//  Send the RETURN_MEASURE_SUBTYPE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_measure_subtype (void *output,
+        uint16_t mts_id,
+        uint16_t mt_id,
+        byte mts_scale,
+        const char *mts_name);
+    
 //  Send the FAIL to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
@@ -633,6 +749,36 @@ void
     common_msg_set_id (common_msg_t *self, int id);
 const char *
     common_msg_command (common_msg_t *self);
+
+//  Get/set the mt_id field
+uint16_t
+    common_msg_mt_id (common_msg_t *self);
+void
+    common_msg_set_mt_id (common_msg_t *self, uint16_t mt_id);
+
+//  Get/set the mt_name field
+const char *
+    common_msg_mt_name (common_msg_t *self);
+void
+    common_msg_set_mt_name (common_msg_t *self, const char *format, ...);
+
+//  Get/set the mts_id field
+uint16_t
+    common_msg_mts_id (common_msg_t *self);
+void
+    common_msg_set_mts_id (common_msg_t *self, uint16_t mts_id);
+
+//  Get/set the mts_name field
+const char *
+    common_msg_mts_name (common_msg_t *self);
+void
+    common_msg_set_mts_name (common_msg_t *self, const char *format, ...);
+
+//  Get/set the mts_scale field
+byte
+    common_msg_mts_scale (common_msg_t *self);
+void
+    common_msg_set_mts_scale (common_msg_t *self, byte mts_scale);
 
 //  Get/set the errtype field
 byte
