@@ -434,6 +434,11 @@ into the binary code, so the building user must either have access to the
 socket (`adduser builder sasl`) or an explicit '--with-saslauthd-mux=...'
 option must be passed to `configure`.
 
+Beside the setup discussed above, no extra configuration for SASL and PAM
+is needed on the target Debian 8 platform -- everything is pre-integrated
+by the OS.
+
+
 
 Other packages
 ~~~~~~~~~~~~~~
