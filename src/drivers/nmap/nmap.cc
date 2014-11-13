@@ -193,16 +193,17 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
             }
 
             // check for IPV6 address 
-            // UGLY, but OK for now
-            int last = args.size() - 1;
-            std::string ip_part (args[last].substr(0, args[last].find("/")));
-            std::string prefix_part (args[last].substr(args[last].find("/") + 1, args[last].size()));
-            shared::CIDRAddress check_ipv6 (ip_part, prefix_part);
+            shared::CIDRAddress check_ipv6 (args[args.size() - 1]);
             if (check_ipv6.protocol() == 6) {
                 log_warning ("IPV6 functionality is not implemented yet. Skipping.\n");
                 break;
             }
-
+            else if (check_ipv6.protocol() == 0) {
+                // maybe assert in front of this if-construct would have sufficed
+                log_error ("An invalid ip address has been supplied: '%s'\n", args[args.size() - 1].c_str());
+                break;
+            }
+ 
             // field: headers
             // Headers are not being used at the moment
 
@@ -392,11 +393,6 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
     zactor_destroy(&nmap);
     zsock_destroy (&incoming);
     zsock_destroy (&outgoing);
-
-    assert (poller == NULL);
-    assert (nmap == NULL);
-    assert (incoming == NULL);
-    assert (outgoing == NULL);
 
     log_info ("nmap daemon stop\n");
     log_close ();
