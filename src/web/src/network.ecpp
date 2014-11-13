@@ -103,7 +103,14 @@
 
         if (ret == 0) {
 </%cpp>
-{ "error" : "Network id does not exists", "id" : "<$ id $>" }
+{ "error" : "Network '<$ id $>' does not exists" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        if (nh.getCommand() == 'a') {
+</%cpp>
+{ "error" : "Can't delete automatic added network" }
 <%cpp>
             return HTTP_BAD_REQUEST;
         }

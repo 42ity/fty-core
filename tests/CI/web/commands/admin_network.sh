@@ -48,3 +48,8 @@ print_result $?
 test_it "admin_network_delete4"
 api_auth_delete /admin/network/abcd | grep -q 'HTTP/1.1 404 Not Found'
 print_result $?
+
+# delete automatic network
+test_it "admin_network_delete5"
+api_auth_delete /admin/network/7 | grep -q 'HTTP/1.1 400 Bad Request'
+print_result $?
