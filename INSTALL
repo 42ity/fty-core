@@ -263,6 +263,11 @@ MariaDB
 ----
  ** The 'mariadb-server' installer will ask for the database's 'root'
 user new password.
+ ** To enable the database service run (note: legacy-named 'mysql'):
+----
+:; systemctl enable mysql
+:; systemctl restart mysql
+----
 
 libCIDR and CIDRcalc
 ~~~~~~~~~~~~~~~~~~~~
