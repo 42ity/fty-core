@@ -34,7 +34,7 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ROW1",4,2);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "RACK1",5,3);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "serv1",6,4);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, conv("112233445566",16,10));
+insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, "1a:21:a2:78:be");
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "epdu",6,2);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 6,2);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ups",6,2);
