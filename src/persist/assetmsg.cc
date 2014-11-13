@@ -745,7 +745,7 @@ asset_msg_t* _generate_return_measurements (uint32_t device_id, zlist_t** measur
 zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 {
     assert ( device_id ); // is required
-
+    
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
@@ -754,7 +754,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
             " id_key, value, id_subkey, scale"
             " FROM"
             " v_bios_client_info_measurements_last"
-            " WHERE id_device=:deviceid"
+            " WHERE id_discovered_device=:deviceid"
         );
 
         tntdb::Result result = st.setInt("deviceid", device_id).
@@ -772,7 +772,6 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
         if ( rsize > 0 )
         {
             // There are some measurements for the specified device
-
             // Go through the selected measurements
             for ( auto &row: result )
             {
@@ -801,8 +800,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
                 zlist_push (measurements, buff);
             }
         }
-        else
-            return measurements;
+        return measurements;
     }
     catch (const std::exception &e) {
         return NULL;
@@ -866,3 +864,5 @@ _checkMacaddress (const std::string &mac_address)
         return true;
 }
 */
+
+

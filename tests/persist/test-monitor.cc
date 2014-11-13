@@ -322,4 +322,3 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client]")
     REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
     common_msg_destroy (&response);
 }
-

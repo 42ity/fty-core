@@ -5,16 +5,18 @@ insert into t_bios_asset_link_type (id_asset_link_type, name) values (NULL, "pow
 insert into t_bios_device_type (id_device_type, name) values (1, "not_classified");
 insert into t_bios_client (id_client, name) values (1, "nmap");
 
+insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
+
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
+insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"monitor_asset_measure",1);
 
 insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");
 insert into t_bios_client(id_client,name) values(NULL,"NUT");
 
-insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
 
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
@@ -34,11 +36,16 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ROW1",4,2);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "RACK1",5,3);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "serv1",6,4);
+
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, "1a:21:a2:78:be");
+
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "epdu",6,2);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 6,2);
+
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ups",6,2);
+insert into t_bios_monitor_asset_relation (id_ma_relation, id_discovered_device, id_asset_element)  values (NULL, 2, 3);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 7,1);
+
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "main",6,1);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 8,4);
 
@@ -70,14 +77,19 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "ROW6",4, 10);
 
 insert into t_bios_discovered_device(id_discovered_device, id_device_type , name) values (NULL, 1, "measures");
+
+insert into t_bios_measurement_types (id, name) values (1, "temperature");
+insert into t_bios_measurement_types (id, name) values (2, "voltage");
+insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (1, 1, "default", -2);
+insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (1, 2, "default1", 0);
+insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (2, 1, "default2", 1);
+insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (2, 2, "default3", 1);
+
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,1,3, "2014-11-12 09:45:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,1,32, "2014-11-12 09:46:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,1,31, "2014-11-12 09:47:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,2,12, "2014-11-12 09:48:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,2,142,"2014-11-12 09:49:59", 1, 1);
-
-insert into t_bios_measurement_types (id, name) values (1, "temperature");
-insert into t_bios_measurement_subtypes (id, type_id, name, scale) values (1, 1, "default", -2);
 
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (7,  "a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (8,  "m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
