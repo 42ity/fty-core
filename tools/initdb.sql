@@ -71,7 +71,7 @@ CREATE TABLE t_bios_discovered_ip(
 CREATE TABLE t_bios_net_history(
     id_net_history  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
     command         CHAR(1)             NOT NULL,
-    mac             BIGINT UNSIGNED,
+    mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
     ip              CHAR(19)            NOT NULL,
     name            VARCHAR(25),
@@ -191,7 +191,7 @@ CREATE TABLE t_bios_asset_device (
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
   ip                    CHAR(19),
-  mac                   BIGINT UNSIGNED,
+  mac                   CHAR(17),
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
