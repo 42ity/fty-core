@@ -23,7 +23,7 @@
     if(meth == "POST") {
         shared::CIDRAddress cidr;
         std::string net;
-        char type;
+        char status;
         int ret;
 
         std::stringstream input(request.getBody(), std::ios_base::in);
@@ -34,22 +34,22 @@
             deserializer.deserialize(si);
             si.getMember("net") >>= net;
             cidr = net;
-            si.getMember("type") >>= type;
-            type = (char)::toupper(type);
+            si.getMember("status") >>= status;
+            status = (char)::toupper(status);
         } catch (const std::exception& e) {
             net = "";
-            type = '?';
+            status = '?';
         }
 
-        if ((net == "" || ! cidr.valid()) || (type != 'M' && type != 'E')) {
+        if ((net == "" || ! cidr.valid()) || (status != 'M' && status != 'E')) {
 </%cpp>
-{ "error" : "invalid network or type" }
+{ "error" : "invalid network or status" }
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
 
         persist::NetHistory nh(url);
-        nh.setCommand((char)::tolower(type));
+        nh.setCommand((char)::tolower(status));
         nh.setAddress(cidr);
         //FIXME: prevents selectById from throwing an exception
         nh.setMac("");
