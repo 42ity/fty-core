@@ -20,6 +20,34 @@
 # Description: tests restapi
 
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+USER=bios
+PASSWD=nosoup4u
+
+usage(){
+    echo "usage $(basename $0) [options]"
+    echo "options:"
+    echo "  -u|--user   username for SASL [bios]"
+    echo "  -p|--passwd password for SASL [nosoup4u]"
+}
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        --user|-u)
+            USER="$2"
+            shift
+            ;;
+        --passwd|-p)
+            PASSWD="$2"
+            shift
+            ;;
+        *)
+            echo "Invalid option $1" 1>&2
+            usage
+            exit 1
+            ;;
+    esac
+    shift
+done
 
 set -u
 set -e
@@ -43,11 +71,12 @@ wait_for_web() {
   # make sure sasl is running
   systemctl restart saslauthd
   # check SASL is working
-  testsaslauthd -u bios -p nosoup4u -s bios
+  testsaslauthd -u "$USER" -p "$PASSWD" -s bios
 
 # do the webserver
   cd $CHECKOUTDIR
   # make clean
+  export USER PASSWD
   make web-test &
   MAKEPID=$!
   wait_for_web
