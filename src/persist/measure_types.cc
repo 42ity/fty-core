@@ -36,7 +36,8 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             try {
                 tntdb::Statement st = conn.prepareCached(
                     "select id, name from t_bios_measurement_types "
-                    "where id = :mt_id");
+                    "where id = :mt_id "
+                    "and id is not null and name is not null");
 
                 row = st.setInt("mt_id", common_msg_mt_id(*msg)).selectRow();
                 ret = common_msg_encode_return_measure_type(
@@ -50,7 +51,8 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             try {
                 tntdb::Statement st = conn.prepareCached(
                     "select id, name from t_bios_measurement_types "
-                    "where name = :name");
+                    "where name = :name "
+                    "and id is not null and name is not null");
 
                 row = st.setString("name", common_msg_mt_name(*msg)).
                       selectRow();
@@ -65,7 +67,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             try {
                 tntdb::Statement st = conn.prepareCached(
                     "select id, mt_id, name, scale "
-                    "from t_bios_measurement_subtypes where id = :mts_id");
+                    "from t_bios_measurement_subtypes where id = :mts_id "
+                    "and id is not null and mt_id is not null and "
+                    "name is not null and scale is not null");
 
                 row = st.setInt("mts_id", common_msg_mts_id(*msg)).selectRow();
                 ret = common_msg_encode_return_measure_subtype(
@@ -80,7 +84,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             try {
                 tntdb::Statement st = conn.prepareCached(
                     "select id, mt_id, name, scale "
-                    "from t_bios_measurement_subtypes where name = :name");
+                    "from t_bios_measurement_subtypes where name = :name "
+                    "and id is not null and mt_id is not null and "
+                    "name is not null and scale is not null");
 
                 row = st.setString("name", common_msg_mts_name(*msg)).
                       selectRow();
