@@ -34,7 +34,7 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ROW1",4,2);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "RACK1",5,3);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "serv1",6,4);
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, conv("112233445566",16,10));
+insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type, mac) values (NULL, 5, 3, "1a:21:a2:78:be");
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "epdu",6,2);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type)   values (NULL, 6,2);
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent)  values (NULL, "ups",6,2);
@@ -79,3 +79,8 @@ insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,1,31, "2014-11-12 09:47:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,2,12, "2014-11-12 09:48:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,2,142,"2014-11-12 09:49:59", 1, 1);
+
+INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (7,  "a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
+INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (8,  "m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
+INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (9,  "a", "10.231.107.0", 24, "enp0s25", "a0:1d:48:b7:e2:4e", UTC_TIMESTAMP());
+INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (10, "d", "10.0.0.0", 8, "", "", UTC_TIMESTAMP());
