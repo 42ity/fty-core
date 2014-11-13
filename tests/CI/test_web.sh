@@ -10,6 +10,8 @@ PATH="$PATH:/sbin:/usr/sbin"
 
 BASE_URL="http://127.0.0.1:8000/api/v1"
 
+_TOKEN_=""
+
 print_result() {
     _ret=0
     if [ "$1" -eq 0 ]; then
@@ -46,10 +48,22 @@ api_post() {
     curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
-api_auth_post() {
-    TOKEN="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
+_api_get_token() {
+    if [ -z "$_TOKEN_" ]; then
+    _TOKEN_="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
             sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
+    fi
+    echo "$_TOKEN_"
+}
+
+api_auth_post() {
+    TOKEN="`_api_get_token`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+}
+
+api_auth_delete() {
+    TOKEN="`_api_get_token`"
+    curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 # fixture ini
