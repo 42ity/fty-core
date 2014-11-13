@@ -416,6 +416,11 @@ all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
 man-docs:
 	( cd docs/man && $(MAKE) all )
 
+CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
+			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
+			${myDOXDIR}/doxygen_sqlite3.db \
+			${myDOXDIR}/${mydoxylog}
+
 ${myDOXDIR}/html:
 if HAVE_DOXYGEN
 	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
