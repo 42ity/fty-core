@@ -17,7 +17,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Author: Alena Chernikava <alenachernikava@eaton.com>
-        Karol Hrdina <karolhrdina@eaton.com>
  
 Description: ...
 References: BIOS-397
@@ -146,15 +145,20 @@ process_message(const std::string& url, zmsg_t *msg) {
     return false;
 }
 
+/*!
+\brief stores the supplied nmap message
+
+\author Karol Hrdina <karolhrdina@eaton.com>
+\todo better exception handling granularity
+*/
+
 void
-//nmap_msg_process (const char *url, nmap_msg_t **msg)
 nmap_msg_process (const char *url, nmap_msg_t *msg)
 {
 
     assert (url);
     assert (msg);
 
-//    if (*msg) {
         int msg_id = nmap_msg_id (msg);
         assert (msg_id != 0);
 
@@ -167,23 +171,18 @@ nmap_msg_process (const char *url, nmap_msg_t *msg)
                     log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received\n");
                     break;
                 }
-                // prepare sql statement
-                std::string statement;
-                statement.append ("insert into t_bios_discovered_ip ");
-                statement.append ("(timestamp, ip) ");
-                statement.append ("VALUES (NOW(), '");
-                statement.append (ip);
-                statement.append ("')");
 
                 // establish connection && execute
                 try
                 {
                     tntdb::Connection connection = tntdb::connectCached (url);
-                    connection.execute (statement);
+                    tntdb::Statement st = connection.prepare(
+                        "INSERT INTO t_bios_discovered_ip (timestamp, ip) VALUES (UTC_TIMESTAMP(), :v1)");
+                    st.setString("v1", ip).execute();
                 }
                 catch (const std::exception& e)
                 {
-                    log_error ("tntdb::connectCached(%s) failed: %s\n", url, e.what ());
+                    log_error ("exception caught: %s\n", e.what ());
                 }
                 catch (...)
                 {
@@ -204,11 +203,6 @@ nmap_msg_process (const char *url, nmap_msg_t *msg)
                 break;
             }
         }
-        
-// TODO: next time we'll rework the process message to take ownership ...
-//        nmap_msg_destroy (msg);
-//        assert (*msg == NULL);
-//    }
 }
 
 bool

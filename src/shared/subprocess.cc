@@ -66,14 +66,15 @@ SubProcess::~SubProcess() {
     errno = _saved_errno;
 }
 
+//note: the extra space at the end of the string doesn't really matter
 std::string SubProcess::argvString() const
 {
     std::string ret;
     for (std::size_t i = 0, l = _cxx_argv.size();
          i < l;
          ++i) {
-        ret.assign (_cxx_argv.at(i));
-        ret.assign (" ");
+        ret.append (_cxx_argv.at(i));
+        ret.append (" ");
     }
     return ret;
 }
