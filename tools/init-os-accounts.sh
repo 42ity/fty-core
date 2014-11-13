@@ -107,6 +107,8 @@ EOF
 	} )
 
 	if [ ! -d "$ALTROOT/lib" ]; then
+	    echo "WARNING: ALTROOT lacks /lib/ - trying to put some needed files in it, but maybe passwd-tools will misbehave on a system different from our reference!" >&2
+	    sleep 2
 	    mkdir -p "$ALTROOT/lib"
 	    ( cd /lib && { \
 		    find . -name 'libnss*.so*'; \
