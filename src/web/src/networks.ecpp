@@ -1,0 +1,26 @@
+<%pre>
+#include "persistence.h"
+#include "dbpath.h"
+#include <vector>
+#include <cctype>
+</%pre>
+
+<%cpp>
+    std::vector<persist::NetHistory> nets = persist::NetHistory::getHistory(url);
+</%cpp>
+{
+    "networks": [
+<%cpp>
+    for (size_t i = 0; i != nets.size(); i++)
+    {
+</%cpp>
+        {
+            "id"      : "<$ nets[i].getId() $>",
+            "status"  : "<$ (char)::toupper(nets[i].getCommand()) $>",
+            "net"     : "<$ nets[i].getIpWithPrefix() $>",
+            "nic"     : "<$ nets[i].getName() $>",
+            "mac"     : "<$ nets[i].getMac() $>"
+        }<? i != nets.size() -1 ? "," ?>
+%   }
+    ]
+}
