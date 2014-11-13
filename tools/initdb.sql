@@ -6,26 +6,28 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_client_info_measurements;
-drop table if exists t_bios_measure_key;
-drop table if exists t_bios_measure_subkey;
+drop table if exists t_bios_measurement_types;
+drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
-CREATE TABLE t_bios_measure_key(
-    id_key   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    keytag   VARCHAR(25),
-
-    PRIMARY KEY(id_key)
+CREATE TABLE t_bios_measurement_types(
+    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    name             VARCHAR(25) NOT NULL,
+    PRIMARY KEY(id)
 );
 
-CREATE TABLE t_bios_measure_subkey(
-    id_subkey   SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    subkeytag   VARCHAR(25),
-    scale       DECIMAL(5,5),
-
-    PRIMARY KEY(id_subkey)
+CREATE TABLE t_bios_measurement_subtypes(
+    id               SMALLINT UNSIGNED  NOT NULL,
+    type_id          SMALLINT UNSIGNED  NOT NULL,
+    name             VARCHAR(25) NOT NULL,
+    scale            TINYINT NOT NULL,
+    PRIMARY KEY(id, type_id)
+    FOREIGN KEY(type_id)
+	REFERENCES t_bios_measurement_types(id)
+        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_device_type(
@@ -69,7 +71,7 @@ CREATE TABLE t_bios_discovered_ip(
 CREATE TABLE t_bios_net_history(
     id_net_history  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
     command         CHAR(1)             NOT NULL,
-    mac             BIGINT UNSIGNED,
+    mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
     ip              CHAR(19)            NOT NULL,
     name            VARCHAR(25),
@@ -189,7 +191,7 @@ CREATE TABLE t_bios_asset_device (
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
   ip                    CHAR(19),
-  mac                   BIGINT UNSIGNED,
+  mac                   CHAR(17),
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
@@ -277,15 +279,15 @@ CREATE TABLE t_bios_client_info_measurements(
 
     INDEX(id_discovered_device),
     INDEX(id_key),
-    INDEX(id_subkey),
+    INDEX(id_key, id_subkey),
     INDEX(id_client),
 
     FOREIGN KEY (id_key)
-        REFERENCEs t_bios_measure_key(id_key)
+        REFERENCEs t_bios_measure_types(id)
         ON DELETE RESTRICT,
     
-    FOREIGN KEY (id_subkey)
-        REFERENCEs t_bios_measure_subkey(id_subkey)
+    FOREIGN KEY (id_key, id_subkey)
+        REFERENCEs t_bios_measure_subtypes(id, type_id)
         ON DELETE RESTRICT,
     
     FOREIGN KEY (id_discovered_device)
