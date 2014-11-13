@@ -3,8 +3,8 @@
 PASS=0
 TOTAL=0
 
-[ "$USER" != "" ] || USER="bios"
-[ "$PASSWD" = "" ] || PASSWD="nosoup4u"
+[ "$USER" ] || USER="bios"
+[ "$PASSWD" ] || PASSWD="nosoup4u"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
