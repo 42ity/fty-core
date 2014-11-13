@@ -19,6 +19,12 @@
 #include "assetmsg.h"
 #include "asset_types.h"
 
+// definition of internal functions, that are in charge of processing 
+// the specific type of the message
+asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
+asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
+asset_msg_t* _get_last_measurements(const char *url, asset_msg_t *msg);
+
 // TODO: move to some common section
 // duplicates the items for zlist/zhash
 void* void_dup(const void* a) { return strdup((char*)a); }
@@ -32,14 +38,14 @@ bool _checkMacaddress (const std::string &mac_address);
  * \brief This function is a general function to process 
  * the asset_msg_t message
  */
-zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
+asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
 {
     log_open();
     log_set_level(LOG_DEBUG);
     log_set_syslog_level(LOG_DEBUG);
     log_info ("%s", "start\n");
 
-    zmsg_t *result = NULL;
+    asset_msg_t *result = NULL;
 
     int msg_id = asset_msg_id (msg);
     
@@ -86,14 +92,15 @@ zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
             break;;
         default:
         {
-        // Example: Let's suppose we are listening on a ROUTER socket 
-        //          from a range of producers.
-        //          Someone sends us a message from older protocol 
-        //          that has been dropped. Are we going to return 
-        //          'false', that usually means db fatal error, and
-        //          make the caller crash/quit? OR does it make more 
-        //          sense to say, OK, message has been processed and 
-        //          we'll log a warning about unexpected message type.
+        // Example: Let's suppose we are listening on a ROUTER socket from 
+        //          a range of producers.
+        //          Someone sends us a message from older protocol that has 
+        //          been dropped. Are we going to return 'false', that 
+        //          usually means db fatal error, and
+        //          make the caller crash/quit? OR does it make more sense 
+        //          to say, OK, message
+        //          has been processed and we'll log a warning about 
+        //          unexpected message type
                   
             log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
             break;       
@@ -110,17 +117,16 @@ zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
  * Get only a list of group IDs the element belongs to.
  *
  * \param url        - the connection to database.
- * \param element_id - the id of the element (from 
- *                     t_bios_asset_element) we search groups for.
+ * \param element_id - the id of the element (from t_bios_asset_element) 
+ *                     we search groups for.
  *
  * \return NULL                   if internal database error occurs.
- *         empty object zlist_t   if the specified element doesn't 
- *                                belong to any group.
+ *         empty object zlist_t   if the specified element doesn't belong 
+ *                                to any group.
  *         filled object zlist_t  if the specified element belongs to 
  *                                some groups.
  */
-zlist_t* _select_asset_element_groups(const char* url, 
-        unsigned int element_id)
+zlist_t* _select_asset_element_groups(const char* url, unsigned int element_id)
 {
     assert ( element_id > 0 );
 
@@ -134,11 +140,11 @@ zlist_t* _select_asset_element_groups(const char* url,
         // Get information about the groups element belongs to
         // Can return more than one row
         tntdb::Statement st_gr = conn.prepareCached(
-            " SELECT"
+            " select"
             " v.id_asset_group"
-            " FROM"
+            " from"
             " v_bios_asset_group_relation v"
-            " WHERE v.id_asset_element = :idelement"
+            " where v.id_asset_element = :idelement"
         );
     
         tntdb::Result result = st_gr.setInt("idelement", element_id).
@@ -176,23 +182,20 @@ zlist_t* _select_asset_element_groups(const char* url,
  * B - src_id
  * C - dest_in
  * D - dest_id.
- * If A or B is 0 then it means that these parameters where not specified 
- * in the database.
- * 
+ *
  * \param url          - the connection to database.
- * \param device_id    - the id of the device (from 
- *                       t_bios_asset_device) we search links for.
- * \param link_type_id - the type of the link 
- *                       (TODO specify the location)
+ * \param device_id    - the id of the device (from t_bios_asset_device) 
+ *                       we search links for.
+ * \param link_type_id - the type of the link (TODO specify the location)
  *
  * \return NULL                   if internal database error occurs.
- *         empty object zlist_t   if the specified device doesn't 
- *                                belong to any link.
+ *         empty object zlist_t   if the specified device doesn't belong 
+ *                                to any link.
  *         filled object zlist_t  if the specified device belongs to 
  *                                some links.
  */
-zlist_t* _select_asset_device_link(const char* url, 
-                unsigned int device_id, unsigned int link_type_id)
+zlist_t* _select_asset_device_link(const char* url, unsigned int device_id, 
+                                   unsigned int link_type_id)
 {
     log_info("%s \n","start");
     
@@ -206,16 +209,15 @@ zlist_t* _select_asset_device_link(const char* url,
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
 
-        // Get information about the links the specified device 
-        // belongs to
+        // Get information about the links the specified device belongs to
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
-            " SELECT"
+            " select"
             " v.id_asset_device_src , v.src_out , v.dest_in"
-            " FROM"
+            " from"
             " v_bios_asset_link v"
-            " WHERE v.id_asset_device_dest = :iddevice "
-            "       AND v.id_asset_link_type = :idlinktype"
+            " where v.id_asset_device_dest = :iddevice "
+            "       and v.id_asset_link_type = :idlinktype"
         ); 
     
         tntdb::Result result = st_pow.setInt("iddevice", device_id).
@@ -225,12 +227,7 @@ zlist_t* _select_asset_device_link(const char* url,
 
         // Go through the selected links
         for ( auto &row: result )
-        { 
-            // src_id, required
-            unsigned int src_id = 0;
-            row[0].get(src_id);
-            assert ( src_id != 0 );  // database is corrupted
-
+        {
             // src_out
             unsigned int src_out = 0;
             row[1].get(src_out);
@@ -239,6 +236,11 @@ zlist_t* _select_asset_device_link(const char* url,
             unsigned int dest_in = 0;
             row[2].get(dest_in);
 
+            // src_id, required
+            unsigned int src_id = 0;
+            row[0].get(src_id);
+            assert ( src_id != 0 );  // database is corrupted
+
             sprintf(buff, "%d:%d:%d:%d", src_out, src_id, dest_in, device_id);
             zlist_push(links, buff);
         }
@@ -246,7 +248,6 @@ zlist_t* _select_asset_device_link(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&links);
-        log_info("abnormal %s \n","end");
         return NULL;
     }
     log_info("normal %s \n","end");
@@ -302,11 +303,11 @@ zhash_t* _select_asset_element_attributes(const char* url,
     
         // Can return more than one row
         tntdb::Statement st_extattr = conn.prepareCached(
-            " SELECT"
+            " select"
             " v.keytag , v.value"
-            " FROM"
+            " from"
             " v_bios_asset_ext_attributes v"
-            " WHERE v.id_asset_element = :idelement"
+            " where v.id_asset_element = :idelement"
         );
 
         tntdb::Result result = st_extattr.setInt("idelement", element_id).
@@ -340,20 +341,24 @@ zhash_t* _select_asset_element_attributes(const char* url,
 /**
  * \brief Gets additional information about specified device.
  *
- * Converts the the message of the type ASSET_MSG_ELEMENT to ASSET_MSG_DEVICE
- * in case of success or in case of failure to COMMON_MSG_FAIL.
- * It destoyes the message element and creates a new zmsg_t message.
+ * Converts the the message of the type ASSET_MSG_ELEMENT to ASSET_MSG_DEVICE. 
+ * In case of failure returns ASSET_MSG_FAIL.
+ * It destoyes the element and create DEVICE.
  * 
  * \param url     - the connection to database.
  * \param element - the message of the type ASSET_MSG_ELEMENT we would like 
  *                  to extend.
  *
- * \return zmsg_t - an encoded ASSET_MSG_DEVICE or COMMON_MSG_FAIL
+ * \return an asset_msg_t message of the type ASSET_MSG_FAIL in case of any 
+ *                                 error.
+ *         an asset_msg_t message of the type ASSET_MSG_DEVICE in case 
+ *                                 of success.
  */
-zmsg_t* _select_asset_device(const char* url, asset_msg_t** element)
+asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
 {
     log_info ("%s", "start\n");
-    assert ( asset_msg_id (*element) == ASSET_MSG_ELEMENT );
+    int msgelement_id = asset_msg_id (*element);
+    assert ( msgelement_id == ASSET_MSG_ELEMENT );
 
     std::string mac = "";
     std::string ip = "";
@@ -369,21 +374,25 @@ zmsg_t* _select_asset_device(const char* url, asset_msg_t** element)
         // Get more attributes of the device
         // Can return one row or nothing 
         tntdb::Statement st_dev = conn.prepareCached(
-            " SELECT"
-            " v.mac , v.ip, v.hostname , v.full_hostname "
+            " select"
+            " v.mac, v.ip, v.hostname , v.full_hostname "
             "   , v.id_asset_device_type, v.id_asset_device"
-            " FROM"
+            " from"
             " v_bios_asset_device v"
-            " WHERE v.id_asset_element = :idelement"
+            " where v.id_asset_element = :idelement"
         );
     
         unsigned int element_id = asset_msg_element_id (*element);
         tntdb::Row row = st_dev.setInt("idelement", element_id).
                                 selectRow();
 
-        // mac
+        // TODO: Assumption: if data where inserted in database, then 
+        // assume they are corrected
+        // mac in db is stored as a number, and without :
         row[0].get(mac);
-        
+        if ( mac != "" )
+            mac = _addColonMacaddress(mac);
+
         // ip
         row[1].get(ip);
 
@@ -403,32 +412,26 @@ zmsg_t* _select_asset_device(const char* url, asset_msg_t** element)
 
         groups = _select_asset_element_groups(url, element_id);
         if ( groups == NULL )    // internal error in database
-            return generate_db_fail(DB_ERROR_INTERNAL);       
+            return generate_fail(DB_ERROR_INTERNAL);       
         
         // 1 means power chain TODO
         powers = _select_asset_device_link(url, device_id, 1);
         if ( powers == NULL )   // internal error in database
-            return generate_db_fail(DB_ERROR_INTERNAL);
+            return generate_fail(DB_ERROR_INTERNAL);
     }
     catch (const tntdb::NotFound &e) {
         //database is corrupted, for every device in db there should be 
         //two rows
         //1 in asset_element
         //2 in asset_device
-        asset_msg_destroy (&element);
-        zlist_destroy (&powers);
-        zlist_destroy (&groups);
-
-        return generate_db_fail(DB_ERROR_BADINPUT);
+        return generate_fail(DB_ERROR_BADINPUT);
     }
     catch (const std::exception &e) {
         // internal error in database
-        asset_msg_destroy (&element);
         zlist_destroy (&powers);
         zlist_destroy (&groups);
         return generate_fail(DB_ERROR_INTERNAL);
     }
-    // device was found
     asset_msg_t* msgdevice = asset_msg_new (ASSET_MSG_DEVICE);
     assert ( msgdevice );
 
@@ -483,11 +486,11 @@ asset_msg_t* _select_asset_element(const char* url, unsigned int element_id,
         // Can return one row or nothing.
         // Get basic attributes of the element
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
+            " select"
             " v.name , v.id_parent, v.id_parent_type"
-            " FROM"
+            " from"
             " v_bios_asset_element v"
-            " WHERE v.id = :id AND v.id_type = :typeid"
+            " where v.id = :id and v.id_type = :typeid"
         );
     
         tntdb::Row row = st.setInt("id", element_id).
@@ -610,11 +613,11 @@ asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg)
 
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
+            " select"
             " v.name, v.id"
-            " FROM"
+            " from"
             " v_bios_asset_element v"
-            " WHERE v.id_type = :typeid"
+            " where v.id_type = :typeid"
         );
     
         tntdb::Result result = st.setInt("typeid", element_type_id).
@@ -672,7 +675,7 @@ uint32_t convert_asset_to_monitor(const char* url, uint32_t asset_element_id)
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             " id_asset_element"
-            " FROM"
+            " from"
             " v_bios_monitor_asset_relation"
             " WHERE id_discovered_device = :id"
         );
@@ -701,7 +704,7 @@ uint32_t convert_monitor_to_asset(const char* url, uint32_t discovered_device_id
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             " id_discovered_device"
-            " FROM"
+            " from"
             " v_bios_monitor_asset_relation"
             " WHERE id_asset_element = :id"
         );
@@ -861,3 +864,5 @@ _checkMacaddress (const std::string &mac_address)
         return true;
 }
 */
+
+
