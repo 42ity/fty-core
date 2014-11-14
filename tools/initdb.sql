@@ -282,21 +282,6 @@ CREATE TABLE t_bios_client_info_measurements(
     INDEX(id_key, id_subkey),
     INDEX(id_client),
 
-    FOREIGN KEY (id_key)
-        REFERENCEs t_bios_measure_types(id)
-        ON DELETE RESTRICT,
-    
-    FOREIGN KEY (id_key, id_subkey)
-        REFERENCEs t_bios_measure_subtypes(id, type_id)
-        ON DELETE RESTRICT,
-    
-    FOREIGN KEY (id_discovered_device)
-        REFERENCEs t_bios_discovered_device(id_discovered_device)
-        ON DELETE RESTRICT,
-
-    FOREIGN KEY (id_client)
-        REFERENCES t_bios_client(id_client)
-        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_monitor_asset_relation(
