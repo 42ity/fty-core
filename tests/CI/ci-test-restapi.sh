@@ -84,7 +84,7 @@ wait_for_web() {
 # do the test
 set +e
 echo "============================================================"
-/bin/bash tests/CI/test_web.sh
+/bin/bash tests/CI/test_web.sh -u "$USER" -p "$PASSWD"
 RESULT=$?
 echo "============================================================"
 
