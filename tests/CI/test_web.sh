@@ -3,8 +3,16 @@
 PASS=0
 TOTAL=0
 
-[ "$USER" ] || USER="bios"
-[ "$PASSWD" ] || PASSWD="@PASSWORD@"
+USER="bios"
+PASSWD="@PASSWORD@"
+if [ "x$1" = "x-u" ]; then
+    USER="$2"
+    shift 2
+fi
+if [ "x$1" = "x-p" ]; then
+    PASSWD="$2"
+    shift 2
+fi
 
 PATH="$PATH:/sbin:/usr/sbin"
 
