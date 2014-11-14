@@ -25,9 +25,6 @@ CREATE TABLE t_bios_measurement_subtypes(
     name             VARCHAR(25) NOT NULL,
     scale            TINYINT NOT NULL,
     PRIMARY KEY(id, type_id)
-    FOREIGN KEY(type_id)
-	REFERENCES t_bios_measurement_types(id)
-        ON DELETE RESTRICT
 );
 
 CREATE TABLE t_bios_device_type(
@@ -280,7 +277,7 @@ CREATE TABLE t_bios_client_info_measurements(
     INDEX(id_discovered_device),
     INDEX(id_key),
     INDEX(id_key, id_subkey),
-    INDEX(id_client),
+    INDEX(id_client)
 
 );
 
