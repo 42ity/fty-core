@@ -92,6 +92,8 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/monitor.h \
 				src/persist/measure_types.cc \
 				src/persist/measure_types.h \
+				src/persist/measurements.cc \
+				src/persist/measurements.h \
 				src/include/common_msg.c \
 				src/include/common_msg.h \
 				src/include/netdisc_msg.c \
@@ -351,7 +353,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/shared/log.c
+                      src/shared/log.c      src/web/src/current.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
