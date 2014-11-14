@@ -43,9 +43,6 @@ Cmnd_Alias DATE_NTP	= /usr/sbin/ntpdate,/etc/init.d/ntp
 Cmnd_Alias DATE_CLOCK	= /usr/bin/rdate
 Cmnd_Alias DATE		= DATE_MANUAL,DATE_HWCLOCK,DATE_NTP,DATE_CLOCK
 
-### Manage the SASL daemon (needed for CI tests):
-Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd
-
 ### Scan available network hosts:
 Cmnd_Alias NMAP		= /usr/bin/nmap
 
@@ -53,7 +50,7 @@ Cmnd_Alias NMAP		= /usr/bin/nmap
 Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,NMAP,SASLD
+Cmnd_Alias BIOS_PROGS	= DATE,NMAP
 
 # Who is allowed to elevate?
 User_Alias BIOS_USERS	= bios,%bios
