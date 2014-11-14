@@ -373,7 +373,19 @@ DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 
-create view v_bios_asset_device as select * from t_bios_asset_device ;
+CREATE VIEW v_bios_asset_device AS
+    SELECT  v1.id_asset_device,
+            v1.id_asset_element,
+            v1.hostname,
+            v1.full_hostname,
+            v1.ip,
+            v1.mac,
+            v1.id_asset_device_type,
+            v2.name
+    FROM t_bios_asset_device v1
+        LEFT JOIN t_bios_asset_device_type v2
+        ON (v1.id_asset_device_type = v2.id_asset_device_type);
+
 create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
