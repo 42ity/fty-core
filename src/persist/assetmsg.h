@@ -32,9 +32,6 @@ asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 uint32_t convert_asset_to_monitor(const char* url, uint32_t asset_element_id);
 uint32_t convert_monitor_to_asset(const char* url, uint32_t discovered_device_id);
-asset_msg_t* _generate_return_measurements (uint32_t device_id, zlist_t** measurements);
-zlist_t* select_last_measurements(const char* url, uint32_t device_id);
-asset_msg_t* _get_last_measurements(const char* url, asset_msg_t* msg);
 //
 #endif // SRC_PERSIST_ASSETMSG_H_
 

@@ -23,7 +23,6 @@
 // the specific type of the message
 asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
 asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
-asset_msg_t* _get_last_measurements(const char *url, asset_msg_t *msg);
 
 // TODO: move to some common section
 // duplicates the items for zlist/zhash
@@ -54,11 +53,6 @@ asset_msg_t* asset_msg_process(const char *url, asset_msg_t *msg)
         case ASSET_MSG_GET_ELEMENT:
         {   //datacenter/room/row/rack/group/device
             result = _get_asset_element(url, msg);
-            break;
-        }
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-        {
-            result = _get_last_measurements(url, msg);
             break;
         }
         case ASSET_MSG_UPDATE_ELEMENT:
@@ -721,114 +715,6 @@ uint32_t convert_monitor_to_asset(const char* url, uint32_t discovered_device_id
     }
     return asset_element_id;
 };
-
-asset_msg_t* _generate_return_measurements (uint32_t device_id, zlist_t** measurements)
-{
-    asset_msg_t* resultmsg = asset_msg_new (ASSET_MSG_RETURN_LAST_MEASUREMENTS);
-    assert ( resultmsg );
-    asset_msg_set_element_id (resultmsg, device_id);
-    asset_msg_set_measurements (resultmsg, measurements);
-    zlist_destroy (measurements);
-    return resultmsg;
-}
-
-/**
- * \brief Takes all last measurements of the spcified device.
- *
- * \param url       - connection url to database.
- * \param device_id - id of the monitor device that was measured.
- *
- * \return NULL            in case of errors.
- *         empty zlist_t   in case of nothing was found
- *         filled zlist_t  in case of succcess.
- */
-zlist_t* select_last_measurements(const char* url, uint32_t device_id)
-{
-    assert ( device_id ); // is required
-    
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " id_key, value, id_subkey, scale"
-            " FROM"
-            " v_bios_client_info_measurements_last"
-            " WHERE id_discovered_device=:deviceid"
-        );
-
-        tntdb::Result result = st.setInt("deviceid", device_id).
-                                  select();
-
-        uint32_t rsize = result.size();
-
-        zlist_t* measurements = zlist_new();
-        assert ( measurements );
-        // in older versions this function is called 
-        // zhash_set_item_duplicator
-        zlist_set_duplicator (measurements, void_dup);
-
-        char buff[42];     // 10+10+10+10 2
-        if ( rsize > 0 )
-        {
-            // There are some measurements for the specified device
-            // Go through the selected measurements
-            for ( auto &row: result )
-            {
-                // keytag_id, required
-                uint32_t keytag_id = 0;
-                row[0].get(keytag_id);
-                assert ( keytag_id );      // database is corrupted
-                
-                // subkeytag_id, required
-                uint32_t subkeytag_id = 0;
-                row[0].get(subkeytag_id);
-                assert ( subkeytag_id );   // database is corrupted
-
-                // value, required
-                uint32_t value = 0;
-                bool isNotNull = row[1].get(value);
-                assert ( isNotNull );      // database is corrupted
-
-                // scale, required
-                uint32_t scale = 0;
-                row[0].get(scale);
-                assert ( scale );          // database is corrupted
-                
-                sprintf(buff, "%d:%d:%d:%d", keytag_id, subkeytag_id, 
-                              value, scale);
-                zlist_push (measurements, buff);
-            }
-        }
-        return measurements;
-    }
-    catch (const std::exception &e) {
-        return NULL;
-    }
-}
-
-asset_msg_t* _get_last_measurements(const char* url, asset_msg_t* msg)
-{
-    assert ( asset_msg_id (msg) == ASSET_MSG_GET_LAST_MEASUREMENTS );
-    uint32_t device_id = asset_msg_element_id (msg);
-    assert ( device_id );
-    uint32_t device_id_monitor = convert_asset_to_monitor(url, device_id);
-    assert ( device_id_monitor > 0 );
-
-    zlist_t* last_measurements = 
-            select_last_measurements(url, device_id_monitor);
-    if ( last_measurements == NULL )
-        return generate_fail(DB_ERROR_INTERNAL);
-    else if ( zlist_size(last_measurements) == 0 )
-        return generate_fail(DB_ERROR_NOTFOUND);
-    else
-    {
-        asset_msg_t* return_measurements = 
-            _generate_return_measurements(device_id, &last_measurements);
-        return return_measurements;
-    }
-};
-
 
 // TODO: These functions are duplicate functions from nethistory.cc
 // it is done, because we plan to get rid of classes

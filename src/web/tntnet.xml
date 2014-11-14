@@ -50,6 +50,12 @@
       </args>
     </mapping>
 
+    <!-- Current meassurements -->
+    <mapping>
+      <target>current@bios_web</target>
+      <url>^/api/v1/metric/current.*$</url>
+    </mapping>
+
     <!-- Network list -->
     <mapping>
       <target>networks@bios_web</target>
