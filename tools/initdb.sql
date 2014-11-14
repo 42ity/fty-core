@@ -1,3 +1,4 @@
+drop database if exists box_utf8;
 create database IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
 use box_utf8;
