@@ -3,14 +3,14 @@
 PASS=0
 TOTAL=0
 
-USER="bios"
-PASSWD="nosoup4u"
+BIOS_USER="bios"
+BIOS_PASSWD="nosoup4u"
 if [ "x$1" = "x-u" ]; then
-    USER="$2"
+    BIOS_USER="$2"
     shift 2
 fi
 if [ "x$1" = "x-p" ]; then
-    PASSWD="$2"
+    BIOS_PASSWD="$2"
     shift 2
 fi
 
@@ -58,7 +58,7 @@ api_post() {
 
 _api_get_token() {
     if [ -z "$_TOKEN_" ]; then
-    _TOKEN_="`api_get "/oauth2/token?username=$USER&password=$PASSWD&grant_type=password" | \
+    _TOKEN_="`api_get "/oauth2/token?username=$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" | \
             sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
     fi
     echo "$_TOKEN_"
@@ -82,16 +82,16 @@ fi
 
 # check the user morbo in system
 # I expects SASL uses Linux PAM, therefor getent will tell us it all
-if ! getent passwd "${USER}" > /dev/null; then
-    echo "User ${USER} is not known to system administrative database"
+if ! getent passwd "$BIOS_USER" > /dev/null; then
+    echo "User $BIOS_USER is not known to system administrative database"
     echo "To add it locally, run: "
-    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody --no-create-home --no-user-group ${USER}"
-    echo "and don't forget the password '${PASSWD}'"
+    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody --no-create-home --no-user-group $BIOS_USER"
+    echo "and don't forget the password '$BIOS_PASSWD'"
     exit 2
 fi
 
-if ! testsaslauthd -u "${USER}" -p "${PASSWD}" -s bios > /dev/null; then
-    echo "SASL autentification for user '${USER}' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
+if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+    echo "SASL autentification for user '$BIOS_USER' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
     exit 3
 fi
 
