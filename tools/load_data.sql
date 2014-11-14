@@ -7,7 +7,7 @@ insert into t_bios_client (id_client, name) values (1, "nmap");
 
 insert into t_bios_device_type(id_device_type,name) values (NULL,"ups");
 insert into t_bios_device_type(id_device_type,name) values (NULL,"epdu");
-insert into t_bios_device_type(id_device_type,name) values (NULL,"serv");
+insert into t_bios_device_type(id_device_type,name) values (NULL,"server");
 
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
 insert into t_bios_discovered_device(id_discovered_device,name,id_device_type) values(NULL,"select_device",1);
@@ -17,10 +17,9 @@ insert into t_bios_client(id_client,name) values(NULL,"mymodule");
 insert into t_bios_client(id_client,name) values(NULL,"admin");
 insert into t_bios_client(id_client,name) values(NULL,"NUT");
 
-
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"ups");
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"epdu");
-insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"serv");
+insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"server");
 insert into t_bios_asset_device_type (id_asset_device_type, name ) values (NULL,"main");
 
 insert into t_bios_asset_element_type (id_asset_element_type, name) values (1, "group");

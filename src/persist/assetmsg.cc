@@ -363,6 +363,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
     std::string fullhostname = "";
     unsigned int id_asset_device_type = 0;
     unsigned int device_id = 0;
+    std::string type_name;
     zlist_t* groups = NULL;
     zlist_t* powers = NULL;
     try {
@@ -373,7 +374,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         tntdb::Statement st_dev = conn.prepareCached(
             " select"
             " v.mac, v.ip, v.hostname , v.full_hostname "
-            "   , v.id_asset_device_type, v.id_asset_device"
+            "   , v.id_asset_device_type, v.id_asset_device, v.name"
             " from"
             " v_bios_asset_device v"
             " where v.id_asset_element = :idelement"
@@ -401,6 +402,9 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         // id of the device, required
         row[5].get(device_id);
         assert ( device_id != 0 );  // database is corrupted
+
+        // string representation of device type
+        row[6].getString(type_name);
 
         groups = _select_asset_element_groups(url, element_id);
         if ( groups == NULL )    // internal error in database
@@ -431,9 +435,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
     asset_msg_set_mac (msgdevice,mac.c_str());
     asset_msg_set_hostname (msgdevice,hostname.c_str());
     asset_msg_set_fqdn (msgdevice,fullhostname.c_str());   
-    char buff[16];
-    sprintf(buff, "%d", id_asset_device_type);
-    asset_msg_set_device_type (msgdevice, buff);  // TODO STRING???
+    asset_msg_set_device_type (msgdevice, type_name.c_str());
      
     zmsg_t* nnmsg = asset_msg_encode (element);
     asset_msg_set_msg (msgdevice, &nnmsg);
