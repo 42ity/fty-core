@@ -1,7 +1,7 @@
 # Description: This OPTIONAL file is a configuration module
 # for "sudo" and it contains definition of some command lines
 # needed for (CI-driven or manual) testing of the $BIOS project.
-# It relies on values set in the bios_sudo_conf_00_base file.
+# It relies on values set in the sudoers.d/bios_00_base file.
 # See also the script to generate these needed $BIOS accounts:
 #    tools/init-os-accounts.sh
 #
