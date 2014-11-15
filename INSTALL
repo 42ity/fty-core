@@ -453,6 +453,16 @@ into the binary code, so the building user must either have access to the
 socket (`adduser builder sasl`) or an explicit '--with-saslauthd-mux=...'
 option must be passed to `configure`.
 
+ * Finally, add the PAM configuration file which defines and constrains
+the 'bios' service, allowing only members of the 'bios' group to pass the
+authentication for this service (i.e. when doing web-logins in REST API).
+Two files need to be installed -- a PAM snippet and a list of groups
+which this snippet references:
+----
+:; cp docs/examples/pam.d/bios /etc/pam.d/
+:; cp docs/examples/security/bios_groups.conf /etc/security
+----
+
 Beside the setup discussed above, no extra configuration for SASL and PAM
 is needed on the target Debian 8 platform -- everything is pre-integrated
 by the OS.
