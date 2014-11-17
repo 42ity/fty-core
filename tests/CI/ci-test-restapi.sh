@@ -15,33 +15,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author(s): Tomas Halman <TomasHalman@eaton.com>
+# Author(s): Tomas Halman <TomasHalman@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
-# Description: tests restapi
+# Description: sets up the sandbox and runs the tests of REST API for
+# the $BIOS project (Note: please also run `ci-fill-db.sh` beforehand!)
 
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-USER=bios
-PASSWD=@PASSWORD@
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 
 usage(){
-    echo "usage $(basename $0) [options]"
+    echo "Usage: $(basename $0) [options...]"
     echo "options:"
-    echo "  -u|--user   username for SASL [bios]"
-    echo "  -p|--passwd password for SASL [@PASSWORD@]"
+    echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
+    echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
 }
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         --user|-u)
-            USER="$2"
+            BIOS_USER="$2"
             shift
             ;;
         --passwd|-p)
-            PASSWD="$2"
+            BIOS_PASSWD="$2"
             shift
             ;;
         *)
-            echo "Invalid option $1" 1>&2
+            echo "Invalid option '$1'" >&2
             usage
             exit 1
             ;;
@@ -71,12 +73,12 @@ wait_for_web() {
   # make sure sasl is running
   systemctl restart saslauthd
   # check SASL is working
-  testsaslauthd -u "$USER" -p "$PASSWD" -s bios
+  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
 # do the webserver
   cd $CHECKOUTDIR
   # make clean
-  export USER PASSWD
+  export BIOS_USER BIOS_PASSWD
   make web-test &
   MAKEPID=$!
   wait_for_web
@@ -84,7 +86,7 @@ wait_for_web() {
 # do the test
 set +e
 echo "============================================================"
-/bin/bash tests/CI/test_web.sh -u "$USER" -p "$PASSWD"
+/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD"
 RESULT=$?
 echo "============================================================"
 
