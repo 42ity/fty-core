@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# Description: This script automates tests of REST API for the $BIOS project
+
 PASS=0
 TOTAL=0
 
@@ -76,22 +78,22 @@ api_auth_delete() {
 
 # fixture ini
 if ! pidof saslauthd > /dev/null; then
-    echo "saslauthd does not run, please start it first!"
+    echo "saslauthd is not running, please start it first!" >&2
     exit 1
 fi
 
-# check the user morbo in system
-# I expects SASL uses Linux PAM, therefor getent will tell us it all
+# Check the user account in system
+# We expect SASL uses Linux PAM, therefore getent will tell us all we need
 if ! getent passwd "$BIOS_USER" > /dev/null; then
     echo "User $BIOS_USER is not known to system administrative database"
     echo "To add it locally, run: "
-    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody --no-create-home --no-user-group $BIOS_USER"
+    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
     exit 2
 fi
 
 if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
-    echo "SASL autentification for user '$BIOS_USER' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
+    echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
 
