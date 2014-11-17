@@ -25,6 +25,14 @@
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 
+PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+export PATH
+
+# Simple check for whether sudo is needed to restart saslauthd
+RUNAS=""
+CURID="`id -u`" || CURID=""
+[ "$CURID" = 0 ] || RUNAS="sudo"
+
 usage(){
     echo "Usage: $(basename $0) [options...]"
     echo "options:"
@@ -71,7 +79,9 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   # make sure sasl is running
-  systemctl restart saslauthd
+  $RUNAS systemctl restart saslauthd || \
+    [ x"$RUNAS" = x ] || \
+    echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
   # check SASL is working
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
