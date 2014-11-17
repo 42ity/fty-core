@@ -19,7 +19,14 @@
 #
 # Description: installs dependecies and compiles the project
 
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+       */tests/CI|tests/CI)
+           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
 set -e
 

@@ -21,7 +21,15 @@
 # Description: sets up the sandbox and runs the tests of REST API for
 # the $BIOS project (Note: please also run `ci-fill-db.sh` beforehand!)
 
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+       */tests/CI|tests/CI)
+           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 

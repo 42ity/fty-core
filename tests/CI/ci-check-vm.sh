@@ -20,7 +20,14 @@
 # Description: checks files on VM, whether they are sync with local checkout.
 #              If they are not, files re copied to vitrual machine and compiled.
 
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+       */tests/CI|tests/CI)
+           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
 set -e
 
