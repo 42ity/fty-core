@@ -32,10 +32,10 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 set -e
 
 usage() {
-    echo "usage: $(basename $0) [options]"
+    echo "Usage: $(basename $0) [options]"
     echo "options:"
     echo "    -m|--machine name    virtual machine name"
-    echo "    -p|--port PORT       virtual machine ssh port [22]"
+    echo "    -p|--port PORT       virtual machine ssh port (Default: $PORT)"
     echo "    -h|--help            print this help"
 }
 
