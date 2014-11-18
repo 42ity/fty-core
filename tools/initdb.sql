@@ -372,6 +372,21 @@ DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
+DROP VIEW IF EXISTS v_bios_measure_subkey;
+DROP VIEW IF EXISTS v_bios_measurement_subtypes;
+DROP VIEW IF EXISTS v_bios_measurement_types;
+
+
+create view v_bios_measurement_types as select * from t_bios_measurement_types ;
+
+create view v_bios_measurement_subtypes as
+SELECT
+    st.id , st.type_id, st.name, st.scale, t.name as typename
+FROM
+    v_bios_measurement_types t,
+    t_bios_measurement_subtypes st
+where
+    st.type_id = t.id;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
