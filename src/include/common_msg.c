@@ -60,14 +60,9 @@ struct _common_msg_t {
     char *name;                         //   Name of the client
     zmsg_t *msg;                        //   Client to be inserted
     uint32_t client_id;                 //   Unique ID of the client to be updated
-    char *keyname;                      //   Name of the client
-    uint32_t scale;                     //   Scale TODO
-    uint32_t keytagid;                  //   Unique ID of the key
     char *client_name;                  //   Name of the client
     char *device_name;                  //   device name 
     char *device_type;                  //   device type 
-    char *keytagname;                   //   key 
-    uint32_t subkeytag;                 //   subkey 
     uint64_t value;                     //   measurement value 
     uint32_t device_id;                 //   A device id
     zchunk_t *info;                     //   Information about device gathered by client (data+ its size)
@@ -243,11 +238,9 @@ common_msg_destroy (common_msg_t **self_p)
         zhash_destroy (&self->erraux);
         free (self->name);
         zmsg_destroy (&self->msg);
-        free (self->keyname);
         free (self->client_name);
         free (self->device_name);
         free (self->device_type);
-        free (self->keytagname);
         zchunk_destroy (&self->info);
         if (self->measurements)
             zlist_destroy (&self->measurements);
@@ -286,6 +279,7 @@ is_common_msg (zmsg_t *msg)
         case COMMON_MSG_GET_MEASURE_TYPE_S:
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
         case COMMON_MSG_RETURN_MEASURE_TYPE:
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
         case COMMON_MSG_FAIL:
@@ -295,11 +289,6 @@ is_common_msg (zmsg_t *msg)
         case COMMON_MSG_UPDATE_CLIENT:
         case COMMON_MSG_DELETE_CLIENT:
         case COMMON_MSG_RETURN_CLIENT:
-        case COMMON_MSG_KEY:
-        case COMMON_MSG_INSERT_KEY:
-        case COMMON_MSG_DELETE_KEY:
-        case COMMON_MSG_RETURN_KEY:
-        case COMMON_MSG_GET_KEY:
         case COMMON_MSG_NEW_MEASUREMENT:
         case COMMON_MSG_CLIENT_INFO:
         case COMMON_MSG_INSERT_CINFO:
@@ -379,6 +368,11 @@ common_msg_decode (zmsg_t **msg_p)
             GET_STRING (self->mts_name);
             break;
 
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            GET_STRING (self->mt_name);
+            GET_STRING (self->mts_name);
+            break;
+
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             GET_NUMBER2 (self->mt_id);
             GET_STRING (self->mt_name);
@@ -449,42 +443,12 @@ common_msg_decode (zmsg_t **msg_p)
                 zmsg_add (self->msg, zmsg_pop (msg));
             break;
 
-        case COMMON_MSG_KEY:
-            GET_STRING (self->keyname);
-            GET_NUMBER4 (self->scale);
-            break;
-
-        case COMMON_MSG_INSERT_KEY:
-            //  Get zero or more remaining frames, leaving current
-            //  frame untouched
-            self->msg = zmsg_new ();
-            while (zmsg_size (msg))
-                zmsg_add (self->msg, zmsg_pop (msg));
-            break;
-
-        case COMMON_MSG_DELETE_KEY:
-            GET_NUMBER4 (self->rowid);
-            break;
-
-        case COMMON_MSG_RETURN_KEY:
-            GET_NUMBER4 (self->keytagid);
-            //  Get zero or more remaining frames, leaving current
-            //  frame untouched
-            self->msg = zmsg_new ();
-            while (zmsg_size (msg))
-                zmsg_add (self->msg, zmsg_pop (msg));
-            break;
-
-        case COMMON_MSG_GET_KEY:
-            GET_NUMBER4 (self->rowid);
-            break;
-
         case COMMON_MSG_NEW_MEASUREMENT:
             GET_STRING (self->client_name);
             GET_STRING (self->device_name);
             GET_STRING (self->device_type);
-            GET_STRING (self->keytagname);
-            GET_NUMBER4 (self->subkeytag);
+            GET_NUMBER2 (self->mt_id);
+            GET_NUMBER2 (self->mts_id);
             GET_NUMBER8 (self->value);
             break;
 
@@ -672,6 +636,17 @@ common_msg_encode (common_msg_t **self_p)
                 frame_size += strlen (self->mts_name);
             break;
             
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            //  mt_name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->mt_name)
+                frame_size += strlen (self->mt_name);
+            //  mts_name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->mts_name)
+                frame_size += strlen (self->mts_name);
+            break;
+            
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             //  mt_id is a 2-byte integer
             frame_size += 2;
@@ -748,33 +723,6 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             break;
             
-        case COMMON_MSG_KEY:
-            //  keyname is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->keyname)
-                frame_size += strlen (self->keyname);
-            //  scale is a 4-byte integer
-            frame_size += 4;
-            break;
-            
-        case COMMON_MSG_INSERT_KEY:
-            break;
-            
-        case COMMON_MSG_DELETE_KEY:
-            //  rowid is a 4-byte integer
-            frame_size += 4;
-            break;
-            
-        case COMMON_MSG_RETURN_KEY:
-            //  keytagid is a 4-byte integer
-            frame_size += 4;
-            break;
-            
-        case COMMON_MSG_GET_KEY:
-            //  rowid is a 4-byte integer
-            frame_size += 4;
-            break;
-            
         case COMMON_MSG_NEW_MEASUREMENT:
             //  client_name is a string with 1-byte length
             frame_size++;       //  Size is one octet
@@ -788,12 +736,10 @@ common_msg_encode (common_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->device_type)
                 frame_size += strlen (self->device_type);
-            //  keytagname is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->keytagname)
-                frame_size += strlen (self->keytagname);
-            //  subkeytag is a 4-byte integer
-            frame_size += 4;
+            //  mt_id is a 2-byte integer
+            frame_size += 2;
+            //  mts_id is a 2-byte integer
+            frame_size += 2;
             //  value is a 8-byte integer
             frame_size += 8;
             break;
@@ -944,6 +890,19 @@ common_msg_encode (common_msg_t **self_p)
                 PUT_NUMBER1 (0);    //  Empty string
             break;
 
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            if (self->mt_name) {
+                PUT_STRING (self->mt_name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->mts_name) {
+                PUT_STRING (self->mts_name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            break;
+
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             PUT_NUMBER2 (self->mt_id);
             if (self->mt_name) {
@@ -1012,30 +971,6 @@ common_msg_encode (common_msg_t **self_p)
             PUT_NUMBER4 (self->rowid);
             break;
 
-        case COMMON_MSG_KEY:
-            if (self->keyname) {
-                PUT_STRING (self->keyname);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER4 (self->scale);
-            break;
-
-        case COMMON_MSG_INSERT_KEY:
-            break;
-
-        case COMMON_MSG_DELETE_KEY:
-            PUT_NUMBER4 (self->rowid);
-            break;
-
-        case COMMON_MSG_RETURN_KEY:
-            PUT_NUMBER4 (self->keytagid);
-            break;
-
-        case COMMON_MSG_GET_KEY:
-            PUT_NUMBER4 (self->rowid);
-            break;
-
         case COMMON_MSG_NEW_MEASUREMENT:
             if (self->client_name) {
                 PUT_STRING (self->client_name);
@@ -1052,12 +987,8 @@ common_msg_encode (common_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            if (self->keytagname) {
-                PUT_STRING (self->keytagname);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER4 (self->subkeytag);
+            PUT_NUMBER2 (self->mt_id);
+            PUT_NUMBER2 (self->mts_id);
             PUT_NUMBER8 (self->value);
             break;
 
@@ -1197,34 +1128,6 @@ common_msg_encode (common_msg_t **self_p)
     }
     //  Now send the message field if there is any
     if (self->id == COMMON_MSG_RETURN_CLIENT) {
-        if (self->msg) {
-            zframe_t *frame = zmsg_pop (self->msg);
-            while (frame) {
-                zmsg_append (msg, &frame);
-                frame = zmsg_pop (self->msg);
-            }
-        }
-        else {
-            zframe_t *frame = zframe_new (NULL, 0);
-            zmsg_append (msg, &frame);
-        }
-    }
-    //  Now send the message field if there is any
-    if (self->id == COMMON_MSG_INSERT_KEY) {
-        if (self->msg) {
-            zframe_t *frame = zmsg_pop (self->msg);
-            while (frame) {
-                zmsg_append (msg, &frame);
-                frame = zmsg_pop (self->msg);
-            }
-        }
-        else {
-            zframe_t *frame = zframe_new (NULL, 0);
-            zmsg_append (msg, &frame);
-        }
-    }
-    //  Now send the message field if there is any
-    if (self->id == COMMON_MSG_RETURN_KEY) {
         if (self->msg) {
             zframe_t *frame = zmsg_pop (self->msg);
             while (frame) {
@@ -1485,6 +1388,21 @@ common_msg_encode_get_measure_subtype_s (
 
 
 //  --------------------------------------------------------------------------
+//  Encode GET_MEASURE_SUBTYPE_SS message
+
+zmsg_t * 
+common_msg_encode_get_measure_subtype_ss (
+    const char *mt_name,
+    const char *mts_name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
+    common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mts_name (self, mts_name);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Encode RETURN_MEASURE_TYPE message
 
 zmsg_t * 
@@ -1624,77 +1542,6 @@ common_msg_encode_return_client (
 
 
 //  --------------------------------------------------------------------------
-//  Encode KEY message
-
-zmsg_t * 
-common_msg_encode_key (
-    const char *keyname,
-    uint32_t scale)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_KEY);
-    common_msg_set_keyname (self, keyname);
-    common_msg_set_scale (self, scale);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode INSERT_KEY message
-
-zmsg_t * 
-common_msg_encode_insert_key (
-    zmsg_t *msg)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_KEY);
-    zmsg_t *msg_copy = zmsg_dup (msg);
-    common_msg_set_msg (self, &msg_copy);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode DELETE_KEY message
-
-zmsg_t * 
-common_msg_encode_delete_key (
-    uint32_t rowid)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_KEY);
-    common_msg_set_rowid (self, rowid);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode RETURN_KEY message
-
-zmsg_t * 
-common_msg_encode_return_key (
-    uint32_t keytagid,
-    zmsg_t *msg)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_KEY);
-    common_msg_set_keytagid (self, keytagid);
-    zmsg_t *msg_copy = zmsg_dup (msg);
-    common_msg_set_msg (self, &msg_copy);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode GET_KEY message
-
-zmsg_t * 
-common_msg_encode_get_key (
-    uint32_t rowid)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_GET_KEY);
-    common_msg_set_rowid (self, rowid);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Encode NEW_MEASUREMENT message
 
 zmsg_t * 
@@ -1702,16 +1549,16 @@ common_msg_encode_new_measurement (
     const char *client_name,
     const char *device_name,
     const char *device_type,
-    const char *keytagname,
-    uint32_t subkeytag,
+    uint16_t mt_id,
+    uint16_t mts_id,
     uint64_t value)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_NEW_MEASUREMENT);
     common_msg_set_client_name (self, client_name);
     common_msg_set_device_name (self, device_name);
     common_msg_set_device_type (self, device_type);
-    common_msg_set_keytagname (self, keytagname);
-    common_msg_set_subkeytag (self, subkeytag);
+    common_msg_set_mt_id (self, mt_id);
+    common_msg_set_mts_id (self, mts_id);
     common_msg_set_value (self, value);
     return common_msg_encode (&self);
 }
@@ -2036,6 +1883,22 @@ common_msg_send_get_measure_subtype_s (
 
 
 //  --------------------------------------------------------------------------
+//  Send the GET_MEASURE_SUBTYPE_SS to the socket in one step
+
+int
+common_msg_send_get_measure_subtype_ss (
+    void *output,
+    const char *mt_name,
+    const char *mts_name)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
+    common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mts_name (self, mts_name);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the RETURN_MEASURE_TYPE to the socket in one step
 
 int
@@ -2184,82 +2047,6 @@ common_msg_send_return_client (
 
 
 //  --------------------------------------------------------------------------
-//  Send the KEY to the socket in one step
-
-int
-common_msg_send_key (
-    void *output,
-    const char *keyname,
-    uint32_t scale)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_KEY);
-    common_msg_set_keyname (self, keyname);
-    common_msg_set_scale (self, scale);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the INSERT_KEY to the socket in one step
-
-int
-common_msg_send_insert_key (
-    void *output,
-    zmsg_t *msg)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_INSERT_KEY);
-    zmsg_t *msg_copy = zmsg_dup (msg);
-    common_msg_set_msg (self, &msg_copy);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the DELETE_KEY to the socket in one step
-
-int
-common_msg_send_delete_key (
-    void *output,
-    uint32_t rowid)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_DELETE_KEY);
-    common_msg_set_rowid (self, rowid);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the RETURN_KEY to the socket in one step
-
-int
-common_msg_send_return_key (
-    void *output,
-    uint32_t keytagid,
-    zmsg_t *msg)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_KEY);
-    common_msg_set_keytagid (self, keytagid);
-    zmsg_t *msg_copy = zmsg_dup (msg);
-    common_msg_set_msg (self, &msg_copy);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the GET_KEY to the socket in one step
-
-int
-common_msg_send_get_key (
-    void *output,
-    uint32_t rowid)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_GET_KEY);
-    common_msg_set_rowid (self, rowid);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Send the NEW_MEASUREMENT to the socket in one step
 
 int
@@ -2268,16 +2055,16 @@ common_msg_send_new_measurement (
     const char *client_name,
     const char *device_name,
     const char *device_type,
-    const char *keytagname,
-    uint32_t subkeytag,
+    uint16_t mt_id,
+    uint16_t mts_id,
     uint64_t value)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_NEW_MEASUREMENT);
     common_msg_set_client_name (self, client_name);
     common_msg_set_device_name (self, device_name);
     common_msg_set_device_type (self, device_type);
-    common_msg_set_keytagname (self, keytagname);
-    common_msg_set_subkeytag (self, subkeytag);
+    common_msg_set_mt_id (self, mt_id);
+    common_msg_set_mts_id (self, mts_id);
     common_msg_set_value (self, value);
     return common_msg_send (&self, output);
 }
@@ -2590,6 +2377,11 @@ common_msg_dup (common_msg_t *self)
             copy->mts_name = self->mts_name? strdup (self->mts_name): NULL;
             break;
 
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
+            copy->mts_name = self->mts_name? strdup (self->mts_name): NULL;
+            break;
+
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             copy->mt_id = self->mt_id;
             copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
@@ -2635,34 +2427,12 @@ common_msg_dup (common_msg_t *self)
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
 
-        case COMMON_MSG_KEY:
-            copy->keyname = self->keyname? strdup (self->keyname): NULL;
-            copy->scale = self->scale;
-            break;
-
-        case COMMON_MSG_INSERT_KEY:
-            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
-            break;
-
-        case COMMON_MSG_DELETE_KEY:
-            copy->rowid = self->rowid;
-            break;
-
-        case COMMON_MSG_RETURN_KEY:
-            copy->keytagid = self->keytagid;
-            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
-            break;
-
-        case COMMON_MSG_GET_KEY:
-            copy->rowid = self->rowid;
-            break;
-
         case COMMON_MSG_NEW_MEASUREMENT:
             copy->client_name = self->client_name? strdup (self->client_name): NULL;
             copy->device_name = self->device_name? strdup (self->device_name): NULL;
             copy->device_type = self->device_type? strdup (self->device_type): NULL;
-            copy->keytagname = self->keytagname? strdup (self->keytagname): NULL;
-            copy->subkeytag = self->subkeytag;
+            copy->mt_id = self->mt_id;
+            copy->mts_id = self->mts_id;
             copy->value = self->value;
             break;
 
@@ -2787,6 +2557,18 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    mts_name=");
             break;
             
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            zsys_debug ("COMMON_MSG_GET_MEASURE_SUBTYPE_SS:");
+            if (self->mt_name)
+                zsys_debug ("    mt_name='%s'", self->mt_name);
+            else
+                zsys_debug ("    mt_name=");
+            if (self->mts_name)
+                zsys_debug ("    mts_name='%s'", self->mts_name);
+            else
+                zsys_debug ("    mts_name=");
+            break;
+            
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             zsys_debug ("COMMON_MSG_RETURN_MEASURE_TYPE:");
             zsys_debug ("    mt_id=%ld", (long) self->mt_id);
@@ -2874,44 +2656,6 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("(NULL)");
             break;
             
-        case COMMON_MSG_KEY:
-            zsys_debug ("COMMON_MSG_KEY:");
-            if (self->keyname)
-                zsys_debug ("    keyname='%s'", self->keyname);
-            else
-                zsys_debug ("    keyname=");
-            zsys_debug ("    scale=%ld", (long) self->scale);
-            break;
-            
-        case COMMON_MSG_INSERT_KEY:
-            zsys_debug ("COMMON_MSG_INSERT_KEY:");
-            zsys_debug ("    msg=");
-            if (self->msg)
-                zmsg_print (self->msg);
-            else
-                zsys_debug ("(NULL)");
-            break;
-            
-        case COMMON_MSG_DELETE_KEY:
-            zsys_debug ("COMMON_MSG_DELETE_KEY:");
-            zsys_debug ("    rowid=%ld", (long) self->rowid);
-            break;
-            
-        case COMMON_MSG_RETURN_KEY:
-            zsys_debug ("COMMON_MSG_RETURN_KEY:");
-            zsys_debug ("    keytagid=%ld", (long) self->keytagid);
-            zsys_debug ("    msg=");
-            if (self->msg)
-                zmsg_print (self->msg);
-            else
-                zsys_debug ("(NULL)");
-            break;
-            
-        case COMMON_MSG_GET_KEY:
-            zsys_debug ("COMMON_MSG_GET_KEY:");
-            zsys_debug ("    rowid=%ld", (long) self->rowid);
-            break;
-            
         case COMMON_MSG_NEW_MEASUREMENT:
             zsys_debug ("COMMON_MSG_NEW_MEASUREMENT:");
             if (self->client_name)
@@ -2926,11 +2670,8 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    device_type='%s'", self->device_type);
             else
                 zsys_debug ("    device_type=");
-            if (self->keytagname)
-                zsys_debug ("    keytagname='%s'", self->keytagname);
-            else
-                zsys_debug ("    keytagname=");
-            zsys_debug ("    subkeytag=%ld", (long) self->subkeytag);
+            zsys_debug ("    mt_id=%ld", (long) self->mt_id);
+            zsys_debug ("    mts_id=%ld", (long) self->mts_id);
             zsys_debug ("    value=%ld", (long) self->value);
             break;
             
@@ -3128,6 +2869,9 @@ common_msg_command (common_msg_t *self)
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             return ("GET_MEASURE_SUBTYPE_S");
             break;
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            return ("GET_MEASURE_SUBTYPE_SS");
+            break;
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             return ("RETURN_MEASURE_TYPE");
             break;
@@ -3154,21 +2898,6 @@ common_msg_command (common_msg_t *self)
             break;
         case COMMON_MSG_RETURN_CLIENT:
             return ("RETURN_CLIENT");
-            break;
-        case COMMON_MSG_KEY:
-            return ("KEY");
-            break;
-        case COMMON_MSG_INSERT_KEY:
-            return ("INSERT_KEY");
-            break;
-        case COMMON_MSG_DELETE_KEY:
-            return ("DELETE_KEY");
-            break;
-        case COMMON_MSG_RETURN_KEY:
-            return ("RETURN_KEY");
-            break;
-        case COMMON_MSG_GET_KEY:
-            return ("GET_KEY");
             break;
         case COMMON_MSG_NEW_MEASUREMENT:
             return ("NEW_MEASUREMENT");
@@ -3571,65 +3300,6 @@ common_msg_set_client_id (common_msg_t *self, uint32_t client_id)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the keyname field
-
-const char *
-common_msg_keyname (common_msg_t *self)
-{
-    assert (self);
-    return self->keyname;
-}
-
-void
-common_msg_set_keyname (common_msg_t *self, const char *format, ...)
-{
-    //  Format keyname from provided arguments
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->keyname);
-    self->keyname = zsys_vprintf (format, argptr);
-    va_end (argptr);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the scale field
-
-uint32_t
-common_msg_scale (common_msg_t *self)
-{
-    assert (self);
-    return self->scale;
-}
-
-void
-common_msg_set_scale (common_msg_t *self, uint32_t scale)
-{
-    assert (self);
-    self->scale = scale;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the keytagid field
-
-uint32_t
-common_msg_keytagid (common_msg_t *self)
-{
-    assert (self);
-    return self->keytagid;
-}
-
-void
-common_msg_set_keytagid (common_msg_t *self, uint32_t keytagid)
-{
-    assert (self);
-    self->keytagid = keytagid;
-}
-
-
-//  --------------------------------------------------------------------------
 //  Get/set the client_name field
 
 const char *
@@ -3695,47 +3365,6 @@ common_msg_set_device_type (common_msg_t *self, const char *format, ...)
     free (self->device_type);
     self->device_type = zsys_vprintf (format, argptr);
     va_end (argptr);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the keytagname field
-
-const char *
-common_msg_keytagname (common_msg_t *self)
-{
-    assert (self);
-    return self->keytagname;
-}
-
-void
-common_msg_set_keytagname (common_msg_t *self, const char *format, ...)
-{
-    //  Format keytagname from provided arguments
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->keytagname);
-    self->keytagname = zsys_vprintf (format, argptr);
-    va_end (argptr);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the subkeytag field
-
-uint32_t
-common_msg_subkeytag (common_msg_t *self)
-{
-    assert (self);
-    return self->subkeytag;
-}
-
-void
-common_msg_set_subkeytag (common_msg_t *self, uint32_t subkeytag)
-{
-    assert (self);
-    self->subkeytag = subkeytag;
 }
 
 
@@ -4055,6 +3684,28 @@ common_msg_test (bool verbose)
         assert (streq (common_msg_mts_name (self), "Life is short but Now lasts for ever"));
         common_msg_destroy (&self);
     }
+    self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_mt_name (self, "Life is short but Now lasts for ever");
+    common_msg_set_mts_name (self, "Life is short but Now lasts for ever");
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (streq (common_msg_mt_name (self), "Life is short but Now lasts for ever"));
+        assert (streq (common_msg_mts_name (self), "Life is short but Now lasts for ever"));
+        common_msg_destroy (&self);
+    }
     self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);
     
     //  Check that _dup works on empty message
@@ -4262,114 +3913,6 @@ common_msg_test (bool verbose)
         assert (zmsg_size (common_msg_msg (self)) == 1);
         common_msg_destroy (&self);
     }
-    self = common_msg_new (COMMON_MSG_KEY);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    common_msg_set_keyname (self, "Life is short but Now lasts for ever");
-    common_msg_set_scale (self, 123);
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (streq (common_msg_keyname (self), "Life is short but Now lasts for ever"));
-        assert (common_msg_scale (self) == 123);
-        common_msg_destroy (&self);
-    }
-    self = common_msg_new (COMMON_MSG_INSERT_KEY);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    zmsg_t *insert_key_msg = zmsg_new ();
-    common_msg_set_msg (self, &insert_key_msg);
-    zmsg_addstr (common_msg_msg (self), "Hello, World");
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (zmsg_size (common_msg_msg (self)) == 1);
-        common_msg_destroy (&self);
-    }
-    self = common_msg_new (COMMON_MSG_DELETE_KEY);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    common_msg_set_rowid (self, 123);
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (common_msg_rowid (self) == 123);
-        common_msg_destroy (&self);
-    }
-    self = common_msg_new (COMMON_MSG_RETURN_KEY);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    common_msg_set_keytagid (self, 123);
-    zmsg_t *return_key_msg = zmsg_new ();
-    common_msg_set_msg (self, &return_key_msg);
-    zmsg_addstr (common_msg_msg (self), "Hello, World");
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (common_msg_keytagid (self) == 123);
-        assert (zmsg_size (common_msg_msg (self)) == 1);
-        common_msg_destroy (&self);
-    }
-    self = common_msg_new (COMMON_MSG_GET_KEY);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    common_msg_set_rowid (self, 123);
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (common_msg_rowid (self) == 123);
-        common_msg_destroy (&self);
-    }
     self = common_msg_new (COMMON_MSG_NEW_MEASUREMENT);
     
     //  Check that _dup works on empty message
@@ -4380,8 +3923,8 @@ common_msg_test (bool verbose)
     common_msg_set_client_name (self, "Life is short but Now lasts for ever");
     common_msg_set_device_name (self, "Life is short but Now lasts for ever");
     common_msg_set_device_type (self, "Life is short but Now lasts for ever");
-    common_msg_set_keytagname (self, "Life is short but Now lasts for ever");
-    common_msg_set_subkeytag (self, 123);
+    common_msg_set_mt_id (self, 123);
+    common_msg_set_mts_id (self, 123);
     common_msg_set_value (self, 123);
     //  Send twice from same object
     common_msg_send_again (self, output);
@@ -4395,8 +3938,8 @@ common_msg_test (bool verbose)
         assert (streq (common_msg_client_name (self), "Life is short but Now lasts for ever"));
         assert (streq (common_msg_device_name (self), "Life is short but Now lasts for ever"));
         assert (streq (common_msg_device_type (self), "Life is short but Now lasts for ever"));
-        assert (streq (common_msg_keytagname (self), "Life is short but Now lasts for ever"));
-        assert (common_msg_subkeytag (self) == 123);
+        assert (common_msg_mt_id (self) == 123);
+        assert (common_msg_mts_id (self) == 123);
         assert (common_msg_value (self) == 123);
         common_msg_destroy (&self);
     }

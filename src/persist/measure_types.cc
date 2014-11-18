@@ -97,6 +97,24 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
             break;
+        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
+            try {
+                tntdb::Statement st = conn.prepareCached(
+                    "select id, mt_id, name, scale "
+                    "from v_bios_measurement_subtypes where name = :name and typename = :typename "
+                    "and id is not null and mt_id is not null and "
+                    "name is not null and scale is not null");
+
+                row = st.setString("name", common_msg_mts_name(*msg)).
+                         setString("typename", common_msg_mt_name(*msg)).
+                         selectRow();
+                ret = common_msg_encode_return_measure_subtype(
+                    row.getInt(0), row.getShort(1), row.getShort(2),
+                    row.getString(3).c_str());
+            } catch (const std::exception &e) {
+                ret = common_msg_encode_fail(0,0,e.what(),NULL);
+            }
+            break;
 
         default:
             ret = common_msg_encode_fail(0,0,"invalid message",NULL);

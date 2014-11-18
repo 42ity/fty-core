@@ -379,9 +379,9 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
     const char* devicename  = common_msg_device_name (msg);
     const char* devicetype  = common_msg_device_type (msg);
     const char* clientname  = common_msg_client_name (msg);
- //   const char* keytagname  = common_msg_keytagname (msg);
- //   uint32_t subkeytag      = common_msg_subkeytag (msg);
-    uint64_t value          = common_msg_value (msg);
+    uint16_t mt_id          = common_msg_mt_id (msg);  // size = 2
+    uint16_t mts_id         = common_msg_mts_id (msg); // size = 2
+    uint64_t value          = common_msg_value (msg); // size = 8
 
     bool result = false;
             
@@ -416,34 +416,21 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
         {   // the device was found
             uint32_t device_id = common_msg_rowid (retDevice);      
             
-        //    common_msg_t* key = select_key(url, keytagname);
-
-        //    msgid = common_msg_id (key);
-            
-        //    if ( msgid == COMMON_MSG_FAIL )
-        //        // the key was not found
-        //        log_error("key with keytagname='%s' was not found, message was ignored\n", keytagname);
-        //    else if ( msgid == COMMON_MSG_RETURN_KEY )
-        //    {   // the key was found
-        //        uint32_t keytag_id = common_msg_keytagid (key);            
-            
-                common_msg_t* imeasurement = insert_measurement(url, client_id, device_id, 1, 1, value);
-                assert ( imeasurement );
+            common_msg_t* imeasurement = insert_measurement(url, client_id, device_id, mt_id, 
+                                mts_id, value);
+            assert ( imeasurement );
     
-                msgid = common_msg_id (imeasurement);
-                if ( msgid == COMMON_MSG_FAIL )
-                    log_info("information about device name='%s' and type='%s' from the client='%s'"
-                            "was not inserted into v_bios_client_measurement", devicename,devicetype,clientname);
-                    // the info was not inserted
-                else if ( msgid == COMMON_MSG_DB_OK )
-                    result = true;
-                else
-                    assert (false); // unknown response
-                // now we don't want to return this message, so destroy it
-                common_msg_destroy (&imeasurement);
-     //       }
-     //       else
-     //           assert (false); // unknown response
+            msgid = common_msg_id (imeasurement);
+            if ( msgid == COMMON_MSG_FAIL )
+                log_info("information about device name='%s' and type='%s' from the client='%s'"
+                        "was not inserted into v_bios_client_measurement", devicename,devicetype,clientname);
+                // the info was not inserted
+            else if ( msgid == COMMON_MSG_DB_OK )
+                result = true;
+            else
+                assert (false); // unknown response
+            // now we don't want to return this message, so destroy it
+            common_msg_destroy (&imeasurement);
         }
         else
             assert (false); //unknown response
