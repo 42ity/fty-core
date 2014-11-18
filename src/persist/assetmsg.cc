@@ -390,8 +390,6 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         // assume they are corrected
         // mac in db is stored as a number, and without :
         row[0].get(mac);
-        if ( mac != "" )
-            mac = _addColonMacaddress(mac);
 
         // ip
         row[1].get(ip);

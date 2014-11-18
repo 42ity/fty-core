@@ -372,9 +372,7 @@ DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
-DROP VIEW IF EXISTS v_bios_measure_subkey;
 
-create view v_bios_measure_subkey as select * from t_bios_measure_subkey ;
 create view v_bios_asset_device as select * from t_bios_asset_device ;
 create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
@@ -399,5 +397,6 @@ FROM    v_bios_client_info_measurements v
                  v.id_subkey = grp.id_subkey AND
                  v.timestamp = grp.maxdate  AND
                  v.id_discovered_device = grp.id_discovered_device
-        INNER JOIN v_bios_measure_subkey sk
-                ON v.id_subkey = sk.id_subkey;
+        INNER JOIN t_bios_measurement_subtypes sk
+                ON v.id_subkey = sk.id AND
+		   v.id_key = sk.type_id;
