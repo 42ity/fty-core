@@ -94,6 +94,8 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/measure_types.h \
 				src/include/common_msg.c \
 				src/include/common_msg.h \
+				src/include/nmap_msg.h \
+				src/include/nmap_msg.c \
 				src/include/netdisc_msg.c \
 				src/include/netdisc_msg.h \
 				src/include/powerdev_msg.c \
