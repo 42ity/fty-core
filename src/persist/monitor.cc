@@ -850,67 +850,6 @@ common_msg_t* insert_device(const char* url, const char* devicetype_name, const 
     return NULL;
 }
 
-common_msg_t* _generate_key(const char* keytagname, uint32_t scale)
-{
-    assert ( scale );
-    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_KEY);
-    assert ( resultmsg );
-    common_msg_set_keytagname (resultmsg, keytagname);
-    common_msg_set_scale (resultmsg, scale);
-
-    return resultmsg;
-}
-
-//it should destroy the key
-common_msg_t* _generate_return_key(uint32_t keytag_id, common_msg_t** key)
-{
-    assert ( common_msg_id (*key) == COMMON_MSG_KEY );
-    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_KEY);
-    assert ( resultmsg );
-    common_msg_set_rowid (resultmsg, keytag_id);
-    zmsg_t* nnmsg = common_msg_encode (key);
-    assert ( nnmsg );
-    common_msg_set_msg (resultmsg, &nnmsg);
-
-    return resultmsg;
-}
-
-common_msg_t* select_key (const char* url, const char* keytagname)
-{
-    assert ( strlen(keytagname) > 0 );
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url); 
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " v.id , v.scale"
-            " FROM"
-            " v_bios_measurements v"
-            " WHERE v.keytag = :name"
-        );
-        
-        tntdb::Row row = st.setString("name", keytagname).
-                            selectRow();
-        
-        uint32_t rowid = 0;
-        row[0].get(rowid);
-
-        uint32_t scale = 0;
-        row[1].get(scale);      // HOW to work with double? or it would be integer too?
-
-        common_msg_t* key = _generate_key (keytagname, scale);
-        return _generate_return_key (rowid, &key);
-    }
-    catch (const tntdb::NotFound &e){
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
-    }
-    catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
-    }
-    return NULL;
-}
-
 /**
  * \brief Inserts into the table t_bios_client_measurements new row.
  *
