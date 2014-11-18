@@ -5,6 +5,7 @@
 
 #include "common_msg.h"
 #include "assetmsg.h"
+#include "monitor.h"
 
 #include "dbpath.h"
 

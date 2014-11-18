@@ -10,14 +10,14 @@
 #include "dbpath.h"
 
 
-TEST_CASE("Common messages: _generate_client_info","[common][generate][client_info]")
+TEST_CASE("Common messages: generate_client_info","[common][generate][client_info]")
 {
     uint32_t client_id = 1;
     uint32_t device_id = 2;
     uint32_t mytime = 4294967295;
     byte data[] = "1234567890";
     uint32_t datasize = 10;
-    common_msg_t* msgclient_info = _generate_client_info (client_id, device_id, mytime, data, datasize);
+    common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
     REQUIRE ( msgclient_info );
     REQUIRE ( common_msg_id (msgclient_info) == COMMON_MSG_CLIENT_INFO );
 //    common_msg_print (msgclient_info);
@@ -32,17 +32,17 @@ TEST_CASE("Common messages: _generate_client_info","[common][generate][client_in
     REQUIRE ( msgclient_info == NULL );
 }
 
-TEST_CASE("Common messages: _generate_return_client_info","[common][generate][return_client_info]")
+TEST_CASE("Common messages: generate_return_client_info","[common][generate][return_client_info]")
 {
     uint32_t client_id = 1;
     uint32_t device_id = 2;
     uint32_t mytime = 4294967295;
     byte data[] = "1234567890";
     uint32_t datasize = 10;
-    common_msg_t* msgclient_info = _generate_client_info (client_id, device_id, mytime, data, datasize);
+    common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
     REQUIRE ( msgclient_info );
     uint32_t client_info_id = 77;
-    common_msg_t* msgreturnclient_info = _generate_return_client_info (client_info_id, &msgclient_info);
+    common_msg_t* msgreturnclient_info = generate_return_client_info (client_info_id, &msgclient_info);
     REQUIRE ( msgreturnclient_info != NULL );
     REQUIRE ( msgclient_info == NULL );
     
@@ -71,44 +71,15 @@ TEST_CASE("Common messages: _generate_return_client_info","[common][generate][re
     common_msg_destroy (&newclient_info); 
     REQUIRE ( newclient_info == NULL );
 }
-/*
-TEST_CASE("Common messages: select_client_info","[common][select][client_info][byName]")
-{
-    char name[] = "NUT";
-    common_msg_t* newreturn = select_client_info (url.c_str(), name);
-    // this row shold be there
-    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_client_info );
-    REQUIRE ( common_msg_client_info_id (newreturn) == 4 ); 
-    // it is inserted during the db creation  and must have 4
-    
-//    common_msg_print (newreturn);
-    zmsg_t* newmsg = common_msg_get_msg (newreturn);
-    common_msg_t* newclient_info = common_msg_decode (&newmsg);
-    REQUIRE ( newclient_info != NULL );
-    REQUIRE ( streq(common_msg_name (newclient_info), name) );
 
-    common_msg_destroy (&newclient_info);
-    common_msg_destroy (&newreturn);
-    
-    char name1[] = "ITISNOTTHERE";
-    newreturn = select_client_info (url.c_str(), name1);
-    // this row shold not be there
-    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
-    
-    REQUIRE ( common_msg_errtype(newreturn) == ERROR_DB );
-    REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
-
-    common_msg_destroy (&newreturn);
-}
-
-TEST_CASE("Common messages: select_client_info2","[common][select][client_info][byId]")
+TEST_CASE("Common messages: select_client_info","[common][select][client_info][byId]")
 {
     uint32_t id = 4;
     char name[] = "NUT";
     common_msg_t* newreturn = select_client_info (url.c_str(), id);
     // this row shold be there
-    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_client_info );
-    REQUIRE ( common_msg_client_info_id (newreturn) == 4 ); 
+    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CINFO );
+    REQUIRE ( common_msg_cinfo_id (newreturn) == 4 ); 
     
 //    common_msg_print (newreturn);
     zmsg_t* newmsg = common_msg_get_msg (newreturn);
@@ -124,7 +95,7 @@ TEST_CASE("Common messages: select_client_info2","[common][select][client_info][
     // this row shold not be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
     
-    REQUIRE ( common_msg_errtype(newreturn) == ERROR_DB );
+    REQUIRE ( common_msg_errtype(newreturn) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
 
     common_msg_destroy (&newreturn);
@@ -132,8 +103,11 @@ TEST_CASE("Common messages: select_client_info2","[common][select][client_info][
 
 TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][insert][delete][client_info]")
 {
-    char name[] = "insert/delete";
-    common_msg_t* response = insert_client_info (url.c_str(), name);
+    uint32_t device_id = 1;
+    uint32_t client_id = 1;
+    zchunk_t* blob = zchunk_new("jjj",4);
+
+    common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
@@ -153,47 +127,15 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
     common_msg_destroy (&response);
     common_msg_destroy (&response2);
 }
-
-TEST_CASE("Common messages: insert_client_info/delete_client_info fail","[common][insert][delete][client_info]")
-{
-    char name[] = "insert/delete/tooooooooooooooooooooooolongname";
-    common_msg_t* response = insert_client_info (url.c_str(), name);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row shold not be inserted
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT);
-
-    common_msg_destroy (&response);
-
-    char name2[] = "";
-    response = insert_client_info (url.c_str(), name2);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row shold not be inserted, empty name is not allowed
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT);
-
-    common_msg_destroy (&response);
-
-    uint32_t newid = 777; // this row doesn't exists in db
-    response = delete_client_info (url.c_str(), newid);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row shold not be deleted, empty name is not allowed
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT);
-    
-    common_msg_destroy (&response);
-}
-
+/*
 TEST_CASE("Common messages: update_client_info1","[common][update][client_info]")
 {
     char name[] = "insert_for_update1";
-    common_msg_t* response = insert_client_info (url.c_str(), name);
+    uint32_t device_id = 1;
+    uint32_t client_id = 1;
+    zchunk_t* blob = zchunk_new("jjj",4);
+
+    common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
@@ -203,7 +145,7 @@ TEST_CASE("Common messages: update_client_info1","[common][update][client_info]"
 
     common_msg_destroy (&response);
 
-    common_msg_t* client_info = _generate_client_info ("insert_updated");
+    common_msg_t* client_info = generate_client_info ("insert_updated");
     response = update_client_info (url.c_str(), newid, &client_info);
     REQUIRE ( response != NULL );
     REQUIRE ( client_info == NULL );
@@ -223,48 +165,4 @@ TEST_CASE("Common messages: update_client_info1","[common][update][client_info]"
     common_msg_destroy (&response);
 }
 
-TEST_CASE("Common messages: update_client_info2 fail","[common][update][client_info]")
-{
-    char name[] = "insert_for_update8";
-    common_msg_t* response = insert_client_info (url.c_str(), name);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row should be inserted
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
-    uint32_t newid = common_msg_rowid (response);
-
-    common_msg_destroy (&response);
-
-    common_msg_t* client_info = _generate_client_info ("toooooooooooooooooooooooooooooolongname");
-    response = update_client_info (url.c_str(), newid, &client_info);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row should not be updated
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT );
-    
-    common_msg_destroy (&response);
-    common_msg_destroy (&client_info);
-
-    client_info = _generate_client_info ("");
-    response = update_client_info (url.c_str(), newid, &client_info);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    // this row should not be updated
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT );
-    
-    common_msg_destroy (&response);
-    common_msg_destroy (&client_info);
-
-    response = delete_client_info (url.c_str(), newid);
-    REQUIRE ( response != NULL );
-//    common_msg_print (response);
-
-    REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
-    common_msg_destroy (&response);
-}
 */

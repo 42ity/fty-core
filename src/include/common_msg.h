@@ -110,13 +110,6 @@
         subkeytag           number 4     subkey 
         value               number 8     measurement value 
 
-    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with device_id
-        device_id           number 4     An asset device id
-
-    RETURN_LAST_MEASUREMENTS - The last measurements about the device with device_id
-        device_id           number 4     An asset device id
-        measurements        dictionary   A map of keytags on values
-
     CLIENT_INFO - Structure describing client info
         client_id           number 4     A client id
         device_id           number 4     A device id
@@ -171,6 +164,13 @@
 
     GET_DEVTYPE - Ask for a device type
         devicetype_id       number 4     Unique ID of the device type
+
+    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with asset_element_id
+        device_id           number 4     An asset_element_id of the device
+
+    RETURN_LAST_MEASUREMENTS - The last measurements about the device with asset_element_id
+        device_id           number 4     An asset_element_id of the device
+        measurements        strings      A list of string values "keytagid:subkeytagid:value:scale"
 */
 
 #define COMMON_MSG_VERSION                  1.0
@@ -194,8 +194,6 @@
 #define COMMON_MSG_RETURN_KEY               231
 #define COMMON_MSG_GET_KEY                  229
 #define COMMON_MSG_NEW_MEASUREMENT          239
-#define COMMON_MSG_GET_LAST_MEASUREMENTS    238
-#define COMMON_MSG_RETURN_LAST_MEASUREMENTS  240
 #define COMMON_MSG_CLIENT_INFO              208
 #define COMMON_MSG_INSERT_CINFO             209
 #define COMMON_MSG_DELETE_CINFO             210
@@ -212,6 +210,8 @@
 #define COMMON_MSG_GET_CINFO                224
 #define COMMON_MSG_GET_DEVICE               225
 #define COMMON_MSG_GET_DEVTYPE              226
+#define COMMON_MSG_GET_LAST_MEASUREMENTS    238
+#define COMMON_MSG_RETURN_LAST_MEASUREMENTS  240
 
 #include <czmq.h>
 
@@ -235,7 +235,8 @@ void
     common_msg_destroy (common_msg_t **self_p);
 
 //  Parse a zmsg_t and decides whether it is common_msg. Returns
-//  true if it is, false otherwise.
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
 bool
     is_common_msg (zmsg_t *msg_p);
 
@@ -381,17 +382,6 @@ zmsg_t *
         uint32_t subkeytag,
         uint64_t value);
 
-//  Encode the GET_LAST_MEASUREMENTS 
-zmsg_t *
-    common_msg_encode_get_last_measurements (
-        uint32_t device_id);
-
-//  Encode the RETURN_LAST_MEASUREMENTS 
-zmsg_t *
-    common_msg_encode_return_last_measurements (
-        uint32_t device_id,
-        zhash_t *measurements);
-
 //  Encode the CLIENT_INFO 
 zmsg_t *
     common_msg_encode_client_info (
@@ -478,6 +468,17 @@ zmsg_t *
 zmsg_t *
     common_msg_encode_get_devtype (
         uint32_t devicetype_id);
+
+//  Encode the GET_LAST_MEASUREMENTS 
+zmsg_t *
+    common_msg_encode_get_last_measurements (
+        uint32_t device_id);
+
+//  Encode the RETURN_LAST_MEASUREMENTS 
+zmsg_t *
+    common_msg_encode_return_last_measurements (
+        uint32_t device_id,
+        zlist_t *measurements);
 
 
 //  Send the GET_MEASURE_TYPE_I to the output in one step
@@ -612,19 +613,6 @@ int
         uint32_t subkeytag,
         uint64_t value);
     
-//  Send the GET_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_get_last_measurements (void *output,
-        uint32_t device_id);
-    
-//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_return_last_measurements (void *output,
-        uint32_t device_id,
-        zhash_t *measurements);
-    
 //  Send the CLIENT_INFO to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
@@ -727,6 +715,19 @@ int
 int
     common_msg_send_get_devtype (void *output,
         uint32_t devicetype_id);
+    
+//  Send the GET_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_last_measurements (void *output,
+        uint32_t device_id);
+    
+//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_last_measurements (void *output,
+        uint32_t device_id,
+        zlist_t *measurements);
     
 //  Duplicate the common_msg message
 common_msg_t *
@@ -909,29 +910,6 @@ uint32_t
 void
     common_msg_set_device_id (common_msg_t *self, uint32_t device_id);
 
-//  Get/set the measurements field
-zhash_t *
-    common_msg_measurements (common_msg_t *self);
-//  Get the measurements field and transfer ownership to caller
-zhash_t *
-    common_msg_get_measurements (common_msg_t *self);
-//  Set the measurements field, transferring ownership from caller
-void
-    common_msg_set_measurements (common_msg_t *self, zhash_t **measurements_p);
-    
-//  Get/set a value in the measurements dictionary
-const char *
-    common_msg_measurements_string (common_msg_t *self,
-        const char *key, const char *default_value);
-uint64_t
-    common_msg_measurements_number (common_msg_t *self,
-        const char *key, uint64_t default_value);
-void
-    common_msg_measurements_insert (common_msg_t *self,
-        const char *key, const char *format, ...);
-size_t
-    common_msg_measurements_size (common_msg_t *self);
-
 //  Get a copy of the info field
 zchunk_t *
     common_msg_info (common_msg_t *self);
@@ -959,6 +937,26 @@ uint32_t
     common_msg_devicetype_id (common_msg_t *self);
 void
     common_msg_set_devicetype_id (common_msg_t *self, uint32_t devicetype_id);
+
+//  Get/set the measurements field
+zlist_t *
+    common_msg_measurements (common_msg_t *self);
+//  Get the measurements field and transfer ownership to caller
+zlist_t *
+    common_msg_get_measurements (common_msg_t *self);
+//  Set the measurements field, transferring ownership from caller
+void
+    common_msg_set_measurements (common_msg_t *self, zlist_t **measurements_p);
+
+//  Iterate through the measurements field, and append a measurements value
+const char *
+    common_msg_measurements_first (common_msg_t *self);
+const char *
+    common_msg_measurements_next (common_msg_t *self);
+void
+    common_msg_measurements_append (common_msg_t *self, const char *format, ...);
+size_t
+    common_msg_measurements_size (common_msg_t *self);
 
 //  Self test of this class
 int

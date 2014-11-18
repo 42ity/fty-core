@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: asset_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -64,7 +64,6 @@ struct _asset_msg_t {
     byte error_id;                      //  Type of the error, enum defined in persistence header file
     zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
     size_t element_ids_bytes;           //  Size of dictionary content
-    zlist_t *measurements;              //   A map of keytags on values
 };
 
 //  --------------------------------------------------------------------------
@@ -240,8 +239,6 @@ asset_msg_destroy (asset_msg_t **self_p)
         free (self->mac);
         zmsg_destroy (&self->msg);
         zhash_destroy (&self->element_ids);
-        if (self->measurements)
-            zlist_destroy (&self->measurements);
 
         //  Free object itself
         free (self);
@@ -249,6 +246,51 @@ asset_msg_destroy (asset_msg_t **self_p)
     }
 }
 
+//  Parse a zmsg_t and decides whether it is asset_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+is_asset_msg (zmsg_t *msg)
+{
+    if (msg == NULL)
+        return false;
+
+    zframe_t *frame = zmsg_first (msg);
+
+    //  Get and check protocol signature
+    asset_msg_t *self = asset_msg_new (0);
+    self->needle = zframe_data (frame);
+    self->ceiling = self->needle + zframe_size (frame);
+    uint16_t signature;
+    GET_NUMBER2 (signature);
+    if (signature != (0xAAA0 | 5))
+        goto fail;             //  Invalid signature
+
+    //  Get message id and parse per message type
+    GET_NUMBER1 (self->id);
+
+    switch (self->id) {
+        case ASSET_MSG_ELEMENT:
+        case ASSET_MSG_DEVICE:
+        case ASSET_MSG_GET_ELEMENT:
+        case ASSET_MSG_RETURN_ELEMENT:
+        case ASSET_MSG_UPDATE_ELEMENT:
+        case ASSET_MSG_INSERT_ELEMENT:
+        case ASSET_MSG_DELETE_ELEMENT:
+        case ASSET_MSG_OK:
+        case ASSET_MSG_FAIL:
+        case ASSET_MSG_GET_ELEMENTS:
+        case ASSET_MSG_RETURN_ELEMENTS:
+            asset_msg_destroy (&self);
+            return true;
+        default:
+            goto fail;
+    }
+    fail:
+    malformed:
+        asset_msg_destroy (&self);
+        return false;
+}
 
 //  --------------------------------------------------------------------------
 //  Parse a asset_msg from zmsg_t. Returns a new object, or NULL if
@@ -400,26 +442,6 @@ asset_msg_decode (zmsg_t **msg_p)
                     zhash_insert (self->element_ids, key, value);
                     free (key);
                     free (value);
-                }
-            }
-            break;
-
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            GET_NUMBER4 (self->element_id);
-            break;
-
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            GET_NUMBER4 (self->element_id);
-            {
-                size_t list_size;
-                GET_NUMBER4 (list_size);
-                self->measurements = zlist_new ();
-                zlist_autofree (self->measurements);
-                while (list_size--) {
-                    char *string;
-                    GET_LONGSTR (string);
-                    zlist_append (self->measurements, string);
-                    free (string);
                 }
             }
             break;
@@ -585,26 +607,6 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size += self->element_ids_bytes;
             break;
             
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            //  element_id is a 4-byte integer
-            frame_size += 4;
-            break;
-            
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            //  element_id is a 4-byte integer
-            frame_size += 4;
-            //  measurements is an array of strings
-            frame_size += 4;    //  Size is 4 octets
-            if (self->measurements) {
-                //  Add up size of list contents
-                char *measurements = (char *) zlist_first (self->measurements);
-                while (measurements) {
-                    frame_size += 4 + strlen (measurements);
-                    measurements = (char *) zlist_next (self->measurements);
-                }
-            }
-            break;
-            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -732,24 +734,6 @@ asset_msg_encode (asset_msg_t **self_p)
             }
             else
                 PUT_NUMBER4 (0);    //  Empty dictionary
-            break;
-
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            PUT_NUMBER4 (self->element_id);
-            break;
-
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            PUT_NUMBER4 (self->element_id);
-            if (self->measurements) {
-                PUT_NUMBER4 (zlist_size (self->measurements));
-                char *measurements = (char *) zlist_first (self->measurements);
-                while (measurements) {
-                    PUT_LONGSTR (measurements);
-                    measurements = (char *) zlist_next (self->measurements);
-                }
-            }
-            else
-                PUT_NUMBER4 (0);    //  Empty string array
             break;
 
     }
@@ -1104,35 +1088,6 @@ asset_msg_encode_return_elements (
 
 
 //  --------------------------------------------------------------------------
-//  Encode GET_LAST_MEASUREMENTS message
-
-zmsg_t * 
-asset_msg_encode_get_last_measurements (
-    uint32_t element_id)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LAST_MEASUREMENTS);
-    asset_msg_set_element_id (self, element_id);
-    return asset_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode RETURN_LAST_MEASUREMENTS message
-
-zmsg_t * 
-asset_msg_encode_return_last_measurements (
-    uint32_t element_id,
-    zlist_t *measurements)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LAST_MEASUREMENTS);
-    asset_msg_set_element_id (self, element_id);
-    zlist_t *measurements_copy = zlist_dup (measurements);
-    asset_msg_set_measurements (self, &measurements_copy);
-    return asset_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Send the ELEMENT to the socket in one step
 
 int
@@ -1325,37 +1280,6 @@ asset_msg_send_return_elements (
 
 
 //  --------------------------------------------------------------------------
-//  Send the GET_LAST_MEASUREMENTS to the socket in one step
-
-int
-asset_msg_send_get_last_measurements (
-    void *output,
-    uint32_t element_id)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LAST_MEASUREMENTS);
-    asset_msg_set_element_id (self, element_id);
-    return asset_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Send the RETURN_LAST_MEASUREMENTS to the socket in one step
-
-int
-asset_msg_send_return_last_measurements (
-    void *output,
-    uint32_t element_id,
-    zlist_t *measurements)
-{
-    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LAST_MEASUREMENTS);
-    asset_msg_set_element_id (self, element_id);
-    zlist_t *measurements_copy = zlist_dup (measurements);
-    asset_msg_set_measurements (self, &measurements_copy);
-    return asset_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Duplicate the asset_msg message
 
 asset_msg_t *
@@ -1425,15 +1349,6 @@ asset_msg_dup (asset_msg_t *self)
 
         case ASSET_MSG_RETURN_ELEMENTS:
             copy->element_ids = self->element_ids? zhash_dup (self->element_ids): NULL;
-            break;
-
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            copy->element_id = self->element_id;
-            break;
-
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            copy->element_id = self->element_id;
-            copy->measurements = self->measurements? zlist_dup (self->measurements): NULL;
             break;
 
     }
@@ -1585,24 +1500,6 @@ asset_msg_print (asset_msg_t *self)
                 zsys_debug ("(NULL)");
             break;
             
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            zsys_debug ("ASSET_MSG_GET_LAST_MEASUREMENTS:");
-            zsys_debug ("    element_id=%ld", (long) self->element_id);
-            break;
-            
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            zsys_debug ("ASSET_MSG_RETURN_LAST_MEASUREMENTS:");
-            zsys_debug ("    element_id=%ld", (long) self->element_id);
-            zsys_debug ("    measurements=");
-            if (self->measurements) {
-                char *measurements = (char *) zlist_first (self->measurements);
-                while (measurements) {
-                    zsys_debug ("        '%s'", measurements);
-                    measurements = (char *) zlist_next (self->measurements);
-                }
-            }
-            break;
-            
     }
 }
 
@@ -1682,12 +1579,6 @@ asset_msg_command (asset_msg_t *self)
             break;
         case ASSET_MSG_RETURN_ELEMENTS:
             return ("RETURN_ELEMENTS");
-            break;
-        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-            return ("GET_LAST_MEASUREMENTS");
-            break;
-        case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-            return ("RETURN_LAST_MEASUREMENTS");
             break;
     }
     return "?";
@@ -2294,88 +2185,6 @@ asset_msg_element_ids_size (asset_msg_t *self)
 }
 
 
-//  --------------------------------------------------------------------------
-//  Get the measurements field, without transferring ownership
-
-zlist_t *
-asset_msg_measurements (asset_msg_t *self)
-{
-    assert (self);
-    return self->measurements;
-}
-
-//  Get the measurements field and transfer ownership to caller
-
-zlist_t *
-asset_msg_get_measurements (asset_msg_t *self)
-{
-    assert (self);
-    zlist_t *measurements = self->measurements;
-    self->measurements = NULL;
-    return measurements;
-}
-
-//  Set the measurements field, transferring ownership from caller
-
-void
-asset_msg_set_measurements (asset_msg_t *self, zlist_t **measurements_p)
-{
-    assert (self);
-    assert (measurements_p);
-    zlist_destroy (&self->measurements);
-    self->measurements = *measurements_p;
-    *measurements_p = NULL;
-}
-
-//  --------------------------------------------------------------------------
-//  Iterate through the measurements field, and append a measurements value
-
-const char *
-asset_msg_measurements_first (asset_msg_t *self)
-{
-    assert (self);
-    if (self->measurements)
-        return (char *) (zlist_first (self->measurements));
-    else
-        return NULL;
-}
-
-const char *
-asset_msg_measurements_next (asset_msg_t *self)
-{
-    assert (self);
-    if (self->measurements)
-        return (char *) (zlist_next (self->measurements));
-    else
-        return NULL;
-}
-
-void
-asset_msg_measurements_append (asset_msg_t *self, const char *format, ...)
-{
-    //  Format into newly allocated string
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    char *string = zsys_vprintf (format, argptr);
-    va_end (argptr);
-
-    //  Attach string to list
-    if (!self->measurements) {
-        self->measurements = zlist_new ();
-        zlist_autofree (self->measurements);
-    }
-    zlist_append (self->measurements, string);
-    free (string);
-}
-
-size_t
-asset_msg_measurements_size (asset_msg_t *self)
-{
-    return zlist_size (self->measurements);
-}
-
-
 
 //  --------------------------------------------------------------------------
 //  Selftest
@@ -2671,51 +2480,6 @@ asset_msg_test (bool verbose)
         assert (asset_msg_element_ids_size (self) == 2);
         assert (streq (asset_msg_element_ids_string (self, "Name", "?"), "Brutus"));
         assert (asset_msg_element_ids_number (self, "Age", 0) == 43);
-        asset_msg_destroy (&self);
-    }
-    self = asset_msg_new (ASSET_MSG_GET_LAST_MEASUREMENTS);
-    
-    //  Check that _dup works on empty message
-    copy = asset_msg_dup (self);
-    assert (copy);
-    asset_msg_destroy (&copy);
-
-    asset_msg_set_element_id (self, 123);
-    //  Send twice from same object
-    asset_msg_send_again (self, output);
-    asset_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = asset_msg_recv (input);
-        assert (self);
-        assert (asset_msg_routing_id (self));
-        
-        assert (asset_msg_element_id (self) == 123);
-        asset_msg_destroy (&self);
-    }
-    self = asset_msg_new (ASSET_MSG_RETURN_LAST_MEASUREMENTS);
-    
-    //  Check that _dup works on empty message
-    copy = asset_msg_dup (self);
-    assert (copy);
-    asset_msg_destroy (&copy);
-
-    asset_msg_set_element_id (self, 123);
-    asset_msg_measurements_append (self, "Name: %s", "Brutus");
-    asset_msg_measurements_append (self, "Age: %d", 43);
-    //  Send twice from same object
-    asset_msg_send_again (self, output);
-    asset_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = asset_msg_recv (input);
-        assert (self);
-        assert (asset_msg_routing_id (self));
-        
-        assert (asset_msg_element_id (self) == 123);
-        assert (asset_msg_measurements_size (self) == 2);
-        assert (streq (asset_msg_measurements_first (self), "Name: Brutus"));
-        assert (streq (asset_msg_measurements_next (self), "Age: 43"));
         asset_msg_destroy (&self);
     }
 
