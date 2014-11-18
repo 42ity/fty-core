@@ -1,1 +1,1 @@
-{"id":"2","name":"ROOM1","location":"/api/v1/asset/datacenter/1"}
+{"id":"2","name":"ROOM1","location_uri":"/api/v1/asset/datacenter/1"}
