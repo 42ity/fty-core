@@ -72,35 +72,6 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
     REQUIRE ( newclient_info == NULL );
 }
 
-TEST_CASE("Common messages: select_client_info","[common][select][client_info][byId]")
-{
-    uint32_t id = 4;
-    char name[] = "NUT";
-    common_msg_t* newreturn = select_client_info (url.c_str(), id);
-    // this row shold be there
-    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CINFO );
-    REQUIRE ( common_msg_cinfo_id (newreturn) == 4 ); 
-    
-//    common_msg_print (newreturn);
-    zmsg_t* newmsg = common_msg_get_msg (newreturn);
-    common_msg_t* newclient_info = common_msg_decode (&newmsg);
-    REQUIRE ( newclient_info != NULL );
-    REQUIRE ( streq(common_msg_name (newclient_info), name) );
-
-    common_msg_destroy (&newclient_info);
-    common_msg_destroy (&newreturn);
-    
-    id = 11111;
-    newreturn = select_client_info (url.c_str(), id);
-    // this row shold not be there
-    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
-    
-    REQUIRE ( common_msg_errtype(newreturn) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
-
-    common_msg_destroy (&newreturn);
-}
-
 TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][insert][delete][client_info]")
 {
     uint32_t device_id = 1;
@@ -115,6 +86,36 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
     REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
     uint32_t newid = common_msg_rowid (response);
     REQUIRE ( newid > 0 );
+
+
+    common_msg_t* newreturn = select_client_info (url.c_str(), newid);
+    // this row shold be there
+    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CINFO );
+    REQUIRE ( common_msg_rowid (newreturn) == newid ); 
+    
+//    common_msg_print (newreturn);
+    zmsg_t* newmsg = common_msg_get_msg (newreturn);
+    common_msg_t* newclient_info = common_msg_decode (&newmsg);
+    REQUIRE ( newclient_info != NULL );
+    REQUIRE ( common_msg_id (newclient_info) == COMMON_MSG_CLIENT_INFO );
+    REQUIRE ( common_msg_client_id (newclient_info) == client_id );
+    REQUIRE ( common_msg_device_id (newclient_info) == device_id );
+
+    common_msg_destroy (&newclient_info);
+    common_msg_destroy (&newreturn);
+    
+    uint32_t id = 11111;
+    newreturn = select_client_info (url.c_str(), id);
+    // this row shold not be there
+    REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_FAIL );
+    
+    REQUIRE ( common_msg_errtype(newreturn) == BIOS_ERROR_DB );
+    REQUIRE ( common_msg_errorno(newreturn) == DB_ERROR_NOTFOUND );
+
+    common_msg_destroy (&newreturn);
+
+
+
 
     common_msg_t* response2 = delete_client_info (url.c_str(), newid);
     REQUIRE ( response2 != NULL );
