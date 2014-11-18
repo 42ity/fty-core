@@ -103,9 +103,13 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/include/asset_msg.c \
                                 src/include/asset_msg.h
 
-libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include \
-                       -I$(top_srcdir)/src/persist -I$(top_srcdir)/src/shared \
-		       -I$(top_srcdir)/src/simple -I$(top_srcdir)/tools
+libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
+					-I$(top_srcdir)/src/include \
+					-I$(top_srcdir)/src/persist \
+					-I$(top_srcdir)/src/shared \
+					-I$(top_srcdir)/src/simple \
+					-I$(top_srcdir)/tools \
+					-I$(top_builddir)/tools
 
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
 
