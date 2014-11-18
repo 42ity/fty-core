@@ -337,6 +337,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element, uint32_t ele
     std::string fqdn = "";
     unsigned int id_asset_device_type = 0;
     unsigned int device_id = 0;
+    std::string type_name = "";
     zlist_t* groups = NULL;
     zlist_t* powers = NULL;
     try {
@@ -347,7 +348,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element, uint32_t ele
         tntdb::Statement st_dev = conn.prepareCached(
             " SELECT"
             " v.mac , v.ip, v.hostname , v.full_hostname "
-            "   , v.id_asset_device_type, v.id_asset_device"
+            "   , v.id_asset_device_type, v.id_asset_device, v.name"
             " FROM"
             " v_bios_asset_device v"
             " WHERE v.id_asset_element = :idelement"
@@ -376,7 +377,12 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element, uint32_t ele
         row[5].get(device_id);
         assert ( device_id != 0 );  // database is corrupted
 
+        // string representation of device type
+        row[6].getString(type_name);
+        assert ( type_name != "" );
+
         groups = select_asset_element_groups(url, element_id);
+
         if ( groups == NULL )    // internal error in database
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, NULL, NULL);       
         
@@ -405,14 +411,11 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element, uint32_t ele
     }
     // device was found
     
-    char buff[16];
-    sprintf(buff, "%d", id_asset_device_type);
-    
     zmsg_t* nnmsg = asset_msg_encode (element);
     assert ( nnmsg );
     
     zmsg_t* msgdevice = asset_msg_encode_device (
-                buff, groups, powers, ip.c_str(), 
+                type_name.c_str(), groups, powers, ip.c_str(), 
                 hostname.c_str(), fqdn.c_str(), mac.c_str(), nnmsg);
     assert ( msgdevice );
 
@@ -701,3 +704,4 @@ uint32_t convert_monitor_to_asset(const char* url,
     }
     return asset_element_id;
 };
+
