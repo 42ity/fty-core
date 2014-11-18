@@ -917,8 +917,12 @@ common_msg_t* generate_return_measurements (uint32_t device_id, zlist_t** measur
 /**
  * \brief Takes all last measurements of the spcified device.
  *
+ * Return the list of strings. One string for one measurement.
+ * Every string has the followng format: "keytag_id:subkeytag_id:value:scale"
+ *
  * \param url       - connection url to database.
  * \param device_id - id of the monitor device that was measured.
+ *
  *
  * \return NULL            in case of errors.
  *         empty zlist_t   in case of nothing was found
@@ -928,6 +932,12 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 {
     assert ( device_id ); // is required
     
+    zlist_t* measurements = zlist_new();
+    assert ( measurements );
+    // in older versions this function is called 
+    // zhash_set_item_duplicator
+    zlist_set_duplicator (measurements, void_dup);
+
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
@@ -944,12 +954,6 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 
         uint32_t rsize = result.size();
 
-        zlist_t* measurements = zlist_new();
-        assert ( measurements );
-        // in older versions this function is called 
-        // zhash_set_item_duplicator
-        zlist_set_duplicator (measurements, void_dup);
-
         char buff[42];     // 10+10+10+10 2
         if ( rsize > 0 )
         {
@@ -964,7 +968,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
                 
                 // subkeytag_id, required
                 uint32_t subkeytag_id = 0;
-                row[0].get(subkeytag_id);
+                row[2].get(subkeytag_id);
                 assert ( subkeytag_id );   // database is corrupted
 
                 // value, required
@@ -974,7 +978,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 
                 // scale, required
                 uint32_t scale = 0;
-                row[0].get(scale);
+                row[3].get(scale);
                 assert ( scale );          // database is corrupted
                 
                 sprintf(buff, "%d:%d:%d:%d", keytag_id, subkeytag_id, 
@@ -985,6 +989,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
         return measurements;
     }
     catch (const std::exception &e) {
+        zlist_destroy (&measurements);
         return NULL;
     }
 }
