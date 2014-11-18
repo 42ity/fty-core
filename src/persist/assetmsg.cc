@@ -29,9 +29,6 @@ asset_msg_t* _get_last_measurements(const char *url, asset_msg_t *msg);
 // duplicates the items for zlist/zhash
 void* void_dup(const void* a) { return strdup((char*)a); }
 
-// different helpers
-void _removeColonMacaddress(std::string &newmac);
-const std::string _addColonMacaddress(const std::string &mac);
 bool _checkMacaddress (const std::string &mac_address);
 
 /**
@@ -366,6 +363,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
     std::string fullhostname = "";
     unsigned int id_asset_device_type = 0;
     unsigned int device_id = 0;
+    std::string type_name;
     zlist_t* groups = NULL;
     zlist_t* powers = NULL;
     try {
@@ -376,7 +374,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         tntdb::Statement st_dev = conn.prepareCached(
             " select"
             " v.mac, v.ip, v.hostname , v.full_hostname "
-            "   , v.id_asset_device_type, v.id_asset_device"
+            "   , v.id_asset_device_type, v.id_asset_device, v.name"
             " from"
             " v_bios_asset_device v"
             " where v.id_asset_element = :idelement"
@@ -386,9 +384,6 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         tntdb::Row row = st_dev.setInt("idelement", element_id).
                                 selectRow();
 
-        // TODO: Assumption: if data where inserted in database, then 
-        // assume they are corrected
-        // mac in db is stored as a number, and without :
         row[0].get(mac);
 
         // ip
@@ -407,6 +402,9 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
         // id of the device, required
         row[5].get(device_id);
         assert ( device_id != 0 );  // database is corrupted
+
+        // string representation of device type
+        row[6].getString(type_name);
 
         groups = _select_asset_element_groups(url, element_id);
         if ( groups == NULL )    // internal error in database
@@ -437,9 +435,7 @@ asset_msg_t* _select_asset_device(const char* url, asset_msg_t** element)
     asset_msg_set_mac (msgdevice,mac.c_str());
     asset_msg_set_hostname (msgdevice,hostname.c_str());
     asset_msg_set_fqdn (msgdevice,fullhostname.c_str());   
-    char buff[16];
-    sprintf(buff, "%d", id_asset_device_type);
-    asset_msg_set_device_type (msgdevice, buff);  // TODO STRING???
+    asset_msg_set_device_type (msgdevice, type_name.c_str());
      
     zmsg_t* nnmsg = asset_msg_encode (element);
     asset_msg_set_msg (msgdevice, &nnmsg);
@@ -827,29 +823,6 @@ asset_msg_t* _get_last_measurements(const char* url, asset_msg_t* msg)
     }
 };
 
-
-// TODO: These functions are duplicate functions from nethistory.cc
-// it is done, because we plan to get rid of classes
-
-/*Internal function for remove colons from mac address
-void
-_removeColonMacaddress(std::string &newmac)
-{
-    newmac.erase (std::remove (newmac.begin(), newmac.end(), ':'), newmac.end()); 
-}
-*/
-//Internal function for add colons to mac address
-const std::string
-_addColonMacaddress(const std::string &mac)
-{
-    std::string macWithColons(mac);
-    macWithColons.insert(2,1,':');
-    macWithColons.insert(5,1,':');
-    macWithColons.insert(8,1,':');
-    macWithColons.insert(11,1,':');
-    macWithColons.insert(14,1,':');
-    return macWithColons;
-}
 
 /*Internal method:check whether the mac address has right format
 bool
