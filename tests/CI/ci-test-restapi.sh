@@ -32,6 +32,7 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
@@ -46,6 +47,7 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+    echo "  -s|--service service for SASL/PAM (Default: '$SASL_SERVICE')"
 }
 
 while [ $# -gt 0 ] ; do
@@ -58,6 +60,10 @@ while [ $# -gt 0 ] ; do
             BIOS_PASSWD="$2"
             shift
             ;;
+	--service|-s)
+	    SASL_SERVICE="$2"
+	    shift
+	    ;;
         *)
             echo "Invalid option '$1'" >&2
             usage
@@ -91,12 +97,12 @@ wait_for_web() {
     [ x"$RUNAS" = x ] || \
     echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
   # check SASL is working
-  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
+  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE"
 
 # do the webserver
   cd $CHECKOUTDIR
   # make clean
-  export BIOS_USER BIOS_PASSWD
+  export BIOS_USER BIOS_PASSWD SASL_SERVICE
   make web-test &
   MAKEPID=$!
   wait_for_web
@@ -104,7 +110,7 @@ wait_for_web() {
 # do the test
 set +e
 echo "============================================================"
-/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD"
+/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE"
 RESULT=$?
 echo "============================================================"
 

@@ -26,6 +26,7 @@ TOTAL=0
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -35,6 +36,10 @@ while [ $# -gt 0 ]; do
 	    ;;
 	-p|--passwd)
 	    BIOS_PASSWD="$2"
+	    shift
+	    ;;
+	-s|--service)
+	    SASL_SERVICE="$2"
 	    shift
 	    ;;
 	*)
@@ -122,7 +127,7 @@ if ! getent passwd "$BIOS_USER" > /dev/null; then
     exit 2
 fi
 
-if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null; then
     echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
