@@ -49,6 +49,10 @@
         mt_id               number 2    Measurement type id
         mts_name            string      Measurement subtype name
 
+    GET_MEASURE_SUBTYPE_SS - 
+        mt_name             string      Measurement type name
+        mts_name            string      Measurement subtype name
+
     RETURN_MEASURE_TYPE - 
         mt_id               number 2    Measurement type id
         mt_name             string      Measurement type name
@@ -85,37 +89,13 @@
         rowid               number 4     Unique ID of the client
         msg                 msg          Client
 
-    KEY - Structure describing keys
-        keyname             string       Name of the client
-        scale               number 4     Scale TODO
-
-    INSERT_KEY - Insert a key
-        msg                 msg          Key to be inserted
-
-    DELETE_KEY - Delete a key
-        rowid               number 4     Unique ID of the key to be deleted
-
-    RETURN_KEY - Return a key we were asked for
-        keytagid            number 4     Unique ID of the key
-        msg                 msg          Key 
-
-    GET_KEY - Ask for a key
-        rowid               number 4     Unique ID of the key
-
     NEW_MEASUREMENT - New measurment
         client_name         string       Name of the client
         device_name         string       device name 
         device_type         string       device type 
-        keytagname          string       key 
-        subkeytag           number 4     subkey 
+        mt_id               number 2     Measurement type id
+        mts_id              number 2     Measurement subtype id
         value               number 8     measurement value 
-
-    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with device_id
-        device_id           number 4     An asset device id
-
-    RETURN_LAST_MEASUREMENTS - The last measurements about the device with device_id
-        device_id           number 4     An asset device id
-        measurements        dictionary   A map of keytags on values
 
     CLIENT_INFO - Structure describing client info
         client_id           number 4     A client id
@@ -179,8 +159,9 @@
 #define COMMON_MSG_GET_MEASURE_TYPE_S       2
 #define COMMON_MSG_GET_MEASURE_SUBTYPE_I    3
 #define COMMON_MSG_GET_MEASURE_SUBTYPE_S    4
-#define COMMON_MSG_RETURN_MEASURE_TYPE      5
-#define COMMON_MSG_RETURN_MEASURE_SUBTYPE   6
+#define COMMON_MSG_GET_MEASURE_SUBTYPE_SS   5
+#define COMMON_MSG_RETURN_MEASURE_TYPE      6
+#define COMMON_MSG_RETURN_MEASURE_SUBTYPE   7
 #define COMMON_MSG_FAIL                     201
 #define COMMON_MSG_DB_OK                    202
 #define COMMON_MSG_CLIENT                   203
@@ -188,14 +169,7 @@
 #define COMMON_MSG_UPDATE_CLIENT            205
 #define COMMON_MSG_DELETE_CLIENT            206
 #define COMMON_MSG_RETURN_CLIENT            207
-#define COMMON_MSG_KEY                      227
-#define COMMON_MSG_INSERT_KEY               228
-#define COMMON_MSG_DELETE_KEY               230
-#define COMMON_MSG_RETURN_KEY               231
-#define COMMON_MSG_GET_KEY                  229
 #define COMMON_MSG_NEW_MEASUREMENT          239
-#define COMMON_MSG_GET_LAST_MEASUREMENTS    238
-#define COMMON_MSG_RETURN_LAST_MEASUREMENTS  240
 #define COMMON_MSG_CLIENT_INFO              208
 #define COMMON_MSG_INSERT_CINFO             209
 #define COMMON_MSG_DELETE_CINFO             210
@@ -235,7 +209,8 @@ void
     common_msg_destroy (common_msg_t **self_p);
 
 //  Parse a zmsg_t and decides whether it is common_msg. Returns
-//  true if it is, false otherwise.
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
 bool
     is_common_msg (zmsg_t *msg_p);
 
@@ -288,6 +263,12 @@ zmsg_t *
 zmsg_t *
     common_msg_encode_get_measure_subtype_s (
         uint16_t mt_id,
+        const char *mts_name);
+
+//  Encode the GET_MEASURE_SUBTYPE_SS 
+zmsg_t *
+    common_msg_encode_get_measure_subtype_ss (
+        const char *mt_name,
         const char *mts_name);
 
 //  Encode the RETURN_MEASURE_TYPE 
@@ -344,53 +325,15 @@ zmsg_t *
         uint32_t rowid,
         zmsg_t *msg);
 
-//  Encode the KEY 
-zmsg_t *
-    common_msg_encode_key (
-        const char *keyname,
-        uint32_t scale);
-
-//  Encode the INSERT_KEY 
-zmsg_t *
-    common_msg_encode_insert_key (
-        zmsg_t *msg);
-
-//  Encode the DELETE_KEY 
-zmsg_t *
-    common_msg_encode_delete_key (
-        uint32_t rowid);
-
-//  Encode the RETURN_KEY 
-zmsg_t *
-    common_msg_encode_return_key (
-        uint32_t keytagid,
-        zmsg_t *msg);
-
-//  Encode the GET_KEY 
-zmsg_t *
-    common_msg_encode_get_key (
-        uint32_t rowid);
-
 //  Encode the NEW_MEASUREMENT 
 zmsg_t *
     common_msg_encode_new_measurement (
         const char *client_name,
         const char *device_name,
         const char *device_type,
-        const char *keytagname,
-        uint32_t subkeytag,
+        uint16_t mt_id,
+        uint16_t mts_id,
         uint64_t value);
-
-//  Encode the GET_LAST_MEASUREMENTS 
-zmsg_t *
-    common_msg_encode_get_last_measurements (
-        uint32_t device_id);
-
-//  Encode the RETURN_LAST_MEASUREMENTS 
-zmsg_t *
-    common_msg_encode_return_last_measurements (
-        uint32_t device_id,
-        zhash_t *measurements);
 
 //  Encode the CLIENT_INFO 
 zmsg_t *
@@ -506,6 +449,13 @@ int
         uint16_t mt_id,
         const char *mts_name);
     
+//  Send the GET_MEASURE_SUBTYPE_SS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_measure_subtype_ss (void *output,
+        const char *mt_name,
+        const char *mts_name);
+    
 //  Send the RETURN_MEASURE_TYPE to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
@@ -569,38 +519,6 @@ int
         uint32_t rowid,
         zmsg_t *msg);
     
-//  Send the KEY to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_key (void *output,
-        const char *keyname,
-        uint32_t scale);
-    
-//  Send the INSERT_KEY to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_insert_key (void *output,
-        zmsg_t *msg);
-    
-//  Send the DELETE_KEY to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_delete_key (void *output,
-        uint32_t rowid);
-    
-//  Send the RETURN_KEY to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_return_key (void *output,
-        uint32_t keytagid,
-        zmsg_t *msg);
-    
-//  Send the GET_KEY to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_get_key (void *output,
-        uint32_t rowid);
-    
 //  Send the NEW_MEASUREMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
@@ -608,22 +526,9 @@ int
         const char *client_name,
         const char *device_name,
         const char *device_type,
-        const char *keytagname,
-        uint32_t subkeytag,
+        uint16_t mt_id,
+        uint16_t mts_id,
         uint64_t value);
-    
-//  Send the GET_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_get_last_measurements (void *output,
-        uint32_t device_id);
-    
-//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_return_last_measurements (void *output,
-        uint32_t device_id,
-        zhash_t *measurements);
     
 //  Send the CLIENT_INFO to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -849,24 +754,6 @@ uint32_t
 void
     common_msg_set_client_id (common_msg_t *self, uint32_t client_id);
 
-//  Get/set the keyname field
-const char *
-    common_msg_keyname (common_msg_t *self);
-void
-    common_msg_set_keyname (common_msg_t *self, const char *format, ...);
-
-//  Get/set the scale field
-uint32_t
-    common_msg_scale (common_msg_t *self);
-void
-    common_msg_set_scale (common_msg_t *self, uint32_t scale);
-
-//  Get/set the keytagid field
-uint32_t
-    common_msg_keytagid (common_msg_t *self);
-void
-    common_msg_set_keytagid (common_msg_t *self, uint32_t keytagid);
-
 //  Get/set the client_name field
 const char *
     common_msg_client_name (common_msg_t *self);
@@ -885,18 +772,6 @@ const char *
 void
     common_msg_set_device_type (common_msg_t *self, const char *format, ...);
 
-//  Get/set the keytagname field
-const char *
-    common_msg_keytagname (common_msg_t *self);
-void
-    common_msg_set_keytagname (common_msg_t *self, const char *format, ...);
-
-//  Get/set the subkeytag field
-uint32_t
-    common_msg_subkeytag (common_msg_t *self);
-void
-    common_msg_set_subkeytag (common_msg_t *self, uint32_t subkeytag);
-
 //  Get/set the value field
 uint64_t
     common_msg_value (common_msg_t *self);
@@ -908,29 +783,6 @@ uint32_t
     common_msg_device_id (common_msg_t *self);
 void
     common_msg_set_device_id (common_msg_t *self, uint32_t device_id);
-
-//  Get/set the measurements field
-zhash_t *
-    common_msg_measurements (common_msg_t *self);
-//  Get the measurements field and transfer ownership to caller
-zhash_t *
-    common_msg_get_measurements (common_msg_t *self);
-//  Set the measurements field, transferring ownership from caller
-void
-    common_msg_set_measurements (common_msg_t *self, zhash_t **measurements_p);
-    
-//  Get/set a value in the measurements dictionary
-const char *
-    common_msg_measurements_string (common_msg_t *self,
-        const char *key, const char *default_value);
-uint64_t
-    common_msg_measurements_number (common_msg_t *self,
-        const char *key, uint64_t default_value);
-void
-    common_msg_measurements_insert (common_msg_t *self,
-        const char *key, const char *format, ...);
-size_t
-    common_msg_measurements_size (common_msg_t *self);
 
 //  Get a copy of the info field
 zchunk_t *
