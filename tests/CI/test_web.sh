@@ -89,8 +89,9 @@ api_post() {
 
 _api_get_token() {
     if [ -z "$_TOKEN_" ]; then
-    _TOKEN_="`api_get "/oauth2/token?username=$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" | \
-            sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
+	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+	_TOKEN_RAW_="`api_get "$AUTH_URL"`"
+	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`"
     fi
     echo "$_TOKEN_"
 }
