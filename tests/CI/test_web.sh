@@ -1,5 +1,24 @@
 #!/bin/sh
 
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
+#            Tomas Halman <TomasHalman@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
+#
 # Description: This script automates tests of REST API for the $BIOS project
 
 PASS=0
@@ -8,14 +27,23 @@ TOTAL=0
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 
-if [ "x$1" = "x-u" ]; then
-    BIOS_USER="$2"
-    shift 2
-fi
-if [ "x$1" = "x-p" ]; then
-    BIOS_PASSWD="$2"
-    shift 2
-fi
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-u|--user)
+	    BIOS_USER="$2"
+	    shift
+	    ;;
+	-p|--passwd)
+	    BIOS_PASSWD="$2"
+	    shift
+	    ;;
+	*)
+	    echo "Unknown param: '$1'!" >&2
+	    exit 1
+	    ;;
+    esac
+    shift
+done
 
 PATH="$PATH:/sbin:/usr/sbin"
 
