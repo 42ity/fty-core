@@ -29,7 +29,5 @@ cd $CHECKOUTDIR
 
 # TODO: parallelization?
 echo "======================== make and make check ==============================="
-autoreconf -vfi && ./configure --prefix=$HOME && make && make check && make install
+autoreconf -vfi && ./configure --prefix=$HOME && make && make distcheck && make install
 
-echo "===================== make dist and make distcheck ========================="
-make distclean && ./configure && make dist && make distcheck
