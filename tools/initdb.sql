@@ -372,7 +372,6 @@ DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
-DROP VIEW IF EXISTS v_bios_measure_subkey;
 DROP VIEW IF EXISTS v_bios_measurement_subtypes;
 DROP VIEW IF EXISTS v_bios_measurement_types;
 
