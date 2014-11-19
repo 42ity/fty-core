@@ -5,8 +5,9 @@
 PASS=0
 TOTAL=0
 
-BIOS_USER="bios"
-BIOS_PASSWD="@PASSWORD@"
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+
 if [ "x$1" = "x-u" ]; then
     BIOS_USER="$2"
     shift 2
