@@ -69,6 +69,7 @@ struct _common_msg_t {
     uint32_t date;                      //   Date when this information was gathered
     uint32_t cinfo_id;                  //   Unique ID of the client info to be deleted
     uint32_t devicetype_id;             //   A devicetype id
+    zlist_t *measurements;              //   A list of string values "keytagid:subkeytagid:value:scale"
 };
 
 //  --------------------------------------------------------------------------
@@ -241,6 +242,8 @@ common_msg_destroy (common_msg_t **self_p)
         free (self->device_name);
         free (self->device_type);
         zchunk_destroy (&self->info);
+        if (self->measurements)
+            zlist_destroy (&self->measurements);
 
         //  Free object itself
         free (self);
@@ -303,6 +306,8 @@ is_common_msg (zmsg_t *msg)
         case COMMON_MSG_GET_CINFO:
         case COMMON_MSG_GET_DEVICE:
         case COMMON_MSG_GET_DEVTYPE:
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             common_msg_destroy (&self);
             return true;
         default:
@@ -547,6 +552,26 @@ common_msg_decode (zmsg_t **msg_p)
 
         case COMMON_MSG_GET_DEVTYPE:
             GET_NUMBER4 (self->devicetype_id);
+            break;
+
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            GET_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            GET_NUMBER4 (self->device_id);
+            {
+                size_t list_size;
+                GET_NUMBER4 (list_size);
+                self->measurements = zlist_new ();
+                zlist_autofree (self->measurements);
+                while (list_size--) {
+                    char *string;
+                    GET_LONGSTR (string);
+                    zlist_append (self->measurements, string);
+                    free (string);
+                }
+            }
             break;
 
         default:
@@ -807,6 +832,26 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             break;
             
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            //  device_id is a 4-byte integer
+            frame_size += 4;
+            break;
+            
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            //  device_id is a 4-byte integer
+            frame_size += 4;
+            //  measurements is an array of strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->measurements) {
+                //  Add up size of list contents
+                char *measurements = (char *) zlist_first (self->measurements);
+                while (measurements) {
+                    frame_size += 4 + strlen (measurements);
+                    measurements = (char *) zlist_next (self->measurements);
+                }
+            }
+            break;
+            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -1026,6 +1071,24 @@ common_msg_encode (common_msg_t **self_p)
 
         case COMMON_MSG_GET_DEVTYPE:
             PUT_NUMBER4 (self->devicetype_id);
+            break;
+
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            PUT_NUMBER4 (self->device_id);
+            break;
+
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            PUT_NUMBER4 (self->device_id);
+            if (self->measurements) {
+                PUT_NUMBER4 (zlist_size (self->measurements));
+                char *measurements = (char *) zlist_first (self->measurements);
+                while (measurements) {
+                    PUT_LONGSTR (measurements);
+                    measurements = (char *) zlist_next (self->measurements);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty string array
             break;
 
     }
@@ -1731,6 +1794,35 @@ common_msg_encode_get_devtype (
 
 
 //  --------------------------------------------------------------------------
+//  Encode GET_LAST_MEASUREMENTS message
+
+zmsg_t * 
+common_msg_encode_get_last_measurements (
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_LAST_MEASUREMENTS);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode RETURN_LAST_MEASUREMENTS message
+
+zmsg_t * 
+common_msg_encode_return_last_measurements (
+    uint32_t device_id,
+    zlist_t *measurements)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
+    common_msg_set_device_id (self, device_id);
+    zlist_t *measurements_copy = zlist_dup (measurements);
+    common_msg_set_measurements (self, &measurements_copy);
+    return common_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the GET_MEASURE_TYPE_I to the socket in one step
 
 int
@@ -2224,6 +2316,37 @@ common_msg_send_get_devtype (
 
 
 //  --------------------------------------------------------------------------
+//  Send the GET_LAST_MEASUREMENTS to the socket in one step
+
+int
+common_msg_send_get_last_measurements (
+    void *output,
+    uint32_t device_id)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_GET_LAST_MEASUREMENTS);
+    common_msg_set_device_id (self, device_id);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the RETURN_LAST_MEASUREMENTS to the socket in one step
+
+int
+common_msg_send_return_last_measurements (
+    void *output,
+    uint32_t device_id,
+    zlist_t *measurements)
+{
+    common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
+    common_msg_set_device_id (self, device_id);
+    zlist_t *measurements_copy = zlist_dup (measurements);
+    common_msg_set_measurements (self, &measurements_copy);
+    return common_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Duplicate the common_msg message
 
 common_msg_t *
@@ -2382,6 +2505,15 @@ common_msg_dup (common_msg_t *self)
 
         case COMMON_MSG_GET_DEVTYPE:
             copy->devicetype_id = self->devicetype_id;
+            break;
+
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            copy->device_id = self->device_id;
+            break;
+
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            copy->device_id = self->device_id;
+            copy->measurements = self->measurements? zlist_dup (self->measurements): NULL;
             break;
 
     }
@@ -2660,6 +2792,24 @@ common_msg_print (common_msg_t *self)
             zsys_debug ("    devicetype_id=%ld", (long) self->devicetype_id);
             break;
             
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            zsys_debug ("COMMON_MSG_GET_LAST_MEASUREMENTS:");
+            zsys_debug ("    device_id=%ld", (long) self->device_id);
+            break;
+            
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            zsys_debug ("COMMON_MSG_RETURN_LAST_MEASUREMENTS:");
+            zsys_debug ("    device_id=%ld", (long) self->device_id);
+            zsys_debug ("    measurements=");
+            if (self->measurements) {
+                char *measurements = (char *) zlist_first (self->measurements);
+                while (measurements) {
+                    zsys_debug ("        '%s'", measurements);
+                    measurements = (char *) zlist_next (self->measurements);
+                }
+            }
+            break;
+            
     }
 }
 
@@ -2799,6 +2949,12 @@ common_msg_command (common_msg_t *self)
             break;
         case COMMON_MSG_GET_DEVTYPE:
             return ("GET_DEVTYPE");
+            break;
+        case COMMON_MSG_GET_LAST_MEASUREMENTS:
+            return ("GET_LAST_MEASUREMENTS");
+            break;
+        case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
+            return ("RETURN_LAST_MEASUREMENTS");
             break;
     }
     return "?";
@@ -3332,6 +3488,88 @@ common_msg_set_devicetype_id (common_msg_t *self, uint32_t devicetype_id)
 {
     assert (self);
     self->devicetype_id = devicetype_id;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the measurements field, without transferring ownership
+
+zlist_t *
+common_msg_measurements (common_msg_t *self)
+{
+    assert (self);
+    return self->measurements;
+}
+
+//  Get the measurements field and transfer ownership to caller
+
+zlist_t *
+common_msg_get_measurements (common_msg_t *self)
+{
+    assert (self);
+    zlist_t *measurements = self->measurements;
+    self->measurements = NULL;
+    return measurements;
+}
+
+//  Set the measurements field, transferring ownership from caller
+
+void
+common_msg_set_measurements (common_msg_t *self, zlist_t **measurements_p)
+{
+    assert (self);
+    assert (measurements_p);
+    zlist_destroy (&self->measurements);
+    self->measurements = *measurements_p;
+    *measurements_p = NULL;
+}
+
+//  --------------------------------------------------------------------------
+//  Iterate through the measurements field, and append a measurements value
+
+const char *
+common_msg_measurements_first (common_msg_t *self)
+{
+    assert (self);
+    if (self->measurements)
+        return (char *) (zlist_first (self->measurements));
+    else
+        return NULL;
+}
+
+const char *
+common_msg_measurements_next (common_msg_t *self)
+{
+    assert (self);
+    if (self->measurements)
+        return (char *) (zlist_next (self->measurements));
+    else
+        return NULL;
+}
+
+void
+common_msg_measurements_append (common_msg_t *self, const char *format, ...)
+{
+    //  Format into newly allocated string
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    char *string = zsys_vprintf (format, argptr);
+    va_end (argptr);
+
+    //  Attach string to list
+    if (!self->measurements) {
+        self->measurements = zlist_new ();
+        zlist_autofree (self->measurements);
+    }
+    zlist_append (self->measurements, string);
+    free (string);
+}
+
+size_t
+common_msg_measurements_size (common_msg_t *self)
+{
+    return zlist_size (self->measurements);
 }
 
 
@@ -4050,6 +4288,51 @@ common_msg_test (bool verbose)
         assert (common_msg_routing_id (self));
         
         assert (common_msg_devicetype_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_GET_LAST_MEASUREMENTS);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_device_id (self, 123);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_device_id (self) == 123);
+        common_msg_destroy (&self);
+    }
+    self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
+    
+    //  Check that _dup works on empty message
+    copy = common_msg_dup (self);
+    assert (copy);
+    common_msg_destroy (&copy);
+
+    common_msg_set_device_id (self, 123);
+    common_msg_measurements_append (self, "Name: %s", "Brutus");
+    common_msg_measurements_append (self, "Age: %d", 43);
+    //  Send twice from same object
+    common_msg_send_again (self, output);
+    common_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = common_msg_recv (input);
+        assert (self);
+        assert (common_msg_routing_id (self));
+        
+        assert (common_msg_device_id (self) == 123);
+        assert (common_msg_measurements_size (self) == 2);
+        assert (streq (common_msg_measurements_first (self), "Name: Brutus"));
+        assert (streq (common_msg_measurements_next (self), "Age: 43"));
         common_msg_destroy (&self);
     }
 

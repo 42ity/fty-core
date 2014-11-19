@@ -12,7 +12,7 @@
 TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
 {
     uint32_t errnonew = 1;
-    common_msg_t* fail = _generate_db_fail (errnonew, NULL,  NULL);
+    common_msg_t* fail = generate_db_fail (errnonew, NULL,  NULL);
     REQUIRE ( fail );
     REQUIRE ( common_msg_id(fail) == COMMON_MSG_FAIL );
 //    common_msg_print (fail);
@@ -28,7 +28,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
     REQUIRE ( fail == NULL );
 
     errnonew = 2;
-    fail = _generate_db_fail (errnonew, "",  NULL);
+    fail = generate_db_fail (errnonew, "",  NULL);
     REQUIRE( fail );
     REQUIRE ( common_msg_id(fail) == COMMON_MSG_FAIL );
 //    common_msg_print (fail);
@@ -50,7 +50,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
     char     value[]     = "myvalue";
     zhash_insert (errauxnew, &keytag, &value);
 
-    fail = _generate_db_fail (errnonew, errmsgnew, &errauxnew);
+    fail = generate_db_fail (errnonew, errmsgnew, &errauxnew);
     REQUIRE ( fail );
     REQUIRE ( common_msg_id(fail) == COMMON_MSG_FAIL );
     // REQUIRE ( errauxnew == NULL );  // this doesn't work
@@ -69,7 +69,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
 TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok]")
 {
     uint32_t rowid = 11111111;
-    common_msg_t* okmsg = _generate_ok (rowid);
+    common_msg_t* okmsg = generate_ok (rowid);
     REQUIRE ( okmsg );
     
     REQUIRE ( common_msg_id (okmsg) == COMMON_MSG_DB_OK );
@@ -84,7 +84,7 @@ TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok]")
 TEST_CASE("Common messages: _generate_client","[common][generate][client]")
 {
     char name[]= "TestGenerateClient";
-    common_msg_t* msgclient = _generate_client (name);
+    common_msg_t* msgclient = generate_client (name);
     REQUIRE ( msgclient );
     REQUIRE ( common_msg_id (msgclient) == COMMON_MSG_CLIENT );
 //    common_msg_print (msgclient);
@@ -98,13 +98,13 @@ TEST_CASE("Common messages: _generate_client","[common][generate][client]")
 TEST_CASE("Common messages: _generate_return_client","[common][generate][return_client]")
 {
     char name[]= "TestGenerateReturnClient";
-    common_msg_t* msgclient = _generate_client (name);
+    common_msg_t* msgclient = generate_client (name);
     REQUIRE ( msgclient );
 
 //    common_msg_print (msgclient);
     uint32_t client_id = 4;
     
-    common_msg_t* msgreturnclient = _generate_return_client (client_id, &msgclient);
+    common_msg_t* msgreturnclient = generate_return_client (client_id, &msgclient);
     REQUIRE ( msgreturnclient != NULL );
     REQUIRE ( msgclient == NULL );
     
@@ -258,7 +258,7 @@ TEST_CASE("Common messages: update_client1","[common][update][client]")
 
     common_msg_destroy (&response);
 
-    common_msg_t* client = _generate_client ("insert_updated");
+    common_msg_t* client = generate_client ("insert_updated");
     response = update_client (url.c_str(), newid, &client);
     REQUIRE ( response != NULL );
     REQUIRE ( client == NULL );
@@ -291,7 +291,7 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client]")
 
     common_msg_destroy (&response);
 
-    common_msg_t* client = _generate_client ("toooooooooooooooooooooooooooooolongname");
+    common_msg_t* client = generate_client ("toooooooooooooooooooooooooooooolongname");
     response = update_client (url.c_str(), newid, &client);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
@@ -303,7 +303,7 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client]")
     common_msg_destroy (&response);
     common_msg_destroy (&client);
 
-    client = _generate_client ("");
+    client = generate_client ("");
     response = update_client (url.c_str(), newid, &client);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);

@@ -151,6 +151,13 @@
 
     GET_DEVTYPE - Ask for a device type
         devicetype_id       number 4     Unique ID of the device type
+
+    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with asset_element_id
+        device_id           number 4     An asset_element_id of the device
+
+    RETURN_LAST_MEASUREMENTS - The last measurements about the device with asset_element_id
+        device_id           number 4     An asset_element_id of the device
+        measurements        strings      A list of string values "keytagid:subkeytagid:value:scale"
 */
 
 #define COMMON_MSG_VERSION                  1.0
@@ -186,6 +193,8 @@
 #define COMMON_MSG_GET_CINFO                224
 #define COMMON_MSG_GET_DEVICE               225
 #define COMMON_MSG_GET_DEVTYPE              226
+#define COMMON_MSG_GET_LAST_MEASUREMENTS    238
+#define COMMON_MSG_RETURN_LAST_MEASUREMENTS  240
 
 #include <czmq.h>
 
@@ -422,6 +431,17 @@ zmsg_t *
     common_msg_encode_get_devtype (
         uint32_t devicetype_id);
 
+//  Encode the GET_LAST_MEASUREMENTS 
+zmsg_t *
+    common_msg_encode_get_last_measurements (
+        uint32_t device_id);
+
+//  Encode the RETURN_LAST_MEASUREMENTS 
+zmsg_t *
+    common_msg_encode_return_last_measurements (
+        uint32_t device_id,
+        zlist_t *measurements);
+
 
 //  Send the GET_MEASURE_TYPE_I to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -633,6 +653,19 @@ int
     common_msg_send_get_devtype (void *output,
         uint32_t devicetype_id);
     
+//  Send the GET_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_get_last_measurements (void *output,
+        uint32_t device_id);
+    
+//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    common_msg_send_return_last_measurements (void *output,
+        uint32_t device_id,
+        zlist_t *measurements);
+    
 //  Duplicate the common_msg message
 common_msg_t *
     common_msg_dup (common_msg_t *self);
@@ -811,6 +844,26 @@ uint32_t
     common_msg_devicetype_id (common_msg_t *self);
 void
     common_msg_set_devicetype_id (common_msg_t *self, uint32_t devicetype_id);
+
+//  Get/set the measurements field
+zlist_t *
+    common_msg_measurements (common_msg_t *self);
+//  Get the measurements field and transfer ownership to caller
+zlist_t *
+    common_msg_get_measurements (common_msg_t *self);
+//  Set the measurements field, transferring ownership from caller
+void
+    common_msg_set_measurements (common_msg_t *self, zlist_t **measurements_p);
+
+//  Iterate through the measurements field, and append a measurements value
+const char *
+    common_msg_measurements_first (common_msg_t *self);
+const char *
+    common_msg_measurements_next (common_msg_t *self);
+void
+    common_msg_measurements_append (common_msg_t *self, const char *format, ...);
+size_t
+    common_msg_measurements_size (common_msg_t *self);
 
 //  Self test of this class
 int

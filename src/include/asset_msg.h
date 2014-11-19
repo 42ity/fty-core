@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: asset_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -40,7 +40,7 @@
         location            number 4    ID of the parent element
         location_type       number 1    Type of the parent element, defined in asset_type
         type                number 1    Type of the element, defined in asset_type
-        ext                 dictionary  Hash map of extended attributes
+        ext                 hash        Hash map of extended attributes
 
     DEVICE - Structure describing asset device
         device_type         string      Type of the device, freeform string not the thing from asset_type
@@ -81,14 +81,7 @@
         type                number 1    Type of the element, defined in in asset_type
 
     RETURN_ELEMENTS - Returns elements we were asked for
-        element_ids         dictionary  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
-
-    GET_LAST_MEASUREMENTS - Request for the last measurements about the device with asset_element_id
-        element_id          number 4     An asset_element_id of the device
-
-    RETURN_LAST_MEASUREMENTS - The last measurements about the device with asset_element_id
-        element_id          number 4     An asset_element_id of the device
-        measurements        strings      A map of keytags on values
+        element_ids         hash        Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
 */
 
 #define ASSET_MSG_VERSION                   1.0
@@ -104,8 +97,6 @@
 #define ASSET_MSG_FAIL                      9
 #define ASSET_MSG_GET_ELEMENTS              10
 #define ASSET_MSG_RETURN_ELEMENTS           11
-#define ASSET_MSG_GET_LAST_MEASUREMENTS     12
-#define ASSET_MSG_RETURN_LAST_MEASUREMENTS  13
 
 #include <czmq.h>
 
@@ -114,7 +105,10 @@ extern "C" {
 #endif
 
 //  Opaque class structure
+#ifndef ASSET_MSG_T_DEFINED
 typedef struct _asset_msg_t asset_msg_t;
+#define ASSET_MSG_T_DEFINED
+#endif
 
 //  @interface
 //  Create a new asset_msg
@@ -124,6 +118,12 @@ asset_msg_t *
 //  Destroy the asset_msg
 void
     asset_msg_destroy (asset_msg_t **self_p);
+
+//  Parse a zmsg_t and decides whether it is asset_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+    is_asset_msg (zmsg_t *msg_p);
 
 //  Parse a asset_msg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 
@@ -224,17 +224,6 @@ zmsg_t *
     asset_msg_encode_return_elements (
         zhash_t *element_ids);
 
-//  Encode the GET_LAST_MEASUREMENTS 
-zmsg_t *
-    asset_msg_encode_get_last_measurements (
-        uint32_t element_id);
-
-//  Encode the RETURN_LAST_MEASUREMENTS 
-zmsg_t *
-    asset_msg_encode_return_last_measurements (
-        uint32_t element_id,
-        zlist_t *measurements);
-
 
 //  Send the ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -316,19 +305,6 @@ int
 int
     asset_msg_send_return_elements (void *output,
         zhash_t *element_ids);
-    
-//  Send the GET_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    asset_msg_send_get_last_measurements (void *output,
-        uint32_t element_id);
-    
-//  Send the RETURN_LAST_MEASUREMENTS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    asset_msg_send_return_last_measurements (void *output,
-        uint32_t element_id,
-        zlist_t *measurements);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -513,26 +489,6 @@ void
         const char *key, const char *format, ...);
 size_t
     asset_msg_element_ids_size (asset_msg_t *self);
-
-//  Get/set the measurements field
-zlist_t *
-    asset_msg_measurements (asset_msg_t *self);
-//  Get the measurements field and transfer ownership to caller
-zlist_t *
-    asset_msg_get_measurements (asset_msg_t *self);
-//  Set the measurements field, transferring ownership from caller
-void
-    asset_msg_set_measurements (asset_msg_t *self, zlist_t **measurements_p);
-
-//  Iterate through the measurements field, and append a measurements value
-const char *
-    asset_msg_measurements_first (asset_msg_t *self);
-const char *
-    asset_msg_measurements_next (asset_msg_t *self);
-void
-    asset_msg_measurements_append (asset_msg_t *self, const char *format, ...);
-size_t
-    asset_msg_measurements_size (asset_msg_t *self);
 
 //  Self test of this class
 int

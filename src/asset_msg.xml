@@ -2,7 +2,7 @@
     name = "asset_msg"
     signature = "5"
     title = "assets management protocol"
-    script = "zproto_codec_c"
+    script = "zproto_codec_c_v1"
     package_dir = "."
     include = "czmq.h"
     >
@@ -21,7 +21,7 @@ Structure describing asset element
     <field name = "location" type = "number" size = "4">ID of the parent element</field>
     <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in asset_type</field>
     <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
-    <field name = "ext" type = "dictionary">Hash map of extended attributes</field>
+    <field name = "ext" type = "hash">Hash map of extended attributes</field>
 </message>
 
 <message name = "device" id = "2">
@@ -82,19 +82,7 @@ Ask for all elements of specific type
 
 <message name = "return_elements" id = "11">
 Returns elements we were asked for
-    <field name = "element_ids" type = "dictionary">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
+    <field name = "element_ids" type = "hash">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
 </message>
-
-<message name = "get_last_measurements"   id = "12">
-Request for the last measurements about the device with asset_element_id
-    <field name = "element_id"   type = "number" size = "4"> An asset_element_id of the device</field>
-</message>
-
-<message name = "return_last_measurements"   id = "13">
-The last measurements about the device with asset_element_id
-    <field name = "element_id"    type = "number" size = "4"> An asset_element_id of the device</field>
-    <field name = "measurements"  type = "strings"> A list of string values "keytagid:subkeytagid:value:scale"</field>
-</message>
-
 
 </class>
