@@ -33,10 +33,38 @@ die() {
 	exit 1
 }
 
+usage() {
+    echo "usage: $(basename $0) [options]"
+    echo "options:"
+    echo "    -m|--machine name    virtual machine name [latest]"
+    echo "    -h|--help            print this help"
+}
+
+#
+# defaults
+#
+VM="latest"
+
+while [ $# -gt 0 ] ; do
+    case "$1" in
+        -m|--machine)
+            VM="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 1
+            ;;
+        *)
+            echo "Invalid switch $1"
+            usage
+            exit 1
+            ;;
+    esac
+done
+
 # Make sure we have a loop
 modprobe loop # TODO: die on failure?
-
-
 
 # Do we have overlayfs?
 if [ "`gzip -cd /proc/config.gz 2> /dev/null | grep OVERLAY`" ]; then
@@ -60,7 +88,7 @@ else
 fi
 
 # Destroy whatever was running
-virsh -c lxc:// destroy latest 2> /dev/null > /dev/null
+virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
 # may be wait for slow box
 sleep 5
 rm -rf "../overlays/$IMAGE"
@@ -74,31 +102,31 @@ if [ "$OVERLAYFS" ]; then
 fi
 
 # Cleanup of the rootfs
-umount -fl "../rootfs/latest/lib/modules" 2> /dev/null > /dev/null
-umount -fl "../rootfs/latest" 2> /dev/null > /dev/null
-fusermount -u -z  "../rootfs/latest" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
+fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
 # clean up VM space
-/bin/rm -rf "../rootfs/latest"
-mkdir -p "../rootfs/latest"
+/bin/rm -rf "../rootfs/$VM"
+mkdir -p "../rootfs/$VM"
 # Mount rw image
 if [ "$OVERLAYFS" ]; then
-	mount -t overlayfs -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" overlayfs "../rootfs/latest" 2> /dev/null || die "Can't mount rw directory"
+	mount -t overlayfs -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" overlayfs "../rootfs/$VM" 2> /dev/null || die "Can't mount rw directory"
 else
-	mkdir -p "../rootfs/latest"
-	tar -C "../rootfs/latest" -xzf "$IMAGE"
+	mkdir -p "../rootfs/$VM"
+	tar -C "../rootfs/$VM" -xzf "$IMAGE"
 fi
 
 # Bind mount modules
-mkdir -p ../rootfs/latest/lib/modules
-mount -o bind /lib/modules ../rootfs/latest/lib/modules
+mkdir -p "../rootfs/$VM/lib/modules"
+mount -o bind "/lib/modules ../rootfs/$VM/lib/modules"
 
 # copy root's ~/.ssh
-cp -r --preserve ~/.ssh "../rootfs/latest/root/"
-cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/latest/etc/ssh"
+cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
+cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
 # setup debian proxy
-echo 'Acquire::http::Proxy "http://gate:3142";' > "../rootfs/latest/etc/apt/apt.conf.d/01proxy-apt-cacher"
+echo 'Acquire::http::Proxy "http://gate:3142";' > "../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
 # Start the virtual machine
-virsh -c lxc:// start latest || die "Can't start the virtual machine"
+virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
