@@ -72,6 +72,8 @@ if [ ! "$VM" ] ; then
     exit 1
 fi
 
+cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
+
 remote_cleanup() {
     ssh root@$VM -p $PORT "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
 }

@@ -84,6 +84,8 @@ wait_for_web() {
 
 
 # prepare environment
+  cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
+
   # might have some mess
   killall tntnet 2>/dev/null || true
   # make sure sasl is running
@@ -94,7 +96,6 @@ wait_for_web() {
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
 # do the webserver
-  cd $CHECKOUTDIR
   # make clean
   export BIOS_USER BIOS_PASSWD
   make web-test &
