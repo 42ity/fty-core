@@ -35,10 +35,10 @@ stop(){
 }
 
 usage(){
-    echo "usage: $(basename $0) [options]
+    echo "Usage: $(basename $0) [options...]
 options:
-    --stop       stop simple
-    --start      start simple
+    --stop       stop simple and netmon daemons
+    --start      start simple (and it starts netmon)
     --help|-h    print this help"
 }
 

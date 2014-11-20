@@ -37,25 +37,25 @@
 # globs generally) which we may be interested in:
 
 ### Change date on this device:
-Cmnd_Alias DATE_MANUAL  = /usr/bin/date,/bin/date
+Cmnd_Alias DATE_MANUAL	= /usr/bin/date,/bin/date
 Cmnd_Alias DATE_HWCLOCK	= /sbin/hwclock
 Cmnd_Alias DATE_NTP	= /usr/sbin/ntpdate,/etc/init.d/ntp
 Cmnd_Alias DATE_CLOCK	= /usr/bin/rdate
 Cmnd_Alias DATE		= DATE_MANUAL,DATE_HWCLOCK,DATE_NTP,DATE_CLOCK
 
 ### Scan available network hosts:
-Cmnd_Alias NMAP         = /usr/bin/nmap
+Cmnd_Alias NMAP		= /usr/bin/nmap
 
 ### Update firmware on this device (disabled by default):
-Cmnd_Alias APT          = /usr/bin/apt-get update,/usr/bin/apt-get upgrade
+Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS   = DATE,NMAP
+Cmnd_Alias BIOS_PROGS	= DATE,NMAP
 
 # Who is allowed to elevate?
-User_Alias BIOS_USERS   = bios,%bios
+User_Alias BIOS_USERS	= bios,%bios
 # With whose privileges can this be executed?
-Runas_Alias BIOS_RUNAS  = root
+Runas_Alias BIOS_RUNAS	= root
 
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_PROGS
 
