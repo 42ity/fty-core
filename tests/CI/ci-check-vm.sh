@@ -45,6 +45,7 @@ usage() {
 #
 PORT=22
 COMPILE=1
+VM="$BUILDMACHINE"
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -52,7 +53,7 @@ while [ $# -gt 0 ] ; do
             VM="$2"
             shift 2
             ;;
-        -m|--machine)
+        -p|--port)
             PORT="$2"
             shift 2
             ;;
@@ -105,7 +106,9 @@ remote_make() {
     ssh root@$VM -p $PORT "cd $BCHECKOUTDIR autoreconf -vfi && ./configure --prefix=\$HOME && make -j 4 && make install"
 }
 
-
+#
+# taken from environment
+#
 echo "======================== BUILD PAREMETERS ==============================="
 echo "FORK:     $FORK"
 echo "BRANCH:   $BRANCH"
