@@ -26,7 +26,7 @@ update_system() {
     apt-get clean all
     apt-get update
     apt-get -f -y --force-yes --fix-missing install
-    apt-get -f -y --force-yes install devscripts sudo doxygen curl
+    apt-get -f -y --force-yes install devscripts sudo doxygen curl git
 }
 
 update_system

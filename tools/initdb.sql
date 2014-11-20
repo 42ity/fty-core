@@ -372,10 +372,34 @@ DROP view if exists v_bios_asset_link;
 DROP view if exists v_bios_client_info_measurements_last;
 DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
-DROP VIEW IF EXISTS v_bios_measure_subkey;
+DROP VIEW IF EXISTS v_bios_measurement_subtypes;
+DROP VIEW IF EXISTS v_bios_measurement_types;
 
-create view v_bios_measure_subkey as select * from t_bios_measure_subkey ;
-create view v_bios_asset_device as select * from t_bios_asset_device ;
+
+create view v_bios_measurement_types as select * from t_bios_measurement_types ;
+
+create view v_bios_measurement_subtypes as
+SELECT
+    st.id , st.type_id, st.name, st.scale, t.name as typename
+FROM
+    v_bios_measurement_types t,
+    t_bios_measurement_subtypes st
+where
+    st.type_id = t.id;
+
+CREATE VIEW v_bios_asset_device AS
+    SELECT  v1.id_asset_device,
+            v1.id_asset_element,
+            v1.hostname,
+            v1.full_hostname,
+            v1.ip,
+            v1.mac,
+            v1.id_asset_device_type,
+            v2.name
+    FROM t_bios_asset_device v1
+        LEFT JOIN t_bios_asset_device_type v2
+        ON (v1.id_asset_device_type = v2.id_asset_device_type);
+
 create view v_bios_asset_link as select * from t_bios_asset_link ;
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
@@ -399,5 +423,6 @@ FROM    v_bios_client_info_measurements v
                  v.id_subkey = grp.id_subkey AND
                  v.timestamp = grp.maxdate  AND
                  v.id_discovered_device = grp.id_discovered_device
-        INNER JOIN v_bios_measure_subkey sk
-                ON v.id_subkey = sk.id_subkey;
+        INNER JOIN t_bios_measurement_subtypes sk
+                ON v.id_subkey = sk.id AND
+		   v.id_key = sk.type_id;

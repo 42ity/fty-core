@@ -8,6 +8,7 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
+#include "dbpath.h"
 
 /**
  * \brief Generates a COMMON_MSG_FAIL message.
@@ -24,7 +25,7 @@
  *
  * TODO the codes are now defined as define. May be need to have enum
  */
-common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux)
+common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_FAIL);
     assert ( resultmsg );
@@ -46,7 +47,7 @@ common_msg_t* _generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** 
  *
  * \return a common_msg_t message of the type COMMON_MSG_DB_OK.
  */
-common_msg_t* _generate_ok(uint32_t rowid)
+common_msg_t* generate_ok(uint32_t rowid)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     assert ( resultmsg );
@@ -58,7 +59,7 @@ common_msg_t* _generate_ok(uint32_t rowid)
 ///////            CLIENT                    ///////////////////////
 ////////////////////////////////////////////////////////////////////
 
-common_msg_t* _generate_client(const char* name)
+common_msg_t* generate_client(const char* name)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_CLIENT);
     assert ( resultmsg );
@@ -67,7 +68,7 @@ common_msg_t* _generate_client(const char* name)
 }
 
 //it shoud destroy the client
-common_msg_t* _generate_return_client(uint32_t clientid, common_msg_t** client)
+common_msg_t* generate_return_client(uint32_t clientid, common_msg_t** client)
 {
     assert ( client );
     assert ( *client );
@@ -102,13 +103,13 @@ common_msg_t* select_client(const char* url, const char* name)
         val.get(id_client); 
     }
     catch (const tntdb::NotFound &e){
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client = _generate_client (name);
-    return _generate_return_client (id_client, &client);
+    common_msg_t* client = generate_client (name);
+    return generate_return_client (id_client, &client);
 }
 
 common_msg_t* select_client(const char* url, uint32_t id)
@@ -130,20 +131,20 @@ common_msg_t* select_client(const char* url, uint32_t id)
         assert ( name != "" );
     }
     catch (const tntdb::NotFound &e){
-        return _generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client = _generate_client (name.c_str());
-    return _generate_return_client (id, &client);
+    common_msg_t* client = generate_client (name.c_str());
+    return generate_return_client (id, &client);
 }
 
 common_msg_t* insert_client(const char* url,const char* name)
 {
     uint32_t length = strlen(name);
     if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
-        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
 
     uint32_t n = 0;
     uint32_t newid = 0;
@@ -161,12 +162,12 @@ common_msg_t* insert_client(const char* url,const char* name)
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (newid);
+        return generate_ok (newid);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 common_msg_t* delete_client(const char* url, uint32_t id_client)
@@ -184,12 +185,12 @@ common_msg_t* delete_client(const char* url, uint32_t id_client)
         n  = st.setInt("id", id_client).execute();
     } 
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (id_client);
+        return generate_ok (id_client);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 // should destroy client
 common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
@@ -203,7 +204,7 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
     if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
     {
         common_msg_destroy(client);
-        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
     }
 
     uint32_t n = 0;
@@ -224,13 +225,13 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
     }
     catch (const std::exception &e) {
         common_msg_destroy (client);
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     common_msg_destroy (client);
     if ( n == 1 )
-        return _generate_ok (id);
+        return generate_ok (id);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -240,7 +241,7 @@ common_msg_t* update_client(const char* url, uint32_t id, common_msg_t** client)
 // Date is always UTC time as UNIX_timestamp.
 //
 
-common_msg_t* _generate_client_info
+common_msg_t* generate_client_info
     (uint32_t client_id, uint32_t device_id, uint32_t mytime, byte* data, uint32_t datasize)
 {
     assert ( datasize );
@@ -255,7 +256,7 @@ common_msg_t* _generate_client_info
 }
 
 //it shoud destroy the client_info.
-common_msg_t* _generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info)
+common_msg_t* generate_return_client_info(uint32_t client_info_id, common_msg_t** client_info)
 {
     assert ( client_info );
     assert ( *client_info );
@@ -312,13 +313,13 @@ common_msg_t* insert_client_info
     }
     catch (const std::exception &e) {
         zchunk_destroy (blob);
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     zchunk_destroy (blob);
     if ( n == 1 )
-        return _generate_ok (newid);
+        return generate_ok (newid);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 common_msg_t* insert_client_info
@@ -356,12 +357,12 @@ common_msg_t* delete_client_info (const char* url, uint32_t id)
         n  = st.setInt("id", id).execute();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (id);
+        return generate_ok (id);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -374,7 +375,7 @@ common_msg_t* delete_client_info (const char* url, uint32_t id)
  */
 common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
 {
-    return _generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
+    return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
 }
 
 /**
@@ -420,12 +421,12 @@ common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint3
         assert ( isNotNull );
     }
     catch (const tntdb::NotFound &e) {
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    return _generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
+    return generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
 }
 
 common_msg_t* select_client_info(const char* url, uint32_t id_client_info)
@@ -463,13 +464,13 @@ common_msg_t* select_client_info(const char* url, uint32_t id_client_info)
         assert ( device_id );
     }
     catch (const tntdb::NotFound &e) {
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client_info = _generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
-    return _generate_return_client_info (id_client_info, &client_info);
+    common_msg_t* client_info = generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
+    return generate_return_client_info (id_client_info, &client_info);
 }
 
 
@@ -477,7 +478,7 @@ common_msg_t* select_client_info(const char* url, uint32_t id_client_info)
 ///////            DEVICE TYPE              ///////////////////////
 ///////////////////////////////////////////////////////////////////
 
-common_msg_t* _generate_device_type(const char* name)
+common_msg_t* generate_device_type(const char* name)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DEVICE_TYPE);
     assert ( resultmsg );
@@ -485,7 +486,7 @@ common_msg_t* _generate_device_type(const char* name)
     return resultmsg;
 }
 //it should destroy the device type
-common_msg_t* _generate_return_device_type(uint32_t devicetype_id, common_msg_t** device_type)
+common_msg_t* generate_return_device_type(uint32_t devicetype_id, common_msg_t** device_type)
 {
 
     assert ( device_type );
@@ -521,14 +522,14 @@ common_msg_t* select_device_type(const char* url, const char* name)
         val.get(devicetype_id); 
     }
     catch (const tntdb::NotFound &e){
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* devicetype = _generate_device_type (name);
+    common_msg_t* devicetype = generate_device_type (name);
     assert(devicetype);
-    return _generate_return_device_type (devicetype_id, &devicetype);
+    return generate_return_device_type (devicetype_id, &devicetype);
 }
 
 common_msg_t* select_device_type(const char* url, uint32_t devicetype_id)
@@ -550,20 +551,20 @@ common_msg_t* select_device_type(const char* url, uint32_t devicetype_id)
         assert ( name != "" );
     }
     catch (const tntdb::NotFound &e){
-        return _generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
+        return generate_db_fail(DB_ERROR_NOTFOUND, e.what(), NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* devicetype = _generate_device_type (name.c_str());
-    return _generate_return_device_type (devicetype_id, &devicetype);
+    common_msg_t* devicetype = generate_device_type (name.c_str());
+    return generate_return_device_type (devicetype_id, &devicetype);
 }
 
 common_msg_t* insert_device_type(const char* url, const char* name)
 {
     uint32_t length = strlen(name);
     if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
-        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
 
     uint32_t n = 0;
     uint32_t newid = 0;
@@ -581,12 +582,12 @@ common_msg_t* insert_device_type(const char* url, const char* name)
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (newid);
+        return generate_ok (newid);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 common_msg_t* delete_device_type(const char* url, uint32_t devicetype_id)
@@ -604,12 +605,12 @@ common_msg_t* delete_device_type(const char* url, uint32_t devicetype_id)
         n  = st.setInt("id", devicetype_id).execute();
     } 
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (devicetype_id);
+        return generate_ok (devicetype_id);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 // should destroy device_type
@@ -621,7 +622,7 @@ common_msg_t* update_device_type(const char* url, uint32_t id, common_msg_t** de
     if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
     {
         common_msg_destroy (devicetype);
-        return _generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "length not in range [1,25]", NULL);
     }
 
     uint32_t n = 0;
@@ -642,19 +643,19 @@ common_msg_t* update_device_type(const char* url, uint32_t id, common_msg_t** de
     }
     catch (const std::exception &e) {
         common_msg_destroy (devicetype);
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     common_msg_destroy(devicetype);
     if ( n == 1 )
-        return _generate_ok (id);
+        return generate_ok (id);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 ////////////////////////////////////////////////////////////////////////
 /////////////////           DEVICE                   ///////////////////
 ////////////////////////////////////////////////////////////////////////
 
-common_msg_t* _generate_device(const char* name, uint32_t devicetype_id)
+common_msg_t* generate_device(const char* name, uint32_t devicetype_id)
 {
     assert ( devicetype_id );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DEVICE);
@@ -666,7 +667,7 @@ common_msg_t* _generate_device(const char* name, uint32_t devicetype_id)
 }
 
 //it should destroy the device
-common_msg_t* _generate_return_device(uint32_t device_id, common_msg_t** device)
+common_msg_t* generate_return_device(uint32_t device_id, common_msg_t** device)
 {
     assert ( common_msg_id (*device) == COMMON_MSG_DEVICE );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_DEVICE);
@@ -714,12 +715,12 @@ common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char*
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (newid);
+        return generate_ok (newid);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -745,12 +746,12 @@ common_msg_t* delete_device (const char* url, uint32_t device_id)
         n  = st.setInt("id", device_id).execute();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (device_id);
+        return generate_ok (device_id);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -763,7 +764,7 @@ common_msg_t* delete_device (const char* url, uint32_t device_id)
  */
 common_msg_t* update_device (const char* url, common_msg_t** newdevice)
 {
-    return _generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
+    return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
 }
 
 common_msg_t* select_device (const char* url, uint32_t devicetype_id, const char* name)
@@ -797,14 +798,14 @@ common_msg_t* select_device (const char* url, uint32_t devicetype_id, const char
 
             row[0].get(id);
 
-            common_msg_t* device = _generate_device (name, devicetype_id);
-            return _generate_return_device (id, &device);
+            common_msg_t* device = generate_device (name, devicetype_id);
+            return generate_return_device (id, &device);
         }
         else
-            return _generate_db_fail (DB_ERROR_NOTFOUND, NULL, NULL);
+            return generate_db_fail (DB_ERROR_NOTFOUND, NULL, NULL);
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
 }
 
@@ -821,7 +822,7 @@ common_msg_t* select_device (const char* url, const char* devicetype_name, const
     common_msg_destroy (&device_type);
 
     if ( msgid == COMMON_MSG_FAIL )
-        return _generate_db_fail (DB_ERROR_BADINPUT, "unknown device type", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "unknown device type", NULL);
     else if ( msgid == COMMON_MSG_RETURN_DEVTYPE )
         return select_device(url, rowid, name);
     else
@@ -842,72 +843,11 @@ common_msg_t* insert_device(const char* url, const char* devicetype_name, const 
     common_msg_destroy (&device_type);
 
     if ( msgid == COMMON_MSG_FAIL )
-        return _generate_db_fail (DB_ERROR_BADINPUT, "unknown device type", NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, "unknown device type", NULL);
     else if ( msgid == COMMON_MSG_RETURN_DEVTYPE )
         return insert_device(url, rowid , name);
     else
         assert (false); // unknown return type
-    return NULL;
-}
-
-common_msg_t* _generate_key(const char* keytagname, uint32_t scale)
-{
-    assert ( scale );
-    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_KEY);
-    assert ( resultmsg );
-    common_msg_set_keytagname (resultmsg, keytagname);
-    common_msg_set_scale (resultmsg, scale);
-
-    return resultmsg;
-}
-
-//it should destroy the key
-common_msg_t* _generate_return_key(uint32_t keytag_id, common_msg_t** key)
-{
-    assert ( common_msg_id (*key) == COMMON_MSG_KEY );
-    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_KEY);
-    assert ( resultmsg );
-    common_msg_set_rowid (resultmsg, keytag_id);
-    zmsg_t* nnmsg = common_msg_encode (key);
-    assert ( nnmsg );
-    common_msg_set_msg (resultmsg, &nnmsg);
-
-    return resultmsg;
-}
-
-common_msg_t* select_key (const char* url, const char* keytagname)
-{
-    assert ( strlen(keytagname) > 0 );
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url); 
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " v.id , v.scale"
-            " FROM"
-            " v_bios_measurements v"
-            " WHERE v.keytag = :name"
-        );
-        
-        tntdb::Row row = st.setString("name", keytagname).
-                            selectRow();
-        
-        uint32_t rowid = 0;
-        row[0].get(rowid);
-
-        uint32_t scale = 0;
-        row[1].get(scale);      // HOW to work with double? or it would be integer too?
-
-        common_msg_t* key = _generate_key (keytagname, scale);
-        return _generate_return_key (rowid, &key);
-    }
-    catch (const tntdb::NotFound &e){
-        return _generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
-    }
-    catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
-    }
     return NULL;
 }
 
@@ -956,12 +896,130 @@ common_msg_t* insert_measurement(const char* url, uint32_t client_id,
         newid = conn.lastInsertId();
     }
     catch (const std::exception &e) {
-        return _generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
     if ( n == 1 )
-        return _generate_ok (newid);
+        return generate_ok (newid);
     else
-        return _generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 
+common_msg_t* generate_return_measurements (uint32_t device_id, zlist_t** measurements)
+{
+    common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
+    assert ( resultmsg );
+    common_msg_set_device_id (resultmsg, device_id);
+    common_msg_set_measurements (resultmsg, measurements);
+    zlist_destroy (measurements);
+    return resultmsg;
+}
+
+/**
+ * \brief Takes all last measurements of the spcified device.
+ *
+ * Return the list of strings. One string for one measurement.
+ * Every string has the followng format: "keytag_id:subkeytag_id:value:scale"
+ *
+ * \param url       - connection url to database.
+ * \param device_id - id of the monitor device that was measured.
+ *
+ *
+ * \return NULL            in case of errors.
+ *         empty zlist_t   in case of nothing was found
+ *         filled zlist_t  in case of succcess.
+ */
+zlist_t* select_last_measurements(const char* url, uint32_t device_id)
+{
+    assert ( device_id ); // is required
+    
+    zlist_t* measurements = zlist_new();
+    assert ( measurements );
+    // in older versions this function is called 
+    // zhash_set_item_duplicator
+    zlist_set_duplicator (measurements, void_dup);
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            " id_key, value, id_subkey, scale"
+            " FROM"
+            " v_bios_client_info_measurements_last"
+            " WHERE id_discovered_device=:deviceid"
+        );
+
+        tntdb::Result result = st.setInt("deviceid", device_id).
+                                  select();
+
+        uint32_t rsize = result.size();
+
+        char buff[42];     // 10+10+10+10 2
+        if ( rsize > 0 )
+        {
+            // There are some measurements for the specified device
+            // Go through the selected measurements
+            for ( auto &row: result )
+            {
+                // keytag_id, required
+                uint32_t keytag_id = 0;
+                row[0].get(keytag_id);
+                assert ( keytag_id );      // database is corrupted
+                
+                // subkeytag_id, required
+                uint32_t subkeytag_id = 0;
+                row[2].get(subkeytag_id);
+                assert ( subkeytag_id );   // database is corrupted
+
+                // value, required
+                uint32_t value = 0;
+                bool isNotNull = row[1].get(value);
+                assert ( isNotNull );      // database is corrupted
+
+                // scale, required
+                uint32_t scale = 0;
+                row[3].get(scale);
+                assert ( scale );          // database is corrupted
+                
+                sprintf(buff, "%d:%d:%d:%d", keytag_id, subkeytag_id, 
+                              value, scale);
+                zlist_push (measurements, buff);
+            }
+        }
+        return measurements;
+    }
+    catch (const std::exception &e) {
+        zlist_destroy (&measurements);
+        return NULL;
+    }
+}
+
+zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
+{
+    assert ( common_msg_id (msg) == COMMON_MSG_GET_LAST_MEASUREMENTS );
+    uint32_t device_id = common_msg_device_id (msg);
+    assert ( device_id );
+    uint32_t device_id_monitor = convert_asset_to_monitor(url, device_id);
+    assert ( device_id_monitor > 0 );
+
+    zlist_t* last_measurements = 
+            select_last_measurements(url, device_id_monitor);
+    if ( last_measurements == NULL )
+        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, NULL , NULL);
+    else if ( zlist_size(last_measurements) == 0 )
+        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, NULL , NULL);
+    else
+    {
+        zmsg_t* return_measurements = common_msg_encode_return_last_measurements(device_id, last_measurements);
+        zlist_destroy (&last_measurements);
+        return return_measurements;
+    }
+};
+
+zmsg_t* _get_last_measurements(zmsg_t** msg) {
+    common_msg_t *req = common_msg_decode(msg);
+    zmsg_t *rep = get_last_measurements(url.c_str(), req);
+    common_msg_destroy(&req);
+    return rep;
+}
