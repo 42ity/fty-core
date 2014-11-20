@@ -66,7 +66,14 @@ Verify SASL connectivity with:
 Then you know you have correct credentials set in `test_web.sh`.
 
 For tests of REST API, don't forget to preconfigure the database
-(MySQL or MariaDB) with `ci-fill-db.sh`.
+(MySQL or MariaDB) with `ci-fill-db.sh`. If the database is also
+secured with a password, the general '~/.my.cfg' file should be
+prepared in the home directory of the user running the test:
+----
+[client]
+user=root
+password=biosroot
+----
 
 Afterwards you can run `make test` and in different terminal on
 the same machine `test_web.sh` or wrapper `ci-test-restapi.sh`.
