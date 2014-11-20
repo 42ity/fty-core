@@ -94,3 +94,5 @@ INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, ti
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (8,  "m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (9,  "a", "10.231.107.0", 24, "enp0s25", "a0:1d:48:b7:e2:4e", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (10, "d", "10.0.0.0", 8, "", "", UTC_TIMESTAMP());
+
+insert into t_bios_monitor_asset_relation values (NULL, 1, 4);
