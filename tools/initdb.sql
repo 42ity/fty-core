@@ -1,6 +1,7 @@
-create database IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
+DROP DATABASE IF EXISTS box_utf8;
+CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
-use box_utf8;
+USE box_utf8;
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
@@ -326,6 +327,7 @@ drop view if exists v_bios_discovered_ip;
 drop view if exists v_bios_net_history;
 drop view if exists v_bios_client_info_measurements;
 
+
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
 create view v_bios_discovered_device as select id_discovered_device id, name , id_device_type from t_bios_discovered_device;
@@ -339,7 +341,6 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
 create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
-
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
