@@ -28,6 +28,6 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 cd $CHECKOUTDIR
 
 # TODO: parallelization?
-echo "======================== make and make check ==============================="
+echo "====================== make and make distcheck ============================="
 autoreconf -vfi && ./configure --prefix=$HOME && make && make distcheck && make install
 
