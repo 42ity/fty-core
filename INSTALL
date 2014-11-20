@@ -380,7 +380,7 @@ other advanced non-default applications; for now see the comments in its
 code for details on further configuration.
 
 NOTE: This script defines also a group named 'bios', to which the elevated
-permissions bellow are assigned. If you build and test the project under
+permissions below are assigned. If you build and test the project under
 a different account, consider adding 'bios' as its secondary group:
 ----
 :; adduser builder bios
@@ -462,6 +462,14 @@ which this snippet references:
 :; cp docs/examples/pam.d/bios /etc/pam.d/
 :; cp docs/examples/security/bios_groups.conf /etc/security
 ----
+
+NOTE: the default PAM configurations in the OS are somewhat relaxed by
+allowing authentication into service names which are not actually defined
+in the current OS security setup. This can apparently be forbidden with 
+changes to the file '/etc/pam.d/other', but the matter is out of scope
+of our project. For more details, see:
+
+ * http://tldp.org/HOWTO/User-Authentication-HOWTO/x263.html
 
 Beside the setup discussed above, no extra configuration for SASL and PAM
 is needed on the target Debian 8 platform -- everything is pre-integrated
