@@ -398,11 +398,19 @@ project accounts to execute many specific tasks.
 ----
 
 * Inspect and copy the sample $BIOS project configuration file into your
-'sudo' installation:
+'sudo' installation which defines a number of sudo'able commands needed
+for the $BIOS project daemons at run-time:
 ----
-:; cp docs/examples/bios_sudo_conf /etc/sudoers.d/
+:; cp docs/examples/sudoers.d/bios_00_base /etc/sudoers.d/
 ----
 (Consult that file regarding the matters of what it sets, why and how).
+
+* To run the automated testing as the 'bios' user or a member of the 'bios'
+group in your OS, a few more commands are needed, defined in an optional
+`sudo` configuration file. In this case, install it also:
+----
+:; cp docs/examples/sudoers.d/bios_01_citest /etc/sudoers.d/
+----
 
 
 SASL2 daemon and PAM

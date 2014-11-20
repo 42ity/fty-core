@@ -1,0 +1,40 @@
+# Description: This OPTIONAL file is a configuration module
+# for "sudo" and it contains definition of some command lines
+# needed for (CI-driven or manual) testing of the $BIOS project.
+# It relies on values set in the sudoers.d/bios_00_base file.
+# See also the script to generate these needed $BIOS accounts:
+#    tools/init-os-accounts.sh
+#
+# Some required legalese follows:
+#
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+# Inspired by Iain "ibuclaw" examples from Ubuntu Forums (C) 2009:
+#    http://ubuntuforums.org/showthread.php?t=1132821
+#
+
+# Shorthands to reference the specific commands or command-line (shell
+# globs generally) which we may be interested in:
+
+### Manage the SASL daemon (needed for CI tests):
+Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd
+
+# Overall, what is currently allowed with different privileges?
+Cmnd_Alias BIOS_TEST_PROGS	= SASLD
+
+BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_TEST_PROGS
+
