@@ -27,7 +27,6 @@ apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 cd $CHECKOUTDIR
 
-# TODO: parallelization?
 echo "======================== autoreconf ========================="
 autoreconf -vfi
 echo "======================== configure =========================="
