@@ -258,6 +258,30 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
 
+###
+check_PROGRAMS += 			test-database
+
+test_database_SOURCES = 	tests/persist/test-database.cc \
+							src/persist/persistencelogic.cc \
+							src/include/nmap_msg.h \
+							src/include/nmap_msg.c
+
+test_database_LDADD = 			libpriv-db.la \
+					libpriv-cidr.la \
+					libpriv-test-run.la \
+					libpriv-log.la
+
+test_database_CPPFLAGS = $(AM_CPPFLAGS) \
+				   -I$(top_srcdir)/tests/include/ \
+				   -I$(top_srcdir)/src/persist \
+				   -I$(top_srcdir)/src/include \
+				   -I$(top_srcdir)/tools \
+				   -I$(top_builddir)/tools
+
+test_database_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
+
+###
+
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 
