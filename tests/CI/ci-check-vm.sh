@@ -29,6 +29,7 @@ usage() {
     echo "options:"
     echo "    -m|--machine name    virtual machine name"
     echo "    -p|--port PORT       virtual machine ssh port [22]"
+    echo "    --dont-compile       don't compile make on target virtual machine"
     echo "    -h|--help            print this help"
 }
 
@@ -36,6 +37,7 @@ usage() {
 # defaults
 #
 PORT=22
+COMPILE=1
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -46,6 +48,10 @@ while [ $# -gt 0 ] ; do
         -m|--machine)
             PORT="$2"
             shift 2
+            ;;
+        --dont-compile)
+            COMPILE=0
+            shift 1
             ;;
         -h|--help)
             usage
@@ -90,10 +96,17 @@ remote_make() {
     ssh root@$VM -p $PORT "cd $BCHECKOUTDIR autoreconf -vfi && ./configure --prefix=\$HOME && make -j 4 && make install"
 }
 
+
+echo "======================== BUILD PAREMETERS ==============================="
+echo "FORK:     $FORK"
+echo "BRANCH:   $BRANCH"
+echo "PLATFORM: $BUILDMACHINE"
+echo "======================== BUILD PAREMETERS ==============================="
+
 if ! compare_revisions ; then
-    echo "======================== make needed, data on $VM:$PORT not sync ==============================="
+    echo "-------------- project on $VM:$PORT need synchronization ----------------"
     remote_cleanup
     copy_project
-    remote_make
-    echo "======================================= make end ================================================"
+    [ "$COMPILE" = "1" ] && remote_make
+    echo "----------------------------- sync end ----------------------------------"
 fi
