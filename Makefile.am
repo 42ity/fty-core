@@ -240,7 +240,7 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-asset.cc \
+				   tests/persist/test-realdatamonitor.cc \
 				   src/include/common_msg.h 
 
 test_db2_LDADD = libpriv-db.la \
