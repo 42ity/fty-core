@@ -401,7 +401,18 @@ CREATE VIEW v_bios_asset_device AS
         LEFT JOIN t_bios_asset_device_type v2
         ON (v1.id_asset_device_type = v2.id_asset_device_type);
 
-create view v_bios_asset_link as select * from t_bios_asset_link ;
+CREATE VIEW v_bios_asset_link AS
+    SELECT  v1.id_link,
+            v1.id_asset_device_src,
+            v1.src_out,
+            v1.id_asset_device_dest,
+            v1.dest_in,
+            v1.id_asset_link_type,
+            v2.id_asset_element
+    FROM t_bios_asset_link v1
+        LEFT JOIN v_bios_asset_device v2
+        ON(v1.id_asset_device_src = v2.id_asset_device);
+
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
