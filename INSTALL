@@ -379,6 +379,13 @@ The script allows much customization intended for image construction and
 other advanced non-default applications; for now see the comments in its
 code for details on further configuration.
 
+NOTE: This script defines also a group named 'bios', to which the elevated
+permissions bellow are assigned. If you build and test the project under
+a different account, consider adding 'bios' as its secondary group:
+----
+:; adduser builder bios
+----
+
 
 The SUDO program
 ~~~~~~~~~~~~~~~~
@@ -428,6 +435,10 @@ the `init-os-accounts.sh` script's job in favorable conditions):
 ----
 :; adduser bios sasl
 ----
+
+ * Likewise, if you run the project daemons and execure automated testing
+from an OS account different from 'bios', it should be added to the 'sasl'
+group as well.
 
  * Also note that the path to the SASL MUX socket is (currently) compiled
 into the binary code, so the building user must either have access to the

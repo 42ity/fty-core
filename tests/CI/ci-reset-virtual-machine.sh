@@ -34,9 +34,9 @@ die() {
 }
 
 usage() {
-    echo "usage: $(basename $0) [options]"
+    echo "Usage: $(basename $0) [options...]"
     echo "options:"
-    echo "    -m|--machine name    virtual machine name [latest]"
+    echo "    -m|--machine name    virtual machine name (Default: '$VM')"
     echo "    -h|--help            print this help"
 }
 
