@@ -33,7 +33,7 @@
 #       as fatal...
 
 # Default settings
-DEF_USER_PASS="@PASSWORD@" && \
+DEF_USER_PASS="@PASSWORD@"
 DEF_USER_PASS_HASH='$6$F5TqxQBgnjXt$O0ZJbFbGg9aeT9m21OL9YanudVeaMygUVCOt7lzVM.wV7yAHa0u1sfcklGydt9A5gHmGYN0b/Byff3fCJkXBh1'
 
 MKPASSWD="/usr/bin/mkpasswd"

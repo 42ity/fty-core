@@ -1,18 +1,49 @@
 #!/bin/sh
 
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
+#            Tomas Halman <TomasHalman@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# Description: This script automates tests of REST API for the $BIOS project
+
 PASS=0
 TOTAL=0
 
-BIOS_USER="bios"
-BIOS_PASSWD="@PASSWORD@"
-if [ "x$1" = "x-u" ]; then
-    BIOS_USER="$2"
-    shift 2
-fi
-if [ "x$1" = "x-p" ]; then
-    BIOS_PASSWD="$2"
-    shift 2
-fi
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+	-u|--user)
+	    BIOS_USER="$2"
+	    shift
+	    ;;
+	-p|--passwd)
+	    BIOS_PASSWD="$2"
+	    shift
+	    ;;
+	*)
+	    echo "Unknown param: '$1'!" >&2
+	    exit 1
+	    ;;
+    esac
+    shift
+done
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -58,8 +89,9 @@ api_post() {
 
 _api_get_token() {
     if [ -z "$_TOKEN_" ]; then
-    _TOKEN_="`api_get "/oauth2/token?username=$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" | \
-            sed -n 's|.*"access_token"[[:blank:]]*:[[:blank:]]*"\([^"]*\)".*|\1|p'`"
+	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
+	_TOKEN_RAW_="`api_get "$AUTH_URL"`"
+	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`"
     fi
     echo "$_TOKEN_"
 }
@@ -76,22 +108,22 @@ api_auth_delete() {
 
 # fixture ini
 if ! pidof saslauthd > /dev/null; then
-    echo "saslauthd does not run, please start it first!"
+    echo "saslauthd is not running, please start it first!" >&2
     exit 1
 fi
 
-# check the user morbo in system
-# I expects SASL uses Linux PAM, therefor getent will tell us it all
+# Check the user account in system
+# We expect SASL uses Linux PAM, therefore getent will tell us all we need
 if ! getent passwd "$BIOS_USER" > /dev/null; then
     echo "User $BIOS_USER is not known to system administrative database"
     echo "To add it locally, run: "
-    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody --no-create-home --no-user-group $BIOS_USER"
+    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
     exit 2
 fi
 
 if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
-    echo "SASL autentification for user '$BIOS_USER' have failed. Check the existence of /etc/sasl2/bios.conf and /etc/pam.d/bios"
+    echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
 
