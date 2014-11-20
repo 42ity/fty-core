@@ -114,7 +114,8 @@ asset_manager asset_mgr;
 <%cpp>
     }
     // Device is special element with more attributes
-    if ( asset_mgr.type_to_byte (request.getArg("type") ) == asset_type::DEVICE ) {
+    byte type_byte = asset_mgr.type_to_byte (request.getArg("type") );
+    if ( type_byte == asset_type::DEVICE ) {
         std::string temp_string;
 </%cpp>
 %       if ( !( temp_string = asset_msg_device_type(device)).empty() ) {
@@ -170,6 +171,18 @@ asset_manager asset_mgr;
 <%cpp>
         }
         zlist_destroy (&power);
+    } else if ( type_byte == asset_type::GROUP ) {
+
+        char *type = NULL;
+        if ( ext_count > 0 ) {
+            type = (char*) zhash_lookup(ext, (void*) "type");
+        }
+        if ( type == NULL ) {
+            type = (char*) "";
+        }
+</%cpp>
+    "type":"<$ (char*) type $>"
+<%cpp>
     }
 
     if ( ext_count > 0 ) {
@@ -178,6 +191,9 @@ asset_manager asset_mgr;
 <%cpp>
         for ( i = 1, it = zhash_first(ext); it != 0;
                     i++,   it = zhash_next(ext) ) {
+            if ( type_byte == asset_type::GROUP && !strcmp((char*) zhash_cursor (ext), "type") ) {
+                continue;
+            }
 </%cpp>
         "<$ (char*) zhash_cursor (ext) $>":"<$ (char*)it $>"<? i != ext_count ? "," ?>
 %       }
