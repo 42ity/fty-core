@@ -42,12 +42,27 @@ std::string dev;
             return HTTP_INTERNAL_SERVER_ERROR;
         }
         common_msg_t *dta = common_msg_decode(&rep);
-        if((dta == NULL) ||
-           (common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS)) {
-            common_msg_destroy(&dta);
+        if(dta == NULL) {
 </%cpp>
-{ "error":"internal_error" }
+{ "error":"internal_error - decode fail" }
 <%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        if(common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS) {
+            if(common_msg_id(dta) == COMMON_MSG_FAIL) {
+</%cpp>
+{ "error":"internal_error",
+  "type":"<$ common_msg_errtype(dta) $>",
+  "errno":"<$ common_msg_errorno(dta) $>",
+  "msg":"<$ common_msg_errmsg(dta) $>" }
+<%cpp>
+            } else {
+</%cpp>
+{ "error":"internal_error",
+  "msg":"unexpected msg" }
+<%cpp>
+            }
+            common_msg_destroy(&dta);
             return HTTP_INTERNAL_SERVER_ERROR;
         } else {
             char buff[64];

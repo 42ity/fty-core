@@ -20,11 +20,6 @@
 #include "monitor.h"
 #include "asset_types.h"
 
-// definition of internal functions, that are in charge of processing 
-// the specific type of the message
-asset_msg_t* _get_asset_elements(const char *url, asset_msg_t *msg);
-asset_msg_t* _get_asset_element(const char *url, asset_msg_t *msg);
-
 // TODO: move to some common section
 // duplicates the items for zlist/zhash
 void* void_dup(const void* a) { return strdup((char*)a); }
