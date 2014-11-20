@@ -27,7 +27,14 @@ apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 cd $CHECKOUTDIR
 
-# TODO: parallelization?
-echo "====================== make and make distcheck ============================="
-autoreconf -vfi && ./configure --prefix=$HOME && make && make distcheck && make install
-
+CPUS=$(getconf _NPROCESSORS_ONLN)
+echo "====================== autoreconf ==========================="
+autoreconf -vfi
+echo "====================== configure ============================"
+./configure --prefix=$HOME
+echo "==================== make distcheck ========================="
+make -j $CPUS distcheck
+echo "========================= make =============================="
+make -j $CPUS
+echo "===================== make install =========================="
+make -j $CPUS install

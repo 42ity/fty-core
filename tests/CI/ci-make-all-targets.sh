@@ -27,15 +27,16 @@ apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 cd $CHECKOUTDIR
 
+CPUS=$(getconf _NPROCESSORS_ONLN)
 echo "======================== autoreconf ========================="
 autoreconf -vfi
 echo "======================== configure =========================="
 ./configure --prefix=$HOME
 echo "======================== make ==============================="
-make -j 4
+make -j $CPUS
 echo "======================== make check ========================="
-make -j 4 check
+make -j $CPUS check
 echo "======================== make dist =========================="
-make -j 4 dist
+make -j $CPUS dist
 echo "======================== make distcheck ====================="
-make -j 4 distcheck
+make -j $CPUS distcheck
