@@ -30,5 +30,5 @@ install_packages() {
 if [ "$1" != "" ] ; then
    install_packages "$@"
 else
-   echo "usage: $(basename $0) package [package ...]"
+   echo "Usage: $(basename $0) package [package ...]"
 fi
