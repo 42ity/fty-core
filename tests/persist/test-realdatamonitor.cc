@@ -133,6 +133,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     glm = common_msg_decode (&returnmeasurements);
     REQUIRE ( common_msg_id (glm) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errorno (glm) == DB_ERROR_NOTFOUND );
+    common_msg_destroy (&glm);
 
 }
 
@@ -164,5 +165,7 @@ TEST_CASE("generate_return_measurements", "[db][generate][return_measurements]")
     REQUIRE ( strstr(first,first1)      == first );
     REQUIRE ( strstr(second,second1)    == second );
     REQUIRE ( strstr(third,third1)      == third );
-    REQUIRE ( strstr(forth,forth1)      == forth );  
+    REQUIRE ( strstr(forth,forth1)      == forth );
+    
+    common_msg_destroy (&gm);  
 }
