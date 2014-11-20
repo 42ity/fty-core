@@ -19,29 +19,24 @@
 #
 # Description: installs dependecies and compiles the project
 
-[ "x$CHECKOUTDIR" = "x" ] && \
-    case "`dirname $0`" in
-       */tests/CI|tests/CI)
-           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
 set -e
 
 apt-get update
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
+cd $CHECKOUTDIR
 
 CPUS=$(getconf _NPROCESSORS_ONLN)
-echo "====================== autoreconf ==========================="
+echo "======================== autoreconf ========================="
 autoreconf -vfi
-echo "====================== configure ============================"
+echo "======================== configure =========================="
 ./configure --prefix=$HOME
-echo "==================== make distcheck ========================="
-make -j $CPUS distcheck
-echo "========================= make =============================="
+echo "======================== make ==============================="
 make -j $CPUS
-echo "===================== make install =========================="
-make -j $CPUS install
+echo "======================== make check ========================="
+make -j $CPUS check
+echo "======================== make dist =========================="
+make -j $CPUS dist
+echo "======================== make distcheck ====================="
+make -j $CPUS distcheck
