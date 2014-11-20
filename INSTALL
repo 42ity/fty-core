@@ -379,6 +379,13 @@ The script allows much customization intended for image construction and
 other advanced non-default applications; for now see the comments in its
 code for details on further configuration.
 
+NOTE: This script defines also a group named 'bios', to which the elevated
+permissions bellow are assigned. If you build and test the project under
+a different account, consider adding 'bios' as its secondary group:
+----
+:; adduser builder bios
+----
+
 
 The SUDO program
 ~~~~~~~~~~~~~~~~
@@ -391,11 +398,19 @@ project accounts to execute many specific tasks.
 ----
 
 * Inspect and copy the sample $BIOS project configuration file into your
-'sudo' installation:
+'sudo' installation which defines a number of sudo'able commands needed
+for the $BIOS project daemons at run-time:
 ----
-:; cp docs/examples/bios_sudo_conf /etc/sudoers.d/
+:; cp docs/examples/sudoers.d/bios_00_base /etc/sudoers.d/
 ----
 (Consult that file regarding the matters of what it sets, why and how).
+
+* To run the automated testing as the 'bios' user or a member of the 'bios'
+group in your OS, a few more commands are needed, defined in an optional
+`sudo` configuration file. In this case, install it also:
+----
+:; cp docs/examples/sudoers.d/bios_01_citest /etc/sudoers.d/
+----
 
 
 SASL2 daemon and PAM
@@ -428,6 +443,10 @@ the `init-os-accounts.sh` script's job in favorable conditions):
 ----
 :; adduser bios sasl
 ----
+
+ * Likewise, if you run the project daemons and execure automated testing
+from an OS account different from 'bios', it should be added to the 'sasl'
+group as well.
 
  * Also note that the path to the SASL MUX socket is (currently) compiled
 into the binary code, so the building user must either have access to the
