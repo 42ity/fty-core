@@ -207,7 +207,7 @@ zlist_t* select_asset_device_link(const char* url,
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
             " SELECT"
-            " v.id_asset_device_src , v.src_out , v.dest_in"
+            " v.id_asset_element , v.src_out , v.dest_in"
             " FROM"
             " v_bios_asset_link v"
             " WHERE v.id_asset_device_dest = :iddevice "
@@ -222,10 +222,10 @@ zlist_t* select_asset_device_link(const char* url,
         // Go through the selected links
         for ( auto &row: result )
         { 
-            // src_id, required
-            unsigned int src_id = 0;
-            row[0].get(src_id);
-            assert ( src_id != 0 );  // database is corrupted
+            // element_id, required
+            unsigned int element_id = 0;
+            row[0].get(element_id);
+            assert ( element_id != 0 );  // database is corrupted
 
             // src_out
             unsigned int src_out = 0;
@@ -235,7 +235,7 @@ zlist_t* select_asset_device_link(const char* url,
             unsigned int dest_in = 0;
             row[2].get(dest_in);
 
-            sprintf(buff, "%d:%d:%d:%d", src_out, src_id, dest_in, device_id);
+            sprintf(buff, "%d:%d:%d:%d", src_out, element_id, dest_in, device_id);
             zlist_push(links, buff);
         }
     }

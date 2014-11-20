@@ -361,16 +361,6 @@ driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 			   		   -I$(top_srcdir)/src/simple
 
-bin_PROGRAMS += fake_message
-fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
-fake_message_CPPFLAGS = 		-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/src/web/include \
-					-I$(top_srcdir)/tools \
-					-I$(top_srcdir)/src/include \
-					-I$(top_builddir)/tools
-fake_message_SOURCES = src/include/asset_msg.c src/web/src/data.cpp \
-                       src/web/fake_message.cpp
-
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
@@ -410,7 +400,9 @@ tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datadir)/$(PACKAGE_NAME)-$(PACKAGE-VERSION)/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' $< > $@ || rm -f $@
 
-EXTRA_DIST += tntnet.xml.example
+exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
+exampleconf_DATA = tntnet.xml.example
+EXTRA_DIST += $(exampleconf_DATA)
 
 web-test: tntnet.xml bios_web.la
 	${TNTNET} tntnet.xml
