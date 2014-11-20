@@ -638,17 +638,16 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
 uint32_t convert_asset_to_monitor(const char* url, uint32_t asset_element_id)
 {
     assert ( asset_element_id );
-    
     uint32_t device_discovered_id = 0;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            " id_asset_element"
+            " id_discovered_device"
             " FROM"
             " v_bios_monitor_asset_relation"
-            " WHERE id_discovered_device = :id"
+            " WHERE id_asset_element = :id"
         );
 
         tntdb::Value val = st.setInt("id", asset_element_id).selectValue();
@@ -683,13 +682,12 @@ uint32_t convert_monitor_to_asset(const char* url,
     uint32_t asset_element_id = 0;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            " id_discovered_device"
+            " id_asset_element"
             " FROM"
             " v_bios_monitor_asset_relation"
-            " WHERE id_asset_element = :id"
+            " WHERE id_discovered_device = :id"
         );
 
         tntdb::Value val = st.setInt("id", discovered_device_id).selectValue();
