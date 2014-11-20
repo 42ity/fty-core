@@ -3,6 +3,17 @@ CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_c
 
 USE box_utf8;
 
+DROP TABLE if exists t_bios_monitor_asset_relation;
+drop table if exists t_bios_discovered_ip;
+drop table if exists t_bios_net_history;
+drop table if exists t_bios_client_info_measurements;
+drop table if exists t_bios_measurement_subtypes;
+drop table if exists t_bios_measurement_types;
+drop table if exists t_bios_client_info;
+drop table if exists t_bios_client;
+drop table if exists t_bios_discovered_device;
+drop table if exists t_bios_device_type;
+
 CREATE TABLE t_bios_measurement_types(
     id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
     name             VARCHAR(25) NOT NULL,
@@ -308,6 +319,14 @@ CREATE TABLE t_bios_monitor_asset_relation(
 
 );
 
+drop view if exists v_bios_device_type;
+drop view if exists v_bios_discovered_device;
+drop view if exists v_bios_client;
+drop view if exists v_bios_client_info;
+drop view if exists v_bios_discovered_ip;
+drop view if exists v_bios_net_history;
+drop view if exists v_bios_client_info_measurements;
+
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -323,6 +342,9 @@ create view v_bios_net_history as select id_net_history id, ip , mac,mask, comma
 
 create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
 
+drop view if exists v_bios_ip_last;
+drop view if exists v_bios_client_info_last;
+drop view if exists v_bios_info_lastdate;
 
 create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
 
