@@ -20,12 +20,19 @@
 # Description: checks files on VM, whether they are sync with local checkout.
 #              If they are not, files re copied to vitrual machine and compiled.
 
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+       */tests/CI|tests/CI)
+           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
 set -e
 
 usage() {
-    echo "usage: $(basename $0) [options]"
+    echo "Usage: $(basename $0) [options]"
     echo "options:"
     echo "    -m|--machine name    virtual machine name"
     echo "    -p|--port PORT       virtual machine ssh port [22]"
@@ -70,6 +77,8 @@ if [ ! "$VM" ] ; then
     usage
     exit 1
 fi
+
+cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 
 remote_cleanup() {
     ssh root@$VM -p $PORT "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
