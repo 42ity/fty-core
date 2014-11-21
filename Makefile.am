@@ -144,7 +144,7 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #[one][two],[three]
 
 
-AM_LOG_FLAGS = 				exclude:[db*]
+AM_LOG_FLAGS = 				exclude: [db*]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -202,7 +202,18 @@ test_log_LDADD = 			libpriv-log.la \
 test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-subprocess
+# EXPL: THA, ACE reported that they had observed unstable
+# 		test-subprocess execution. On ACE's computer it had
+# 		supposedly crashed only once; THA did not observe
+# 		a test-failure on his local computer at all.
+#
+# 		However on Jenkins CI (running on a weaker virtual
+# 		machine) this test fails quite often, but still
+# 		unregularly.
+#
+# SOLUTION: Until we find out what's happening,
+# 			don't include this test into make check
+#check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
 					tests/shared/test-subprocess.cc
 test_subprocess_LDADD = 		libpriv-subprocess.la \
@@ -240,7 +251,7 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-asset.cc \
+				   tests/persist/test-realdatamonitor.cc \
 				   src/include/common_msg.h 
 
 test_db2_LDADD = libpriv-db.la \
@@ -257,6 +268,30 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 					-I$(top_builddir)/tools
 
 test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
+
+###
+check_PROGRAMS += 			test-database
+
+test_database_SOURCES = 	tests/persist/test-database.cc \
+							src/persist/persistencelogic.cc \
+							src/include/nmap_msg.h \
+							src/include/nmap_msg.c
+
+test_database_LDADD = 			libpriv-db.la \
+					libpriv-cidr.la \
+					libpriv-test-run.la \
+					libpriv-log.la
+
+test_database_CPPFLAGS = $(AM_CPPFLAGS) \
+				   -I$(top_srcdir)/tests/include/ \
+				   -I$(top_srcdir)/src/persist \
+				   -I$(top_srcdir)/src/include \
+				   -I$(top_srcdir)/tools \
+				   -I$(top_builddir)/tools
+
+test_database_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
+
+###
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
@@ -337,16 +372,6 @@ driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 			   		   -I$(top_srcdir)/src/simple
 
-bin_PROGRAMS += fake_message
-fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
-fake_message_CPPFLAGS = 		-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/src/web/include \
-					-I$(top_srcdir)/tools \
-					-I$(top_srcdir)/src/include \
-					-I$(top_builddir)/tools
-fake_message_SOURCES = src/include/asset_msg.c src/web/src/data.cpp \
-                       src/web/fake_message.cpp
-
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
@@ -384,9 +409,11 @@ tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
 
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datadir)/$(PACKAGE_NAME)-$(PACKAGE-VERSION)/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || rm -f $@
 
-EXTRA_DIST += tntnet.xml.example
+exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
+exampleconf_DATA = tntnet.xml.example
+EXTRA_DIST += $(exampleconf_DATA)
 
 web-test: tntnet.xml bios_web.la
 	${TNTNET} tntnet.xml
