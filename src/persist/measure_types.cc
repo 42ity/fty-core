@@ -66,9 +66,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, mt_id, name, scale "
+                    "select id, type_id, scale, name "
                     "from t_bios_measurement_subtypes where id = :mts_id "
-                    "and id is not null and mt_id is not null and "
+                    "and id is not null and type_id is not null and "
                     "name is not null and scale is not null");
 
                 row = st.setInt("mts_id", common_msg_mts_id(*msg)).selectRow();
@@ -83,9 +83,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, mt_id, name, scale "
+                    "select id, type_id, scale, name "
                     "from t_bios_measurement_subtypes where name = :name "
-                    "and id is not null and mt_id is not null and "
+                    "and id is not null and type_id is not null and "
                     "name is not null and scale is not null");
 
                 row = st.setString("name", common_msg_mts_name(*msg)).
@@ -100,9 +100,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, mt_id, name, scale "
+                    "select id, type_id, scale, name "
                     "from v_bios_measurement_subtypes where name = :name and typename = :typename "
-                    "and id is not null and mt_id is not null and "
+                    "and id is not null and type_id is not null and "
                     "name is not null and scale is not null");
 
                 row = st.setString("name", common_msg_mts_name(*msg)).
