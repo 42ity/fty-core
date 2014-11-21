@@ -9,7 +9,7 @@
 
 #include "dbpath.h"
 
-TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
+TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]")
 {
     uint32_t errnonew = 1;
     common_msg_t* fail = generate_db_fail (errnonew, NULL,  NULL);
@@ -66,7 +66,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail]")
     REQUIRE ( fail == NULL );
 }
 
-TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok]")
+TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok][db]")
 {
     uint32_t rowid = 11111111;
     common_msg_t* okmsg = generate_ok (rowid);
@@ -95,7 +95,7 @@ TEST_CASE("Common messages: _generate_client","[common][generate][client]")
     REQUIRE ( msgclient == NULL );
 }
 
-TEST_CASE("Common messages: _generate_return_client","[common][generate][return_client]")
+TEST_CASE("Common messages: _generate_return_client","[common][generate][return_client][db]")
 {
     char name[]= "TestGenerateReturnClient";
     common_msg_t* msgclient = generate_client (name);
@@ -127,7 +127,7 @@ TEST_CASE("Common messages: _generate_return_client","[common][generate][return_
     common_msg_destroy (&newclient); 
 }
 
-TEST_CASE("Common messages: select_client","[common][select][client][byName]")
+TEST_CASE("Common messages: select_client","[common][select][client][byName][db]")
 {
     char name[] = "NUT";
     common_msg_t* newreturn = select_client (url.c_str(), name);
@@ -156,7 +156,7 @@ TEST_CASE("Common messages: select_client","[common][select][client][byName]")
     common_msg_destroy (&newreturn);
 }
 
-TEST_CASE("Common messages: select_client2","[common][select][client][byId]")
+TEST_CASE("Common messages: select_client2","[common][select][client][byId][db]")
 {
     uint32_t id = 4;
     char name[] = "NUT";
@@ -185,7 +185,7 @@ TEST_CASE("Common messages: select_client2","[common][select][client][byId]")
     common_msg_destroy (&newreturn);
 }
 
-TEST_CASE("Common messages: insert_client/delete_client","[common][insert][delete][client]")
+TEST_CASE("Common messages: insert_client/delete_client","[common][insert][delete][client][db]")
 {
     char name[] = "insert/delete";
     common_msg_t* response = insert_client (url.c_str(), name);
@@ -209,7 +209,7 @@ TEST_CASE("Common messages: insert_client/delete_client","[common][insert][delet
     common_msg_destroy (&response2);
 }
 
-TEST_CASE("Common messages: insert_client/delete_client fail","[common][insert][delete][client]")
+TEST_CASE("Common messages: insert_client/delete_client fail","[common][insert][delete][client][db]")
 {
     char name[] = "insert/delete/tooooooooooooooooooooooolongname";
     common_msg_t* response = insert_client (url.c_str(), name);
@@ -245,7 +245,7 @@ TEST_CASE("Common messages: insert_client/delete_client fail","[common][insert][
     common_msg_destroy (&response);
 }
 
-TEST_CASE("Common messages: update_client1","[common][update][client]")
+TEST_CASE("Common messages: update_client1","[common][update][client][db]")
 {
     char name[] = "insert_for_update1";
     common_msg_t* response = insert_client (url.c_str(), name);
@@ -278,7 +278,7 @@ TEST_CASE("Common messages: update_client1","[common][update][client]")
     common_msg_destroy (&response);
 }
 
-TEST_CASE("Common messages: update_client2 fail","[common][update][client]")
+TEST_CASE("Common messages: update_client2 fail","[common][update][client][db]")
 {
     char name[] = "insert_for_update8";
     common_msg_t* response = insert_client (url.c_str(), name);

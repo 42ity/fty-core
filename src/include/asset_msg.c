@@ -64,6 +64,14 @@ struct _asset_msg_t {
     byte error_id;                      //  Type of the error, enum defined in persistence header file
     zhash_t *element_ids;               //  Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
     size_t element_ids_bytes;           //  Size of dictionary content
+    byte recursive;                     //  If the search should be recursive (=1) or not (=0)
+    byte filter_type;                   //  Type of the looked elements, if null take all
+    zframe_t *dcs;                      //  List of datacenters, matryoshka of this msg
+    zframe_t *rooms;                    //  List of rooms, matryoshka of this msg
+    zframe_t *rows;                     //  List of rows, matryoshka of this msg
+    zframe_t *racks;                    //  List of racks, matryoshka of this msg
+    zframe_t *devices;                  //  List of devices, matryoshka of this msg
+    zframe_t *grs;                      //  List of groups, matryoshka of this msg
 };
 
 //  --------------------------------------------------------------------------
@@ -239,6 +247,12 @@ asset_msg_destroy (asset_msg_t **self_p)
         free (self->mac);
         zmsg_destroy (&self->msg);
         zhash_destroy (&self->element_ids);
+        zframe_destroy (&self->dcs);
+        zframe_destroy (&self->rooms);
+        zframe_destroy (&self->rows);
+        zframe_destroy (&self->racks);
+        zframe_destroy (&self->devices);
+        zframe_destroy (&self->grs);
 
         //  Free object itself
         free (self);
@@ -281,6 +295,10 @@ is_asset_msg (zmsg_t *msg)
         case ASSET_MSG_FAIL:
         case ASSET_MSG_GET_ELEMENTS:
         case ASSET_MSG_RETURN_ELEMENTS:
+        case ASSET_MSG_GET_LOCATION_FROM:
+        case ASSET_MSG_GET_LOCATION_TO:
+        case ASSET_MSG_RETURN_LOCATION_TO:
+        case ASSET_MSG_RETURN_LOCATION_FROM:
             asset_msg_destroy (&self);
             return true;
         default:
@@ -446,6 +464,75 @@ asset_msg_decode (zmsg_t **msg_p)
             }
             break;
 
+        case ASSET_MSG_GET_LOCATION_FROM:
+            GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
+            GET_NUMBER1 (self->recursive);
+            GET_NUMBER1 (self->filter_type);
+            break;
+
+        case ASSET_MSG_GET_LOCATION_TO:
+            GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
+            //  Get zero or more remaining frames, leaving current
+            //  frame untouched
+            self->msg = zmsg_new ();
+            while (zmsg_size (msg))
+                zmsg_add (self->msg, zmsg_pop (msg));
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            GET_NUMBER4 (self->element_id);
+            GET_NUMBER1 (self->type);
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *dcs = zmsg_pop (msg);
+                if (!dcs)
+                    goto malformed;
+                self->dcs = dcs;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *rooms = zmsg_pop (msg);
+                if (!rooms)
+                    goto malformed;
+                self->rooms = rooms;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *rows = zmsg_pop (msg);
+                if (!rows)
+                    goto malformed;
+                self->rows = rows;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *racks = zmsg_pop (msg);
+                if (!racks)
+                    goto malformed;
+                self->racks = racks;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *devices = zmsg_pop (msg);
+                if (!devices)
+                    goto malformed;
+                self->devices = devices;
+            }
+            {
+                //  Get next frame, leave current untouched
+                zframe_t *grs = zmsg_pop (msg);
+                if (!grs)
+                    goto malformed;
+                self->grs = grs;
+            }
+            break;
+
         default:
             goto malformed;
     }
@@ -607,6 +694,38 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size += self->element_ids_bytes;
             break;
             
+        case ASSET_MSG_GET_LOCATION_FROM:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
+            //  recursive is a 1-byte integer
+            frame_size += 1;
+            //  filter_type is a 1-byte integer
+            frame_size += 1;
+            break;
+            
+        case ASSET_MSG_GET_LOCATION_TO:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
+            break;
+            
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
+            break;
+            
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            //  element_id is a 4-byte integer
+            frame_size += 4;
+            //  type is a 1-byte integer
+            frame_size += 1;
+            break;
+            
         default:
             zsys_error ("bad message type '%d', not sent\n", self->id);
             //  No recovery, this is a fatal application error
@@ -736,12 +855,85 @@ asset_msg_encode (asset_msg_t **self_p)
                 PUT_NUMBER4 (0);    //  Empty dictionary
             break;
 
+        case ASSET_MSG_GET_LOCATION_FROM:
+            PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
+            PUT_NUMBER1 (self->recursive);
+            PUT_NUMBER1 (self->filter_type);
+            break;
+
+        case ASSET_MSG_GET_LOCATION_TO:
+            PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            PUT_NUMBER4 (self->element_id);
+            PUT_NUMBER1 (self->type);
+            break;
+
     }
     //  Now send the data frame
     if (zmsg_append (msg, &frame)) {
         zmsg_destroy (&msg);
         asset_msg_destroy (self_p);
         return NULL;
+    }
+    //  Now send any frame fields, in order
+    if (self->id == ASSET_MSG_RETURN_LOCATION_FROM) {
+        //  If dcs isn't set, send an empty frame
+        if (!self->dcs)
+            self->dcs = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->dcs)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If rooms isn't set, send an empty frame
+        if (!self->rooms)
+            self->rooms = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->rooms)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If rows isn't set, send an empty frame
+        if (!self->rows)
+            self->rows = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->rows)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If racks isn't set, send an empty frame
+        if (!self->racks)
+            self->racks = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->racks)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If devices isn't set, send an empty frame
+        if (!self->devices)
+            self->devices = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->devices)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
+        //  If grs isn't set, send an empty frame
+        if (!self->grs)
+            self->grs = zframe_new (NULL, 0);
+        if (zmsg_append (msg, &self->grs)) {
+            zmsg_destroy (&msg);
+            asset_msg_destroy (self_p);
+            return NULL;
+        }
     }
     //  Now send the message field if there is any
     if (self->id == ASSET_MSG_DEVICE) {
@@ -787,6 +979,20 @@ asset_msg_encode (asset_msg_t **self_p)
     }
     //  Now send the message field if there is any
     if (self->id == ASSET_MSG_INSERT_ELEMENT) {
+        if (self->msg) {
+            zframe_t *frame = zmsg_pop (self->msg);
+            while (frame) {
+                zmsg_append (msg, &frame);
+                frame = zmsg_pop (self->msg);
+            }
+        }
+        else {
+            zframe_t *frame = zframe_new (NULL, 0);
+            zmsg_append (msg, &frame);
+        }
+    }
+    //  Now send the message field if there is any
+    if (self->id == ASSET_MSG_RETURN_LOCATION_TO) {
         if (self->msg) {
             zframe_t *frame = zmsg_pop (self->msg);
             while (frame) {
@@ -1088,6 +1294,91 @@ asset_msg_encode_return_elements (
 
 
 //  --------------------------------------------------------------------------
+//  Encode GET_LOCATION_FROM message
+
+zmsg_t * 
+asset_msg_encode_get_location_from (
+    uint32_t element_id,
+    byte type,
+    byte recursive,
+    byte filter_type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    asset_msg_set_recursive (self, recursive);
+    asset_msg_set_filter_type (self, filter_type);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode GET_LOCATION_TO message
+
+zmsg_t * 
+asset_msg_encode_get_location_to (
+    uint32_t element_id,
+    byte type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode RETURN_LOCATION_TO message
+
+zmsg_t * 
+asset_msg_encode_return_location_to (
+    uint32_t element_id,
+    byte type,
+    zmsg_t *msg)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    asset_msg_set_msg (self, &msg_copy);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Encode RETURN_LOCATION_FROM message
+
+zmsg_t * 
+asset_msg_encode_return_location_from (
+    uint32_t element_id,
+    byte type,
+    zframe_t *dcs,
+    zframe_t *rooms,
+    zframe_t *rows,
+    zframe_t *racks,
+    zframe_t *devices,
+    zframe_t *grs)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    zframe_t *dcs_copy = zframe_dup (dcs);
+    asset_msg_set_dcs (self, &dcs_copy);
+    zframe_t *rooms_copy = zframe_dup (rooms);
+    asset_msg_set_rooms (self, &rooms_copy);
+    zframe_t *rows_copy = zframe_dup (rows);
+    asset_msg_set_rows (self, &rows_copy);
+    zframe_t *racks_copy = zframe_dup (racks);
+    asset_msg_set_racks (self, &racks_copy);
+    zframe_t *devices_copy = zframe_dup (devices);
+    asset_msg_set_devices (self, &devices_copy);
+    zframe_t *grs_copy = zframe_dup (grs);
+    asset_msg_set_grs (self, &grs_copy);
+    return asset_msg_encode (&self);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Send the ELEMENT to the socket in one step
 
 int
@@ -1280,6 +1571,95 @@ asset_msg_send_return_elements (
 
 
 //  --------------------------------------------------------------------------
+//  Send the GET_LOCATION_FROM to the socket in one step
+
+int
+asset_msg_send_get_location_from (
+    void *output,
+    uint32_t element_id,
+    byte type,
+    byte recursive,
+    byte filter_type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    asset_msg_set_recursive (self, recursive);
+    asset_msg_set_filter_type (self, filter_type);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the GET_LOCATION_TO to the socket in one step
+
+int
+asset_msg_send_get_location_to (
+    void *output,
+    uint32_t element_id,
+    byte type)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the RETURN_LOCATION_TO to the socket in one step
+
+int
+asset_msg_send_return_location_to (
+    void *output,
+    uint32_t element_id,
+    byte type,
+    zmsg_t *msg)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    zmsg_t *msg_copy = zmsg_dup (msg);
+    asset_msg_set_msg (self, &msg_copy);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Send the RETURN_LOCATION_FROM to the socket in one step
+
+int
+asset_msg_send_return_location_from (
+    void *output,
+    uint32_t element_id,
+    byte type,
+    zframe_t *dcs,
+    zframe_t *rooms,
+    zframe_t *rows,
+    zframe_t *racks,
+    zframe_t *devices,
+    zframe_t *grs)
+{
+    asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    asset_msg_set_element_id (self, element_id);
+    asset_msg_set_type (self, type);
+    zframe_t *dcs_copy = zframe_dup (dcs);
+    asset_msg_set_dcs (self, &dcs_copy);
+    zframe_t *rooms_copy = zframe_dup (rooms);
+    asset_msg_set_rooms (self, &rooms_copy);
+    zframe_t *rows_copy = zframe_dup (rows);
+    asset_msg_set_rows (self, &rows_copy);
+    zframe_t *racks_copy = zframe_dup (racks);
+    asset_msg_set_racks (self, &racks_copy);
+    zframe_t *devices_copy = zframe_dup (devices);
+    asset_msg_set_devices (self, &devices_copy);
+    zframe_t *grs_copy = zframe_dup (grs);
+    asset_msg_set_grs (self, &grs_copy);
+    return asset_msg_send (&self, output);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Duplicate the asset_msg message
 
 asset_msg_t *
@@ -1349,6 +1729,35 @@ asset_msg_dup (asset_msg_t *self)
 
         case ASSET_MSG_RETURN_ELEMENTS:
             copy->element_ids = self->element_ids? zhash_dup (self->element_ids): NULL;
+            break;
+
+        case ASSET_MSG_GET_LOCATION_FROM:
+            copy->element_id = self->element_id;
+            copy->type = self->type;
+            copy->recursive = self->recursive;
+            copy->filter_type = self->filter_type;
+            break;
+
+        case ASSET_MSG_GET_LOCATION_TO:
+            copy->element_id = self->element_id;
+            copy->type = self->type;
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            copy->element_id = self->element_id;
+            copy->type = self->type;
+            copy->msg = self->msg? zmsg_dup (self->msg): NULL;
+            break;
+
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            copy->element_id = self->element_id;
+            copy->type = self->type;
+            copy->dcs = self->dcs? zframe_dup (self->dcs): NULL;
+            copy->rooms = self->rooms? zframe_dup (self->rooms): NULL;
+            copy->rows = self->rows? zframe_dup (self->rows): NULL;
+            copy->racks = self->racks? zframe_dup (self->racks): NULL;
+            copy->devices = self->devices? zframe_dup (self->devices): NULL;
+            copy->grs = self->grs? zframe_dup (self->grs): NULL;
             break;
 
     }
@@ -1500,6 +1909,67 @@ asset_msg_print (asset_msg_t *self)
                 zsys_debug ("(NULL)");
             break;
             
+        case ASSET_MSG_GET_LOCATION_FROM:
+            zsys_debug ("ASSET_MSG_GET_LOCATION_FROM:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
+            zsys_debug ("    recursive=%ld", (long) self->recursive);
+            zsys_debug ("    filter_type=%ld", (long) self->filter_type);
+            break;
+            
+        case ASSET_MSG_GET_LOCATION_TO:
+            zsys_debug ("ASSET_MSG_GET_LOCATION_TO:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
+            break;
+            
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            zsys_debug ("ASSET_MSG_RETURN_LOCATION_TO:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
+            zsys_debug ("    msg=");
+            if (self->msg)
+                zmsg_print (self->msg);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            zsys_debug ("ASSET_MSG_RETURN_LOCATION_FROM:");
+            zsys_debug ("    element_id=%ld", (long) self->element_id);
+            zsys_debug ("    type=%ld", (long) self->type);
+            zsys_debug ("    dcs=");
+            if (self->dcs)
+                zframe_print (self->dcs, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    rooms=");
+            if (self->rooms)
+                zframe_print (self->rooms, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    rows=");
+            if (self->rows)
+                zframe_print (self->rows, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    racks=");
+            if (self->racks)
+                zframe_print (self->racks, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    devices=");
+            if (self->devices)
+                zframe_print (self->devices, NULL);
+            else
+                zsys_debug ("(NULL)");
+            zsys_debug ("    grs=");
+            if (self->grs)
+                zframe_print (self->grs, NULL);
+            else
+                zsys_debug ("(NULL)");
+            break;
+            
     }
 }
 
@@ -1579,6 +2049,18 @@ asset_msg_command (asset_msg_t *self)
             break;
         case ASSET_MSG_RETURN_ELEMENTS:
             return ("RETURN_ELEMENTS");
+            break;
+        case ASSET_MSG_GET_LOCATION_FROM:
+            return ("GET_LOCATION_FROM");
+            break;
+        case ASSET_MSG_GET_LOCATION_TO:
+            return ("GET_LOCATION_TO");
+            break;
+        case ASSET_MSG_RETURN_LOCATION_TO:
+            return ("RETURN_LOCATION_TO");
+            break;
+        case ASSET_MSG_RETURN_LOCATION_FROM:
+            return ("RETURN_LOCATION_FROM");
             break;
     }
     return "?";
@@ -2185,6 +2667,240 @@ asset_msg_element_ids_size (asset_msg_t *self)
 }
 
 
+//  --------------------------------------------------------------------------
+//  Get/set the recursive field
+
+byte
+asset_msg_recursive (asset_msg_t *self)
+{
+    assert (self);
+    return self->recursive;
+}
+
+void
+asset_msg_set_recursive (asset_msg_t *self, byte recursive)
+{
+    assert (self);
+    self->recursive = recursive;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the filter_type field
+
+byte
+asset_msg_filter_type (asset_msg_t *self)
+{
+    assert (self);
+    return self->filter_type;
+}
+
+void
+asset_msg_set_filter_type (asset_msg_t *self, byte filter_type)
+{
+    assert (self);
+    self->filter_type = filter_type;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the dcs field without transferring ownership
+
+zframe_t *
+asset_msg_dcs (asset_msg_t *self)
+{
+    assert (self);
+    return self->dcs;
+}
+
+//  Get the dcs field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_dcs (asset_msg_t *self)
+{
+    zframe_t *dcs = self->dcs;
+    self->dcs = NULL;
+    return dcs;
+}
+
+//  Set the dcs field, transferring ownership from caller
+
+void
+asset_msg_set_dcs (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->dcs);
+    self->dcs = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the rooms field without transferring ownership
+
+zframe_t *
+asset_msg_rooms (asset_msg_t *self)
+{
+    assert (self);
+    return self->rooms;
+}
+
+//  Get the rooms field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_rooms (asset_msg_t *self)
+{
+    zframe_t *rooms = self->rooms;
+    self->rooms = NULL;
+    return rooms;
+}
+
+//  Set the rooms field, transferring ownership from caller
+
+void
+asset_msg_set_rooms (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->rooms);
+    self->rooms = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the rows field without transferring ownership
+
+zframe_t *
+asset_msg_rows (asset_msg_t *self)
+{
+    assert (self);
+    return self->rows;
+}
+
+//  Get the rows field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_rows (asset_msg_t *self)
+{
+    zframe_t *rows = self->rows;
+    self->rows = NULL;
+    return rows;
+}
+
+//  Set the rows field, transferring ownership from caller
+
+void
+asset_msg_set_rows (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->rows);
+    self->rows = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the racks field without transferring ownership
+
+zframe_t *
+asset_msg_racks (asset_msg_t *self)
+{
+    assert (self);
+    return self->racks;
+}
+
+//  Get the racks field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_racks (asset_msg_t *self)
+{
+    zframe_t *racks = self->racks;
+    self->racks = NULL;
+    return racks;
+}
+
+//  Set the racks field, transferring ownership from caller
+
+void
+asset_msg_set_racks (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->racks);
+    self->racks = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the devices field without transferring ownership
+
+zframe_t *
+asset_msg_devices (asset_msg_t *self)
+{
+    assert (self);
+    return self->devices;
+}
+
+//  Get the devices field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_devices (asset_msg_t *self)
+{
+    zframe_t *devices = self->devices;
+    self->devices = NULL;
+    return devices;
+}
+
+//  Set the devices field, transferring ownership from caller
+
+void
+asset_msg_set_devices (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->devices);
+    self->devices = *frame_p;
+    *frame_p = NULL;
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get the grs field without transferring ownership
+
+zframe_t *
+asset_msg_grs (asset_msg_t *self)
+{
+    assert (self);
+    return self->grs;
+}
+
+//  Get the grs field and transfer ownership to caller
+
+zframe_t *
+asset_msg_get_grs (asset_msg_t *self)
+{
+    zframe_t *grs = self->grs;
+    self->grs = NULL;
+    return grs;
+}
+
+//  Set the grs field, transferring ownership from caller
+
+void
+asset_msg_set_grs (asset_msg_t *self, zframe_t **frame_p)
+{
+    assert (self);
+    assert (frame_p);
+    zframe_destroy (&self->grs);
+    self->grs = *frame_p;
+    *frame_p = NULL;
+}
+
+
 
 //  --------------------------------------------------------------------------
 //  Selftest
@@ -2480,6 +3196,120 @@ asset_msg_test (bool verbose)
         assert (asset_msg_element_ids_size (self) == 2);
         assert (streq (asset_msg_element_ids_string (self, "Name", "?"), "Brutus"));
         assert (asset_msg_element_ids_number (self, "Age", 0) == 43);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
+    asset_msg_set_recursive (self, 123);
+    asset_msg_set_filter_type (self, 123);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
+        assert (asset_msg_recursive (self) == 123);
+        assert (asset_msg_filter_type (self) == 123);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
+    zmsg_t *return_location_to_msg = zmsg_new ();
+    asset_msg_set_msg (self, &return_location_to_msg);
+    zmsg_addstr (asset_msg_msg (self), "Hello, World");
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
+        assert (zmsg_size (asset_msg_msg (self)) == 1);
+        asset_msg_destroy (&self);
+    }
+    self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    
+    //  Check that _dup works on empty message
+    copy = asset_msg_dup (self);
+    assert (copy);
+    asset_msg_destroy (&copy);
+
+    asset_msg_set_element_id (self, 123);
+    asset_msg_set_type (self, 123);
+    zframe_t *return_location_from_dcs = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_dcs (self, &return_location_from_dcs);
+    zframe_t *return_location_from_rooms = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_rooms (self, &return_location_from_rooms);
+    zframe_t *return_location_from_rows = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_rows (self, &return_location_from_rows);
+    zframe_t *return_location_from_racks = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_racks (self, &return_location_from_racks);
+    zframe_t *return_location_from_devices = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_devices (self, &return_location_from_devices);
+    zframe_t *return_location_from_grs = zframe_new ("Captcha Diem", 12);
+    asset_msg_set_grs (self, &return_location_from_grs);
+    //  Send twice from same object
+    asset_msg_send_again (self, output);
+    asset_msg_send (&self, output);
+
+    for (instance = 0; instance < 2; instance++) {
+        self = asset_msg_recv (input);
+        assert (self);
+        assert (asset_msg_routing_id (self));
+        
+        assert (asset_msg_element_id (self) == 123);
+        assert (asset_msg_type (self) == 123);
+        assert (zframe_streq (asset_msg_dcs (self), "Captcha Diem"));
+        assert (zframe_streq (asset_msg_rooms (self), "Captcha Diem"));
+        assert (zframe_streq (asset_msg_rows (self), "Captcha Diem"));
+        assert (zframe_streq (asset_msg_racks (self), "Captcha Diem"));
+        assert (zframe_streq (asset_msg_devices (self), "Captcha Diem"));
+        assert (zframe_streq (asset_msg_grs (self), "Captcha Diem"));
         asset_msg_destroy (&self);
     }
 

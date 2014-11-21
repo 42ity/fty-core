@@ -31,18 +31,16 @@ while [ $# -gt 0 ]; do
     case "$1" in
 	-u|--user)
 	    BIOS_USER="$2"
-	    shift
+	    shift 2
 	    ;;
 	-p|--passwd)
 	    BIOS_PASSWD="$2"
-	    shift
+	    shift 2
 	    ;;
-	*)
-	    echo "Unknown param: '$1'!" >&2
-	    exit 1
-	    ;;
+    *)
+        break
+        ;;
     esac
-    shift
 done
 
 PATH="$PATH:/sbin:/usr/sbin"

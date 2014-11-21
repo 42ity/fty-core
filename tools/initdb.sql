@@ -1,6 +1,7 @@
-create database IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
+DROP DATABASE IF EXISTS box_utf8;
+CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_ci;
 
-use box_utf8;
+USE box_utf8;
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
@@ -326,6 +327,7 @@ drop view if exists v_bios_discovered_ip;
 drop view if exists v_bios_net_history;
 drop view if exists v_bios_client_info_measurements;
 
+
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
 create view v_bios_discovered_device as select id_discovered_device id, name , id_device_type from t_bios_discovered_device;
@@ -339,7 +341,6 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
 create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
-
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
@@ -400,13 +401,24 @@ CREATE VIEW v_bios_asset_device AS
         LEFT JOIN t_bios_asset_device_type v2
         ON (v1.id_asset_device_type = v2.id_asset_device_type);
 
-create view v_bios_asset_link as select * from t_bios_asset_link ;
+CREATE VIEW v_bios_asset_link AS
+    SELECT  v1.id_link,
+            v1.id_asset_device_src,
+            v1.src_out,
+            v1.id_asset_device_dest,
+            v1.dest_in,
+            v1.id_asset_link_type,
+            v2.id_asset_element
+    FROM t_bios_asset_link v1
+        LEFT JOIN v_bios_asset_device v2
+        ON(v1.id_asset_device_src = v2.id_asset_device);
+
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
-create view v_bios_monitor_asset_relation as select * from t_bios_asset_element_type;
+create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 create view v_bios_measurements_lastdate as SELECT p.id_key, max(p.timestamp) maxdate, p.id_subkey, p.id_discovered_device FROM v_bios_client_info_measurements p  GROUP BY p.id_key, p.id_subkey, p.id_discovered_device;
 
 create view v_bios_client_info_measurements_last as

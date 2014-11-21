@@ -10,7 +10,7 @@
 #include "dbpath.h"
 
 
-TEST_CASE("Common messages: generate_client_info","[common][generate][client_info]")
+TEST_CASE("Common messages: generate_client_info","[common][generate][client_info][db]")
 {
     uint32_t client_id = 1;
     uint32_t device_id = 2;
@@ -32,7 +32,7 @@ TEST_CASE("Common messages: generate_client_info","[common][generate][client_inf
     REQUIRE ( msgclient_info == NULL );
 }
 
-TEST_CASE("Common messages: generate_return_client_info","[common][generate][return_client_info]")
+TEST_CASE("Common messages: generate_return_client_info","[common][generate][return_client_info][db]")
 {
     uint32_t client_id = 1;
     uint32_t device_id = 2;
@@ -72,7 +72,7 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
     REQUIRE ( newclient_info == NULL );
 }
 
-TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][insert][delete][client_info]")
+TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][insert][delete][client_info][db]")
 {
     uint32_t device_id = 1;
     uint32_t client_id = 1;
