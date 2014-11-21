@@ -1,3 +1,6 @@
+#ifndef WEB_DATA_H
+#define WEB_DATA_H
+
 #include <czmq.h>
 #include <string>
 
@@ -11,3 +14,13 @@ class asset_manager {
         static byte type_to_byte(std::string type);
         static std::string byte_to_type(byte type);
 };
+
+class measures_manager {
+    public:
+        static std::string int_to_type(std::string i);
+        static std::string int_to_subtype(std::string i, std::string t);
+        static std::string int_to_type(uint16_t i);
+        static std::string int_to_subtype(uint16_t i, uint16_t tid);
+};
+
+#endif // WEB_DATA_H

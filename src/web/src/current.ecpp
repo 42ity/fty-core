@@ -9,7 +9,11 @@
 #include "persistencelogic.h"
 #include "common_msg.h"
 #include "monitor.h"
+#include "data.h"
 </%pre>
+<%thread scope="global">
+measures_manager mes_mgr;
+</%thread>
 <%args>
 std::string dev;
 </%args>
@@ -71,7 +75,7 @@ std::string dev;
                 json = ", ";
             else
                 json = "  ";
-            json += "{ \"id\"':";
+            json += "{ \"id\":";
             sprintf(buff, "%d", common_msg_device_id(dta));
             json += buff;
             zlist_t *list = common_msg_measurements(dta);
@@ -80,7 +84,8 @@ std::string dev;
                cxxtools::split(":", std::string((char*)it),
                                     std::back_inserter(measurements));
                // TODO: Proper output formating according to the rfc-11
-               json += ", \"" + measurements[0] + "." + measurements[1] + 
+               json += ", \"" + mes_mgr.int_to_type(measurements[0])
+                        + "." + mes_mgr.int_to_subtype(measurements[1], measurements[0]) + 
                        "\": " + measurements[2];
             }
             json += " }";
@@ -91,7 +96,7 @@ std::string dev;
 {
    "current":[
 %   for(auto i: measure) {
-    <$ i $>
+    <$$ i $>
 %   }
    ]
 }
