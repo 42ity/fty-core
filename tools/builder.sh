@@ -56,21 +56,48 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+do_make() {
+	if [ ! -s Makefile ]; then
+		case "$@" in
+		    *clean*)
+				echo "INFO: Makefile absent, skipping 'make $@'"
+#distclean?#			[ -d config ] && rm -rf config
+				return 0 ;;
+		    *)
+				echo "ERROR: Makefile absent, skipping 'make $@'" >&2
+				return 1 ;;
+		esac
+	fi
+	echo "INFO: running 'make "$@"'"
+	case "$@" in
+	    *distclean*)
+		### Hack to avoid running configure if it is newer
+		### than Makefile - these are deleted soon anyway
+		echo "INFO: Hack to avoid extra useless configure - touch some files"
+		touch Makefile
+		[ -f config.status ] && touch config.status
+		;;
+	esac
+	make "$@"
+}
+
 buildSamedir() {
-	make -k distclean
+	do_make -k distclean
 	./configure && \
-	{ make -k clean; \
-	  if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
+	{ do_make -k clean; \
+	  if [ x"$NOPARMAKE" != xY ]; then 
+	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; }
 }
 
 buildSubdir() {
-	make -k distclean
+	do_make -k distclean
 	( { rm -rf build-${BLDARCH}; \
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
 	../configure && \
-	{ if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
+	{ if [ x"$NOPARMAKE" != xY ]; then
+	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
 	  echo "=== SEQMAKE:"; make "$@"; } && \
 	{ make DESTDIR=${DESTDIR} install; } )
 }
@@ -126,15 +153,15 @@ case "$1" in
 	;;
     distclean)
 	./configure && \
-	make -k distclean
+	do_make -k distclean
 	;;
     distcheck)
-	make -k distclean
+	do_make -k distclean
 	./configure && \
-	make distcheck
+	do_make distcheck
 	;;
     conf|configure)
-	make -k distclean
+	do_make -k distclean
 	./configure
 	;;
     *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
