@@ -1000,6 +1000,7 @@ zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
     uint32_t device_id = common_msg_device_id (msg);
     assert ( device_id );
     uint32_t device_id_monitor = convert_asset_to_monitor(url, device_id);
+
     assert ( device_id_monitor > 0 );
 
     zlist_t* last_measurements = 
