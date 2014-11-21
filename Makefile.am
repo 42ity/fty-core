@@ -398,7 +398,7 @@ tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
 
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datadir)/$(PACKAGE_NAME)-$(PACKAGE-VERSION)/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || rm -f $@
 
 exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
 exampleconf_DATA = tntnet.xml.example
