@@ -82,6 +82,31 @@
 
     RETURN_ELEMENTS - Returns elements we were asked for
         element_ids         hash        Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
+
+    GET_LOCATION_FROM - Ask for a location topology started from the specified element
+        element_id          number 4    Unique ID of the start asset element
+        type                number 1    Type of the start element
+        recursive           number 1    If the search should be recursive (=1) or not (=0)
+        filter_type         number 1    Type of the looked elements, if null take all
+
+    GET_LOCATION_TO - Ask for a location topology for the specified element
+        element_id          number 4    Unique ID of the asset element
+        type                number 1    Type of the element
+
+    RETURN_LOCATION_TO - Reply for a location topology for the specified element
+        element_id          number 4    Unique ID of the asset element
+        type                number 1    Type of the element
+        msg                 msg          parent of the element, this msg
+
+    RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element
+        element_id          number 4    Unique ID of the asset element
+        type                number 1    Type of the element
+        dcs                 frame       List of datacenters, matryoshka of this msg
+        rooms               frame       List of rooms, matryoshka of this msg
+        rows                frame       List of rows, matryoshka of this msg
+        racks               frame       List of racks, matryoshka of this msg
+        devices             frame       List of devices, matryoshka of this msg
+        grs                 frame       List of groups, matryoshka of this msg
 */
 
 #define ASSET_MSG_VERSION                   1.0
@@ -97,6 +122,10 @@
 #define ASSET_MSG_FAIL                      9
 #define ASSET_MSG_GET_ELEMENTS              10
 #define ASSET_MSG_RETURN_ELEMENTS           11
+#define ASSET_MSG_GET_LOCATION_FROM         12
+#define ASSET_MSG_GET_LOCATION_TO           13
+#define ASSET_MSG_RETURN_LOCATION_TO        14
+#define ASSET_MSG_RETURN_LOCATION_FROM      15
 
 #include <czmq.h>
 
@@ -224,6 +253,39 @@ zmsg_t *
     asset_msg_encode_return_elements (
         zhash_t *element_ids);
 
+//  Encode the GET_LOCATION_FROM 
+zmsg_t *
+    asset_msg_encode_get_location_from (
+        uint32_t element_id,
+        byte type,
+        byte recursive,
+        byte filter_type);
+
+//  Encode the GET_LOCATION_TO 
+zmsg_t *
+    asset_msg_encode_get_location_to (
+        uint32_t element_id,
+        byte type);
+
+//  Encode the RETURN_LOCATION_TO 
+zmsg_t *
+    asset_msg_encode_return_location_to (
+        uint32_t element_id,
+        byte type,
+        zmsg_t *msg);
+
+//  Encode the RETURN_LOCATION_FROM 
+zmsg_t *
+    asset_msg_encode_return_location_from (
+        uint32_t element_id,
+        byte type,
+        zframe_t *dcs,
+        zframe_t *rooms,
+        zframe_t *rows,
+        zframe_t *racks,
+        zframe_t *devices,
+        zframe_t *grs);
+
 
 //  Send the ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -305,6 +367,43 @@ int
 int
     asset_msg_send_return_elements (void *output,
         zhash_t *element_ids);
+    
+//  Send the GET_LOCATION_FROM to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_location_from (void *output,
+        uint32_t element_id,
+        byte type,
+        byte recursive,
+        byte filter_type);
+    
+//  Send the GET_LOCATION_TO to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_location_to (void *output,
+        uint32_t element_id,
+        byte type);
+    
+//  Send the RETURN_LOCATION_TO to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_return_location_to (void *output,
+        uint32_t element_id,
+        byte type,
+        zmsg_t *msg);
+    
+//  Send the RETURN_LOCATION_FROM to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_return_location_from (void *output,
+        uint32_t element_id,
+        byte type,
+        zframe_t *dcs,
+        zframe_t *rooms,
+        zframe_t *rows,
+        zframe_t *racks,
+        zframe_t *devices,
+        zframe_t *grs);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -489,6 +588,78 @@ void
         const char *key, const char *format, ...);
 size_t
     asset_msg_element_ids_size (asset_msg_t *self);
+
+//  Get/set the recursive field
+byte
+    asset_msg_recursive (asset_msg_t *self);
+void
+    asset_msg_set_recursive (asset_msg_t *self, byte recursive);
+
+//  Get/set the filter_type field
+byte
+    asset_msg_filter_type (asset_msg_t *self);
+void
+    asset_msg_set_filter_type (asset_msg_t *self, byte filter_type);
+
+//  Get a copy of the dcs field
+zframe_t *
+    asset_msg_dcs (asset_msg_t *self);
+//  Get the dcs field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_dcs (asset_msg_t *self);
+//  Set the dcs field, transferring ownership from caller
+void
+    asset_msg_set_dcs (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the rooms field
+zframe_t *
+    asset_msg_rooms (asset_msg_t *self);
+//  Get the rooms field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_rooms (asset_msg_t *self);
+//  Set the rooms field, transferring ownership from caller
+void
+    asset_msg_set_rooms (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the rows field
+zframe_t *
+    asset_msg_rows (asset_msg_t *self);
+//  Get the rows field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_rows (asset_msg_t *self);
+//  Set the rows field, transferring ownership from caller
+void
+    asset_msg_set_rows (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the racks field
+zframe_t *
+    asset_msg_racks (asset_msg_t *self);
+//  Get the racks field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_racks (asset_msg_t *self);
+//  Set the racks field, transferring ownership from caller
+void
+    asset_msg_set_racks (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the devices field
+zframe_t *
+    asset_msg_devices (asset_msg_t *self);
+//  Get the devices field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_devices (asset_msg_t *self);
+//  Set the devices field, transferring ownership from caller
+void
+    asset_msg_set_devices (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get a copy of the grs field
+zframe_t *
+    asset_msg_grs (asset_msg_t *self);
+//  Get the grs field and transfer ownership to caller
+zframe_t *
+    asset_msg_get_grs (asset_msg_t *self);
+//  Set the grs field, transferring ownership from caller
+void
+    asset_msg_set_grs (asset_msg_t *self, zframe_t **frame_p);
 
 //  Self test of this class
 int
