@@ -31,22 +31,22 @@ static const std::vector<std::string> physicsNUT {
 };
 
 static const std::vector<std::string> physicsBIOS {
-    "ups.temperature",
-    "ups.load",
-    "ups.realpower",
-    "output.voltage",
-    "output.current",
-    "output.L1-N.voltage",
-    "output.L1.realpower",
-    "output.L1.current",
-    "output.L2-N.voltage",
-    "output.L2.realpower",
-    "output.L2.current",
-    "output.L3-N.voltage",
-    "output.L3.realpower",
-    "output.L3.current",
+    "temperature.default",
+    "load.default",
+    "realpower.default",
+    "voltage.output",
+    "current.output",
+    "voltage.output.L1-N",
+    "realpower.output.L1",
+    "current.output.L1",
+    "voltage.output.L2-N",
+    "realpower.output.L2",
+    "current.output.L2",
+    "voltage.output.L3-N",
+    "realpower.output.L3",
+    "current.output.L3",
     "batery.charge",
-    "outlet.realpower"
+    "realpower.outlet"
 };
 
 static const std::vector<std::string> inventoryNUT {
@@ -82,17 +82,14 @@ static const std::vector<std::string> inventoryBIOS {
 };
 
 NUTDevice::NUTDevice() {  
-    _change = false;
     _name = "";
 }
 
 NUTDevice::NUTDevice(const char *aName) {  
-    _change = false;
     name(aName);
 }
 
 NUTDevice::NUTDevice(const std::string& aName) {  
-    _change = false;
     name(aName);
 }
 
@@ -104,34 +101,91 @@ std::string NUTDevice::name() const {
     return _name;
 }
 
+/**
+ * change getters  
+ */
 bool NUTDevice::changed() const {
-    return _change;
+    for(auto it : _physics ){
+        if(it.second.changed) return true;
+    }
+    for(auto it : _inventory ){
+        if(it.second.changed) return true;
+    }
+    return false;
 }
 
-void NUTDevice::changed(const bool status) {
-    _change = status;
+bool NUTDevice::changed(const char *name) const {
+    auto iterP = _physics.find(name);
+    if( iterP != _physics.end() ) {
+        // this is a number, value exists
+        return iterP->second.changed;
+    }
+    auto iterI = _inventory.find(name);
+    if( iterI != _inventory.end() ) {
+        // this is a inventory string, value exists
+        return iterI->second.changed;
+    }
+    return false;
 }
+
+bool NUTDevice::changed(const std::string &name) const {
+    return changed(name.c_str());
+}
+
+/**
+ * change setters
+ */
+void NUTDevice::changed(const bool status) {
+    for(auto it : _physics ){
+        it.second.changed = status;
+    }
+    for(auto it : _inventory ){
+        it.second.changed = status;
+    }
+}
+
+void NUTDevice::changed(const char *name, const bool status) {
+    auto iterP = _physics.find(name);
+    if( iterP != _physics.end() ) {
+        // this is a number, value exists
+        iterP->second.changed = status;
+    }
+    auto iterI = _inventory.find(name);
+    if( iterI != _inventory.end() ) {
+        // this is a inventory string, value exists
+        iterI->second.changed = status;
+    }
+}
+    
+void NUTDevice::changed(const std::string& name,const bool status){
+    changed(name.c_str(),status);
+}
+
 
 void NUTDevice::updatePhysics(const std::string& varName, const float newValue) {
     // calculating round(newValue * 100) without math library
     long int newValueInt = ((newValue * 100) + 0.5);
     if( _physics.count( varName ) == 0 ) {
         // this is new value
-        _physics[ varName ] = newValueInt;
-        _change = true;
+        struct NUTPhysicalValue pvalue;
+        pvalue.changed = true;
+        pvalue.value = newValueInt;
+        _physics[ varName ] = pvalue;
     } else {
-        long int oldValue = _physics[ varName ];
+        long int oldValue = _physics[ varName ].value;
         if( oldValue == newValueInt ) return ;
         try {
             if( abs( oldValue - newValueInt ) * 100 / oldValue > 5 ) {
                 // significant change
-                _physics[ varName ] = newValueInt;
-                _change = true;
+                _physics[ varName ].value = newValueInt;
+                _physics[ varName ].changed = true;
             }
         } catch(...) {
             // probably division by 0
-            _physics[ varName ] = newValueInt;
-            _change = true;     
+            struct NUTPhysicalValue pvalue;
+            pvalue.changed = true;
+            pvalue.value = newValueInt;
+            _physics[ varName ] = pvalue;
         }
     }
 }
@@ -160,13 +214,14 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
     if( varName == "type" && inventory == "pdu" ) { inventory = "epdu"; }
     if( _inventory.count( varName ) == 0 ) {
         // this is new value
-        _inventory[ varName ] = inventory;
-        _change = true;
+        struct NUTInventoryValue ivalue;
+        ivalue.changed = true;
+        ivalue.value = inventory;
+        _inventory[ varName ] = ivalue;
     } else {
-        std::string oldValue = _inventory[ varName ];
-        if( oldValue != inventory ) {
-            _inventory[ varName ] = inventory;
-            _change = true;
+        if( _inventory[ varName ].value != inventory ) {
+            _inventory[ varName ].value = inventory;
+            _inventory[ varName ].changed = true;
         }
     }
 }
@@ -204,10 +259,10 @@ std::string NUTDevice::itof(const long int X) const {
 std::string NUTDevice::toString() const {
     std::string msg = "",val;
     for(auto it : _physics ){
-        msg += "\"" + it.first + "\":" + itof(it.second ) + ", ";
+        msg += "\"" + it.first + "\":" + itof(it.second.value) + ", ";
     }
     for(auto it : _inventory ){
-        val = it.second;
+        val = it.second.value;
         std::replace(val.begin(), val.end(),'"',' ');
         msg += "\"" + it.first + "\":\"" + val + "\", ";
     }
@@ -220,10 +275,20 @@ std::string NUTDevice::toString() const {
 std::map<std::string,std::string> NUTDevice::properties() const {
     std::map<std::string,std::string> map;
     for(auto it : _physics ){
-        map[ it.first ] = itof(it.second);
+        map[ it.first ] = itof(it.second.value);
     }
     for(auto it : _inventory ){
-        map[ it.first ] = it.second;
+        map[ it.first ] = it.second.value;
+    }
+    return map;
+}
+
+std::map<std::string,int> NUTDevice::physics(bool onlyChanged) const {
+    std::map<std::string,int> map;
+    for(auto it : _physics ){
+        if( ( ! onlyChanged ) || it.second.changed ) {
+            map[ it.first ] = it.second.value;
+        }
     }
     return map;
 }
@@ -245,16 +310,30 @@ bool NUTDevice::hasProperty(const std::string& name) const {
     return hasProperty(name.c_str());
 }
 
+bool NUTDevice::hasPhysics(const char *name) const {
+    if( _physics.count( name ) != 0 ) {
+        // this is a number and value exists
+        return true;
+    }
+    return false;
+}
+
+bool NUTDevice::hasPhysics(const std::string& name) const {
+    return hasPhysics(name.c_str());
+}
+
+
+    
 std::string NUTDevice::property(const char *name) const {
     auto iterP = _physics.find(name);
     if( iterP != _physics.end() ) {
         // this is a number, value exists
-        return itof(iterP->second);
+        return itof(iterP->second.value);
     }
     auto iterI = _inventory.find(name);
     if( iterI != _inventory.end() ) {
         // this is a inventory string, value exists
-        return iterI->second;
+        return iterI->second.value;
     }
     return "";
 }
@@ -342,7 +421,6 @@ std::map<std::string, NUTDevice>::iterator NUTDeviceList::end() {
 }
 
 bool NUTDeviceList::changed() const {
-
     for(auto  &it : _devices ) {
         if(it.second.changed() ) return true; 
     }

@@ -34,6 +34,17 @@ namespace drivers
 {
 namespace nut
 {
+
+struct NUTInventoryValue {
+    bool changed;
+    std::string value;
+};
+
+struct NUTPhysicalValue {
+    bool changed;
+    long int value;
+};
+ 
 /**
  * \class NUTDevice
  *
@@ -71,11 +82,15 @@ class NUTDevice {
      * statusMessage has been called.
      */
     bool changed() const;
+    bool changed(const char *name) const;
+    bool changed(const std::string& name) const;
 
     /**
      * \brief Method for setting the change status.
      */
     void changed(const bool status);
+    void changed(const char *name, const bool status);
+    void changed(const std::string& name,const bool status);
 
     /**
      * \brief Produces a std::string with device status in JSON format.
@@ -98,6 +113,9 @@ class NUTDevice {
      */
     bool hasProperty(const char *name) const;
     bool hasProperty(const std::string& name) const;
+    bool hasPhysics(const char *name) const;
+    bool hasPhysics(const std::string& name) const;
+    std::map<std::string,int> physics(bool onlyChanged) const;
 
     /**
      * \brief method returns particular device property.
@@ -164,11 +182,9 @@ class NUTDevice {
      *
      * Values are multiplied by 100 and stored as integer 
      */
-    std::map<std::string, long int> _physics;
+    std::map<std::string, NUTPhysicalValue> _physics;
     //! \brief map of inventory values
-    std::map<std::string, std::string> _inventory;
-    //! \brief flag, if there is change to be published
-    bool _change;
+    std::map<std::string, NUTInventoryValue> _inventory;
     //! \brief device name
     std::string _name;
     //! \brief Transformation of our integer (x100) back
