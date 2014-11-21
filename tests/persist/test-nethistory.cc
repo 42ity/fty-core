@@ -5,7 +5,7 @@
 
 TEST_CASE("net history getters","[dbnethistory][constructor1][toString] \\
 [getId][getUrl][getState][getTimestamp][getMac][getMask][getIp][getName] \\
-[getCommand][getAddress]")
+[getCommand][getAddress][db]")
 {
     persist::NetHistory dbnethistory(url);
     time_t tmp_t = dbnethistory.getTimestamp();
@@ -35,7 +35,7 @@ TEST_CASE("net history getters","[dbnethistory][constructor1][toString] \\
     //REQUIRE( dbnethistory.getAddress() == nn );
 }
 
-TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
+TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete][db]"){
     persist::NetHistory dbnethistory(url);
     std::string newname = "insert_delete";
     shared::CIDRAddress newaddress("1.1.1.1",8);
@@ -87,7 +87,7 @@ TEST_CASE("net history insert/delete ","[dbnethistory][save][insert][delete]"){
 
 
 
-TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
+TEST_CASE("net history select by id ","[dbnethistory][select][byId][db]"){
     
     persist::NetHistory dbnethistory(url);
     std::string newname = "selectById";
@@ -110,7 +110,7 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId]"){
     REQUIRE( n == 1);
 }
 
-TEST_CASE("net history select all","[dbnethistory][select][getHistory]"){
+TEST_CASE("net history select all","[dbnethistory][select][getHistory][db]"){
     std::vector<persist::NetHistory> history = persist::NetHistory::getHistory(url);
     bool result = true;
     for ( auto i = history.begin(); i != history.end(); i++ ) {
