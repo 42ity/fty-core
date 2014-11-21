@@ -28,6 +28,7 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 cd $CHECKOUTDIR
 
 CPUS=$(getconf _NPROCESSORS_ONLN)
+CPUS=1
 echo "======================== autoreconf ========================="
 autoreconf -vfi
 echo "======================== configure =========================="
