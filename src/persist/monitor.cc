@@ -880,7 +880,7 @@ common_msg_t* insert_measurement(const char* url, uint32_t client_id,
 
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
-            " v_bios_client_info_measurements (id, id_client, id_device, id_key , id_subkey, value, timestamp)"
+            " v_bios_client_info_measurements (id, id_client, id_discovered_device, id_key , id_subkey, value, timestamp)"
             " VALUES (NULL, :clientid, :deviceid, :keytagid, :subkeytagid , :val, UTC_TIMESTAMP())"
         );
     
