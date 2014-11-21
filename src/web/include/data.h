@@ -19,8 +19,10 @@ class measures_manager {
     public:
         static std::string int_to_type(std::string i);
         static std::string int_to_subtype(std::string i, std::string t);
+        static std::string scale(std::string val, std::string i, std::string t);
         static std::string int_to_type(uint16_t i);
         static std::string int_to_subtype(uint16_t i, uint16_t tid);
+        static std::string scale(std::string val, uint16_t i, uint16_t tid);
 };
 
 #endif // WEB_DATA_H

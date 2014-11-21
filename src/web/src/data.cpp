@@ -99,3 +99,45 @@ std::string measures_manager::int_to_subtype(std::string i, std::string t) {
         return int_to_subtype(id, tid);
     }
 }
+
+std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
+    char buff[16];
+    zmsg_t *req = common_msg_encode_get_measure_subtype_i(i, tid);
+    zmsg_t *rep = process_measures_meta(&req);
+    common_msg_t *dta = NULL;
+    if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
+       (common_msg_id(dta) == COMMON_MSG_RETURN_MEASURE_SUBTYPE)) {
+        int sc = common_msg_mts_scale(dta);
+        if(sc > 128)
+            sc -= 256;
+        common_msg_destroy(&dta);
+        while(sc > 0) {
+            val += "0";
+            sc--;
+        }
+        if(sc < 0) {
+            for(int i=0; i+val.length() < 2-sc; i++)
+                val = "0" + val;
+            val.insert(val.length()+sc, ".");
+        }
+        return val;
+    } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {
+        common_msg_print(dta); 
+    }
+    sprintf(buff, "%d", i);
+    zmsg_destroy(&rep);
+    common_msg_destroy(&dta);
+    return val;
+}
+
+
+std::string measures_manager::scale(std::string val, std::string i, std::string t) {
+    errno = 0;
+    uint16_t id =  strtol(i.c_str(), NULL, 10);
+    uint16_t tid = strtol(t.c_str(), NULL, 10);
+    if(errno != 0) {
+        return val;
+    } else {
+        return scale(val, id, tid);
+    }
+}

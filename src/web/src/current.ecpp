@@ -86,7 +86,7 @@ std::string dev;
                // TODO: Proper output formating according to the rfc-11
                json += ", \"" + mes_mgr.int_to_type(measurements[0])
                         + "." + mes_mgr.int_to_subtype(measurements[1], measurements[0]) + 
-                       "\": " + measurements[2];
+                       "\": " + mes_mgr.scale(measurements[2],measurements[1], measurements[0]) ;
             }
             json += " }";
             measure.push_back(json);
