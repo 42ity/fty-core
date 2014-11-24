@@ -438,3 +438,60 @@ FROM    v_bios_client_info_measurements v
         INNER JOIN t_bios_measurement_subtypes sk
                 ON v.id_subkey = sk.id AND
 		   v.id_key = sk.type_id;
+
+--------------------------------------------------------------------------------
+------------------------          INSERTIONS          --------------------------
+--------------------------------------------------------------------------------
+
+---
+--- t_bios_measurement_types
+---
+INSERT INTO t_bios_measurement_types (id, name) VALUES (1, "temperature");
+INSERT INTO t_bios_measurement_types (id, name) VALUES (2, "voltage");
+
+---
+--- t_bios_measurement_types
+---
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 1, "default", -2);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 2, "default1", 0);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 1, "default2", 1);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 2, "default3", 1);
+
+---
+--- t_bios_device_type
+---
+INSERT INTO t_bios_device_type (id_device_type, name) VALUES (1,    "not_classified");
+INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "ups");
+INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "epdu");
+INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "server");
+
+---
+--- t_bios_client
+---
+INSERT INTO t_bios_client (id_client, name) VALUES (1,      "nmap");
+INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "mymodule");
+INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "admin");
+INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "NUT");
+
+---
+--- t_bios_asset_element_type
+---
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (1, "group");
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (2, "datacenter");
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (3, "room");
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (4, "row");
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (5, "rack");
+INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (6, "device");
+
+---
+--- t_bios_asset_device_type
+---
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "ups");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "epdu");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "server");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "main");
+
+---
+--- t_bios_asset_link_type
+---
+INSERT INTO t_bios_asset_link_type (id_asset_link_type, name) VALUES (NULL, "power chain");
