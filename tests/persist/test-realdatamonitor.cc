@@ -48,12 +48,14 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     uint32_t id = 1;
     zlist_t* measurements = select_last_measurements (url.c_str(), id);
     REQUIRE ( measurements );
-    char fifth1[10]  = "3:1:1:0";
     char forth1[10]  = "1:1:3:-2";
     char third1[10]  = "2:1:31:0";
     char second1[10] = "2:2:12:1";
     char first1[10]  = "1:2:1:1";
-    char* first  = (char*) zlist_first (measurements);
+    char zero1[10]   = "3:1:1:0";
+    char* zero  = (char*) zlist_first  (measurements);
+    REQUIRE ( zero  != NULL );
+    char* first  = (char*) zlist_next  (measurements);
     REQUIRE ( first  != NULL );
     char* second = (char*) zlist_next  (measurements);
     REQUIRE ( second != NULL );
@@ -61,14 +63,12 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     REQUIRE ( third  != NULL );
     char* forth  = (char*) zlist_next  (measurements);
     REQUIRE ( forth  != NULL );
-    char* fifth  = (char*) zlist_next  (measurements);
-    REQUIRE ( fifth  != NULL );
     REQUIRE ( zlist_next (measurements) == NULL );
+    REQUIRE ( strstr(zero, zero1)       == zero );
     REQUIRE ( strstr(first, first1)     == first );
     REQUIRE ( strstr(second, second1)   == second );
     REQUIRE ( strstr(third, third1)     == third );
     REQUIRE ( strstr(forth, forth1)     == forth );
-    REQUIRE ( strstr(fifth, fifth1)     == fifth );
 
     zlist_destroy (&measurements);
     
@@ -115,12 +115,14 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     REQUIRE ( common_msg_device_id (glm) == id );
     zlist_t* info = common_msg_get_measurements (glm);
 
-    char fifth1[10]  = "3:1:1:0";
     char forth1[10]  = "1:1:3:-2";
     char third1[10]  = "2:1:31:0";
     char second1[10] = "2:2:12:1";
     char first1[10]  = "1:2:1:1";
-    char* first  = (char*) zlist_first (info);
+    char zero1[10]   = "3:1:1:0";
+    char* zero   = (char*) zlist_first (info);
+    REQUIRE ( zero  != NULL );
+    char* first  = (char*) zlist_next  (info);
     REQUIRE ( first  != NULL );
     char* second = (char*) zlist_next  (info);
     REQUIRE ( second != NULL );
@@ -128,14 +130,12 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     REQUIRE ( third  != NULL );
     char* forth  = (char*) zlist_next  (info);
     REQUIRE ( forth  != NULL );
-    char* fifth  = (char*) zlist_next  (info);
-    REQUIRE ( fifth  != NULL );
     REQUIRE ( zlist_next (info)      == NULL );
+    REQUIRE ( strstr(zero,zero1)     == zero );
     REQUIRE ( strstr(first,first1)   == first );
     REQUIRE ( strstr(second,second1) == second );
     REQUIRE ( strstr(third,third1)   == third );
     REQUIRE ( strstr(forth,forth1)   == forth );  
-    REQUIRE ( strstr(fifth,fifth1)   == fifth );
     
     zlist_destroy (&info);
     common_msg_destroy (&glm);
