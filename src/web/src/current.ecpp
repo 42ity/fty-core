@@ -1,0 +1,102 @@
+<%pre>
+#include <czmq.h>
+#include <cxxtools/split.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <vector>
+#include <string>
+
+#include "persistencelogic.h"
+#include "common_msg.h"
+#include "monitor.h"
+#include "data.h"
+</%pre>
+<%thread scope="global">
+measures_manager mes_mgr;
+</%thread>
+<%args>
+std::string dev;
+</%args>
+<%cpp>
+    // Check URL validity
+    std::vector<std::string> devices;
+    cxxtools::split(",", dev, std::back_inserter(devices));
+    if(devices.empty()) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> measure;
+    for(auto i : devices) {
+        errno = 0;
+        uint32_t id = strtol(i.c_str(), NULL, 10);
+        if(errno != 0) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        zmsg_t *req = common_msg_encode_get_last_measurements(id);
+        zmsg_t *rep = _get_last_measurements(&req);
+        if(!is_common_msg(rep)){
+</%cpp>
+{ "error":"internal_error" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        common_msg_t *dta = common_msg_decode(&rep);
+        if(dta == NULL) {
+</%cpp>
+{ "error":"internal_error - decode fail" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        if(common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS) {
+            if(common_msg_id(dta) == COMMON_MSG_FAIL) {
+</%cpp>
+{ "error":"internal_error",
+  "type":"<$ common_msg_errtype(dta) $>",
+  "errno":"<$ common_msg_errorno(dta) $>",
+  "msg":"<$ common_msg_errmsg(dta) $>" }
+<%cpp>
+            } else {
+</%cpp>
+{ "error":"internal_error",
+  "msg":"unexpected msg" }
+<%cpp>
+            }
+            common_msg_destroy(&dta);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        } else {
+            char buff[64];
+            std::string json;
+            if(!measure.empty())
+                json = ", ";
+            else
+                json = "  ";
+            json += "{ \"id\":";
+            sprintf(buff, "%d", common_msg_device_id(dta));
+            json += buff;
+            zlist_t *list = common_msg_measurements(dta);
+            for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
+               std::vector<std::string> measurements;
+               cxxtools::split(":", std::string((char*)it),
+                                    std::back_inserter(measurements));
+               // TODO: Proper output formating according to the rfc-11
+               json += ", \"" + mes_mgr.int_to_type(measurements[0])
+                        + "." + mes_mgr.int_to_subtype(measurements[1], measurements[0]) + 
+                       "\": " + mes_mgr.scale(measurements[2],measurements[1], measurements[0]) ;
+            }
+            json += " }";
+            measure.push_back(json);
+        }
+    }
+</%cpp>
+{
+   "current":[
+%   for(auto i: measure) {
+    <$$ i $>
+%   }
+   ]
+}

@@ -46,11 +46,6 @@ zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
             result = get_asset_element(url, msg);
             break;
         }
-/*        case ASSET_MSG_GET_LAST_MEASUREMENTS:
-        {
-            result = _get_last_measurements(url, msg);
-            break;
-        }*/
         case ASSET_MSG_UPDATE_ELEMENT:
         {           
             //not implemented yet

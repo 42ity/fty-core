@@ -8,6 +8,7 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
+#include "dbpath.h"
 
 /**
  * \brief Generates a COMMON_MSG_FAIL message.
@@ -880,7 +881,7 @@ common_msg_t* insert_measurement(const char* url, uint32_t client_id,
 
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
-            " v_bios_client_info_measurements (id, id_client, id_device, id_key , id_subkey, value, timestamp)"
+            " v_bios_client_info_measurements (id, id_client, id_discovered_device, id_key , id_subkey, value, timestamp)"
             " VALUES (NULL, :clientid, :deviceid, :keytagid, :subkeytagid , :val, UTC_TIMESTAMP())"
         );
     
@@ -1016,3 +1017,10 @@ zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
         return return_measurements;
     }
 };
+
+zmsg_t* _get_last_measurements(zmsg_t** msg) {
+    common_msg_t *req = common_msg_decode(msg);
+    zmsg_t *rep = get_last_measurements(url.c_str(), req);
+    common_msg_destroy(&req);
+    return rep;
+}

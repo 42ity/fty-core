@@ -152,6 +152,8 @@ common_msg_t* insert_measurement(const char* url,uint32_t client_id,uint32_t dev
 
 zmsg_t* get_last_measurements(const char* url, common_msg_t* msg);
 
+zmsg_t* _get_last_measurements(zmsg_t** msg);
+
 zlist_t* select_last_measurements(const char* url, uint32_t device_id);
 
 common_msg_t* generate_return_measurements (uint32_t device_id, zlist_t** measurements);
