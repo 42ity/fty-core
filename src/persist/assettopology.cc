@@ -53,6 +53,9 @@ int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
     }
 }
 
+/**
+ * \brief Helper function: calculate zrame_t size even for NULL value
+ */
 size_t my_size(zframe_t* frame)
 {
     if (frame == NULL)
@@ -61,20 +64,30 @@ size_t my_size(zframe_t* frame)
         return zframe_size (frame);
 }
 /**
- * \brief .
+ * \brief Select childs of specified type for the specified element 
+ * (element_id + element_type_id). 
  *
- * \param 
+ * \param url - connection to database
+ * \param element_id - id of the asset element
+ * \param element_type_id - id of the type of the asset element
+ * \param child_type_id - type id of the child asset elements
+ * \param is_recursive - if the search recursive or not
+ * \param current_depth - a recursion parameter, started from 1
+ * \param filter_type - id of the type of the searched elements
  *
- * \return 
- *        .
+ * \return zframe_t - list of the childs of secified type according 
+ *                    to the filter filter_type. (it is a Matryoshka).
  */
-zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_type_id, uint32_t child_type_id, bool is_recursive, uint32_t current_depth, uint32_t filtertype)
+zframe_t* select_childs(const char* url, uint32_t element_id, 
+    uint32_t element_type_id, uint32_t child_type_id, 
+    bool is_recursive, uint32_t current_depth, uint32_t filtertype)
 {
     assert ( element_id );      // is required
     assert ( element_type_id ); // is required
     assert ( child_type_id );   // is required
     assert ( current_depth >= 0 );
-    assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); // it can be only 1,2,3,4,5,6.7. 7 means - take all
+    assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
+    // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start\n");
     log_info ("depth = %d\n", current_depth);
@@ -90,7 +103,9 @@ zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_t
             " v.id, v.name, v.id_type"
             " FROM"
             " v_bios_asset_element v"
-            " WHERE v.id_parent = :elementid AND v.id_parent_type = :elementtypeid and v.id_type = :childtypeid"
+            " WHERE v.id_parent = :elementid AND "
+            "       v.id_parent_type = :elementtypeid AND "
+            "       v.id_type = :childtypeid"
         );
 
         // Could return more than one row
@@ -98,7 +113,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_t
                                   setInt("elementtypeid", element_type_id).
                                   setInt("childtypeid", child_type_id).
                                   select();
-        log_info("after_select\n");
         log_info("rows selected %d\n", result.size());
         int rv = 0;
         zmsg_t* ret = zmsg_new();
@@ -131,55 +145,65 @@ zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_t
             zframe_t* devices = NULL;
             zframe_t* grps    = NULL;
 
-            if ( ( is_recursive ) && ( child_type_id != DEVICE ) && ( current_depth <= MAX_RECURSION_DEPTH ) )
+            if ( ( is_recursive ) && ( child_type_id != DEVICE ) && 
+                        ( current_depth <= MAX_RECURSION_DEPTH ) )
             {
                 if  ( ( child_type_id < 2 ) && ( 2 <= filtertype ) )
                 {
                     log_info ("start select_dcs\n");
-                    dcs     = select_childs (url, id, child_type_id, 2, is_recursive, current_depth + 1, filtertype);
+                    dcs     = select_childs (url, id, child_type_id, 2, 
+                                is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_dcs\n");
                 }
                 if ( ( child_type_id < 3 ) && ( 3 <= filtertype ) )
                 {
                     log_info ("start select_rooms\n");
-                    rooms   = select_childs (url, id, child_type_id, 3, is_recursive, current_depth + 1, filtertype);
+                    rooms   = select_childs (url, id, child_type_id, 3, 
+                                is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_rooms\n");
                 }
                 if ( ( child_type_id < 4 ) && ( 4 <= filtertype ) )
                 {
                     log_info ("start select_rows\n");
-                    rows    = select_childs (url, id, child_type_id, 4, is_recursive, current_depth + 1, filtertype);
+                    rows    = select_childs (url, id, child_type_id, 4, 
+                            is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_rows\n");
                 }
                 if ( ( child_type_id < 5 ) && ( 5 <= filtertype ) )
                 {
                     log_info ("start select_racks\n");
-                    racks   = select_childs (url, id, child_type_id, 5, is_recursive, current_depth + 1, filtertype);
+                    racks   = select_childs (url, id, child_type_id, 5, 
+                            is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_racks\n");
                 }
                 if ( ( child_type_id < 6 ) && ( 6 <= filtertype ) )
                 {
                     log_info ("start select_devices\n");
-                    devices = select_childs (url, id, child_type_id, 6, is_recursive, current_depth + 1, filtertype);
+                    devices = select_childs (url, id, child_type_id, 6, 
+                            is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_devices\n");
                 }
                 if ( child_type_id < 2 )
                 {
                     log_info ("start select_grps\n");
-                    grps    = select_childs (url, id, child_type_id, 1, is_recursive, current_depth + 1, filtertype);
+                    grps    = select_childs (url, id, child_type_id, 1, 
+                            is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_grps\n");
                 }
             }
-            if (!( ( filtertype < 7 ) &&
-                 ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) && ( my_size(rows) == 0 ) 
-                                && ( my_size(racks) == 0 ) && ( my_size(devices) == 0 ) && (my_size(grps) ==0 ) 
-                 ) &&
-                 ( child_type_id != filtertype ) 
-                ))
+            if ( !( ( filtertype < 7 ) &&
+                    ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) 
+                        && ( my_size(rows) == 0 ) && ( my_size(racks) == 0 ) 
+                        && ( my_size(devices) == 0 ) && (my_size(grps) == 0 ) 
+                    ) &&
+                    ( child_type_id != filtertype ) 
+                  )
+               )
             {
                 zmsg_t* el = asset_msg_encode_return_location_from 
-                                (id, id_type, name.c_str(), dcs, rooms, rows, racks, devices, grps);
-                assert (el);
+                                (id, id_type, name.c_str(), dcs, rooms, 
+                                        rows, racks, devices, grps);
+                assert ( el );
                 log_info ("created msg el for i = %d\n",i);
                 rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
                 assert ( rv != -1 );
@@ -192,7 +216,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_t
                 zframe_destroy (&grps);
             }
         }// end for
-        log_info ("done\n");
         zframe_t* res = NULL;
         rv = matryoshka2frame (&ret, &res);
         assert ( rv == 0 );
@@ -200,15 +223,16 @@ zframe_t* select_childs(const char* url, uint32_t element_id, uint32_t element_t
         return res;
     }
     catch (const std::exception &e) {
-        log_info ("abort\n");
+        log_warning ("abort with err = '%s'\n", e.what());
         return NULL;
     }
 }
 
-zmsg_t* get_return_topology(const char* url, asset_msg_t* getmsg)
+zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
-    log_info("start\n");
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TOPOLOGY_FROM );
+    log_info ("start\n");
     bool     is_recursive = asset_msg_recursive   (getmsg);
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  type_id      = asset_msg_type        (getmsg);
@@ -241,83 +265,97 @@ zmsg_t* get_return_topology(const char* url, asset_msg_t* getmsg)
     }
     catch (const tntdb::NotFound &e) {
         // element with specified type was not found
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, e.what(), NULL);
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                                        e.what(), NULL);
     }
-    catch (const std::exception &e)
-    {
+    catch (const std::exception &e) {
         // internal error in database
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, e.what(), NULL);
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
     }
 
     if ( ( type_id < 2 ) && ( 2 <= filter_type ) )
     {
         log_info ("start select_dcs\n");
-        dcs     = select_childs (url, element_id, type_id, 2, is_recursive, 1, filter_type);
+        dcs = select_childs (url, element_id, type_id, 2, is_recursive, 1, 
+                                filter_type);
         if ( dcs == NULL )
         {
-            log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "dcs error", NULL);
+            log_warning ("end abnormal\n");
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        "dcs error", NULL);
         }
         log_info ("end select_dcs\n");
     }
     if ( ( type_id < 3 ) && ( 3 <= filter_type ) )
     {
         log_info ("start select_rooms\n");
-        rooms   = select_childs (url, element_id, type_id, 3, is_recursive, 1, filter_type);
+        rooms = select_childs (url, element_id, type_id, 3, is_recursive, 1, 
+                                filter_type);
         if ( rooms == NULL )
         {
             zframe_destroy (&dcs);
-            log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "rooms error", NULL);
+            log_warning ("end abnormal\n");
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        "rooms error", NULL);
         }
         log_info ("end select_rooms\n");
     }
     if ( ( type_id < 4 ) && ( 4 <= filter_type ) )
     {
         log_info ("start select_rows\n");
-        rows    = select_childs (url, element_id, type_id, 4, is_recursive, 1, filter_type);
+        rows = select_childs (url, element_id, type_id, 4, is_recursive, 1, 
+                                filter_type);
         if ( rows == NULL )
         {
             zframe_destroy (&dcs);
             zframe_destroy (&rooms);
             log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "rows error", NULL);
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        "rows error", NULL);
         }
         log_info ("end select_rows\n");
     }
     if ( ( type_id < 5 ) && ( 5 <= filter_type ) )
     {
         log_info ("start select_racks\n");
-        racks   = select_childs (url, element_id, type_id, 5, is_recursive, 1, filter_type);
+        racks = select_childs (url, element_id, type_id, 5, is_recursive, 1, 
+                                filter_type);
         if ( racks == NULL )
         {
             zframe_destroy (&dcs);
             zframe_destroy (&rooms);
             zframe_destroy (&rows);
-            log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "racks error", NULL);
+            log_warning ("end abnormal\n");
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        "racks error", NULL);
         }
         log_info ("end select_racks\n");
     }
     if ( ( type_id < 6 ) && ( 6 <= filter_type ) )
     {
         log_info ("start select_devices\n");
-        devices = select_childs (url, element_id, type_id, 6, is_recursive, 1, filter_type );
+        devices = select_childs (url, element_id, type_id, 6, is_recursive, 1,
+                                    filter_type );
         if ( devices == NULL )
         {
             zframe_destroy (&dcs);
             zframe_destroy (&rooms);
             zframe_destroy (&rows);
             zframe_destroy (&racks);
-            log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "devices error", NULL);
+            log_warning ("end abnormal\n");
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        "devices error", NULL);
         }
         log_info ("end select_devices\n");
     }
     if ( type_id < 2 )
     {
         log_info ("start select_grps\n");
-        grps    = select_childs (url, element_id, type_id, 1, is_recursive, 1, filter_type);
+        grps = select_childs (url, element_id, type_id, 1, is_recursive, 1, 
+                                filter_type);
         if ( grps == NULL )
         {
             zframe_destroy (&dcs);
@@ -325,32 +363,34 @@ zmsg_t* get_return_topology(const char* url, asset_msg_t* getmsg)
             zframe_destroy (&rows);
             zframe_destroy (&racks);
             zframe_destroy (&devices);
-            log_warning("end abnormal\n");
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, "groups error", NULL);
+            log_warning ("end abnormal\n");
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                    "groups error", NULL);
         }
         log_info ("end select_grps\n");
     }
     zmsg_t* el = asset_msg_encode_return_location_from 
-                        (element_id, type_id, name.c_str(), dcs, rooms, rows, racks, devices, grps);
-    log_info("end normal\n");
+                        (element_id, type_id, name.c_str(), dcs, rooms, 
+                         rows, racks, devices, grps);
+    log_info ("end normal\n");
     return el;
 }
 
 
 void print_frame (zframe_t* frame)
 {    
-    byte *buffer = zframe_data (frame);
+    byte* buffer = zframe_data (frame);
     assert ( buffer );
 
-    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (frame));
-    assert (zmsg);
-    assert (zmsg_is (zmsg));
+    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    assert ( zmsg );
+    assert ( zmsg_is (zmsg) );
      
-    zmsg_t *pop = NULL;
-    while ((pop = zmsg_popmsg (zmsg)) != NULL)
+    zmsg_t* pop = NULL;
+    while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { // caller owns zmgs_t
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
-        assert (item);
+        assert ( item );
         asset_msg_print (item);
         zframe_t* fr = asset_msg_dcs (item);
         print_frame (fr);
@@ -366,8 +406,8 @@ void print_frame (zframe_t* frame)
         print_frame (fr);
 //            printf ("\tstatus = %d\n", (int) test_msg_status (item));
         asset_msg_destroy (&item);
-        assert (pop == NULL);
+        assert ( pop == NULL );
     }
    zmsg_destroy (&zmsg);
-   assert (zmsg == NULL);
+   assert ( zmsg == NULL );
 }
