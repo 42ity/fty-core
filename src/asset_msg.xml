@@ -90,7 +90,7 @@ Ask for a location topology started from the specified element
     <field name = "element_id"  type = "number" size = "4">Unique ID of the start asset element</field>
     <field name = "type"        type = "number" size = "1">Type of the start element</field>
     <field name = "recursive"   type = "number" size = "1">If the search should be recursive (=1) or not (=0)</field>
-    <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if null take all</field>
+    <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if 7 take all</field>
 </message>
 
 <message name = "get_location_to" id = "13">
