@@ -123,7 +123,6 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             ret = common_msg_encode_fail(0,0,"invalid message",NULL);
             break;
     }
-
     common_msg_destroy(msg);
     return ret;
 }

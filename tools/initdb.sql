@@ -448,14 +448,16 @@ FROM    v_bios_client_info_measurements v
 ---
 INSERT INTO t_bios_measurement_types (id, name) VALUES (1, "temperature");
 INSERT INTO t_bios_measurement_types (id, name) VALUES (2, "voltage");
+INSERT INTO t_bios_measurement_types (id, name) VALUES (3, "status");
 
 ---
 --- t_bios_measurement_types
 ---
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 1, "default", -2);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 1, "default0", -2);
 INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 2, "default1", 0);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 1, "default2", 1);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 2, "default3", 1);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 1, "default", 1);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 2, "L1", 1);
+INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 3, "ups", 0);
 
 ---
 --- t_bios_device_type

@@ -51,6 +51,7 @@ insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,1,31, "2014-11-12 09:47:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 2,2,12, "2014-11-12 09:48:59", 1, 1);
 insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 1,2,1,  "2014-11-12 09:49:59", 1, 1);
+insert into t_bios_client_info_measurements(id_measurements , id_key , id_subkey , value , timestamp , id_client, id_discovered_device ) values ( NULL, 3,1,1,  "2014-11-12 09:59:59", 1, 1);
 
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (7,  "a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (id_net_history, command, ip, mask, mac, name, timestamp) VALUES (8,  "m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
