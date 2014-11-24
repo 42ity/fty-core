@@ -377,7 +377,7 @@ BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
 bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
-                      src/web/src/data.cpp  src/web/src/item.cpp         \
+                      src/shared/data.cpp   src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
@@ -389,6 +389,7 @@ bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 					   -I$(top_srcdir)/src/simple \
+					   -I$(top_srcdir)/src/shared \
 				   	   -I$(top_srcdir)/src/web/include \
 					   -I$(top_srcdir)/tools \
 				   	   -I$(top_builddir)/tools \
@@ -399,7 +400,7 @@ bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 					  -module -lm -ltntdb -ltntnet -lcidr
 bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la
 
-dist_noinst_HEADERS +=	src/web/include/data.h \
+dist_noinst_HEADERS +=	src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
 			src/persist/assetmsg.h \
