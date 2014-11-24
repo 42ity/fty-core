@@ -9,7 +9,7 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-     * The XML model used for this code generation: common_msg.xml, or
+     * The XML model used for this code generation: ./common_msg.xml, or
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
@@ -252,8 +252,7 @@ common_msg_destroy (common_msg_t **self_p)
 }
 
 //  Parse a zmsg_t and decides whether it is common_msg. Returns
-//  true if it is, false otherwise. Doesn't destroy or modify the
-//  original message.
+//  true if it is, false otherwise.
 bool
 is_common_msg (zmsg_t *msg)
 {

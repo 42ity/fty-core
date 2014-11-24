@@ -8,6 +8,7 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
+#include "dbpath.h"
 
 /**
  * \brief Generates a COMMON_MSG_FAIL message.
@@ -1016,3 +1017,10 @@ zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
         return return_measurements;
     }
 };
+
+zmsg_t* _get_last_measurements(zmsg_t** msg) {
+    common_msg_t *req = common_msg_decode(msg);
+    zmsg_t *rep = get_last_measurements(url.c_str(), req);
+    common_msg_destroy(&req);
+    return rep;
+}
