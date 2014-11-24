@@ -101,12 +101,13 @@
     RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
+        name                string      Name of the asset element
         dcs                 frame       List of datacenters, matryoshka of this msg
         rooms               frame       List of rooms, matryoshka of this msg
         rows                frame       List of rows, matryoshka of this msg
         racks               frame       List of racks, matryoshka of this msg
         devices             frame       List of devices, matryoshka of this msg
-        grs                 frame       List of groups, matryoshka of this msg
+        grps                frame       List of groups, matryoshka of this msg
 */
 
 #define ASSET_MSG_VERSION                   1.0
@@ -279,12 +280,13 @@ zmsg_t *
     asset_msg_encode_return_location_from (
         uint32_t element_id,
         byte type,
+        const char *name,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
         zframe_t *racks,
         zframe_t *devices,
-        zframe_t *grs);
+        zframe_t *grps);
 
 
 //  Send the ELEMENT to the output in one step
@@ -398,12 +400,13 @@ int
     asset_msg_send_return_location_from (void *output,
         uint32_t element_id,
         byte type,
+        const char *name,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
         zframe_t *racks,
         zframe_t *devices,
-        zframe_t *grs);
+        zframe_t *grps);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -651,15 +654,15 @@ zframe_t *
 void
     asset_msg_set_devices (asset_msg_t *self, zframe_t **frame_p);
 
-//  Get a copy of the grs field
+//  Get a copy of the grps field
 zframe_t *
-    asset_msg_grs (asset_msg_t *self);
-//  Get the grs field and transfer ownership to caller
+    asset_msg_grps (asset_msg_t *self);
+//  Get the grps field and transfer ownership to caller
 zframe_t *
-    asset_msg_get_grs (asset_msg_t *self);
-//  Set the grs field, transferring ownership from caller
+    asset_msg_get_grps (asset_msg_t *self);
+//  Set the grps field, transferring ownership from caller
 void
-    asset_msg_set_grs (asset_msg_t *self, zframe_t **frame_p);
+    asset_msg_set_grps (asset_msg_t *self, zframe_t **frame_p);
 
 //  Self test of this class
 int
