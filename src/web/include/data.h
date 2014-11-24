@@ -17,12 +17,14 @@ class asset_manager {
 
 class measures_manager {
     public:
-        static std::string int_to_type(std::string i);
-        static std::string int_to_subtype(std::string i, std::string t);
-        static std::string scale(std::string val, std::string i, std::string t);
-        static std::string int_to_type(uint16_t i);
-        static std::string int_to_subtype(uint16_t i, uint16_t tid);
-        static std::string scale(std::string val, uint16_t i, uint16_t tid);
+        std::string map_names(std::string name);
+        std::string map_values(std::string name, std::string value);
+        std::string int_to_type(std::string i);
+        std::string int_to_subtype(std::string i, std::string t);
+        std::string scale(std::string val, std::string i, std::string t);
+        std::string int_to_type(uint16_t i);
+        std::string int_to_subtype(uint16_t i, uint16_t tid);
+        std::string scale(std::string val, uint16_t i, uint16_t tid);
 };
 
 #endif // WEB_DATA_H

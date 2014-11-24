@@ -3,6 +3,7 @@
 #include "measure_types.h"
 
 #include <algorithm>
+#include <map>
 
 byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
@@ -72,7 +73,7 @@ std::string measures_manager::int_to_type(std::string i) {
 
 std::string measures_manager::int_to_subtype(uint16_t i, uint16_t tid) {
     char buff[16];
-    zmsg_t *req = common_msg_encode_get_measure_subtype_i(i, tid);
+    zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
     zmsg_t *rep = process_measures_meta(&req);
     common_msg_t *dta = NULL;
     if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
@@ -102,7 +103,7 @@ std::string measures_manager::int_to_subtype(std::string i, std::string t) {
 
 std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
     char buff[16];
-    zmsg_t *req = common_msg_encode_get_measure_subtype_i(i, tid);
+    zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
     zmsg_t *rep = process_measures_meta(&req);
     common_msg_t *dta = NULL;
     if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
@@ -140,4 +141,47 @@ std::string measures_manager::scale(std::string val, std::string i, std::string 
     } else {
         return scale(val, id, tid);
     }
+}
+
+std::string measures_manager::map_names(std::string name) {
+    static std::map<std::string, std::string> map = {
+        { "temperature.ups", "ups.temperature" },
+        { "status.ups", "ups.status" },
+        { "load.ups", "ups.load" },
+        { "realpower.default", "ups.realpower" },
+        { "realpower.L1", "output.L1.realpower" },
+        { "realpower.L2", "output.L2.realpower" },
+        { "realpower.L3", "output.L3.realpower" },
+        { "voltage.default", "output.voltage" },
+        { "voltage.L1", "output.L1-N.voltage" },
+        { "voltage.L2", "output.L2-N.voltage" },
+        { "voltage.L3", "output.L3-N.voltage" },
+    };
+    
+    auto it = map.find(name);
+    if(it != map.end())
+        return it->second;
+    return name;
+}
+
+std::string measures_manager::map_values(std::string name, std::string value) {
+    static std::map<std::string, std::map<std::string, std::string>> map = {
+        { "status.ups", {
+                { "0", "OFF" },
+                { "1", "OL"  },
+                { "2", "OL CHRG"  },
+                { "3", "RB OL OFF"  },
+                { "4", "OFF DISCHRG"  },
+                { "5", "ALAM OL RB OFF"  },
+            }
+        }
+    };
+    
+    auto it = map.find(name);
+    if(it != map.end()) {
+        auto it2 = it->second.find(value);
+        if(it2 != it->second.end())
+            return "\"" + it2->second + "\"";
+    }
+    return value;
 }
