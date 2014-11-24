@@ -4,11 +4,10 @@
 #include <tntdb/error.h>
 #include <tntdb/value.h>
 #include <tntdb/result.h>
-
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
-
+#include <assert.h>
 // TODO HARDCODED CONSTANTS for asset device types
 
 // TODO This parameter should be placed in configure file
@@ -55,6 +54,10 @@ int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
 
 /**
  * \brief Helper function: calculate zrame_t size even for NULL value
+ *
+ * \param frame - frame
+ *
+ * \return size of the frame
  */
 size_t my_size(zframe_t* frame)
 {
@@ -63,17 +66,18 @@ size_t my_size(zframe_t* frame)
     else
         return zframe_size (frame);
 }
+
 /**
  * \brief Select childs of specified type for the specified element 
  * (element_id + element_type_id). 
  *
- * \param url - connection to database
- * \param element_id - id of the asset element
+ * \param url             - connection to database
+ * \param element_id      - id of the asset element
  * \param element_type_id - id of the type of the asset element
- * \param child_type_id - type id of the child asset elements
- * \param is_recursive - if the search recursive or not
- * \param current_depth - a recursion parameter, started from 1
- * \param filter_type - id of the type of the searched elements
+ * \param child_type_id   - type id of the child asset elements
+ * \param is_recursive    - if the search recursive or not
+ * \param current_depth   - a recursion parameter, started from 1
+ * \param filter_type     - id of the type of the searched elements
  *
  * \return zframe_t - list of the childs of secified type according 
  *                    to the filter filter_type. (it is a Matryoshka).
@@ -127,7 +131,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     
             std::string name = "";
             row[1].get(name);
-            assert ( !streq(name, "") );
+            assert ( strcmp(name.c_str(), "") );
 
             uint32_t id_type = 0;
             row[2].get(id_type);
@@ -228,10 +232,23 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     }
 }
 
+/**
+ * \brief This function processes the ASSET_MSG_GET_LOCATION_FROM message
+ *
+ * In case of success it generates the ASSET_MSG_RETURN_LOCATION_FROM. 
+ * In case of failure returns COMMON_MSG_FAIL.
+ * 
+ * \param url - the connection to database.
+ * \param msg - the message of the type ASSET_MSG_GET_LOCATION_FROM 
+ *                  we would like to process.
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or
+ *                       ASSET_MSG_RETURN_LOCATION_FROM
+ */
 zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
-    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TOPOLOGY_FROM );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
     log_info ("start\n");
     bool     is_recursive = asset_msg_recursive   (getmsg);
     uint32_t element_id   = asset_msg_element_id  (getmsg);
@@ -261,7 +278,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         tntdb::Value val = st.setInt("id", element_id).
                               selectValue();
         val.get(name);
-        assert ( !streq(name,"") );
+        assert ( strcmp(name.c_str() ,"") );
     }
     catch (const tntdb::NotFound &e) {
         // element with specified type was not found
@@ -376,7 +393,12 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     return el;
 }
 
-
+/**
+ * \brief A helper function: prints the frames in the
+ *  ASSET_MSG_LOCATION_FROM message
+ *
+ *  \param frame - frame to print
+ */
 void print_frame (zframe_t* frame)
 {    
     byte* buffer = zframe_data (frame);
@@ -410,4 +432,112 @@ void print_frame (zframe_t* frame)
     }
    zmsg_destroy (&zmsg);
    assert ( zmsg == NULL );
+}
+
+/**
+ * \brief Recursivly selects the parents of the lement, until the top 
+ *  unlocated element.
+ *
+ * And generates the ASSET_MSG_RETURN_TOPOLOGY_TO message, but in inverse 
+ * order (the specified element would be on the top level, but the top 
+ * location would be at the bottom level;
+ *
+ * \param url             - the connection to database.
+ * \param element_id      - the element id
+ * \param element_type_id - id of the lement's type
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or ASSET_MSG_RETURN_TOPOLOGY_TO
+ */
+zmsg_t* select_parents (const char* url, uint32_t element_id, 
+                        uint32_t element_type_id)
+{
+    assert ( element_id );      // is required
+    assert ( element_type_id ); // is required
+
+    log_info ("start\n");
+    log_info ("element_id = %d\n", element_id);
+    log_info ("element_type_id = %d\n", element_type_id);
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url); 
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            " v.id_parent, v.id_parent_type"
+            " FROM"
+            " v_bios_asset_element v"
+            " WHERE v.id = :elementid AND "
+            "       v.id_type = :elementtypeid"
+        );
+
+        // Could return one row or nothing
+        tntdb::Row row = st.setInt("elementid", element_id).
+                            setInt("elementtypeid", element_type_id).
+                            selectRow();
+    
+        uint32_t parent_id = 0;
+        uint32_t parent_type_id = 0;
+
+        row[0].get(parent_id);
+        row[1].get(parent_type_id);
+        log_info("rows selected %d, parent_id = %d, parent_type_id = %d\n", 1,
+                    parent_id, parent_type_id);
+        
+        if ( parent_id != 0 )
+        {  
+            zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
+            if ( is_asset_msg (parent) )
+                return asset_msg_encode_return_location_to (element_id, 
+                                    element_type_id, parent);
+            else if ( is_common_msg (parent) )
+                return parent;
+            else
+                return common_msg_encode_fail (BIOS_ERROR_DB, 
+                        DB_ERROR_INTERNAL, "UNSUPPORTED RETURN MESSAGE TYPE", 
+                        NULL);
+        }
+        else
+        {
+            log_info ("but this element has no parent\n");
+            return asset_msg_encode_return_location_to (element_id, 
+                                    element_type_id, zmsg_new());
+        }
+    }
+    catch (const tntdb::NotFound &e) {
+        // element with specified type was not found
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                                        e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        // internal error in database
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+}
+
+/**
+ * \brief This function processes the ASSET_MSG_GET_LOCATION_TO message
+ *
+ * In case of success it generates the ASSET_MSG_RETURN_LOCATION_TO. 
+ * In case of failure returns COMMON_MSG_FAIL.
+ * 
+ * \param url - the connection to database.
+ * \param msg - the message of the type ASSET_MSG_GET_LOCATION_TO 
+ *                  we would like to process.
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or
+ *                       ASSET_MSG_RETURN_LOCATION_TO
+ */
+zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
+{
+    assert ( getmsg );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
+    log_info ("start\n");
+    uint32_t element_id   = asset_msg_element_id (getmsg);
+    uint8_t  type_id      = asset_msg_type       (getmsg);
+    zmsg_t* result = select_parents (url, element_id, type_id);
+    log_info ("end\n");
+    return result;
 }
