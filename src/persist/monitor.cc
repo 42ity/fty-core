@@ -977,10 +977,9 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
                 bool isNotNull = row[1].get(value);
                 assert ( isNotNull );      // database is corrupted
 
-                // scale, required
-                uint32_t scale = 0;
+                // scale
+                int32_t scale = 0;
                 row[3].get(scale);
-                assert ( scale );          // database is corrupted
                 
                 sprintf(buff, "%d:%d:%d:%d", keytag_id, subkeytag_id, 
                               value, scale);
