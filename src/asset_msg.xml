@@ -110,12 +110,13 @@ Reply for a location topology for the specified element
 Reply for the ask for a location topology for the specified element
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "type"       type = "number" size = "1">Type of the element</field>
+    <field name = "name"       type = "string">Name of the asset element</field>
     <field name = "dcs"        type = "frame">List of datacenters, matryoshka of this msg</field>
     <field name = "rooms"      type = "frame">List of rooms, matryoshka of this msg</field>
     <field name = "rows"       type = "frame">List of rows, matryoshka of this msg</field>
     <field name = "racks"      type = "frame">List of racks, matryoshka of this msg</field>
     <field name = "devices"    type = "frame">List of devices, matryoshka of this msg</field>
-    <field name = "grs"        type = "frame">List of groups, matryoshka of this msg</field>
+    <field name = "grps"       type = "frame">List of groups, matryoshka of this msg</field>
 </message>
 
 </class>
