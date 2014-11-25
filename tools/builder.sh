@@ -126,14 +126,23 @@ installSubdir() {
 	  make DESTDIR=${DESTDIR} install )
 }
 
+_WARNLESS_UNUSED=0
+suppressWarningsUnused() {
+	[ "$_WARNLESS_UNUSED" != 0 ] && return
+	CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	export CFLAGS CXXFLAGS
+	echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+	_WARNLESS_UNUSED=1
+}
+### The flag can be set in environment rather than passed on command line
+[ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
+
 while [ $# -gt 0 ]; do
 	case "$1" in
 	    "--warnless-unused")
+		suppressWarningsUnused
 		shift
-		CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		export CFLAGS CXXFLAGS
-		echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
 		;;
 	    *)	break ;;
 	esac
