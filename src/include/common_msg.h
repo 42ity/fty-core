@@ -48,10 +48,12 @@
     GET_MEASURE_SUBTYPE_S - 
         mt_id               number 2    Measurement type id
         mts_name            string      Measurement subtype name
+        mts_scale           number 1    Preffered scale
 
     GET_MEASURE_SUBTYPE_SS - 
         mt_name             string      Measurement type name
         mts_name            string      Measurement subtype name
+        mts_scale           number 1    Preffered scale
 
     RETURN_MEASURE_TYPE - 
         mt_id               number 2    Measurement type id
@@ -271,13 +273,15 @@ zmsg_t *
 zmsg_t *
     common_msg_encode_get_measure_subtype_s (
         uint16_t mt_id,
-        const char *mts_name);
+        const char *mts_name,
+        byte mts_scale);
 
 //  Encode the GET_MEASURE_SUBTYPE_SS 
 zmsg_t *
     common_msg_encode_get_measure_subtype_ss (
         const char *mt_name,
-        const char *mts_name);
+        const char *mts_name,
+        byte mts_scale);
 
 //  Encode the RETURN_MEASURE_TYPE 
 zmsg_t *
@@ -466,14 +470,16 @@ int
 int
     common_msg_send_get_measure_subtype_s (void *output,
         uint16_t mt_id,
-        const char *mts_name);
+        const char *mts_name,
+        byte mts_scale);
     
 //  Send the GET_MEASURE_SUBTYPE_SS to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_get_measure_subtype_ss (void *output,
         const char *mt_name,
-        const char *mts_name);
+        const char *mts_name,
+        byte mts_scale);
     
 //  Send the RETURN_MEASURE_TYPE to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.

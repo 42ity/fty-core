@@ -90,7 +90,7 @@ long int nut_scale(long int value, int scale ) {
  */
 measurement_id_t nut_get_measurement_id(const std::string &name) {
     common_msg_t *cmsg;
-    zmsg_t *reply;
+    zmsg_t *request, *reply;
     measurement_id_t ID;
 
     memset(&ID, 0, sizeof(ID));
@@ -99,11 +99,11 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
     if( i ) {
         typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
-        cmsg = common_msg_new(COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-        assert(cmsg);
-        common_msg_set_mt_name(cmsg, typeName.c_str());
-        common_msg_set_mts_name(cmsg, subtypeName.c_str());
-        reply = process_measures_meta(&cmsg);
+        request = common_msg_encode_get_measure_subtype_ss(
+                        typeName.c_str(),
+                        subtypeName.c_str(),
+                        -2);
+        reply = process_measures_meta(&request);
         common_msg_destroy(&cmsg);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
