@@ -408,7 +408,7 @@ CREATE VIEW v_bios_asset_link AS
             v1.id_asset_device_dest,
             v1.dest_in,
             v1.id_asset_link_type,
-            v2.id_asset_element
+            v2.id_asset_element_src
     FROM t_bios_asset_link v1
         LEFT JOIN v_bios_asset_device v2
         ON(v1.id_asset_device_src = v2.id_asset_device);
