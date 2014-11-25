@@ -58,7 +58,7 @@ fi
 
 do_make() {
 	if [ ! -s Makefile ]; then
-		case "$@" in
+		case "$*" in
 		    *clean*)
 				echo "INFO: Makefile absent, skipping 'make $@'"
 #distclean?#			[ -d config ] && rm -rf config
@@ -69,7 +69,7 @@ do_make() {
 		esac
 	fi
 	echo "INFO: running 'make "$@"'"
-	case "$@" in
+	case "$*" in
 	    *distclean*)
 		### Hack to avoid running configure if it is newer
 		### than Makefile - these are deleted soon anyway
@@ -78,7 +78,17 @@ do_make() {
 		[ -f config.status ] && touch config.status
 		;;
 	esac
-	make "$@"
+
+	make "$@"; RES=$?
+
+	[ "$RES" != 0 ] && case "$*" in
+	    *-k*distclean*)
+		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2
+		RES=0
+		;;
+	esac
+
+	return $RES
 }
 
 buildSamedir() {
