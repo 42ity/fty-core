@@ -15,13 +15,6 @@ LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
 
-# debuging
-AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],
-                                     [debugging environment (default no)])])
-AS_IF([test "x$enable_debug" != "xyes"], [
-    AC_DEFINE(NDEBUG, [1], [Define disabling debugging])
-])
-
 # display source/build paths of interest to us
 echo "Value of srcdir...        '$srcdir'"
 echo "Value of current dir...   '`pwd`'"
@@ -273,8 +266,6 @@ Summary:
         LIBSASL2_CFLAGS:         ${LIBSASL2_CFLAGS}
         LIBSASL2_LIBS:           ${LIBSASL2_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
-
-        debug mode:              ${enable_debug:-no}
 
 	absolute SRC DIR:        ${_srcdir_abs}
 ])
