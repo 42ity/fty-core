@@ -83,7 +83,12 @@ do_make() {
 
 	[ "$RES" != 0 ] && case "$*" in
 	    *-k*distclean*)
-		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2
+		### Killing files enforces that the project is reconfigured
+		### during later make attempts (this protects against some
+		### broken contents of a Makefile). Depending on the result
+		### of "rm -f" protects against unwritable directories.
+		rm -rf Makefile config.status config/ && \
+		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2 && \
 		RES=0
 		;;
 	esac
