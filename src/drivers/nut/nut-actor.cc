@@ -1,5 +1,4 @@
 #include <string>
-#include <iostream>
 #include <ctime>
 #include "nut-driver.h"
 #include "powerdev_msg.h"
@@ -15,6 +14,16 @@ namespace nut
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
 #define NUT_MESSAGE_REPEAT_AFTER 300
+// TODO: read this from configuration (check with upsd ever 5s)
+#define NUT_POLLING_INTERVAL  5000
+
+/**
+ * \brief private sructure for caching measurement IDs
+ */
+struct measurement_id_t {
+    uint16_t type, subtype;
+    signed char scale;
+};
 
 // basic powerdev properties
 static const std::vector<std::string> basicProperties {
@@ -33,7 +42,7 @@ zmsg_t *nut_device_to_powerdev_msg(const NUTDevice &dev) {
     assert(otherProperties);
     auto properties = dev.properties();
 
-    memset(name,0, sizeof(char *) * basicProperties.size() );
+    memset(name, 0, sizeof(char *) * basicProperties.size() );
     // get basics properties
     for(unsigned int i=0; i < basicProperties.size(); ++i) {
         auto iter = properties.find(basicProperties[i]);
@@ -54,7 +63,7 @@ zmsg_t *nut_device_to_powerdev_msg(const NUTDevice &dev) {
         name[3],
         name[4],
         otherProperties
-    );
+                                              );
     // clean allocated memory
     for(unsigned int i=0; i < basicProperties.size(); ++i) {
         if(name[i]) free(name[i]);
@@ -71,47 +80,42 @@ long int nut_scale(long int value, int scale ) {
     scale += 2;
     if( scale == 0 ) { return value; }
     if( scale > 0 ) {
-        return value / pow(10,scale);
+        return value / pow(10, scale);
     }
-    return value * pow(10,-scale);
+    return value * pow(10, -scale);
 }
-
-/**
- * \brief private sructure for caching measurement IDs
- */
-struct measurement_id_t {
-    uint16_t type, subtype;
-    signed char scale;
-};
 
 /**
  * \brief function for discovering measurement IDs
  */
-measurement_id_t nut_get_measurement_id(const std::string &name ) {
+measurement_id_t nut_get_measurement_id(const std::string &name) {
     common_msg_t *cmsg;
     zmsg_t *reply;
     measurement_id_t ID;
 
-    memset(&ID,0,sizeof(ID));
+    memset(&ID, 0, sizeof(ID));
     std::string typeName = "" , subtypeName = "";
     std::size_t i = name.find(".");
     if( i ) {
-        typeName = name.substr(0,i);
+        typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
+        cmsg = common_msg_new(COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
+        assert(cmsg);
+        common_msg_set_mt_name(cmsg, typeName.c_str());
+        common_msg_set_mts_name(cmsg, subtypeName.c_str());
+        reply = process_measures_meta(&cmsg);
+        common_msg_destroy(&cmsg);
+        if( reply ) {
+            cmsg = common_msg_decode(&reply);
+            ID.type = common_msg_mt_id(cmsg);
+            ID.subtype = common_msg_mts_id(cmsg);
+            ID.scale = (signed char)common_msg_mts_scale(cmsg);
+            common_msg_destroy(&cmsg);
+        }
+        zmsg_destroy(&reply);
+    } else {
+        log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
     }
-    cmsg = common_msg_new(COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-    common_msg_set_mt_name(cmsg,typeName.c_str());
-    common_msg_set_mts_name(cmsg,subtypeName.c_str());
-    assert(cmsg);
-    reply = process_measures_meta(&cmsg);
-    common_msg_destroy(&cmsg);
-    if( reply ) {
-        cmsg = common_msg_decode(&reply);
-        ID.type = common_msg_mt_id(cmsg);
-        ID.subtype = common_msg_mts_id(cmsg);
-        ID.scale = (signed char)common_msg_mts_scale(cmsg);
-    }
-    zmsg_destroy(&reply);
     return ID;
 }
 
@@ -119,7 +123,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name ) {
  * \brief creating powerdev message from NUTDevice 
  */
 zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value) {
-    static std::map<std::string,measurement_id_t> IDs;
+    static std::map<std::string, measurement_id_t> IDs;
     zmsg_t *zmsg;
     measurement_id_t ID;
    
@@ -128,24 +132,28 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
         ID = nut_get_measurement_id(name);
         if( ID.type != 0 && ID.subtype != 0 ) {
             IDs[name] = ID;
-            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(),ID.type,ID.subtype, ID.scale );
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(), ID.type, ID.subtype, ID.scale );
         } else {
             log_error("Can't get measurement type and subtype for %s\n", name.c_str());
             return NULL;
         }
     }
-    std::string type = "ups";
-    if( dev.hasProperty("type") ) { type = dev.property("type"); }
-    // TODO: get NUT name from DB/is it necessary?
-    zmsg = common_msg_encode_new_measurement(
-        "NUT",          
-        dev.name().c_str(),
-        type.c_str(),
-        IDs[name].type,
-        IDs[name].subtype,
-        nut_scale(value,IDs[name].scale)
-    );
-    return zmsg;
+    if( dev.hasProperty("type") ) {
+        std::string type = dev.property("type");
+        // TODO: get NUT name from DB/is it necessary?
+        zmsg = common_msg_encode_new_measurement(
+            "NUT",          
+            dev.name().c_str(),
+            type.c_str(),
+            IDs[name].type,
+            IDs[name].subtype,
+            nut_scale(value, IDs[name].scale)
+        );
+        return zmsg;
+    } else {
+        log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
+        return NULL;
+    }
 }
 
 // we know that *args param in nut_actor() is unused parameter
@@ -162,7 +170,7 @@ void nut_actor(zsock_t *pipe, void *args) {
     log_info ("%s", "nut_actor start\n");
 
     bool advertise;
-    std::map<std::string,measurement_id_t> measurement_ids;
+    std::map<std::string, measurement_id_t> measurement_ids;
     std::time_t timestamp = std::time(NULL);
 
     zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
@@ -173,7 +181,7 @@ void nut_actor(zsock_t *pipe, void *args) {
     NUTDeviceList listOfUPS;
 
     while(!zpoller_terminated(poller)) {
-        zsock_t *which = (zsock_t *)zpoller_wait(poller, 5000);
+        zsock_t *which = (zsock_t *)zpoller_wait(poller, NUT_POLLING_INTERVAL);
         if (which == pipe) {
             break;
         } else if( which == NULL ) {
@@ -190,10 +198,10 @@ void nut_actor(zsock_t *pipe, void *args) {
                     // something has changed or we should advertise status
                     // go trough measurements
                     for(auto &measurement : it->second.physics( ! advertise ) ) {
-                        zmsg_t *msg = nut_device_to_measurement_msg(it->second,measurement.first,measurement.second);
+                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second);
                         if(msg) {
                             log_info ("ups %s : %s\n", it->second.name().c_str(), it->second.toString().c_str() );
-                            zmsg_send(&msg,dbsock);
+                            zmsg_send(&msg, dbsock);
                         }
                         zmsg_destroy(&msg);
                     }
@@ -201,7 +209,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                     // send also POWERDEV_MSG_POWERDEV_STATUS
                     zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
                     log_info ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
-                    zmsg_send(&msg,dbsock);
+                    zmsg_send(&msg, dbsock);
                     zmsg_destroy(&msg);
                     it->second.changed(false);
                 }
