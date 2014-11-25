@@ -219,6 +219,4 @@ The last measurements about the device with asset_element_id
     <field name = "measurements"  type = "strings"> A list of string values "keytagid:subkeytagid:value:scale"</field>
 </message>
 
-
-
 </class>

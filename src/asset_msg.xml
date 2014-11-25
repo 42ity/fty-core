@@ -90,7 +90,7 @@ Ask for a location topology started from the specified element
     <field name = "element_id"  type = "number" size = "4">Unique ID of the start asset element</field>
     <field name = "type"        type = "number" size = "1">Type of the start element</field>
     <field name = "recursive"   type = "number" size = "1">If the search should be recursive (=1) or not (=0)</field>
-    <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if null take all</field>
+    <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if 7 take all</field>
 </message>
 
 <message name = "get_location_to" id = "13">
@@ -110,12 +110,46 @@ Reply for a location topology for the specified element
 Reply for the ask for a location topology for the specified element
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "type"       type = "number" size = "1">Type of the element</field>
+    <field name = "name"       type = "string">Name of the asset element</field>
     <field name = "dcs"        type = "frame">List of datacenters, matryoshka of this msg</field>
     <field name = "rooms"      type = "frame">List of rooms, matryoshka of this msg</field>
     <field name = "rows"       type = "frame">List of rows, matryoshka of this msg</field>
     <field name = "racks"      type = "frame">List of racks, matryoshka of this msg</field>
     <field name = "devices"    type = "frame">List of devices, matryoshka of this msg</field>
-    <field name = "grs"        type = "frame">List of groups, matryoshka of this msg</field>
+    <field name = "grps"       type = "frame">List of groups, matryoshka of this msg</field>
 </message>
+
+<message name = "get_power_from" id = "16">
+Request for a list of devices directly powered to the specified device
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "powerchain_device" id = "17">
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+    <field name = "type_name"   type = "string">Type of the device</field>
+    <field name = "name"        type = "string">Asset element name of the device</field>
+</message>
+
+<message name = "return_power" id = "18">
+Reply for the request for a list of devices directly powered to the specified device
+    <field name = "devices" type = "frame">List of devices(id, name, typename), matroyska of he powerchain_device</field>
+    <field name = "powers"  type = "strings">List of link messages in form "src_socket:src_id:dst_socket:dst_id"</field>
+</message>
+
+<message name = "get_power_to" id = "19">
+Request for a full power chain which powers the requested target device.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "get_power_group" id = "20">
+Request for a full power chain from the group.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the group</field>
+</message>
+
+<message name = "get_power_datacenter" id = "21">
+Request for a full power chains in the target datacentrum.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the datacenter</field>
+</message>
+
 
 </class>
