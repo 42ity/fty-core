@@ -119,4 +119,37 @@ Reply for the ask for a location topology for the specified element
     <field name = "grps"       type = "frame">List of groups, matryoshka of this msg</field>
 </message>
 
+<message name = "get_power_from" id = "16">
+Request for a list of devices directly powered to the specified device
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "powerchain_device" id = "17">
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+    <field name = "type_name"   type = "string">Type of the device</field>
+    <field name = "name"        type = "string">Asset element name of the device</field>
+</message>
+
+<message name = "return_power" id = "18">
+Reply for the request for a list of devices directly powered to the specified device
+    <field name = "devices" type = "frame">List of devices(id, name, typename), matroyska of he powerchain_device</field>
+    <field name = "powers"  type = "strings">List of link messages in form "src_socket:src_id:dst_socket:dst_id"</field>
+</message>
+
+<message name = "get_power_to" id = "19">
+Request for a full power chain which powers the requested target device.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "get_power_group" id = "20">
+Request for a full power chain from the group.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the group</field>
+</message>
+
+<message name = "get_power_datacenter" id = "21">
+Request for a full power chains in the target datacentrum.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the datacenter</field>
+</message>
+
+
 </class>
