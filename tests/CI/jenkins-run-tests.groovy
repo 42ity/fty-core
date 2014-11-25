@@ -67,11 +67,11 @@ for(
     } else  if ( result == Result.UNSTABLE ) {
         println "WARNING: " + jobName + " result is " + result.toString();
         println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
     } else {
         println "ERROR: " + jobName + " result is " + result.toString();
         println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
         throw new Exception("Job $jobName failed");
     }
 }
@@ -96,6 +96,6 @@ for(
     } else {
         println "WARNING: " + jobName + " result is " + result.toString();
         println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
     }
 }
