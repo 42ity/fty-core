@@ -357,7 +357,7 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
        
         nmap_msg_send (&msg, incoming);
 
-        poller = zpoller_new (router);
+        poller = zpoller_new (router, NULL);
         assert (poller);
 
         while (!zpoller_terminated (poller)) {
