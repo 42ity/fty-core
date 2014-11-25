@@ -18,7 +18,7 @@ import hudson.utils.*
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Author(s): Tomas Halman <TomasHalman@eaton.com>
- *           
+ *
  * Description: Runs the "Test plan". Necessary jobs first (like compiling),
  *              later on functional/integration tests. If one of necessary jobs
  *              fails, Test plan fails immediatelly too. If one of functional/integration
@@ -26,18 +26,14 @@ import hudson.utils.*
  *              using "Console output parsing" plugin.
  */
 
-def startJob(name,params) {
+def doJob(name,params) {
     job = Hudson.instance.getJob(name);
-    job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
-    sleep(1000);
-}
-
-def waitForJob(name) {
-    job = Hudson.instance.getJob(name);
-    while( job.isInQueue() || job.isBuilding() ) {
+    fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
+    fut.waitForStart();
+    while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
-    return job.getLastBuild().getResult();
+    return job.getLastBuild();
 }
 
 
@@ -63,14 +59,19 @@ for(
     ]
 ){
     println "=== Starting $jobName ===";
-    startJob(jobName, jobParams);
-    result = waitForJob(jobName);
+    lastbuild = doJob(jobName, jobParams);
+    result = lastbuild.getResult();
     if ( result == Result.SUCCESS ) {
-        println result.toString()
+        print result.toString();
+        println ", see " + lastbuild.getAbsoluteUrl() + " for details";
     } else  if ( result == Result.UNSTABLE ) {
         println "WARNING: " + jobName + " result is " + result.toString();
+        println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
     } else {
         println "ERROR: " + jobName + " result is " + result.toString();
+        println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
         throw new Exception("Job $jobName failed");
     }
 }
@@ -82,15 +83,19 @@ for(
         "test_db_tests",
         "test_netmon",
         "test_restapi",
+        "test_general_database",
         "stop_bios"
     ]
 ){
     println "=== Starting $jobName ===";
-    startJob(jobName, jobParams);
-    result = waitForJob(jobName);
+    lastbuild = doJob(jobName, jobParams);
+    result = lastbuild.getResult();
     if ( result == Result.SUCCESS ) {
-        println result.toString()
+        print result.toString();
+        println ", see " + lastbuild.getAbsoluteUrl() + " for details";
     } else {
         println "WARNING: " + jobName + " result is " + result.toString();
+        println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
+        println "or  " + lastbuild.getAbsoluteUrl() + "console/ for console output.";
     }
 }
