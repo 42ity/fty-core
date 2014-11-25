@@ -105,10 +105,10 @@ std::string NUTDevice::name() const {
  * change getters  
  */
 bool NUTDevice::changed() const {
-    for(auto it : _physics ){
+    for(auto &it : _physics ){
         if(it.second.changed) return true;
     }
-    for(auto it : _inventory ){
+    for(auto &it : _inventory ){
         if(it.second.changed) return true;
     }
     return false;
@@ -136,10 +136,10 @@ bool NUTDevice::changed(const std::string &name) const {
  * change setters
  */
 void NUTDevice::changed(const bool status) {
-    for(auto it : _physics ){
+    for(auto &it : _physics ){
         it.second.changed = status;
     }
-    for(auto it : _inventory ){
+    for(auto &it : _inventory ){
         it.second.changed = status;
     }
 }

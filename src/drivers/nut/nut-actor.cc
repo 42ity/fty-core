@@ -1,5 +1,6 @@
 #include <string>
 #include <iostream>
+#include <ctime>
 #include "nut-driver.h"
 #include "powerdev_msg.h"
 #include "measure_types.h"
@@ -12,6 +13,9 @@ namespace drivers
 namespace nut
 {
 
+// TODO: read this from configuration (once in 5 minutes now (300s))
+#define NUT_MESSAGE_REPEAT_AFTER 300
+
 // basic powerdev properties
 static const std::vector<std::string> basicProperties {
     "model",
@@ -21,7 +25,7 @@ static const std::vector<std::string> basicProperties {
     "status",
 };
 
-zmsg_t *nutdevice_to_powerdev_msg(const NUTDevice &dev) {
+zmsg_t *nut_device_to_powerdev_msg(const NUTDevice &dev) {
     zmsg_t *msg;
     char *name[basicProperties.size()];
 
@@ -43,13 +47,13 @@ zmsg_t *nutdevice_to_powerdev_msg(const NUTDevice &dev) {
         zhash_insert(otherProperties, (void*)iter.first.c_str(), (void *)( iter.second.c_str() ) );
     }
     msg = powerdev_msg_encode_powerdev_status(
-         dev.name().c_str(),
-         name[0],
-         name[1],
-         name[2],
-         name[3],
-         name[4],
-         otherProperties
+        dev.name().c_str(),
+        name[0],
+        name[1],
+        name[2],
+        name[3],
+        name[4],
+        otherProperties
     );
     // clean allocated memory
     for(unsigned int i=0; i < basicProperties.size(); ++i) {
@@ -59,60 +63,107 @@ zmsg_t *nutdevice_to_powerdev_msg(const NUTDevice &dev) {
     return msg;
 }
 
+/**
+ * \brief scalling internal nut values to database scale
+ */
+long int nut_scale(long int value, int scale ) {
+    // NUT driver uses -2 scale internally
+    scale += 2;
+    if( scale == 0 ) { return value; }
+    if( scale > 0 ) {
+        return value / pow(10,scale);
+    }
+    return value * pow(10,-scale);
+}
+
+/**
+ * \brief private sructure for caching measurement IDs
+ */
 struct measurement_id_t {
-    int type,subtype;
+    uint16_t type, subtype;
+    signed char scale;
 };
 
-zmsg_t * nutdevice_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value) {
+/**
+ * \brief function for discovering measurement IDs
+ */
+measurement_id_t nut_get_measurement_id(const std::string &name ) {
+    common_msg_t *cmsg;
+    zmsg_t *reply;
+    measurement_id_t ID;
+
+    memset(&ID,0,sizeof(ID));
+    std::string typeName = "" , subtypeName = "";
+    std::size_t i = name.find(".");
+    if( i ) {
+        typeName = name.substr(0,i);
+        subtypeName = name.substr(i+1);
+    }
+    cmsg = common_msg_new(COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
+    common_msg_set_mt_name(cmsg,typeName.c_str());
+    common_msg_set_mts_name(cmsg,subtypeName.c_str());
+    assert(cmsg);
+    reply = process_measures_meta(&cmsg);
+    common_msg_destroy(&cmsg);
+    if( reply ) {
+        cmsg = common_msg_decode(&reply);
+        ID.type = common_msg_mt_id(cmsg);
+        ID.subtype = common_msg_mts_id(cmsg);
+        ID.scale = (signed char)common_msg_mts_scale(cmsg);
+    }
+    zmsg_destroy(&reply);
+    return ID;
+}
+
+/**       
+ * \brief creating powerdev message from NUTDevice 
+ */
+zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value) {
     static std::map<std::string,measurement_id_t> IDs;
-    std::cout << "nut to measurement: " << name << "\n";
+    zmsg_t *zmsg;
+    measurement_id_t ID;
+   
     if( IDs.count(name) == 0 ) {
-        // we dont have this ID name, lets get it
-        std::string typeName = "" , subtypeName = "";
-        std::size_t i = name.find(".");
-        if( i ) {
-            typeName = name.substr(0,i);
-            subtypeName = name.substr(i+1);
-        }
-        common_msg_t * cmsg = common_msg_new(COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-        common_msg_set_mt_name(cmsg,typeName.c_str());
-        common_msg_set_mts_name(cmsg,subtypeName.c_str());
-        assert(cmsg);
-        zmsg_t* reply = process_measures_meta(&cmsg);
-        common_msg_destroy(&cmsg);
-        if( reply ) {
-            cmsg = common_msg_decode(&reply);
-            measurement_id_t ID;
-            ID.type = common_msg_mt_id(cmsg);
-            ID.subtype = common_msg_mts_id(cmsg);
-            if( ID.type != 0 && ID.subtype != 0 ) {
-                common_msg_print(cmsg);
-                IDs[name] = ID;
-            }
-        }
-        //zmsg_destroy(&zmsg);
-        zmsg_destroy(&reply);
-        if( IDs.count(name) == 0 ) {
+        // we dont know measurement IDs
+        ID = nut_get_measurement_id(name);
+        if( ID.type != 0 && ID.subtype != 0 ) {
+            IDs[name] = ID;
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(),ID.type,ID.subtype, ID.scale );
+        } else {
+            log_error("Can't get measurement type and subtype for %s\n", name.c_str());
             return NULL;
         }
     }
-    //if( 
-    // FIXME: get nut name from DB
-    zmsg_t * zmsg = common_msg_encode_new_measurement(
-                                                      "NUT",          
-                                                      dev.name().c_str(),
-                                                      "ups",
-                                                      IDs[name].type,
-                                                      IDs[name].subtype,
-                                                      value
+    std::string type = "ups";
+    if( dev.hasProperty("type") ) { type = dev.property("type"); }
+    // TODO: get NUT name from DB/is it necessary?
+    zmsg = common_msg_encode_new_measurement(
+        "NUT",          
+        dev.name().c_str(),
+        type.c_str(),
+        IDs[name].type,
+        IDs[name].subtype,
+        nut_scale(value,IDs[name].scale)
     );
     return zmsg;
 }
 
+// we know that *args param in nut_actor() is unused parameter
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+
+/**
+ * \brief main nut-driver loop. Checks NUT every 5 second for changes.
+ *        detected changes are propagated immediatelly. Once in
+ *        NUT_MESSAGE_REPEAT_AFTER interval [seconds], all values are
+ *        propagated, even if there is nochange.
+ */
 void nut_actor(zsock_t *pipe, void *args) {
     log_info ("%s", "nut_actor start\n");
 
+    bool advertise;
     std::map<std::string,measurement_id_t> measurement_ids;
+    std::time_t timestamp = std::time(NULL);
 
     zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
     assert(dbsock);
@@ -122,27 +173,36 @@ void nut_actor(zsock_t *pipe, void *args) {
     NUTDeviceList listOfUPS;
 
     while(!zpoller_terminated(poller)) {
-        zsock_t *which = (zsock_t *)zpoller_wait(poller, 1000);
+        zsock_t *which = (zsock_t *)zpoller_wait(poller, 5000);
         if (which == pipe) {
             break;
         } else if( which == NULL ) {
+            if( timestamp + NUT_MESSAGE_REPEAT_AFTER < time(NULL) ) {
+                // timestamp + NUT_MESSAGE_REPEAT_AFTER is in past
+                advertise = true;
+                timestamp = std::time(NULL);
+            } else {
+                advertise = false;
+            }
             listOfUPS.update();
             for(auto it = listOfUPS.begin(); it != listOfUPS.end() ; ++it) {
-                if(it->second.changed() ) {
-                    //
-                    for(auto &measurement : it->second.physics(true) ) {
-                        zmsg_t *msg = nutdevice_to_measurement_msg(it->second,measurement.first,measurement.second);
+                if(advertise || it->second.changed() ) {
+                    // something has changed or we should advertise status
+                    // go trough measurements
+                    for(auto &measurement : it->second.physics( ! advertise ) ) {
+                        zmsg_t *msg = nut_device_to_measurement_msg(it->second,measurement.first,measurement.second);
                         if(msg) {
                             log_info ("ups %s : %s\n", it->second.name().c_str(), it->second.toString().c_str() );
                             zmsg_send(&msg,dbsock);
                         }
                         zmsg_destroy(&msg);
                     }
-                    //FIXME: don't send allways
-                    // zmsg_t *msg = nutdevice_to_powerdev_msg(it->second);
-                    // log_info ("ups %s : %s\n", it->second.name().c_str(), it->second.toString().c_str() );
-                    // zmsg_send(&msg,dbsock);
-                    // zmsg_destroy(&msg);
+                    // TODO: status mapping to COMMON_MSG_NEW_MEASUREMENT ?
+                    // send also POWERDEV_MSG_POWERDEV_STATUS
+                    zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
+                    log_info ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
+                    zmsg_send(&msg,dbsock);
+                    zmsg_destroy(&msg);
                     it->second.changed(false);
                 }
             }
@@ -153,6 +213,8 @@ void nut_actor(zsock_t *pipe, void *args) {
     log_info ("%s", "nut_actor end\n");
 }
 
+#pragma GCC diagnostic pop
+
+
 } // namespace drivers::nut
 } // namespace drivers
-
