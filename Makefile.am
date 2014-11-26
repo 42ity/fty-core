@@ -463,6 +463,7 @@ all-docs: man-docs html-docs doxygen-docs
 doxygen-docs: ${myDOXDIR}/html
 
 html-docs: INSTALL.html CONTRIBUTING.html \
+		docs/develop/README-builder.html \
 		INSTALL-referenceOS-debian8.html
 
 man-docs:
@@ -492,6 +493,9 @@ else
 endif
 
 if HAVE_ASCIIDOC
+docs/develop:
+	test -d "$@" || mkdir -p "$@"
+
 INSTALL.html: INSTALL
 	$(ASCIIDOC) -b html -o $@ $^
 
@@ -500,6 +504,10 @@ CONTRIBUTING.html: CONTRIBUTING
 
 INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
 	$(ASCIIDOC) -b html -o $@ $^
+
+docs/develop/README-builder.html: $(top_srcdir)/docs/develop/README-builder.txt
+	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
+	$(ASCIIDOC) -b html -o $@ $<
 else
 INSTALL.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
@@ -508,6 +516,9 @@ CONTRIBUTING.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 
 INSTALL-referenceOS-debian8.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+
+docs/develop/README-builder.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 endif
 
@@ -532,6 +543,7 @@ clean-local: clean-man
 	/bin/rm -f INSTALL.html
 	/bin/rm -f CONTRIBUTING.html
 	/bin/rm -f INSTALL-referenceOS-debian8.html
+	/bin/rm -f docs/develop/README-builder.html
 
 #----------------------------------------------------------------------
 #                        astyle formating
