@@ -37,11 +37,16 @@ quit with success (or fail otherwise).
 
 
 == Command-line options
-Currently one optional modifier is supported on the command-line:
+Currently these optional modifier are supported on the command-line:
 
  * '--warnless-unused' -- this suppresses the compiler warnings about
 unused variables (see details below in the 'WARNLESS_UNUSED' envvar
 description).
+ * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
+(see below) for this invokation of the script i.e. to override the current
+environment variable
+ * '--parmake' or '--enable-parallel-make' -- this sets 'NOPARMAKE=no'
+to enable parallel makes (enabled by default unless envvars forbid)
 
 The first command-line attribute that is not an option defined above
 is considered to be the request of a command-line method as described
@@ -74,12 +79,16 @@ in the project root directory, and finally run `make distcheck`
  * 'distclean' -- (re)create `configure` if needed, run it in the
 project root directory to create the proper 'Makefile', and run
 `make distclean` to delete everything as configured in 'Makefile'
+ * 'make' or 'make-samedir', and 'make-subdir' -- run just the parallel
+and sequential 'make' routine for the optionally specified target(s)
+from the relevant (base or "relocated") directory; that is -- do not
+cleanup and reconfigure the build area
 
 Any parameters on the command line after the method specification
 are processed according to the method. Currently this means the
-optional list of 'Makefile' targets for the 'build-samedir',
-'build-subdir', 'install-samedir' and 'install-subdir' methods,
-and ignored for others.
+optional list of 'Makefile' targets for the 'make-samedir',
+'make-subdir', 'build-samedir', 'build-subdir', 'install-samedir'
+and 'install-subdir' methods, and ignored for others.
 
 
 
@@ -102,7 +111,9 @@ directory name which should contain the project sources.
 
 The `builder.sh` script rebases into the root of the project sources
 as specified by 'CHECKOUTDIR' if present, or guessed from the script's
-own path name by default.
+own path name by default. Then during the script's work the variable
+is redefined to contain the full filesystem path of the root of project
+sources.
 
 
 === 'BLDARCH' tag
@@ -131,8 +142,20 @@ the installation target is being made.
 The default value generally is empty (install into the currently running
 OS), and the default value in `builder.sh` depends on '$BLDARCH':
 ----
-:; DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH}
+:; DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
 ----
+
+
+=== 'BUILDSUBDIR' path
+If the "relocated" build is invoked ('make-subdir', 'build-subdir', or
+'install-subdir'), then the specified directory (absolute, or relative
+to the '$CHECKOUTDIR') is used to contain the temporary build products.
+
+The default value in `builder.sh` depends on '$BLDARCH':
+----
+:; BUILDSUBDIR="build-${BLDARCH}"
+----
+
 
 
 === 'WARNLESS_UNUSED' toggle
@@ -162,7 +185,7 @@ the parallel make uncovered some race conditions or other brokenness
 in our 'Makefile' or in the tools used, and this should generally be
 fixed.
 
-`export NOPARMAKE=Y` allows to confirm or rule out such problems: it
+`export NOPARMAKE=yes` allows to confirm or rule out such problems: it
 tells `builder.sh` to skip the parallel building attempts and proceed
 to a sequential `make` right after a successful `configure`.
 
