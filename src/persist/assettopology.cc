@@ -572,14 +572,14 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
     zmsg_t* ret = zmsg_new();
     assert ( ret );
- 
+
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
-            "  v.dest_type_name"
+            "  v.dest_type_name, v.src_type_name, v.src_name"
             " FROM"
             "  v_bios_asset_link_topology v"
             " WHERE"
@@ -592,7 +592,6 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                   select();
         
         char buff[28];     // 10+3+3+10+ safe 2
-        
         
         // Go through the selected links
         for ( auto &row: result )
@@ -639,6 +638,25 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( rv != -1 );
             assert ( el == NULL );
         } // end for
+        auto it = result.begin();
+        tntdb::Row row = *it;
+       
+        // device_name, required
+        std::string device_name = "";
+        row[6].get(device_name);
+        assert ( device_name != "" );
+        
+        // device_type_name, requiured
+        std::string device_type_name = "";
+        row[5].get(device_type_name);
+        assert ( device_type_name != "" );
+
+        zmsg_t* el = asset_msg_encode_powerchain_device
+                                (element_id, device_type_name.c_str(), device_name.c_str());
+        int rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
+        assert ( rv != -1 );
+        assert ( el == NULL );
+
     }
     catch (const std::exception &e) {
         // internal error in database
