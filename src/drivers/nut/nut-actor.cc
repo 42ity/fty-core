@@ -102,8 +102,9 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
         request = common_msg_encode_get_measure_subtype_ss(
                         typeName.c_str(),
                         subtypeName.c_str(),
-                        -2);
+                        (uint8_t)-2);
         reply = process_measures_meta(&request);
+        zmsg_destroy(&request);
         common_msg_destroy(&cmsg);
         if( reply ) {
             cmsg = common_msg_decode(&reply);

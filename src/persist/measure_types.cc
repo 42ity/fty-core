@@ -52,7 +52,7 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                 tntdb::Statement st = conn.prepareCached(
                     "insert into t_bios_measurement_types (name) "
                     "select :name from dual WHERE NOT EXISTS "
-                    "(select * from t_bios_measurement_types where name=:name);"
+                    "(select id from t_bios_measurement_types where name=:name);"
                 );
                 st.setString("name", common_msg_mt_name(*msg)).execute();
             } catch (const std::exception &e) {
@@ -96,12 +96,12 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                 tntdb::Statement st = conn.prepareCached(
                     "insert into t_bios_measurement_subtypes (name, type_id, scale) "
                     "select :name, :type_id, :scale from dual WHERE NOT EXISTS "
-                    "(select * from t_bios_measurement_subtypes where "
+                    "(select id from t_bios_measurement_subtypes where "
                     " name=:name and type_id=:mt_id);"
                 );
                 st.setString("name", common_msg_mt_name(*msg)).
                    setInt("mt_id", common_msg_mt_id(*msg)).
-                   setInt("scale", common_msg_mts_scale(*msg)).
+                   setInt("scale", (int8_t)common_msg_mts_scale(*msg)).
                    execute();
             } catch (const std::exception &e) {
             }
@@ -139,6 +139,7 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                           common_msg_mts_scale(*msg) );
                 common_msg_destroy(&dta);
                 ret = process_measures_meta(&req);
+                zmsg_destroy(&req);
             }
             break;
 
