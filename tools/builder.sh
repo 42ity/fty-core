@@ -143,8 +143,7 @@ buildSubdir() {
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
 	verb_run ../configure && \
-	{ do_build "$@" && \
-	  do_make DESTDIR=${DESTDIR} install; } )
+	do_build "$@" )
 }
 
 installSamedir() {
