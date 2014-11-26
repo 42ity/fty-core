@@ -458,8 +458,12 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #                        doxygen html generation
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
-		INSTALL-referenceOS-debian8.html man-docs
+all-docs: man-docs html-docs doxygen-docs
+
+doxygen-docs: ${myDOXDIR}/html
+
+html-docs: INSTALL.html CONTRIBUTING.html \
+		INSTALL-referenceOS-debian8.html
 
 man-docs:
 	( cd docs/man && $(MAKE) all )
