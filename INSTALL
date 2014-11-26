@@ -490,24 +490,28 @@ Configure and build the $BIOS project sources
 
 If no `configure` script is available yet (or if it needs to be rebuilt):
 
- * create or update the `configure` script:
+ * Create or update the `configure` script as deemed necessary by automated
+logic:
 ----
 :; ./autogen.sh
 ----
- * ...or if you need to enforce an update of the `configure` script:
+ * ...or if you want to most certainly enforce an update of the `configure`
+script:
 ----
 :; autoreconf -fiv
 ----
 
-else (if configure script exists and is acceptable):
+If the `configure` script exists and is acceptable, you can proceed with
+the compilation and installation:
 
- * Configure the build system:
+ * Configure the build system, default options should generally suffice:
 ----
 :; ./configure
 ----
- ** An "out-of-tree" build (i.e. to produce binaries and other build
-    results for different platforms from the same copy of the source
-    codebase) can be triggered in a way similar to this:
+ ** An "out-of-tree" or "relocated" build (useful for example to produce
+    the binaries and other build results for different platforms from the
+    same copy of the source codebase) can be triggered in a way similar
+    to this:
 ----
 :; mkdir build
 :; cd build && \
