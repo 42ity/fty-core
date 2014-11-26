@@ -52,6 +52,9 @@ verb_run() {
 	[ "$RES" = 0 ] && \
 	    echo "INFO-RUN[${TAG}]: `date`: completed '"$@"' from directory '`pwd`'" || \
 	    echo "INFO-RUN[${TAG}]: `date`: failed($RES) '"$@"' from directory '`pwd`'"
+
+	### This line intentionally left blank :)
+	echo ""
 	return $RES
     )
 }
@@ -117,13 +120,20 @@ do_make() {
 	return $RES
 }
 
+do_build() {
+	if [ x"$NOPARMAKE" != xY ]; then 
+	    echo "=== PARMAKE:"
+	    do_make V=0 -j $NPARMAKES -k "$@" || true
+	fi
+
+	echo "=== SEQMAKE:"
+	do_make "$@"
+}
+
 buildSamedir() {
 	do_make -k distclean
 	verb_run ./configure && \
-	{ do_make -k clean; \
-	  if [ x"$NOPARMAKE" != xY ]; then 
-	    echo "=== PARMAKE:"; do_make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; do_make "$@"; }
+	{ do_make -k clean; do_build "$@"; }
 }
 
 buildSubdir() {
@@ -133,10 +143,8 @@ buildSubdir() {
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
 	verb_run ../configure && \
-	{ if [ x"$NOPARMAKE" != xY ]; then
-	    echo "=== PARMAKE:"; do_make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; do_make "$@"; } && \
-	{ do_make DESTDIR=${DESTDIR} install; } )
+	{ do_build "$@" && \
+	  do_make DESTDIR=${DESTDIR} install; } )
 }
 
 installSamedir() {
