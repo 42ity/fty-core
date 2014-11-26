@@ -88,6 +88,19 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+# Normalize the optional flags
+case "$NOPARMAKE" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	NOPARMAKE=yes ;;
+    *)	NOPARMAKE=no  ;;
+esac
+
+case "$WARNLESS_UNUSED" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	WARNLESS_UNUSED=yes ;;
+    *)	WARNLESS_UNUSED=no  ;;
+esac
+
 do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
@@ -128,9 +141,11 @@ do_make() {
 }
 
 do_build() {
-	if [ x"$NOPARMAKE" != xY ]; then 
+	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE:"
 	    do_make V=0 -j $NPARMAKES -k "$@" || true
+	else
+	    echo "=== PARMAKE disabled by user request"
 	fi
 
 	echo "=== SEQMAKE:"
@@ -171,18 +186,27 @@ suppressWarningsUnused() {
 	echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
 	_WARNLESS_UNUSED=1
 }
-### The flag can be set in environment rather than passed on command line
-[ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
 
 while [ $# -gt 0 ]; do
 	case "$1" in
 	    "--warnless-unused")
-		suppressWarningsUnused
+		WARNLESS_UNUSED=yes
+		shift
+		;;
+	    --noparmake|--disable-parallel-make)
+		NOPARMAKE=yes
+		shift
+		;;
+	    --parmake|--enable-parallel-make)
+		NOPARMAKE=no
 		shift
 		;;
 	    *)	break ;;
 	esac
 done
+
+### The flags can be set in environment rather than passed on command line
+[ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
 
 case "$1" in
     "")
@@ -235,7 +259,9 @@ case "$1" in
 	do_make -k distclean
 	verb_run ./configure
 	;;
-    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir | make-samedir | make-subdir } [maketargets...] ]"
+    *)	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
+	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
+	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
 	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
 	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
 	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
