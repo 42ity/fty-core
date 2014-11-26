@@ -306,9 +306,9 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
 
                             int rv = nmap_msg_send (&msg, socket);
                             assert (rv != -1);
-                            log_debug ("msg sent.\n,");
+                            log_debug ("'%s' sent\n,", addr_v.c_str());
                         } else {
-                            log_debug ("host doesn't have <hostnames>\n");
+                            log_debug ("'%s' doesn't have <hostnames>\n", addr_v.c_str());
                         }
 
 
