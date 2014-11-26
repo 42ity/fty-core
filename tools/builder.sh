@@ -28,11 +28,15 @@
 #   supported command-line parameters to the main "autogen.sh" script.
 
 # Some of our CI-scripts can define the CHECKOUTDIR variable
-if [ x"$CHECKOUTDIR" != x ]; then
-    cd "$CHECKOUTDIR" || exit
-else
-    cd "`dirname $0`/.."
+# Otherwise we define it ourselves to use below
+if [ x"$CHECKOUTDIR" = x ]; then
+    CHECKOUTDIR="`dirname $0`/.."
 fi
+cd "$CHECKOUTDIR" || exit
+# Actually... (re)define the value to a complete FS path
+CHECKOUTDIR="`pwd`" || exit
+export CHECKOUTDIR
+echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'..."
 
 VERB_COUNT=0
 verb_run() {
@@ -73,6 +77,9 @@ fi
 # For sub-dir build - automatic naming according to OS/arch of the builder
 [ x"$BLDARCH" = x ] && BLDARCH="`uname -s`-`uname -m`"
 [ x"$DESTDIR" = x ] && DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
+# Name of the sub-directory for the build, relative to workspace root
+# ...or absolute (i.e. in /tmp/build-test) - this also works ;)
+[ x"$BUILDSUBDIR" = x ] && BUILDSUBDIR="build-${BLDARCH}"
 
 # Set up the parallel make with reasonable limits, using several ways to
 # gather and calculate this information
@@ -138,21 +145,21 @@ buildSamedir() {
 
 buildSubdir() {
 	do_make -k distclean
-	( { echo "INFO: (Re-)Creating the relocated build directory in 'build-${BLDARCH}'..."
-	  rm -rf build-${BLDARCH}; \
-	  mkdir build-${BLDARCH}; \
-	  cd build-${BLDARCH}; } && \
-	verb_run ../configure && \
+	( { echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
+	  rm -rf "${BUILDSUBDIR}"; \
+	  mkdir "${BUILDSUBDIR}" && \
+	  cd "${BUILDSUBDIR}"; } && \
+	verb_run "$CHECKOUTDIR/configure" && \
 	do_build "$@" )
 }
 
 installSamedir() {
-	{ do_make DESTDIR=${DESTDIR} install; }
+	{ do_make "DESTDIR=${DESTDIR}" install; }
 }
 
 installSubdir() {
-	( cd build-${BLDARCH} && \
-	  do_make DESTDIR=${DESTDIR} install )
+	( cd "${BUILDSUBDIR}" && \
+	  do_make "DESTDIR=${DESTDIR}" install )
 }
 
 _WARNLESS_UNUSED=0
@@ -182,12 +189,23 @@ case "$1" in
 	# Ensure that an exit at this point is "successful"
 	true
 	;;
-    build-samedir|build|make|make-samedir)
+    make|make-samedir)
+	shift
+	do_build "$@"
+	exit
+	;;
+    make-subdir)
+	shift
+	( cd "${BUILDSUBDIR}" && \
+	  do_build "$@" )
+	exit
+	;;
+    build-samedir|build)
 	shift
 	buildSamedir "$@"
 	exit
 	;;
-    build-subdir|make-subdir)
+    build-subdir)
 	shift
 	buildSubdir "$@"
 	exit
@@ -217,9 +235,10 @@ case "$1" in
 	do_make -k distclean
 	verb_run ./configure
 	;;
-    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
-	echo "This script (re-)creates the configure script and optionally either just builds"
-	echo "or builds and installs into a DESTDIR the requested project targets."
+    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir | make-samedir | make-subdir } [maketargets...] ]"
+	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
+	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
+	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
 	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
 	echo "Some uses without further parameters:"
 	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
