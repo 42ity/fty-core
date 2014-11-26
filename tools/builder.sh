@@ -34,10 +34,32 @@ else
     cd "`dirname $0`/.."
 fi
 
+VERB_COUNT=0
+verb_run() {
+	VERB_COUNT="$(($VERB_COUNT+1))" 2>/dev/null || \
+	VERB_COUNT="`echo $VERB_COUNT+1|bc`" 2>/dev/null || \
+	VERB_COUNT=""
+
+    (
+	### Despite the round parentheses, $$ contains the parent bash PID
+	TAG="$$"
+	[ x"$BASHPID" != x ] && TAG="$BASHPID"
+	[ x"$VERB_COUNT" != x ] && TAG="$VERB_COUNT:$TAG"
+
+	echo "INFO-RUN[${TAG}]: `date`: running '"$@"' from directory '`pwd`'..."
+	"$@"
+	RES=$?
+	[ "$RES" = 0 ] && \
+	    echo "INFO-RUN[${TAG}]: `date`: completed '"$@"' from directory '`pwd`'" || \
+	    echo "INFO-RUN[${TAG}]: `date`: failed($RES) '"$@"' from directory '`pwd`'"
+	return $RES
+    )
+}
+
 if [ x"$AUTOGEN_DONE" != xyes -a -x "./autogen.sh" ]; then
     # Variable was set by our autogen.sh if it invokes this script,
     # otherwise run the autogen logic first
-    "./autogen.sh" || exit
+    verb_run ./autogen.sh || exit
 fi
 
 if [ ! -s "./configure" -o ! -x "./configure" ]; then
@@ -68,7 +90,6 @@ do_make() {
 				return 1 ;;
 		esac
 	fi
-	echo "INFO: running 'make "$@"'"
 	case "$*" in
 	    *distclean*)
 		### Hack to avoid running configure if it is newer
@@ -79,7 +100,7 @@ do_make() {
 		;;
 	esac
 
-	make "$@"; RES=$?
+	verb_run make "$@"; RES=$?
 
 	[ "$RES" != 0 ] && case "$*" in
 	    *-k*distclean*)
@@ -98,32 +119,33 @@ do_make() {
 
 buildSamedir() {
 	do_make -k distclean
-	./configure && \
+	verb_run ./configure && \
 	{ do_make -k clean; \
 	  if [ x"$NOPARMAKE" != xY ]; then 
-	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; }
+	    echo "=== PARMAKE:"; do_make V=0 -j $NPARMAKES -k "$@"; fi; \
+	  echo "=== SEQMAKE:"; do_make "$@"; }
 }
 
 buildSubdir() {
 	do_make -k distclean
-	( { rm -rf build-${BLDARCH}; \
+	( { echo "INFO: (Re-)Creating the relocated build directory in 'build-${BLDARCH}'..."
+	  rm -rf build-${BLDARCH}; \
 	  mkdir build-${BLDARCH}; \
 	  cd build-${BLDARCH}; } && \
-	../configure && \
+	verb_run ../configure && \
 	{ if [ x"$NOPARMAKE" != xY ]; then
-	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; } && \
-	{ make DESTDIR=${DESTDIR} install; } )
+	    echo "=== PARMAKE:"; do_make V=0 -j $NPARMAKES -k "$@"; fi; \
+	  echo "=== SEQMAKE:"; do_make "$@"; } && \
+	{ do_make DESTDIR=${DESTDIR} install; } )
 }
 
 installSamedir() {
-	{ make DESTDIR=${DESTDIR} install; }
+	{ do_make DESTDIR=${DESTDIR} install; }
 }
 
 installSubdir() {
 	( cd build-${BLDARCH} && \
-	  make DESTDIR=${DESTDIR} install )
+	  do_make DESTDIR=${DESTDIR} install )
 }
 
 _WARNLESS_UNUSED=0
@@ -176,17 +198,17 @@ case "$1" in
 	exit
 	;;
     distclean)
-	./configure && \
+	verb_run ./configure && \
 	do_make -k distclean
 	;;
     distcheck)
 	do_make -k distclean
-	./configure && \
+	verb_run ./configure && \
 	do_make distcheck
 	;;
     conf|configure)
 	do_make -k distclean
-	./configure
+	verb_run ./configure
 	;;
     *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
 	echo "This script (re-)creates the configure script and optionally either just builds"
