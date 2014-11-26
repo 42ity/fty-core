@@ -202,7 +202,7 @@ zlist_t* select_asset_device_link(const char* url,
         // Can return more than one row
         tntdb::Statement st_pow = conn.prepareCached(
             " SELECT"
-            " v.id_asset_element , v.src_out , v.dest_in"
+            " v.id_asset_element_src , v.src_out , v.dest_in"
             " FROM"
             " v_bios_asset_link v"
             " WHERE v.id_asset_device_dest = :iddevice "
