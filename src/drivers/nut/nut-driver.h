@@ -96,24 +96,24 @@ class NUTDevice {
      *
      * Method sets status of all properties accoring parameter.
      */
-    void changed(const bool status);
+    void setChanged(const bool status);
     /**
      * \brief Method for setting the change status.
      *
      * Method sets status of particular property accoring parameter.
      */
-    void changed(const char *name, const bool status);
-    void changed(const std::string& name,const bool status);
+    void setChanged(const char *name, const bool status);
+    void setChanged(const std::string& name,const bool status);
 
     /**
      * \brief Produces a std::string with device status in JSON format.
      * \return std::string
-     * \see change()
+     * \see changed()
      *
      * Method returns string with device status message. Method returs the
      * actual status in json like std::string.
      *
-     *    if( UPS.change() ) {
+     *    if( UPS.changed() ) {
      *        cout << UPS.toString() << endl;
      *        UPS.changed(false);
      *    }

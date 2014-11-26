@@ -135,7 +135,7 @@ bool NUTDevice::changed(const std::string &name) const {
 /**
  * change setters
  */
-void NUTDevice::changed(const bool status) {
+void NUTDevice::setChanged(const bool status) {
     for(auto &it : _physics ){
         it.second.changed = status;
     }
@@ -144,7 +144,7 @@ void NUTDevice::changed(const bool status) {
     }
 }
 
-void NUTDevice::changed(const char *name, const bool status) {
+void NUTDevice::setChanged(const char *name, const bool status) {
     auto iterP = _physics.find(name);
     if( iterP != _physics.end() ) {
         // this is a number, value exists
@@ -157,8 +157,8 @@ void NUTDevice::changed(const char *name, const bool status) {
     }
 }
     
-void NUTDevice::changed(const std::string& name,const bool status){
-    changed(name.c_str(),status);
+void NUTDevice::setChanged(const std::string& name,const bool status){
+    setChanged(name.c_str(),status);
 }
 
 
