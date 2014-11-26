@@ -541,3 +541,150 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     log_info ("end\n");
     return result;
 }
+
+
+/**
+ * \brief This function processes the ASSET_MSG_GET_POWER_FROM message
+ *
+ * In case of success it generates the ASSET_MSG_RETURN_POWER. 
+ * In case of failure returns COMMON_MSG_FAIL.
+ * powerchains: A:B:C:D if A or C is zero it means, that it was not srecified in database 
+ * \param url - the connection to database.
+ * \param msg - the message of the type ASSET_MSG_GET_POWER_FROM 
+ *                  we would like to process.
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or
+ *                       ASSET_MSG_RETURN_POWER
+ */ 
+zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
+{
+    assert ( getmsg );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_FROM );
+    log_info ("start\n");
+    uint32_t element_id   = asset_msg_element_id  (getmsg);
+    uint8_t  linktype = 1; //TODO hardcoded constants
+
+    zlist_t* powers = zlist_new();
+    assert ( powers );
+    zlist_set_duplicator (powers, void_dup);
+
+    zframe_t* devices = NULL;
+
+    zmsg_t* ret = zmsg_new();
+    assert ( ret );
+ 
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
+            "  v.dest_type_name"
+            " FROM"
+            "  v_bios_asset_link_topology v"
+            " WHERE"
+            "  v.id_asset_link_type = :idlinktype AND"
+            "  v.id_asset_element_src = :id"
+        );
+        // can return more than one value
+        tntdb::Result result = st.setInt("id", element_id).
+                                  setInt("idlinktype", linktype).
+                                  select();
+        
+        char buff[28];     // 10+3+3+10+ safe 2
+        
+        
+        // Go through the selected links
+        for ( auto &row: result )
+        {
+            // id_asset_element_dest, requiured
+            uint32_t id_asset_element_dest = 0;
+            row[0].get(id_asset_element_dest);
+            assert ( id_asset_element_dest );
+   
+            // src_out 
+            uint32_t src_out = 0;
+            row[1].get(src_out);
+            
+            // dest_in
+            uint32_t dest_in = 0;
+            row[2].get(dest_in);
+            
+            // device_name, required
+            std::string device_name = "";
+            row[3].get(device_name);
+            assert ( device_name != "" );
+
+            // device_type_name, requiured
+            std::string device_type_name = "";
+            row[4].get(device_type_name);
+            assert ( device_type_name != "" );
+
+            log_info ("for\n");
+            log_info ("asset_element_id_src = %d\n", element_id);
+            log_info ("asset_element_dest_id = %d\n", id_asset_element_dest);
+            log_info ("src_out = %d\n", src_out);
+            log_info ("dest_in = %d\n", dest_in);
+            log_info ("device_name = %s\n", device_name.c_str());
+            log_info ("device_type_name = %s\n", device_type_name.c_str());
+
+            sprintf(buff, "%d:%d:%d:%d", src_out, element_id, dest_in, id_asset_element_dest);
+            zlist_push(powers, buff);
+
+            zmsg_t* el = asset_msg_encode_powerchain_device
+                                (id_asset_element_dest, device_type_name.c_str(), device_name.c_str());
+            assert ( el );
+            log_info ("created msg el \n");
+            int rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
+            assert ( rv != -1 );
+            assert ( el == NULL );
+        } // end for
+    }
+    catch (const std::exception &e) {
+        // internal error in database
+        zlist_destroy (&powers);
+        zframe_destroy (&devices);
+        zmsg_destroy (&ret);
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+    
+    int rv = matryoshka2frame (&ret, &devices);
+    assert ( rv == 0 );
+    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
+    zlist_destroy (&powers);
+    zframe_destroy (&devices);
+    log_info ("end normal\n");
+    return result;
+}
+
+/**
+ * \brief A helper function: prints the devices frame in the
+ *  ASSET_MSG_POWER_FROM message
+ *
+ *  \param frame - frame to print
+ */
+void print_frame_devices (zframe_t* frame)
+{    
+    byte* buffer = zframe_data (frame);
+    assert ( buffer );
+
+    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    assert ( zmsg );
+    assert ( zmsg_is (zmsg) );
+     
+    zmsg_t* pop = NULL;
+    while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
+    { // caller owns zmgs_t
+        asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
+        assert ( item );
+        asset_msg_print (item);
+        //            printf ("\tstatus = %d\n", (int) test_msg_status (item));
+        asset_msg_destroy (&item);
+        assert ( pop == NULL );
+    }
+   zmsg_destroy (&zmsg);
+   assert ( zmsg == NULL );
+}
+
