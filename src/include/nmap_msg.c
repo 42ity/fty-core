@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: nmap_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -51,10 +51,10 @@ struct _nmap_msg_t {
     size_t headers_bytes;               //  Size of dictionary content
     zlist_t *args;                      //  Arguments for scanning, usually list of ip addresses
     char *addr;                         //  IP address
-    byte host_state;                    //   Status of a host (up|down|unknown|skipped)
     char *reason;                       //  Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
     zhash_t *hostnames;                 //  dictionary of hostname : type, where type is a type of hostname (user, PTR)
     size_t hostnames_bytes;             //  Size of dictionary content
+    byte host_state;                    //   Status of a host (up|down|unknown|skipped)
     zhash_t *addresses;                 //  dictionary of address : vendor, where vendor is valid only for mac addresses
     size_t addresses_bytes;             //  Size of dictionary content
     zframe_t *ports;                    //  List of port_scan results. List of 'port_scan' messages
@@ -306,6 +306,50 @@ nmap_msg_destroy (nmap_msg_t **self_p)
     }
 }
 
+//  Parse a zmsg_t and decides whether it is nmap_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+is_nmap_msg (zmsg_t *msg)
+{
+    if (msg == NULL)
+        return false;
+
+    zframe_t *frame = zmsg_first (msg);
+
+    //  Get and check protocol signature
+    nmap_msg_t *self = nmap_msg_new (0);
+    self->needle = zframe_data (frame);
+    self->ceiling = self->needle + zframe_size (frame);
+    uint16_t signature;
+    GET_NUMBER2 (signature);
+    if (signature != (0xAAA0 | 1))
+        goto fail;             //  Invalid signature
+
+    //  Get message id and parse per message type
+    GET_NUMBER1 (self->id);
+
+    switch (self->id) {
+        case NMAP_MSG_SCAN_COMMAND:
+        case NMAP_MSG_LIST_SCAN:
+        case NMAP_MSG_DEV_SCAN:
+        case NMAP_MSG_PORT_SCAN:
+        case NMAP_MSG_SCRIPT:
+        case NMAP_MSG_OS_SCAN:
+        case NMAP_MSG_PORTUSED:
+        case NMAP_MSG_OSMATCH:
+        case NMAP_MSG_OSCLASS:
+        case NMAP_MSG_SCAN_ERROR:
+            nmap_msg_destroy (&self);
+            return true;
+        default:
+            goto fail;
+    }
+    fail:
+    malformed:
+        nmap_msg_destroy (&self);
+        return false;
+}
 
 //  --------------------------------------------------------------------------
 //  Parse a nmap_msg from zmsg_t. Returns a new object, or NULL if
@@ -370,7 +414,6 @@ nmap_msg_decode (zmsg_t **msg_p)
 
         case NMAP_MSG_LIST_SCAN:
             GET_STRING (self->addr);
-            GET_NUMBER1 (self->host_state);
             GET_STRING (self->reason);
             {
                 size_t hash_size;
@@ -651,8 +694,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->addr)
                 frame_size += strlen (self->addr);
-            //  host_state is a 1-byte integer
-            frame_size += 1;
             //  reason is a string with 1-byte length
             frame_size++;       //  Size is one octet
             if (self->reason)
@@ -929,7 +970,6 @@ nmap_msg_encode (nmap_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER1 (self->host_state);
             if (self->reason) {
                 PUT_STRING (self->reason);
             }
@@ -1256,7 +1296,7 @@ nmap_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1284,7 +1324,6 @@ nmap_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1373,13 +1412,11 @@ nmap_msg_encode_scan_command (
 zmsg_t * 
 nmap_msg_encode_list_scan (
     const char *addr,
-    byte host_state,
     const char *reason,
     zhash_t *hostnames)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_LIST_SCAN);
     nmap_msg_set_addr (self, addr);
-    nmap_msg_set_host_state (self, host_state);
     nmap_msg_set_reason (self, reason);
     zhash_t *hostnames_copy = zhash_dup (hostnames);
     nmap_msg_set_hostnames (self, &hostnames_copy);
@@ -1618,13 +1655,11 @@ int
 nmap_msg_send_list_scan (
     void *output,
     const char *addr,
-    byte host_state,
     const char *reason,
     zhash_t *hostnames)
 {
     nmap_msg_t *self = nmap_msg_new (NMAP_MSG_LIST_SCAN);
     nmap_msg_set_addr (self, addr);
-    nmap_msg_set_host_state (self, host_state);
     nmap_msg_set_reason (self, reason);
     zhash_t *hostnames_copy = zhash_dup (hostnames);
     nmap_msg_set_hostnames (self, &hostnames_copy);
@@ -1865,7 +1900,6 @@ nmap_msg_dup (nmap_msg_t *self)
 
         case NMAP_MSG_LIST_SCAN:
             copy->addr = self->addr? strdup (self->addr): NULL;
-            copy->host_state = self->host_state;
             copy->reason = self->reason? strdup (self->reason): NULL;
             copy->hostnames = self->hostnames? zhash_dup (self->hostnames): NULL;
             break;
@@ -1990,7 +2024,6 @@ nmap_msg_print (nmap_msg_t *self)
                 zsys_debug ("    addr='%s'", self->addr);
             else
                 zsys_debug ("    addr=");
-            zsys_debug ("    host_state=%ld", (long) self->host_state);
             if (self->reason)
                 zsys_debug ("    reason='%s'", self->reason);
             else
@@ -2525,24 +2558,6 @@ nmap_msg_set_addr (nmap_msg_t *self, const char *format, ...)
 
 
 //  --------------------------------------------------------------------------
-//  Get/set the host_state field
-
-byte
-nmap_msg_host_state (nmap_msg_t *self)
-{
-    assert (self);
-    return self->host_state;
-}
-
-void
-nmap_msg_set_host_state (nmap_msg_t *self, byte host_state)
-{
-    assert (self);
-    self->host_state = host_state;
-}
-
-
-//  --------------------------------------------------------------------------
 //  Get/set the reason field
 
 const char *
@@ -2650,6 +2665,24 @@ size_t
 nmap_msg_hostnames_size (nmap_msg_t *self)
 {
     return zhash_size (self->hostnames);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the host_state field
+
+byte
+nmap_msg_host_state (nmap_msg_t *self)
+{
+    assert (self);
+    return self->host_state;
+}
+
+void
+nmap_msg_set_host_state (nmap_msg_t *self, byte host_state)
+{
+    assert (self);
+    self->host_state = host_state;
 }
 
 
@@ -3931,7 +3964,6 @@ nmap_msg_test (bool verbose)
     nmap_msg_destroy (&copy);
 
     nmap_msg_set_addr (self, "Life is short but Now lasts for ever");
-    nmap_msg_set_host_state (self, 123);
     nmap_msg_set_reason (self, "Life is short but Now lasts for ever");
     nmap_msg_hostnames_insert (self, "Name", "Brutus");
     nmap_msg_hostnames_insert (self, "Age", "%d", 43);
@@ -3945,7 +3977,6 @@ nmap_msg_test (bool verbose)
         assert (nmap_msg_routing_id (self));
         
         assert (streq (nmap_msg_addr (self), "Life is short but Now lasts for ever"));
-        assert (nmap_msg_host_state (self) == 123);
         assert (streq (nmap_msg_reason (self), "Life is short but Now lasts for ever"));
         assert (nmap_msg_hostnames_size (self) == 2);
         assert (streq (nmap_msg_hostnames_string (self, "Name", "?"), "Brutus"));
