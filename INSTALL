@@ -157,8 +157,6 @@ Debian 8.0 platform with APT package management should work like this
      apt-key add - && \
    echo 'deb http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-mbt-deb8.list
-
-:; apt-get update
 ----
 * *Repository preference:*
 It is also encouraged to make sure that your package manager always prefers
@@ -184,8 +182,51 @@ because the upstream Debian deprecated 'iproute2-dev' (claiming that
 the interface is private to the kernel and should not be used directly)
 and provides an empty package just for legacy compatibility purposes.
 
+* *Before any installations, update the packaging metadata* known to
+your packaging client: in order to calculate the dependencies, `apt`
+keeps a cache of downloaded lists of packages provided by each of the
+configured repositories. In a dynamic world, these should be updated
+before starting any installations or upgrades:
+----
+:; apt-get update
+----
+
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
+
+To verify which variant (version/repo) of the package is installed and
+what such variants are known to `apt`, you can use `apt-cache policy`:
+----
+:; apt-cache policy iproute2-dev
+iproute2-dev:
+  Installed: 3.16.0-0
+  Candidate: 3.16.0-0
+  Package pin: 3.16.0-0
+  Version table:
+ *** 3.16.0-0 9999
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        100 /var/lib/dpkg/status
+
+:; apt-cache policy mariadb-server-10.0
+mariadb-server-10.0:
+  Installed: 10.0.14-2
+  Candidate: 10.0.14-2
+  Version table:
+ *** 10.0.14-2 0
+        500 http://localhost:3142/debian/ jessie/main amd64 Packages
+        500 http://gate:3142/debian/ jessie/main amd64 Packages
+        500 http://ftp.debian.org/debian/ jessie/main amd64 Packages
+        100 /var/lib/dpkg/status
+     10.0.10-1 0
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+     10.0.10-1 0
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+----
+In the example above, 'iproute2-dev' was installed from OBS, but for MariaDB
+a version provided by the distribution and newer than the one in OBS was
+picked (as permitted by the "pinning" settings on that OS installation).
+
 
 Manually fetching and installing packages built for Debian 8.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
