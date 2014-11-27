@@ -27,7 +27,7 @@ Makefile
 !Makefile.am
 driver-nmap
 netmon
-!src/netmon
+!src/drivers/netmon
 simple
 !src/simple
 bios_web.la
