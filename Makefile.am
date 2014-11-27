@@ -111,6 +111,10 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tools \
 					-I$(top_builddir)/tools
 
+noinst_LTLIBRARIES += 		libpriv-nmap-parse.la
+libpriv_nmap_parse_la_SOURCES = src/drivers/nmap/nmap-parse.h \
+					  src/drivers/nmap/nmap-parse.cc
+
 DISTCLEANFILES +=		docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
@@ -362,12 +366,10 @@ bin_PROGRAMS += driver-nmap
 
 driver_nmap_SOURCES = src/drivers/nmap/nmap-driver.h \
 					  src/drivers/nmap/nmap.cc \
-					  src/drivers/nmap/nmap-parse.h \
-					  src/drivers/nmap/nmap-parse.cc \
 					  src/include/nmap_msg.h \
 					  src/include/nmap_msg.c
 
-driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la libpriv-cidr.la
+driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la libpriv-cidr.la libpriv-nmap-parse.la
 driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 			   		   -I$(top_srcdir)/src/simple
