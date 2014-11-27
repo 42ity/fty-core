@@ -61,19 +61,15 @@ TODO: Resolve ctrl-c unresponsiveness
 // (iproute2)/ll_map.h
 #ifndef __LL_MAP_H__
     // Might have been included by someone in the stack of headers
-
 # ifdef HAVE_LL_MAP_H
 #  include <ll_map.h>
 # else
 #  ifdef HAVE_LIBNETLINK__ll_remember_index
     // The binary function is available, but the dev headers are missing
-
 extern int ll_remember_index(const struct sockaddr_nl *who,
 				struct nlmsghdr *n, void *arg);
-
 #  endif
 # endif
-
 #endif
 
 // ip/ip_utils.h
@@ -183,7 +179,7 @@ const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen
 }
 
 // lib/utils.c
-const char *format_host(int af, int len, const void *addr,
+const char *format_host(int af, int UNUSED_PARAM len, const void *addr,
 			char *buf, int buflen)
 {
 	return rt_addr_n2a(af, len, addr, buf, buflen);
