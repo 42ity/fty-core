@@ -116,8 +116,10 @@ std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
             val += "0";
             sc--;
         }
+	/* Prepend zeroes - if needed - and add the period separator.
+	 * Locale does not matter, this is for programmatic consumption */
         if(sc < 0) {
-            for(int i=0; i+val.length() < 2-sc; i++)
+            for(int i=0; i+(int)(val.length()) < 2-sc; i++)
                 val = "0" + val;
             val.insert(val.length()+sc, ".");
         }
