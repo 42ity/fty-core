@@ -141,22 +141,49 @@ recently "frozen" and heading to official stable supported release).
 However, automatic dependency handling in OBS should handle refreshed
 source code coming from some project's upstream for us.
 
-Automatic setup of OBS as a package source for a supported Debian 8.0
-platform with APT package management should work like this (execute
-as "root"):
+* *Keys to trust and repositories to use:*
+Automatic setup of an OBS instance as a package source for a supported
+Debian 8.0 platform with APT package management should work like this
+(execute as 'root'):
 ----
 :; wget -O - \
      http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-roz-deb8.list
+
 :; wget -O - \
      http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-mbt-deb8.list
+
 :; apt-get update
 ----
+* *Repository preference:*
+It is also encouraged to make sure that your package manager always prefers
+the project's supported packages over any other repositories (i.e. in the
+upstream OS distribution) that might be named the same:
+----
+:; cat > /etc/apt/preferences.d/bios <<EOF
+Package: *
+Pin: origin "obs.roz.lab.etn.com"
+Pin-Priority: 9999
+
+Package: *
+Pin: origin "obs.mbt.lab.etn.com"
+Pin-Priority: 8999
+EOF
+----
+See https://wiki.debian.org/AptPreferences for more details.
+
+NOTE: for some experimental purposes, you might want to put just the
+specific name or a pattern to prefer just some 'Package'(s) from our
+OBS; keep in mind that such a list should at least include 'iproute*',
+because the upstream Debian deprecated 'iproute2-dev' (claiming that
+the interface is private to the kernel and should not be used directly)
+and provides an empty package just for legacy compatibility purposes.
+
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
 
@@ -203,7 +230,8 @@ the upstream OS itself, don't forget to update the metadata index first
 
 iproute (may be named iproute2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Install iproute-dev development files, version "20120521" or newer,
+ * Install iproute-dev development files, version "20120521" or newer
+(later versions are linked with the Linux kernel release like "3.16"),
 using your configured system repositories, i.e. with Debian APT:
 ----
 :; apt-get install -y iproute2-dev
