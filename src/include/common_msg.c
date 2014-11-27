@@ -50,7 +50,7 @@ struct _common_msg_t {
     char *mt_name;                      //  Measurement type name
     uint16_t mts_id;                    //  Measurement subtype id
     char *mts_name;                     //  Measurement subtype name
-    byte mts_scale;                     //  Measurement subtype scale
+    byte mts_scale;                     //  Preffered scale
     byte errtype;                       //   An error type, defined in enum somewhere
     uint32_t errorno;                   //   An error id
     char *errmsg;                       //   A user visible error string
@@ -365,11 +365,13 @@ common_msg_decode (zmsg_t **msg_p)
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             GET_NUMBER2 (self->mt_id);
             GET_STRING (self->mts_name);
+            GET_NUMBER1 (self->mts_scale);
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
             GET_STRING (self->mt_name);
             GET_STRING (self->mts_name);
+            GET_NUMBER1 (self->mts_scale);
             break;
 
         case COMMON_MSG_RETURN_MEASURE_TYPE:
@@ -633,6 +635,8 @@ common_msg_encode (common_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->mts_name)
                 frame_size += strlen (self->mts_name);
+            //  mts_scale is a 1-byte integer
+            frame_size += 1;
             break;
             
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
@@ -644,6 +648,8 @@ common_msg_encode (common_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->mts_name)
                 frame_size += strlen (self->mts_name);
+            //  mts_scale is a 1-byte integer
+            frame_size += 1;
             break;
             
         case COMMON_MSG_RETURN_MEASURE_TYPE:
@@ -887,6 +893,7 @@ common_msg_encode (common_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
+            PUT_NUMBER1 (self->mts_scale);
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
@@ -900,6 +907,7 @@ common_msg_encode (common_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
+            PUT_NUMBER1 (self->mts_scale);
             break;
 
         case COMMON_MSG_RETURN_MEASURE_TYPE:
@@ -1377,11 +1385,13 @@ common_msg_encode_get_measure_subtype_i (
 zmsg_t * 
 common_msg_encode_get_measure_subtype_s (
     uint16_t mt_id,
-    const char *mts_name)
+    const char *mts_name,
+    byte mts_scale)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_S);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_scale (self, mts_scale);
     return common_msg_encode (&self);
 }
 
@@ -1392,11 +1402,13 @@ common_msg_encode_get_measure_subtype_s (
 zmsg_t * 
 common_msg_encode_get_measure_subtype_ss (
     const char *mt_name,
-    const char *mts_name)
+    const char *mts_name,
+    byte mts_scale)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
     common_msg_set_mt_name (self, mt_name);
     common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_scale (self, mts_scale);
     return common_msg_encode (&self);
 }
 
@@ -1872,11 +1884,13 @@ int
 common_msg_send_get_measure_subtype_s (
     void *output,
     uint16_t mt_id,
-    const char *mts_name)
+    const char *mts_name,
+    byte mts_scale)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_S);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_scale (self, mts_scale);
     return common_msg_send (&self, output);
 }
 
@@ -1888,11 +1902,13 @@ int
 common_msg_send_get_measure_subtype_ss (
     void *output,
     const char *mt_name,
-    const char *mts_name)
+    const char *mts_name,
+    byte mts_scale)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
     common_msg_set_mt_name (self, mt_name);
     common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_scale (self, mts_scale);
     return common_msg_send (&self, output);
 }
 
@@ -2374,11 +2390,13 @@ common_msg_dup (common_msg_t *self)
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             copy->mt_id = self->mt_id;
             copy->mts_name = self->mts_name? strdup (self->mts_name): NULL;
+            copy->mts_scale = self->mts_scale;
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
             copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
             copy->mts_name = self->mts_name? strdup (self->mts_name): NULL;
+            copy->mts_scale = self->mts_scale;
             break;
 
         case COMMON_MSG_RETURN_MEASURE_TYPE:
@@ -2554,6 +2572,7 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    mts_name='%s'", self->mts_name);
             else
                 zsys_debug ("    mts_name=");
+            zsys_debug ("    mts_scale=%ld", (long) self->mts_scale);
             break;
             
         case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
@@ -2566,6 +2585,7 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    mts_name='%s'", self->mts_name);
             else
                 zsys_debug ("    mts_name=");
+            zsys_debug ("    mts_scale=%ld", (long) self->mts_scale);
             break;
             
         case COMMON_MSG_RETURN_MEASURE_TYPE:
@@ -3670,6 +3690,7 @@ common_msg_test (bool verbose)
 
     common_msg_set_mt_id (self, 123);
     common_msg_set_mts_name (self, "Life is short but Now lasts for ever");
+    common_msg_set_mts_scale (self, 123);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3681,6 +3702,7 @@ common_msg_test (bool verbose)
         
         assert (common_msg_mt_id (self) == 123);
         assert (streq (common_msg_mts_name (self), "Life is short but Now lasts for ever"));
+        assert (common_msg_mts_scale (self) == 123);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
@@ -3692,6 +3714,7 @@ common_msg_test (bool verbose)
 
     common_msg_set_mt_name (self, "Life is short but Now lasts for ever");
     common_msg_set_mts_name (self, "Life is short but Now lasts for ever");
+    common_msg_set_mts_scale (self, 123);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3703,6 +3726,7 @@ common_msg_test (bool verbose)
         
         assert (streq (common_msg_mt_name (self), "Life is short but Now lasts for ever"));
         assert (streq (common_msg_mts_name (self), "Life is short but Now lasts for ever"));
+        assert (common_msg_mts_scale (self) == 123);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);

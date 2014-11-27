@@ -34,6 +34,17 @@ namespace drivers
 {
 namespace nut
 {
+
+struct NUTInventoryValue {
+    bool changed;
+    std::string value;
+};
+
+struct NUTPhysicalValue {
+    bool changed;
+    long int value;
+};
+ 
 /**
  * \class NUTDevice
  *
@@ -71,11 +82,28 @@ class NUTDevice {
      * statusMessage has been called.
      */
     bool changed() const;
+    /**
+     * \brief Method for checking that particular property in device has changes.
+     * \return bool
+     *
+     * Method returns true if property has changed since last check.
+     */
+    bool changed(const char *name) const;
+    bool changed(const std::string& name) const;
 
     /**
      * \brief Method for setting the change status.
+     *
+     * Method sets status of all properties accoring parameter.
      */
     void changed(const bool status);
+    /**
+     * \brief Method for setting the change status.
+     *
+     * Method sets status of particular property accoring parameter.
+     */
+    void changed(const char *name, const bool status);
+    void changed(const std::string& name,const bool status);
 
     /**
      * \brief Produces a std::string with device status in JSON format.
@@ -98,6 +126,20 @@ class NUTDevice {
      */
     bool hasProperty(const char *name) const;
     bool hasProperty(const std::string& name) const;
+    /**
+     * \brief Method checks whether this device reports particular physical
+     *        (measurement) property.
+     * \return bool, true if property exists
+     */
+    bool hasPhysics(const char *name) const;
+    bool hasPhysics(const std::string& name) const;
+    /**
+     * \brief Method returns list of physical properties. If the parameter
+     *        is true, only changed properties are returned. Otherways
+     *        all properties are returned.
+     * \return bool, true if property exists
+     */
+    std::map<std::string,int> physics(bool onlyChanged) const;
 
     /**
      * \brief method returns particular device property.
@@ -164,11 +206,9 @@ class NUTDevice {
      *
      * Values are multiplied by 100 and stored as integer 
      */
-    std::map<std::string, long int> _physics;
+    std::map<std::string, NUTPhysicalValue> _physics;
     //! \brief map of inventory values
-    std::map<std::string, std::string> _inventory;
-    //! \brief flag, if there is change to be published
-    bool _change;
+    std::map<std::string, NUTInventoryValue> _inventory;
     //! \brief device name
     std::string _name;
     //! \brief Transformation of our integer (x100) back

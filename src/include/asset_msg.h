@@ -87,7 +87,7 @@
         element_id          number 4    Unique ID of the start asset element
         type                number 1    Type of the start element
         recursive           number 1    If the search should be recursive (=1) or not (=0)
-        filter_type         number 1    Type of the looked elements, if null take all
+        filter_type         number 1    Type of the looked elements, if 7 take all
 
     GET_LOCATION_TO - Ask for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
@@ -108,6 +108,27 @@
         racks               frame       List of racks, matryoshka of this msg
         devices             frame       List of devices, matryoshka of this msg
         grps                frame       List of groups, matryoshka of this msg
+
+    GET_POWER_FROM - Request for a list of devices directly powered to the specified device
+        element_id          number 4    Unique asset element ID of the device
+
+    POWERCHAIN_DEVICE - 
+        element_id          number 4    Unique asset element ID of the device
+        type_name           string      Type of the device
+        name                string      Asset element name of the device
+
+    RETURN_POWER - Reply for the request for a list of devices directly powered to the specified device
+        devices             frame       List of devices(id, name, typename), matroyska of he powerchain_device
+        powers              strings     List of link messages in form "src_socket:src_id:dst_socket:dst_id"
+
+    GET_POWER_TO - Request for a full power chain which powers the requested target device.
+        element_id          number 4    Unique asset element ID of the device
+
+    GET_POWER_GROUP - Request for a full power chain from the group.
+        element_id          number 4    Unique asset element ID of the group
+
+    GET_POWER_DATACENTER - Request for a full power chains in the target datacentrum.
+        element_id          number 4    Unique asset element ID of the datacenter
 */
 
 #define ASSET_MSG_VERSION                   1.0
@@ -127,6 +148,12 @@
 #define ASSET_MSG_GET_LOCATION_TO           13
 #define ASSET_MSG_RETURN_LOCATION_TO        14
 #define ASSET_MSG_RETURN_LOCATION_FROM      15
+#define ASSET_MSG_GET_POWER_FROM            16
+#define ASSET_MSG_POWERCHAIN_DEVICE         17
+#define ASSET_MSG_RETURN_POWER              18
+#define ASSET_MSG_GET_POWER_TO              19
+#define ASSET_MSG_GET_POWER_GROUP           20
+#define ASSET_MSG_GET_POWER_DATACENTER      21
 
 #include <czmq.h>
 
@@ -288,6 +315,39 @@ zmsg_t *
         zframe_t *devices,
         zframe_t *grps);
 
+//  Encode the GET_POWER_FROM 
+zmsg_t *
+    asset_msg_encode_get_power_from (
+        uint32_t element_id);
+
+//  Encode the POWERCHAIN_DEVICE 
+zmsg_t *
+    asset_msg_encode_powerchain_device (
+        uint32_t element_id,
+        const char *type_name,
+        const char *name);
+
+//  Encode the RETURN_POWER 
+zmsg_t *
+    asset_msg_encode_return_power (
+        zframe_t *devices,
+        zlist_t *powers);
+
+//  Encode the GET_POWER_TO 
+zmsg_t *
+    asset_msg_encode_get_power_to (
+        uint32_t element_id);
+
+//  Encode the GET_POWER_GROUP 
+zmsg_t *
+    asset_msg_encode_get_power_group (
+        uint32_t element_id);
+
+//  Encode the GET_POWER_DATACENTER 
+zmsg_t *
+    asset_msg_encode_get_power_datacenter (
+        uint32_t element_id);
+
 
 //  Send the ELEMENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -407,6 +467,45 @@ int
         zframe_t *racks,
         zframe_t *devices,
         zframe_t *grps);
+    
+//  Send the GET_POWER_FROM to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_power_from (void *output,
+        uint32_t element_id);
+    
+//  Send the POWERCHAIN_DEVICE to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_powerchain_device (void *output,
+        uint32_t element_id,
+        const char *type_name,
+        const char *name);
+    
+//  Send the RETURN_POWER to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_return_power (void *output,
+        zframe_t *devices,
+        zlist_t *powers);
+    
+//  Send the GET_POWER_TO to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_power_to (void *output,
+        uint32_t element_id);
+    
+//  Send the GET_POWER_GROUP to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_power_group (void *output,
+        uint32_t element_id);
+    
+//  Send the GET_POWER_DATACENTER to the output in one step
+//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
+int
+    asset_msg_send_get_power_datacenter (void *output,
+        uint32_t element_id);
     
 //  Duplicate the asset_msg message
 asset_msg_t *
@@ -663,6 +762,12 @@ zframe_t *
 //  Set the grps field, transferring ownership from caller
 void
     asset_msg_set_grps (asset_msg_t *self, zframe_t **frame_p);
+
+//  Get/set the type_name field
+const char *
+    asset_msg_type_name (asset_msg_t *self);
+void
+    asset_msg_set_type_name (asset_msg_t *self, const char *format, ...);
 
 //  Self test of this class
 int
