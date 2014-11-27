@@ -117,7 +117,7 @@ do_make() {
 	    *distclean*)
 		### Hack to avoid running configure if it is newer
 		### than Makefile - these are deleted soon anyway
-		echo "INFO: Hack to avoid extra useless configure - touch some files"
+		echo "INFO: Take steps to avoid extra useless configure before distclean - touch some files"
 		touch Makefile
 		[ -f config.status ] && touch config.status
 		;;
@@ -182,8 +182,9 @@ suppressWarningsUnused() {
 	[ "$_WARNLESS_UNUSED" != 0 ] && return
 	CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
 	CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-	export CFLAGS CXXFLAGS
-	echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+	CPPFLAGS="$CPPFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	export CFLAGS CXXFLAGS CPPFLAGS
+	echo "INFO: Fixed up CFLAGS, CXXFLAGS and CPPFLAGS to ignore warnings about unused code"
 	_WARNLESS_UNUSED=1
 }
 
