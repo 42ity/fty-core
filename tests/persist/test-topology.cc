@@ -286,3 +286,26 @@ TEST_CASE("Power topology to","[db][topology][power][to]")
     asset_msg_destroy (&cretTopology);
     log_close();
 }
+
+TEST_CASE("Power topology group","[db][topology][power][group]")
+{
+    log_open();
+    log_set_level(LOG_DEBUG);
+
+    log_info ("=============== POWER GROUP id = 4999 ==================\n");
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
+    assert ( getmsg );
+    asset_msg_set_element_id (getmsg, 4999);
+    asset_msg_print (getmsg);
+
+    zmsg_t* retTopology = get_return_power_topology_group (url.c_str(), getmsg);
+    assert ( retTopology );
+    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    assert ( cretTopology );
+    asset_msg_print (cretTopology);
+    print_frame_devices (asset_msg_devices (cretTopology));
+    
+    asset_msg_destroy (&getmsg);
+    asset_msg_destroy (&cretTopology);
+    log_close();
+}

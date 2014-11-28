@@ -17,4 +17,5 @@ zmsg_t* get_return_topology_to (const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_topology_from (const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_to(const char* url, asset_msg_t* getmsg);
+zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
 #endif // SRC_PERSIST_ASSETTOPOLOGY_H_
