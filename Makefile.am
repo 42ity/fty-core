@@ -330,6 +330,7 @@ simple_SOURCES = src/simple/main.cc \
 				 src/include/common_msg.h \
 				 src/drivers/nut/nut-actor.cc \
 				 src/drivers/nut/nut-driver.cc \
+				 src/shared/upsstatus.cc \
 				 src/include/nmap_msg.h \
 				 src/include/nmap_msg.c
 
