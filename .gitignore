@@ -51,6 +51,17 @@ docs/doxygen/doxygen_sqlite3.db
 .test.log
 .test.trs
 test-log.*
+test-*.log
+test-*.trs
+
+test-cidr
+test-database
+test-db
+test-db2
+test-log
+test-utils
+
+tests/junit/
 
 build/
 build-*/
