@@ -298,6 +298,20 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 test_database_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
 ###
+check_PROGRAMS += 			test-nmap-parse
+test_nmap_parse_SOURCES = tests/drivers/nmap/test-nmap-parse.cc
+test_nmap_parse_LDADD = libpriv-nmap-parse.la \
+						libpriv-log.la \
+						libpriv-proto.la \
+						libpriv-test-run.la
+test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
+test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
+				   -I$(top_srcdir)/tests/include/ \
+				   -I$(top_srcdir)/src/drivers/nmap/ \
+				   -DTDIR=$(top_srcdir)/tests/drivers/nmap/
+EXTRA_DIST += $(top_srcdir)/tests/drivers/nmap/mbt-lab.xml
+
+###
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
