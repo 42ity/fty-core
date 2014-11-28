@@ -167,7 +167,7 @@ static unsigned int get_ifa_flags(struct ifaddrmsg *ifa,
 }
 
 // lib/utils.c
-const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen)
+const char *rt_addr_n2a(int af, int UNUSED_PARAM len, const void *addr, char *buf, int buflen)
 {
 	switch (af) {
 	case AF_INET:
@@ -179,7 +179,7 @@ const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen
 }
 
 // lib/utils.c
-const char *format_host(int af, int UNUSED_PARAM len, const void *addr,
+const char *format_host(int af, int len, const void *addr,
 			char *buf, int buflen)
 {
 	return rt_addr_n2a(af, len, addr, buf, buflen);
