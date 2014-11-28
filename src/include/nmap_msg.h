@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: nmap_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -37,21 +37,20 @@
 
     SCAN_COMMAND - Command for scanning
         type                string      Type of a scan - default list scan, device scan, ...
-        headers             dictionary  Aditional parameters for scanning, not used right now
+        headers             hash        Aditional parameters for scanning, not used right now
         args                strings     Arguments for scanning, usually list of ip addresses
 
     LIST_SCAN - Results of a list scan, this parses 'host' element with a limited set of fields, see ELEMENT host in nmap DTD
         addr                string      IP address
-        host_state          number 1     Status of a host (up|down|unknown|skipped)
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
-        hostnames           dictionary  dictionary of hostname : type, where type is a type of hostname (user, PTR)
+        hostnames           hash        dictionary of hostname : type, where type is a type of hostname (user, PTR)
 
     DEV_SCAN - Results of a device scan, this parses 'host' element. It is a high-level container, which encapsulates
 port scan results and os scan one (if enabled).
         host_state          number 1     Status of a host (up|down|unknown|skipped)
         reason              string      Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type
-        addresses           dictionary  dictionary of address : vendor, where vendor is valid only for mac addresses
-        hostnames           dictionary  dictionary of hostname : type, where type is a type of hostname (user, PTR)
+        addresses           hash        dictionary of address : vendor, where vendor is valid only for mac addresses
+        hostnames           hash        dictionary of hostname : type, where type is a type of hostname (user, PTR)
         ports               frame       List of port_scan results. List of 'port_scan' messages
         os                  frame       List of os_scan results. List of 'os_scan' messages
         scripts             frame       List of script results. List of 'script' messages
@@ -136,7 +135,10 @@ extern "C" {
 #endif
 
 //  Opaque class structure
+#ifndef NMAP_MSG_T_DEFINED
 typedef struct _nmap_msg_t nmap_msg_t;
+#define NMAP_MSG_T_DEFINED
+#endif
 
 //  @interface
 //  Create a new nmap_msg
@@ -146,6 +148,12 @@ nmap_msg_t *
 //  Destroy the nmap_msg
 void
     nmap_msg_destroy (nmap_msg_t **self_p);
+
+//  Parse a zmsg_t and decides whether it is nmap_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+    is_nmap_msg (zmsg_t *msg_p);
 
 //  Parse a nmap_msg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 
@@ -187,7 +195,6 @@ zmsg_t *
 zmsg_t *
     nmap_msg_encode_list_scan (
         const char *addr,
-        byte host_state,
         const char *reason,
         zhash_t *hostnames);
 
@@ -288,7 +295,6 @@ int
 int
     nmap_msg_send_list_scan (void *output,
         const char *addr,
-        byte host_state,
         const char *reason,
         zhash_t *hostnames);
     
@@ -460,12 +466,6 @@ const char *
 void
     nmap_msg_set_addr (nmap_msg_t *self, const char *format, ...);
 
-//  Get/set the host_state field
-byte
-    nmap_msg_host_state (nmap_msg_t *self);
-void
-    nmap_msg_set_host_state (nmap_msg_t *self, byte host_state);
-
 //  Get/set the reason field
 const char *
     nmap_msg_reason (nmap_msg_t *self);
@@ -494,6 +494,12 @@ void
         const char *key, const char *format, ...);
 size_t
     nmap_msg_hostnames_size (nmap_msg_t *self);
+
+//  Get/set the host_state field
+byte
+    nmap_msg_host_state (nmap_msg_t *self);
+void
+    nmap_msg_set_host_state (nmap_msg_t *self, byte host_state);
 
 //  Get/set the addresses field
 zhash_t *
