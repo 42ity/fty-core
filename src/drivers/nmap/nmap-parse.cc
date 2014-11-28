@@ -210,7 +210,6 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
     std::list<std::string> ls_res;
     std::string reason_v;
     std::string addr_v;
-    int host_state_v;
     zhash_t *hostnames = NULL;
 
     enum ListState state = ListState::START;
@@ -237,20 +236,6 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                 // host state
                 if (v == "up" || v == "unknown") {
                     state = ListState::HOST;
-                    // quick & dirty - to be reworked
-                    if (v.compare("up") == 0) {
-                        host_state_v = 0;
-                    }
-                    else if (v.compare("down") == 0) {
-                        host_state_v = 1;
-                    }
-                    else if (v.compare("unknown") == 0) {
-                        host_state_v = 2;
-                    }
-                    else if (v.compare("skipped") == 0) {
-                        host_state_v = 3;
-                    }
-                        
                     static auto reason = convert<String>("reason");
                     reason_v = convert<std::string>(el.attribute(reason));
                 }
@@ -301,8 +286,8 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                             nmap_msg_t *msg = nmap_msg_new (NMAP_MSG_LIST_SCAN);
                             assert (msg);
                             nmap_msg_set_addr (msg, "%s", addr_v.c_str());
-                            nmap_msg_set_host_state (msg, host_state_v);
                             nmap_msg_set_reason (msg, "%s", reason_v.c_str());                                                
+                            nmap_msg_set_hostnames(msg, &hostnames);
 
                             int rv = nmap_msg_send (&msg, socket);
                             assert (rv != -1);
