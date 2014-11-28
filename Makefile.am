@@ -345,6 +345,8 @@ simple_SOURCES = src/simple/main.cc \
 				 src/persist/persistence.h \
 				 src/drivers/nut/nut-actor.cc \
 				 src/drivers/nut/nut-driver.cc
+				 src/drivers/nut/nut-driver.cc \
+				 src/shared/upsstatus.cc
 
 simple_LDFLAGS = -lcidr \
 				 ${LIBCZMQ_LIBS} \
