@@ -38,7 +38,7 @@ CPUS=$(getconf _NPROCESSORS_ONLN)
 echo "====================== autoreconf ==========================="
 autoreconf -vfi
 echo "====================== configure ============================"
-./configure --prefix=$HOME
+./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
 echo "==================== make distcheck ========================="
 make -j $CPUS distcheck
 echo "========================= make =============================="
