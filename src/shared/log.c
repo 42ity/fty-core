@@ -28,7 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
            level == LOG_INFO    || \
            level == LOG_WARNING || \
            level == LOG_ERR     || \
-           level == LOG_CRIT)
+           level == LOG_CRIT    || \
+           level == LOG_NOOP)
 
 static int log_syslog_level = LOG_SYSLOG_NA;
 static int log_stderr_level = LOG_ERR;
