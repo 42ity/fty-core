@@ -261,7 +261,7 @@ check_PROGRAMS += 			test-db2
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
 				   tests/persist/test-realdatamonitor.cc \
-				   tests/persist/test-topology.cc \
+				   tests/persist/test-topology.cc 
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
