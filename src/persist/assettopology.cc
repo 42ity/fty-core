@@ -1,13 +1,17 @@
+#include <assert.h>
+#include <set>
+#include <tuple>
+
 #include <czmq.h>
 #include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/error.h>
 #include <tntdb/value.h>
 #include <tntdb/result.h>
+
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
-#include <assert.h>
 // TODO HARDCODED CONSTANTS for asset device types
 
 // TODO This parameter should be placed in configure file
@@ -209,7 +213,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
                                         rows, racks, devices, grps);
                 assert ( el );
                 log_info ("created msg el for i = %d\n",i);
-                rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
+                rv = zmsg_addmsg ( ret, &el);
                 assert ( rv != -1 );
                 assert ( el == NULL );
                 zframe_destroy (&dcs);
@@ -594,7 +598,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         char buff[28];     // 10+3+3+10+ safe 2
         
         // Go through the selected links
-        for ( auto &row: result )
+        for ( auto row: result )
         {
             // id_asset_element_dest, requiured
             uint32_t id_asset_element_dest = 0;
@@ -621,7 +625,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
             log_info ("for\n");
             log_info ("asset_element_id_src = %d\n", element_id);
-            log_info ("asset_element_dest_id = %d\n", id_asset_element_dest);
+            log_info ("asset_element_id_dest = %d\n", id_asset_element_dest);
             log_info ("src_out = %d\n", src_out);
             log_info ("dest_in = %d\n", dest_in);
             log_info ("device_name = %s\n", device_name.c_str());
@@ -634,7 +638,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                 (id_asset_element_dest, device_type_name.c_str(), device_name.c_str());
             assert ( el );
             log_info ("created msg el \n");
-            int rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
+            int rv = zmsg_addmsg ( ret, &el);
             assert ( rv != -1 );
             assert ( el == NULL );
         } // end for
@@ -653,7 +657,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
         zmsg_t* el = asset_msg_encode_powerchain_device
                                 (element_id, device_type_name.c_str(), device_name.c_str());
-        int rv = zmsg_addmsg ( ret, (zmsg_t **) &el);
+        int rv = zmsg_addmsg ( ret, &el);
         assert ( rv != -1 );
         assert ( el == NULL );
 
@@ -706,3 +710,193 @@ void print_frame_devices (zframe_t* frame)
    assert ( zmsg == NULL );
 }
 
+/**
+ * \brief This function processes the ASSET_MSG_GET_POWER_TO message
+ *
+ * In case of success it generates the ASSET_MSG_RETURN_POWER. 
+ * In case of failure returns COMMON_MSG_FAIL.
+ * 
+ * A single powerchain link is coded as "A:B:C:D" string ("src_socket:src_id:dst_socket:dst_id").
+ * If A or C is zero than A or C it was not srecified in database (it was NULL). 
+ *
+ * \param url - the connection to database.
+ * \param msg - the message of the type ASSET_MSG_GET_POWER_TO
+ *                  we would like to process.
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or
+ *                       ASSET_MSG_RETURN_POWER
+ */ 
+zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
+{
+    assert ( getmsg );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
+    log_info ("start\n");
+    uint32_t element_id   = asset_msg_element_id  (getmsg);
+    uint32_t element_type_id = 6; // TODO hardcoded constant
+    uint8_t  linktype = 1; //TODO hardcoded constants
+
+    zlist_t* powers = zlist_new();
+    assert ( powers );
+    zlist_set_duplicator (powers, void_dup);
+
+    std::string name = "";
+    std::string name1 = "";
+
+    // select information about the start device
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            " v.name, v2.name"
+            " FROM"
+            " v_bios_asset_element v,"
+            " v_bios_asset_device v1,"
+            " v_bios_asset_device_type v2"
+            " WHERE v.id = :id AND"
+            "       v.id_type = :idtype AND"
+            "       v1.id_asset_element = v.id AND"
+            "       v2.id_asset_device_type = v1.id_asset_device_type"
+        );
+    
+        tntdb::Row row = st.setInt("id", element_id).
+                            setInt("idtype", element_type_id).
+                            selectRow();
+        // device name, required
+        row[0].get(name);
+        assert ( name != "" ); // database is corrupted
+        
+        // device type name, required
+        row[1].get(name1);
+        assert ( name1 != "" ); // database is corrupted
+    }
+    catch (const tntdb::NotFound &e) {
+        // device with specified id was not found
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                                        e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        // internal error in database
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+
+    std::set<std::tuple<int,std::string,std::string>> newdevices, resultdevices;
+    auto adevice = std::make_tuple(element_id, name, name1);   // ( id,  device_name, device_type_name )
+    resultdevices.insert (adevice);
+    newdevices.insert (adevice);
+
+    bool ncontinue = true;
+    while ( ncontinue )
+    {
+        uint32_t cur_element_id = std::get<0>(adevice);
+        
+        try{
+            tntdb::Connection conn = tntdb::connectCached(url);
+
+            tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "  v.id_asset_element_src, v.src_out, v.dest_in, v.src_name,"
+                "  v.src_type_name"
+                " FROM"
+                "  v_bios_asset_link_topology v"
+                " WHERE"
+                "  v.id_asset_link_type = :idlinktype AND"
+                "  v.id_asset_element_dest = :id"
+            );
+            
+            // can return more than one value
+            tntdb::Result result = st.setInt("id", cur_element_id).
+                                      setInt("idlinktype", linktype).
+                                      select();
+            
+            char buff[28];     // 10+3+3+10+ safe 2
+            
+            // Go through the selected links
+            for ( auto &row: result )
+            {
+                // id_asset_element_dest, requiured
+                uint32_t id_asset_element_src = 0;
+                row[0].get(id_asset_element_src);
+                assert ( id_asset_element_src );
+       
+                // src_out 
+                uint32_t src_out = 0;
+                row[1].get(src_out);
+                
+                // dest_in
+                uint32_t dest_in = 0;
+                row[2].get(dest_in);
+                
+                // device_name_src, required
+                std::string device_name_src = "";
+                row[3].get(device_name_src);
+                assert ( device_name_src != "" );
+    
+                // device_type_name_src, requiured
+                std::string device_type_name_src = "";
+                row[4].get(device_type_name_src);
+                assert ( device_type_name_src != "" );
+    
+                log_info ("for\n");
+                log_info ("asset_element_id_dest = %d\n", cur_element_id);
+                log_info ("asset_element_id_src = %d\n", id_asset_element_src);
+                log_info ("src_out = %d\n", src_out);
+                log_info ("dest_in = %d\n", dest_in);
+                log_info ("device_name_src = %s\n", device_name_src.c_str());
+                log_info ("device_type_name_src = %s\n", device_type_name_src.c_str());
+    
+                sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, dest_in, cur_element_id);
+                zlist_push(powers, buff);
+
+                newdevices.insert (std::make_tuple(id_asset_element_src, device_name_src, device_type_name_src));
+            } // end for
+        }
+        catch (const std::exception &e) {
+            // internal error in database
+            zlist_destroy (&powers);
+            log_warning ("abort with err = '%s'\n", e.what());
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+        }
+
+        // find the next dest device 
+        ncontinue = false;
+        for ( auto it = newdevices.begin(); it != newdevices.end(); ++it )
+        {
+            adevice = *it;
+            if ( resultdevices.count (adevice) == 1 )  // it could be 0 or 1
+                continue;
+            else
+            {
+                resultdevices.insert (adevice);
+                ncontinue = true;
+                break;
+            }
+        }
+    }
+    zmsg_t* ret = zmsg_new();
+    assert ( ret );
+    for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
+    {
+        adevice = *it;
+
+        zmsg_t* el = asset_msg_encode_powerchain_device
+                                (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), (std::get<1>(adevice)).c_str() );
+        int rv = zmsg_addmsg ( ret, &el);
+        assert ( rv != -1 );
+        assert ( el == NULL );
+    }
+    
+    zframe_t* devices = NULL;
+    int rv = matryoshka2frame (&ret, &devices);
+    assert ( rv == 0 );
+    
+    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
+    zlist_destroy (&powers);
+    zframe_destroy (&devices);
+    log_info ("end normal\n");
+    return result;
+}
