@@ -28,16 +28,45 @@
 #   supported command-line parameters to the main "autogen.sh" script.
 
 # Some of our CI-scripts can define the CHECKOUTDIR variable
-if [ x"$CHECKOUTDIR" != x ]; then
-    cd "$CHECKOUTDIR" || exit
-else
-    cd "`dirname $0`/.."
+# Otherwise we define it ourselves to use below
+if [ x"$CHECKOUTDIR" = x ]; then
+    CHECKOUTDIR="`dirname $0`/.."
 fi
+cd "$CHECKOUTDIR" || exit
+# Actually... (re)define the value to a complete FS path
+CHECKOUTDIR="`pwd`" || exit
+export CHECKOUTDIR
+echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'..."
+
+VERB_COUNT=0
+verb_run() {
+	VERB_COUNT="$(($VERB_COUNT+1))" 2>/dev/null || \
+	VERB_COUNT="`echo $VERB_COUNT+1|bc`" 2>/dev/null || \
+	VERB_COUNT=""
+
+    (
+	### Despite the round parentheses, $$ contains the parent bash PID
+	TAG="$$"
+	[ x"$BASHPID" != x ] && TAG="$BASHPID"
+	[ x"$VERB_COUNT" != x ] && TAG="$VERB_COUNT:$TAG"
+
+	echo "INFO-RUN[${TAG}]: `date`: running '"$@"' from directory '`pwd`'..."
+	"$@"
+	RES=$?
+	[ "$RES" = 0 ] && \
+	    echo "INFO-RUN[${TAG}]: `date`: completed '"$@"' from directory '`pwd`'" || \
+	    echo "INFO-RUN[${TAG}]: `date`: failed($RES) '"$@"' from directory '`pwd`'"
+
+	### This line intentionally left blank :)
+	echo ""
+	return $RES
+    )
+}
 
 if [ x"$AUTOGEN_DONE" != xyes -a -x "./autogen.sh" ]; then
     # Variable was set by our autogen.sh if it invokes this script,
     # otherwise run the autogen logic first
-    "./autogen.sh" || exit
+    verb_run ./autogen.sh || exit
 fi
 
 if [ ! -s "./configure" -o ! -x "./configure" ]; then
@@ -48,6 +77,9 @@ fi
 # For sub-dir build - automatic naming according to OS/arch of the builder
 [ x"$BLDARCH" = x ] && BLDARCH="`uname -s`-`uname -m`"
 [ x"$DESTDIR" = x ] && DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
+# Name of the sub-directory for the build, relative to workspace root
+# ...or absolute (i.e. in /tmp/build-test) - this also works ;)
+[ x"$BUILDSUBDIR" = x ] && BUILDSUBDIR="build-${BLDARCH}"
 
 # Set up the parallel make with reasonable limits, using several ways to
 # gather and calculate this information
@@ -56,9 +88,22 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+# Normalize the optional flags
+case "$NOPARMAKE" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	NOPARMAKE=yes ;;
+    *)	NOPARMAKE=no  ;;
+esac
+
+case "$WARNLESS_UNUSED" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	WARNLESS_UNUSED=yes ;;
+    *)	WARNLESS_UNUSED=no  ;;
+esac
+
 do_make() {
 	if [ ! -s Makefile ]; then
-		case "$@" in
+		case "$*" in
 		    *clean*)
 				echo "INFO: Makefile absent, skipping 'make $@'"
 #distclean?#			[ -d config ] && rm -rf config
@@ -68,8 +113,7 @@ do_make() {
 				return 1 ;;
 		esac
 	fi
-	echo "INFO: running 'make "$@"'"
-	case "$@" in
+	case "$*" in
 	    *distclean*)
 		### Hack to avoid running configure if it is newer
 		### than Makefile - these are deleted soon anyway
@@ -78,63 +122,114 @@ do_make() {
 		[ -f config.status ] && touch config.status
 		;;
 	esac
-	make "$@"
+
+	verb_run make "$@"; RES=$?
+
+	[ "$RES" != 0 ] && case "$*" in
+	    *-k*distclean*)
+		### Killing files enforces that the project is reconfigured
+		### during later make attempts (this protects against some
+		### broken contents of a Makefile). Depending on the result
+		### of "rm -f" protects against unwritable directories.
+		rm -rf Makefile config.status config/ && \
+		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2 && \
+		RES=0
+		;;
+	esac
+
+	return $RES
+}
+
+do_build() {
+	if [ x"$NOPARMAKE" != xyes ]; then 
+	    echo "=== PARMAKE:"
+	    do_make V=0 -j $NPARMAKES -k "$@" || true
+	else
+	    echo "=== PARMAKE disabled by user request"
+	fi
+
+	echo "=== SEQMAKE:"
+	do_make "$@"
 }
 
 buildSamedir() {
 	do_make -k distclean
-	./configure && \
-	{ do_make -k clean; \
-	  if [ x"$NOPARMAKE" != xY ]; then 
-	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; }
+	verb_run ./configure && \
+	{ do_make -k clean; do_build "$@"; }
 }
 
 buildSubdir() {
 	do_make -k distclean
-	( { rm -rf build-${BLDARCH}; \
-	  mkdir build-${BLDARCH}; \
-	  cd build-${BLDARCH}; } && \
-	../configure && \
-	{ if [ x"$NOPARMAKE" != xY ]; then
-	    echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; } && \
-	{ make DESTDIR=${DESTDIR} install; } )
+	( { echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
+	  rm -rf "${BUILDSUBDIR}"; \
+	  mkdir "${BUILDSUBDIR}" && \
+	  cd "${BUILDSUBDIR}"; } && \
+	verb_run "$CHECKOUTDIR/configure" && \
+	do_build "$@" )
 }
 
 installSamedir() {
-	{ make DESTDIR=${DESTDIR} install; }
+	{ do_make "DESTDIR=${DESTDIR}" install; }
 }
 
 installSubdir() {
-	( cd build-${BLDARCH} && \
-	  make DESTDIR=${DESTDIR} install )
+	( cd "${BUILDSUBDIR}" && \
+	  do_make "DESTDIR=${DESTDIR}" install )
+}
+
+_WARNLESS_UNUSED=0
+suppressWarningsUnused() {
+	[ "$_WARNLESS_UNUSED" != 0 ] && return
+	CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	export CFLAGS CXXFLAGS
+	echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+	_WARNLESS_UNUSED=1
 }
 
 while [ $# -gt 0 ]; do
 	case "$1" in
 	    "--warnless-unused")
+		WARNLESS_UNUSED=yes
 		shift
-		CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		export CFLAGS CXXFLAGS
-		echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+		;;
+	    --noparmake|--disable-parallel-make)
+		NOPARMAKE=yes
+		shift
+		;;
+	    --parmake|--enable-parallel-make)
+		NOPARMAKE=no
+		shift
 		;;
 	    *)	break ;;
 	esac
 done
+
+### The flags can be set in environment rather than passed on command line
+[ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
 
 case "$1" in
     "")
 	# Ensure that an exit at this point is "successful"
 	true
 	;;
-    build-samedir|build|make|make-samedir)
+    make|make-samedir)
+	shift
+	do_build "$@"
+	exit
+	;;
+    make-subdir)
+	shift
+	( cd "${BUILDSUBDIR}" && \
+	  do_build "$@" )
+	exit
+	;;
+    build-samedir|build)
 	shift
 	buildSamedir "$@"
 	exit
 	;;
-    build-subdir|make-subdir)
+    build-subdir)
 	shift
 	buildSubdir "$@"
 	exit
@@ -152,21 +247,24 @@ case "$1" in
 	exit
 	;;
     distclean)
-	./configure && \
+	verb_run ./configure && \
 	do_make -k distclean
 	;;
     distcheck)
 	do_make -k distclean
-	./configure && \
+	verb_run ./configure && \
 	do_make distcheck
 	;;
     conf|configure)
 	do_make -k distclean
-	./configure
+	verb_run ./configure
 	;;
-    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
-	echo "This script (re-)creates the configure script and optionally either just builds"
-	echo "or builds and installs into a DESTDIR the requested project targets."
+    *)	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
+	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
+	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
+	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
+	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
+	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
 	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
 	echo "Some uses without further parameters:"
 	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
