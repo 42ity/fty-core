@@ -6,6 +6,7 @@
 #include "common_msg.h"
 #include "defs.h"
 #include "log.h"
+#include "upsstatus.h"
 
 namespace drivers
 {
@@ -105,7 +106,6 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
                         (uint8_t)-2);
         reply = process_measures_meta(&request);
         zmsg_destroy(&request);
-        common_msg_destroy(&cmsg);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
             ID.type = common_msg_mt_id(cmsg);
@@ -201,18 +201,28 @@ void nut_actor(zsock_t *pipe, void *args) {
                     for(auto &measurement : it->second.physics( ! advertise ) ) {
                         zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second);
                         if(msg) {
-                            log_info ("ups %s : %s\n", it->second.name().c_str(), it->second.toString().c_str() );
+                            log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
                             zmsg_send(&msg, dbsock);
                         }
                         zmsg_destroy(&msg);
                     }
-                    // TODO: status mapping to COMMON_MSG_NEW_MEASUREMENT ?
+                    // send also status as bitmap
+                    if( it->second.hasProperty("status") && ( advertise || it->second.changed("status") ) ) {
+                        std::string status_s = it->second.property("status");
+                        uint16_t    status_i = shared::upsstatus_to_int( status_s );
+                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i);
+                        if(msg) {
+                            log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
+                            zmsg_send(&msg, dbsock);
+                        }
+                        zmsg_destroy(&msg);
+                    }
                     // send also POWERDEV_MSG_POWERDEV_STATUS
                     zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
                     log_info ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
                     zmsg_send(&msg, dbsock);
                     zmsg_destroy(&msg);
-                    it->second.changed(false);
+                    it->second.setChanged(false);
                 }
             }
         }
