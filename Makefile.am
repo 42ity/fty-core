@@ -14,8 +14,11 @@ CLEANFILES =
 DISTCLEANFILES =
 TESTS =
 
+# Named by analogy from configure'd myDOXDIR for doxygen
+myMANDIR = docs/man
+
 # Locations of child Makefiles
-SUBDIRS = docs/man docs/examples tools
+SUBDIRS = $(myMANDIR) docs/examples tools
 
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
@@ -447,7 +450,8 @@ if HAVE_DOXYGEN
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
 endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
-EXTRA_DIST +=				$(top_srcdir)/docs/man/*.txt
+EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
+DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
 EXTRA_DIST +=			$(top_srcdir)/INSTALL-referenceOS-debian8 \
 					$(top_srcdir)/CONTRIBUTING \
 					$(top_srcdir)/INSTALL
@@ -468,7 +472,7 @@ html-docs: INSTALL.html CONTRIBUTING.html \
 		INSTALL-referenceOS-debian8.html
 
 man-docs:
-	( cd docs/man && $(MAKE) all )
+	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
 
 CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
@@ -535,16 +539,22 @@ all-local: all-docs
 #----------------------------------------------------------------------
 
 clean-man:
-	( cd docs/man && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
-	/bin/rm -f docs/man/*.?
+	( cd $(top_builddir)/$(myMANDIR) && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
+	/bin/rm -f $(top_builddir)/$(myMANDIR)/*.?
 
-clean-local: clean-man
-	/bin/rm -rf $(top_builddir)/tests/junit
+clean-doxygen:
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
+
+clean-docs: clean-man clean-doxygen
 	/bin/rm -f INSTALL.html
 	/bin/rm -f CONTRIBUTING.html
 	/bin/rm -f INSTALL-referenceOS-debian8.html
 	/bin/rm -f docs/develop/README-builder.html
+
+clean-junit:
+	/bin/rm -rf $(top_builddir)/tests/junit
+
+clean-local: clean-docs clean-junit
 
 #----------------------------------------------------------------------
 #                        astyle formating
