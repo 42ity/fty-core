@@ -105,6 +105,12 @@ case "$WARNLESS_UNUSED" in
     *)	WARNLESS_UNUSED=no  ;;
 esac
 
+case "$SHOW_BUILDER_FLAGS" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	SHOW_BUILDER_FLAGS=yes ;;
+    *)	SHOW_BUILDER_FLAGS=no  ;;
+esac
+
 do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
@@ -195,7 +201,7 @@ suppressWarningsUnused() {
 }
 
 usage() {
-	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
+	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] [--show-builder-flags] \ "
 	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
 	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
@@ -208,9 +214,40 @@ usage() {
 	echo "Usage: $0 distclean	- execute the distclean step and exit"
 }
 
+showBuilderFlags() {
+	echo "INFO: Summary of flags that influence this run of the '$0':
+	BLDARCH (for bld/inst):	$BLDARCH
+	CHECKOUTDIR workspace:	$CHECKOUTDIR
+	BUILDSUBDIR (subdirs):	$BUILDSUBDIR
+	DESTDIR (for install):	$DESTDIR
+	MAKE command to use:	$MAKE
+	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
+	 NCPUS (private var):	$NCPUS
+	 NPARMAKES jobs:	$NPARMAKES
+	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)"
+	[ -n "$CFLAGS" ] && echo \
+"	 Requested CFLAGS:	$CFLAGS"
+	[ -n "$CPPFLAGS" ] && echo \
+"	 Requested CPPFLAGS:	$CPPFLAGS"
+	[ -n "$CXXFLAGS" ] && echo \
+"	 Requested CXXFLAGS:	$CXXFLAGS"
+	echo \
+"	Requested action:	$1"
+
+	[ $# -gt 1 ] && case "$1" in
+	build*|install*|make*)
+	    shift
+	    echo \
+"	 Requested target(s):	$@"
+	    ;;
+	esac
+
+	echo ""
+}
+
 while [ $# -gt 0 ]; do
 	case "$1" in
-	    "--warnless-unused")
+	    --warnless-unused)
 		WARNLESS_UNUSED=yes
 		shift
 		;;
@@ -222,12 +259,19 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		shift
 		;;
+	    --show-builder-flags|--verbose)
+		SHOW_BUILDER_FLAGS=yes
+		shift
+		;;
 	    *)	break ;;
 	esac
 done
 
 ### The flags can be set in environment rather than passed on command line
 [ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
+
+### This is the last flag-reaction in the stack of such
+[ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
 
 case "$1" in
     "")
