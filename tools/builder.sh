@@ -142,13 +142,15 @@ do_make() {
 
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
-	    echo "=== PARMAKE:"
+	    echo "=== PARMAKE (fast first pass which is allowed to fail): $@"
 	    do_make V=0 -j $NPARMAKES -k "$@" || true
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
 
-	echo "=== SEQMAKE:"
+	# User can request 'builder.sh install-subdir V=0' or somesuch
+	# to suppress the build tracing, or '... --trace' to increase it
+	echo "=== SEQMAKE: $@"
 	do_make "$@"
 }
 
