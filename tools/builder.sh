@@ -105,11 +105,11 @@ do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
 		    *clean*)
-				echo "INFO: Makefile absent, skipping 'make $@'"
+				echo "INFO: Makefile absent, skipping 'make $@' for a cleaning action"
 #distclean?#			[ -d config ] && rm -rf config
 				return 0 ;;
 		    *)
-				echo "ERROR: Makefile absent, skipping 'make $@'" >&2
+				echo "ERROR: Makefile absent, can not fulfill 'make $@'" >&2
 				return 1 ;;
 		esac
 	fi
