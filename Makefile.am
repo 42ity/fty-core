@@ -85,6 +85,8 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/nethistory.cc \
 				src/persist/nethistory.h \
 				src/persist/assetmsg.cc \
+				src/persist/assettopology.cc \
+				src/persist/assettopology.h \
 				src/persist/assetmsg.h \
 				src/persist/persistencelogic.cc \
 				src/persist/persistencelogic.h \
@@ -151,7 +153,7 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #[one][two],[three]
 
 
-AM_LOG_FLAGS = 				exclude: [db*]
+AM_LOG_FLAGS = 				~[db]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -258,7 +260,8 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-realdatamonitor.cc
+				   tests/persist/test-realdatamonitor.cc \
+				   tests/persist/test-topology.cc 
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
