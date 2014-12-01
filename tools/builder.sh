@@ -285,11 +285,11 @@ showBuilderFlags() {
 	 NPARMAKES jobs:	$NPARMAKES
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)"
 	[ -n "$CFLAGS" ] && echo \
-"	 Requested CFLAGS:	$CFLAGS"
-	[ -n "$CPPFLAGS" ] && echo \
-"	 Requested CPPFLAGS:	$CPPFLAGS"
+"	 CFLAGS (the C compiler):	$CFLAGS"
 	[ -n "$CXXFLAGS" ] && echo \
-"	 Requested CXXFLAGS:	$CXXFLAGS"
+"	 CXXFLAGS (C++ compiler):	$CXXFLAGS"
+	[ -n "$CPPFLAGS" ] && echo \
+"	 CPPFLAGS (C/C++ preprocessor):	$CPPFLAGS"
 	echo \
 "	Requested action:	$1"
 
