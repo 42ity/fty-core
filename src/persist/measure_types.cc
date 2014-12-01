@@ -52,7 +52,7 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                 tntdb::Statement st = conn.prepareCached(
                     "insert into t_bios_measurement_types (name) "
                     "select :name from dual WHERE NOT EXISTS "
-                    "(select id from t_bios_measurement_types where name=:name);"
+                    "(select id from t_bios_measurement_types where name=:name)"
                 );
                 st.setString("name", common_msg_mt_name(*msg)).execute();
             } catch (const std::exception &e) {
@@ -94,12 +94,14 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "insert into t_bios_measurement_subtypes (name, type_id, scale) "
-                    "select :name, :type_id, :scale from dual WHERE NOT EXISTS "
+                    "insert into t_bios_measurement_subtypes (id, name, type_id, scale) "
+                    "select "
+                    "(select max(id)+1 from t_bios_measurement_subtypes where type_id=:mt_id), "
+                    ":name, :mt_id, :scale from dual WHERE NOT EXISTS "
                     "(select id from t_bios_measurement_subtypes where "
-                    " name=:name and type_id=:mt_id);"
+                    " name=:name and type_id=:mt_id)"
                 );
-                st.setString("name", common_msg_mt_name(*msg)).
+                st.setString("name", common_msg_mts_name(*msg)).
                    setInt("mt_id", common_msg_mt_id(*msg)).
                    setInt("scale", (int8_t)common_msg_mts_scale(*msg)).
                    execute();
