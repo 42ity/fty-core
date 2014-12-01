@@ -85,6 +85,8 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/nethistory.cc \
 				src/persist/nethistory.h \
 				src/persist/assetmsg.cc \
+				src/persist/assettopology.cc \
+				src/persist/assettopology.h \
 				src/persist/assetmsg.h \
 				src/persist/persistencelogic.cc \
 				src/persist/persistencelogic.h \
@@ -151,7 +153,7 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #[one][two],[three]
 
 
-AM_LOG_FLAGS = 				exclude: [db*]
+AM_LOG_FLAGS = 				~[db]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -209,18 +211,7 @@ test_log_LDADD = 			libpriv-log.la \
 test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 
-# EXPL: THA, ACE reported that they had observed unstable
-# 		test-subprocess execution. On ACE's computer it had
-# 		supposedly crashed only once; THA did not observe
-# 		a test-failure on his local computer at all.
-#
-# 		However on Jenkins CI (running on a weaker virtual
-# 		machine) this test fails quite often, but still
-# 		unregularly.
-#
-# SOLUTION: Until we find out what's happening,
-# 			don't include this test into make check
-#check_PROGRAMS += 			test-subprocess
+check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
 					tests/shared/test-subprocess.cc
 test_subprocess_LDADD = 		libpriv-subprocess.la \
@@ -258,7 +249,8 @@ check_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-realdatamonitor.cc
+				   tests/persist/test-realdatamonitor.cc \
+				   tests/persist/test-topology.cc 
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
