@@ -416,6 +416,30 @@ CREATE VIEW v_bios_asset_link AS
         LEFT JOIN v_bios_asset_device v3
         ON(v1.id_asset_device_dest = v3.id_asset_device);
 
+CREATE VIEW v_bios_asset_link_topology AS
+    SELECT  v1.src_out,
+            v1.dest_in,
+            v1.id_asset_link_type,
+            v2.id_asset_element AS id_asset_element_src,
+            v4.name AS src_name,
+            v3.id_asset_element AS id_asset_element_dest,
+            v5.name AS dest_name,
+            v6.name AS src_type_name,
+            v7.name AS dest_type_name
+    FROM t_bios_asset_link v1
+        LEFT JOIN t_bios_asset_device v2
+        ON (v1.id_asset_device_src  = v2.id_asset_device)
+        LEFT JOIN v_bios_asset_device v3
+        ON (v1.id_asset_device_dest = v3.id_asset_device)
+        LEFT JOIN t_bios_asset_element v4
+        ON (v4.id_asset_element = v2.id_asset_element)
+        LEFT JOIN t_bios_asset_element v5
+        ON (v5.id_asset_element = v3.id_asset_element)
+        LEFT JOIN t_bios_asset_device_type v6
+        ON (v2.id_asset_device_type = v6.id_asset_device_type)
+        LEFT JOIN t_bios_asset_device_type v7
+        ON (v3.id_asset_device_type = v7.id_asset_device_type);
+
 create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
