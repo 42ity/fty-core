@@ -270,8 +270,8 @@ values
 
 insert into t_bios_discovered_device (id_device_type , name) values (@device_unclassified, "measures");
 
-insert into t_bios_client_info_measurements
-    (id_key, id_subkey, value, timestamp, id_client, id_discovered_device)
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     1,
@@ -281,8 +281,8 @@ values
     @client_nmap,
     1
 );
-insert into t_bios_client_info_measurements
-    (id_key, id_subkey, value, timestamp, id_client, id_discovered_device)
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     1,
@@ -292,8 +292,8 @@ values
     @client_nmap,
     1
 );
-insert into t_bios_client_info_measurements
-    (id_key, id_subkey, value, timestamp, id_client, id_discovered_device)
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     2,
@@ -303,8 +303,8 @@ values
     @client_nmap,
     1
 );
-insert into t_bios_client_info_measurements
-    (id_key, id_subkey, value, timestamp, id_client, id_discovered_device)
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     2,
@@ -314,14 +314,25 @@ values
     @client_nmap,
     1
 );
-insert into t_bios_client_info_measurements
-    (id_key, id_subkey, value, timestamp, id_client, id_discovered_device)
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     1,
     2,
     1,
     "2014-11-12 09:49:59",
+    @client_nmap,
+    1
+);
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    1,
+    1,
+    "2014-11-12 09:59:59",
     @client_nmap,
     1
 );
