@@ -134,7 +134,7 @@ If the 'MAKE' variable value contains a space, it is split into 'MAKE'
 'MAKE_OPTS'.
 
 
-=== 'MAKE_OPTS' parameters to the `make` program
+=== 'MAKE_OPTS', 'MAKE_OPTS_PAR' and 'MAKE_OPTS_SEQ' parameters to the `make` program
 Optional parameters commonly passed to the `$MAKE` program during a build
 operation (basically any of the actions except 'configure', 'distclean'
 and 'distcheck'). The value can be parsed at runtime from a multi-token
@@ -153,6 +153,14 @@ enables it even for the parallel `make` phase:
 :; export MAKE="make V=1"
 :; export MAKE_OPTS="--trace"
 ----
+
+The 'MAKE_OPTS_PAR' and 'MAKE_OPTS_SEQ' define *additional* parameters
+for the "parallel" (fast and optional) or "sequential" (reliable and
+enforced) phases, and are empty by default (can be set by user envvars.
+These values are prepended before the general 'MAKE_OPTS', but if the
+flags are in conflict (i.e. both variables set different values of
+'V=xxx' for verbosity), the resulting behavior depends on the `make`
+program's implementation.
 
 
 === 'BLDARCH' tag
