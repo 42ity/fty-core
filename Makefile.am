@@ -211,18 +211,7 @@ test_log_LDADD = 			libpriv-log.la \
 test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 
-# EXPL: THA, ACE reported that they had observed unstable
-# 		test-subprocess execution. On ACE's computer it had
-# 		supposedly crashed only once; THA did not observe
-# 		a test-failure on his local computer at all.
-#
-# 		However on Jenkins CI (running on a weaker virtual
-# 		machine) this test fails quite often, but still
-# 		unregularly.
-#
-# SOLUTION: Until we find out what's happening,
-# 			don't include this test into make check
-#check_PROGRAMS += 			test-subprocess
+check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
 					tests/shared/test-subprocess.cc
 test_subprocess_LDADD = 		libpriv-subprocess.la \
