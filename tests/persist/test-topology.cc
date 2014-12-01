@@ -172,6 +172,69 @@ TEST_CASE("location topology recursive filtered by 6","[db][topology][location][
     log_close();
 }
 
+TEST_CASE("unlocated location topology filtered by 3","[db][topology][location][from][nonrecursive][filtered][unlocated]")
+{
+    log_open();
+    log_set_level(LOG_DEBUG);
+
+    log_info ("================= LOCATION TOPOLOGY UNLOCATED FILTERED (by type = 3)=================== \n");
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    assert ( getmsg );
+    asset_msg_set_element_id  (getmsg, 0);
+    asset_msg_set_filter_type (getmsg, 3);
+    asset_msg_print (getmsg);
+
+    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    assert ( retTopology );
+
+    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    assert ( cretTopology );
+    asset_msg_print (cretTopology);
+    
+    print_frame (asset_msg_dcs     (cretTopology) );
+    print_frame (asset_msg_rooms   (cretTopology) );
+    print_frame (asset_msg_rows    (cretTopology) );
+    print_frame (asset_msg_racks   (cretTopology) );
+    print_frame (asset_msg_devices (cretTopology) );
+    print_frame (asset_msg_grps    (cretTopology) );
+
+    asset_msg_destroy (&getmsg);
+    asset_msg_destroy (&cretTopology);
+    log_close();
+}
+
+TEST_CASE("unlocated location topology nonfiltered","[db][topology][location][from][nonrecursive][nonfiltered][unlocated]")
+{
+    log_open();
+    log_set_level(LOG_DEBUG);
+
+    log_info ("================= LOCATION TOPOLOGY UNLOCATED NONFILTERED=================== \n");
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    assert ( getmsg );
+    asset_msg_set_element_id  (getmsg, 0);
+    asset_msg_set_filter_type (getmsg, 7);
+    asset_msg_print (getmsg);
+
+    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    assert ( retTopology );
+
+    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    assert ( cretTopology );
+    asset_msg_print (cretTopology);
+    
+    print_frame (asset_msg_dcs     (cretTopology) );
+    print_frame (asset_msg_rooms   (cretTopology) );
+    print_frame (asset_msg_rows    (cretTopology) );
+    print_frame (asset_msg_racks   (cretTopology) );
+    print_frame (asset_msg_devices (cretTopology) );
+    print_frame (asset_msg_grps    (cretTopology) );
+
+    asset_msg_destroy (&getmsg);
+    asset_msg_destroy (&cretTopology);
+    log_close();
+}
+
+
 TEST_CASE("location topology to2","[db][topology][to][location]")
 {
     log_open();

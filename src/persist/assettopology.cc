@@ -90,8 +90,8 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     uint32_t element_type_id, uint32_t child_type_id, 
     bool is_recursive, uint32_t current_depth, uint32_t filtertype)
 {
-    assert ( element_id );      // is required
-    assert ( element_type_id ); // is required
+    //assert ( element_id );      // is required
+    //assert ( element_type_id ); // is required
     assert ( child_type_id );   // is required
     assert ( current_depth >= 0 );
     assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
@@ -105,22 +105,40 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
+        // TODO change select for NULL values
+        tntdb::Statement st;
+        tntdb::Result result; 
+        if ( element_id != 0 )
+        {
+            st = conn.prepareCached(
+                " SELECT "
+                "   v.id, v.name, v.id_type"
+                " FROM"
+                "   v_bios_asset_element v"
+                " WHERE v.id_parent = :elementid AND "
+                "       v.id_parent_type = :elementtypeid AND "
+                "       v.id_type = :childtypeid"
+            );
+            // Could return more than one row
+            result = st.setInt("elementid", element_id).
+                        setInt("elementtypeid", element_type_id).
+                        setInt("childtypeid", child_type_id).
+                        select();
+        }
+        else
+        {
+            st = conn.prepareCached(
+                " SELECT "
+                "   v.id, v.name, v.id_type"
+                " FROM"
+                "   v_bios_asset_element v"
+                " WHERE v.id_parent is NULL  AND "
+                "       v.id_type = :childtypeid"
+            );
 
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " v.id, v.name, v.id_type"
-            " FROM"
-            " v_bios_asset_element v"
-            " WHERE v.id_parent = :elementid AND "
-            "       v.id_parent_type = :elementtypeid AND "
-            "       v.id_type = :childtypeid"
-        );
-
-        // Could return more than one row
-        tntdb::Result result = st.setInt("elementid", element_id).
-                                  setInt("elementtypeid", element_type_id).
-                                  setInt("childtypeid", child_type_id).
-                                  select();
+            result = st.setInt("childtypeid", child_type_id).
+                        select();
+        }
         log_info("rows selected %d\n", result.size());
         int rv = 0;
         zmsg_t* ret = zmsg_new();
@@ -254,9 +272,17 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
     log_info ("start\n");
-    bool     is_recursive = asset_msg_recursive   (getmsg);
+    // element_id = 0 means, that we are looking for unlocated elements
+    // then recursive is false
+    // we are not interested in datacenters and groups
     uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint8_t  type_id      = asset_msg_type        (getmsg);
+    uint8_t  type_id      = 0;
+    bool     is_recursive = false;  
+    if ( element_id != 0 )
+    {   
+        is_recursive      = asset_msg_recursive   (getmsg);
+        type_id           = asset_msg_type        (getmsg);
+    }
     uint8_t  filter_type  = asset_msg_filter_type (getmsg);
     
     log_info("filter = %d\n", filter_type);
@@ -268,36 +294,39 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     zframe_t* grps    = NULL;
     
     std::string name = "";
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
+    if ( element_id != 0 )
+    {
+        try{
+            tntdb::Connection conn = tntdb::connectCached(url);
 
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            " v.name"
-            " FROM"
-            " v_bios_asset_element v"
-            " WHERE v.id = :id"
-        );
+            tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "   v.name"
+                " FROM"
+                "   v_bios_asset_element v"
+                " WHERE v.id = :id"
+            );
     
-        tntdb::Value val = st.setInt("id", element_id).
+            tntdb::Value val = st.setInt("id", element_id).
                               selectValue();
-        val.get(name);
-        assert ( strcmp(name.c_str() ,"") );
-    }
-    catch (const tntdb::NotFound &e) {
-        // element with specified type was not found
-        log_warning ("abort with err = '%s'\n", e.what());
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+            val.get(name);
+            assert ( strcmp(name.c_str() ,"") );
+        }
+        catch (const tntdb::NotFound &e) {
+            // element with specified type was not found
+            log_warning ("abort select element with err = '%s'\n", e.what());
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
-    }
-    catch (const std::exception &e) {
-        // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+        }
+        catch (const std::exception &e) {
+            // internal error in database
+            log_warning ("abort select element with err = '%s'\n", e.what());
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
+        }
     }
 
-    if ( ( type_id < 2 ) && ( 2 <= filter_type ) )
+    if ( ( type_id < 2 ) && ( 2 <= filter_type ) && ( element_id != 0 ) )
     {
         log_info ("start select_dcs\n");
         dcs = select_childs (url, element_id, type_id, 2, is_recursive, 1, 
@@ -372,7 +401,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_devices\n");
     }
-    if ( type_id < 2 )
+    if ( ( type_id < 2 ) && ( element_id != 0 ) )
     {
         log_info ("start select_grps\n");
         grps = select_childs (url, element_id, type_id, 1, is_recursive, 1, 
