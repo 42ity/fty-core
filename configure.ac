@@ -86,7 +86,12 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
+
 AC_LANG_PUSH([C++])
+AC_SEARCH_LIBS([ll_remember_index], [netlink],
+		AC_DEFINE_UNQUOTED([HAVE_LIBNETLINK__ll_remember_index],[1],[libnetlink does implement ll_remember_index()]),
+		AC_MSG_ERROR([cannot find required function ll_remember_index() that should be in libnetlink]))
+AC_CHECK_HEADERS([ll_map.h], [], AC_MSG_NOTICE([cannot find (optional) header ll_map.h]))
 AC_CHECK_HEADERS([tntdb.h],
                  [],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
