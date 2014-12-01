@@ -108,16 +108,19 @@ std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
     common_msg_t *dta = NULL;
     if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
        (common_msg_id(dta) == COMMON_MSG_RETURN_MEASURE_SUBTYPE)) {
-        int sc = common_msg_mts_scale(dta);
-        if(sc > 128)
-            sc -= 256;
+	/* The message passes an unsigned byte which we know to be
+	 * really a _signed_ 8-bit value */
+        int sc = (int8_t)common_msg_mts_scale(dta);
+
         common_msg_destroy(&dta);
         while(sc > 0) {
             val += "0";
             sc--;
         }
+	/* Prepend zeroes - if needed - and add the period separator.
+	 * Locale does not matter, this is for programmatic consumption */
         if(sc < 0) {
-            for(int i=0; i+val.length() < 2-sc; i++)
+            for(int i=0; i+(int)(val.length()) < 2-sc; i++)
                 val = "0" + val;
             val.insert(val.length()+sc, ".");
         }
