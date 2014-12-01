@@ -41,7 +41,12 @@ echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'
 # This is a generally used variable in the build systems to
 # override into usage of a specific make program filename/path
 # Also a custom variable MAKE_OPTS can be used to pass flags to `make`
+# Finally, for options specific to only one stage, the caller can set
+# MAKE_OPTS_PAR or MAKE_OPTS_SEQ respectively (no defaults)
 [ -z "$MAKE" ] && MAKE="make"
+#default# MAKE_OPTS=""
+#default# MAKE_OPTS_PAR=""
+#default# MAKE_OPTS_SEQ=""
 case "$MAKE" in
     *\ *) # Split into program and options
 	_MAKE_OPTS="`echo "$MAKE" | { read _C _A; echo "$_A"; }`"
@@ -166,11 +171,11 @@ do_make() {
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $@"
-	    case " $MAKE_OPTS $*" in
+	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
 		*\ V=*|*\ --trace*)
-		    do_make $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
+		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
 		*)
-		    do_make V=0 -j $NPARMAKES -k "$@" || true ;;
+		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@" || true ;;
 		esac
 	else
 	    echo "=== PARMAKE disabled by user request"
@@ -180,7 +185,7 @@ do_build() {
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
 	echo "=== SEQMAKE: $@"
-	do_make $MAKE_OPTS "$@"
+	do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
 }
 
 buildSamedir() {
@@ -277,7 +282,11 @@ showBuilderFlags() {
 	DESTDIR (for install):	$DESTDIR
 	MAKE command to use:	$MAKE"
 	[ -n "$MAKE_OPTS" ] && echo \
-"	 MAKE command options (for build/install/other explicit targets):	$MAKE_OPTS"
+"	 Common MAKE command options (for build/install/make explicit targets):	$MAKE_OPTS"
+	[ -n "$MAKE_OPTS_PAR" ] && echo \
+"	 Additional MAKE command options for optional parallel build phase:	$MAKE_OPTS_PAR"
+	[ -n "$MAKE_OPTS_SEQ" ] && echo \
+"	 Additional MAKE command options for reliable sequential build phase: 	$MAKE_OPTS_SEQ"
 
 	echo \
 "	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
