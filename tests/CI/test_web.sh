@@ -120,7 +120,11 @@ if ! getent passwd "$BIOS_USER" > /dev/null; then
     exit 2
 fi
 
-if ! testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+SASLTEST="`which testsaslauthd`"
+[ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
+[ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
+
+if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
     echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
