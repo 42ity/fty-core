@@ -1068,3 +1068,175 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     return result;
 }
 
+/**
+ * \brief This function processes the ASSET_MSG_GET_POWER_DATACENTER message
+ *
+ * In case of success it generates the ASSET_MSG_RETURN_POWER. 
+ * In case of failure returns COMMON_MSG_FAIL.
+ * powerchains: A:B:C:D if A or C is zero it means, that it was not srecified in database 
+ *
+ * \param url - the connection to database.
+ * \param msg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
+ *                  we would like to process.
+ *
+ * \return zmsg_t - an encoded COMMON_MSG_FAIL or
+ *                       ASSET_MSG_RETURN_DATACENTER
+ */ 
+zmsg_t* get_return_power_topology_datacenter(const char* url, asset_msg_t* getmsg)
+{
+    assert ( getmsg );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_DATACENTER );
+    log_info ("start\n");
+    uint32_t element_id   = asset_msg_element_id  (getmsg);
+    uint8_t  linktype = 1; //TODO hardcoded constants
+
+    // devices
+    zmsg_t*   ret     = zmsg_new();
+    assert ( ret );
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            " v.id_asset_element, v.name , v.type_name" 
+            " FROM"
+            "   v_bios_asset_element_super_parent v"
+            " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3 ,v.id_parent4)"
+            );
+        // can return more than one row
+        tntdb::Result result = st.setInt("dcid", element_id).
+                                  select();
+        
+        for ( auto &row: result )
+        {
+            // id_asset_element, required
+            uint32_t id_asset_element = 0;
+            row[0].get(id_asset_element);
+            assert ( id_asset_element );
+            
+            // device_name, required
+            std::string device_name = "";
+            row[1].get(device_name);
+            assert ( device_name != "" );
+            
+            // device_type_name, required 
+            std::string device_type_name = "";
+            row[2].get(device_type_name);
+            assert ( device_type_name != "" );
+
+            log_info ("for\n");
+            log_info ("device_name = %s\n", device_name.c_str());
+            log_info ("device_type_name = %s\n", device_name.c_str());
+            log_info ("asset_element_id = %d\n", id_asset_element);
+            zmsg_t* el = asset_msg_encode_powerchain_device
+                                (id_asset_element, device_type_name.c_str(), device_name.c_str());
+            int rv = zmsg_addmsg (ret, &el);
+            assert ( rv != -1 );
+            assert ( el == NULL );
+        } // end for
+    }
+    catch (const std::exception &e) {
+        // internal error in database
+        zmsg_destroy   (&ret);
+        log_warning ("1 abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+    // device is ok
+
+    // powers
+    zlist_t* powers = zlist_new();
+    assert ( powers );
+    zlist_set_duplicator (powers, void_dup);
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        // v_bios_asset_link are only devices, so there is no need to add more constrains
+        log_info ("start select \n");
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.src_out, v.id_asset_element_src, v.dest_in, v.id_asset_element_dest"
+            " FROM"
+            "   v_bios_asset_link v"
+            " WHERE"
+            "       v.id_asset_link_type = :linktypeid AND"
+            "       v.id_asset_element_src IN ("
+            "                 SELECT"
+            "                   v.id_asset_element" 
+            "                 FROM"
+            "                   v_bios_asset_element_super_parent v"
+            "                 WHERE"
+            "                   :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3 ,v.id_parent4)"
+            "             )"
+            "   AND"
+            "       v.id_asset_element_dest IN ("
+            "               SELECT"
+            "                   v.id_asset_element" 
+            "                 FROM"
+            "                   v_bios_asset_element_super_parent v"
+            "                 WHERE"
+            "                   :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3 ,v.id_parent4)"
+            "             )"
+        );
+        // can return more than one row
+        tntdb::Result result = st.setInt("dcid", element_id).
+                                  setInt("linktypeid", linktype).
+                                  select();
+        
+        log_info ("end select \n");
+        char buff[28];     // 10+3+3+10+ safe 2
+        
+        // Go through the selected links
+        for ( auto &row: result )
+        {
+            // src_out 
+            uint32_t src_out = 0;
+            row[0].get(src_out);
+            
+            // id_asset_element_src, required
+            uint32_t id_asset_element_src = 0;
+            row[1].get(id_asset_element_src);
+            assert ( id_asset_element_src );
+            
+            // dest_in
+            uint32_t dest_in = 0;
+            row[2].get(dest_in);
+            
+            // id_asset_element_dest, required
+            uint32_t id_asset_element_dest = 0;
+            row[3].get(id_asset_element_dest);
+            assert ( id_asset_element_dest );
+            
+            log_info ("for\n");
+            log_info ("asset_element_id_src = %d\n", id_asset_element_src);
+            log_info ("asset_element_id_dest = %d\n", id_asset_element_dest);
+            log_info ("src_out = %d\n", src_out);
+            log_info ("dest_in = %d\n", dest_in);
+
+            sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, dest_in, id_asset_element_dest);
+            zlist_push (powers, buff);
+        } // end for
+    }
+    catch (const std::exception &e) {
+        // TODO noramal behavior 
+        // internal error in database
+        // zlist_destroy (&powers);
+        // log_warning ("2 abort with err = '%s'\n", e.what());
+        // return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+        //                                                e.what(), NULL);
+        // ACE: "MARIA_DB_CRASH" workaround:
+        // known crash of maria db, when result is empty, just continue
+        log_warning (" links are empty  = '%s'\n", e.what());
+    }
+    // powers is ok
+
+    zframe_t* devices = NULL;
+    int rv = matryoshka2frame (&ret, &devices);
+    assert ( rv == 0 );
+    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
+    zlist_destroy  (&powers);
+    zframe_destroy (&devices);
+    zmsg_destroy   (&ret);
+    log_info ("end normal\n");
+    return result;
+}
+
