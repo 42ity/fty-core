@@ -49,8 +49,11 @@ environment variable
 to enable parallel makes (enabled by default unless envvars forbid)
  * '--show-builder-flags' -- before executing an action, display the
 setup of `builder.sh` for this run
+ * '--show-repository-metadata' -- before executing an action, display
+the last commit of the source code (and differences after it, if any)
  * '--verbose' flag is reserved for verbosity settings; currently it
-just enables the '--show-builder-flags' activity
+just enables the '--show-builder-flags' and '--show-repository-metadata'
+activities
 
 The first command-line attribute that is not an option defined above
 is considered to be the request of a command-line method as described
