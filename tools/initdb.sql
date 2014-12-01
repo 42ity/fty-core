@@ -6,7 +6,7 @@ USE box_utf8;
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
-drop table if exists t_bios_client_info_measurements;
+drop table if exists t_bios_measurements;
 drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_measurement_types;
 drop table if exists t_bios_client_info;
@@ -15,22 +15,24 @@ drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
 CREATE TABLE t_bios_measurement_types(
-    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    name             VARCHAR(25) NOT NULL,
+    id              SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    name            VARCHAR(25) NOT NULL,
+    unit            VARCHAR (10),
+
     PRIMARY KEY(id)
 );
 
 CREATE TABLE t_bios_measurement_subtypes(
     id               SMALLINT UNSIGNED  NOT NULL,
-    type_id          SMALLINT UNSIGNED  NOT NULL,
+    id_type          SMALLINT UNSIGNED  NOT NULL,
     name             VARCHAR(25) NOT NULL,
     scale            TINYINT NOT NULL,
 
-    PRIMARY KEY(id, type_id),
+    PRIMARY KEY (id, id_type),
 
-    INDEX(id, type_id),
+    INDEX (id, id_type),
 
-    FOREIGN KEY(type_id)
+    FOREIGN KEY (id_type)
 	REFERENCES t_bios_measurement_types(id)
         ON DELETE RESTRICT
 );
@@ -271,26 +273,26 @@ CREATE TABLE t_bios_asset_ext_attributes(
     ON DELETE RESTRICT
 );
 
-CREATE TABLE t_bios_client_info_measurements(
+CREATE TABLE t_bios_measurements (
     id_measurements         BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
+    id_device               SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
-    id_subkey               SMALLINT UNSIGNED   NOT NULL,
-    id_key                  SMALLINT UNSIGNED   NOT NULL,
-    value                   INT                 NOT NULL,
+    id_subtype              SMALLINT UNSIGNED   NOT NULL,
+    id_type                 SMALLINT UNSIGNED   NOT NULL,
+    value                   BIGINT              NOT NULL,
 
     PRIMARY KEY(id_measurements),
 
-    INDEX(id_discovered_device),
-    INDEX(id_subkey, id_key),
+    INDEX (id_device),
+    INDEX (id_subtype, id_type),
     INDEX(id_client),
 
-    FOREIGN KEY (id_subkey, id_key)
-        REFERENCES t_bios_measurement_subtypes(id, type_id)
+    FOREIGN KEY (id_subtype, id_type)
+        REFERENCES t_bios_measurement_subtypes(id, id_type)
         ON DELETE RESTRICT,
     
-    FOREIGN KEY (id_discovered_device)
+    FOREIGN KEY (id_device)
         REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT,
 
@@ -340,7 +342,7 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
-create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
+create view v_bios_client_info_measurements as select  id_measurements as id, id_client, id_device as id_discovered_device, timestamp, id_type as id_key, id_subtype as id_subkey, value from t_bios_measurements;
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
@@ -381,12 +383,12 @@ create view v_bios_measurement_types as select * from t_bios_measurement_types ;
 
 create view v_bios_measurement_subtypes as
 SELECT
-    st.id , st.type_id, st.name, st.scale, t.name as typename
+    st.id , st.id_type, st.name, st.scale, t.name as typename
 FROM
     v_bios_measurement_types t,
     t_bios_measurement_subtypes st
 where
-    st.type_id = t.id;
+    st.id_type = t.id;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
@@ -464,7 +466,7 @@ FROM    v_bios_client_info_measurements v
                  v.id_discovered_device = grp.id_discovered_device
         INNER JOIN t_bios_measurement_subtypes sk
                 ON v.id_subkey = sk.id AND
-		   v.id_key = sk.type_id;
+		   v.id_key = sk.id_type;
 
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
@@ -476,11 +478,11 @@ INSERT INTO t_bios_measurement_types (id, name) VALUES (2, "voltage");
 INSERT INTO t_bios_measurement_types (id, name) VALUES (3, "status");
 
 /* t_bios_measurement_types */
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 1, "default", -2);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 2, "default1", 0);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 1, "default", 1);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 2, "L1", 1);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 3, "ups", 0);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "default", -2);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "default1", 0);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "default", 1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "L1", 1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "ups", 0);
 
 /* t_bios_device_type */
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
