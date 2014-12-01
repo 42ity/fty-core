@@ -214,6 +214,42 @@ usage() {
 	echo "Usage: $0 distclean	- execute the distclean step and exit"
 }
 
+showGitFlags() {
+    # Get the Git repository metadata, if available
+    # Code cloned from our configure.ac
+    HAVE_PACKAGE_GIT=0
+    PACKAGE_GIT_ORIGIN=""
+    PACKAGE_GIT_BRANCH=""
+    PACKAGE_GIT_TSTAMP=""
+    PACKAGE_GIT_HASH_S=""
+    PACKAGE_GIT_HASH_L=""
+
+    [ -z "$GIT" ] && GIT="`which git 2>/dev/null | head -1`"
+    _srcdir_abs="$CHECKOUTDIR"
+
+    if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
+        PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s`"			&& HAVE_PACKAGE_GIT=1
+    fi 2>/dev/null
+
+    if [ "$HAVE_PACKAGE_GIT" = 1 ]; then
+	echo "INFO: Summary of GIT metadata about the workspace '$_srcdir_abs':
+	PACKAGE_GIT_ORIGIN:	$PACKAGE_GIT_ORIGIN
+	PACKAGE_GIT_BRANCH:	$PACKAGE_GIT_BRANCH
+	PACKAGE_GIT_TSTAMP:	$PACKAGE_GIT_TSTAMP
+	PACKAGE_GIT_HASH_S:	$PACKAGE_GIT_HASH_S
+	PACKAGE_GIT_HASH_L:	$PACKAGE_GIT_HASH_L"
+	[ -n "$PACKAGE_GIT_STATUS" ] && echo \
+"	PACKAGE_GIT_STATUS (short list of differences against committed repository):
+$PACKAGE_GIT_STATUS"
+	echo ""
+    fi
+}
+
 showBuilderFlags() {
 	echo "INFO: Summary of flags that influence this run of the '$0':
 	BLDARCH (for bld/inst):	$BLDARCH
@@ -259,8 +295,17 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		shift
 		;;
-	    --show-builder-flags|--verbose)
+	    --show-builder-flags)
 		SHOW_BUILDER_FLAGS=yes
+		shift
+		;;
+	    --show-repository-metadata|--show-repository-metadata-git|--show-git-metadata)
+		SHOW_REPOSITORY_METADATA_GIT=yes
+		shift
+		;;
+	    --verbose)
+		SHOW_BUILDER_FLAGS=yes
+		SHOW_REPOSITORY_METADATA_GIT=yes
 		shift
 		;;
 	    *)	break ;;
@@ -272,6 +317,7 @@ done
 
 ### This is the last flag-reaction in the stack of such
 [ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
+[ x"$SHOW_REPOSITORY_METADATA_GIT" = xyes ] && showGitFlags
 
 case "$1" in
     "")
