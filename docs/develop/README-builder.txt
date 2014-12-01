@@ -129,6 +129,31 @@ In some systems, there may be a need to specify an exact `make` program
 For such purposes, the 'MAKE' envvar (defaults to 'make') is supported
 to set the `make` program name (and standard arguments).
 
+If the 'MAKE' variable value contains a space, it is split into 'MAKE'
+(value of the first token) and all the rest becomes an appendix to
+'MAKE_OPTS'.
+
+
+=== 'MAKE_OPTS' parameters to the `make` program
+Optional parameters commonly passed to the `$MAKE` program during a build
+operation (basically any of the actions except 'configure', 'distclean'
+and 'distcheck'). The value can be parsed at runtime from a multi-token
+'MAKE' value as well as explicitly passed from envvars by the user. If
+both methods are used, the resulting value should be concatenated.
+
+For example, this can be used to enforce quiet (re-)builds even during a
+sequential-only mode:
+----
+:; export MAKE="make V=0"
+----
+
+On the contrary, this should enable high verbosity from GNU `make`, and
+enables it even for the parallel `make` phase:
+----
+:; export MAKE="make V=1"
+:; export MAKE_OPTS="--trace"
+----
+
 
 === 'BLDARCH' tag
 The 'BLDARCH' is a string tag for the "relocated" build environment
