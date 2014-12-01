@@ -128,5 +128,8 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 # setup debian proxy
 echo 'Acquire::http::Proxy "http://gate:3142";' > "../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
+# setup virtual hostname
+echo "$VM" > "../rootfs/$VM/etc/hostname"
+
 # Start the virtual machine
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
