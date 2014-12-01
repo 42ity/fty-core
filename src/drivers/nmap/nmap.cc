@@ -56,13 +56,13 @@ static std::map<NmapMethod, Argv> _map = {
 
 static std::string read_all(int fd) {
     static size_t BUF_SIZE = 4096;
-    char buf[BUF_SIZE];
+    char buf[BUF_SIZE+1];
     ssize_t r;
 
     std::stringbuf sbuf;
 
     while (true) {
-        memset(buf, '\0', BUF_SIZE);
+        memset(buf, '\0', BUF_SIZE+1);
         r = ::read(fd, buf, BUF_SIZE);
         //TODO if errno != EAGAIN | EWOULDBLOCK, unregister fd?
         if (r <= 0) {
