@@ -115,7 +115,7 @@ case "$TIME_MAKE" in
     time|*bin/time)	;;
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	TIME_MAKE="time" ;;
-    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]|"")
 	TIME_MAKE="" ;;
     *)	echo "WARNING: Ingoring unrecognized value of TIME_MAKE='$TIME_MAKE'" >&2
 	TIME_MAKE="" ;;
@@ -125,7 +125,7 @@ case "$TIME_CONF" in
     time|*bin/time)	;;
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	TIME_CONF="time" ;;
-    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]|"")
 	TIME_CONF="" ;;
     *)	echo "WARNING: Ingoring unrecognized value of TIME_CONF='$TIME_CONF'" >&2
 	TIME_CONF="" ;;
