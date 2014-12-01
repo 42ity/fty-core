@@ -43,7 +43,7 @@ CREATE TABLE t_bios_device_type(
 
     UNIQUE INDEX `UI_t_bios_device_type_name` (`name` ASC)
 
-)AUTO_INCREMENT = 2;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_discovered_device(
     id_discovered_device    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -92,7 +92,7 @@ CREATE TABLE t_bios_client(
     PRIMARY KEY(id_client),
 
     UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
-) AUTO_INCREMENT = 2;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_client_info(
     id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -134,7 +134,7 @@ CREATE TABLE t_bios_asset_element_type (
   
   UNIQUE INDEX `UI_t_bios_asset_element_type` (`name` ASC)
 
-) AUTO_INCREMENT = 6;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,

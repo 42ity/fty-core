@@ -37,6 +37,9 @@ select @client_nut := id_client from t_bios_client where name = 'NUT';
 
 /*  Data  */
 
+/* TODO (Alenka): Is it intentional to have two rows ('select_device', 'not_classified')
+                  that are almost indentical except for id?
+ */
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
@@ -154,7 +157,7 @@ values
 
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type, mac) values (@asset_element_rack, @asset_device_server, "11:22:33:44:55:66");
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@asset_element_device, @asset_device_epdu);
-/*  TODO: Solve with Gerald? strange insertions into t_bios_discovered_device  */
+/*  TODO: (Alenka) See Line 41 */
 insert into t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) values (2, 3);
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
