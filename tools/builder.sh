@@ -38,6 +38,10 @@ CHECKOUTDIR="`pwd`" || exit
 export CHECKOUTDIR
 echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'..."
 
+# This is a generally used variable in the build systems to
+# override into usage of a specific make program
+[ -z "$MAKE" ] && MAKE="make"
+
 VERB_COUNT=0
 verb_run() {
 	VERB_COUNT="$(($VERB_COUNT+1))" 2>/dev/null || \
@@ -105,11 +109,11 @@ do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
 		    *clean*)
-				echo "INFO: Makefile absent, skipping 'make $@' for a cleaning action"
+				echo "INFO: Makefile absent, skipping '$MAKE $@' for a cleaning action"
 #distclean?#			[ -d config ] && rm -rf config
 				return 0 ;;
 		    *)
-				echo "ERROR: Makefile absent, can not fulfill 'make $@'" >&2
+				echo "ERROR: Makefile absent, can not fulfill '$MAKE $@'" >&2
 				return 1 ;;
 		esac
 	fi
@@ -123,7 +127,7 @@ do_make() {
 		;;
 	esac
 
-	verb_run make "$@"; RES=$?
+	verb_run $MAKE "$@"; RES=$?
 
 	[ "$RES" != 0 ] && case "$*" in
 	    *-k*distclean*)
@@ -132,7 +136,7 @@ do_make() {
 		### broken contents of a Makefile). Depending on the result
 		### of "rm -f" protects against unwritable directories.
 		rm -rf Makefile config.status config/ && \
-		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2 && \
+		echo "WARN: '$MAKE $@' failed ($RES) but we ignore it for cleanups" >&2 && \
 		RES=0
 		;;
 	esac
