@@ -47,6 +47,10 @@ description).
 environment variable
  * '--parmake' or '--enable-parallel-make' -- this sets 'NOPARMAKE=no'
 to enable parallel makes (enabled by default unless envvars forbid)
+ * '--show-builder-flags' -- before executing an action, display the
+setup of `builder.sh` for this run
+ * '--verbose' flag is reserved for verbosity settings; currently it
+just enables the '--show-builder-flags' activity
 
 The first command-line attribute that is not an option defined above
 is considered to be the request of a command-line method as described
