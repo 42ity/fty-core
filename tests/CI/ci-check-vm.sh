@@ -82,6 +82,7 @@ fi
 cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 
 remote_cleanup() {
+    echo "-- VM cleanup"
     ssh root@$VM -p $PORT "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
 }
 
@@ -98,10 +99,12 @@ compare_revisions() {
 }
 
 copy_project() {
+    echo "-- copying files"
     scp -r -P $PORT $CHECKOUTDIR "root@$VM:~/"
 }
 
 remote_make() {
+    echo "-- compiling"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
     ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && autoreconf -vfi && ./configure --prefix=\$HOME --with-saslauthd-mux=/var/run/saslauthd/mux && make -j 4 && make install"
 }
