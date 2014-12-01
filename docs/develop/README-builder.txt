@@ -51,9 +51,12 @@ to enable parallel makes (enabled by default unless envvars forbid)
 setup of `builder.sh` for this run
  * '--show-repository-metadata' -- before executing an action, display
 the last commit of the source code (and differences after it, if any)
+ * '--show-time-make' -- measure how long each `make` call took
+ * '--show-time-conf' -- measure how long each `configure` call took
+ * '--show-timing' -- measure the times above
  * '--verbose' flag is reserved for verbosity settings; currently it
-just enables the '--show-builder-flags' and '--show-repository-metadata'
-activities
+just enables the '--show-builder-flags', '--show-repository-metadata'
+and '--show-timing' activities
 
 The first command-line attribute that is not an option defined above
 is considered to be the request of a command-line method as described
