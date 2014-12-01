@@ -14,6 +14,7 @@ CLEANFILES =
 DISTCLEANFILES =
 TESTS =
 
+# Locations of child Makefiles
 SUBDIRS = docs/man docs/examples tools
 
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
