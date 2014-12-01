@@ -110,6 +110,27 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+# enable timing of the steps
+case "$TIME_MAKE" in
+    time|*bin/time)	;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	TIME_MAKE="time" ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+	TIME_MAKE="" ;;
+    *)	echo "WARNING: Ingoring unrecognized value of TIME_MAKE='$TIME_MAKE'" >&2
+	TIME_MAKE="" ;;
+esac
+
+case "$TIME_CONF" in
+    time|*bin/time)	;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	TIME_CONF="time" ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+	TIME_CONF="" ;;
+    *)	echo "WARNING: Ingoring unrecognized value of TIME_CONF='$TIME_CONF'" >&2
+	TIME_CONF="" ;;
+esac
+
 # Normalize the optional flags
 case "$NOPARMAKE" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
@@ -151,7 +172,7 @@ do_make() {
 		;;
 	esac
 
-	verb_run $MAKE "$@"; RES=$?
+	verb_run $TIME_MAKE $MAKE "$@"; RES=$?
 
 	[ "$RES" != 0 ] && case "$*" in
 	    *-k*distclean*)
@@ -190,7 +211,7 @@ do_build() {
 
 buildSamedir() {
 	do_make -k distclean
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	{ do_make -k clean; do_build "$@"; }
 }
 
@@ -200,7 +221,7 @@ buildSubdir() {
 	  rm -rf "${BUILDSUBDIR}"; \
 	  mkdir "${BUILDSUBDIR}" && \
 	  cd "${BUILDSUBDIR}"; } && \
-	verb_run "$CHECKOUTDIR/configure" && \
+	verb_run $TIME_CONF "$CHECKOUTDIR/configure" && \
 	do_build "$@" )
 }
 
@@ -226,6 +247,7 @@ suppressWarningsUnused() {
 
 usage() {
 	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] [--show-builder-flags] \ "
+	echo "    [--show-repository-metadata] [--show-timing|[--show-timing-make|[--show-timing-conf] \ "
 	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
 	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
@@ -310,7 +332,10 @@ showBuilderFlags() {
 	    ;;
 	esac
 
-	echo ""
+	echo \
+"	Measure TIME_MAKE:	$TIME_MAKE
+	Measure TIME_CONF:	$TIME_CONF
+"
 }
 
 while [ $# -gt 0 ]; do
@@ -335,9 +360,24 @@ while [ $# -gt 0 ]; do
 		SHOW_REPOSITORY_METADATA_GIT=yes
 		shift
 		;;
+	    --show-timing-make)
+		TIME_MAKE=time
+		shift
+		;;
+	    --show-timing-conf|--show-timing-configure)
+		TIME_CONF=time
+		shift
+		;;
+	    --show-timing|--show-timings)
+		TIME_MAKE=time
+		TIME_CONF=time
+		shift
+		;;
 	    --verbose)
 		SHOW_BUILDER_FLAGS=yes
 		SHOW_REPOSITORY_METADATA_GIT=yes
+		TIME_MAKE=time
+		TIME_CONF=time
 		shift
 		;;
 	    *)	break ;;
@@ -390,17 +430,17 @@ case "$1" in
 	exit
 	;;
     distclean)
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	do_make -k distclean
 	;;
     distcheck)
 	do_make -k distclean
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	do_make distcheck
 	;;
     conf|configure)
 	do_make -k distclean
-	verb_run ./configure
+	verb_run $TIME_CONF ./configure
 	;;
     help|-help|--help|-h)
 	usage
