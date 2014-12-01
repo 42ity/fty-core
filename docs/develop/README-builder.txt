@@ -166,6 +166,17 @@ flags are in conflict (i.e. both variables set different values of
 program's implementation.
 
 
+=== 'TIME_MAKE' and 'TIME_CONF' flags or paths
+These variables correcpond to command-line flags '--show-timing-make'
+and '--show-timing-conf', and allow to specify the command to measure
+the execution time of the `make` or `configure` invokations.
+
+The values default to empty (no measurements), can accept the `time`
+program name or shell builtin, or the yes/no values for simplicity.
+Unknown values are considered as empty with a warning.
+
+
+
 === 'BLDARCH' tag
 The 'BLDARCH' is a string tag for the "relocated" build environment
 to use uniquely named directories for the compilation and installation.
