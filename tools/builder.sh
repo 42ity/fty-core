@@ -170,7 +170,7 @@ do_make() {
 
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
-	    echo "=== PARMAKE (fast first pass which is allowed to fail): $@"
+	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
 		*\ V=*|*\ --trace*)
 		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
@@ -184,7 +184,7 @@ do_build() {
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
-	echo "=== SEQMAKE: $@"
+	echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
 	do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
 }
 
