@@ -90,8 +90,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     uint32_t element_type_id, uint32_t child_type_id, 
     bool is_recursive, uint32_t current_depth, uint32_t filtertype)
 {
-    //assert ( element_id );      // is required
-    //assert ( element_type_id ); // is required
     assert ( child_type_id );   // is required
     assert ( current_depth >= 0 );
     assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
@@ -105,7 +103,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
-        // TODO change select for NULL values
         tntdb::Statement st;
         tntdb::Result result; 
         if ( element_id != 0 )
