@@ -452,9 +452,26 @@ endif
 EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
 DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
-EXTRA_DIST +=			$(top_srcdir)/INSTALL-referenceOS-debian8 \
+
+# The stuff HTML docs are made of...
+# Historically some original docs have *.txt names and some don't
+HTMLS = 	INSTALL.html CONTRIBUTING.html \
+		docs/develop/README-builder.html \
+		INSTALL-referenceOS-debian8.html
+
+HTMLS_TXT_NOEXT = 			$(top_srcdir)/INSTALL-referenceOS-debian8 \
 					$(top_srcdir)/CONTRIBUTING \
 					$(top_srcdir)/INSTALL
+HTMLS_TXT =				$(top_srcdir)/docs/develop/README-builder.txt
+EXTRA_DIST +=				$(HTMLS_TXT_NOEXT) $(HTMLS_TXT)
+DISTCLEANFILES +=			$(top_builddir)/docs/develop/*.html
+
+develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
+develdoc_DATA = $(HTMLS)
+
+# Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
+develdocdoxygendir = $(develdocdir)/doxygen
+develdocdoxygen_DATA = $(abs_top_builddir)/${myDOXDIR}/html/*
 
 BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 
@@ -467,9 +484,7 @@ all-docs: man-docs html-docs doxygen-docs
 
 doxygen-docs: ${myDOXDIR}/html
 
-html-docs: INSTALL.html CONTRIBUTING.html \
-		docs/develop/README-builder.html \
-		INSTALL-referenceOS-debian8.html
+html-docs: $(HTMLS)
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
@@ -545,11 +560,10 @@ clean-man:
 clean-doxygen:
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 
-clean-docs: clean-man clean-doxygen
-	/bin/rm -f INSTALL.html
-	/bin/rm -f CONTRIBUTING.html
-	/bin/rm -f INSTALL-referenceOS-debian8.html
-	/bin/rm -f docs/develop/README-builder.html
+clean-html:
+	/bin/rm -f $(HTMLS)
+
+clean-docs: clean-man clean-doxygen clean-html
 
 clean-junit:
 	/bin/rm -rf $(top_builddir)/tests/junit
