@@ -39,8 +39,21 @@ export CHECKOUTDIR
 echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'..."
 
 # This is a generally used variable in the build systems to
-# override into usage of a specific make program
+# override into usage of a specific make program filename/path
+# Also a custom variable MAKE_OPTS can be used to pass flags to `make`
 [ -z "$MAKE" ] && MAKE="make"
+case "$MAKE" in
+    *\ *) # Split into program and options
+	_MAKE_OPTS="`echo "$MAKE" | { read _C _A; echo "$_A"; }`"
+	MAKE="`echo "$MAKE" | { read _C _A; echo "$_C"; }`"
+	if [ -n "$_MAKE_OPTS" ]; then
+	    [ -n "$MAKE_OPTS" ] && \
+		MAKE_OPTS="$MAKE_OPTS $_MAKE_OPTS" || \
+		MAKE_OPTS="$_MAKE_OPTS"
+	fi
+	unset _MAKE_OPTS
+	;;
+esac
 
 VERB_COUNT=0
 verb_run() {
@@ -153,15 +166,21 @@ do_make() {
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $@"
-	    do_make V=0 -j $NPARMAKES -k "$@" || true
+	    case " $MAKE_OPTS $*" in
+		*\ V=*|*\ --trace*)
+		    do_make $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
+		*)
+		    do_make V=0 -j $NPARMAKES -k "$@" || true ;;
+		esac
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
 
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
+	# ...or the MAKE variable can be overridden to the same effect
 	echo "=== SEQMAKE: $@"
-	do_make "$@"
+	do_make $MAKE_OPTS "$@"
 }
 
 buildSamedir() {
@@ -256,8 +275,12 @@ showBuilderFlags() {
 	CHECKOUTDIR workspace:	$CHECKOUTDIR
 	BUILDSUBDIR (subdirs):	$BUILDSUBDIR
 	DESTDIR (for install):	$DESTDIR
-	MAKE command to use:	$MAKE
-	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
+	MAKE command to use:	$MAKE"
+	[ -n "$MAKE_OPTS" ] && echo \
+"	 MAKE command options (for build/install/other explicit targets):	$MAKE_OPTS"
+
+	echo \
+"	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)"
