@@ -116,6 +116,13 @@ is redefined to contain the full filesystem path of the root of project
 sources.
 
 
+=== 'MAKE' program
+In some systems, there may be a need to specify an exact `make` program
+(such as `gmake` where non-GNU `make` may be available as a default).
+For such purposes, the 'MAKE' envvar (defaults to 'make') is supported
+to set the `make` program name (and standard arguments).
+
+
 === 'BLDARCH' tag
 The 'BLDARCH' is a string tag for the "relocated" build environment
 to use uniquely named directories for the compilation and installation.
