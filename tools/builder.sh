@@ -188,6 +188,20 @@ suppressWarningsUnused() {
 	_WARNLESS_UNUSED=1
 }
 
+usage() {
+	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
+	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
+	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
+	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
+	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
+	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
+	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
+	echo "Some uses without further parameters:"
+	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
+	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
+	echo "Usage: $0 distclean	- execute the distclean step and exit"
+}
+
 while [ $# -gt 0 ]; do
 	case "$1" in
 	    "--warnless-unused")
@@ -260,17 +274,12 @@ case "$1" in
 	do_make -k distclean
 	verb_run ./configure
 	;;
-    *)	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
-	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
-	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
-	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
-	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
-	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
-	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
-	echo "Some uses without further parameters:"
-	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
-	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
-	echo "Usage: $0 distclean	- execute the distclean step and exit"
+    help|-help|--help|-h)
+	usage
+	exit 2
+	;;
+    *)	echo "ERROR: Unknown parameter '$1' for '$0'" >&2
+	usage
 	exit 2
 	;;
 esac
