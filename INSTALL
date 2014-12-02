@@ -563,7 +563,7 @@ management scenarios are automated in the `./tools/builder.sh` script (and
 our `autogen.sh` invokes it if any command-line parameters are provided),
 so that most activity can be done by typing one relatively short command.
 Details on its usage can be seen in the help output of that script, or in
-'link:docs/develop/README-builder.html[docs/develop/README-builder.txt]'.
+'link:README-builder.html[docs/develop/README-builder.txt]'.
 
 NOTE: We are obliged to stress that the *supported* method of compilation
 is the common `./autogen.sh && configure && make` pattern (and with the
