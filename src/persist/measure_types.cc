@@ -35,13 +35,14 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_TYPE_I:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, name from t_bios_measurement_types "
+                    "select id, name, unit from t_bios_measurement_types "
                     "where id = :mt_id "
                     "and id is not null and name is not null");
 
                 row = st.setInt("mt_id", common_msg_mt_id(*msg)).selectRow();
                 ret = common_msg_encode_return_measure_type(
-                    row.getInt(0), row.getString(1).c_str());
+                    row.getInt(0), row.getString(1).c_str(),
+                    row.getString(2).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
@@ -50,23 +51,26 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_TYPE_S:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "insert into t_bios_measurement_types (name) "
-                    "select :name from dual WHERE NOT EXISTS "
+                    "insert into t_bios_measurement_types (name, unit) "
+                    "select :name, :unit from dual WHERE NOT EXISTS "
                     "(select id from t_bios_measurement_types where name=:name)"
                 );
-                st.setString("name", common_msg_mt_name(*msg)).execute();
+                st.setString("name", common_msg_mt_name(*msg)).
+                   setString("unit", common_msg_mt_unit(*msg)).
+                   execute();
             } catch (const std::exception &e) {
             }
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, name from t_bios_measurement_types "
+                    "select id, name, unit from t_bios_measurement_types "
                     "where name = :name "
                     "and id is not null and name is not null");
 
                 row = st.setString("name", common_msg_mt_name(*msg)).
                       selectRow();
                 ret = common_msg_encode_return_measure_type(
-                    row.getInt(0), row.getString(1).c_str());
+                    row.getInt(0), row.getString(1).c_str(),
+                    row.getString(2).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
             }
@@ -96,7 +100,8 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                 tntdb::Statement st = conn.prepareCached(
                     "insert into t_bios_measurement_subtypes (id, name, type_id, scale) "
                     "select "
-                    "(select max(id)+1 from t_bios_measurement_subtypes where type_id=:mt_id), "
+                    "(select COALESCE(max(id),0)+1 from "
+                    "t_bios_measurement_subtypes where type_id=:mt_id), "
                     ":name, :mt_id, :scale from dual WHERE NOT EXISTS "
                     "(select id from t_bios_measurement_subtypes where "
                     " name=:name and type_id=:mt_id)"
@@ -122,26 +127,6 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                     row.getString(3).c_str());
             } catch (const std::exception &e) {
                 ret = common_msg_encode_fail(0,0,e.what(),NULL);
-            }
-            break;
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            zmsg_t *req;
-            zmsg_t *rep;
-            common_msg_t *dta;
-            req = common_msg_encode_get_measure_type_s(
-                      common_msg_mt_name(*msg));
-            rep = process_measures_meta(&req);
-            dta = common_msg_decode(&rep);
-            if(common_msg_id(dta) != COMMON_MSG_RETURN_MEASURE_TYPE) {
-                ret = common_msg_encode(&dta);
-            } else {
-                uint16_t id = common_msg_mt_id(dta);
-                req = common_msg_encode_get_measure_subtype_s(id,
-                          common_msg_mts_name(*msg),
-                          common_msg_mts_scale(*msg) );
-                common_msg_destroy(&dta);
-                ret = process_measures_meta(&req);
-                zmsg_destroy(&req);
             }
             break;
 
