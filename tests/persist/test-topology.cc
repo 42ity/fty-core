@@ -895,6 +895,10 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][n9]")
     // the expected devices
     std::set<std::tuple<int,std::string,std::string>> sdevices;
     sdevices.insert (std::make_tuple(5040, "UPSFROM9", "ups")); // id,  device_name, device_type_name
+    
+    // the expected links
+    std::set<std::string> spowers;
+    spowers.insert ("5:5040:6:5040"); 
 
     zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
@@ -929,6 +933,15 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][n9]")
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    
+    // check powers, should be one link
+    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    REQUIRE ( powers );
+
+    REQUIRE ( spowers.count(std::string ((const char*)zlist_first  (powers))) == 1 );
+    REQUIRE ( zlist_next (powers)   == NULL );
+
+    zlist_destroy (&powers);
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
