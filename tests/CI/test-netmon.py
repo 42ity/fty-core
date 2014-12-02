@@ -18,11 +18,10 @@ Test the netmon -> zeromq -> db integration.
 import subprocess
 import time
 import re
-import MySQLdb
 import sys
 import copy
 
-from shared import parse_ip_a_s
+from shared import parse_ip_a_s, connect_to_db
 
 def read_db(db):
     """
@@ -105,7 +104,7 @@ assert nic_name, "Name of network card is empty!"
 
 assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
 
-db = MySQLdb.connect(host="localhost", user="root", db="box_utf8")
+db = connect_to_db()
 dbres = read_db(db)
 try:
     df = compare_results(ipres, dbres)
