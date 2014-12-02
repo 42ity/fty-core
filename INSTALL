@@ -606,21 +606,6 @@ the compilation and installation:
 ----
 :; make
 ----
- ** When the project becomes large enough, it may make sense to speed up
-    the builds using parallelization, followed by a pass of sequential
-    make to reduce the impact of intemittent failures, such as those
-    caused by filesystem lags, out-of-memory issues, or by breaking
-    some unspecified dependency ordering. Assuming a GNU `make`, run:
-----
-:; make -j 4 -k ; make
-----
- ** A quieter build can be triggered for GNU `make` with 'V=0' parameter
-    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
-    which is good at least until you hit some build errors and need more
-    verbosity), thus suggesting this command line:
-----
-:; make V=0 -j 4 -k ; make V=0
-----
  * Install the binaries (under a chosen destination root directory
    '/some/path', such as under a temporary filesystem or your homedir):
 ----
@@ -628,12 +613,95 @@ the compilation and installation:
 ----
 
 
+About parallel `make`
+~~~~~~~~~~~~~~~~~~~~
+As noted above, the sequential `make` routine, which does one task at
+a time, in order dictated by dependencies, is the most reliable way to
+ensure that the project is compiled and linked and installed correctly.
+It is also the slowest way to achieve this goal, and with the development
+cycle involving lots of rebuilds and other automated `make` jobs, the
+time loss of everyone waiting for the build to complete adds up.
+
+Even on a single-CPU computer, the mathematical load of the compiler
+can generally be parallelized with blocking disk I/O to read and write
+the files, so parallel jobs are often requested as two per processor.
+
+However, the parallel `make` has its traps and pitfalls: it uses more CPU
+concurrently, so individual jobs may take longer to complete (especially
+when there are several jobs per CPU and/or swapping becomes involved),
+and coupled with filesystems or their specific mount options that for
+some reasons do not update metadata atomically, the dependency order can
+get broken (things expected to exist are not yet seen); also there may
+be some third-party tools that use the same filename for output and so
+parallel invokations of that tool are bound to fail; the memory resources
+are used more heavily so jobs can fail due to out-of-memory errors rather
+than coding mistakes. In case of GNU make, not specifying the maximum
+number of jobs to run causes unlimited parallelicity, so hundreds of
+processes can be spawned and might fail due to forking issues (`ulimit`
+constraints or OS resource depletion).
+
+In short, while parallel `make` can fail with higher probability than a
+sequential `make`, and its failure alone does not mean bad quality of
+the built project's source code. In certain cases, its success also does
+not guarantee correctness.
+
+When the project becomes large enough, it may make sense to speed up
+the builds using parallelization, followed by a pass of sequential
+`make` to reduce the impact of intemittent failures, such as those
+caused by filesystem lags, out-of-memory issues, or by breaking some
+poorly specified dependency ordering. This approach benefits from both
+the substantial speed improvement of a parallel `make` and the higher
+dependability of the sequential one. Also, linear and less clobbered
+output of the sequential `make` makes spotting and debugging of the
+remaining fatal errors during development (including development of
+the 'Makefile' itself) much easier.
+
+ * For a quick solution, assuming a GNU make or compatible, in place
+of the singular `make` commands, run this:
+----
+:; { make -j 4 -k ; make; }
+----
+ * Thus the one-liner to configure and compile the project becomes
+similar to this:
+----
+:; ./autogen.sh && ./configure && { make -j 4 -k; make; } && make install
+----
+
+A smarter, but not officially supported, solution is offered in the
+`tools/builder.sh` script.
+
+
+About quieter `make`
+~~~~~~~~~~~~~~~~~~~~
+Output of the `make` program is by default moderately verbose, including
+the command lines executed by the process. This adds up to a lot of text,
+in which the possible compilation errors are getting somewhat lost.
+The `make V=0` output format which only prints a short summary of what
+file is being processed with what program, half a line per source file,
+is often much more convenient.
+
+ *  A quieter build can be triggered for GNU `make` with 'V=0' parameter
+    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
+    which is good at least until you hit some build errors and need more
+    verbosity), thus suggesting this command line:
+----
+:; { make V=0 -j 4 -k ; make V=0; }
+----
+
+
+
 Testing the build
 -----------------
+
+Testing REST API
+~~~~~~~~~~~~~~~~
 Before testing the REST API with `test_web.sh`, make sure to configure
 the OS properly (including the user accounts and runtime dependencies
-described above).
+described above). Revise also './src/web/README.txt'.
 
+
+Generic notes on testing the $BIOS project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The 'Makefile' includes some targets for automated testing, such as:
 
  * `make check` -- this would trigger the compilation of all tests
@@ -642,7 +710,8 @@ The 'Makefile' includes some targets for automated testing, such as:
    tests
  * `./test-db` -- would run the database tests
 
-Note: as part of the project's automated validation the `make distcheck`
+Note: as part of the project's automated validation, the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
-build. An `./autogen.sh distcheck` method exists to automate this into a
-single-command routine to configure-build-check.
+build. An `./autogen.sh distcheck` action exists to automate this into a
+single-command routine to clean-configure-build+check.
+
