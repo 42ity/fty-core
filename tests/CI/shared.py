@@ -1,4 +1,5 @@
 # shared routines for CI tests written in python
+import MySQLdb
 
 def parse_ip_a_s(out):
     """
@@ -42,3 +43,6 @@ def parse_ip_a_s(out):
 
             ret.append((name, ipver, ipaddr, int(prefixlen), mac))
     return ret
+
+def connect_to_db():
+    return MySQLdb.connect(host="localhost", user="root", db="box_utf8")
