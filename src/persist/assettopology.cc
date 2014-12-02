@@ -646,9 +646,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     zlist_set_duplicator (powers, void_dup);
 
     zframe_t* devices = NULL;
-
-    zmsg_t* ret = zmsg_new();
-    assert ( ret );
+ 
+    std::set<std::tuple<int,std::string,std::string>> resultdevices;
+    // ( id,  device_name, device_type_name )
+    resultdevices.insert (std::make_tuple(element_id, device_name, device_type_name));
+    
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
@@ -705,31 +707,34 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
             sprintf(buff, "%d:%d:%d:%d", src_out, element_id, dest_in, id_asset_element_dest);
             zlist_push(powers, buff);
-
-            zmsg_t* el = asset_msg_encode_powerchain_device
-                                (id_asset_element_dest, device_type_name.c_str(), device_name.c_str());
-            assert ( el );
-            log_info ("created msg el \n");
-            int rv = zmsg_addmsg ( ret, &el);
-            assert ( rv != -1 );
-            assert ( el == NULL );
+            
+            resultdevices.insert (std::make_tuple(id_asset_element_dest, device_name, device_type_name));
         } // end for
-        zmsg_t* el = asset_msg_encode_powerchain_device
-                            (element_id, device_type_name.c_str(), device_name.c_str());
-        int rv = zmsg_addmsg ( ret, &el);
-        assert ( rv != -1 );
-        assert ( el == NULL );
     }
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&powers);
         zframe_destroy (&devices);
-        zmsg_destroy (&ret);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
     
+    zmsg_t* ret = zmsg_new();
+    assert ( ret );
+    for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
+    {
+        auto adevice = *it;
+
+    // tuple: ( id,  device_name, device_type_name )
+    // encode: id, device_type_name, device_name
+        zmsg_t* el = asset_msg_encode_powerchain_device
+                                (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), (std::get<1>(adevice)).c_str() );
+        int rv = zmsg_addmsg ( ret, &el);
+        assert ( rv != -1 );
+        assert ( el == NULL );
+    }
+
     int rv = matryoshka2frame (&ret, &devices);
     assert ( rv == 0 );
     zmsg_t* result = asset_msg_encode_return_power (devices, powers);

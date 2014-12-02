@@ -151,5 +151,27 @@ INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_d
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent )              VALUES (5040, "UPSFROM9", @id_device , NULL); 
 INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (6040, 5040, @id_ups);
 
-INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6040, NULL, 6040 , 1, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6040, NULL, 6040 , NULL, @id_link);
+
+/* power topology from: #10 */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent )              VALUES (5041, "UPSFROM10", @id_device , NULL); 
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (6041, 5041, @id_ups);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent )              VALUES (5042, "SINK15", @id_device , NULL); 
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (6042, 5042, @id_sink);
+
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6041, NULL, 6042 , NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6041, NULL, 6042 , NULL, @id_link);
+
+/* power topology from: #11 */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent )              VALUES (5043, "UPSFROM11", @id_device , NULL); 
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (6043, 5043, @id_ups);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent )              VALUES (5044, "SINK16", @id_device , NULL); 
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (6044, 5044, @id_sink);
+
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6043, NULL, 6044 , NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6044, NULL, 6043 , NULL, @id_link);
 
