@@ -389,7 +389,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/shared/log.c      src/web/src/current.cpp
+                      src/web/src/current.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
@@ -405,7 +405,8 @@ bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 					  -module -lm -ltntdb -ltntnet -lcidr
-bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la
+bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la libpriv-proto.la \
+                     libpriv-log.la
 
 dist_noinst_HEADERS +=	src/shared/data.h \
 			src/web/include/sasl.h \
