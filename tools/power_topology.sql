@@ -49,7 +49,7 @@ SELECT @id_device := id_asset_element_type FROM t_bios_asset_element_type WHERE 
 SELECT @id_link := id_asset_link_type FROM t_bios_asset_link_type WHERE name = 'power chain';
 
 /* power topology from: #1 */
-/* no need to insert enything */
+/* no need to insert anything */
 
 /* power topology from: #2 */
 
@@ -144,7 +144,7 @@ INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_d
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6038, NULL, 6039 , NULL, @id_link);
 
 /* power topology from: #8 */
-/* no need to insert enything */
+/* no need to insert anything */
 
 /* power topology from: #9 */
 
