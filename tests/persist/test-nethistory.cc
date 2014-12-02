@@ -110,12 +110,3 @@ TEST_CASE("net history select by id ","[dbnethistory][select][byId][db]"){
     REQUIRE( n == 1);
 }
 
-TEST_CASE("net history select all","[dbnethistory][select][getHistory][db]"){
-    std::vector<persist::NetHistory> history = persist::NetHistory::getHistory(url);
-    bool result = true;
-    for ( auto i = history.begin(); i != history.end(); i++ ) {
-        result = result && ( (*i).getId() >= 7 ) && ( (*i).getId() <=10 ) ;
-    }
-    REQUIRE (result);
-    REQUIRE (history.size() > 0);
-}

@@ -15,6 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef _GNU_SOURCE
+# define _GNU_SOURCE	/* to get asprintf() and vasprintf() from stdio.h */
+#endif
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -28,7 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
            level == LOG_INFO    || \
            level == LOG_WARNING || \
            level == LOG_ERR     || \
-           level == LOG_CRIT)
+           level == LOG_CRIT    || \
+           level == LOG_NOOP)
 
 static int log_syslog_level = LOG_SYSLOG_NA;
 static int log_stderr_level = LOG_ERR;

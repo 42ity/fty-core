@@ -2,7 +2,7 @@
     name = "nmap_msg"
     signature = "1"
     title = "nmap scan results"
-    script = "zproto_codec_c"
+    script = "zproto_codec_c_v1"
     package_dir = "."
     include = "czmq.h"
     >
@@ -16,16 +16,15 @@
 <message name = "scan_command" id = "1">
     Command for scanning
     <field name = "type" type = "string">Type of a scan - default list scan, device scan, ...</field>
-    <field name = "headers" type = "dictionary">Aditional parameters for scanning, not used right now</field>
+    <field name = "headers" type = "hash">Aditional parameters for scanning, not used right now</field>
     <field name = "args" type = "strings">Arguments for scanning, usually list of ip addresses</field>
 </message>
 
 <message name = "list_scan" id = "2">
     Results of a list scan, this parses 'host' element with a limited set of fields, see ELEMENT host in nmap DTD
     <field name = "addr" type = "string">IP address</field>
-    <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
+    <field name = "hostnames" type = "hash">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
 </message>
 
 <!--
@@ -84,8 +83,8 @@ omitted: smurf, distance, uptime, tcpsequence, ipidsequence, tcptssequence, trac
     port scan results and os scan one (if enabled).
     <field name = "host_state" type = "number" size= "1"> Status of a host (up|down|unknown|skipped)</field>
     <field name = "reason" type = "string">Reason string (syn-ack, echo-reply, ...), see portreason.cc:reason_map_type</field>
-    <field name = "addresses" type = "dictionary">dictionary of address : vendor, where vendor is valid only for mac addresses</field>
-    <field name = "hostnames" type = "dictionary">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
+    <field name = "addresses" type = "hash">dictionary of address : vendor, where vendor is valid only for mac addresses</field>
+    <field name = "hostnames" type = "hash">dictionary of hostname : type, where type is a type of hostname (user, PTR)</field>
     <field name = "ports" type = "frame" >List of port_scan results. List of 'port_scan' messages</field>
     <field name = "os"    type = "frame" >List of os_scan results. List of 'os_scan' messages</field>
     <field name = "scripts" type = "frame" >List of script results. List of 'script' messages</field>

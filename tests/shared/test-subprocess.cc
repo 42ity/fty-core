@@ -136,7 +136,13 @@ TEST_CASE("subprocess-kill", "[subprocess][kill]") {
 
     ret = proc.kill();
     CHECK(ret == 0);
-    usleep(150);
+    for (auto i = 1u; i != 10; i++) {
+        usleep(i*50);
+        proc.poll();
+        if (!proc.isRunning()) {
+            break;
+        }
+    }
     // note that getReturnCode does not report anything unless poll is called
     proc.poll();
     ret = proc.getReturnCode();
@@ -192,7 +198,13 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     CHECK(bret);
 
     kill(proc.getPid(), SIGTERM);
-    usleep(50);
+    for (auto i = 1u; i != 10; i++) {
+        usleep(i*50);
+        proc.poll();
+        if (!proc.isRunning()) {
+            break;
+        }
+    }
     proc.poll();
 
     CHECK(!proc.isRunning());
@@ -227,6 +239,40 @@ TEST_CASE("subprocess-proccache", "[subprocess][proccache]") {
     std::pair<std::string, std::string> r = c.pop();
     CHECK(r.first == "stdout");
     CHECK(r.second == "stderr");
+    
+    //pop means to clear everything - so next attempt is an empty string(s)
+    std::pair<std::string, std::string> r2 = c.pop();
+    CHECK(r2.first == "");
+    CHECK(r2.second == "");
+
+    // test the copy contructor
+    c.pushStdout("copy");
+    ProcCache c2 = c;
+    c.pushStdout(" this");
+
+    r = c.pop();
+    r2 = c2.pop();
+    CHECK(r.first == "copy this");
+    CHECK(r.second == "");
+    CHECK(r2.first == "copy");
+    CHECK(r2.second == "");
+
+}
+
+TEST_CASE("subprocess-proccache-big", "[subprocess][proccache]") {
+    ProcCache c{};
+
+    static const auto LIMIT = 1024*1024u;
+    static const auto SENTENCE = "The quick brown fox jumps over a lazy dog!\n";
+    static constexpr auto SIZE = LIMIT * strlen(SENTENCE);
+
+    for (auto i = 0u; i != LIMIT; i++) {
+        c.pushStdout(SENTENCE);
+    }
+
+    std::pair<std::string, std::string> r = c.pop();
+    CHECK(r.second == "");
+    CHECK(r.first.size() == SIZE);
     
     //pop means to clear everything - so next attempt is an empty string(s)
     std::pair<std::string, std::string> r2 = c.pop();
@@ -305,14 +351,12 @@ TEST_CASE("subprocess-que", "[subprocess][processque]") {
     CHECK(!q.hasRunning());
     CHECK(q.runningSize() == 0);
 
-    fprintf(stderr, "first schedule()\n");
     q.schedule();
     CHECK(!q.hasDone());
     CHECK(q.hasIncomming());
     CHECK(q.hasRunning());
     CHECK(q.runningSize() == 1);
     
-    fprintf(stderr, "second schedule()\n");
     //second schedule does not have any impact on runningSize due limit == 1
     q.schedule();
     CHECK(!q.hasDone());
