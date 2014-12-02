@@ -594,6 +594,53 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  linktype = 1; //TODO hardcoded constants
 
+    std::string device_name = "";
+    std::string device_type_name = "";
+
+    // select information about the start device
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name, v1.name as type_name"
+            " FROM"
+            "   v_bios_asset_element v"
+            " LEFT JOIN  v_bios_asset_device v1"
+            "   ON ( v1.id_asset_element = v.id )"
+            " WHERE v.id = :id"
+        );
+        tntdb::Row row = st.setInt("id", element_id).
+                            selectRow();
+        
+        // device name, required
+        row[0].get(device_name);
+        assert ( device_name != "" ); // database is corrupted
+        
+        // device type name, would be NULL if it is not a device
+        row[1].get(device_type_name);
+    }
+    catch (const tntdb::NotFound &e) {
+        // device with specified id was not found
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                                        e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        // internal error in database
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+    
+    // check, if selected element has a device type
+    if ( device_type_name == "" )
+    {   // than it is not a device
+        log_warning ("abort with err = '%s %d %s'\n", "specified element id =", 
+                            element_id, " is not a device");
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+                                        "specified element is not a device", NULL);
+    }
     zlist_t* powers = zlist_new();
     assert ( powers );
     zlist_set_duplicator (powers, void_dup);
@@ -602,14 +649,13 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
     zmsg_t* ret = zmsg_new();
     assert ( ret );
-
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
-            "  v.dest_type_name, v.src_type_name, v.src_name"
+            "  v.dest_type_name"
             " FROM"
             "  v_bios_asset_link_topology v"
             " WHERE"
@@ -668,25 +714,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( rv != -1 );
             assert ( el == NULL );
         } // end for
-        auto it = result.begin();
-        tntdb::Row row = *it;
-       
-        // device_name, required
-        std::string device_name = "";
-        row[6].get(device_name);
-        assert ( device_name != "" );
-        
-        // device_type_name, requiured
-        std::string device_type_name = "";
-        row[5].get(device_type_name);
-        assert ( device_type_name != "" );
-
         zmsg_t* el = asset_msg_encode_powerchain_device
-                                (element_id, device_type_name.c_str(), device_name.c_str());
+                            (element_id, device_type_name.c_str(), device_name.c_str());
         int rv = zmsg_addmsg ( ret, &el);
         assert ( rv != -1 );
         assert ( el == NULL );
-
     }
     catch (const std::exception &e) {
         // internal error in database
