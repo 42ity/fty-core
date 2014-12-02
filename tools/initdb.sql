@@ -29,7 +29,7 @@ CREATE TABLE t_bios_measurement_subtypes(
 
     PRIMARY KEY(id, id_type),
     INDEX(id),
-    INDEX(type_id, name),
+    INDEX(id_type, name),
 
     FOREIGN KEY(id_type)
 	REFERENCES t_bios_measurement_types(id)
