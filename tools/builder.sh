@@ -40,6 +40,28 @@ CHECKOUTDIR="`pwd`" || exit
 export CHECKOUTDIR
 echo "INFO: Starting '`basename $0` $@' for workspace CHECKOUTDIR='$CHECKOUTDIR'..."
 
+# This is a generally used variable in the build systems to
+# override into usage of a specific make program filename/path
+# Also a custom variable MAKE_OPTS can be used to pass flags to `make`
+# Finally, for options specific to only one stage, the caller can set
+# MAKE_OPTS_PAR or MAKE_OPTS_SEQ respectively (no defaults)
+[ -z "$MAKE" ] && MAKE="make"
+#default# MAKE_OPTS=""
+#default# MAKE_OPTS_PAR=""
+#default# MAKE_OPTS_SEQ=""
+case "$MAKE" in
+    *\ *) # Split into program and options
+	_MAKE_OPTS="`echo "$MAKE" | { read _C _A; echo "$_A"; }`"
+	MAKE="`echo "$MAKE" | { read _C _A; echo "$_C"; }`"
+	if [ -n "$_MAKE_OPTS" ]; then
+	    [ -n "$MAKE_OPTS" ] && \
+		MAKE_OPTS="$MAKE_OPTS $_MAKE_OPTS" || \
+		MAKE_OPTS="$_MAKE_OPTS"
+	fi
+	unset _MAKE_OPTS
+	;;
+esac
+
 VERB_COUNT=0
 verb_run() {
 	VERB_COUNT="$(($VERB_COUNT+1))" 2>/dev/null || \
@@ -90,6 +112,27 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+# enable timing of the steps
+case "$TIME_MAKE" in
+    time|*bin/time)	;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	TIME_MAKE="time" ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]|"")
+	TIME_MAKE="" ;;
+    *)	echo "WARNING: Ingoring unrecognized value of TIME_MAKE='$TIME_MAKE'" >&2
+	TIME_MAKE="" ;;
+esac
+
+case "$TIME_CONF" in
+    time|*bin/time)	;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	TIME_CONF="time" ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]|"")
+	TIME_CONF="" ;;
+    *)	echo "WARNING: Ingoring unrecognized value of TIME_CONF='$TIME_CONF'" >&2
+	TIME_CONF="" ;;
+esac
+
 # Normalize the optional flags
 case "$NOPARMAKE" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
@@ -103,15 +146,21 @@ case "$WARNLESS_UNUSED" in
     *)	WARNLESS_UNUSED=no  ;;
 esac
 
+case "$SHOW_BUILDER_FLAGS" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	SHOW_BUILDER_FLAGS=yes ;;
+    *)	SHOW_BUILDER_FLAGS=no  ;;
+esac
+
 do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
 		    *clean*)
-				echo "INFO: Makefile absent, skipping 'make $@'"
+				echo "INFO: Makefile absent, skipping '$MAKE $@' for a cleaning action"
 #distclean?#			[ -d config ] && rm -rf config
 				return 0 ;;
 		    *)
-				echo "ERROR: Makefile absent, skipping 'make $@'" >&2
+				echo "ERROR: Makefile absent, can not fulfill '$MAKE $@'" >&2
 				return 1 ;;
 		esac
 	fi
@@ -119,13 +168,13 @@ do_make() {
 	    *distclean*)
 		### Hack to avoid running configure if it is newer
 		### than Makefile - these are deleted soon anyway
-		echo "INFO: Hack to avoid extra useless configure - touch some files"
+		echo "INFO: Take steps to avoid extra useless configure before distclean - touch some files"
 		touch Makefile
 		[ -f config.status ] && touch config.status
 		;;
 	esac
 
-	verb_run make "$@"; RES=$?
+	verb_run $TIME_MAKE $MAKE "$@"; RES=$?
 
 	[ "$RES" != 0 ] && case "$*" in
 	    *-k*distclean*)
@@ -134,7 +183,7 @@ do_make() {
 		### broken contents of a Makefile). Depending on the result
 		### of "rm -f" protects against unwritable directories.
 		rm -rf Makefile config.status config/ && \
-		echo "WARN: 'make $@' failed ($RES) but we ignore it for cleanups" >&2 && \
+		echo "WARN: '$MAKE $@' failed ($RES) but we ignore it for cleanups" >&2 && \
 		RES=0
 		;;
 	esac
@@ -144,19 +193,27 @@ do_make() {
 
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
-	    echo "=== PARMAKE:"
-	    do_make V=0 -j $NPARMAKES -k "$@" || true
+	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
+	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
+		*\ V=*|*\ --trace*)
+		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
+		*)
+		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@" || true ;;
+		esac
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
 
-	echo "=== SEQMAKE:"
-	do_make "$@"
+	# User can request 'builder.sh install-subdir V=0' or somesuch
+	# to suppress the build tracing, or '... --trace' to increase it
+	# ...or the MAKE variable can be overridden to the same effect
+	echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
+	do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
 }
 
 buildSamedir() {
 	do_make -k distclean
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	{ do_make -k clean; do_build "$@"; }
 }
 
@@ -166,7 +223,7 @@ buildSubdir() {
 	  rm -rf "${BUILDSUBDIR}"; \
 	  mkdir "${BUILDSUBDIR}" && \
 	  cd "${BUILDSUBDIR}"; } && \
-	verb_run "$CHECKOUTDIR/configure" && \
+	verb_run $TIME_CONF "$CHECKOUTDIR/configure" && \
 	do_build "$@" )
 }
 
@@ -184,14 +241,108 @@ suppressWarningsUnused() {
 	[ "$_WARNLESS_UNUSED" != 0 ] && return
 	CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
 	CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-	export CFLAGS CXXFLAGS
-	echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
+	CPPFLAGS="$CPPFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
+	export CFLAGS CXXFLAGS CPPFLAGS
+	echo "INFO: Fixed up CFLAGS, CXXFLAGS and CPPFLAGS to ignore warnings about unused code"
 	_WARNLESS_UNUSED=1
+}
+
+usage() {
+	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] [--show-builder-flags] \ "
+	echo "    [--show-repository-metadata] [--show-timing|[--show-timing-make|[--show-timing-conf] \ "
+	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
+	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
+	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
+	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
+	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
+	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
+	echo "Some uses without further parameters:"
+	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
+	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
+	echo "Usage: $0 distclean	- execute the distclean step and exit"
+}
+
+showGitFlags() {
+    # Get the Git repository metadata, if available
+    # Code cloned from our configure.ac
+    HAVE_PACKAGE_GIT=0
+    PACKAGE_GIT_ORIGIN=""
+    PACKAGE_GIT_BRANCH=""
+    PACKAGE_GIT_TSTAMP=""
+    PACKAGE_GIT_HASH_S=""
+    PACKAGE_GIT_HASH_L=""
+
+    [ -z "$GIT" ] && GIT="`which git 2>/dev/null | head -1`"
+    _srcdir_abs="$CHECKOUTDIR"
+
+    if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
+        PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+        PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s`"			&& HAVE_PACKAGE_GIT=1
+    fi 2>/dev/null
+
+    if [ "$HAVE_PACKAGE_GIT" = 1 ]; then
+	echo "INFO: Summary of GIT metadata about the workspace '$_srcdir_abs':
+	PACKAGE_GIT_ORIGIN:	$PACKAGE_GIT_ORIGIN
+	PACKAGE_GIT_BRANCH:	$PACKAGE_GIT_BRANCH
+	PACKAGE_GIT_TSTAMP:	$PACKAGE_GIT_TSTAMP
+	PACKAGE_GIT_HASH_S:	$PACKAGE_GIT_HASH_S
+	PACKAGE_GIT_HASH_L:	$PACKAGE_GIT_HASH_L"
+	[ -n "$PACKAGE_GIT_STATUS" ] && echo \
+"	PACKAGE_GIT_STATUS (short list of differences against committed repository):
+$PACKAGE_GIT_STATUS"
+	echo ""
+    fi
+}
+
+showBuilderFlags() {
+	echo "INFO: Summary of flags that influence this run of the '$0':
+	BLDARCH (for bld/inst):	$BLDARCH
+	CHECKOUTDIR workspace:	$CHECKOUTDIR
+	BUILDSUBDIR (subdirs):	$BUILDSUBDIR
+	DESTDIR (for install):	$DESTDIR
+	MAKE command to use:	$MAKE"
+	[ -n "$MAKE_OPTS" ] && echo \
+"	 Common MAKE command options (for build/install/make explicit targets):	$MAKE_OPTS"
+	[ -n "$MAKE_OPTS_PAR" ] && echo \
+"	 Additional MAKE command options for optional parallel build phase:	$MAKE_OPTS_PAR"
+	[ -n "$MAKE_OPTS_SEQ" ] && echo \
+"	 Additional MAKE command options for reliable sequential build phase: 	$MAKE_OPTS_SEQ"
+
+	echo \
+"	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
+	 NCPUS (private var):	$NCPUS
+	 NPARMAKES jobs:	$NPARMAKES
+	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)"
+	[ -n "$CFLAGS" ] && echo \
+"	 CFLAGS (the C compiler):	$CFLAGS"
+	[ -n "$CXXFLAGS" ] && echo \
+"	 CXXFLAGS (C++ compiler):	$CXXFLAGS"
+	[ -n "$CPPFLAGS" ] && echo \
+"	 CPPFLAGS (C/C++ preprocessor):	$CPPFLAGS"
+	echo \
+"	Requested action:	$1"
+
+	[ $# -gt 1 ] && case "$1" in
+	build*|install*|make*)
+	    shift
+	    echo \
+"	 Requested target(s):	$@"
+	    ;;
+	esac
+
+	echo \
+"	Measure TIME_MAKE:	$TIME_MAKE
+	Measure TIME_CONF:	$TIME_CONF
+"
 }
 
 while [ $# -gt 0 ]; do
 	case "$1" in
-	    "--warnless-unused")
+	    --warnless-unused)
 		WARNLESS_UNUSED=yes
 		shift
 		;;
@@ -203,12 +354,44 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		shift
 		;;
+	    --show-builder-flags)
+		SHOW_BUILDER_FLAGS=yes
+		shift
+		;;
+	    --show-repository-metadata|--show-repository-metadata-git|--show-git-metadata)
+		SHOW_REPOSITORY_METADATA_GIT=yes
+		shift
+		;;
+	    --show-timing-make)
+		TIME_MAKE=time
+		shift
+		;;
+	    --show-timing-conf|--show-timing-configure)
+		TIME_CONF=time
+		shift
+		;;
+	    --show-timing|--show-timings)
+		TIME_MAKE=time
+		TIME_CONF=time
+		shift
+		;;
+	    --verbose)
+		SHOW_BUILDER_FLAGS=yes
+		SHOW_REPOSITORY_METADATA_GIT=yes
+		TIME_MAKE=time
+		TIME_CONF=time
+		shift
+		;;
 	    *)	break ;;
 	esac
 done
 
 ### The flags can be set in environment rather than passed on command line
 [ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
+
+### This is the last flag-reaction in the stack of such
+[ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
+[ x"$SHOW_REPOSITORY_METADATA_GIT" = xyes ] && showGitFlags
 
 case "$1" in
     "")
@@ -249,29 +432,24 @@ case "$1" in
 	exit
 	;;
     distclean)
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	do_make -k distclean
 	;;
     distcheck)
 	do_make -k distclean
-	verb_run ./configure && \
+	verb_run $TIME_CONF ./configure && \
 	do_make distcheck
 	;;
     conf|configure)
 	do_make -k distclean
-	verb_run ./configure
+	verb_run $TIME_CONF ./configure
 	;;
-    *)	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] \ "
-	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
-	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
-	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
-	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
-	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
-	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
-	echo "Some uses without further parameters:"
-	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
-	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
-	echo "Usage: $0 distclean	- execute the distclean step and exit"
+    help|-help|--help|-h)
+	usage
+	exit 2
+	;;
+    *)	echo "ERROR: Unknown parameter '$1' for '$0'" >&2
+	usage
 	exit 2
 	;;
 esac
