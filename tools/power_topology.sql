@@ -1,3 +1,4 @@
+use box_utf8;
 insert into t_bios_asset_device_type (id_asset_device_type , name) values (5, "mgenset");
 
 
