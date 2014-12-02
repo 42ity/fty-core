@@ -457,12 +457,14 @@ DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
 # Historically some original docs have *.txt names and some don't
 HTMLS = 	INSTALL.html CONTRIBUTING.html \
 		docs/develop/README-builder.html \
+		docs/develop/README-init-os-accounts.html \
 		INSTALL-referenceOS-debian8.html
 
 HTMLS_TXT_NOEXT = 			$(top_srcdir)/INSTALL-referenceOS-debian8 \
 					$(top_srcdir)/CONTRIBUTING \
 					$(top_srcdir)/INSTALL
-HTMLS_TXT =				$(top_srcdir)/docs/develop/README-builder.txt
+HTMLS_TXT =		$(top_srcdir)/docs/develop/README-builder.txt \
+			$(top_srcdir)/docs/develop/README-init-os-accounts.txt
 EXTRA_DIST +=				$(HTMLS_TXT_NOEXT) $(HTMLS_TXT)
 DISTCLEANFILES +=			$(top_builddir)/docs/develop/*.html
 
@@ -528,6 +530,10 @@ INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
 docs/develop/README-builder.html: $(top_srcdir)/docs/develop/README-builder.txt
 	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
 	$(ASCIIDOC) -b html -o $@ $<
+
+docs/develop/README-init-os-accounts.html: $(top_srcdir)/docs/develop/README-init-os-accounts.txt
+	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
+	$(ASCIIDOC) -b html -o $@ $<
 else
 INSTALL.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
@@ -536,6 +542,9 @@ CONTRIBUTING.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 
 INSTALL-referenceOS-debian8.html:
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+
+docs/develop/README-init-os-accounts.html:
 	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
 
 docs/develop/README-builder.html:
