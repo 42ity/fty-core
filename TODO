@@ -3,6 +3,12 @@ TODO
 
 The list of known issues, which have to be addressed!
 
+src/persist/assettopology.cc (MARIA_DB_CRASH):
+-------------------------------------------------------------
+-> The known issue with mariadb crash. Rework when crash would be fixed.
+
+
+
 src/utils/messages :
 --------------------
 GCL: Major comments are same as previous on PR BIOS-347 :
@@ -114,5 +120,3 @@ if anything is needed to be done here.
 
 ==== src/simple ====
 -> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
-
-
