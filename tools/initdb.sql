@@ -468,6 +468,24 @@ FROM    v_bios_client_info_measurements v
                 ON v.id_subkey = sk.id AND
 		   v.id_key = sk.id_type;
 
+CREATE VIEW v_bios_asset_element_super_parent AS 
+SELECT v1.id_asset_element, 
+       v1.name , 
+       v5.name AS type_name,
+       v1.id_parent AS id_parent1,
+       v2.id_parent AS id_parent2,
+       v3.id_parent AS id_parent3,
+       v4.id_parent AS id_parent4 
+FROM t_bios_asset_element v1 
+     LEFT JOIN t_bios_asset_element v2 
+        ON (v1.id_parent = v2.id_asset_element) 
+     LEFT JOIN t_bios_asset_element v3 
+        ON (v2.id_parent = v3.id_asset_element) 
+     LEFT JOIN t_bios_asset_element v4 
+        ON (v3.id_parent=v4.id_asset_element) 
+     INNER JOIN v_bios_asset_device v5 
+        ON (v5.id_asset_element = v1.id_asset_element);
+
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
