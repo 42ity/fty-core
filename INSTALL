@@ -697,7 +697,12 @@ Testing REST API
 ~~~~~~~~~~~~~~~~
 Before testing the REST API with `test_web.sh`, make sure to configure
 the OS properly (including the user accounts and runtime dependencies
-described above). Revise also './src/web/README.txt'.
+described above).
+
+See also:
+
+ * 'link:README-web-tests-generalInfo.html[src/web/README.txt]'
+ * 'link:README-web-tests-ciAutomation.html[tests/CI/web/README.txt]'
 
 
 Generic notes on testing the $BIOS project
