@@ -1,42 +1,80 @@
 NUT driver
 ==========
-
-This driver connects to the NUT daemon and periodically checks for all
-configured devices and their changes. Whenever there is a change, the
-`nut-actor` generates a 0MQ message.
+This driver connects to the NUT (Network UPS Tools) daemon and periodically
+checks it for all configured devices and their changes. Whenever there is a
+change, the `nut-actor` generates a 0MQ message.
 
 The message for every configured device is also generated on application
 start (this is considered as a change from nothing to something).
 
+NOTE: Do not mistake the NUT system daemons and drivers (programs which
+translate between device-specific protocols and the common NUT protocol),
+and the $BIOS project's "'nut-driver'" which translates messages between
+subsystems (such as NUT in this case) and the $BIOS framework.
+
+
 Dependencies
 ------------
 
-To be able build the driver, 'nut-devel' package >= 2.7 is required, and
-particularly the `libnutclient` library.
+Build dependencies
+~~~~~~~~~~~~~~~~~~
+To be able build the driver, NUT development files (headers, library and
+`pkgconfig` support) for version >= 2.7 are required. This especially
+refers to the `libnutclient` library and related development files.
 
-To have also some messages produced, `nut-server` must be configured and
-running. It is not necessary to configure and run `nut-server`, if You
-are not interested in power device messages.
+On the target Debian 8 platform this is packaged as 'libnutclient-dev'.
+On other platforms such as CentOS it might be available as 'nut-devel'.
+
+Run-time dependencies
+~~~~~~~~~~~~~~~~~~~~~
+As a run-time dependency, at least the shared library is required for
+our daemon. A configured and running set of Network UPS Tools daemons
+and drivers is also needed to get the data from actual hardware.
+
+On the target Debian 8 platform this is packaged as 'nut-server' for
+the base server and local-connection NUT drivers, as well as 'nut-snmp'
+or 'nut-xml' or 'nut-ipmi' for remote-connection NUT drivers.
+
+To have also some messages produced, the `upsd` daemon of the NUT system
+(which can be provided by `nut-server` service in packaged distributions)
+must be configured and running. It is not necessary to configure and run
+`nut-server`, if you are not interested in power device messages.
+
 
 Configuration
 -------------
+NUT configuration is stored in several files in a location dependant on
+the distribution used, such as (but not limited to):
 
-NUT configuration is stored in several files under '/etc/ups/' (CentOS).
+ * under '/etc/nut/' (Debian, Ubuntu, ...); note that the supported target
+platform for the $BIOS project is Debian 8
+ * under '/etc/ups/' (RHEL, CentOS, Suse family, ...)
+ * other OSes or packagings might involve '/usr/local/ups' or other paths.
+
 
 nut.conf
 ~~~~~~~~
-For us, there is one line in this file:
+WARNING: 'nut.conf' was the NUT project's way to overcome the various
+distro specific SysV config quirks (as mentioned in 'nut.conf' comments).
+However, the new 'systemd' framework (available in the target Debian 8)
+has made this file not useful now.
+
+For systems that do consult it at all (such as CentOS), there is just one
+essential line for us in this file:
 ----
 MODE=standalone
 ----
 
+
 ups.conf
 ~~~~~~~~
-In this file we should specify our particular devices.
+In this file we should specify our particular devices and some attributes
+required by their NUT drivers such as `snmp-ups` in order to connect to
+the specific device and interpret its connection protocols.
 
-Here is working example:
+Here is a working example:
 
-----------------------------------------------------------
+----
 [labroz]
     driver = "snmp-ups"
     port = "10.130.38.135"
@@ -85,22 +123,28 @@ Here is working example:
     desc = "APC"
     mibs = "ietf"
     community = "public"
-----------------------------------------------------------
+----
 
 
 upsd.conf
 ~~~~~~~~~
 Let this file be empty (only comments here).
 
+Rationale: because NUT server (`upsd`) only listens to local network
+interface by default (IPv4 '127.0.0.1' and IPv6 '::1').
+
+
 upsd.users
 ~~~~~~~~~~
-As far as we only read values (no commands are sent to UPS), we
-don't need edit this file.
+As far as we only read values (no commands are sent to UPS), we don't
+need to edit this file.
+
 
 upsmon.conf
 ~~~~~~~~~~~
 This file specifies actions and communication params (like timeouts, ssl).
 We don't need to touch this file.
+
 
 upssched.conf
 ~~~~~~~~~~~~~
@@ -109,9 +153,10 @@ Let this file untouched.
 
 NUT services
 ------------
+There are two services to be started after configuration (consult your OS
+packaging for the specific packages which deliver the daemons, device
+protocol drivers and service management files):
 
-There are two services to be started after configuration (Dependency is defined
-in CentOS package).
 ----
 :; systemctl start nut-server
 ----
