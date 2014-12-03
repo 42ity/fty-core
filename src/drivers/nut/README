@@ -2,8 +2,8 @@ NUT driver
 ==========
 
 This driver connects to the NUT daemon and periodically checks for all
-configured devices and their changes. Whenever there is a change, nut-actor
-generates 0MQ message.
+configured devices and their changes. Whenever there is a change, the
+`nut-actor` generates a 0MQ message.
 
 The message for every configured device is also generated on application
 start (this is considered as a change from nothing to something).
@@ -11,27 +11,28 @@ start (this is considered as a change from nothing to something).
 Dependencies
 ------------
 
-To be able build the driver, nut-devel package >= 2.7 is required. Particularly
-libnutclient library.
+To be able build the driver, 'nut-devel' package >= 2.7 is required, and
+particularly the `libnutclient` library.
 
-To have also some messages produced, nut-server must be configured and
-running. It is not necessary to configure and run nut-server, if You
-are not interested for power device messages.
+To have also some messages produced, `nut-server` must be configured and
+running. It is not necessary to configure and run `nut-server`, if You
+are not interested in power device messages.
 
 Configuration
 -------------
 
-NUT configuration is stored in several files in /etc/ups/ (CentOS).
+NUT configuration is stored in several files under '/etc/ups/' (CentOS).
 
 nut.conf
 ~~~~~~~~
-for us, there is one line in this file:
-
+For us, there is one line in this file:
+----
 MODE=standalone
+----
 
 ups.conf
 ~~~~~~~~
-In this file we should specify out particular devices.
+In this file we should specify our particular devices.
 
 Here is working example:
 
@@ -89,7 +90,7 @@ Here is working example:
 
 upsd.conf
 ~~~~~~~~~
-Let this file empty (only comments here).
+Let this file be empty (only comments here).
 
 upsd.users
 ~~~~~~~~~~
@@ -111,10 +112,12 @@ NUT services
 
 There are two services to be started after configuration (Dependency is defined
 in CentOS package).
+----
+:; systemctl start nut-server
+----
 
-  systemctl start nut-server
-
-eventually
-
-  systemctl start nut-driver
+...and eventually
+----
+:; systemctl start nut-driver
+----
 
