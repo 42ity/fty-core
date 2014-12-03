@@ -9,7 +9,7 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-     * The XML model used for this code generation: ./common_msg.xml, or
+     * The XML model used for this code generation: common_msg.xml, or
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
@@ -48,6 +48,7 @@ struct _common_msg_t {
     byte *ceiling;                      //  Valid upper limit for read pointer
     uint16_t mt_id;                     //  Measurement type id
     char *mt_name;                      //  Measurement type name
+    char *mt_unit;                      //  Prefered units
     uint16_t mts_id;                    //  Measurement subtype id
     char *mts_name;                     //  Measurement subtype name
     byte mts_scale;                     //  Preffered scale
@@ -233,6 +234,7 @@ common_msg_destroy (common_msg_t **self_p)
         //  Free class properties
         zframe_destroy (&self->routing_id);
         free (self->mt_name);
+        free (self->mt_unit);
         free (self->mts_name);
         free (self->errmsg);
         zhash_destroy (&self->erraux);
@@ -252,7 +254,8 @@ common_msg_destroy (common_msg_t **self_p)
 }
 
 //  Parse a zmsg_t and decides whether it is common_msg. Returns
-//  true if it is, false otherwise.
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
 bool
 is_common_msg (zmsg_t *msg)
 {
@@ -278,7 +281,6 @@ is_common_msg (zmsg_t *msg)
         case COMMON_MSG_GET_MEASURE_TYPE_S:
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
         case COMMON_MSG_RETURN_MEASURE_TYPE:
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
         case COMMON_MSG_FAIL:
@@ -355,6 +357,7 @@ common_msg_decode (zmsg_t **msg_p)
 
         case COMMON_MSG_GET_MEASURE_TYPE_S:
             GET_STRING (self->mt_name);
+            GET_STRING (self->mt_unit);
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
@@ -368,15 +371,10 @@ common_msg_decode (zmsg_t **msg_p)
             GET_NUMBER1 (self->mts_scale);
             break;
 
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            GET_STRING (self->mt_name);
-            GET_STRING (self->mts_name);
-            GET_NUMBER1 (self->mts_scale);
-            break;
-
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             GET_NUMBER2 (self->mt_id);
             GET_STRING (self->mt_name);
+            GET_STRING (self->mt_unit);
             break;
 
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
@@ -619,6 +617,10 @@ common_msg_encode (common_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->mt_name)
                 frame_size += strlen (self->mt_name);
+            //  mt_unit is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->mt_unit)
+                frame_size += strlen (self->mt_unit);
             break;
             
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
@@ -639,19 +641,6 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 1;
             break;
             
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            //  mt_name is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->mt_name)
-                frame_size += strlen (self->mt_name);
-            //  mts_name is a string with 1-byte length
-            frame_size++;       //  Size is one octet
-            if (self->mts_name)
-                frame_size += strlen (self->mts_name);
-            //  mts_scale is a 1-byte integer
-            frame_size += 1;
-            break;
-            
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             //  mt_id is a 2-byte integer
             frame_size += 2;
@@ -659,6 +648,10 @@ common_msg_encode (common_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->mt_name)
                 frame_size += strlen (self->mt_name);
+            //  mt_unit is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->mt_unit)
+                frame_size += strlen (self->mt_unit);
             break;
             
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
@@ -879,6 +872,11 @@ common_msg_encode (common_msg_t **self_p)
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
+            if (self->mt_unit) {
+                PUT_STRING (self->mt_unit);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
@@ -896,24 +894,15 @@ common_msg_encode (common_msg_t **self_p)
             PUT_NUMBER1 (self->mts_scale);
             break;
 
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            if (self->mt_name) {
-                PUT_STRING (self->mt_name);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
-            if (self->mts_name) {
-                PUT_STRING (self->mts_name);
-            }
-            else
-                PUT_NUMBER1 (0);    //  Empty string
-            PUT_NUMBER1 (self->mts_scale);
-            break;
-
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             PUT_NUMBER2 (self->mt_id);
             if (self->mt_name) {
                 PUT_STRING (self->mt_name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->mt_unit) {
+                PUT_STRING (self->mt_unit);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
@@ -1248,6 +1237,7 @@ common_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1356,10 +1346,12 @@ common_msg_encode_get_measure_type_i (
 
 zmsg_t * 
 common_msg_encode_get_measure_type_s (
-    const char *mt_name)
+    const char *mt_name,
+    const char *mt_unit)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_TYPE_S);
-    common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mt_name (self, "%s", mt_name);
+    common_msg_set_mt_unit (self, "%s", mt_unit);
     return common_msg_encode (&self);
 }
 
@@ -1390,24 +1382,7 @@ common_msg_encode_get_measure_subtype_s (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_S);
     common_msg_set_mt_id (self, mt_id);
-    common_msg_set_mts_name (self, mts_name);
-    common_msg_set_mts_scale (self, mts_scale);
-    return common_msg_encode (&self);
-}
-
-
-//  --------------------------------------------------------------------------
-//  Encode GET_MEASURE_SUBTYPE_SS message
-
-zmsg_t * 
-common_msg_encode_get_measure_subtype_ss (
-    const char *mt_name,
-    const char *mts_name,
-    byte mts_scale)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-    common_msg_set_mt_name (self, mt_name);
-    common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_name (self, "%s", mts_name);
     common_msg_set_mts_scale (self, mts_scale);
     return common_msg_encode (&self);
 }
@@ -1419,11 +1394,13 @@ common_msg_encode_get_measure_subtype_ss (
 zmsg_t * 
 common_msg_encode_return_measure_type (
     uint16_t mt_id,
-    const char *mt_name)
+    const char *mt_name,
+    const char *mt_unit)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);
     common_msg_set_mt_id (self, mt_id);
-    common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mt_name (self, "%s", mt_name);
+    common_msg_set_mt_unit (self, "%s", mt_unit);
     return common_msg_encode (&self);
 }
 
@@ -1442,7 +1419,7 @@ common_msg_encode_return_measure_subtype (
     common_msg_set_mts_id (self, mts_id);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_scale (self, mts_scale);
-    common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_name (self, "%s", mts_name);
     return common_msg_encode (&self);
 }
 
@@ -1460,7 +1437,7 @@ common_msg_encode_fail (
     common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
     common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
-    common_msg_set_errmsg (self, errmsg);
+    common_msg_set_errmsg (self, "%s", errmsg);
     zhash_t *erraux_copy = zhash_dup (erraux);
     common_msg_set_erraux (self, &erraux_copy);
     return common_msg_encode (&self);
@@ -1488,7 +1465,7 @@ common_msg_encode_client (
     const char *name)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_CLIENT);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1565,9 +1542,9 @@ common_msg_encode_new_measurement (
     uint64_t value)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_NEW_MEASUREMENT);
-    common_msg_set_client_name (self, client_name);
-    common_msg_set_device_name (self, device_name);
-    common_msg_set_device_type (self, device_type);
+    common_msg_set_client_name (self, "%s", client_name);
+    common_msg_set_device_name (self, "%s", device_name);
+    common_msg_set_device_type (self, "%s", device_type);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_id (self, mts_id);
     common_msg_set_value (self, value);
@@ -1648,7 +1625,7 @@ common_msg_encode_device (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE);
     common_msg_set_devicetype_id (self, devicetype_id);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1704,7 +1681,7 @@ common_msg_encode_device_type (
     const char *name)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE_TYPE);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1853,10 +1830,12 @@ common_msg_send_get_measure_type_i (
 int
 common_msg_send_get_measure_type_s (
     void *output,
-    const char *mt_name)
+    const char *mt_name,
+    const char *mt_unit)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_TYPE_S);
     common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mt_unit (self, mt_unit);
     return common_msg_send (&self, output);
 }
 
@@ -1896,35 +1875,19 @@ common_msg_send_get_measure_subtype_s (
 
 
 //  --------------------------------------------------------------------------
-//  Send the GET_MEASURE_SUBTYPE_SS to the socket in one step
-
-int
-common_msg_send_get_measure_subtype_ss (
-    void *output,
-    const char *mt_name,
-    const char *mts_name,
-    byte mts_scale)
-{
-    common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-    common_msg_set_mt_name (self, mt_name);
-    common_msg_set_mts_name (self, mts_name);
-    common_msg_set_mts_scale (self, mts_scale);
-    return common_msg_send (&self, output);
-}
-
-
-//  --------------------------------------------------------------------------
 //  Send the RETURN_MEASURE_TYPE to the socket in one step
 
 int
 common_msg_send_return_measure_type (
     void *output,
     uint16_t mt_id,
-    const char *mt_name)
+    const char *mt_name,
+    const char *mt_unit)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mt_name (self, mt_name);
+    common_msg_set_mt_unit (self, mt_unit);
     return common_msg_send (&self, output);
 }
 
@@ -2380,6 +2343,7 @@ common_msg_dup (common_msg_t *self)
 
         case COMMON_MSG_GET_MEASURE_TYPE_S:
             copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
+            copy->mt_unit = self->mt_unit? strdup (self->mt_unit): NULL;
             break;
 
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
@@ -2393,15 +2357,10 @@ common_msg_dup (common_msg_t *self)
             copy->mts_scale = self->mts_scale;
             break;
 
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
-            copy->mts_name = self->mts_name? strdup (self->mts_name): NULL;
-            copy->mts_scale = self->mts_scale;
-            break;
-
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             copy->mt_id = self->mt_id;
             copy->mt_name = self->mt_name? strdup (self->mt_name): NULL;
+            copy->mt_unit = self->mt_unit? strdup (self->mt_unit): NULL;
             break;
 
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
@@ -2557,6 +2516,10 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    mt_name='%s'", self->mt_name);
             else
                 zsys_debug ("    mt_name=");
+            if (self->mt_unit)
+                zsys_debug ("    mt_unit='%s'", self->mt_unit);
+            else
+                zsys_debug ("    mt_unit=");
             break;
             
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
@@ -2575,19 +2538,6 @@ common_msg_print (common_msg_t *self)
             zsys_debug ("    mts_scale=%ld", (long) self->mts_scale);
             break;
             
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            zsys_debug ("COMMON_MSG_GET_MEASURE_SUBTYPE_SS:");
-            if (self->mt_name)
-                zsys_debug ("    mt_name='%s'", self->mt_name);
-            else
-                zsys_debug ("    mt_name=");
-            if (self->mts_name)
-                zsys_debug ("    mts_name='%s'", self->mts_name);
-            else
-                zsys_debug ("    mts_name=");
-            zsys_debug ("    mts_scale=%ld", (long) self->mts_scale);
-            break;
-            
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             zsys_debug ("COMMON_MSG_RETURN_MEASURE_TYPE:");
             zsys_debug ("    mt_id=%ld", (long) self->mt_id);
@@ -2595,6 +2545,10 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    mt_name='%s'", self->mt_name);
             else
                 zsys_debug ("    mt_name=");
+            if (self->mt_unit)
+                zsys_debug ("    mt_unit='%s'", self->mt_unit);
+            else
+                zsys_debug ("    mt_unit=");
             break;
             
         case COMMON_MSG_RETURN_MEASURE_SUBTYPE:
@@ -2888,9 +2842,6 @@ common_msg_command (common_msg_t *self)
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             return ("GET_MEASURE_SUBTYPE_S");
             break;
-        case COMMON_MSG_GET_MEASURE_SUBTYPE_SS:
-            return ("GET_MEASURE_SUBTYPE_SS");
-            break;
         case COMMON_MSG_RETURN_MEASURE_TYPE:
             return ("RETURN_MEASURE_TYPE");
             break;
@@ -3016,6 +2967,29 @@ common_msg_set_mt_name (common_msg_t *self, const char *format, ...)
     va_start (argptr, format);
     free (self->mt_name);
     self->mt_name = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
+//  Get/set the mt_unit field
+
+const char *
+common_msg_mt_unit (common_msg_t *self)
+{
+    assert (self);
+    return self->mt_unit;
+}
+
+void
+common_msg_set_mt_unit (common_msg_t *self, const char *format, ...)
+{
+    //  Format mt_unit from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->mt_unit);
+    self->mt_unit = zsys_vprintf (format, argptr);
     va_end (argptr);
 }
 
@@ -3647,6 +3621,7 @@ common_msg_test (bool verbose)
     common_msg_destroy (&copy);
 
     common_msg_set_mt_name (self, "Life is short but Now lasts for ever");
+    common_msg_set_mt_unit (self, "Life is short but Now lasts for ever");
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3657,6 +3632,7 @@ common_msg_test (bool verbose)
         assert (common_msg_routing_id (self));
         
         assert (streq (common_msg_mt_name (self), "Life is short but Now lasts for ever"));
+        assert (streq (common_msg_mt_unit (self), "Life is short but Now lasts for ever"));
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_I);
@@ -3705,30 +3681,6 @@ common_msg_test (bool verbose)
         assert (common_msg_mts_scale (self) == 123);
         common_msg_destroy (&self);
     }
-    self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_SS);
-    
-    //  Check that _dup works on empty message
-    copy = common_msg_dup (self);
-    assert (copy);
-    common_msg_destroy (&copy);
-
-    common_msg_set_mt_name (self, "Life is short but Now lasts for ever");
-    common_msg_set_mts_name (self, "Life is short but Now lasts for ever");
-    common_msg_set_mts_scale (self, 123);
-    //  Send twice from same object
-    common_msg_send_again (self, output);
-    common_msg_send (&self, output);
-
-    for (instance = 0; instance < 2; instance++) {
-        self = common_msg_recv (input);
-        assert (self);
-        assert (common_msg_routing_id (self));
-        
-        assert (streq (common_msg_mt_name (self), "Life is short but Now lasts for ever"));
-        assert (streq (common_msg_mts_name (self), "Life is short but Now lasts for ever"));
-        assert (common_msg_mts_scale (self) == 123);
-        common_msg_destroy (&self);
-    }
     self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);
     
     //  Check that _dup works on empty message
@@ -3738,6 +3690,7 @@ common_msg_test (bool verbose)
 
     common_msg_set_mt_id (self, 123);
     common_msg_set_mt_name (self, "Life is short but Now lasts for ever");
+    common_msg_set_mt_unit (self, "Life is short but Now lasts for ever");
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3749,6 +3702,7 @@ common_msg_test (bool verbose)
         
         assert (common_msg_mt_id (self) == 123);
         assert (streq (common_msg_mt_name (self), "Life is short but Now lasts for ever"));
+        assert (streq (common_msg_mt_unit (self), "Life is short but Now lasts for ever"));
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_RETURN_MEASURE_SUBTYPE);

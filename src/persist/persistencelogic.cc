@@ -467,7 +467,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
             const char* devicename = powerdev_msg_deviceid (&msg_c);
             const char* devicetype = powerdev_msg_type (&msg_c);
 
-            char *clientname = "NUT";
+            const char* clientname = "NUT";
             
             // look for a client 
             common_msg_t* retClient = select_client(url.c_str(), clientname);

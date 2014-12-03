@@ -6,7 +6,7 @@ USE box_utf8;
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
-drop table if exists t_bios_client_info_measurements;
+drop table if exists t_bios_measurements;
 drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_measurement_types;
 drop table if exists t_bios_client_info;
@@ -17,20 +17,21 @@ drop table if exists t_bios_device_type;
 CREATE TABLE t_bios_measurement_types(
     id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
     name             VARCHAR(25) NOT NULL,
+    unit             VARCHAR(10) NOT NULL,
     PRIMARY KEY(id)
 );
 
 CREATE TABLE t_bios_measurement_subtypes(
     id               SMALLINT UNSIGNED  NOT NULL,
-    type_id          SMALLINT UNSIGNED  NOT NULL,
+    id_type          SMALLINT UNSIGNED  NOT NULL,
     name             VARCHAR(25) NOT NULL,
     scale            TINYINT NOT NULL,
 
-    PRIMARY KEY(id, type_id),
+    PRIMARY KEY(id, id_type),
+    INDEX(id),
+    INDEX(id_type, name),
 
-    INDEX(id, type_id),
-
-    FOREIGN KEY(type_id)
+    FOREIGN KEY(id_type)
 	REFERENCES t_bios_measurement_types(id)
         ON DELETE RESTRICT
 );
@@ -43,7 +44,7 @@ CREATE TABLE t_bios_device_type(
 
     UNIQUE INDEX `UI_t_bios_device_type_name` (`name` ASC)
 
-)AUTO_INCREMENT = 2;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_discovered_device(
     id_discovered_device    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -92,7 +93,7 @@ CREATE TABLE t_bios_client(
     PRIMARY KEY(id_client),
 
     UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
-) AUTO_INCREMENT = 2;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_client_info(
     id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
@@ -134,7 +135,7 @@ CREATE TABLE t_bios_asset_element_type (
   
   UNIQUE INDEX `UI_t_bios_asset_element_type` (`name` ASC)
 
-) AUTO_INCREMENT = 6;
+) AUTO_INCREMENT = 1;
 
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
@@ -271,26 +272,26 @@ CREATE TABLE t_bios_asset_ext_attributes(
     ON DELETE RESTRICT
 );
 
-CREATE TABLE t_bios_client_info_measurements(
+CREATE TABLE t_bios_measurements (
     id_measurements         BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
+    id_device               SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
-    id_subkey               SMALLINT UNSIGNED   NOT NULL,
-    id_key                  SMALLINT UNSIGNED   NOT NULL,
-    value                   INT                 NOT NULL,
+    id_subtype              SMALLINT UNSIGNED   NOT NULL,
+    id_type                 SMALLINT UNSIGNED   NOT NULL,
+    value                   BIGINT              NOT NULL,
 
     PRIMARY KEY(id_measurements),
 
-    INDEX(id_discovered_device),
-    INDEX(id_subkey, id_key),
+    INDEX (id_device),
+    INDEX (id_subtype, id_type),
     INDEX(id_client),
 
-    FOREIGN KEY (id_subkey, id_key)
-        REFERENCES t_bios_measurement_subtypes(id, type_id)
+    FOREIGN KEY (id_subtype, id_type)
+        REFERENCES t_bios_measurement_subtypes(id, id_type)
         ON DELETE RESTRICT,
     
-    FOREIGN KEY (id_discovered_device)
+    FOREIGN KEY (id_device)
         REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT,
 
@@ -340,7 +341,7 @@ create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, t
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
-create view v_bios_client_info_measurements as select  id_measurements as id, id_client , id_discovered_device, timestamp , id_key  ,  id_subkey , value from t_bios_client_info_measurements;
+create view v_bios_client_info_measurements as select  id_measurements as id, id_client, id_device as id_discovered_device, timestamp, id_type as id_key, id_subtype as id_subkey, value from t_bios_measurements;
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
@@ -381,12 +382,12 @@ create view v_bios_measurement_types as select * from t_bios_measurement_types ;
 
 create view v_bios_measurement_subtypes as
 SELECT
-    st.id , st.type_id, st.name, st.scale, t.name as typename
+    st.id , st.id_type, st.name, st.scale, t.name as typename
 FROM
     v_bios_measurement_types t,
     t_bios_measurement_subtypes st
 where
-    st.type_id = t.id;
+    st.id_type = t.id;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
@@ -464,65 +465,67 @@ FROM    v_bios_client_info_measurements v
                  v.id_discovered_device = grp.id_discovered_device
         INNER JOIN t_bios_measurement_subtypes sk
                 ON v.id_subkey = sk.id AND
-		   v.id_key = sk.type_id;
+		   v.id_key = sk.id_type;
 
-/*
---------------------------------------------------------------------------------
-------------------------          INSERTIONS          --------------------------
---------------------------------------------------------------------------------
-*/
+CREATE VIEW v_bios_asset_element_super_parent AS 
+SELECT v1.id_asset_element, 
+       v1.name , 
+       v5.name AS type_name,
+       v1.id_parent AS id_parent1,
+       v2.id_parent AS id_parent2,
+       v3.id_parent AS id_parent3,
+       v4.id_parent AS id_parent4 
+FROM t_bios_asset_element v1 
+     LEFT JOIN t_bios_asset_element v2 
+        ON (v1.id_parent = v2.id_asset_element) 
+     LEFT JOIN t_bios_asset_element v3 
+        ON (v2.id_parent = v3.id_asset_element) 
+     LEFT JOIN t_bios_asset_element v4 
+        ON (v3.id_parent=v4.id_asset_element) 
+     INNER JOIN v_bios_asset_device v5 
+        ON (v5.id_asset_element = v1.id_asset_element);
 
-/*
-    t_bios_measurement_types
-*/
+/* *************************************************************************** */
+/* **********************          INSERTIONS          *********************** */
+/* *************************************************************************** */
+
+/* t_bios_measurement_types */
 INSERT INTO t_bios_measurement_types (id, name) VALUES (1, "temperature");
 INSERT INTO t_bios_measurement_types (id, name) VALUES (2, "voltage");
 INSERT INTO t_bios_measurement_types (id, name) VALUES (3, "status");
 
-/*
-    t_bios_measurement_types
-*/
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 1, "default0", -2);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 2, "default1", 0);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 1, "default", 1);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (2, 2, "L1", 1);
-INSERT INTO t_bios_measurement_subtypes (id, type_id, name, scale) VALUES (1, 3, "ups", 0);
+/* t_bios_measurement_types */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "default", -2);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "default1", 0);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "default", 1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "L1", 1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "ups", 0);
 
-/*
-    t_bios_device_type
-*/
-INSERT INTO t_bios_device_type (id_device_type, name) VALUES (1,    "not_classified");
-INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "ups");
-INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "epdu");
-INSERT INTO t_bios_device_type (id_device_type, name) VALUES (NULL, "server");
+/* t_bios_device_type */
+INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
+INSERT INTO t_bios_device_type (name) VALUES ("ups");
+INSERT INTO t_bios_device_type (name) VALUES ("epdu");
+INSERT INTO t_bios_device_type (name) VALUES ("server");
 
-/*
-    t_bios_client
-*/
-INSERT INTO t_bios_client (id_client, name) VALUES (1,      "nmap");
-INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "mymodule");
-INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "admin");
-INSERT INTO t_bios_client (id_client, name) VALUES (NULL,   "NUT");
+/* t_bios_client */
+INSERT INTO t_bios_client (name) VALUES ("nmap");
+INSERT INTO t_bios_client (name) VALUES ("mymodule");
+INSERT INTO t_bios_client (name) VALUES ("admin");
+INSERT INTO t_bios_client (name) VALUES ("NUT");
 
-/*
-    t_bios_asset_element_type
-*/
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (1, "group");
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (2, "datacenter");
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (3, "room");
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (4, "row");
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (5, "rack");
-INSERT INTO t_bios_asset_element_type (id_asset_element_type, name) VALUES (6, "device");
+/* t_bios_asset_element_type */
+INSERT INTO t_bios_asset_element_type (name) VALUES ("group");
+INSERT INTO t_bios_asset_element_type (name) VALUES ("datacenter");
+INSERT INTO t_bios_asset_element_type (name) VALUES ("room");
+INSERT INTO t_bios_asset_element_type (name) VALUES ("row");
+INSERT INTO t_bios_asset_element_type (name) VALUES ("rack");
+INSERT INTO t_bios_asset_element_type (name) VALUES ("device");
 
-/*
-    t_bios_asset_device_type
-*/
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "ups");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "epdu");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "server");
-INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (NULL, "main");
+/* t_bios_asset_device_type */
+INSERT INTO t_bios_asset_device_type (name) VALUES ("ups");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
 
-/*
-    t_bios_asset_link_type
-*/
-INSERT INTO t_bios_asset_link_type (id_asset_link_type, name) VALUES (NULL, "power chain");
+/* t_bios_asset_link_type */
+INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");

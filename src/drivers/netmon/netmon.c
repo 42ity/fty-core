@@ -58,6 +58,20 @@ TODO: Resolve ctrl-c unresponsiveness
 #define SPRINT_BUF(x)	char x[SPRINT_BSIZE]
 #define DN_MAXADDL 20
 
+// (iproute2)/ll_map.h
+#ifndef __LL_MAP_H__
+    // Might have been included by someone in the stack of headers
+# ifdef HAVE_LL_MAP_H
+#  include <ll_map.h>
+# else
+#  ifdef HAVE_LIBNETLINK__ll_remember_index
+    // The binary function is available, but the dev headers are missing
+extern int ll_remember_index(const struct sockaddr_nl *who,
+				struct nlmsghdr *n, void *arg);
+#  endif
+# endif
+#endif
+
 // ip/ip_utils.h
 #ifndef	INFINITY_LIFE_TIME
 #define     INFINITY_LIFE_TIME      0xFFFFFFFFU
@@ -153,7 +167,7 @@ static unsigned int get_ifa_flags(struct ifaddrmsg *ifa,
 }
 
 // lib/utils.c
-const char *rt_addr_n2a(int af, int len, const void *addr, char *buf, int buflen)
+const char *rt_addr_n2a(int af, int UNUSED_PARAM len, const void *addr, char *buf, int buflen)
 {
 	switch (af) {
 	case AF_INET:
@@ -331,7 +345,7 @@ static void ipaddr_filter(struct nlmsg_chain *linfo, struct nlmsg_chain *ainfo)
 			struct rtattr *tb[IFA_MAX + 1];
 			unsigned int ifa_flags;
 
-			if (ifa->ifa_index != ifi->ifi_index)
+			if ((int)ifa->ifa_index != ifi->ifi_index)
 				continue;
 			missing_net_address = 0;
 			if (filter_family && filter_family != ifa->ifa_family)
@@ -378,7 +392,7 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *
 		if (n->nlmsg_len < NLMSG_LENGTH(sizeof(ifa)))
 			return -1;
 
-		if (ifa->ifa_index != ifindex) {
+		if ((int)ifa->ifa_index != ifindex) {
 		    //(filter.family && filter.family != ifa->ifa_family))
 			continue;
         }
