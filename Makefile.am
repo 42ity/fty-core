@@ -495,6 +495,10 @@ BASE_DOCS_PLAINTEXT +=	TODO
 TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
 			$(myDEVDOCDIR)/README-init-os-accounts.txt
 
+# List of text files that are installed as is (none so far, but see
+# below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
+TXT_DOCS_PLAINTEXT =
+
 # Note that the installation targets are similarly named files with
 # an added ".txt" extension in the "docs/develop" subdirectory
 # Note these should have paths relative to project root dir.
@@ -509,6 +513,30 @@ EXTRA_DIST +=		$(BASE_DOCS_PLAINTEXT) $(BASE_DOCS_ASCIIDOC)
 # we may want a way to kill them from build area)
 DISTCLEANFILES +=	$(BASE_DOCS_TXT)
 
+
+#----------------------------------------------------------------------
+#  List of source texts dispersed in the code with automated targeting
+#----------------------------------------------------------------------
+# The list below is a colon-separated map of filenames copied from
+# sources relative to project root (first token) into different names
+# under the builddir and final installation (the second token, here
+# copied into "docs/develop"), and also maybe compiled into HTML
+# (as in case of the _ASCIIDOC list).
+# Filenames here should not have spaces and should have the '.txt' suffix.
+
+# TODO: The makefile could actually be simplified by automated addtion
+# of the files listed in variables above to the pattern below, so many
+# explicit rules and dependencies listed further below can be cut away.
+# After all, conversion rules are known and stable: same=same for one
+# group, and name = subdir/name.txt for another...
+
+MAPPED_TXT_DOCS_PLAINTEXT = \
+	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
+
+MAPPED_TXT_DOCS_ASCIIDOC = \
+	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
+	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
+	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
 
 ##################################################
 # The stuff HTML docs are made of...
@@ -540,6 +568,8 @@ develdoc_DATA +=	$(HTMLS_ASCIIDOC)
 DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
 endif
 
+
+
 #----------------------------------------------------------------------
 #                One rule to generate and wipe documentation
 #----------------------------------------------------------------------
@@ -548,21 +578,83 @@ all-docs: man-docs doxygen-docs html-docs txt-docs
 
 clean-docs: clean-man clean-doxygen clean-html clean-txt
 
+###----------------------------------------------------------------------
+###   Magic macros to expand the patterns for text to text file copying
+###----------------------------------------------------------------------
+# Magic below inspired by this blog post (see description/comments):
+#   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
+
+# Copies from "$1" to "$2", making the subdirectories as needed
+define copy-file =
+	@if test x"$(2)" != x"$(1)" ; then \
+	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
+	    echo "Copy '$(1)' to '$(2)'" && \
+	    cp -pf "$(1)" "$(2)" ; \
+	else \
+	    echo "Not copying '$(1)' to '$(2)': same file"; \
+	fi
+endef
+
+define depend-copy-file =
+$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
+$(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+
+# Define the dependency and the rule
+$(_MAP_DST_ABS): $(_MAP_SRC_ABS)
+	$$(call copy-file,$$<,$$@)
+
+# Fake dependency for subdir/dist builds
+$(_MAP_DST_REL): $(_MAP_DST_ABS)
+	@echo "DEBUG-MAKEFILE: Mapped target '$$@' to source '$$<'"
+
+### Target as a text file
+$(eval TXT_DOCS_PLAINTEXT +=	$(_MAP_DST_REL) )
+
+### Copy for installation:
+$(eval develdoc_DATA +=		$(_MAP_DST_REL) )
+
+### Cleanup in build
+$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
+
+### Copy in make dist
+$(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
+endef
+
+# Run the logic for patterns that define file-copying
+$(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
+	$(eval $(call depend-copy-file,$(m))))
+
+
 #----------------------------------------------------------------------
 #                        text to text copying
 # Some documents are by GNU standard stored in project root, and we
 # want to deliver them to common docs/devel subdirectory in install.
 #----------------------------------------------------------------------
 
+# TODO: The dependencies for TXT and HTML-asciidocs below as they are
+# implemented now, actually define several files as the rule target,
+# then parsed with percent-tags, and become several dependencies in
+# the end. So a requested rebuild of one file actually causes attempts
+# to rebuild/recopy all of the source texts of the relevant type.
+# The TODO is to rewrite into a foreach() pattern with one target
+# per each file, for correctness.
+
+
 # A copy of TXT_DOCS_ASCIIDOC in the build area is needed for unified
 # rules of asciidoc to html parsing, defined below
 txt-docs: $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)) \
+	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC))
 
-clean-txt: clean-txt-basedocs clean-txt-asciidocs
+clean-txt: clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
 
 clean-txt-basedocs:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
+
+clean-txt-plaintext:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT))
 
 # Only clean up the copies in the builddir, if applicable
 # Do not kill the originals in the source tree
@@ -575,16 +667,12 @@ clean-txt-asciidocs:
 # Copy over the *.txt files into symmetrically named build path,
 # if required and not there (messed up with EXT_DIST)
 $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
-	if test x"$@" != x"$<" ; then \
-		echo "Copy '$<' to '$@'"; cp -pf "$<" "$@"; \
-	fi
+	$(call copy-file,$<,$@)
 
 # This is hardcoded to copy documents from project root directory into
 # the build area's "docs/develop" subdirectory and with ".txt" suffix
 $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
-	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
-	echo "Copy '$<' to '$@'"
-	cp -pf "$<" "$@"
+	$(call copy-file,$<,$@)
 
 # Fake targets for simple pathnames (not needed for the same-to-same
 # copies like TXT_DOCS_ASCIIDOC)
@@ -604,6 +692,17 @@ html-docs: txt-docs $(HTMLS)
 
 clean-html:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS))
+
+
+# The dependencies for the text file via patterns in the standard dir
+# were defined above. Now just add the dependency for HTML building
+# into the same basename...
+define depend-txt-html =
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval HTMLS_ASCIIDOC +=	$(_MAP_DST_REL:%.txt=%.html) )
+endef
+
+$(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
 
 
 # Fake targets for simple pathnames (not needed for the same-to-same
@@ -649,10 +748,10 @@ develdocdoxygendir = $(develdocdir)/doxygen
 develdocdoxygen: doxygen-docs
 
 if HAVE_DOXYGEN
-develdocdoxygen_DATA = $(abs_top_srcdir)/${myDOXDIR}/html/*
+develdocdoxygen_DATA = ${myDOXDIR}/html/*
 
 # Such-named target is required by the _DATA above, so have a rule to build it
-#$(abs_top_srcdir)/${myDOXDIR}/html/*: doxygen-docs
+${myDOXDIR}/html/*: doxygen-docs
 
 ${myDOXDIR}/html:
 	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
