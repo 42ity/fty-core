@@ -9,9 +9,10 @@ optimizations to run a parallelized build when possible, into a
 single script with several short-named methods to quickly run the
 frequently needed building scenarios.
 
-NOTE: Currently the `./configure` script is called without any
-command-line parameters. Any environment variables which influence
-it (like 'CFLAGS') should pass through from the caller's shell, though.
+NOTE: Currently the `./configure` script is called uncustomized, without
+any of its usual tweaking command-line parameters. Any environment
+variables which influence its progress and results (like 'CFLAGS')
+should quite pass through from the caller's shell, though.
 
 As part of development and maintenance of the 'Makefile' and related
 build files, it occasionally happens that something happens differently
@@ -32,7 +33,7 @@ method requested by the user.
 
 Calling either `./autogen.sh` or `./tools/builder.sh` without any
 command-line parameters should do just the default autogen job --
-make sure that the `confugure` script exists and is up to date, and
+make sure that the `configure` script exists and is up to date, and
 quit with success (or fail otherwise).
 
 
