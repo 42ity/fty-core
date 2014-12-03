@@ -9,7 +9,7 @@
     statements. DO NOT MAKE ANY CHANGES YOU WISH TO KEEP. The correct places
     for commits are:
 
-     * The XML model used for this code generation: ./common_msg.xml, or
+     * The XML model used for this code generation: common_msg.xml, or
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
@@ -40,6 +40,7 @@
 
     GET_MEASURE_TYPE_S - 
         mt_name             string      Measurement type name
+        mt_unit             string      Prefered units
 
     GET_MEASURE_SUBTYPE_I - 
         mt_id               number 2    Measurement type id
@@ -50,14 +51,10 @@
         mts_name            string      Measurement subtype name
         mts_scale           number 1    Preffered scale
 
-    GET_MEASURE_SUBTYPE_SS - 
-        mt_name             string      Measurement type name
-        mts_name            string      Measurement subtype name
-        mts_scale           number 1    Preffered scale
-
     RETURN_MEASURE_TYPE - 
         mt_id               number 2    Measurement type id
         mt_name             string      Measurement type name
+        mt_unit             string      Measurement type units
 
     RETURN_MEASURE_SUBTYPE - 
         mts_id              number 2    Measurement subtype id
@@ -168,9 +165,8 @@
 #define COMMON_MSG_GET_MEASURE_TYPE_S       2
 #define COMMON_MSG_GET_MEASURE_SUBTYPE_I    3
 #define COMMON_MSG_GET_MEASURE_SUBTYPE_S    4
-#define COMMON_MSG_GET_MEASURE_SUBTYPE_SS   5
-#define COMMON_MSG_RETURN_MEASURE_TYPE      6
-#define COMMON_MSG_RETURN_MEASURE_SUBTYPE   7
+#define COMMON_MSG_RETURN_MEASURE_TYPE      5
+#define COMMON_MSG_RETURN_MEASURE_SUBTYPE   6
 #define COMMON_MSG_FAIL                     201
 #define COMMON_MSG_DB_OK                    202
 #define COMMON_MSG_CLIENT                   203
@@ -220,7 +216,8 @@ void
     common_msg_destroy (common_msg_t **self_p);
 
 //  Parse a zmsg_t and decides whether it is common_msg. Returns
-//  true if it is, false otherwise.
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
 bool
     is_common_msg (zmsg_t *msg_p);
 
@@ -261,7 +258,8 @@ zmsg_t *
 //  Encode the GET_MEASURE_TYPE_S 
 zmsg_t *
     common_msg_encode_get_measure_type_s (
-        const char *mt_name);
+        const char *mt_name,
+        const char *mt_unit);
 
 //  Encode the GET_MEASURE_SUBTYPE_I 
 zmsg_t *
@@ -276,18 +274,12 @@ zmsg_t *
         const char *mts_name,
         byte mts_scale);
 
-//  Encode the GET_MEASURE_SUBTYPE_SS 
-zmsg_t *
-    common_msg_encode_get_measure_subtype_ss (
-        const char *mt_name,
-        const char *mts_name,
-        byte mts_scale);
-
 //  Encode the RETURN_MEASURE_TYPE 
 zmsg_t *
     common_msg_encode_return_measure_type (
         uint16_t mt_id,
-        const char *mt_name);
+        const char *mt_name,
+        const char *mt_unit);
 
 //  Encode the RETURN_MEASURE_SUBTYPE 
 zmsg_t *
@@ -456,7 +448,8 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_get_measure_type_s (void *output,
-        const char *mt_name);
+        const char *mt_name,
+        const char *mt_unit);
     
 //  Send the GET_MEASURE_SUBTYPE_I to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -473,20 +466,13 @@ int
         const char *mts_name,
         byte mts_scale);
     
-//  Send the GET_MEASURE_SUBTYPE_SS to the output in one step
-//  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
-    common_msg_send_get_measure_subtype_ss (void *output,
-        const char *mt_name,
-        const char *mts_name,
-        byte mts_scale);
-    
 //  Send the RETURN_MEASURE_TYPE to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_return_measure_type (void *output,
         uint16_t mt_id,
-        const char *mt_name);
+        const char *mt_name,
+        const char *mt_unit);
     
 //  Send the RETURN_MEASURE_SUBTYPE to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -704,6 +690,12 @@ const char *
     common_msg_mt_name (common_msg_t *self);
 void
     common_msg_set_mt_name (common_msg_t *self, const char *format, ...);
+
+//  Get/set the mt_unit field
+const char *
+    common_msg_mt_unit (common_msg_t *self);
+void
+    common_msg_set_mt_unit (common_msg_t *self, const char *format, ...);
 
 //  Get/set the mts_id field
 uint16_t

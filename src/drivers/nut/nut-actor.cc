@@ -93,6 +93,17 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
     common_msg_t *cmsg;
     zmsg_t *request, *reply;
     measurement_id_t ID;
+    static std::map<std::string, std::string> units = {
+        { "temperature", "C" },
+        { "realpower",   "W" },
+        { "voltage",     "V" },
+        { "current",     "A" },
+        { "load",        "%" },
+        { "charge",      "%" },
+    };
+    static std::map<std::string, int8_t> scales = {
+        { "status.ups", 0 },
+    };
 
     memset(&ID, 0, sizeof(ID));
     std::string typeName = "" , subtypeName = "";
@@ -100,17 +111,40 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
     if( i ) {
         typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
-        request = common_msg_encode_get_measure_subtype_ss(
+
+        // Get type info
+        auto unit = units.find(typeName);
+        request = common_msg_encode_get_measure_type_s(
                         typeName.c_str(),
-                        subtypeName.c_str(),
-                        (uint8_t)-2);
+                        ((unit == units.end()) ?
+                            std::string("") :
+                            unit->second).c_str());
         reply = process_measures_meta(&request);
         zmsg_destroy(&request);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
+            assert(common_msg_mt_unit(cmsg) ==
+                   ((unit == units.end()) ? "" : unit->second));
             ID.type = common_msg_mt_id(cmsg);
+            common_msg_destroy(&cmsg);
+        }
+        zmsg_destroy(&reply);
+
+        // Get subtype info
+        auto scale = scales.find(name);
+        request = common_msg_encode_get_measure_subtype_s(
+                        ID.type,
+                        subtypeName.c_str(),
+                        (uint8_t)((scale == scales.end()) ?
+                                   -2 : unit->second));
+        reply = process_measures_meta(&request);
+        zmsg_destroy(&request);
+        if( reply ) {
+            cmsg = common_msg_decode(&reply);
             ID.subtype = common_msg_mts_id(cmsg);
-            ID.scale = (signed char)common_msg_mts_scale(cmsg);
+            ID.scale = (int8_t)common_msg_mts_scale(cmsg);
+            assert(ID.scale == ((scale == scales.end()) ?
+                                 -2 : unit->second));
             common_msg_destroy(&cmsg);
         }
         zmsg_destroy(&reply);
