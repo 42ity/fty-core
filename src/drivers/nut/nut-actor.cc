@@ -14,7 +14,7 @@ namespace nut
 {
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
-#define NUT_MESSAGE_REPEAT_AFTER 300
+#define NUT_MESSAGE_REPEAT_AFTER 600
 // TODO: read this from configuration (check with upsd ever 5s)
 #define NUT_POLLING_INTERVAL  5000
 
@@ -103,11 +103,12 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
         request = common_msg_encode_get_measure_subtype_ss(
                         typeName.c_str(),
                         subtypeName.c_str(),
-                        (uint8_t)-2);
+                        (uint8_t)-1);
         reply = process_measures_meta(&request);
         zmsg_destroy(&request);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
+            common_msg_print(cmsg);
             ID.type = common_msg_mt_id(cmsg);
             ID.subtype = common_msg_mts_id(cmsg);
             ID.scale = (signed char)common_msg_mts_scale(cmsg);
