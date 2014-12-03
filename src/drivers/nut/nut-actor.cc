@@ -136,7 +136,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
                         ID.type,
                         subtypeName.c_str(),
                         (uint8_t)((scale == scales.end()) ?
-                                   -2 : unit->second));
+                                   -2 : scale->second));
         reply = process_measures_meta(&request);
         zmsg_destroy(&request);
         if( reply ) {
@@ -144,7 +144,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
             ID.subtype = common_msg_mts_id(cmsg);
             ID.scale = (int8_t)common_msg_mts_scale(cmsg);
             assert(ID.scale == ((scale == scales.end()) ?
-                                 -2 : unit->second));
+                                 -2 : scale->second));
             common_msg_destroy(&cmsg);
         }
         zmsg_destroy(&reply);
