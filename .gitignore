@@ -42,6 +42,7 @@ stamp-h1
 
 docs/man/*.8
 docs/develop/*.html
+
 !docs/develop/README-builder.txt
 !docs/develop/README-init-os-accounts.txt
 docs/develop/*.txt
