@@ -8,57 +8,20 @@ Test the netmon -> zeromq -> db integration.
 3.) Check the status again
 4.) Turn it not
 5.) Check it again
+
+ Expects:
+1.) database empty before start
+2.) main daemon running
+3.) netmon running
 """
 
 import subprocess
 import time
 import re
-import MySQLdb
 import sys
 import copy
 
-def parse_ip_a_s(out):
-    """
-    parse output of command ip a(ddr) s(how)
-    
-    return - list of tuple (name, ipver, ipaddr, prefixlen: int, mac)
-    """
-
-    state = "start"
-    header = list()
-    ret = list()
-
-    for line in out.split('\n'):
-
-        if line and line[0] != ' ':
-            state = "start"
-            header = list()
-            if not "state UP" in line:
-                continue
-            header = list()
-            nic_name = line.split(':')[1].strip()
-            header.append(nic_name)
-            state = "read-mac"
-            continue
-
-        # skip entries for 'lo'
-        if state == "start" and not header:
-            continue
-
-        if line.startswith("    link/"):
-            try:
-                mac = line.split()[1]
-            except IndexError as e:
-                print(line)
-                print(e)
-            header.append(mac)
-        elif line.startswith("    inet"):
-            name, mac = header
-            ipver, ipaddr = line.split()[:2]
-            ipaddr, prefixlen = ipaddr.split('/')
-
-            ret.append((name, ipver, ipaddr, int(prefixlen), mac))
-    return ret
+from shared import parse_ip_a_s, connect_to_db
 
 def read_db(db):
     """
@@ -141,7 +104,7 @@ assert nic_name, "Name of network card is empty!"
 
 assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
 
-db = MySQLdb.connect(host="localhost", user="root", db="box_utf8")
+db = connect_to_db()
 dbres = read_db(db)
 try:
     df = compare_results(ipres, dbres)
