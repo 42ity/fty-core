@@ -15,10 +15,9 @@ drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 
 CREATE TABLE t_bios_measurement_types(
-    id              SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    name            VARCHAR(25) NOT NULL,
-    unit            VARCHAR (10),
-
+    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
+    name             VARCHAR(25) NOT NULL,
+    unit             VARCHAR(10) NOT NULL,
     PRIMARY KEY(id)
 );
 
@@ -28,11 +27,11 @@ CREATE TABLE t_bios_measurement_subtypes(
     name             VARCHAR(25) NOT NULL,
     scale            TINYINT NOT NULL,
 
-    PRIMARY KEY (id, id_type),
+    PRIMARY KEY(id, id_type),
+    INDEX(id),
+    INDEX(id_type, name),
 
-    INDEX (id, id_type),
-
-    FOREIGN KEY (id_type)
+    FOREIGN KEY(id_type)
 	REFERENCES t_bios_measurement_types(id)
         ON DELETE RESTRICT
 );
