@@ -156,6 +156,7 @@
 
     RETURN_LAST_MEASUREMENTS - The last measurements about the device with asset_element_id
         device_id           number 4     An asset_element_id of the device
+        device_name         string       device name 
         measurements        strings      A list of string values "keytagid:subkeytagid:value:scale"
 */
 
@@ -435,6 +436,7 @@ zmsg_t *
 zmsg_t *
     common_msg_encode_return_last_measurements (
         uint32_t device_id,
+        const char *device_name,
         zlist_t *measurements);
 
 
@@ -655,6 +657,7 @@ int
 int
     common_msg_send_return_last_measurements (void *output,
         uint32_t device_id,
+        const char *device_name,
         zlist_t *measurements);
     
 //  Duplicate the common_msg message

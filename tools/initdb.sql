@@ -457,7 +457,8 @@ SELECT  v.id,
         v.id_subkey,
         v.value,
         v.timestamp,
-        sk.scale
+        sk.scale,
+        dd.name
 FROM    v_bios_client_info_measurements v
         INNER JOIN v_bios_measurements_lastdate grp 
               ON v.id_key = grp.id_key AND
@@ -465,8 +466,11 @@ FROM    v_bios_client_info_measurements v
                  v.timestamp = grp.maxdate  AND
                  v.id_discovered_device = grp.id_discovered_device
         INNER JOIN t_bios_measurement_subtypes sk
-                ON v.id_subkey = sk.id AND
-		   v.id_key = sk.id_type;
+              ON v.id_subkey = sk.id AND
+                 v.id_key = sk.id_type
+        INNER JOIN v_bios_discovered_device dd
+              ON v.id_discovered_device = dd.id
+        ;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
 SELECT v1.id_asset_element, 

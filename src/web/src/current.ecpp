@@ -85,6 +85,7 @@ std::string dev;
             json += "{ \"id\":";
             sprintf(buff, "\"%d\"", common_msg_device_id(dta));
             json += buff;
+            json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
             zlist_t *list = common_msg_measurements(dta);
             for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
                std::vector<std::string> measurements;

@@ -28,15 +28,15 @@ MariaDB [box_utf8]> select * from v_bios_client_info_measurements;
 +----+-----------+----------------------+---------------------+--------+-----------+-------+
 
 MariaDB [box_utf8]> select * from v_bios_client_info_measurements_last;
-+----+----------------------+--------+-----------+-------+---------------------+-------+
-| id | id_discovered_device | id_key | id_subkey | value | timestamp           | scale |
-+----+----------------------+--------+-----------+-------+---------------------+-------+
-|  2 |                    1 |      1 |         1 |     3 | 2014-11-12 09:46:59 |    -1 |
-|  3 |                    1 |      2 |         1 |    31 | 2014-11-12 09:47:59 |    -1 |
-|  4 |                    1 |      2 |         2 |    12 | 2014-11-12 09:48:59 |    -1 |
-|  5 |                    1 |      1 |         2 |     1 | 2014-11-12 09:49:59 |    -1 |
-|  6 |                    1 |      3 |         1 |     1 | 2014-11-12 09:59:59 |    -1 |
-+----+----------------------+--------+-----------+-------+---------------------+-------+
++----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
+| id | id_discovered_device | id_key | id_subkey | value | timestamp           | scale | name          |
++----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
+|  2 |                    1 |      1 |         1 |     3 | 2014-11-12 09:46:59 |    -1 | select_device |
+|  3 |                    1 |      2 |         1 |    31 | 2014-11-12 09:47:59 |    -1 | select_device |
+|  4 |                    1 |      2 |         2 |    12 | 2014-11-12 09:48:59 |    -1 | select_device |
+|  5 |                    1 |      1 |         2 |     1 | 2014-11-12 09:49:59 |    -1 | select_device |
+|  6 |                    1 |      3 |         1 |     1 | 2014-11-12 09:59:59 |    -1 | select_device |
++----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
 
 "keytag_id:subkeytag_id:value:scale"
 
@@ -45,8 +45,10 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
 {
     //SUCCESS
     uint32_t id = 1;
-    zlist_t* measurements = select_last_measurements (url.c_str(), id);
+    std::string name;
+    zlist_t* measurements = select_last_measurements (url.c_str(), id, name);
     REQUIRE ( measurements );
+    CHECK (name == "select_device");
     char zero1[10]   = "3:1:1:-1";
     char first1[10]  = "1:2:1:-1";
     char second1[10] = "2:2:12:-1";
@@ -73,7 +75,9 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     
     //FAIL
     id = 2;
-    measurements = select_last_measurements (url.c_str(), id);
+    name = "";
+    measurements = select_last_measurements (url.c_str(), id, name);
+    CHECK (name == "");
     REQUIRE ( measurements );
     REQUIRE (zlist_size(measurements) == 0 );
     zlist_destroy (&measurements);
