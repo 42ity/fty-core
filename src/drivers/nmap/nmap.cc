@@ -26,8 +26,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <algorithm>
 #include <cassert>
+#include <exception>
+#include <fstream>
 
 #include <unistd.h>
+#include <stdlib.h>
 
 #include <czmq.h>
 
@@ -71,6 +74,25 @@ static std::string read_all(int fd) {
         sbuf.sputn(buf, strlen(buf));
     }
     return sbuf.str();
+}
+
+static void s_dump_nmap_xml(const std::string& _path, const std::string& input) {
+    std::string path = _path;
+    size_t pos = 0;
+    while ((pos = path.find("/")) != std::string::npos) {
+        pos = path.find("/");
+        path = path.replace(pos, 1u, "_");
+    }
+
+    try {
+        std::ofstream of{path};
+        of << input;
+        of.flush();
+        of.close();
+    } catch (const std::exception& exp) {
+        log_debug("error on storing debug file '%s'\n", path.c_str());
+        log_debug(exp.what());
+    }
 }
 
 static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg);
@@ -125,6 +147,9 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
             //\todo make it nicer! There needs to be code mapping argv to NmapMethod
             auto argv = proc->argv();
             if (std::count(argv.begin(), argv.end(), "-sL")) {
+                if (::getenv("BIOS_DEBUG")) {
+                    s_dump_nmap_xml("nmap-defaultlistscan-" + *(argv.cend()-1) + ".xml", p.first);
+                }
                 parse_list_scan(p.first, outgoing);
             }
             else {
