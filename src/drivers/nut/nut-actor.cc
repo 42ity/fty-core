@@ -14,7 +14,7 @@ namespace nut
 {
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
-#define NUT_MESSAGE_REPEAT_AFTER 600
+#define NUT_MESSAGE_REPEAT_AFTER 300
 // TODO: read this from configuration (check with upsd ever 5s)
 #define NUT_POLLING_INTERVAL  5000
 
