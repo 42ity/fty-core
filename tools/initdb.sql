@@ -490,16 +490,40 @@ FROM t_bios_asset_element v1
 /* *************************************************************************** */
 
 /* t_bios_measurement_types */
-INSERT INTO t_bios_measurement_types (id, name) VALUES (1, "temperature");
-INSERT INTO t_bios_measurement_types (id, name) VALUES (2, "voltage");
-INSERT INTO t_bios_measurement_types (id, name) VALUES (3, "status");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (1, "voltage", "V");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (2, "current", "A");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (3, "realpower", "W");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (4, "temperature", "C");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (5, "load", "%");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (6, "charge", "%");
+INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (7, "status", "");
 
-/* t_bios_measurement_types */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "default", -2);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "default1", 0);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "default", 1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "L1", 1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "ups", 0);
+
+/* t_bios_measurement_subtypes */
+/* voltage.* */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "output", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "output.L1-N", -1); 
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 1, "output.L2-N", -1); 
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 1, "output.L3-N", -1);
+/* current.* */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "output", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "output.L1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 2, "output.L2", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 2, "output.L3", -1);
+/* realpower.* */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "default", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3, "output.L1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
+/* temperature */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
+/* load */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 5, "default", -1);
+/* charge */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 6, "battery", -1);
+/* status */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 7, "ups", 0);
+
 
 /* t_bios_device_type */
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
