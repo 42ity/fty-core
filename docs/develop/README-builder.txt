@@ -1,6 +1,6 @@
 = The tools/builder.sh script
 :Author:        Evgeny Klimov
-:Email:         <EvgenyKlimov@eaton.com>
+:Email:         EvgenyKlimov@eaton.com
 
 The project includes a `tools/builder.sh` script whose main purpose
 is to automate the repetitive standard GNU automake procedure of
