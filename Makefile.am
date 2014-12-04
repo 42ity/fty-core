@@ -268,7 +268,8 @@ test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 bin_PROGRAMS += 			test-dbtopology
 
-test_dbtopology_SOURCES = tests/persist/test-topology.cc 
+test_dbtopology_SOURCES = tests/persist/test-topology.cc \
+						tests/persist/test-topology-power-to.cc 
 
 test_dbtopology_LDADD = libpriv-db.la \
 				 libpriv-proto.la \
