@@ -795,12 +795,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
     log_info ("start\n");
     uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint32_t element_type_id = 6; // TODO hardcoded constant
     uint8_t  linktype = 1; //TODO hardcoded constants
-
-    zlist_t* powers = zlist_new();
-    assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
 
     std::string device_name = "";
     std::string device_type_name = "";
@@ -854,6 +849,10 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     auto adevice = std::make_tuple(element_id, device_name, device_type_name);   // ( id,  device_name, device_type_name )
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
+
+    zlist_t* powers = zlist_new();
+    assert ( powers );
+    zlist_set_duplicator (powers, void_dup);
 
     bool ncontinue = true;
     while ( ncontinue )

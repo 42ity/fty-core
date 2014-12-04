@@ -554,13 +554,21 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][n5]")
     zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
-    REQUIRE ( spowers.count(std::string ((const char*)zlist_first  (powers))) == 1 );
-    REQUIRE ( spowers.count(std::string ((const char*)zlist_next  (powers))) == 1 );
-    REQUIRE ( spowers.count(std::string ((const char*)zlist_next  (powers))) == 1 );
+    char* a = NULL;
+    for ( int i = 1; i <= 3; i++ )
+    {
+        if ( i == 1 )
+            a = (char*)zlist_first (powers);
+        else
+            a = (char*)zlist_next (powers);
+        REQUIRE ( a != NULL );
+        auto it = spowers.find (std::string(a));
+        REQUIRE ( it != spowers.end() );
+        spowers.erase(it);
+    }
     REQUIRE ( zlist_next (powers)   == NULL );
-
     zlist_destroy (&powers);
-
+    
     // check the devices, should be four devices
     zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
@@ -1013,29 +1021,6 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][n11]")
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
-    log_close();
-}
-
-TEST_CASE("Power topology to","[db][topology][power][to]")
-{
-    log_open();
-    log_set_level(LOG_DEBUG);
-
-    log_info ("=============== POWER TO serv2 ==================\n");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
-    assert ( getmsg );
-    asset_msg_set_element_id (getmsg, 5000);
-    asset_msg_print (getmsg);
-
-    zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
-    assert ( retTopology );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
-    assert ( cretTopology );
-    asset_msg_print (cretTopology);
-    print_frame_devices (asset_msg_devices (cretTopology));
-    
-    asset_msg_destroy (&getmsg);
-    asset_msg_destroy (&cretTopology);
     log_close();
 }
 
