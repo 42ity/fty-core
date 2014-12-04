@@ -141,24 +141,92 @@ recently "frozen" and heading to official stable supported release).
 However, automatic dependency handling in OBS should handle refreshed
 source code coming from some project's upstream for us.
 
-Automatic setup of OBS as a package source for a supported Debian 8.0
-platform with APT package management should work like this (execute
-as "root"):
+* *Keys to trust and repositories to use:*
+Automatic setup of an OBS instance as a package source for a supported
+Debian 8.0 platform with APT package management should work like this
+(execute as 'root'):
 ----
 :; wget -O - \
      http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-roz-deb8.list
+
 :; wget -O - \
      http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-mbt-deb8.list
+----
+* *Repository preference:*
+It is also encouraged to make sure that your package manager always prefers
+the project's supported packages over any other repositories (i.e. in the
+upstream OS distribution) that might be named the same:
+----
+:; cat > /etc/apt/preferences.d/bios <<EOF
+Package: *
+Pin: origin "obs.roz.lab.etn.com"
+Pin-Priority: 9999
+
+Package: *
+Pin: origin "obs.mbt.lab.etn.com"
+Pin-Priority: 8999
+EOF
+----
+See https://wiki.debian.org/AptPreferences for more details.
+
+NOTE: for some experimental purposes, you might want to put just the
+specific name or a pattern to prefer just some 'Package'(s) from our
+OBS; keep in mind that such a list should at least include 'iproute*',
+because the upstream Debian deprecated 'iproute2-dev' (claiming that
+the interface is private to the kernel and should not be used directly)
+and provides an empty package just for legacy compatibility purposes.
+
+* *Before any installations, update the packaging metadata* known to
+your packaging client: in order to calculate the dependencies, `apt`
+keeps a cache of downloaded lists of packages provided by each of the
+configured repositories. In a dynamic world, these should be updated
+before starting any installations or upgrades:
+----
 :; apt-get update
 ----
+
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
+
+To verify which variant (version/repo) of the package is installed and
+what such variants are known to `apt`, you can use `apt-cache policy`:
+----
+:; apt-cache policy iproute2-dev
+iproute2-dev:
+  Installed: 3.16.0-0
+  Candidate: 3.16.0-0
+  Package pin: 3.16.0-0
+  Version table:
+ *** 3.16.0-0 9999
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        100 /var/lib/dpkg/status
+
+:; apt-cache policy mariadb-server-10.0
+mariadb-server-10.0:
+  Installed: 10.0.14-2
+  Candidate: 10.0.14-2
+  Version table:
+ *** 10.0.14-2 0
+        500 http://localhost:3142/debian/ jessie/main amd64 Packages
+        500 http://gate:3142/debian/ jessie/main amd64 Packages
+        500 http://ftp.debian.org/debian/ jessie/main amd64 Packages
+        100 /var/lib/dpkg/status
+     10.0.10-1 0
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+     10.0.10-1 0
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+----
+In the example above, 'iproute2-dev' was installed from OBS, but for MariaDB
+a version provided by the distribution and newer than the one in OBS was
+picked (as permitted by the "pinning" settings on that OS installation).
+
 
 Manually fetching and installing packages built for Debian 8.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -203,7 +271,8 @@ the upstream OS itself, don't forget to update the metadata index first
 
 iproute (may be named iproute2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Install iproute-dev development files, version "20120521" or newer,
+ * Install iproute-dev development files, version "20120521" or newer
+(later versions are linked with the Linux kernel release like "3.16"),
 using your configured system repositories, i.e. with Debian APT:
 ----
 :; apt-get install -y iproute2-dev
@@ -488,26 +557,45 @@ Configure and build the $BIOS project sources
 ---------------------------------------------
 (Getting the project sources is covered above in this document).
 
+NOTE: While the section below goes into greater detail about managing the
+build following a generic GNU auto-tools procedure, some typical building
+management scenarios are automated in the `./tools/builder.sh` script (and
+our `autogen.sh` invokes it if any command-line parameters are provided),
+so that most activity can be done by typing one relatively short command.
+Details on its usage can be seen in the help output of that script, or in
+'link:README-builder.html[docs/develop/README-builder.txt]'.
+
+NOTE: We are obliged to stress that the *supported* method of compilation
+is the common `./autogen.sh && configure && make` pattern (and with the
+sequential `make` while we are at it), possibly followed by `make install`.
+While our scripted extensions are made for developers' personal convenience
+and provided with the project sources to help others, they are not endorsed
+nor prioritized by the official support of the $BIOS project.
+
 If no `configure` script is available yet (or if it needs to be rebuilt):
 
- * create or update the `configure` script:
+ * Create or update the `configure` script as deemed necessary by automated
+logic:
 ----
 :; ./autogen.sh
 ----
- * ...or if you need to enforce an update of the `configure` script:
+ * ...or if you want to most certainly enforce an update of the `configure`
+script:
 ----
 :; autoreconf -fiv
 ----
 
-else (if configure script exists and is acceptable):
+If the `configure` script exists and is acceptable, you can proceed with
+the compilation and installation:
 
- * Configure the build system:
+ * Configure the build system, default options should generally suffice:
 ----
 :; ./configure
 ----
- ** An "out-of-tree" build (i.e. to produce binaries and other build
-    results for different platforms from the same copy of the source
-    codebase) can be triggered in a way similar to this:
+ ** An "out-of-tree" or "relocated" build (useful for example to produce
+    the binaries and other build results for different platforms from the
+    same copy of the source codebase) can be triggered in a way similar
+    to this:
 ----
 :; mkdir build
 :; cd build && \
@@ -518,21 +606,6 @@ else (if configure script exists and is acceptable):
 ----
 :; make
 ----
- ** When the project becomes large enough, it may make sense to speed up
-    the builds using parallelization, followed by a pass of sequential
-    make to reduce the impact of intemittent failures, such as those
-    caused by filesystem lags, out-of-memory issues, or by breaking
-    some unspecified dependency ordering. Assuming a GNU `make`, run:
-----
-:; make -j 4 -k ; make
-----
- ** A quieter build can be triggered for GNU `make` with 'V=0' parameter
-    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
-    which is good at least until you hit some build errors and need more
-    verbosity), thus suggesting this command line:
-----
-:; make V=0 -j 4 -k ; make V=0
-----
  * Install the binaries (under a chosen destination root directory
    '/some/path', such as under a temporary filesystem or your homedir):
 ----
@@ -540,12 +613,100 @@ else (if configure script exists and is acceptable):
 ----
 
 
+About parallel `make`
+~~~~~~~~~~~~~~~~~~~~
+As noted above, the sequential `make` routine, which does one task at
+a time, in order dictated by dependencies, is the most reliable way to
+ensure that the project is compiled and linked and installed correctly.
+It is also the slowest way to achieve this goal, and with the development
+cycle involving lots of rebuilds and other automated `make` jobs, the
+time loss of everyone waiting for the build to complete adds up.
+
+Even on a single-CPU computer, the mathematical load of the compiler
+can generally be parallelized with blocking disk I/O to read and write
+the files, so parallel jobs are often requested as two per processor.
+
+However, the parallel `make` has its traps and pitfalls: it uses more CPU
+concurrently, so individual jobs may take longer to complete (especially
+when there are several jobs per CPU and/or swapping becomes involved),
+and coupled with filesystems or their specific mount options that for
+some reasons do not update metadata atomically, the dependency order can
+get broken (things expected to exist are not yet seen); also there may
+be some third-party tools that use the same filename for output and so
+parallel invokations of that tool are bound to fail; the memory resources
+are used more heavily so jobs can fail due to out-of-memory errors rather
+than coding mistakes. In case of GNU make, not specifying the maximum
+number of jobs to run causes unlimited parallelicity, so hundreds of
+processes can be spawned and might fail due to forking issues (`ulimit`
+constraints or OS resource depletion).
+
+In short, while parallel `make` can fail with higher probability than a
+sequential `make`, and its failure alone does not mean bad quality of
+the built project's source code. In certain cases, its success also does
+not guarantee correctness.
+
+When the project becomes large enough, it may make sense to speed up
+the builds using parallelization, followed by a pass of sequential
+`make` to reduce the impact of intemittent failures, such as those
+caused by filesystem lags, out-of-memory issues, or by breaking some
+poorly specified dependency ordering. This approach benefits from both
+the substantial speed improvement of a parallel `make` and the higher
+dependability of the sequential one. Also, linear and less clobbered
+output of the sequential `make` makes spotting and debugging of the
+remaining fatal errors during development (including development of
+the 'Makefile' itself) much easier.
+
+ * For a quick solution, assuming a GNU make or compatible, in place
+of the singular `make` commands, run this:
+----
+:; { make -j 4 -k ; make; }
+----
+ * Thus the one-liner to configure and compile the project becomes
+similar to this:
+----
+:; ./autogen.sh && ./configure && { make -j 4 -k; make; } && make install
+----
+
+A smarter, but not officially supported, solution is offered in the
+`tools/builder.sh` script.
+
+
+About quieter `make`
+~~~~~~~~~~~~~~~~~~~~
+Output of the `make` program is by default moderately verbose, including
+the command lines executed by the process. This adds up to a lot of text,
+in which the possible compilation errors are getting somewhat lost.
+The `make V=0` output format which only prints a short summary of what
+file is being processed with what program, half a line per source file,
+is often much more convenient.
+
+ *  A quieter build can be triggered for GNU `make` with 'V=0' parameter
+    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
+    which is good at least until you hit some build errors and need more
+    verbosity), thus suggesting this command line:
+----
+:; { make V=0 -j 4 -k ; make V=0; }
+----
+
+
+
 Testing the build
 -----------------
+
+Testing REST API
+~~~~~~~~~~~~~~~~
 Before testing the REST API with `test_web.sh`, make sure to configure
 the OS properly (including the user accounts and runtime dependencies
 described above).
 
+See also:
+
+ * 'link:README-web-tests-generalInfo.html[src/web/README.txt]'
+ * 'link:README-web-tests-ciAutomation.html[tests/CI/web/README.txt]'
+
+
+Generic notes on testing the $BIOS project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The 'Makefile' includes some targets for automated testing, such as:
 
  * `make check` -- this would trigger the compilation of all tests
@@ -554,7 +715,8 @@ The 'Makefile' includes some targets for automated testing, such as:
    tests
  * `./test-db` -- would run the database tests
 
-Note: as part of the project's automated validation the `make distcheck`
+Note: as part of the project's automated validation, the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
-build. An `./autogen.sh distcheck` method exists to automate this into a
-single-command routine to configure-build-check.
+build. An `./autogen.sh distcheck` action exists to automate this into a
+single-command routine to clean-configure-build+check.
+
