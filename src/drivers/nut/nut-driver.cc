@@ -27,7 +27,10 @@ static const std::vector<std::string> physicsNUT {
     "output.L3.realpower",
     "output.L3.current",
     "batery.charge",
-    "outlet.realpower"
+    "outlet.realpower",
+    "outlet.#.current",
+    "outlet.#.voltage",
+    "outlet.#.realpower"
 };
 
 static const std::vector<std::string> physicsBIOS {
@@ -45,8 +48,11 @@ static const std::vector<std::string> physicsBIOS {
     "voltage.output.L3-N",
     "realpower.output.L3",
     "current.output.L3",
-    "batery.charge",
-    "realpower.outlet"
+    "charge.battery",
+    "realpower.outlet",
+    "current.outlet.#",
+    "voltage.outlet.#",
+    "realpower.outlet.#"
 };
 
 static const std::vector<std::string> inventoryNUT {
@@ -163,8 +169,7 @@ void NUTDevice::setChanged(const std::string& name,const bool status){
 
 
 void NUTDevice::updatePhysics(const std::string& varName, const float newValue) {
-    // calculating round(newValue * 100) without math library
-    long int newValueInt = ((newValue * 100) + 0.5);
+    long int newValueInt = round(newValue * 100);
     if( _physics.count( varName ) == 0 ) {
         // this is new value
         struct NUTPhysicalValue pvalue;
@@ -175,7 +180,7 @@ void NUTDevice::updatePhysics(const std::string& varName, const float newValue) 
         long int oldValue = _physics[ varName ].value;
         if( oldValue == newValueInt ) return ;
         try {
-            if( abs( oldValue - newValueInt ) * 100 / oldValue > 5 ) {
+            if( (oldValue == 0.0 ) || ( abs( (oldValue - newValueInt ) * 100 / oldValue ) > 5 ) ) {
                 // significant change
                 _physics[ varName ].value = newValueInt;
                 _physics[ varName ].changed = true;
@@ -232,6 +237,29 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
             // variable found in received data
             std::vector<std::string> values = vars[physicsNUT[i]];
             updatePhysics( physicsBIOS[i], values );
+        } else {
+            // iterating numbered items in physics
+            // like outlet.1.voltage, outlet.2.voltage, ...
+            int x = physicsNUT[i].find(".#."); // is always in the middle: outlet.1.realpower
+            int y = physicsBIOS[i].find(".#"); // can be at the end: outlet.voltage.#
+            if( x > 0 && y > 0 ) {
+                // this is something like outlet.#.realpower
+                std::string nutprefix = physicsNUT[i].substr(0,x+1);
+                std::string nutsuffix = physicsNUT[i].substr(x+2);
+                std::string biosprefix = physicsBIOS[i].substr(0,y+1);
+                std::string biossuffix = physicsBIOS[i].substr(y+2);
+                std::string nutname,biosname;
+                int i = 1;
+                while(true) {
+                    nutname = nutprefix + std::to_string(i) + nutsuffix;
+                    biosname = biosprefix + std::to_string(i) + biossuffix;
+                    if( vars.count(nutname) == 0 ) break; // variable out of scope
+                    // variable found
+                    std::vector<std::string> values = vars[nutname];
+                    updatePhysics(biosname,values);
+                    ++i;
+                }
+            }
         }
     }
     for(size_t i = 0; i < inventoryNUT.size(); ++i) {
@@ -244,15 +272,22 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
 }
 
 std::string NUTDevice::itof(const long int X) const {
-    std::string num,dec;
+    std::string num,dec,sig;
+    long int AX;
 
-    num = std::to_string( X / 100 );
-    dec = std::to_string( X % 100 );
+    if( X < 0 ) {
+        sig = "-";
+    } else {         
+        sig = "";
+    }
+    AX = abs(X);
+    num = std::to_string( AX / 100 );
+    dec = std::to_string( AX % 100 );
     if( dec.size() == 1 ) dec = "0" + dec;
     if( dec == "00" ) {
-        return num;
+        return sig + num;
     } else {
-        return num + "." + dec;
+        return sig + num + "." + dec;
     }
 }
 
