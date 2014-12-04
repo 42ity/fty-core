@@ -39,6 +39,10 @@ zmsg_t *nut_device_to_powerdev_msg(const NUTDevice &dev) {
     zmsg_t *msg;
     char *name[basicProperties.size()];
 
+    // check for unknown device type
+    if( ! dev.hasProperty("type") ) return NULL;
+    if( ( dev.property("type") != "ups" ) && ( dev.property("type") != "epdu" ) ) return NULL;
+
     zhash_t *otherProperties = zhash_new();
     assert(otherProperties);
     auto properties = dev.properties();
@@ -135,16 +139,14 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
         request = common_msg_encode_get_measure_subtype_s(
                         ID.type,
                         subtypeName.c_str(),
-                        (uint8_t)((scale == scales.end()) ?
-                                   -2 : scale->second));
+                        (uint8_t)( ( scale == scales.end() ) ?
+                                   -1 : scale->second ) );
         reply = process_measures_meta(&request);
         zmsg_destroy(&request);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
             ID.subtype = common_msg_mts_id(cmsg);
             ID.scale = (int8_t)common_msg_mts_scale(cmsg);
-            assert(ID.scale == ((scale == scales.end()) ?
-                                 -2 : scale->second));
             common_msg_destroy(&cmsg);
         }
         zmsg_destroy(&reply);
@@ -157,7 +159,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
 /**       
  * \brief creating powerdev message from NUTDevice 
  */
-zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value) {
+zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value, bool scale) {
     static std::map<std::string, measurement_id_t> IDs;
     zmsg_t *zmsg;
     measurement_id_t ID;
@@ -175,16 +177,17 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
     }
     if( dev.hasProperty("type") ) {
         std::string type = dev.property("type");
-        // TODO: get NUT name from DB/is it necessary?
-        zmsg = common_msg_encode_new_measurement(
-            "NUT",          
-            dev.name().c_str(),
-            type.c_str(),
-            IDs[name].type,
-            IDs[name].subtype,
-            nut_scale(value, IDs[name].scale)
-        );
-        return zmsg;
+        if( type == "ups" || type == "epdu" ) {
+            zmsg = common_msg_encode_new_measurement(
+                "NUT",          
+                dev.name().c_str(),
+                type.c_str(),
+                IDs[name].type,
+                IDs[name].subtype,
+                ( scale ? nut_scale(value, IDs[name].scale) : value )
+            );
+            return zmsg;
+        } else { return NULL; }
     } else {
         log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
         return NULL;
@@ -233,7 +236,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                     // something has changed or we should advertise status
                     // go trough measurements
                     for(auto &measurement : it->second.physics( ! advertise ) ) {
-                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second);
+                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true);
                         if(msg) {
                             log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
                             zmsg_send(&msg, dbsock);
@@ -244,7 +247,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                     if( it->second.hasProperty("status") && ( advertise || it->second.changed("status") ) ) {
                         std::string status_s = it->second.property("status");
                         uint16_t    status_i = shared::upsstatus_to_int( status_s );
-                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i);
+                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false);
                         if(msg) {
                             log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
                             zmsg_send(&msg, dbsock);
@@ -253,8 +256,10 @@ void nut_actor(zsock_t *pipe, void *args) {
                     }
                     // send also POWERDEV_MSG_POWERDEV_STATUS
                     zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
-                    log_info ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
-                    zmsg_send(&msg, dbsock);
+                    if(msg) {
+                        log_debug ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
+                        zmsg_send(&msg, dbsock);
+                    }
                     zmsg_destroy(&msg);
                     it->second.setChanged(false);
                 }
