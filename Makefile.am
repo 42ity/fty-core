@@ -604,7 +604,7 @@ clean-docs: clean-man clean-doxygen clean-html clean-txt
 
 # Copies from "$1" to "$2", making the subdirectories as needed
 define copy-file-cp =
-	@if test x"$(2)" != x"$(1)" ; then \
+	if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
 	    echo "Copy '$(1)' to '$(2)'" && \
 	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
@@ -613,11 +613,15 @@ define copy-file-cp =
 	fi
 endef
 
-define copy-file
-	@$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
+# Another way to skin the cat...
+define copy-file-install =
+	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
 endef
 
-
+# Generalize the two solutions
+define copy-file =
+	$(call copy-file-install,$1,$2) || $(call copy-file-cp,$1,$2)
+endef
 
 define depend-copy-file =
 $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
@@ -627,7 +631,7 @@ $(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)
 
 # Define the dependency and the rule
 $(_MAP_DST_ABS): $(_MAP_SRC_ABS)
-	$$(call copy-file,$$<,$$@)
+	@$$(call copy-file,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
 $(_MAP_DST_REL): $(_MAP_DST_ABS)
@@ -691,12 +695,12 @@ clean-txt-asciidocs:
 # Copy over the *.txt files into symmetrically named build path,
 # if required and not there (messed up with EXT_DIST)
 $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
-	$(call copy-file,$<,$@)
+	@$(call copy-file,$<,$@)
 
 # This is hardcoded to copy documents from project root directory into
 # the build area's "docs/develop" subdirectory and with ".txt" suffix
 $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
-	$(call copy-file,$<,$@)
+	@$(call copy-file,$<,$@)
 
 # Fake targets for simple pathnames (not needed for the same-to-same
 # copies like TXT_DOCS_ASCIIDOC)
