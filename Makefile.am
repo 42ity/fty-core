@@ -266,7 +266,7 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-check_PROGRAMS += 			test-dbtopology
+bin_PROGRAMS += 			test-dbtopology
 
 test_dbtopology_SOURCES = tests/persist/test-topology.cc 
 
