@@ -360,15 +360,6 @@ INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "10.231.107.0", 24, "enp0s25", "a0:1d:48:b7:e2:4e", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("d", "10.0.0.0", 8, "", "", UTC_TIMESTAMP());
 
-/* TODO: Solve with Gerald strange t_bios_discovered_device insertions */
-/* ("", "RACK1")  */
-insert into t_bios_monitor_asset_relation values
-(
-    NULL,
-    (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
-    (select id_asset_element from t_bios_asset_element where name = 'ROW1')
-);
-
 /* ************* */
 /* MBT Rack data */
 /* ************* */
