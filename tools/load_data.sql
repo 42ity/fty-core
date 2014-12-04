@@ -37,10 +37,6 @@ select @client_nut := id_client from t_bios_client where name = 'NUT';
 
 /*  Data  */
 
-/* TODO (Alenka): Is it intentional to have two rows ('select_device', 'not_classified')
-                  that are almost indentical except for id?
- */
-insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
 
@@ -155,10 +151,28 @@ values
     (select id from (select id_asset_element as id from t_bios_asset_element where name = 'DC2') as subquery)
 );
 
-insert into t_bios_asset_device  (id_asset_element, id_asset_device_type, mac) values (@asset_element_rack, @asset_device_server, "11:22:33:44:55:66");
-insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@asset_element_device, @asset_device_epdu);
-/*  TODO: (Alenka) See Line 41 */
-insert into t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) values (2, 3);
+insert into t_bios_asset_device
+    (id_asset_element, id_asset_device_type, mac)
+values
+(
+    (select id_asset_element from t_bios_asset_element where name = 'serv1'),
+    @asset_device_server,
+    "11:22:33:44:55:66"
+);
+insert into t_bios_asset_device
+    (id_asset_element, id_asset_device_type)
+values
+(
+    (select id_asset_element from t_bios_asset_element where name = 'epdu'),
+    @asset_device_epdu
+);
+insert into t_bios_monitor_asset_relation
+    (id_discovered_device, id_asset_element)
+values
+(
+    (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
+    (select id_asset_element from t_bios_asset_element where name = 'ROW1')
+);
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
 values
@@ -213,15 +227,17 @@ values
     1,
     2
 );
+/* ( t_bios_asset_device ('ups' 'ups');  */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values
 (
     (select id_asset_device from t_bios_asset_device
      where id_asset_element = (select id_asset_element from t_bios_asset_element where name = 'ups')
-           AND id_asset_device_type = @asset_device_ups), /* 3 */
+           AND id_asset_device_type = @asset_device_ups),
     (select id_asset_device from t_bios_asset_device
-     where id_asset_element = @asset_element_device AND id_asset_device_type = @asset_device_epdu), /* 2 */
+     where id_asset_element = (select id_asset_element from t_bios_asset_element where name = 'epdu')
+           AND id_asset_device_type = @asset_device_epdu),
     @asset_link_powerchain
 );
 insert into t_bios_asset_link
@@ -229,9 +245,11 @@ insert into t_bios_asset_link
 values 
 (
     (select id_asset_device from t_bios_asset_device
-     where id_asset_element = @asset_element_device AND id_asset_device_type = @asset_device_epdu), /* 2 */
+     where id_asset_element = (select id_asset_element from t_bios_asset_element where name = 'epdu')
+            AND id_asset_device_type = @asset_device_epdu),
     (select id_asset_device from t_bios_asset_device
-     where id_asset_element = @asset_element_rack AND id_asset_device_type = @asset_device_server AND mac = '11:22:33:44:55:66'), /* 1 */
+     where id_asset_element = (select id_asset_element from t_bios_asset_element where name = 'serv1')
+            AND id_asset_device_type = @asset_device_server AND mac = '11:22:33:44:55:66'),
     @asset_link_powerchain
 );
 
@@ -343,7 +361,13 @@ INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("d", "10.0.0.0", 8, "", "", UTC_TIMESTAMP());
 
 /* TODO: Solve with Gerald strange t_bios_discovered_device insertions */
-insert into t_bios_monitor_asset_relation values (NULL, 1, 4);
+/* ("", "RACK1")  */
+insert into t_bios_monitor_asset_relation values
+(
+    NULL,
+    (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
+    (select id_asset_element from t_bios_asset_element where name = 'ROW1')
+);
 
 /* ************* */
 /* MBT Rack data */
