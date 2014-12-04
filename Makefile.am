@@ -257,8 +257,7 @@ bin_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-realdatamonitor.cc \
-				   tests/persist/test-topology.cc 
+				   tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
@@ -275,6 +274,26 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 					-I$(top_builddir)/tools
 
 test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+bin_PROGRAMS += 			test-dbtopology
+
+test_dbtopology_SOURCES = tests/persist/test-topology.cc 
+
+test_dbtopology_LDADD = libpriv-db.la \
+				 libpriv-proto.la \
+				 libpriv-test-run.la \
+				 libpriv-log.la
+
+
+test_dbtopology_CPPFLAGS =	$(AM_CPPFLAGS) \
+					-I$(top_srcdir)/tests/include/ \
+					-I$(top_srcdir)/src/persist \
+					-I$(top_srcdir)/src/simple \
+					-I$(top_srcdir)/tools \
+					-I$(top_builddir)/tools
+
+test_dbtopology_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
 
 ###
 bin_PROGRAMS += 			test-database
