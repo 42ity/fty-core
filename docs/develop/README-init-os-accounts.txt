@@ -1,6 +1,6 @@
 = The tools/init-os-accounts.sh script
 :Author:        Evgeny Klimov
-:Email:         <EvgenyKlimov@eaton.com>
+:Email:         EvgenyKlimov@eaton.com
 
 The project includes a `tools/init-os-accounts.sh` script whose main
 purpose is to automate and standardize the creation of the user and
