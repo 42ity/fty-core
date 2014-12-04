@@ -17,7 +17,7 @@ drop table if exists t_bios_device_type;
 CREATE TABLE t_bios_measurement_types(
     id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
     name             VARCHAR(25) NOT NULL,
-    unit             VARCHAR(10),
+    unit             VARCHAR(10) NOT NULL,
     PRIMARY KEY(id)
 );
 
