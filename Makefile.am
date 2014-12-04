@@ -603,7 +603,7 @@ clean-docs: clean-man clean-doxygen clean-html clean-txt
 #   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
 
 # Copies from "$1" to "$2", making the subdirectories as needed
-define copy-file =
+define copy-file-cp =
 	@if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
 	    echo "Copy '$(1)' to '$(2)'" && \
@@ -612,6 +612,12 @@ define copy-file =
 	    echo "Not copying '$(1)' to '$(2)': same file"; \
 	fi
 endef
+
+define copy-file
+	@$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
+endef
+
+
 
 define depend-copy-file =
 $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
@@ -732,7 +738,7 @@ if HAVE_ASCIIDOC
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
 $(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)): %.html: %.txt
-	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
+	@test -d "`dirname $@`" || mkdir -p "`dirname $@`"
 	$(ASCIIDOC) -b html -o $@ $<
 else
 $(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)):
