@@ -151,9 +151,8 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #Names within square brackets are interpreted as tags. A series of tags form an AND expression wheras a comma-separated sequence forms an OR expression. e.g.:
 #
 #[one][two],[three]
-
-
-AM_LOG_FLAGS = 				~[db]
+# setup using AM_LOG_FLAGS see an example
+# AM_LOG_FLAGS = 				~[db]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -229,7 +228,7 @@ test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) \
 test_cidr_LDFLAGS =			-lcidr
 
 
-check_PROGRAMS += 			test-db
+bin_PROGRAMS += 			test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
@@ -245,7 +244,7 @@ test_db_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_db_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
-check_PROGRAMS += 			test-db2
+bin_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
@@ -269,7 +268,7 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 ###
-check_PROGRAMS += 			test-database
+bin_PROGRAMS += 			test-database
 
 test_database_SOURCES = 	tests/persist/test-database.cc \
 							src/persist/persistencelogic.cc
