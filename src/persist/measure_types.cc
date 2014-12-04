@@ -79,9 +79,9 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, type_id, scale, name "
+                    "select id, id_type, scale, name "
                     "from t_bios_measurement_subtypes where id = :mts_id "
-                    "and type_id = :mt_id "
+                    "and id_type = :mt_id "
                     "and id is not null and type_id is not null and "
                     "name is not null and scale is not null");
 
@@ -98,13 +98,13 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
         case COMMON_MSG_GET_MEASURE_SUBTYPE_S:
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "insert into t_bios_measurement_subtypes (id, name, type_id, scale) "
+                    "insert into t_bios_measurement_subtypes (id, name, id_type, scale) "
                     "select "
                     "(select COALESCE(max(id),0)+1 from "
-                    "t_bios_measurement_subtypes where type_id=:mt_id), "
+                    "t_bios_measurement_subtypes where id_type=:mt_id), "
                     ":name, :mt_id, :scale from dual WHERE NOT EXISTS "
                     "(select id from t_bios_measurement_subtypes where "
-                    " name=:name and type_id=:mt_id)"
+                    " name=:name and id_type=:mt_id)"
                 );
                 st.setString("name", common_msg_mts_name(*msg)).
                    setInt("mt_id", common_msg_mt_id(*msg)).
@@ -114,10 +114,10 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
             }
             try {
                 tntdb::Statement st = conn.prepareCached(
-                    "select id, type_id, scale, name "
+                    "select id, id_type, scale, name "
                     "from t_bios_measurement_subtypes where name = :name "
-                    "and type_id = :mt_id "
-                    "and id is not null and type_id is not null and "
+                    "and id_type = :mt_id "
+                    "and id is not null and id_type is not null and "
                     "name is not null and scale is not null");
 
                 row = st.setString("name", common_msg_mts_name(*msg)).
