@@ -137,14 +137,21 @@ fi
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
+CMP="`pwd`/cmpjson.py"
 cd web/commands
 [ "$1" ] || set *
 while [ "$1" ]; do
     for NAME in *$1*; do
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
     if [ -r "../results/$NAME".res ]; then
-        diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
-        print_result $?
+        RESULT="../results/$NAME".res
+        EXPECT="$LOG_DIR/$NAME".log
+        python "$CMP" "$RESULT" "$EXPECT"
+        RES=$?
+        if [ $RES -ne 0 ]; then
+            diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
+        fi
+        print_result $RES
     fi
     done
     shift
