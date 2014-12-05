@@ -84,6 +84,7 @@ for(
         "test_netmon",
         "test_restapi",
         "test_general_database",
+        "test_NUT",
         "stop_bios"
     ]
 ){
