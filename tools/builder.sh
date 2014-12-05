@@ -22,6 +22,8 @@
 #   Description: Script to generate all required files from fresh
 #   git checkout and automate the fastest possible build (parallel
 #   for speed, then sequential for reliability).
+#   Supports automation of an "in-place" build in the current directory,
+#   a "relocated" build in a sub-directory, and of a "distcheck" build.
 #   NOTE: It expects to be run from the root of the project directory
 #   (probably the checkout directory, unless you use strange set-ups)
 #   i.e. as "./tools/builder.sh" or, for simplicity, by passing its

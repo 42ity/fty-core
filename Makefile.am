@@ -1,3 +1,7 @@
+# Description: The Makefile (automake template) for the $BIOS project.
+# Note: relies on GNU make syntax and features, may fail to work in
+# other make programs.
+
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
 EXTRA_DIST =
@@ -14,7 +18,12 @@ CLEANFILES =
 DISTCLEANFILES =
 TESTS =
 
-SUBDIRS = docs/man docs/examples tools
+# Named by analogy from configure'd myDOXDIR for doxygen
+myMANDIR = docs/man
+myDEVDOCDIR = docs/develop
+
+# Locations of child Makefiles
+SUBDIRS = $(myMANDIR) docs/examples tools
 
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
@@ -151,9 +160,8 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #Names within square brackets are interpreted as tags. A series of tags form an AND expression wheras a comma-separated sequence forms an OR expression. e.g.:
 #
 #[one][two],[three]
-
-
-AM_LOG_FLAGS = 				~[db]
+# setup using AM_LOG_FLAGS see an example
+# AM_LOG_FLAGS = 				~[db]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -229,7 +237,7 @@ test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) \
 test_cidr_LDFLAGS =			-lcidr
 
 
-check_PROGRAMS += 			test-db
+bin_PROGRAMS += 			test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
@@ -245,12 +253,11 @@ test_db_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_db_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
-check_PROGRAMS += 			test-db2
+bin_PROGRAMS += 			test-db2
 
 test_db2_SOURCES = tests/persist/test-monitor.cc \
 				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-realdatamonitor.cc \
-				   tests/persist/test-topology.cc 
+				   tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = libpriv-db.la \
 				 libpriv-cidr.la \
@@ -268,8 +275,28 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+bin_PROGRAMS += 			test-dbtopology
+
+test_dbtopology_SOURCES = tests/persist/test-topology.cc 
+
+test_dbtopology_LDADD = libpriv-db.la \
+				 libpriv-proto.la \
+				 libpriv-test-run.la \
+				 libpriv-log.la
+
+
+test_dbtopology_CPPFLAGS =	$(AM_CPPFLAGS) \
+					-I$(top_srcdir)/tests/include/ \
+					-I$(top_srcdir)/src/persist \
+					-I$(top_srcdir)/src/simple \
+					-I$(top_srcdir)/tools \
+					-I$(top_builddir)/tools
+
+test_dbtopology_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
 ###
-check_PROGRAMS += 			test-database
+bin_PROGRAMS += 			test-database
 
 test_database_SOURCES = 	tests/persist/test-database.cc \
 							src/persist/persistencelogic.cc
@@ -450,35 +477,301 @@ EXTRA_DIST +=				$(top_srcdir)/tests/CI
 
 DISTCLEANFILES +=			$(top_builddir)/tools/dbpath.h
 
-if HAVE_DOXYGEN
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
-endif
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
-EXTRA_DIST +=				$(top_srcdir)/docs/man/*.txt
-EXTRA_DIST +=			$(top_srcdir)/INSTALL-referenceOS-debian8 \
-					$(top_srcdir)/CONTRIBUTING \
-					$(top_srcdir)/INSTALL
-
 BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
+
+#----------------------------------------------------------------------
+#           list of text-based documentation files (rules below)
+# Note that the basic filenames in these variables are relative to the
+# project sources' root directory, but later in usage and actual targets
+# they are prefixed by the build directory (which may or may not be the
+# same as the checked-out source directory, both ways SHOULD work).
+#----------------------------------------------------------------------
+
+
+# Documentation files saved in the project source-code root directory
+# as text files without extensions in the name (following GNU standards)
+# and written in asciidoc markup
+# Note these should have paths relative to project root dir.
+BASE_DOCS_ASCIIDOC =	INSTALL INSTALL-referenceOS-debian8 \
+			CONTRIBUTING 
+
+# Documentation files saved in the project source-code root directory
+# as text files without extensions in the name and written in plain
+# text with no expected transformation
+# Note these should have paths relative to project root dir.
+BASE_DOCS_PLAINTEXT =	AUTHORS COPYING NEWS ChangeLog
+
+# These two seem to have some markup or similar structuring, but it is
+# not asciidoc so consider them plaintext for now
+# Note these should have paths relative to project root dir.
+BASE_DOCS_PLAINTEXT +=	README
+BASE_DOCS_PLAINTEXT +=	TODO
+
+# The following files are saved into proper subdirectories, have an
+# extension in the filename, and contain asciidoc markup.
+# Note these should have paths relative to project root dir.
+TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
+			$(myDEVDOCDIR)/README-init-os-accounts.txt
+
+# List of text files that are installed as is (none so far, but see
+# below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
+TXT_DOCS_PLAINTEXT =
+
+# Note that the installation targets are similarly named files with
+# an added ".txt" extension in the "docs/develop" subdirectory
+# Note these should have paths relative to project root dir.
+BASE_DOCS_TXT = 	$(BASE_DOCS_PLAINTEXT:%=$(myDEVDOCDIR)/%.txt)
+BASE_DOCS_TXT +=	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.txt)
+
+# These are also redistributed into the build area...
+EXTRA_DIST +=		$(TXT_DOCS_ASCIIDOC)
+EXTRA_DIST +=		$(BASE_DOCS_PLAINTEXT) $(BASE_DOCS_ASCIIDOC)
+
+# As these files are "generated" (copied in this case),
+# we may want a way to kill them from build area)
+DISTCLEANFILES +=	$(BASE_DOCS_TXT)
+
+
+#----------------------------------------------------------------------
+#  List of source texts dispersed in the code with automated targeting
+#----------------------------------------------------------------------
+# The list below is a colon-separated map of filenames copied from
+# sources relative to project root (first token) into different names
+# under the builddir and final installation (the second token, here
+# copied into "docs/develop"), and also maybe compiled into HTML
+# (as in case of the _ASCIIDOC list).
+# Filenames here should not have spaces and should have the '.txt' suffix.
+
+# TODO: The makefile could actually be simplified by automated addtion
+# of the files listed in variables above to the pattern below, so many
+# explicit rules and dependencies listed further below can be cut away.
+# After all, conversion rules are known and stable: same=same for one
+# group, and name = subdir/name.txt for another...
+
+MAPPED_TXT_DOCS_PLAINTEXT = \
+	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
+
+MAPPED_TXT_DOCS_ASCIIDOC = \
+	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
+	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
+	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
+
+##################################################
+# The stuff HTML docs are made of...
+# Historically some original docs have *.txt names and some don't
+# but we solve it by having a target to ensure presence of *.txt
+# copies now for all needed files in the same docs directory
+
+HTMLS_ASCIIDOC =	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.html)
+HTMLS_ASCIIDOC +=	$(TXT_DOCS_ASCIIDOC:%.txt=%.html)
+
+
+# Ultimate list of HTMLs from generally many sources (except doxygen)
+HTMLS =			$(HTMLS_ASCIIDOC)
+
+
+# Target directory for developer documentation after installation
+develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
+
+# Install the non-doxygen docs here (doxygen has its subdir defined below).
+# Text files are "originals" or copies under a different name and are always
+# expected to be available (to fail the make otherwise is correct action).
+# Note that other HTML component targets must be listed explicitly as they
+# might appear in the project later on; as for example HTMLS_ASCIIDOC needs
+# a conditional enablement (try install only if generatable at all).
+develdoc_DATA =		$(TXT_DOCS_ASCIIDOC) $(BASE_DOCS_TXT)
+
+if HAVE_ASCIIDOC
+develdoc_DATA +=	$(HTMLS_ASCIIDOC)
+DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
+endif
+
+
+
+#----------------------------------------------------------------------
+#                One rule to generate and wipe documentation
+#----------------------------------------------------------------------
+
+all-docs: man-docs doxygen-docs html-docs txt-docs
+
+clean-docs: clean-man clean-doxygen clean-html clean-txt
+
+###----------------------------------------------------------------------
+###   Magic macros to expand the patterns for text to text file copying
+###----------------------------------------------------------------------
+# Magic below inspired by this blog post (see description/comments):
+#   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
+
+# Copies from "$1" to "$2", making the subdirectories as needed
+define copy-file =
+	@if test x"$(2)" != x"$(1)" ; then \
+	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
+	    echo "Copy '$(1)' to '$(2)'" && \
+	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
+	else \
+	    echo "Not copying '$(1)' to '$(2)': same file"; \
+	fi
+endef
+
+define depend-copy-file =
+$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
+$(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+
+# Define the dependency and the rule
+$(_MAP_DST_ABS): $(_MAP_SRC_ABS)
+	$$(call copy-file,$$<,$$@)
+
+# Fake dependency for subdir/dist builds
+$(_MAP_DST_REL): $(_MAP_DST_ABS)
+	@echo "DEBUG-MAKEFILE: Mapped target '$$@' to source '$$<'"
+
+### Target as a text file
+$(eval TXT_DOCS_PLAINTEXT +=	$(_MAP_DST_REL) )
+
+### Copy for installation:
+$(eval develdoc_DATA +=		$(_MAP_DST_REL) )
+
+### Cleanup in build
+$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
+
+### Copy in make dist
+$(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
+endef
+
+# Run the logic for patterns that define file-copying
+$(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
+	$(eval $(call depend-copy-file,$(m))))
+
+
+#----------------------------------------------------------------------
+#                        text to text copying
+# Some documents are by GNU standard stored in project root, and we
+# want to deliver them to common docs/devel subdirectory in install.
+#----------------------------------------------------------------------
+
+# TODO: The dependencies for TXT and HTML-asciidocs below as they are
+# implemented now, actually define several files as the rule target,
+# then parsed with percent-tags, and become several dependencies in
+# the end. So a requested rebuild of one file actually causes attempts
+# to rebuild/recopy all of the source texts of the relevant type.
+# The TODO is to rewrite into a foreach() pattern with one target
+# per each file, for correctness.
+
+
+# A copy of TXT_DOCS_ASCIIDOC in the build area is needed for unified
+# rules of asciidoc to html parsing, defined below
+txt-docs: $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)) \
+	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
+	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC))
+
+clean-txt: clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
+
+clean-txt-basedocs:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
+
+clean-txt-plaintext:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT))
+
+# Only clean up the copies in the builddir, if applicable
+# Do not kill the originals in the source tree
+clean-txt-asciidocs:
+	if test x"$(abs_top_srcdir)" != x"$(abs_top_builddir)" -a \
+	    x"$(abs_top_srcdir)" != x -a x"$(abs_top_builddir)" != x ; then \
+	    /bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)); \
+	else true; fi
+
+# Copy over the *.txt files into symmetrically named build path,
+# if required and not there (messed up with EXT_DIST)
+$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
+	$(call copy-file,$<,$@)
+
+# This is hardcoded to copy documents from project root directory into
+# the build area's "docs/develop" subdirectory and with ".txt" suffix
+$(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
+	$(call copy-file,$<,$@)
+
+# Fake targets for simple pathnames (not needed for the same-to-same
+# copies like TXT_DOCS_ASCIIDOC)
+$(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
+
+
+
+#----------------------------------------------------------------------
+#                       asciidoc html generation
+#----------------------------------------------------------------------
+
+# Technically we only implement building of HTMLS_ASCIIDOC now.
+# If others appear and are not handled, they will fail to make.
+# That is a good thing by design ;)
+
+html-docs: txt-docs $(HTMLS)
+
+clean-html:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS))
+
+
+# The dependencies for the text file via patterns in the standard dir
+# were defined above. Now just add the dependency for HTML building
+# into the same basename...
+define depend-txt-html =
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval HTMLS_ASCIIDOC +=	$(_MAP_DST_REL:%.txt=%.html) )
+endef
+
+$(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
+
+
+# Fake targets for simple pathnames (not needed for the same-to-same
+# copies like TXT_DOCS_ASCIIDOC)
+$(HTMLS): $(addprefix $(abs_top_builddir)/,$(HTMLS))
+
+
+if HAVE_ASCIIDOC
+# Per dependencies, all the text files should be available in the
+# builddir/docs/develop/*.txt and the *.html will appear nearby
+$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)): %.html: %.txt
+	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
+	$(ASCIIDOC) -b html -o $@ $<
+else
+$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)):
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$@'!" >&2
+endif
 
 
 #----------------------------------------------------------------------
 #                        doxygen html generation
+# Note that unlike many other targets, doxygen seemingly has to use
+# relative paths and be generated in a directory near the source code 
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
-		INSTALL-referenceOS-debian8.html man-docs
-
-man-docs:
-	( cd docs/man && $(MAKE) all )
+if HAVE_DOXYGEN
+EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
+endif
+EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
 			${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/${mydoxylog}
 
-${myDOXDIR}/html:
+doxygen-docs: ${myDOXDIR}/html
+
+clean-doxygen:
+	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
+
+# Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
+develdocdoxygendir = $(develdocdir)/doxygen
+develdocdoxygen: doxygen-docs
+
 if HAVE_DOXYGEN
+develdocdoxygen_DATA = ${myDOXDIR}/html/*
+
+# Such-named target is required by the _DATA above, so have a rule to build it
+${myDOXDIR}/html/*: doxygen-docs
+
+${myDOXDIR}/html:
 	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
 		test -d ${myDOXDIR}/html || \
 		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
@@ -492,28 +785,25 @@ if HAVE_DOXYGEN
 		fi; \
 	fi
 else
+develdocdoxygen_DATA =
+
+${myDOXDIR}/html:
 	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
 endif
 
-if HAVE_ASCIIDOC
-INSTALL.html: INSTALL
-	$(ASCIIDOC) -b html -o $@ $^
+#----------------------------------------------------------------------
+#                 manpage generation (delegated to sub-make)
+#----------------------------------------------------------------------
 
-CONTRIBUTING.html: CONTRIBUTING
-	$(ASCIIDOC) -b html -o $@ $^
+EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
+DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
 
-INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
-	$(ASCIIDOC) -b html -o $@ $^
-else
-INSTALL.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+man-docs:
+	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
 
-CONTRIBUTING.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
-
-INSTALL-referenceOS-debian8.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
-endif
+clean-man:
+	( cd $(top_builddir)/$(myMANDIR) && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
+	/bin/rm -f $(top_builddir)/$(myMANDIR)/*.?
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
@@ -526,16 +816,10 @@ all-local: all-docs
 #                        clean, what was not removed automatically
 #----------------------------------------------------------------------
 
-clean-man:
-	( cd docs/man && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
-	/bin/rm -f docs/man/*.?
-
-clean-local: clean-man
+clean-junit:
 	/bin/rm -rf $(top_builddir)/tests/junit
-	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-	/bin/rm -f INSTALL.html
-	/bin/rm -f CONTRIBUTING.html
-	/bin/rm -f INSTALL-referenceOS-debian8.html
+
+clean-local: clean-docs clean-junit
 
 #----------------------------------------------------------------------
 #                        astyle formating
