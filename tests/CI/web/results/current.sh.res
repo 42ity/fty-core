@@ -1,1 +1,2 @@
-{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}
+{"current":[{"id":3,"ups.realpower":0.1,"voltage.output.L1-N":0.1,"current.output.L1":01.2,"current.output":03.1,"voltage.output":0.3}]}
+
