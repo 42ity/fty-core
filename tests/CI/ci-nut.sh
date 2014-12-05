@@ -1,4 +1,4 @@
-#!/bin/sh -u
+#!/bin/bash -u
 
 # Copyright (C) 2014 Eaton
 #
@@ -45,7 +45,19 @@ SAMPLES=(
   3 200 80 -5  201 203 CHRG
 )
 
-CFGDIR=/etc/ups
+
+CFGDIR=""
+for cfgd in "/etc/ups" "/etc/nut"; do
+    if [ -d "$cfgd" ] ; then
+        CFGDIR="$cfgd"
+        break
+    fi
+done
+if [ "$CFGDIR" = "" ] ; then
+    echo "NUT config dir not found"
+    exit 1
+fi
+
 USR=user1
 PSW=user1
 UPS1="UPS1"
@@ -145,22 +157,22 @@ expected_db_value() {
     PARAM="$1"
     SAMPLE="$2"
     case "$PARAM" in
-	"ups.status")
-	    case "$SAMPLE" in
-		"OL")
-		    echo "8"
-		    ;;
-		"OB")
-		    echo "16"
-		    ;;
-		"CHRG")
-		    echo "1024"
-		    ;;
-	    esac
-	    ;;
-	*)
-	    expr $SAMPLE \* 10
-	    ;;
+        "ups.status")
+            case "$SAMPLE" in
+                "OL")
+                    echo "8"
+                    ;;
+                "OB")
+                    echo "16"
+                    ;;
+                "CHRG")
+                    echo "1024"
+                    ;;
+            esac
+            ;;
+        *)
+            expr $SAMPLE \* 10
+            ;;
     esac
 }
 
@@ -176,36 +188,36 @@ create_nut_config
 echo "starting the test"
 for UPS in $UPS1 $UPS2 ; do
     for s in $(seq 0 $SAMPLESCNT); do
-	SAMPLECURSOR=$(expr $s \* ${NPAR} )
-	TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")	
-	# set values
-	for i in $(seq 0 $PARAMSCNT ); do
-	    PARAM=${PARAMS[$i]}
-	    NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
-	    set_value_in_ups $UPS $PARAM $NEWVALUE
-	    sleep 2 # give time to nut dummy driver for change
-	    if [ "$(upsc $UPS@localhost $PARAM)" = "$NEWVALUE" ]; then 	
-		echo "Parameter $PARAM succesfuly modified. New value: $NEWVALUE"
-		SUCCESSES=$(expr $SUCCESSES + 1)
-	    else	
-		echo "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver."
-		ERRORS=$(expr $ERRORS + 1)
-	    fi
-	done
-	sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
-	for i in $(seq 0 $PARAMSCNT ); do
-	    PARAM=${PARAMS[$i]}
-	    NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
-	    SELECT="select count(*) from t_bios_measurements where timestamp >= '$TIME' and value = $(expected_db_value $PARAM $NEWVALUE);"
-	    #echo $SELECT
-	    if [ $(do_select "$SELECT") = 1 ]; then
-		echo "Looking for $PARAM: $NEWVALUE OK."
-		SUCCESSES=$(expr $SUCCESSES + 1)
-	    else 
-		echo "Looking for $PARAM: $NEWVALUE failed."
-		ERRORS=$(expr $ERRORS + 1)
-	    fi
-	done	
+        SAMPLECURSOR=$(expr $s \* ${NPAR} )
+        TIME=$(date --utc "+%Y-%m-%d %H:%M:%S") 
+        # set values
+        for i in $(seq 0 $PARAMSCNT ); do
+            PARAM=${PARAMS[$i]}
+            NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
+            set_value_in_ups $UPS $PARAM $NEWVALUE
+            sleep 2 # give time to nut dummy driver for change
+            if [ "$(upsc $UPS@localhost $PARAM)" = "$NEWVALUE" ]; then  
+                echo "Parameter $PARAM succesfuly modified. New value: $NEWVALUE"
+                SUCCESSES=$(expr $SUCCESSES + 1)
+            else
+                echo "Failed to set $PARAM value to $NEWVALUE in NUT dummy driver."
+                ERRORS=$(expr $ERRORS + 1)
+            fi
+        done
+        sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+        for i in $(seq 0 $PARAMSCNT ); do
+            PARAM=${PARAMS[$i]}
+            NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
+            SELECT="select count(*) from t_bios_measurements where timestamp >= '$TIME' and value = $(expected_db_value $PARAM $NEWVALUE);"
+            #echo $SELECT
+            if [ $(do_select "$SELECT") = 1 ]; then
+                echo "Looking for $PARAM: $NEWVALUE OK."
+                SUCCESSES=$(expr $SUCCESSES + 1)
+            else 
+                echo "Looking for $PARAM: $NEWVALUE failed."
+                ERRORS=$(expr $ERRORS + 1)
+            fi
+        done
     done
 done
 
