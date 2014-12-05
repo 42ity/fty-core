@@ -607,7 +607,7 @@ define copy-file =
 	@if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
 	    echo "Copy '$(1)' to '$(2)'" && \
-	    cp -pf "$(1)" "$(2)" ; \
+	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
 	else \
 	    echo "Not copying '$(1)' to '$(2)': same file"; \
 	fi
