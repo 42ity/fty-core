@@ -35,7 +35,10 @@ CLEANFILES = *.xml *.html
 SUFFIXES = .txt .html .1 .3 .5 .8
 
 # Actual build rules
-
+# NOTE: Even though a2x prints the warning below, the option is essential for
+# the resulting manpage to appear in the build directory rather than near the
+# original source file, so just ignore it:
+#   a2x: WARNING: --destination-dir option is only applicable to HTML based outputs
 A2X_MANPAGE_OPTS = --doctype manpage --format manpage --destination-dir=$(builddir)
 
 .txt.1:
