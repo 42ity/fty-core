@@ -33,21 +33,21 @@ set -u
 set -e
 set -x
 
-DB1="$CHECKOUTDIR/tools/initdb.sql"
-DB2="$CHECKOUTDIR/tools/load_data.sql"
-DB2="$CHECKOUTDIR/tools/power_topology.sql"
+DB_BASE="$CHECKOUTDIR/tools/initdb.sql"
+DB_DATA="$CHECKOUTDIR/tools/load_data.sql"
+DB_TOPO="$CHECKOUTDIR/tools/power_topology.sql"
 
 
 cd $CHECKOUTDIR
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB1"
-mysql -u root < "$DB2"
+mysql -u root < "$DB_BASE"
+mysql -u root < "$DB_DATA"
 echo "-------------------- test-db --------------------"
 make test-db && ./test-db
 echo "-------------------- test-db2 --------------------"
 make test-db2 && ./test-db2
 echo "-------------------- fill db for topology --------------------"
-mysql -u root < "$DB1"
-mysql -u root < "$DB3"
+mysql -u root < "$DB_BASE"
+mysql -u root < "$DB_TOPO"
 echo "-------------------- test-dbtopology --------------------"
 make test-dbtopology && ./test-dbtopology
