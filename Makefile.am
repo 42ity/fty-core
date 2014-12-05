@@ -594,6 +594,9 @@ endif
 
 all-docs: man-docs doxygen-docs html-docs txt-docs
 
+# alias for manual typing errors
+docs-all: all-docs
+
 clean-docs: clean-man clean-doxygen clean-html clean-txt
 
 ###----------------------------------------------------------------------
@@ -676,6 +679,9 @@ txt-docs: $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)) \
 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC))
 
+# alias for manual typing errors
+docs-txt: txt-docs
+
 clean-txt: clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
 
 clean-txt-basedocs:
@@ -717,6 +723,9 @@ $(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
 # That is a good thing by design ;)
 
 html-docs: txt-docs $(HTMLS)
+
+# alias for manual typing errors
+docs-html: html-docs
 
 clean-html:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS))
@@ -768,6 +777,9 @@ CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 
 doxygen-docs: ${myDOXDIR}/html
 
+# alias for manual typing errors
+docs-doxygen: doxygen-docs
+
 clean-doxygen:
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 
@@ -810,6 +822,9 @@ DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
+
+# alias for manual typing errors
+docs-man: man-docs
 
 clean-man:
 	( cd $(top_builddir)/$(myMANDIR) && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
