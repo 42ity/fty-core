@@ -12,31 +12,31 @@ api_auth_post /admin/network '{"net" : "123"}' | grep -q 'HTTP/1.1 400 Bad Reque
 print_result $?
 
 test_it "admin_network_post_excl1"
-api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "E"}' | grep -q '{ "id" : "11" }'
+api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "E"}' | grep -q '{ "id" : "5" }'
 print_result $?
 
 # check the double POST just returns the same ID
 test_it "admin_network_post_excl2"
-api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "E"}' | grep -q '{ "id" : "11" }'
+api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "E"}' | grep -q '{ "id" : "5" }'
 print_result $?
 
 # ... but manual status is different
 test_it "admin_network_post_man1"
-api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "M"}' | grep -q '{ "id" : "12" }'
+api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "M"}' | grep -q '{ "id" : "6" }'
 print_result $?
 
 test_it "admin_network_post_man2"
-api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "M"}' | grep -q '{ "id" : "12" }'
+api_auth_post /admin/network '{"net" : "10.20.30.40/24", "status" : "M"}' | grep -q '{ "id" : "6" }'
 print_result $?
 
 # and let's del 'em all
 test_it "admin_network_delete11"
-api_auth_delete /admin/network/11 | grep -q 'HTTP/1.1 200 OK'
+api_auth_delete /admin/network/5 | grep -q 'HTTP/1.1 200 OK'
 print_result $?
 
 # and let's del 'em all
 test_it "admin_network_delete12"
-api_auth_delete /admin/network/12 | grep -q 'HTTP/1.1 200 OK'
+api_auth_delete /admin/network/6 | grep -q 'HTTP/1.1 200 OK'
 print_result $?
 
 # delete non-existent network
