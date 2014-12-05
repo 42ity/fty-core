@@ -91,7 +91,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     bool is_recursive, uint32_t current_depth, uint32_t filtertype)
 {
     assert ( child_type_id );   // is required
-    assert ( current_depth >= 0 );
     assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
