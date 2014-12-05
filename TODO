@@ -7,7 +7,11 @@ src/persist/assettopology.cc (MARIA_DB_CRASH):
 -------------------------------------------------------------
 -> The known issue with mariadb crash. Rework when crash would be fixed.
 
-
+src/persist/assetmsg.cc (insert links):
+-------------------------------------------------------------
+-> Inserting of the information is not done yet. But it is assumed, that 
+   It is not possible to insert the link (NULL,7,NULL,8) twice
+   (src_out:src-id:dest_in:dest_id).
 
 src/utils/messages :
 --------------------
@@ -120,3 +124,39 @@ if anything is needed to be done here.
 
 ==== src/simple ====
 -> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
+
+
+=== The building infrastructure ===
+
+==== Makefile.am =====
+-> new feature: validate the built binaries and .so libraries that their
+   run-time linking dependencies can be satisfied (ldd | grep unresolved)
+-> refactor the documentation generation rules into population of the new
+   common MAPPED_* variables introduced recently and kill the extra recipes
+-> use foreach() to generate from MAPPED_* lists the dependency lists for
+   copied *.txt and generated *.html files (now "all depend on all", so
+   rules are always triggered)
+-> Generate a docs/devel/index.html with the list of generated HTML and
+   unprocessed text files and a link into "doxygen/" and deliver it;
+   add a footer with the build information (git, host, timestamps...)
+-> research and refactor generation of doxygen/ docs, preferably to have
+   them really generated (5+ Mbytes worth) in the build directory but
+   with relative URL-links to src/* rather than build-host absolute paths
+-> instead of the disabled rule for documentation tests, have the script
+   run_test_doc.sh executed but returning 77 ("test skipped" status)
+
+==== configure and .in processed files ====
+-> generate and deliver a file with the repository info, including output
+   of `git status -s` for possible discrepancies from the committed repo
+-> generate and deliver another file with the build host info, timestamps, etc
+-> (?) refactor some scripts to become generated with substitution of default
+   passwords, user/group names, etc. instead of current hardcoding.
+-> SASL MUX path - test not only the socket file, but also container directory
+   (if the sasl service was running and then stopped - it should be around)
+-> configure.ac -- replace "echo" with appropriate "AC_..." message macros
+
+==== builder.sh script ====
+-> suggest a way to pass custom options to configure (one big token?)
+-> use "builder make" from CI scripts instead of their inferior "make" calls
+
+

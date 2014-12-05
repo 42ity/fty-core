@@ -58,6 +58,11 @@ the last commit of the source code (and differences after it, if any)
  * '--verbose' flag is reserved for verbosity settings; currently it
 just enables the '--show-builder-flags', '--show-repository-metadata'
 and '--show-timing' activities
+ * '--debug-makefile' -- sets a number of verbosity preferences to ease
+debugging of 'Makefile' development with just one option to set (turns
+the parallel pass into a sequential `make` of lowered verbosity, so it
+is well seen where the errors originate from, and follows up by a usual
+sequential pass).
 
 The first command-line attribute that is not an option defined above
 is considered to be the request of a command-line method as described
