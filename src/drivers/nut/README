@@ -1,5 +1,6 @@
 NUT driver
 ==========
+
 This driver connects to the NUT (Network UPS Tools) daemon and periodically
 checks it for all configured devices and their changes. Whenever there is a
 change, the `nut-actor` generates a 0MQ message.
@@ -7,10 +8,10 @@ change, the `nut-actor` generates a 0MQ message.
 The message for every configured device is also generated on application
 start (this is considered as a change from nothing to something).
 
-NOTE: Do not mistake the NUT system daemons and drivers (programs which
+NOTE: Do not mistake the NUT system daemons and "drivers" (programs which
 translate between device-specific protocols and the common NUT protocol),
-and the $BIOS project's "'nut-driver'" which translates messages between
-subsystems (such as NUT in this case) and the $BIOS framework.
+and the $BIOS project's drivers which translate messages between subsystems
+(such as NUT in this case of "'nut-driver'") and the $BIOS framework.
 
 
 Dependencies
