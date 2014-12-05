@@ -18,7 +18,11 @@
 # Author(s): Barbora Stepankova <BarboraStepankova@Eaton.com>,
 #            Tomas Halman <TomasHalman@eaton.com>
 #
-# Description: tests database files import
+# Description: ??
+#
+# Requirements:
+#   - mariadb running
+#   - db user root without password
 
 [ "x$CHECKOUTDIR" = "x" ] && \
     case "`dirname $0`" in
@@ -31,23 +35,46 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 
 set -u
 set -e
-set -x
 
 DB_BASE="$CHECKOUTDIR/tools/initdb.sql"
 DB_DATA="$CHECKOUTDIR/tools/load_data.sql"
 DB_TOPO="$CHECKOUTDIR/tools/power_topology.sql"
-
+RESULT=0
 
 cd $CHECKOUTDIR
 echo "-------------------- reset db --------------------"
 mysql -u root < "$DB_BASE"
 mysql -u root < "$DB_DATA"
 echo "-------------------- test-db --------------------"
+set +e
 make test-db && ./test-db
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-db failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
 echo "-------------------- test-db2 --------------------"
 make test-db2 && ./test-db2
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-db2 failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
+
 echo "-------------------- fill db for topology --------------------"
+set -e
 mysql -u root < "$DB_BASE"
 mysql -u root < "$DB_TOPO"
 echo "-------------------- test-dbtopology --------------------"
-make test-dbtopology && ./test-dbtopology
+set +e
+# make test-dbtopology && ./test-dbtopology
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-dbtopology failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
+cd -
+exit $RESULT
