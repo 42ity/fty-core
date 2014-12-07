@@ -340,6 +340,9 @@ showBuilderFlags() {
 "
 }
 
+# Note that this loop processes optional "--options" before going on to the
+# actions below. We must "shift" explicitly on every option, and then we
+# fall through on an unknown keyword - considering it a potential option.
 while [ $# -gt 0 ]; do
 	case "$1" in
 	    --warnless-unused)
@@ -380,6 +383,19 @@ while [ $# -gt 0 ]; do
 		SHOW_REPOSITORY_METADATA_GIT=yes
 		TIME_MAKE=time
 		TIME_CONF=time
+		shift
+		;;
+	    --debug-makefile)
+		# A special mode to debug makefiles themselves, minimal cruft
+		SHOW_BUILDER_FLAGS=yes
+		SHOW_REPOSITORY_METADATA_GIT=yes
+		WARNLESS_UNUSED=yes
+		TIME_MAKE=time
+		TIME_CONF=time
+		# Enforce first a sequential build with little verbosity and
+		# linear output
+		NOPARMAKE=no
+		NPARMAKES=1
 		shift
 		;;
 	    *)	break ;;

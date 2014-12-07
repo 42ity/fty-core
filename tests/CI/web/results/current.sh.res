@@ -1,1 +1,1 @@
-{"current":[{"id":4,"ups.status":"OL","temperature.default":10,"output.L1-N.voltage":120,"voltage.default1":31,"temperature.default0":0.03}]}
+{"current":[{"id":3,"ups.realpower":0.1,"voltage.output.L1-N":0.1,"current.output.L1":1.2,"current.output":3.1,"voltage.output":0.3}]}
