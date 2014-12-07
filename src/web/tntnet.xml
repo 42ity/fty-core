@@ -28,6 +28,12 @@
     </mapping>
     <!-- API itself -->
 
+    <!-- topology/location -->
+    <mapping>
+      <target>location@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>
