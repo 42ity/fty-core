@@ -91,7 +91,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     bool is_recursive, uint32_t current_depth, uint32_t filtertype)
 {
     assert ( child_type_id );   // is required
-    assert ( current_depth >= 0 );
     assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
@@ -795,41 +794,33 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
     log_info ("start\n");
     uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint32_t element_type_id = 6; // TODO hardcoded constant
     uint8_t  linktype = 1; //TODO hardcoded constants
 
-    zlist_t* powers = zlist_new();
-    assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
-
-    std::string name = "";
-    std::string name1 = "";
-
+    std::string device_name = "";
+    std::string device_type_name = "";
+    
     // select information about the start device
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            " v.name, v1.name"
+            "   v.name, v1.name as type_name"
             " FROM"
-            " v_bios_asset_element v,"
-            " v_bios_asset_device v1"
-            " WHERE v.id = :id AND"
-            "       v.id_type = :idtype AND"
-            "       v1.id_asset_element = v.id"
+            "   v_bios_asset_element v"
+            " LEFT JOIN  v_bios_asset_device v1"
+            "   ON ( v1.id_asset_element = v.id )"
+            " WHERE v.id = :id"
         );
-    
         tntdb::Row row = st.setInt("id", element_id).
-                            setInt("idtype", element_type_id).
                             selectRow();
-        // device name, required
-        row[0].get(name);
-        assert ( name != "" ); // database is corrupted
         
-        // device type name, required
-        row[1].get(name1);
-        assert ( name1 != "" ); // database is corrupted
+        // device name, required
+        row[0].get(device_name);
+        assert ( device_name != "" ); // database is corrupted
+        
+        // device type name, would be NULL if it is not a device
+        row[1].get(device_type_name);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -843,11 +834,24 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
+    
+    // check, if selected element has a device type
+    if ( device_type_name == "" )
+    {   // than it is not a device
+        log_warning ("abort with err = '%s %d %s'\n", "specified element id =", 
+                            element_id, " is not a device");
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+                                        "specified element is not a device", NULL);
+    }
 
     std::set<std::tuple<int,std::string,std::string>> newdevices, resultdevices;
-    auto adevice = std::make_tuple(element_id, name, name1);   // ( id,  device_name, device_type_name )
+    auto adevice = std::make_tuple(element_id, device_name, device_type_name);   // ( id,  device_name, device_type_name )
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
+
+    zlist_t* powers = zlist_new();
+    assert ( powers );
+    zlist_set_duplicator (powers, void_dup);
 
     bool ncontinue = true;
     while ( ncontinue )
