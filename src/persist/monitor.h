@@ -81,6 +81,7 @@ common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
 common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint32_t device_id);
 
 common_msg_t* select_client_info(const char* url, uint32_t id_client_info);
+common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id);
 
 ///////////////////////////////////////////////////////////////////
 ///////            DEVICE TYPE              ///////////////////////
@@ -132,15 +133,19 @@ common_msg_t* insert_device(const char* url, uint32_t devicetype_id, const char*
  *         COMMON_MSG_DB_OK   if delete was successful
  */
 common_msg_t* delete_device (const char* url, uint32_t device_id);
+
 /**
- * \brief Updates in the table t_bios_discovered_device row by id.
+ * \brief Updates into the table t_bios_client_info new row.
  *
- * \param newdevice - message with new information
+ * blob would be destroyed.
  *
- * \return COMMON_MSG_DB_FAIL if update failed
+ * \param client_id - id of the module that gathered this information
+ * \param blob      - an information as a flow of bytes
+ *
+ * \return COMMON_MSG_FAIL if update failed
  *         COMMON_MSG_DB_OK   if update was successful
  */
-common_msg_t* update_device (const char* url, common_msg_t** newdevice);
+common_msg_t* update_client_info (const char* url, uint32_t client_id, zchunk_t** blob);
 
 common_msg_t* select_device (const char* url, uint32_t devicetype_id, const char* name);
 

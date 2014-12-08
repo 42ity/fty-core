@@ -27,4 +27,10 @@ class measures_manager {
         std::string scale(std::string val, uint16_t i, uint16_t tid);
 };
 
+class ui_props_manager {
+    public:
+        std::string get();
+        std::string put(const std::string& props);
+};
+
 #endif // WEB_DATA_H

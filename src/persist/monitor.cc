@@ -366,16 +366,50 @@ common_msg_t* delete_client_info (const char* url, uint32_t id)
 }
 
 /**
- * \brief Updates in the table t_bios_client_info row by id.
+ * \brief Updates into the table t_bios_client_info new row.
  *
- * \param common_msg_t - message with new information.
+ * blob would be destroyed.
  *
- * \return COMMON_MSG_FAIL    if update failed.
- *         COMMON_MSG_DB_OK   if update was successful.
+ * \param client_id - id of the module that gathered this information
+ * \param blob      - an information as a flow of bytes
+ *
+ * \return COMMON_MSG_FAIL if update failed
+ *         COMMON_MSG_DB_OK   if update was successful
  */
-common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
+common_msg_t* update_client_info
+    (const char* url, uint32_t client_id, zchunk_t** blob)
 {
-    return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT INMPLEMENTED
+    assert ( client_id );  // is required
+    assert ( blob );
+    assert ( *blob );      // is required
+
+    uint32_t n = 0;     // number of rows affected
+    uint32_t newid = 0;
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " UPDATE t_bios_client_info"
+            " SET ext=:ext, timestamp=UTC_TIMESTAMP()"
+            " WHERE id_client=:idclient"
+        );          // time is the time of inserting into database
+        tntdb::Blob blobData((const char*)zchunk_data(*blob), zchunk_size(*blob));
+
+        n = st.setInt("idclient", client_id).
+               setBlob("ext", blobData).
+               execute();
+        newid = conn.lastInsertId();
+    }
+    catch (const std::exception &e) {
+        zchunk_destroy (blob);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    zchunk_destroy (blob);
+    if ( n == 1 )
+        return generate_ok (newid);
+    else
+        return generate_db_fail (DB_ERROR_BADINPUT, NULL, NULL);
 }
 
 /**
@@ -472,6 +506,51 @@ common_msg_t* select_client_info(const char* url, uint32_t id_client_info)
     common_msg_t* client_info = generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
     return generate_return_client_info (id_client_info, &client_info);
 }
+
+common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id)
+{
+    assert ( client_id );
+
+    uint32_t id_client_info = 0;
+    uint32_t device_id = 0;
+    time_t mydatetime = 0;
+    tntdb::Blob myBlob;
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url); 
+
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            " UNIX_TIMESTAMP(v.timestamp) as utm, v.ext, v.id , v.id_discovered_device"
+            " FROM"
+            " v_bios_client_info v"
+            " WHERE v.id_client = :id"
+        );
+        
+        tntdb::Row row = st.setInt("id", client_id).selectRow();
+          
+        bool isNotNull = row[0].get(mydatetime);
+        assert ( isNotNull );
+                               
+        isNotNull = row[1].get(myBlob);
+        assert ( isNotNull );
+    
+        row[2].get(id_client_info);
+        assert ( client_id );
+        
+        row[3].get(device_id);
+        //assert ( device_id );
+    }
+    catch (const tntdb::NotFound &e) {
+        return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    common_msg_t* client_info = generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
+    return generate_return_client_info (id_client_info, &client_info);
+}
+
 
 
 ///////////////////////////////////////////////////////////////////

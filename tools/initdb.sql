@@ -536,6 +536,7 @@ INSERT INTO t_bios_client (name) VALUES ("nmap");
 INSERT INTO t_bios_client (name) VALUES ("mymodule");
 INSERT INTO t_bios_client (name) VALUES ("admin");
 INSERT INTO t_bios_client (name) VALUES ("NUT");
+INSERT INTO t_bios_client (name) VALUES ("ui_properties");
 
 /* t_bios_asset_element_type */
 INSERT INTO t_bios_asset_element_type (name) VALUES ("group");
@@ -553,3 +554,7 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
+
+/* ui/properties are somewhat special */
+SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
+INSERT INTO t_bios_client_info (id_client, timestamp, ext) VALUES (@client_ui_properties, NOW(), "{}");
