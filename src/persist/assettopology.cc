@@ -448,7 +448,7 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type, con
 }
 
 /**
- * \brief A helper function: prints the frames in the
+ * \brief A helper function: convert a frame into the std::set of edges in the tree
  *  ASSET_MSG_LOCATION_FROM message
  *
  *  \param frame - frame to print
@@ -551,16 +551,16 @@ void print_frame (zframe_t* frame, uint32_t parent_id)
 }
 
 /**
- * \brief Recursivly selects the parents of the lement, until the top 
+ * \brief Recursivly selects the parents of the element, until the top 
  *  unlocated element.
  *
  * And generates the ASSET_MSG_RETURN_TOPOLOGY_TO message, but in inverse 
  * order (the specified element would be on the top level, but the top 
- * location would be at the bottom level;
+ * location would be at the bottom level);
  *
  * \param url             - the connection to database.
  * \param element_id      - the element id
- * \param element_type_id - id of the lement's type
+ * \param element_type_id - id of the element's type
  *
  * \return zmsg_t - an encoded COMMON_MSG_FAIL or ASSET_MSG_RETURN_TOPOLOGY_TO
  */
@@ -578,10 +578,12 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         tntdb::Connection conn = tntdb::connectCached(url); 
 
         tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " v.id_parent, v.id_parent_type"
+            " SELECT"
+            " v.id_parent, v.id_parent_type,v.name, v1.name as dtype_name"
             " FROM"
             " v_bios_asset_element v"
+            " LEFT JOIN v_bios_asset_device v1"
+            "      ON (v.id = v1.id_asset_element)"
             " WHERE v.id = :elementid AND "
             "       v.id_type = :elementtypeid"
         );
@@ -594,10 +596,13 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         uint32_t parent_id = 0;
         uint32_t parent_type_id = 0;
 
-        std::string dtype_name = ""; // TODO this is mock
-        std::string name = ""; // TODO this is mock
+        std::string dtype_name = ""; 
+        std::string name = "";
         row[0].get(parent_id);
         row[1].get(parent_type_id);
+        row[2].get(name);
+        row[3].get(dtype_name);
+
         log_info("rows selected %d, parent_id = %d, parent_type_id = %d\n", 1,
                     parent_id, parent_type_id);
         
