@@ -75,4 +75,3 @@ INSERT INTO t_bios_asset_device ( id_asset_device, id_asset_element, id_asset_de
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7024, "srv_LOC_51",   @ae_device, NULL); /* unlockated */
 INSERT INTO t_bios_asset_device ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (8008, 7024, @device_server);
-

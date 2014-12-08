@@ -11,18 +11,22 @@
 #include "assetmsg.h"
 
 
-TEST_CASE("Power topology to #1","[db][topology][power][to][power_topology.sql][t1]")
+TEST_CASE("Location topology from #1","[db][topology][location][location_topology.sql][from][lf1]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #1 ==================\n");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
+    log_info ("=============== LOCATION FROM #1 ==================\n");
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
+    // t_bios_asset_element with id 5019 should not exist
     asset_msg_set_element_id (getmsg, 5019);
+    asset_msg_set_type (getmsg, 1);
+    asset_msg_set_filter_type (getmsg, 7);
+    asset_msg_set_recursive (getmsg, true);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
+    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_common_msg (retTopology) );
     common_msg_t* cretTopology = common_msg_decode (&retTopology);
@@ -36,34 +40,99 @@ TEST_CASE("Power topology to #1","[db][topology][power][to][power_topology.sql][
     log_close();
 }
 
-
-TEST_CASE("Power topology to #2","[db][topology][power][power_topology.sql][to][t2]")
+TEST_CASE("Location topology from #3","[db][topology][location][location_topology.sql][from][lf3]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #2 ==================\n");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
+    uint32_t    start_id                = 7000;
+    uint8_t     start_type_id           = 2;
+    const char* start_name              = "DC_LOC_01";
+    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    uint8_t     start_filter_type_id    = 7;    // take all, 7 means without the filter
+    bool        start_recursive         = false;
+
+    log_info ("=============== LOCATION FROM #3 ==================\n");
+    
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
-    asset_msg_set_element_id (getmsg, 4998);
+    asset_msg_set_element_id  (getmsg, start_id);
+    asset_msg_set_type        (getmsg, start_type_id);
+    asset_msg_set_filter_type (getmsg, start_filter_type_id);
+    asset_msg_set_recursive   (getmsg, start_recursive);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
-    assert ( retTopology );
+    // expected childs in the tree
+    // (child, parent)
+    // id, id_type, name, device_type_name
+    uint8_t id_dc     = 2;
+    uint8_t id_room   = 3;
+    uint8_t id_row    = 4;
+    uint8_t id_rack   = 5;
+    uint8_t id_device = 6;
+
+    edge_lf expected;
     
-    REQUIRE ( is_common_msg (retTopology) );
-    common_msg_t* cretTopology = common_msg_decode (&retTopology);
+    expected.insert (std::make_tuple(7016,id_device,"main_LOC_1"  ,"main"  ,7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7017,id_device,"genset_LOC_1","genset",7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7018,id_device,"ups_LOC_1"   ,"ups"   ,7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7019,id_device,"srv_LOC_40"  ,"server",7000,id_dc,"DC_LOC_01",""));
+    
+    expected.insert (std::make_tuple(7013,id_rack,"RACK_LOC_30"   ,""      ,7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7007,id_row,"ROW_LOC_30"     ,""      ,7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7001,id_room,"ROOM_LOC_01"   ,""      ,7000,id_dc,"DC_LOC_01",""));
+    expected.insert (std::make_tuple(7002,id_room,"ROOM_LOC_02"   ,""      ,7000,id_dc,"DC_LOC_01",""));
+
+    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    assert ( retTopology );   
+    REQUIRE ( is_asset_msg (retTopology) );
+
+    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
-//    common_msg_print (cretTopology);
-    REQUIRE ( common_msg_errtype (cretTopology) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (cretTopology) == DB_ERROR_BADINPUT );
+//    asset_msg_print (cretTopology);
+    // check if the root is ok
+    REQUIRE ( compare_start_element (cretTopology, start_id, start_type_id, start_name, start_device_type_name) );
+   
+    // take edges from each group, and union step by step into r1
+    auto r1 = print_frame_to_edges (asset_msg_dcs (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    auto r2 = print_frame_to_edges (asset_msg_rooms (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_rows    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_racks   (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_devices (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_grps    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    // check if edges are ok
+    for (auto  it = expected.begin(); it != expected.end(); ++it )
+    {   
+        auto itr = r1.find ( *it );
+        INFO(std::get<0>(*it));
+        REQUIRE ( itr != r1.end() );
+        r1.erase (itr); 
+    }
+    REQUIRE ( (int)r1.size() == 0 );
+    r1.clear();
+    expected.clear();
 
     asset_msg_destroy (&getmsg);
-    common_msg_destroy (&cretTopology);
+    asset_msg_destroy (&cretTopology);
     log_close();
 }
-
-TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][t3]")
+/*
+TEST_CASE("Power topology to #3","[db][topology][power][to][t3]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -123,7 +192,7 @@ TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][t4]")
+TEST_CASE("Power topology to #4","[db][topology][power][to][t4]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -179,7 +248,7 @@ TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][t5]")
+TEST_CASE("Power topology to #5","[db][topology][power][to][t5]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -264,7 +333,7 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][t6]")
+TEST_CASE("Power topology to #6","[db][topology][power][to][t6]")
 {   
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -357,7 +426,7 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
     log_close();
 }
  
-TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][t7]")
+TEST_CASE("Power topology to #7","[db][topology][power][to][t7]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -439,7 +508,7 @@ TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][t8]")
+TEST_CASE("Power topology to #8","[db][topology][power][to][t8]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -524,7 +593,7 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][t9]")
+TEST_CASE("Power topology to #9","[db][topology][power][to][t9]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -619,7 +688,7 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
     log_close();
 }
 
-TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to][t10]")
+TEST_CASE("Power topology to #10","[db][topology][power][to][t10]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -702,7 +771,7 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     log_close();
 }
 
-TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to][t11]")
+TEST_CASE("Power topology to #11","[db][topology][power][to][t11]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -786,4 +855,4 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     asset_msg_destroy (&cretTopology);
     zmsg_destroy (&zmsg);
     log_close();
-}
+}*/
