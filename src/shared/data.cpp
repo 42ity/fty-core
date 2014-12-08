@@ -120,9 +120,19 @@ std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
 	/* Prepend zeroes - if needed - and add the period separator.
 	 * Locale does not matter, this is for programmatic consumption */
         if(sc < 0) {
-            for(int i=0; i+(int)(val.length()) < 2-sc; i++)
-                val = "0" + val;
-            val.insert(val.length()+sc, ".");
+            sc += (int)(val.length());
+            // We need to add some leading zeros
+            if(sc <= 0) {
+                while(sc < 0) {
+                    val = "0" + val;
+                    sc++;
+                }
+                val = "0." + val;
+            // We just need to insert decimal point to the correct possition
+            // -2 as letters are indexed from zero and insert adds after the index
+            } else {
+                val.insert(val.length()+sc-2, ".");
+            }
         }
         return val;
     } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {

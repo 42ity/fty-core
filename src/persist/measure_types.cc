@@ -82,7 +82,7 @@ zmsg_t* process_measures_meta(common_msg_t** msg) {
                     "select id, id_type, scale, name "
                     "from t_bios_measurement_subtypes where id = :mts_id "
                     "and id_type = :mt_id "
-                    "and id is not null and type_id is not null and "
+                    "and id is not null and id_type is not null and "
                     "name is not null and scale is not null");
 
                 row = st.setInt("mts_id", common_msg_mts_id(*msg)).
