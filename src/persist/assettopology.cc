@@ -12,6 +12,9 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
+
+
+#include "assettopology.h"
 // TODO HARDCODED CONSTANTS for asset device types
 
 // TODO This parameter should be placed in configure file
@@ -19,7 +22,6 @@
 // So instead of it the constat would be used
 #define MAX_RECURSION_DEPTH 6
 #define DEVICE 6
-
 
 int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
 {
@@ -107,12 +109,13 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         if ( element_id != 0 )
         {
             st = conn.prepareCached(
-                " SELECT "
-                "   v.id, v.name, v.id_type"
-                " FROM"
-                "   v_bios_asset_element v"
-                " WHERE v.id_parent = :elementid AND "
-                "       v.id_parent_type = :elementtypeid AND "
+                " SELECT"
+                "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                " FROM v_bios_asset_element v"
+                "    LEFT JOIN v_bios_asset_device v1"
+                "      ON (v.id = v1.id_asset_element)"
+                " WHERE v.id_parent = :elementid AND"
+                "       v.id_parent_type = :elementtypeid AND"
                 "       v.id_type = :childtypeid"
             );
             // Could return more than one row
@@ -124,10 +127,11 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         else
         {
             st = conn.prepareCached(
-                " SELECT "
-                "   v.id, v.name, v.id_type"
-                " FROM"
-                "   v_bios_asset_element v"
+                " SELECT"
+                "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                " FROM v_bios_asset_element v"
+                "    LEFT JOIN v_bios_asset_device v1"
+                "      ON (v.id = v1.id_asset_element)"
                 " WHERE v.id_parent is NULL  AND "
                 "       v.id_type = :childtypeid"
             );
@@ -155,10 +159,14 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             row[2].get(id_type);
             assert ( id_type );
             
+            std::string dtype_name = "";
+            row[3].get(dtype_name);
+            
             log_info ("for\n");
             log_info ("i = %d\n", i);
             log_info ("name = %s\n", name.c_str());
             log_info ("id_type = %d\n", id_type);
+            log_info ("dtype_name = %s\n", dtype_name.c_str());
 
             zframe_t* dcs     = NULL;
             zframe_t* rooms   = NULL;
@@ -223,7 +231,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
                )
             {
                 zmsg_t* el = asset_msg_encode_return_location_from 
-                                (id, id_type, name.c_str(), dcs, rooms, 
+                                (id, id_type, name.c_str(), dtype_name.c_str(), dcs, rooms, 
                                         rows, racks, devices, grps);
                 assert ( el );
                 log_info ("created msg el for i = %d\n",i);
@@ -290,6 +298,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     zframe_t* grps    = NULL;
     
     std::string name = "";
+    std::string dtype_name = "";
     if ( element_id != 0 )
     {
         try{
@@ -297,19 +306,23 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
-                "   v.name"
-                " FROM"
-                "   v_bios_asset_element v"
+                "    v.name, v1.name as dtype_name"                  
+                " FROM v_bios_asset_element v"
+                "    LEFT JOIN v_bios_asset_device v1"
+                "      ON (v.id = v1.id_asset_element)"
                 " WHERE v.id = :id"
             );
     
-            tntdb::Value val = st.setInt("id", element_id).
-                              selectValue();
-            val.get(name);
-            assert ( strcmp(name.c_str() ,"") );
+            tntdb::Row row = st.setInt("id", element_id).
+                                selectRow();
+            
+            row[0].get(name);
+            assert ( strcmp(name.c_str(), "") );
+
+            row[1].get(dtype_name);
         }
         catch (const tntdb::NotFound &e) {
-            // element with specified type was not found
+            // element with specified id was not found
             log_warning ("abort select element with err = '%s'\n", e.what());
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
@@ -416,10 +429,22 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         log_info ("end select_grps\n");
     }
     zmsg_t* el = asset_msg_encode_return_location_from 
-                        (element_id, type_id, name.c_str(), dcs, rooms, 
+                        (element_id, type_id, name.c_str(), dtype_name.c_str(), dcs, rooms, 
                          rows, racks, devices, grps);
     log_info ("end normal\n");
     return el;
+}
+
+/* helper function */
+bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type, const char* name, const char* dtype_name)
+{
+    if ( asset_msg_id (rmsg) != ASSET_MSG_RETURN_LOCATION_FROM )
+        return false;
+    else if ( ( asset_msg_element_id (rmsg) == id ) && ( asset_msg_type (rmsg) == id_type ) && ( !strcmp (asset_msg_name (rmsg), name) ) 
+                && ( !strcmp (asset_msg_device_type (rmsg), dtype_name) ) )
+        return true;
+    else
+        return false;
 }
 
 /**
@@ -428,7 +453,68 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
  *
  *  \param frame - frame to print
  */
-void print_frame (zframe_t* frame)
+edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, int type, std::string name, std::string dtype_name)
+{    
+    byte* buffer = zframe_data (frame);
+    assert ( buffer );
+    
+    edge_lf result, result1;
+
+    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    assert ( zmsg );
+    assert ( zmsg_is (zmsg) );
+     
+    zmsg_t* pop = NULL;
+    while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
+    { // caller owns zmgs_t
+        asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
+        assert ( item );
+//        asset_msg_print (item);
+        
+        result.insert(std::make_tuple (asset_msg_element_id(item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item) , parent_id, type, name, dtype_name)); 
+        log_debug ("parent_id = %d\n", parent_id );
+        
+        zframe_t* fr = asset_msg_dcs (item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+        
+        fr = asset_msg_rooms (item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+        
+        fr = asset_msg_rows (item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+        
+        fr = asset_msg_racks(item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+        
+        fr = asset_msg_devices (item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+        
+        fr = asset_msg_grps (item);
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result.insert(result1.begin(), result1.end());
+//            printf ("\tstatus = %d\n", (int) test_msg_status (item));
+        
+        asset_msg_destroy (&item);
+        assert ( pop == NULL );
+    }
+   zmsg_destroy (&zmsg);
+   assert ( zmsg == NULL );
+   return result;
+}
+
+
+/**
+ * \brief A helper function: prints the frames in the
+ *  ASSET_MSG_LOCATION_FROM message
+ *
+ *  \param frame - frame to print
+ */
+void print_frame (zframe_t* frame, uint32_t parent_id)
 {    
     byte* buffer = zframe_data (frame);
     assert ( buffer );
@@ -443,18 +529,19 @@ void print_frame (zframe_t* frame)
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
         assert ( item );
         asset_msg_print (item);
+        printf ("parent_id = %d\n", parent_id );
         zframe_t* fr = asset_msg_dcs (item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
         fr = asset_msg_rooms (item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
         fr = asset_msg_rows (item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
         fr = asset_msg_racks(item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
         fr = asset_msg_devices (item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
         fr = asset_msg_grps (item);
-        print_frame (fr);
+        print_frame (fr, asset_msg_element_id (item));
 //            printf ("\tstatus = %d\n", (int) test_msg_status (item));
         asset_msg_destroy (&item);
         assert ( pop == NULL );
@@ -507,6 +594,8 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         uint32_t parent_id = 0;
         uint32_t parent_type_id = 0;
 
+        std::string dtype_name = ""; // TODO this is mock
+        std::string name = ""; // TODO this is mock
         row[0].get(parent_id);
         row[1].get(parent_type_id);
         log_info("rows selected %d, parent_id = %d, parent_type_id = %d\n", 1,
@@ -517,7 +606,7 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
             zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
             if ( is_asset_msg (parent) )
                 return asset_msg_encode_return_location_to (element_id, 
-                                    element_type_id, parent);
+                                    element_type_id, name.c_str(), dtype_name.c_str(), parent);
             else if ( is_common_msg (parent) )
                 return parent;
             else
@@ -529,7 +618,7 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         {
             log_info ("but this element has no parent\n");
             return asset_msg_encode_return_location_to (element_id, 
-                                    element_type_id, zmsg_new());
+                                    element_type_id, name.c_str(), dtype_name.c_str(), zmsg_new());
         }
     }
     catch (const tntdb::NotFound &e) {

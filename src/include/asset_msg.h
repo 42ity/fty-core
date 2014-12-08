@@ -96,12 +96,15 @@
     RETURN_LOCATION_TO - Reply for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
+        name                string      Name of the asset element
+        device_type         string      Type of the device, string from t_bios_asset_device_type, if it is not a divece, then it is an empty string
         msg                 msg          parent of the element, this msg
 
     RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
         name                string      Name of the asset element
+        device_type         string      Type of the device, string from t_bios_asset_device_type, if it is not a divece, then it is an empty string
         dcs                 frame       List of datacenters, matryoshka of this msg
         rooms               frame       List of rooms, matryoshka of this msg
         rows                frame       List of rows, matryoshka of this msg
@@ -300,6 +303,8 @@ zmsg_t *
     asset_msg_encode_return_location_to (
         uint32_t element_id,
         byte type,
+        const char *name,
+        const char *device_type,
         zmsg_t *msg);
 
 //  Encode the RETURN_LOCATION_FROM 
@@ -308,6 +313,7 @@ zmsg_t *
         uint32_t element_id,
         byte type,
         const char *name,
+        const char *device_type,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
@@ -452,6 +458,8 @@ int
     asset_msg_send_return_location_to (void *output,
         uint32_t element_id,
         byte type,
+        const char *name,
+        const char *device_type,
         zmsg_t *msg);
     
 //  Send the RETURN_LOCATION_FROM to the output in one step
@@ -461,6 +469,7 @@ int
         uint32_t element_id,
         byte type,
         const char *name,
+        const char *device_type,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
