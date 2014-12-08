@@ -596,6 +596,9 @@ endif
 
 all-docs: man-docs doxygen-docs html-docs txt-docs
 
+# alias for manual typing errors
+docs-all: all-docs
+
 clean-docs: clean-man clean-doxygen clean-html clean-txt
 
 ###----------------------------------------------------------------------
@@ -605,14 +608,24 @@ clean-docs: clean-man clean-doxygen clean-html clean-txt
 #   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
 
 # Copies from "$1" to "$2", making the subdirectories as needed
-define copy-file =
-	@if test x"$(2)" != x"$(1)" ; then \
+define copy-file-cp =
+	if test x"$(2)" != x"$(1)" ; then \
 	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
 	    echo "Copy '$(1)' to '$(2)'" && \
 	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
 	else \
 	    echo "Not copying '$(1)' to '$(2)': same file"; \
 	fi
+endef
+
+# Another way to skin the cat...
+define copy-file-install =
+	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
+endef
+
+# Generalize the two solutions
+define copy-file =
+	$(call copy-file-install,$1,$2) || $(call copy-file-cp,$1,$2)
 endef
 
 define depend-copy-file =
@@ -623,7 +636,7 @@ $(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)
 
 # Define the dependency and the rule
 $(_MAP_DST_ABS): $(_MAP_SRC_ABS)
-	$$(call copy-file,$$<,$$@)
+	@$$(call copy-file,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
 $(_MAP_DST_REL): $(_MAP_DST_ABS)
@@ -668,6 +681,9 @@ txt-docs: $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)) \
 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC))
 
+# alias for manual typing errors
+docs-txt: txt-docs
+
 clean-txt: clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
 
 clean-txt-basedocs:
@@ -687,12 +703,12 @@ clean-txt-asciidocs:
 # Copy over the *.txt files into symmetrically named build path,
 # if required and not there (messed up with EXT_DIST)
 $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
-	$(call copy-file,$<,$@)
+	@$(call copy-file,$<,$@)
 
 # This is hardcoded to copy documents from project root directory into
 # the build area's "docs/develop" subdirectory and with ".txt" suffix
 $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
-	$(call copy-file,$<,$@)
+	@$(call copy-file,$<,$@)
 
 # Fake targets for simple pathnames (not needed for the same-to-same
 # copies like TXT_DOCS_ASCIIDOC)
@@ -709,6 +725,9 @@ $(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
 # That is a good thing by design ;)
 
 html-docs: txt-docs $(HTMLS)
+
+# alias for manual typing errors
+docs-html: html-docs
 
 clean-html:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS))
@@ -734,7 +753,7 @@ if HAVE_ASCIIDOC
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
 $(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)): %.html: %.txt
-	test -d "`dirname $@`" || mkdir -p "`dirname $@`"
+	@test -d "`dirname $@`" || mkdir -p "`dirname $@`"
 	$(ASCIIDOC) -b html -o $@ $<
 else
 $(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)):
@@ -759,6 +778,9 @@ CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/${mydoxylog}
 
 doxygen-docs: ${myDOXDIR}/html
+
+# alias for manual typing errors
+docs-doxygen: doxygen-docs
 
 clean-doxygen:
 	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
@@ -802,6 +824,9 @@ DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
+
+# alias for manual typing errors
+docs-man: man-docs
 
 clean-man:
 	( cd $(top_builddir)/$(myMANDIR) && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )

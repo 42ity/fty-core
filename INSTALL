@@ -268,6 +268,23 @@ the upstream OS itself, don't forget to update the metadata index first
 :; apt-get update
 ----
 
+The compiler and interpreter suites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The project is developed and built with GCC 4.8 or newer, and GNU make.
+The GNU auto-tools (autoconf, automake) and m4 packages are needed to
+regenerate the `configure` script. Further tools that may be required
+might include the linker, binutils and similar common C/C++ development
+packages.
+
+Scripts in the project are developed in POSIX shells (should work with
+`dash` and similar constrained shells as a `/bin/sh`); some shell scripts
+do require a `/bin/bash` explicitly. Further script environments include
+Python.
+
+We hope to minimize run-time dependencies and thus the total installation
+footprint and RAM usage, so other languages (Java, JS, PERL, PHP, Ruby,
+etc.) should have an undeniable reason to be added and used in the project.
+
 
 iproute (may be named iproute2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
