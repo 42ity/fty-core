@@ -1,9 +1,4 @@
 use box_utf8;
-insert into t_bios_asset_device_type (id_asset_device_type , name) values (5, "mgenset");
-
-
-
-insert into t_bios_asset_device_type (id_asset_device_type , name) values (6, "sink");
 
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_parent ) values (5000, "serv2", 6 , NULL); 
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_parent ) values (5001, "ePDUA", 6 , NULL); 
@@ -33,15 +28,11 @@ insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_grou
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5002);
 insert into t_bios_asset_group_relation (id_asset_group_relation , id_asset_group, id_asset_element) values (NULL, 4999, 5000);
 
-
-
 insert into t_bios_asset_element ( id_asset_element , name , id_type , id_parent ) values (4998, "power_inputgrp_empty", 1, NULL);
-
-
 
 /* prepared to insert */
 
-INSERT INTO t_bios_device_type (name) VALUES ("sink");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("sink");
 
 SELECT @id_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @id_sink := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'sink';
