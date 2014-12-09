@@ -540,3 +540,5 @@ values
     2
 );
 
+SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
+UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2"}' WHERE id_client=@client_ui_properties;
