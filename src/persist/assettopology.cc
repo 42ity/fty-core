@@ -642,7 +642,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     }
     zlist_t* powers = zlist_new();
     assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
+    zlist_autofree(powers);
 
     zframe_t* devices = NULL;
  
@@ -851,7 +851,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
 
     zlist_t* powers = zlist_new();
     assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
+    zlist_autofree(powers);
 
     bool ncontinue = true;
     while ( ncontinue )
@@ -990,7 +990,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     // powers
     zlist_t* powers = zlist_new();
     assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
+    zlist_autofree(powers);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // v_bios_asset_link are only devices, so there is no need to add more constrains
@@ -1214,7 +1214,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url, asset_msg_t* getms
     // powers
     zlist_t* powers = zlist_new();
     assert ( powers );
-    zlist_set_duplicator (powers, void_dup);
+    zlist_autofree(powers);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // v_bios_asset_link are only devices, so there is no need to add more constrains

@@ -319,11 +319,11 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                     continue;
                 }
 
-                auto v1 = el.attribute(name);
-                auto v2 = el.attribute(type);
+                const char* v1 = (const char*)el.attribute(name).c_str();
+                char* v2 =       (      char*)el.attribute(type).c_str();
             
                 assert (hostnames);
-                int rv = zhash_insert (hostnames, &v1, &v2); 
+                int rv = zhash_insert (hostnames, v1, v2); 
                 assert (rv == 0);
 
                 }
@@ -383,7 +383,6 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
     bool in_os = false;    
     bool in_osmatch = false;    
-    bool in_osclass = false;    
 
     // multi
     bool in_cpe = false;
@@ -484,12 +483,11 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                         // NOTE: By default
                         //  keys are duplicated usign strdup - check
                         //  keys are freed free() - check
-                        zhash_set_duplicator (hash, (czmq_duplicator *) strdup);
-                        zhash_set_destructor (hash, (czmq_destructor *) zstr_free);
+                        zhash_autofree (hash);
                     }
                     // TODO: rewrite C-style cast
                     zhash_insert (hash,
-                        (const void *) convert<std::string>
+                        convert<std::string>
                         (el.attribute (addr_term)).c_str(),
                         (void *) convert<std::string>
                         (el.attribute (vendor_term)).c_str());
@@ -516,12 +514,11 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                     // NOTE: By default
                     //  keys are duplicated usign strdup - check
                     //  keys are freed free() - check
-                    zhash_set_duplicator (hash, (czmq_duplicator *) strdup);
-                    zhash_set_destructor (hash, (czmq_destructor *) zstr_free);
+                    zhash_autofree (hash);
                 }
                 // TODO: rewrite C-style cast
                 zhash_insert (hash, 
-                    (const void *) convert<std::string>
+                    convert<std::string>
                     (el.attribute (name_term)).c_str(),
                     (void *) convert<std::string>
                     (el.attribute (type_term)).c_str());
@@ -781,8 +778,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                 if (list == NULL) {
                     list = zlist_new ();
                     assert (list);
-                    zlist_set_duplicator (list, (czmq_duplicator *) strdup);
-                    zlist_set_destructor (list, (czmq_destructor *) zstr_free);
+                    zlist_autofree (list);
                 }
                 // TODO: rewrite C-style cast
                 rv = zlist_append (list,
@@ -1017,8 +1013,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                 if (list == NULL) {
                     list = zlist_new ();
                     assert (list);
-                    zlist_set_duplicator (list, (czmq_duplicator *) strdup);
-                    zlist_set_destructor (list, (czmq_destructor *) zstr_free);
+                    zlist_autofree (list);
                 }
                 // TODO: rewrite C-style cast
                 rv = zlist_append (list,

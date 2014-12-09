@@ -935,9 +935,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
     
     zlist_t* measurements = zlist_new();
     assert ( measurements );
-    // in older versions this function is called 
-    // zhash_set_item_duplicator
-    zlist_set_duplicator (measurements, void_dup);
+    zlist_autofree(measurements);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
