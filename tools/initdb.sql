@@ -547,6 +547,7 @@ INSERT INTO t_bios_asset_element_type (name) VALUES ("device");
 
 /* t_bios_asset_device_type */
 INSERT INTO t_bios_asset_device_type (name) VALUES ("ups");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("genset");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
