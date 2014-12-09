@@ -78,6 +78,13 @@
         <id>$1</id>
       </args>
     </mapping>
+
+    <!-- UI/properties -->
+    <mapping>
+      <target>ui_properties@bios_web</target>
+      <method>(GET|PUT)</method>
+      <url>^/api/v1/ui/properties.*$</url>
+    </mapping>
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
