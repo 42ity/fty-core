@@ -29,7 +29,7 @@ class measures_manager {
 
 class ui_props_manager {
     public:
-        std::string get();
+        std::string get(std::string& result);
         std::string put(const std::string& props);
 };
 

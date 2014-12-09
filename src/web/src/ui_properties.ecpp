@@ -17,7 +17,14 @@ ui_props_manager mgr;
 
     if (meth == "GET") {
 
-        std::string res = mgr.get();
+        std::string res;
+        std::string err = mgr.get(res);
+        if (err != "") {
+</%cpp>
+<$$ err $>
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
 </%cpp>
 <$$ res $>
 <%cpp>

@@ -31,6 +31,7 @@ References: BIOS-397
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
 
+#include "defs.h"
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
@@ -453,7 +454,7 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
     bool result = false;
 
     //FIXME: we now support is == 5 == UI_properties
-    assert (client_id == 5);
+    assert (client_id == UI_PROPERTIES_CLIENT_ID);
 
     common_msg_t *reply = update_client_info(url, client_id, &info);
     uint32_t msgid = common_msg_id (reply);

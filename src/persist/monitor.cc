@@ -5,6 +5,7 @@
 #include <tntdb/value.h>
 #include <tntdb/result.h>
 
+#include "defs.h"
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
@@ -507,10 +508,10 @@ common_msg_t* select_client_info(const char* url, uint32_t id_client_info)
     return generate_return_client_info (id_client_info, &client_info);
 }
 
-common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id)
+// specific function due to unusual nature of ui/properties entry - we suppose there will be
+// the only one
+common_msg_t* select_ui_properties(const char* url)
 {
-    assert ( client_id );
-
     uint32_t id_client_info = 0;
     uint32_t device_id = 0;
     time_t mydatetime = 0;
@@ -527,7 +528,7 @@ common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id
             " WHERE v.id_client = :id"
         );
         
-        tntdb::Row row = st.setInt("id", client_id).selectRow();
+        tntdb::Row row = st.setInt("id", UI_PROPERTIES_CLIENT_ID).selectRow();
           
         bool isNotNull = row[0].get(mydatetime);
         assert ( isNotNull );
@@ -536,10 +537,9 @@ common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id
         assert ( isNotNull );
     
         row[2].get(id_client_info);
-        assert ( client_id );
+        assert ( id_client_info );
         
         row[3].get(device_id);
-        //assert ( device_id );
     }
     catch (const tntdb::NotFound &e) {
         return generate_db_fail (DB_ERROR_NOTFOUND, e.what(), NULL);
@@ -547,7 +547,7 @@ common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id
     catch (const std::exception &e) {
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client_info = generate_client_info(client_id, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
+    common_msg_t* client_info = generate_client_info(UI_PROPERTIES_CLIENT_ID, device_id, mydatetime, (byte*)myBlob.data(), myBlob.size());
     return generate_return_client_info (id_client_info, &client_info);
 }
 

@@ -81,7 +81,14 @@ common_msg_t* update_client_info (const char* url, common_msg_t** newclientinfo)
 common_msg_t* select_client_info_last(const char* url, uint32_t client_id, uint32_t device_id);
 
 common_msg_t* select_client_info(const char* url, uint32_t id_client_info);
-common_msg_t* select_client_info_by_clientid(const char* url, uint32_t client_id);
+
+/**
+ * \brief Selects one line with contect of ui/properties
+ *
+ * \return COMMON_MSG_DB_FAIL if update fails
+ *         COMMON_MSG_DB_OK   if update was succesfull
+ */
+common_msg_t* select_ui_properties(const char* url);
 
 ///////////////////////////////////////////////////////////////////
 ///////            DEVICE TYPE              ///////////////////////

@@ -1,3 +1,4 @@
+#include "defs.h"
 #include "data.h"
 #include "asset_types.h"
 #include "measure_types.h"
@@ -202,47 +203,52 @@ std::string measures_manager::map_values(std::string name, std::string value) {
     return value;
 }
 
-std::string ui_props_manager::get() {
-
-    static std::string def{"{0:1}"};
+std::string ui_props_manager::get(std::string& result) {
 
     //FIXME: where to put the constant?
-    common_msg_t *reply = select_client_info_by_clientid(url.c_str(), 5);
+    common_msg_t *reply = select_ui_properties(url.c_str());
     if (!reply)
-        return def;
+        return std::string("{\"error\" : \"Can't load ui/properties from database!\"}");
 
     uint32_t msg_id = common_msg_id(reply);
 
-    if (msg_id != COMMON_MSG_RETURN_CINFO) {
+    if (msg_id == COMMON_MSG_FAIL) {
+        auto ret = std::string{"{\"error\" : \""};
+        ret.append(common_msg_errmsg(reply));
+        ret.append("\"}");
         common_msg_destroy(&reply);
-        return def;
+        return ret;
+    }
+    else if (msg_id != COMMON_MSG_RETURN_CINFO) {
+        common_msg_destroy(&reply);
+        return std::string("{\"error\" : \"Unexpected msg_id delivered, expected COMMON_MSG_RETURN_CINFO\"}");
     }
 
     zmsg_t *zmsg = common_msg_get_msg(reply);
     if (!zmsg) {
         common_msg_destroy(&reply);
-        return std::string{"{0:2}"};
+        return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");
     }
 
     common_msg_t *msg = common_msg_decode(&zmsg);
     common_msg_destroy(&reply);
     if (!msg)
-        return std::string{"{0:3}"};
+        return std::string("{\"error\" : \"Can't decode inner message from reply!\"}");
     
     zchunk_t *info = common_msg_get_info(msg);
     common_msg_destroy(&msg);
     if (!info)
-        return std::string{"{0:4}"};
+        return std::string("{\"error\" : \"Can't get chunk from reply!\"}");
 
     char *s = zchunk_strdup(info);
     zchunk_destroy(&info);
     if (!s)
-        return std::string{"{0:5}"};
+        return std::string("{\"error\" : \"Can't get string from reply!\"}");
     
-    std::string ret{s};
+    result = s;
     free(s);
 
-    return ret;
+    return std::string{};
 }
 
 std::string ui_props_manager::put(const std::string& ext) {
@@ -254,7 +260,7 @@ std::string ui_props_manager::put(const std::string& ext) {
         return std::string("fail to create zchunk");
 
     //FIXME: where to store client_id?
-    common_msg_t *reply = update_client_info(url.c_str(), 5, &chunk);
+    common_msg_t *reply = update_client_info(url.c_str(), UI_PROPERTIES_CLIENT_ID, &chunk);
     uint32_t msg_id = common_msg_id(reply);
     common_msg_destroy(&reply);
 
