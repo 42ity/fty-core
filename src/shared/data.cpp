@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <map>
+#include <limits.h>
 
 byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
@@ -105,6 +106,45 @@ std::string measures_manager::int_to_subtype(std::string i, std::string t) {
     }
 }
 
+static std::string s_scale(const std::string& val, int8_t scale) {
+
+    assert(val != "");
+    assert(val.size() <= SCHAR_MAX);
+
+    std::string ret{val};
+
+    //1. no scale, nothing to do
+    if (!scale)
+        return ret;
+
+    //2. positive scale, simply append things
+    if (scale > 0) {
+        while (scale > 0) {
+            ret.append("0");
+            scale--;
+        }
+        return ret;
+    }
+
+    //3. scale is "bigger" than size of string,
+    if (scale <= -val.size()) {
+        //3a. prepend zeroes
+        while (scale != -val.size()) {
+            ret.insert(0, "0");
+            scale++;
+        }
+
+        //3b and prepend 0.
+        ret.insert(0, "0.");
+        return ret;
+    }
+
+    //4. just find the right place for dot
+    ret.insert(val.size() + scale, ".");
+    return ret;
+
+}
+
 std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
     char buff[16];
     zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
@@ -117,28 +157,7 @@ std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
         int sc = (int8_t)common_msg_mts_scale(dta);
 
         common_msg_destroy(&dta);
-        while(sc > 0) {
-            val += "0";
-            sc--;
-        }
-	/* Prepend zeroes - if needed - and add the period separator.
-	 * Locale does not matter, this is for programmatic consumption */
-        if(sc < 0) {
-            sc += (int)(val.length());
-            // We need to add some leading zeros
-            if(sc <= 0) {
-                while(sc < 0) {
-                    val = "0" + val;
-                    sc++;
-                }
-                val = "0." + val;
-            // We just need to insert decimal point to the correct possition
-            // -2 as letters are indexed from zero and insert adds after the index
-            } else {
-                val.insert(val.length()+sc-2, ".");
-            }
-        }
-        return val;
+        return s_scale(val, sc);
     } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {
         common_msg_print(dta); 
     }
