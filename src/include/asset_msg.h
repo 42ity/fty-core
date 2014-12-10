@@ -97,14 +97,14 @@
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
         name                string      Name of the asset element
-        device_type         string      Type of the device, string from t_bios_asset_device_type, if it is not a divece, then it is an empty string
+        type_name           string      Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string
         msg                 msg          parent of the element, this msg
 
     RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
         name                string      Name of the asset element
-        device_type         string      Type of the device, string from t_bios_asset_device_type, if it is not a divece, then it is an empty string
+        type_name           string      Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string
         dcs                 frame       List of datacenters, matryoshka of this msg
         rooms               frame       List of rooms, matryoshka of this msg
         rows                frame       List of rows, matryoshka of this msg
@@ -304,7 +304,7 @@ zmsg_t *
         uint32_t element_id,
         byte type,
         const char *name,
-        const char *device_type,
+        const char *type_name,
         zmsg_t *msg);
 
 //  Encode the RETURN_LOCATION_FROM 
@@ -313,7 +313,7 @@ zmsg_t *
         uint32_t element_id,
         byte type,
         const char *name,
-        const char *device_type,
+        const char *type_name,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
@@ -459,7 +459,7 @@ int
         uint32_t element_id,
         byte type,
         const char *name,
-        const char *device_type,
+        const char *type_name,
         zmsg_t *msg);
     
 //  Send the RETURN_LOCATION_FROM to the output in one step
@@ -469,7 +469,7 @@ int
         uint32_t element_id,
         byte type,
         const char *name,
-        const char *device_type,
+        const char *type_name,
         zframe_t *dcs,
         zframe_t *rooms,
         zframe_t *rows,
@@ -712,6 +712,12 @@ byte
 void
     asset_msg_set_filter_type (asset_msg_t *self, byte filter_type);
 
+//  Get/set the type_name field
+const char *
+    asset_msg_type_name (asset_msg_t *self);
+void
+    asset_msg_set_type_name (asset_msg_t *self, const char *format, ...);
+
 //  Get a copy of the dcs field
 zframe_t *
     asset_msg_dcs (asset_msg_t *self);
@@ -771,12 +777,6 @@ zframe_t *
 //  Set the grps field, transferring ownership from caller
 void
     asset_msg_set_grps (asset_msg_t *self, zframe_t **frame_p);
-
-//  Get/set the type_name field
-const char *
-    asset_msg_type_name (asset_msg_t *self);
-void
-    asset_msg_set_type_name (asset_msg_t *self, const char *format, ...);
 
 //  Self test of this class
 int

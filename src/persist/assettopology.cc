@@ -640,7 +640,7 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type, con
     if ( asset_msg_id (rmsg) != ASSET_MSG_RETURN_LOCATION_FROM )
         return false;
     else if ( ( asset_msg_element_id (rmsg) == id ) && ( asset_msg_type (rmsg) == id_type ) && ( !strcmp (asset_msg_name (rmsg), name) ) 
-                && ( !strcmp (asset_msg_device_type (rmsg), dtype_name) ) )
+                && ( !strcmp (asset_msg_type_name (rmsg), dtype_name) ) )
         return true;
     else
         return false;
@@ -670,31 +670,31 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, int type, std
         assert ( item );
 //        asset_msg_print (item);
         
-        result.insert(std::make_tuple (asset_msg_element_id(item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item) , parent_id, type, name, dtype_name)); 
+        result.insert(std::make_tuple (asset_msg_element_id(item), asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item) , parent_id, type, name, dtype_name)); 
         log_debug ("parent_id = %d\n", parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item), asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_rooms (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_rows (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_racks(item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_devices (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_grps (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
 //            printf ("\tstatus = %d\n", (int) test_msg_status (item));
         

@@ -42,7 +42,7 @@ TEST_CASE("Location topology from #1","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #3","[db][topology][location][location_topology.sql][from][lf3]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
+    log_set_level(LOG_DEBUG);
 
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -90,34 +90,43 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
+    log_info ("=============== LOCATION FROM #31 ==================\n");
 
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
+    log_info ("=============== LOCATION FROM #32 ==================\n");
 //    asset_msg_print (cretTopology);
     // check if the root is ok
     REQUIRE ( compare_start_element (cretTopology, start_id, start_type_id, start_name, start_device_type_name) );
    
+    log_info ("=============== LOCATION FROM #33 ==================\n");
     // take edges from each group, and union step by step into r1
     auto r1 = print_frame_to_edges (asset_msg_dcs (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    log_info ("=============== LOCATION FROM #33 ==================\n");
     auto r2 = print_frame_to_edges (asset_msg_rooms (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     r1.insert(r2.begin(), r2.end());
     r2.clear();
 
+    log_info ("=============== LOCATION FROM #34 ==================\n");
     r2 = print_frame_to_edges (asset_msg_rows    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     r1.insert(r2.begin(), r2.end());
     r2.clear();
 
+    log_info ("=============== LOCATION FROM #35 ==================\n");
     r2 = print_frame_to_edges (asset_msg_racks   (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     r1.insert(r2.begin(), r2.end());
     r2.clear();
 
+    log_info ("=============== LOCATION FROM #36 ==================\n");
     r2 = print_frame_to_edges (asset_msg_devices (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     r1.insert(r2.begin(), r2.end());
     r2.clear();
+    log_info ("=============== LOCATION FROM #37 ==================\n");
 
     r2 = print_frame_to_edges (asset_msg_grps    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     r1.insert(r2.begin(), r2.end());
     r2.clear();
+    log_info ("=============== LOCATION FROM #38 ==================\n");
 
      // check if edges are ok
     for (auto  it = r1.begin(); it != r1.end(); ++it )
