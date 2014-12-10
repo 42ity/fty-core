@@ -104,6 +104,11 @@ api_auth_delete() {
     curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+api_auth_put() {
+    TOKEN="`_api_get_token`"
+    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
+}
+
 # fixture ini
 if ! pidof saslauthd > /dev/null; then
     echo "saslauthd is not running, please start it first!" >&2
