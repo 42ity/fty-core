@@ -73,6 +73,164 @@ size_t my_size(zframe_t* frame)
         return zframe_size (frame);
 }
 
+
+/**
+ * \brief Select group elements of specified type for the specified group
+ *  
+ * \param url             - connection to database
+ * \param element_id      - asset element id of group
+ * \param filter_type     - id of the type of the searched elements
+ *                          (from the table t_bios_asset_element_type)
+ *
+ * \return zmsg_t  - in case of success returns ASEET_MSG_RETURN_LOCATION_FROM
+ *                   filled with elements of the group,
+ *                   or COMMON_MSG_FAIL in case of errors.
+ */
+zmsg_t* select_group_elements(const char* url, uint32_t element_id, 
+        uint8_t element_type_id, const char* group_name, 
+        const char* dtype_name, uint8_t filtertype)
+{
+    assert ( element_id );  // id of the group should be specified
+    assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
+    // it can be only 1,2,3,4,5,6.7. 7 means - take all
+
+    log_info ("start\n");
+    log_info ("element_id = %d\n", element_id);
+    log_info ("filter_type = %d\n", filtertype);
+ 
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url); 
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "   v.id_asset_element,"
+                "   v1.name,"
+                "   v1.id_type AS id_asset_element_type,"
+                "   v3.name AS dtype_name,"
+                "   v2.name AS name_asset_element_type"
+                " FROM    t_bios_asset_group_relation v"
+                "   INNER JOIN t_bios_asset_element v1"
+                "       ON (v.id_asset_element = v1.id_asset_element )"
+                "   INNER JOIN t_bios_asset_element_type v2"
+                "       ON (v1.id_type = v2.id_asset_element_type)"
+                "   LEFT JOIN v_bios_asset_device v3"
+                "       ON v3.id_asset_element = v1.id_asset_element"
+                "       WHERE v.id_asset_group = :elementid"
+            );
+            
+        // Could return more than one row
+        tntdb::Result result = st.setInt("elementid", element_id).
+                                  select();
+        
+        log_info("rows selected %d\n", result.size());
+        int i = 0;
+        int rv = 0;
+
+        zmsg_t* dcss     = zmsg_new();
+        zmsg_t* roomss   = zmsg_new();
+        zmsg_t* rowss    = zmsg_new();
+        zmsg_t* rackss   = zmsg_new();
+        zmsg_t* devicess = zmsg_new();
+
+        for ( auto &row: result )
+        {
+            i++;
+            uint32_t id = 0;
+            row[0].get(id);
+            assert ( id );
+    
+            std::string name = "";
+            row[1].get(name);
+            assert ( strcmp(name.c_str(), "") );
+
+            uint32_t id_type = 0;
+            row[2].get(id_type);
+            assert ( id_type );
+            
+            std::string dtype_name = "";
+            row[3].get(dtype_name);
+            
+            log_info ("for\n");
+            log_info ("i = %d\n", i);
+            log_info ("id = %d\n", id);
+            log_info ("name = %s\n", name.c_str());
+            log_info ("id_type = %d\n", id_type);
+            log_info ("dtype_name = %s\n", dtype_name.c_str());
+
+            // we are interested in the element if we are interested in all
+            // elements ( filtertype == 7) or if this element has exactly the type
+            // of the filter (filtertype == id_type)
+            if (( filtertype == 7 ) || ( ( filtertype == 1 ) ) )
+            {
+                zmsg_t* el = asset_msg_encode_return_location_from 
+                              (id, id_type, name.c_str(), dtype_name.c_str(), NULL, NULL, 
+                                   NULL, NULL, NULL, NULL);
+                assert ( el );
+        
+                log_info ("created msg el for i = %d\n", i);
+                                // we are interested in the element
+                if ( id_type == 2 )
+                {
+                    rv = zmsg_addmsg (dcss, &el);
+                    assert ( rv != -1 );
+                    assert ( el == NULL );                 
+                }
+                if ( id_type == 3 )
+                {   
+                    rv = zmsg_addmsg (roomss, &el);
+                    assert ( rv != -1 );
+                    assert ( el == NULL );
+                }
+                if ( id_type == 4 )
+                {   
+                    rv = zmsg_addmsg (rowss, &el);
+                    assert ( rv != -1 );
+                    assert ( el == NULL );
+                }
+                if ( id_type == 5 )
+                {   
+                    rv = zmsg_addmsg (rackss, &el);
+                    assert ( rv != -1 );
+                    assert ( el == NULL );
+                }
+                if ( id_type == 6 )
+                {   
+                    rv = zmsg_addmsg (devicess, &el);
+                    assert ( rv != -1 );
+                    assert ( el == NULL );
+                }
+               // group of groups is not allowed 
+            }
+        }// end for
+        zframe_t* dcs     = NULL;
+        zframe_t* rooms   = NULL;
+        zframe_t* rows    = NULL;
+        zframe_t* racks   = NULL;
+        zframe_t* devices = NULL;
+        
+        rv = matryoshka2frame (&dcss, &dcs);
+        assert ( rv == 0 );
+        rv = matryoshka2frame (&roomss, &rooms);
+        assert ( rv == 0 );
+        rv = matryoshka2frame (&rowss, &rows);
+        assert ( rv == 0 );
+        rv = matryoshka2frame (&rackss, &racks);
+        assert ( rv == 0 );
+        rv = matryoshka2frame (&devicess, &devices);
+        assert ( rv == 0 );
+        zmsg_t* el = asset_msg_encode_return_location_from 
+                      (element_id, element_type_id, group_name, dtype_name, dcs, rooms, 
+                                        rows, racks, devices, NULL);
+        assert ( el );
+        log_info ("end\n");
+        return el;
+    }
+    catch (const std::exception &e) {
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+}
+
 /**
  * \brief Select childs of specified type for the specified element 
  * (element_id + element_type_id). 
@@ -96,7 +254,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
     assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
-    log_info ("start\n");
+    log_info ("start select_childs\n");
     log_info ("depth = %d\n", current_depth);
     log_info ("element_id = %d\n", element_id);
     log_info ("element_type_id = %d\n", element_type_id);
@@ -108,16 +266,34 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         tntdb::Result result; 
         if ( element_id != 0 )
         {
-            st = conn.prepareCached(
-                " SELECT"
-                "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
-                " FROM v_bios_asset_element v"
-                "    LEFT JOIN v_bios_asset_device v1"
-                "      ON (v.id = v1.id_asset_element)"
-                " WHERE v.id_parent = :elementid AND"
-                "       v.id_parent_type = :elementtypeid AND"
-                "       v.id_type = :childtypeid"
-            );
+            // for the groups, other select is needed
+            // because type of the group should be selected
+            if ( child_type_id == 1 )
+            {
+                st = conn.prepareCached(
+                    " SELECT"
+                    "    v.id, v.name, v.id_type, v1.value as dtype_name"                  
+                    " FROM v_bios_asset_element v"
+                    "    INNER JOIN t_bios_asset_ext_attributes v1"
+                    "      ON (v.id = v1.id_asset_element AND v1.keytag = 'type')"
+                    " WHERE v.id_parent = :elementid AND"
+                    "       v.id_parent_type = :elementtypeid AND"
+                    "       v.id_type = :childtypeid"
+                );
+            }
+            else
+            {
+                st = conn.prepareCached(
+                    " SELECT"
+                    "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                    " FROM v_bios_asset_element v"
+                    "    LEFT JOIN v_bios_asset_device v1"
+                    "      ON (v.id = v1.id_asset_element)"
+                    " WHERE v.id_parent = :elementid AND"
+                    "       v.id_parent_type = :elementtypeid AND"
+                    "       v.id_type = :childtypeid"
+                );
+            }
             // Could return more than one row
             result = st.setInt("elementid", element_id).
                         setInt("elementtypeid", element_type_id).
@@ -126,16 +302,33 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         }
         else
         {
-            st = conn.prepareCached(
-                " SELECT"
-                "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
-                " FROM v_bios_asset_element v"
-                "    LEFT JOIN v_bios_asset_device v1"
-                "      ON (v.id = v1.id_asset_element)"
-                " WHERE v.id_parent is NULL  AND "
-                "       v.id_type = :childtypeid"
-            );
-
+            // for the groups, other select is needed
+            // because type of the group should be selected
+            if ( child_type_id == 1 )
+            {
+                st = conn.prepareCached(
+                    " SELECT"
+                    "    v.id, v.name, v.id_type, v1.value as dtype_name"                  
+                    " FROM v_bios_asset_element v"
+                    "   INNER JOIN t_bios_asset_ext_attributes v1"
+                    "      ON (v.id = v1.id_asset_element AND v1.keytag = 'type')"
+                    " WHERE v.id_parent is NULL  AND "
+                    "       v.id_type = :childtypeid"
+                );
+            }
+            else
+            {
+                st = conn.prepareCached(
+                    " SELECT"
+                    "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                    " FROM v_bios_asset_element v"
+                    "    LEFT JOIN v_bios_asset_device v1"
+                    "      ON (v.id = v1.id_asset_element)"
+                    " WHERE v.id_parent is NULL  AND "
+                    "       v.id_type = :childtypeid"
+                );
+            }
+            // Could return more than one row
             result = st.setInt("childtypeid", child_type_id).
                         select();
         }
@@ -164,6 +357,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             
             log_info ("for\n");
             log_info ("i = %d\n", i);
+            log_info ("id = %d\n", id);
             log_info ("name = %s\n", name.c_str());
             log_info ("id_type = %d\n", id_type);
             log_info ("dtype_name = %s\n", dtype_name.c_str());
@@ -173,66 +367,72 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             zframe_t* rows    = NULL;
             zframe_t* racks   = NULL;
             zframe_t* devices = NULL;
-            zframe_t* grps    = NULL;
-
+            zmsg_t* grp       = NULL;
+            
             if ( ( is_recursive ) && ( child_type_id != DEVICE ) && 
                         ( current_depth <= MAX_RECURSION_DEPTH ) )
             {
-                if  ( ( child_type_id < 2 ) && ( 2 <= filtertype ) )
+                if  ( ( child_type_id != 1 ) && ( child_type_id < 2 ) && ( 2 <= filtertype ) )
                 {
                     log_info ("start select_dcs\n");
                     dcs     = select_childs (url, id, child_type_id, 2, 
                                 is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_dcs\n");
                 }
-                if ( ( child_type_id < 3 ) && ( 3 <= filtertype ) )
+                if ( ( child_type_id != 1 ) && ( child_type_id < 3 ) && ( 3 <= filtertype ) )
                 {
                     log_info ("start select_rooms\n");
                     rooms   = select_childs (url, id, child_type_id, 3, 
                                 is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_rooms\n");
                 }
-                if ( ( child_type_id < 4 ) && ( 4 <= filtertype ) )
+                if ( ( child_type_id != 1 ) && ( child_type_id < 4 ) && ( 4 <= filtertype ) )
                 {
                     log_info ("start select_rows\n");
                     rows    = select_childs (url, id, child_type_id, 4, 
                             is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_rows\n");
                 }
-                if ( ( child_type_id < 5 ) && ( 5 <= filtertype ) )
+                if ( ( child_type_id != 1 ) && ( child_type_id < 5 ) && ( 5 <= filtertype ) )
                 {
                     log_info ("start select_racks\n");
                     racks   = select_childs (url, id, child_type_id, 5, 
                             is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_racks\n");
                 }
-                if ( ( child_type_id < 6 ) && ( 6 <= filtertype ) )
+                if ( ( child_type_id != 1 ) && ( child_type_id < 6 ) && ( 6 <= filtertype ) )
                 {
                     log_info ("start select_devices\n");
                     devices = select_childs (url, id, child_type_id, 6, 
                             is_recursive, current_depth + 1, filtertype);
                     log_info ("end select_devices\n");
                 }
-                if ( child_type_id < 2 )
+                
+                // if it is a group, then do a special processing
+                if ( ( child_type_id == 1 )  && ( ( 1 == filtertype ) || (filtertype == 7 ) ) )
                 {
-                    log_info ("start select_grps\n");
-                    grps    = select_childs (url, id, child_type_id, 1, 
-                            is_recursive, current_depth + 1, filtertype);
-                    log_info ("end select_grps\n");
+                    log_info ("start select elements of the grp\n");
+                    grp = select_group_elements (url, id, 1, name.c_str(), dtype_name.c_str(), filtertype);
+                    log_info ("end select elements of the grp\n");
                 }
             }
             if ( !( ( filtertype < 7 ) &&
                     ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) 
                         && ( my_size(rows) == 0 ) && ( my_size(racks) == 0 ) 
-                        && ( my_size(devices) == 0 ) && (my_size(grps) == 0 ) 
+                        && ( my_size(devices) == 0 )  
                     ) &&
                     ( child_type_id != filtertype ) 
                   )
                )
             {
-                zmsg_t* el = asset_msg_encode_return_location_from 
+                
+                zmsg_t* el;
+                if ( ( child_type_id == 1 ) && (is_recursive ) )
+                    el = grp;
+                else 
+                    el = asset_msg_encode_return_location_from 
                                 (id, id_type, name.c_str(), dtype_name.c_str(), dcs, rooms, 
-                                        rows, racks, devices, grps);
+                                        rows, racks, devices, NULL);
                 assert ( el );
                 log_info ("created msg el for i = %d\n",i);
                 rv = zmsg_addmsg ( ret, &el);
@@ -243,7 +443,6 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
                 zframe_destroy (&rows);
                 zframe_destroy (&racks);
                 zframe_destroy (&devices);
-                zframe_destroy (&grps);
             }
         }// end for
         zframe_t* res = NULL;
@@ -410,7 +609,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_devices\n");
     }
-    if ( ( type_id < 2 ) && ( element_id != 0 ) )
+    if  ( ( type_id == 2 )  && ( ( 1 == filter_type ) || (filter_type == 7 ) ) )
     {
         log_info ("start select_grps\n");
         grps = select_childs (url, element_id, type_id, 1, is_recursive, 1, 

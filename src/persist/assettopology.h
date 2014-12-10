@@ -12,6 +12,10 @@ zframe_t* select_childs ( const char* url,          uint32_t element_id,
 
 zmsg_t* select_parents (const char* url, uint32_t element_id, uint32_t element_type_id);
 
+zmsg_t* select_group_elements(const char* url, uint32_t element_id, 
+        uint8_t element_type_id, const char* group_name, 
+        const char* dtype_name, uint8_t filtertype);
+
 edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, int type, std::string name, std::string dtype_name);
 
 void print_frame (zframe_t* frame,uint32_t parent_id);
