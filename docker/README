@@ -1,0 +1,116 @@
+BIOS appliance may also work as a Docker Linux container.
+
+Install docker
+--------------
+ * Install docker
+----
+:; sudo apt-get install -y docker.io
+----
+
+Building BIOS docker image
+-------------------------
+the steps are :
+ * make BIOS application. See INSTALL document:
+----
+:; ./autogen.sh
+:; mkdir build
+:; cd build && \
+:; ../configure && \
+:; make
+----
+
+ * build BIOS docker image
+----
+:; ./docker_build_bios.sh 
+done
+eaton/bios           latest              077cff0b355b        3 seconds ago       331.8 MB
+exporting eaton/bios into eaton-bios.tar ..
+-rw-r--r-- 1 eaton eaton 327M Dec 10 13:56 eaton-bios.tar
+---- 
+
+Importing BIOS image in local cache
+-----------------------------------
+This import task is only necessary if you are an end user of eaton-bios.tar image.
+If you are able to build the docker image (previous step), this task is useless.
+
+ * to import BIOS docker image into docker local cache, do :
+---
+:; sudo docker load < eaton.tar
+:; sudo docker images
+REPOSITORY           TAG                 IMAGE ID            CREATED             VIRTUAL SIZE
+eaton/bios           latest              1d513ac4e269        6 minutes ago       331.8 MB
+----
+
+Running BIOS docker container
+-----------------------------
+BIOS docker container need to work mariadb engine. It is linked to other docker container name "dockerfile/mariadb".
+dockerfile/mariadb is available on public docker hub.
+As BIOS docker expose port 8000, this port should be available before starting it.
+
+ * to run CLI bash BIOS docker container (cold start)
+----
+:; sudo docker run -d --name mysql dockerfile/mariadb
+:; sleep 10
+:; sudo docker run -ti --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash
+----
+
+or use script file docker_run_bios.sh with -ti option :
+----
+:; ./docker_run_bios.sh -ti
+
+starting dockerfile/mariadb ..
+53d109c7e6d81997f727ed5749f34df85ee9d4b601d80d2c9031a855669bb630
+starting eaton/bios ..
+root@8cb594194537:/#
+----
+
+ * to run full BIOS appliactions (simple, tntnet, nut) (cold start)
+----
+:; sudo docker run -d --name mysql dockerfile/mariadb
+:; sleep 10
+:; sudo docker run --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash -c /usr/local/bin/start_bios.sh
+----
+ 
+or use script file docker_run_bios.sh  :
+----
+:; ./docker_run_bios.sh
+
+starting dockerfile/mariadb ..
+53d109c7e6d81997f727ed5749f34df85ee9d4b601d80d2c9031a855669bb630
+starting eaton/bios ..
+initializing db ..
+Starting SASL auth ..
+Starting web srv ..
+starting nut ..
+starting simple ..
+----
+
+ * to stop docker container
+use docker_stop.sh [container_name|all] shell script to stop a container or all of them :
+./docker_stop.sh bios stop eaton/bios container
+./docker_stop.sh mysql stop dockerfile/mariadb container
+./docker_stop.sh all  stop both
+
+The example bellow show how to stop eaton/bios container
+----
+:; ./docker_stop.sh bios
+stopping bios container ..
+56ef702f540e
+56ef702f540e eaton/bios:latest "/bin/bash -c /usr/l 6 minutes ago  Exited (-1) 6 minutes ago    bios 
+----
+
+
+ * to remove docker container from local 
+use docker_remove.sh [container_name|all] shell script to remove a specific container or all of them :
+./docker_remove.sh bios remove eaton/bios container
+./docker_remove.sh mysql remove dockerfile/mariadb container
+./docker_remove.sh all  remove both
+
+The example bellow show how to remove eaton/bios container from local 
+----
+:; ./docker_remove.sh bios
+removing bios container ..
+56ef702f540e
+----
+ 
+use 
