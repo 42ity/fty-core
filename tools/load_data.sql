@@ -288,6 +288,7 @@ values
 
 insert into t_bios_discovered_device (id_device_type , name) values (@device_unclassified, "measures");
 
+/* voltage.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -299,6 +300,8 @@ values
     @client_nut,
     1
 );
+
+/* voltage.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -310,6 +313,8 @@ values
     @client_nut,
     1
 );
+
+/* current.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -321,6 +326,8 @@ values
     @client_nut,
     1
 );
+
+/* current.output.L1 */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -332,6 +339,8 @@ values
     @client_nut,
     1
 );
+
+/* voltage.output.L1-N */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -343,6 +352,8 @@ values
     @client_nut,
     1
 );
+
+/* realpower.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -350,6 +361,58 @@ values
     3,
     1,
     1,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* status.ups */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    7,
+    1,
+    2,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* temperature.default */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    4,
+    1,
+    56,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* load.ups */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    5,
+    1,
+    17,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* charge.battery */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    6,
+    1,
+    931,
     "2014-11-12 09:59:59",
     @client_nut,
     1
