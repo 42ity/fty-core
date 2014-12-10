@@ -6,6 +6,8 @@
 #include "dbpath.h"
 #include "monitor.h"
 
+#include <tnt/http.h>
+
 #include <algorithm>
 #include <map>
 #include <limits.h>
@@ -289,3 +291,38 @@ std::string ui_props_manager::put(const std::string& ext) {
     return "";
 }
 
+/**
+ * \brief get the error string, msg string and HTTP code from common_msg
+ */
+void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, int* p_code) {
+
+    assert(cm_msg);
+
+    int code = *p_code;
+
+    if (common_msg_id(cm_msg) == COMMON_MSG_FAIL) {
+        switch (common_msg_errorno(cm_msg)) {
+            case DB_ERROR_NOTFOUND:
+                error = "not_found";
+                code = HTTP_NOT_FOUND;
+                break;
+            case DB_ERROR_BADINPUT:
+                error = "bad_input";
+                code = HTTP_BAD_REQUEST;
+                break;
+            case DB_ERROR_NOTIMPLEMENTED:
+                error = "not_implemented";
+                code = HTTP_NOT_IMPLEMENTED;
+            default:
+                error = "internal_error";
+                code = HTTP_INTERNAL_SERVER_ERROR;
+                break;
+        }
+        msg = common_msg_errmsg(cm_msg);
+    }
+    else {
+        error = "internal_error";
+        msg = "unexpected message";
+        code = HTTP_INTERNAL_SERVER_ERROR;
+    }
+}

@@ -1077,10 +1077,13 @@ zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
 {
     assert ( common_msg_id (msg) == COMMON_MSG_GET_LAST_MEASUREMENTS );
     uint32_t device_id = common_msg_device_id (msg);
-    assert ( device_id );
+    if ( device_id == 0 )
+        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, "Invalid device id requested" , NULL);
+
     uint32_t device_id_monitor = convert_asset_to_monitor(url, device_id);
 
-    assert ( device_id_monitor > 0 );
+    if ( device_id_monitor == 0 )
+        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, "No monitoring device found for given device id" , NULL);
 
     zlist_t* last_measurements = 
             select_last_measurements(url, device_id_monitor);
