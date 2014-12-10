@@ -56,6 +56,12 @@
       <url>^/api/v1/metric/current.*$</url>
     </mapping>
 
+    <!-- rack consumption -->
+    <mapping>
+      <target>rack_total@bios_web</target>
+      <url>^/api/v1/metric/rack_total.*$</url>
+    </mapping>
+
     <!-- Network list -->
     <mapping>
       <target>networks@bios_web</target>
