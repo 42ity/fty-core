@@ -76,7 +76,7 @@ std::string dev;
             else
                 json = "  ";
             json += "{ \"id\":";
-            sprintf(buff, "%d", common_msg_device_id(dta));
+            sprintf(buff, "\"%d\"", common_msg_device_id(dta));
             json += buff;
             zlist_t *list = common_msg_measurements(dta);
             for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
