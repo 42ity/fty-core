@@ -7,11 +7,9 @@
 #include "persistencelogic.h"
 #include "common_msg.h"
 </%pre>
-
 <%thread scope="global">
 ui_props_manager mgr;
 </%thread>
-
 <%cpp>
     std::string meth = request.getMethod();
 
