@@ -53,21 +53,28 @@ std::string dev;
             return HTTP_INTERNAL_SERVER_ERROR;
         }
         if(common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS) {
+
+            std::string error;
+            std::string msg;
+            int code;
+
+            common_msg_to_rest_error(dta, error, msg, &code);
+
             if(common_msg_id(dta) == COMMON_MSG_FAIL) {
 </%cpp>
-{ "error":"internal_error",
-  "type":"<$ common_msg_errtype(dta) $>",
+{ "error":"<$ error $>",
+  "type":"<$ (unsigned) common_msg_errtype(dta) $>",
   "errno":"<$ common_msg_errorno(dta) $>",
-  "msg":"<$ common_msg_errmsg(dta) $>" }
+  "msg":"<$ msg $>" }
 <%cpp>
             } else {
 </%cpp>
-{ "error":"internal_error",
-  "msg":"unexpected msg" }
+{ "error":"<$ error $>",
+  "msg":"<$ msg $> $>" }
 <%cpp>
             }
             common_msg_destroy(&dta);
-            return HTTP_INTERNAL_SERVER_ERROR;
+            return code;
         } else {
             char buff[64];
             std::string json;

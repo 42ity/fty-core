@@ -4,8 +4,16 @@
 #include <czmq.h>
 #include <string>
 
+#include "defs.h"
 #include "asset_msg.h"
 #include "asset_types.h"
+#include "common_msg.h"
+
+/**
+ * \brief extract error, msg and HTTP error code from common_msg instance
+ *
+ */
+void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, int* p_code);
 
 class asset_manager {
     public:
