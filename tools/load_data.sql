@@ -296,7 +296,7 @@ values
     1,
     32,
     "2014-11-12 09:45:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 insert into t_bios_measurements
@@ -307,7 +307,7 @@ values
     1,
     3,
     "2014-11-12 09:46:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 insert into t_bios_measurements
@@ -318,7 +318,7 @@ values
     1,
     31,
     "2014-11-12 09:47:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 insert into t_bios_measurements
@@ -329,7 +329,7 @@ values
     2,
     12,
     "2014-11-12 09:48:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 insert into t_bios_measurements
@@ -340,7 +340,7 @@ values
     2,
     1,
     "2014-11-12 09:49:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 insert into t_bios_measurements
@@ -351,7 +351,7 @@ values
     1,
     1,
     "2014-11-12 09:59:59",
-    @client_nmap,
+    @client_nut,
     1
 );
 
