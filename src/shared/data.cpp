@@ -1,9 +1,16 @@
+#include "defs.h"
 #include "data.h"
 #include "asset_types.h"
 #include "measure_types.h"
+#include "common_msg.h"
+#include "dbpath.h"
+#include "monitor.h"
+
+#include <tnt/http.h>
 
 #include <algorithm>
 #include <map>
+#include <limits.h>
 
 byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
@@ -101,6 +108,45 @@ std::string measures_manager::int_to_subtype(std::string i, std::string t) {
     }
 }
 
+static std::string s_scale(const std::string& val, int8_t scale) {
+
+    assert(val != "");
+    assert(val.size() <= SCHAR_MAX);
+
+    std::string ret{val};
+
+    //1. no scale, nothing to do
+    if (!scale)
+        return ret;
+
+    //2. positive scale, simply append things
+    if (scale > 0) {
+        while (scale > 0) {
+            ret.append("0");
+            scale--;
+        }
+        return ret;
+    }
+
+    //3. scale is "bigger" than size of string,
+    if (scale <= -val.size()) {
+        //3a. prepend zeroes
+        while (scale != -val.size()) {
+            ret.insert(0, "0");
+            scale++;
+        }
+
+        //3b and prepend 0.
+        ret.insert(0, "0.");
+        return ret;
+    }
+
+    //4. just find the right place for dot
+    ret.insert(val.size() + scale, ".");
+    return ret;
+
+}
+
 std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
     char buff[16];
     zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
@@ -113,28 +159,7 @@ std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
         int sc = (int8_t)common_msg_mts_scale(dta);
 
         common_msg_destroy(&dta);
-        while(sc > 0) {
-            val += "0";
-            sc--;
-        }
-	/* Prepend zeroes - if needed - and add the period separator.
-	 * Locale does not matter, this is for programmatic consumption */
-        if(sc < 0) {
-            sc += (int)(val.length());
-            // We need to add some leading zeros
-            if(sc <= 0) {
-                while(sc < 0) {
-                    val = "0" + val;
-                    sc++;
-                }
-                val = "0." + val;
-            // We just need to insert decimal point to the correct possition
-            // -2 as letters are indexed from zero and insert adds after the index
-            } else {
-                val.insert(val.length()+sc-2, ".");
-            }
-        }
-        return val;
+        return s_scale(val, sc);
     } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {
         common_msg_print(dta); 
     }
@@ -197,4 +222,107 @@ std::string measures_manager::map_values(std::string name, std::string value) {
             return "\"" + it2->second + "\"";
     }
     return value;
+}
+
+std::string ui_props_manager::get(std::string& result) {
+
+    //FIXME: where to put the constant?
+    common_msg_t *reply = select_ui_properties(url.c_str());
+    if (!reply)
+        return std::string("{\"error\" : \"Can't load ui/properties from database!\"}");
+
+    uint32_t msg_id = common_msg_id(reply);
+
+    if (msg_id == COMMON_MSG_FAIL) {
+        auto ret = std::string{"{\"error\" : \""};
+        ret.append(common_msg_errmsg(reply));
+        ret.append("\"}");
+        common_msg_destroy(&reply);
+        return ret;
+    }
+    else if (msg_id != COMMON_MSG_RETURN_CINFO) {
+        common_msg_destroy(&reply);
+        return std::string("{\"error\" : \"Unexpected msg_id delivered, expected COMMON_MSG_RETURN_CINFO\"}");
+    }
+
+    zmsg_t *zmsg = common_msg_get_msg(reply);
+    if (!zmsg) {
+        common_msg_destroy(&reply);
+        return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");
+    }
+
+    common_msg_t *msg = common_msg_decode(&zmsg);
+    common_msg_destroy(&reply);
+    if (!msg)
+        return std::string("{\"error\" : \"Can't decode inner message from reply!\"}");
+    
+    zchunk_t *info = common_msg_get_info(msg);
+    common_msg_destroy(&msg);
+    if (!info)
+        return std::string("{\"error\" : \"Can't get chunk from reply!\"}");
+
+    char *s = zchunk_strdup(info);
+    zchunk_destroy(&info);
+    if (!s)
+        return std::string("{\"error\" : \"Can't get string from reply!\"}");
+    
+    result = s;
+    free(s);
+
+    return std::string{};
+}
+
+std::string ui_props_manager::put(const std::string& ext) {
+
+    const char* s = ext.c_str();
+
+    zchunk_t *chunk = zchunk_new(s, strlen(s));
+    if (!chunk)
+        return std::string("fail to create zchunk");
+
+    //FIXME: where to store client_id?
+    common_msg_t *reply = update_client_info(url.c_str(), UI_PROPERTIES_CLIENT_ID, &chunk);
+    uint32_t msg_id = common_msg_id(reply);
+    common_msg_destroy(&reply);
+
+    if (msg_id != COMMON_MSG_DB_OK)
+        return std::string("msg_id != COMMON_MSG_DB_OK");
+
+    return "";
+}
+
+/**
+ * \brief get the error string, msg string and HTTP code from common_msg
+ */
+void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, int* p_code) {
+
+    assert(cm_msg);
+
+    int code = *p_code;
+
+    if (common_msg_id(cm_msg) == COMMON_MSG_FAIL) {
+        switch (common_msg_errorno(cm_msg)) {
+            case DB_ERROR_NOTFOUND:
+                error = "not_found";
+                code = HTTP_NOT_FOUND;
+                break;
+            case DB_ERROR_BADINPUT:
+                error = "bad_input";
+                code = HTTP_BAD_REQUEST;
+                break;
+            case DB_ERROR_NOTIMPLEMENTED:
+                error = "not_implemented";
+                code = HTTP_NOT_IMPLEMENTED;
+            default:
+                error = "internal_error";
+                code = HTTP_INTERNAL_SERVER_ERROR;
+                break;
+        }
+        msg = common_msg_errmsg(cm_msg);
+    }
+    else {
+        error = "internal_error";
+        msg = "unexpected message";
+        code = HTTP_INTERNAL_SERVER_ERROR;
+    }
 }
