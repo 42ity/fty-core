@@ -2,22 +2,22 @@ USE box_utf8;
 
 /* t_bios_asset_element_type */
 
-SELECT @ae_group := id_asset_element_type FROM t_bios_asset_element_type where name ='group';
-SELECT @ae_datacenter := id_asset_element_type FROM t_bios_asset_element_type where name ='datacenter';
-SELECT @ae_room := id_asset_element_type FROM t_bios_asset_element_type where name ='room';
-SELECT @ae_row := id_asset_element_type FROM t_bios_asset_element_type where name ='row';
-SELECT @ae_rack := id_asset_element_type FROM t_bios_asset_element_type where name ='rack';
-SELECT @ae_device := id_asset_element_type FROM t_bios_asset_element_type where name ='device';
+SELECT @ae_group := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='group';
+SELECT @ae_datacenter := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='datacenter';
+SELECT @ae_room := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='room';
+SELECT @ae_row := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='row';
+SELECT @ae_rack := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='rack';
+SELECT @ae_device := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='device';
 
 /* t_bios_device_type */
 
-select @device_ups := id_asset_device_type from t_bios_asset_device_type where name = 'ups';
-select @device_epdu := id_asset_device_type from t_bios_asset_device_type where name = 'epdu';
-select @device_main := id_asset_device_type from t_bios_asset_device_type where name = 'main';
-select @device_server := id_asset_device_type from t_bios_asset_device_type where name = 'server';
-select @device_genset := id_asset_device_type from t_bios_asset_device_type where name = 'genset';
+SELECT @device_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
+SELECT @device_epdu := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'epdu';
+SELECT @device_main := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'main';
+SELECT @device_server := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'server';
+SELECT @device_genset := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'genset';
 
-/* DC 1, is use for almost all tests for location topology */
+/* DC 01, is use for almost all tests for location topology */
 
 /* DC */
 
@@ -75,3 +75,68 @@ INSERT INTO t_bios_asset_device ( id_asset_device, id_asset_element, id_asset_de
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7024, "srv_LOC_51",   @ae_device, NULL); /* unlockated */
 INSERT INTO t_bios_asset_device ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (8008, 7024, @device_server);
+
+/* GROUPS */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7025, "inputpowergroup DC_LOC_01", @ae_group, 7000);
+INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9000, "type", "happynewyear", 7025);
+
+INSERT INTO t_bios_asset_group_relation
+    (id_asset_group, id_asset_element)
+VALUES
+(
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = "inputpowergroup DC_LOC_01"),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'main_LOC_1')
+);
+
+INSERT INTO t_bios_asset_group_relation
+    (id_asset_group, id_asset_element)
+VALUES
+(
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC_LOC_01'),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'genset_LOC_1')
+);
+
+INSERT INTO t_bios_asset_group_relation
+    (id_asset_group, id_asset_element)
+VALUES
+(
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'inputpowergroup DC_LOC_01'),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'ups_LOC_1')
+);
+
+/* DC 02 */
+
+/* DC */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7026, "DC_LOC_02", @ae_datacenter, NULL); 
+
+/* RACKS */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7027, "RACK_LOC_6", @ae_rack, 7026); 
+
+/* DEVICES*/
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7028, "DEVICE1",   @ae_device, 7026); 
+INSERT INTO t_bios_asset_device ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (8009, 7028, @device_main);
+
+/* DC 03 */
+
+/* DC */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7029, "DC_LOC_03", @ae_datacenter, NULL); 
+
+/* ROOMS */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7030, "ROOM_LOC_6", @ae_room, 7029); 
+
+/* ROWS*/
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7031, "ROW_LOC_6",  @ae_row, 7029);
+
+/* DC 04, empty */
+
+/* DC */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (7032, "DC_LOC_04", @ae_datacenter, NULL); 
+ 
