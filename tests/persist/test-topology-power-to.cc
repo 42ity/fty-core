@@ -203,6 +203,7 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
@@ -296,6 +297,7 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
@@ -378,6 +380,7 @@ TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
@@ -464,6 +467,7 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
@@ -560,6 +564,7 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
 //    asset_msg_print (cretTopology);
 
@@ -642,6 +647,7 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
@@ -725,6 +731,7 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
+    REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
