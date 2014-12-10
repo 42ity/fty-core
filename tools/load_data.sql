@@ -173,6 +173,13 @@ values
     (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
     (select id_asset_element from t_bios_asset_element where name = 'ups')
 );
+insert into t_bios_monitor_asset_relation
+    (id_discovered_device, id_asset_element)
+values
+(
+    (select id_discovered_device from t_bios_discovered_device where name = 'monitor_asset_measure' AND id_device_type = @device_unclassified),
+    (select id_asset_element from t_bios_asset_element where name = 'epdu')
+);
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
 values
@@ -416,6 +423,49 @@ values
     "2014-11-12 09:59:59",
     @client_nut,
     1
+);
+
+/* epdu */
+
+/* realpower.outlet */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    5,
+    2405,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
+);
+
+/* realpower.outlet.1 */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    6,
+    2405,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
+);
+
+/* realpower.outlet.2 */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    7,
+    500,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
 );
 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
