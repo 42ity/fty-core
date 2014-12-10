@@ -171,7 +171,7 @@ insert into t_bios_monitor_asset_relation
 values
 (
     (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
-    (select id_asset_element from t_bios_asset_element where name = 'ROW1')
+    (select id_asset_element from t_bios_asset_element where name = 'ups')
 );
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
