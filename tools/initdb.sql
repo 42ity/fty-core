@@ -29,6 +29,7 @@ CREATE TABLE t_bios_measurement_subtypes(
 
     PRIMARY KEY(id, id_type),
     INDEX(id),
+    INDEX(id_type),
     INDEX(id_type, name),
 
     FOREIGN KEY(id_type)
@@ -64,7 +65,7 @@ CREATE TABLE t_bios_discovered_ip(
     id_ip                   INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
     id_discovered_device    SMALLINT UNSIGNED,
     timestamp               datetime            NOT NULL,
-    ip                      char(19)            NOT NULL,
+    ip                      char(45)            NOT NULL,
     PRIMARY KEY(id_ip),
 
     INDEX(id_discovered_device),
@@ -87,8 +88,8 @@ CREATE TABLE t_bios_net_history(
 );
 
 CREATE TABLE t_bios_client(
-    id_client TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name VARCHAR(25),
+    id_client   TINYINT UNSIGNED    NOT NULL AUTO_INCREMENT,
+    name        VARCHAR(25)         NOT NULL,
 
     PRIMARY KEY(id_client),
 
@@ -100,7 +101,7 @@ CREATE TABLE t_bios_client_info(
     id_client               TINYINT UNSIGNED    NOT NULL,
     id_discovered_device    SMALLINT UNSIGNED,
     timestamp               datetime            NOT NULL,
-    ext                     BLOB,
+    ext                     BLOB                NOT NULL,
 
     PRIMARY KEY(id_client_info),
 
@@ -196,7 +197,7 @@ CREATE TABLE t_bios_asset_device (
   id_asset_element      INT UNSIGNED     NOT NULL,
   hostname              VARCHAR(25),
   full_hostname         VARCHAR(45),
-  ip                    CHAR(19),
+  ip                    CHAR(45),
   mac                   CHAR(17),
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
@@ -249,7 +250,7 @@ CREATE TABLE t_bios_asset_link (
     REFERENCES t_bios_asset_device(id_asset_device)
     ON DELETE RESTRICT,
 
-  CONSTRAINT FK_ASSETLINK_TYPEEE
+  CONSTRAINT FK_ASSETLINK_TYPE
     FOREIGN KEY (id_asset_link_type)
     REFERENCES t_bios_asset_link_type(id_asset_link_type)
     ON DELETE RESTRICT
@@ -298,7 +299,7 @@ CREATE TABLE t_bios_measurements (
     FOREIGN KEY (id_client)
         REFERENCES t_bios_client(id_client)
         ON DELETE RESTRICT
-) ENGINE=INNODB;
+);
 
 CREATE TABLE t_bios_monitor_asset_relation(
     id_ma_relation        INT UNSIGNED      NOT NULL AUTO_INCREMENT,
@@ -536,6 +537,7 @@ INSERT INTO t_bios_client (name) VALUES ("nmap");
 INSERT INTO t_bios_client (name) VALUES ("mymodule");
 INSERT INTO t_bios_client (name) VALUES ("admin");
 INSERT INTO t_bios_client (name) VALUES ("NUT");
+INSERT INTO t_bios_client (name) VALUES ("ui_properties");
 
 /* t_bios_asset_element_type */
 INSERT INTO t_bios_asset_element_type (name) VALUES ("group");
@@ -547,9 +549,14 @@ INSERT INTO t_bios_asset_element_type (name) VALUES ("device");
 
 /* t_bios_asset_device_type */
 INSERT INTO t_bios_asset_device_type (name) VALUES ("ups");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("genset");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
+
+/* ui/properties are somewhat special */
+SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
+INSERT INTO t_bios_client_info (id_client, timestamp, ext) VALUES (@client_ui_properties, NOW(), "{}");
