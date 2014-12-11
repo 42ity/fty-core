@@ -97,6 +97,7 @@ common_msg_t* select_client(const char* url, const char* name)
             " FROM"
             " v_bios_client v"
             " WHERE v.name = :name"
+            " LIMIT 1"
         );
           
         tntdb::Value val = st.setString("name", name).selectValue();
@@ -575,7 +576,8 @@ common_msg_t* insert_device_type(const char* url, const char* name)
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
             " v_bios_device_type (id,name)"
-            " VALUES (NULL,:name)"
+            " select NULL,:name from dual where not exists"
+            " (select id from v_bios_device_type where name=:name)"
         );
     
         n  = st.setString("name", name).execute();
@@ -781,6 +783,7 @@ common_msg_t* select_device (const char* url, uint32_t devicetype_id, const char
             " FROM"
             " v_bios_discovered_device v"
             " WHERE v.name = :name AND v.id_device_type = :devicetypeid"
+            " LIMIT 1"
         );
         
         tntdb::Result result = st.setInt("devicetypeid", devicetype_id).
