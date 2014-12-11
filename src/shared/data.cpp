@@ -295,7 +295,8 @@ void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::str
                 *code = HTTP_INTERNAL_SERVER_ERROR;
                 break;
         }
-        msg = common_msg_errmsg(cm_msg);
+        const char *cmsg = common_msg_errmsg(cm_msg);
+        msg = (cmsg == NULL) ? "" : cmsg;
     }
     else {
         error = "internal_error";
