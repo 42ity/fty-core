@@ -2,7 +2,7 @@
 EXTRA_DIST =
 
 helperdir	= $(datadir)/@PACKAGE@-@VERSION@/scripts
-helper_SCRIPTS	= init-os-accounts.sh
+helper_SCRIPTS	= init-os-accounts.sh resolveip.sh
 
 mysqldir	= $(datadir)/@PACKAGE@-@VERSION@/sql/mysql
 mysql_DATA	= initdb.sql
@@ -11,3 +11,4 @@ mysqlexdir	= $(datadir)/@PACKAGE@-@VERSION@/examples/sql/mysql
 mysqlex_DATA	= load_data.sql
 
 EXTRA_DIST += $(helper_SCRIPTS) $(mysql_DATA) $(mysqlex_DATA)
+
