@@ -637,10 +637,11 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 /* helper function */
 bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type, const char* name, const char* dtype_name)
 {
-    if ( asset_msg_id (rmsg) != ASSET_MSG_RETURN_LOCATION_FROM )
+    if ( ( asset_msg_id (rmsg) != ASSET_MSG_RETURN_LOCATION_FROM )  &&
+             ( asset_msg_id (rmsg) != ASSET_MSG_RETURN_LOCATION_TO ) )
         return false;
     else if ( ( asset_msg_element_id (rmsg) == id ) && ( asset_msg_type (rmsg) == id_type ) && ( !strcmp (asset_msg_name (rmsg), name) ) 
-                && ( !strcmp (asset_msg_device_type (rmsg), dtype_name) ) )
+                && ( !strcmp (asset_msg_type_name (rmsg), dtype_name) ) )
         return true;
     else
         return false;
@@ -670,31 +671,31 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, int type, std
         assert ( item );
 //        asset_msg_print (item);
         
-        result.insert(std::make_tuple (asset_msg_element_id(item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item) , parent_id, type, name, dtype_name)); 
+        result.insert(std::make_tuple (asset_msg_element_id(item), asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item) , parent_id, type, name, dtype_name)); 
         log_debug ("parent_id = %d\n", parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item), asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item), asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_rooms (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_rows (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_racks(item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_devices (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
         
         fr = asset_msg_grps (item);
-        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_device_type(item));
+        result1 = print_frame_to_edges (fr, asset_msg_element_id (item),asset_msg_type(item), asset_msg_name(item), asset_msg_type_name(item));
         result.insert(result1.begin(), result1.end());
 //            printf ("\tstatus = %d\n", (int) test_msg_status (item));
         
@@ -775,17 +776,36 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            " v.id_parent, v.id_parent_type,v.name, v1.name as dtype_name"
-            " FROM"
-            " v_bios_asset_element v"
-            " LEFT JOIN v_bios_asset_device v1"
-            "      ON (v.id = v1.id_asset_element)"
-            " WHERE v.id = :elementid AND "
-            "       v.id_type = :elementtypeid"
-        );
+        tntdb::Statement st;
+        
+        // for the groups, other select is needed
+        // because type of the group should be selected
+        if ( element_type_id != 1 )
+        {
+            st = conn.prepareCached(
+                  " SELECT"
+                  "     v.id_parent, v.id_parent_type,v.name, v1.name as dtype_name"
+                  " FROM"
+                  "     v_bios_asset_element v"
+                  "     LEFT JOIN v_bios_asset_device v1"
+                  "      ON (v.id = v1.id_asset_element)"
+                  " WHERE v.id = :elementid AND "
+                  "       v.id_type = :elementtypeid"
+            );
+        }
+        else
+        {
+            st = conn.prepareCached(
+                  " SELECT"
+                  "     v.id_parent, v.id_parent_type,v.name, v1.value as dtype_name"
+                  " FROM"
+                  "     v_bios_asset_element v"
+                  "     INNER JOIN t_bios_asset_ext_attributes v1"
+                  "      ON (v.id = v1.id_asset_element AND v1.keytag = 'type')"
+                  " WHERE v.id = :elementid AND "
+                  "       v.id_type = :elementtypeid"
+            );
+        }
 
         // Could return one row or nothing
         tntdb::Row row = st.setInt("elementid", element_id).
