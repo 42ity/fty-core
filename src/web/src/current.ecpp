@@ -95,7 +95,7 @@ std::string dev;
                     + "." + mes_mgr.int_to_subtype(measurements[1],
                                                    measurements[0]); 
 
-               json += ", \"" + mes_mgr.map_names(name) +
+               json += ", \"" + name +
                        "\": " + mes_mgr.map_values(name,
                        mes_mgr.scale(measurements[2],
                                      measurements[1],
