@@ -1,5 +1,6 @@
 #include <catch.hpp>
 
+#include <set>
 #include <iostream>
 #include <czmq.h>
 
@@ -19,28 +20,46 @@ MariaDB [box_utf8]> select * from v_bios_client_info_measurements;
 +----+-----------+----------------------+---------------------+--------+-----------+-------+
 | id | id_client | id_discovered_device | timestamp           | id_key | id_subkey | value |
 +----+-----------+----------------------+---------------------+--------+-----------+-------+
-|  1 |         1 |                    1 | 2014-11-12 09:45:59 |      1 |         1 |    32 |
-|  2 |         1 |                    1 | 2014-11-12 09:46:59 |      1 |         1 |     3 |
-|  3 |         1 |                    1 | 2014-11-12 09:47:59 |      2 |         1 |    31 |
-|  4 |         1 |                    1 | 2014-11-12 09:48:59 |      2 |         2 |    12 |
-|  5 |         1 |                    1 | 2014-11-12 09:49:59 |      1 |         2 |     1 |
-|  6 |         1 |                    1 | 2014-11-12 09:59:59 |      3 |         1 |     1 |
+|  1 |         4 |                    1 | 2014-11-12 09:45:59 |      1 |         1 |    32 |
+|  2 |         4 |                    1 | 2014-11-12 09:46:59 |      1 |         1 |     3 |
+|  3 |         4 |                    1 | 2014-11-12 09:47:59 |      2 |         1 |    31 |
+|  4 |         4 |                    1 | 2014-11-12 09:48:59 |      2 |         2 |    12 |
+|  5 |         4 |                    1 | 2014-11-12 09:49:59 |      1 |         2 |     1 |
+|  6 |         4 |                    1 | 2014-11-12 09:59:59 |      3 |         1 |     1 |
+|  7 |         4 |                    1 | 2014-11-12 09:59:59 |      7 |         1 |     2 |
+|  8 |         4 |                    1 | 2014-11-12 09:59:59 |      4 |         1 |    56 |
+|  9 |         4 |                    1 | 2014-11-12 09:59:59 |      5 |         1 |    17 |
+| 10 |         4 |                    1 | 2014-11-12 09:59:59 |      6 |         1 |   931 |
+| 11 |         4 |                    2 | 2014-11-12 09:59:59 |      3 |         5 |  2405 |
+| 12 |         4 |                    2 | 2014-11-12 09:59:59 |      3 |         6 |  2405 |
+| 13 |         4 |                    2 | 2014-11-12 09:59:59 |      3 |         7 |   500 |
 +----+-----------+----------------------+---------------------+--------+-----------+-------+
 
 MariaDB [box_utf8]> select * from v_bios_client_info_measurements_last;
-+----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
-| id | id_discovered_device | id_key | id_subkey | value | timestamp           | scale | name          |
-+----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
-|  2 |                    1 |      1 |         1 |     3 | 2014-11-12 09:46:59 |    -1 | select_device |
-|  3 |                    1 |      2 |         1 |    31 | 2014-11-12 09:47:59 |    -1 | select_device |
-|  4 |                    1 |      2 |         2 |    12 | 2014-11-12 09:48:59 |    -1 | select_device |
-|  5 |                    1 |      1 |         2 |     1 | 2014-11-12 09:49:59 |    -1 | select_device |
-|  6 |                    1 |      3 |         1 |     1 | 2014-11-12 09:59:59 |    -1 | select_device |
-+----+----------------------+--------+-----------+-------+---------------------+-------+---------------+
++----+----------------------+--------+-----------+-------+---------------------+-------+-----------------------+
+| id | id_discovered_device | id_key | id_subkey | value | timestamp           | scale | name                  |
++----+----------------------+--------+-----------+-------+---------------------+-------+-----------------------+
+|  2 |                    1 |      1 |         1 |     3 | 2014-11-12 09:46:59 |    -1 | select_device         |
+|  3 |                    1 |      2 |         1 |    31 | 2014-11-12 09:47:59 |    -1 | select_device         |
+|  4 |                    1 |      2 |         2 |    12 | 2014-11-12 09:48:59 |    -1 | select_device         |
+|  5 |                    1 |      1 |         2 |     1 | 2014-11-12 09:49:59 |    -1 | select_device         |
+|  6 |                    1 |      3 |         1 |     1 | 2014-11-12 09:59:59 |    -1 | select_device         |
+|  7 |                    1 |      7 |         1 |     2 | 2014-11-12 09:59:59 |     0 | select_device         |
+|  8 |                    1 |      4 |         1 |    56 | 2014-11-12 09:59:59 |    -1 | select_device         |
+|  9 |                    1 |      5 |         1 |    17 | 2014-11-12 09:59:59 |    -1 | select_device         |
+| 10 |                    1 |      6 |         1 |   931 | 2014-11-12 09:59:59 |    -1 | select_device         |
+| 11 |                    2 |      3 |         5 |  2405 | 2014-11-12 09:59:59 |    -1 | monitor_asset_measure |
+| 12 |                    2 |      3 |         6 |  2405 | 2014-11-12 09:59:59 |    -1 | monitor_asset_measure |
+| 13 |                    2 |      3 |         7 |   500 | 2014-11-12 09:59:59 |    -1 | monitor_asset_measure |
++----+----------------------+--------+-----------+-------+---------------------+-------+-----------------------+
 
 "keytag_id:subkeytag_id:value:scale"
 
 */
+
+
+static const std::set<std::string> EXP{"6:1:931:-1", "5:1:17:-1", "4:1:56:-1", "7:1:2:0", "3:1:1:-1", "1:2:1:-1", "2:2:12:-1", "2:1:31:-1", "1:1:3:-1"};
+
 TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasurements]")
 {
     //SUCCESS
@@ -49,32 +68,21 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     zlist_t* measurements = select_last_measurements (url.c_str(), id, name);
     REQUIRE ( measurements );
     CHECK (name == "select_device");
-    char zero1[10]   = "3:1:1:-1";
-    char first1[10]  = "1:2:1:-1";
-    char second1[10] = "2:2:12:-1";
-    char third1[10]  = "2:1:31:-1";
-    char forth1[10]  = "1:1:3:-1";
-    char* zero  = (char*) zlist_first  (measurements);
-    REQUIRE ( zero  != NULL );
-    char* first  = (char*) zlist_next  (measurements);
-    REQUIRE ( first  != NULL );
-    char* second = (char*) zlist_next  (measurements);
-    REQUIRE ( second != NULL );
-    char* third  = (char*) zlist_next  (measurements);
-    REQUIRE ( third  != NULL );
-    char* forth  = (char*) zlist_next  (measurements);
-    REQUIRE ( forth  != NULL );
-    REQUIRE ( zlist_next (measurements) == NULL );
-    REQUIRE ( strstr(zero, zero1)       == zero );
-    REQUIRE ( strstr(first, first1)     == first );
-    REQUIRE ( strstr(second, second1)   == second );
-    REQUIRE ( strstr(third, third1)     == third );
-    REQUIRE ( strstr(forth, forth1)     == forth );
 
+
+    char* s = (char*) zlist_first(measurements);
+    int i = 0;
+    while (s != NULL) {
+        REQUIRE ( EXP.count(s) == 1 );
+        s = (char*) zlist_next(measurements);
+        i++;
+    }
+    REQUIRE ( i == EXP.size() );
+    REQUIRE ( s == NULL );
     zlist_destroy (&measurements);
     
     //FAIL
-    id = 2;
+    id = 42;
     name = "";
     measurements = select_last_measurements (url.c_str(), id, name);
     CHECK (name == "");
@@ -100,6 +108,12 @@ TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor
 
     st = conn.prepareCached(
        "select id_asset_element from t_bios_asset_element where name = 'ROW1'"
+    );
+    REQUIRE_NOTHROW (val = st.selectValue ());
+    REQUIRE_NOTHROW (val.get (id_asset));
+
+    st = conn.prepareCached(
+       "select id_asset_element from t_bios_asset_element where name = 'ups'"
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_asset));
@@ -132,7 +146,7 @@ TEST_CASE("helper functions: convert_monitor_to_asset", "[db][convert_to_asset]"
     REQUIRE_NOTHROW (val.get (id_monitor));
 
     st = conn.prepareCached (
-       "select id_asset_element from t_bios_asset_element where name = 'ROW1'"
+       "select id_asset_element from t_bios_asset_element where name = 'ups'"
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_asset));
@@ -152,7 +166,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     uint32_t id = 0;
 
     tntdb::Statement st = conn.prepareCached (
-       "select id_asset_element from t_bios_asset_element where name = 'ROW1'"
+       "select id_asset_element from t_bios_asset_element where name = 'ups'"
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id));
@@ -171,29 +185,17 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     REQUIRE ( common_msg_id (glm) == COMMON_MSG_RETURN_LAST_MEASUREMENTS );
     REQUIRE ( common_msg_device_id (glm) == id );
     zlist_t* info = common_msg_get_measurements (glm);
+    
+    char* s = (char*) zlist_first(info);
+    int i = 0;
+    while (s != NULL) {
+        REQUIRE ( EXP.count(s) == 1 );
+        s = (char*) zlist_next(info);
+        i++;
+    }
+    REQUIRE (i == EXP.size());
 
-    char zero1[10]   = "3:1:1:-1";
-    char first1[10]  = "1:2:1:-1";
-    char second1[10] = "2:2:12:-1";
-    char third1[10]  = "2:1:31:-1";
-    char forth1[10]  = "1:1:3:-1";
-
-    char* zero   = (char*) zlist_first (info);
-    REQUIRE ( zero  != NULL );
-    char* first  = (char*) zlist_next  (info);
-    REQUIRE ( first  != NULL );
-    char* second = (char*) zlist_next  (info);
-    REQUIRE ( second != NULL );
-    char* third  = (char*) zlist_next  (info);
-    REQUIRE ( third  != NULL );
-    char* forth  = (char*) zlist_next  (info);
-    REQUIRE ( forth  != NULL );
-    REQUIRE ( zlist_next (info)      == NULL );
-    REQUIRE ( strstr(zero,zero1)     == zero );
-    REQUIRE ( strstr(first,first1)   == first );
-    REQUIRE ( strstr(second,second1) == second );
-    REQUIRE ( strstr(third,third1)   == third );
-    REQUIRE ( strstr(forth,forth1)   == forth );  
+    REQUIRE ( s      == NULL );
     
     zlist_destroy (&info);
     common_msg_destroy (&glm);
