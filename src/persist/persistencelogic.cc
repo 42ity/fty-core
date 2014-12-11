@@ -31,6 +31,7 @@ References: BIOS-397
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
 
+#include "defs.h"
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
@@ -364,7 +365,7 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
         //          Are we going to return 'false', that usually means db fatal error, and
         //          make the caller crash/quit? OR does it make more sense to say, OK, message
         //          has been processed and we'll log a warning about unexpected message type
-            result = true;        
+            result = true;
             log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
             break;
         }
@@ -440,6 +441,34 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
         assert (false); // unknown response
         
     common_msg_destroy (&retClient);
+    return result;
+};
+
+bool insert_new_client_info(const char* url, common_msg_t* msg)
+{
+    uint32_t client_id = common_msg_client_id (msg);
+    uint32_t device_id = common_msg_device_id (msg);
+    zchunk_t* info = common_msg_info (msg);
+    uint32_t date = common_msg_date (msg);
+
+    bool result = false;
+
+    //FIXME: we now support is == 5 == UI_properties
+    assert (client_id == UI_PROPERTIES_CLIENT_ID);
+
+    common_msg_t *reply = update_client_info(url, client_id, &info);
+    uint32_t msgid = common_msg_id (reply);
+
+    if ( msgid  == COMMON_MSG_FAIL )
+        // the client info was not found
+        log_error("client infor for UI/properties not found, message was ignored\n");
+    else if ( msgid == COMMON_MSG_DB_OK )
+        result = true;
+    else
+        log_error("Invalid reply for update_client_info, client_id: %d, message was ignored\n", client_id);
+
+    common_msg_destroy (&reply);
+
     return result;
 };
 
