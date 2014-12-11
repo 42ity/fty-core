@@ -13,10 +13,16 @@ zmsg_t* select_parents (const char* url, uint32_t element_id, uint32_t element_t
 void print_frame (zframe_t* frame);
 void print_frame_devices (zframe_t* frame);
 
+zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p);
+
 zmsg_t* get_return_topology_to (const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_topology_from (const char* url, asset_msg_t* getmsg);
+
+
 zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_to(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_datacenter(const char* url, asset_msg_t* getmsg);
+
+
 #endif // SRC_PERSIST_ASSETTOPOLOGY_H_

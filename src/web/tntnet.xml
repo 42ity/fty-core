@@ -29,6 +29,12 @@
     <!-- API itself -->
 
     <!-- topology/location -->
+    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
+    <mapping>
+      <target>topology_inputcheck@bios_web</target>
+      <url>^/api/v1/topology/.*$</url>
+    </mapping>
+    -->     
     <mapping>
       <target>location@bios_web</target>
       <url>^/api/v1/topology/location.*$</url>

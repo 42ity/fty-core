@@ -2,11 +2,15 @@
 #include <cstdlib>
 #include <string>
 #include <algorithm>
+#include <exception>
+#include <stack>
 #include <czmq.h>
+#include "log.h"
+#include "dbpath.h"
+#include "common_msg.h"
 #include "asset_msg.h"
-#include "location_helpers.h"
 #include "asset_types.h"
-#include "defs.h"
+#include "assettopology.h"
 </%pre>
 <%args>
 std::string from;
@@ -15,15 +19,19 @@ std::string recursive;
 std::string filter;
 </%args>
 
-<%cpp>
+<%cpp>    
+    log_open ();
+    log_set_level (LOG_DEBUG);
+    // GET requests only
     if (request.isMethodGET() == false) {
         return HTTP_BAD_REQUEST;
     }
 
+    // Exactly one variable has to be specified: 'from' or 'to'
     if (!from.empty() && !to.empty()) {
 </%cpp>
         {
-            "error" :   "bad_input"
+            "error" :   "bad_input",
             "msg"   :   "You can specify 'from' OR 'to' variable, but not both."
         }
 <%cpp>
@@ -32,83 +40,250 @@ std::string filter;
     if (from.empty() && to.empty()) {
 </%cpp>
         {
-            "error" :   "bad_input"
-            "msg"   :   "You have to specify one of the following variables: 'from=<location_uri|none>', 'to=<location_uri>'."
+            "error" :   "bad_input",
+            "msg"   :   "You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'."
         }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
 
     if (!to.empty()) {
+        // Check recursive
         if (!recursive.empty()) {
 </%cpp>
             {
-                "error" :   "bad_input"
+                "error" :   "bad_input",
                 "msg"   :   "Variable 'recursive' can not be specified along with 'to'."
             }
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-
+        // Check filter
         if (!filter.empty()) {
 </%cpp>
             {
-                "error" :   "bad_input"
+                "error" :   "bad_input",
                 "msg"   :   "Variable 'filter' can not be specified along with 'to'."
             }
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-
-        std::transform (to.begin(), to.end(), to.begin(), ::tolower);
-        int assettype = asset (to);
-
-        if (assettype == asset_type::UNKNOWN || assettype == -1) {
+        // Try to convert string to number
+        int element_id = -1;
+        try {
+            element_id = std::stoi (to);
+        } catch (std::out_of_range& e) {
 </%cpp>
             {
-                "error" :   "bad_input"
-                "msg"   :   "Error in location_uri or invalid asset type."
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'to' contains number that falls out of the allowed range."
             }
-<%cpp> 
-            return HTTP_BAD_REQUEST;
-        }
-        int id = -1;
-        int ret = element_id (to, id);
-        if (ret == -1) {            
-</%cpp>
-            {
-                "error" :   "bad_input"
-                "msg"   :   "Error in location_uri or invalid element."
-            }
-<%cpp> 
-            return HTTP_BAD_REQUEST;
-        }
-        
-/* TODO uncomment when process_message counterpart is ready and delete the DEBUG below
-        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
-        assert (input_msg);        
-
-        asset_msg_set_element_id (input_msg, (byte) id);
-        asset_msg_set_type (input_msg, (byte) assettype);
-
-        zsock_t * dbsock = zsock_new_req (DB_SOCK);
-        assert (dbsock);
-
-        ret = asset_msg_send (&input_msg, dbsock);
-        assert (ret != -1);
-        input_msg = asset_msg_recv (dbsock);
-        assert (input_msg);
-
-        zsock_destroy (&dbsock);        
-*/
-</%cpp>
-sending ASSET_MSG_GET_LOCATION_TO:
-    elemend_id: <$ id $>
-    type: <$ assettype $>
 <%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::invalid_argument& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Please specify an integer value for variable 'to'."
+            }
+<%cpp>       
+            return HTTP_BAD_REQUEST;
+        } catch (std::exception& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Error while converting <$ to $> to integer value: <$ e.what() $>."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Call persistence layer
+        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (byte) element_id);
+        
+        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        assert (return_msg);
+        assert (input_msg == NULL);
+    
+        if (is_common_msg (return_msg)) {
+            common_msg_t *common_msg = common_msg_decode (&return_msg);
+            assert (common_msg);
+            assert (return_msg == NULL);
+
+            if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+                "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+                "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else if (is_asset_msg (return_msg)) {
+            asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            assert (asset_msg);
+            assert (return_msg == NULL);
+
+            std::stack<std::tuple<int, int, std::string>> stack; 
+            std::string contains;
+            assert (contains.empty());
+        
+            if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_TO) {
+                bool go = true;
+                do {
+                    element_id = asset_msg_element_id (asset_msg);
+                    int type_id = asset_msg_type (asset_msg);
+                    stack.push (make_tuple(element_id, type_id, contains));
+                    // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
+                    switch (type_id) {                        
+                        case asset_type::DATACENTER:
+                        {
+                            contains = "datacenters";
+                            break;
+                        }
+                        case asset_type::ROOM:
+                        {
+                            contains = "rooms";
+                            break;
+                        }
+                        case asset_type::ROW:
+                        {
+                            contains = "rows";
+                            break;
+                        }
+                        case asset_type::RACK:
+                        {
+                            contains = "racks";
+                            break;
+                        }
+                        case asset_type::GROUP:
+                        {
+                            contains = "groups";
+                            break;
+                        }
+                        case asset_type::DEVICE:
+                        {
+                            contains = "devices";
+                            break;
+                        }
+                        default:
+                        {
+</%cpp>
+                            {
+                                "error" :   "internal_error",
+                                "msg"   :   "Unknown asset_element_type ID received: '<$ type_id $>'."
+                            }
+<%cpp>
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                    }                 
+
+                    if (zmsg_size (asset_msg_msg (asset_msg)) != 0) {
+                        zmsg_t *inner = asset_msg_get_msg (asset_msg); 
+                        assert (inner);
+                        asset_msg_destroy (&asset_msg);
+                        assert (asset_msg == NULL);
+                        asset_msg = asset_msg_decode (&inner);
+                        assert (asset_msg);
+                        go = true;
+                    } else {
+                        asset_msg_destroy (&asset_msg);
+                        go = false;
+                    }
+                } while (go == true);
+
+                // TODO: Now go from top -> down
+                int counter = 0;
+                int indent = 0;
+                std::string json = "{\n";
+
+                while (stack.size() > 0) {
+                    std::tuple<int, int, std::string> row = stack.top();
+                    stack.pop();
+
+                    indent++;
+                    if (!std::get<2>(row).empty()) {
+                        counter++;
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"name\" : \"Not implemented yet.\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"id\" : \"")
+                            .append(std::to_string(std::get<0>(row)))
+                            .append("\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"contains\" : { \"")
+                            .append(std::get<2>(row))
+                            .append("\" : [{\n");
+                    } else {
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"name\" : \"Not implemented yet.\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"id\" : \"")
+                            .append(std::to_string(std::get<0>(row)))
+                            .append("\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"type\" : \"")
+                            .append(std::to_string(std::get<1>(row)))
+                            .append("\"\n");
+                    }
+
+                }
+                log_info ("COUNTER: %d\n", counter);
+                for (int i = counter; i > 0; i--) {                    
+                    indent--;
+                    for (int j = 0; j < indent; j++) {
+                        json.append ("\t");
+                    }
+                    json.append ("}]}\n"); 
+                }
+                json.append ("}");
+
+// json
+</%cpp>
+    <$$ json $>                
+<%cpp>
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else {
+            log_error ("TODO Unknown protocol");
+            return HTTP_INTERNAL_SERVER_ERROR; 
+        }    
     }
     else if (!from.empty()) {
-        std::transform (from.begin(), from.end(), from.begin(), ::tolower);
         std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
         std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
 
@@ -118,8 +293,8 @@ sending ASSET_MSG_GET_LOCATION_TO:
         } else if (!recursive.empty() && recursive != "no") {
 </%cpp>
             {
-                "error" :   "bad_input"
-                "msg"   :   "Unrecognized 'recursive' value. Please use 'yes' or 'no'."
+                "error" :   "bad_input",
+                "msg"   :   "Invalid 'recursive' value. Please use 'yes' or 'no'."
             }
 <%cpp>
             return HTTP_BAD_REQUEST;           
@@ -142,69 +317,52 @@ sending ASSET_MSG_GET_LOCATION_TO:
                 // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
 </%cpp>
                     {
-                        "error" :   "bad input"
-                        "msg"   :   "unrecognized or invalid filter value."
+                        "error" :   "bad input",
+                        "msg"   :   "Unrecognized or invalid filter value."
                     }
 <%cpp>
                     return HTTP_BAD_REQUEST;
             }
         }
-        int id = -1;
-        int ret = element_id (from, id);
-        if (ret == -1) {            
+        int element_id = -1;
+        try {
+            element_id = std::stoi (from);
+        } catch (std::out_of_range& e) {
 </%cpp>
             {
-                "error" :   "bad_input"
-                "msg"   :   "Error in location_uri or invalid asset type."
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'from' contains number that falls out of the allowed range."
             }
-<%cpp> 
-            return HTTP_BAD_REQUEST;
-        }
-        int asset_type = asset (from);
-        if (asset_type == asset_type::UNKNOWN || asset_type == -1) {
-</%cpp>
-            {
-                "error" :   "bad_input"
-                "msg"   :   "Error in location_uri or invalid asset type."
-            }
-<%cpp> 
-            return HTTP_BAD_REQUEST;
-        }
-
-/* TODO uncomment when process_message counterpart is ready and delete the DEBUG below        
-        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
-        assert (input_msg);        
-
-        asset_msg_set_element_id (input_msg, (byte) id);
-        asset_msg_set_type (input_msg, (byte) asset_type);
-        asset_msg_set_recursive (input_msg, (byte) is_recursive);
-        asset_msg_set_filter_type (input_msg, (byte) filter_type);
-
-        zsock_t * dbsock = zsock_new_req (DB_SOCK);
-        assert (dbsock);
-        
-        ret = asset_msg_send (&input_msg, dbsock);
-        assert (ret != -1);
-        input_msg = asset_msg_recv (dbsock);
-        assert (input_msg);
-
-        zsock_destroy (&dbsock);
-*/
-</%cpp>
-sending ASSET_MSG_GET_LOCATION_FROM:
-    elemend_id: <$ id $>
-    type: <$ asset_type $>
-    recursive: <$ is_recursive $>
-    filter_type: <$ filter_type $>
 <%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::invalid_argument& e) {       
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Please specify an integer value for variable 'from'."
+            }
+<%cpp>       
+            return HTTP_BAD_REQUEST;
+        } catch (std::exception& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        // TODO asset_msg create, call persistence layer, process returned message
     }   
     else {
         // should never reach here
 </%cpp>
-        { "error" : "bad input" }
+        {
+            "msg" : "Unreachable code segment."
+        }
 <%cpp>
-        return HTTP_BAD_REQUEST;    
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
-
 </%cpp>
 

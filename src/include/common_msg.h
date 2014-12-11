@@ -65,7 +65,7 @@
     FAIL - A failed message indicates that some error had occured
         errtype             number 1     An error type, defined in enum somewhere
         errorno             number 4     An error id
-        errmsg              string       A user visible error string
+        errmsg              longstr      A user visible error string
         erraux              hash         An optional additional information about occured error
 
     DB_OK - An ok message indicates that during the work with db no error had occured

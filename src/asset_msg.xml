@@ -86,17 +86,15 @@ Returns elements we were asked for
 </message>
 
 <message name = "get_location_from" id = "12">
-Ask for a location topology started from the specified element
+Ask for location topology starting from the element specified.
     <field name = "element_id"  type = "number" size = "4">Unique ID of the start asset element</field>
-    <field name = "type"        type = "number" size = "1">Type of the start element</field>
     <field name = "recursive"   type = "number" size = "1">If the search should be recursive (=1) or not (=0)</field>
     <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if 7 take all</field>
 </message>
 
 <message name = "get_location_to" id = "13">
-Ask for a location topology for the specified element
+Ask for a location topology for the specified element.
     <field name = "element_id"  type = "number" size = "4">Unique ID of the asset element</field>
-    <field name = "type"        type = "number" size = "1">Type of the element</field>
 </message>
 
 <message name = "return_location_to" id = "14">

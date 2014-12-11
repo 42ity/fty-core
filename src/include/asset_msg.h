@@ -83,15 +83,13 @@
     RETURN_ELEMENTS - Returns elements we were asked for
         element_ids         hash        Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
 
-    GET_LOCATION_FROM - Ask for a location topology started from the specified element
+    GET_LOCATION_FROM - Ask for location topology starting from the element specified.
         element_id          number 4    Unique ID of the start asset element
-        type                number 1    Type of the start element
         recursive           number 1    If the search should be recursive (=1) or not (=0)
         filter_type         number 1    Type of the looked elements, if 7 take all
 
-    GET_LOCATION_TO - Ask for a location topology for the specified element
+    GET_LOCATION_TO - Ask for a location topology for the specified element.
         element_id          number 4    Unique ID of the asset element
-        type                number 1    Type of the element
 
     RETURN_LOCATION_TO - Reply for a location topology for the specified element
         element_id          number 4    Unique ID of the asset element
@@ -285,15 +283,13 @@ zmsg_t *
 zmsg_t *
     asset_msg_encode_get_location_from (
         uint32_t element_id,
-        byte type,
         byte recursive,
         byte filter_type);
 
 //  Encode the GET_LOCATION_TO 
 zmsg_t *
     asset_msg_encode_get_location_to (
-        uint32_t element_id,
-        byte type);
+        uint32_t element_id);
 
 //  Encode the RETURN_LOCATION_TO 
 zmsg_t *
@@ -435,7 +431,6 @@ int
 int
     asset_msg_send_get_location_from (void *output,
         uint32_t element_id,
-        byte type,
         byte recursive,
         byte filter_type);
     
@@ -443,8 +438,7 @@ int
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     asset_msg_send_get_location_to (void *output,
-        uint32_t element_id,
-        byte type);
+        uint32_t element_id);
     
 //  Send the RETURN_LOCATION_TO to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
