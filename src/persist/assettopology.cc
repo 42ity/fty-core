@@ -12,17 +12,19 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
-
+#include "asset_types.h"
 
 #include "assettopology.h"
+
 // TODO HARDCODED CONSTANTS for asset device types
 
 // TODO This parameter should be placed in configure file
 // but now configure file doesn't exist. 
 // So instead of it the constat would be used
 #define MAX_RECURSION_DEPTH 6
-#define DEVICE 6
 
+/**\brief A helper function, that transforms a Matroshka to Frame
+ */
 int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
 {
     assert ( matryoshka );
@@ -59,7 +61,7 @@ int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
 }
 
 /**
- * \brief Helper function: calculate zrame_t size even for NULL value
+ * \brief Helper function: calculates zframe_t size even for NULL value.
  *
  * \param frame - frame
  *
@@ -75,23 +77,33 @@ size_t my_size(zframe_t* frame)
 
 
 /**
- * \brief Select group elements of specified type for the specified group
+ * \brief Selects group elements of specified type for the specified group.
  *  
+ *  Paramenters "element_type_id" and "group_name" are used only in the 
+ *  returned zmsg_t message.
+ * 
+ *  In case of success it generates the ASEET_MSG_RETURN_LOCATION_FROM. 
+ *  In case of failure returns COMMON_MSG_FAIL.
+
  * \param url             - connection to database
  * \param element_id      - asset element id of group
+ * \param element_type_id - asset_element_type_id of the group
+ * \param group_name      - name of the group
  * \param filter_type     - id of the type of the searched elements
  *                          (from the table t_bios_asset_element_type)
  *
- * \return zmsg_t  - in case of success returns ASEET_MSG_RETURN_LOCATION_FROM
- *                   filled with elements of the group,
- *                   or COMMON_MSG_FAIL in case of errors.
+ * \return zmsg_t  - encoded ASEET_MSG_RETURN_LOCATION_FROM or 
+ *                           COMMON_MSG_FAIL.
  */
-zmsg_t* select_group_elements(const char* url, uint32_t element_id, 
-        uint8_t element_type_id, const char* group_name, 
-        const char* dtype_name, uint8_t filtertype)
+zmsg_t* select_group_elements(
+            const char* url             , uint32_t    element_id, 
+            uint8_t     element_type_id , const char* group_name, 
+            const char* dtype_name      , uint8_t     filtertype
+        )
 {
     assert ( element_id );  // id of the group should be specified
-    assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
+    assert ( element_type_id ); // type_id of the group
+    assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start\n");
@@ -156,57 +168,45 @@ zmsg_t* select_group_elements(const char* url, uint32_t element_id,
             log_info ("id_type = %d\n", id_type);
             log_info ("dtype_name = %s\n", dtype_name.c_str());
 
-            // we are interested in the element if we are interested in all
-            // elements ( filtertype == 7) or if this element has exactly the type
-            // of the filter (filtertype == id_type)
-            if (( filtertype == 7 ) || ( ( filtertype == 1 ) ) )
+            // we are interested in this element if we are interested in 
+            // all elements ( filtertype == 7) or if this element has 
+            // exactly the type of the filter (filtertype == id_type)
+            if ( ( filtertype == 7 ) || ( filtertype == 1 ) )
             {
+                // dcs, rooms, rows, racks, devices, groups are NULL
+                // because we provide only first layer of inclusion
                 zmsg_t* el = asset_msg_encode_return_location_from 
-                              (id, id_type, name.c_str(), dtype_name.c_str(), NULL, NULL, 
-                                   NULL, NULL, NULL, NULL);
+                              (id, id_type, name.c_str(), dtype_name.c_str(), 
+                               NULL, NULL, NULL, NULL, NULL, NULL);
                 assert ( el );
         
+                // we are interested in this element
                 log_info ("created msg el for i = %d\n", i);
-                                // we are interested in the element
-                if ( id_type == 2 )
-                {
+
+                // put elements into the bins by its asset_element_type_id
+                if ( id_type == asset_type::DATACENTER )
                     rv = zmsg_addmsg (dcss, &el);
-                    assert ( rv != -1 );
-                    assert ( el == NULL );                 
-                }
-                if ( id_type == 3 )
-                {   
+                else if ( id_type == asset_type::ROOM )
                     rv = zmsg_addmsg (roomss, &el);
-                    assert ( rv != -1 );
-                    assert ( el == NULL );
-                }
-                if ( id_type == 4 )
-                {   
+                else if ( id_type == asset_type::ROW )
                     rv = zmsg_addmsg (rowss, &el);
-                    assert ( rv != -1 );
-                    assert ( el == NULL );
-                }
-                if ( id_type == 5 )
-                {   
+                else if ( id_type == asset_type::RACK )
                     rv = zmsg_addmsg (rackss, &el);
-                    assert ( rv != -1 );
-                    assert ( el == NULL );
-                }
-                if ( id_type == 6 )
-                {   
+                else if ( id_type == asset_type::DEVICE )
                     rv = zmsg_addmsg (devicess, &el);
-                    assert ( rv != -1 );
-                    assert ( el == NULL );
-                }
-               // group of groups is not allowed 
-            }
+                assert ( rv != -1 );
+                assert ( el == NULL );                 
+                // group of groups is not allowed 
+            } // end of if interested in element
         }// end for
+        
         zframe_t* dcs     = NULL;
         zframe_t* rooms   = NULL;
         zframe_t* rows    = NULL;
         zframe_t* racks   = NULL;
         zframe_t* devices = NULL;
         
+        // transform bins to the frames
         rv = matryoshka2frame (&dcss, &dcs);
         assert ( rv == 0 );
         rv = matryoshka2frame (&roomss, &rooms);
@@ -217,9 +217,11 @@ zmsg_t* select_group_elements(const char* url, uint32_t element_id,
         assert ( rv == 0 );
         rv = matryoshka2frame (&devicess, &devices);
         assert ( rv == 0 );
+
+        // generate message for the group with filled elements
         zmsg_t* el = asset_msg_encode_return_location_from 
-                      (element_id, element_type_id, group_name, dtype_name, dcs, rooms, 
-                                        rows, racks, devices, NULL);
+                      (element_id, element_type_id, group_name, dtype_name, 
+                       dcs, rooms, rows, racks, devices, NULL);
         assert ( el );
         log_info ("end\n");
         return el;
@@ -233,7 +235,10 @@ zmsg_t* select_group_elements(const char* url, uint32_t element_id,
 
 /**
  * \brief Select childs of specified type for the specified element 
- * (element_id + element_type_id). 
+ *  (element_id + element_type_id). 
+ *  
+ *  To select unlockated elements need to set element_id to 0.
+ *  To select without the filter need to set a filtertype to 7.
  *
  * \param url             - connection to database
  * \param element_id      - id of the asset element
@@ -246,12 +251,14 @@ zmsg_t* select_group_elements(const char* url, uint32_t element_id,
  * \return zframe_t - list of the childs of secified type according 
  *                    to the filter filter_type. (it is a Matryoshka).
  */
-zframe_t* select_childs(const char* url, uint32_t element_id, 
-    uint32_t element_type_id, uint32_t child_type_id, 
-    bool is_recursive, uint32_t current_depth, uint32_t filtertype)
+zframe_t* select_childs(
+    const char* url             , uint32_t element_id, 
+    uint32_t    element_type_id , uint32_t child_type_id, 
+    bool        is_recursive    , uint32_t current_depth, 
+    uint32_t    filtertype)
 {
     assert ( child_type_id );   // is required
-    assert ( ( filtertype >= 1 ) && ( filtertype <= 7 ) ); 
+    assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start select_childs\n");
@@ -266,16 +273,17 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         tntdb::Result result; 
         if ( element_id != 0 )
         {
-            // for the groups, other select is needed
+            // for the groups other select is needed
             // because type of the group should be selected
-            if ( child_type_id == 1 )
+            if ( child_type_id == asset_type::GROUP )
             {
                 st = conn.prepareCached(
                     " SELECT"
-                    "    v.id, v.name, v.id_type, v1.value as dtype_name"                  
+                    "    v.id, v.name, v.id_type, v1.value as dtype_name"
                     " FROM v_bios_asset_element v"
                     "    INNER JOIN t_bios_asset_ext_attributes v1"
-                    "      ON (v.id = v1.id_asset_element AND v1.keytag = 'type')"
+                    "      ON ( v.id = v1.id_asset_element AND"
+                    "           v1.keytag = 'type')"
                     " WHERE v.id_parent = :elementid AND"
                     "       v.id_parent_type = :elementtypeid AND"
                     "       v.id_type = :childtypeid"
@@ -285,7 +293,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             {
                 st = conn.prepareCached(
                     " SELECT"
-                    "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                    "    v.id, v.name, v.id_type, v1.name as dtype_name"
                     " FROM v_bios_asset_element v"
                     "    LEFT JOIN v_bios_asset_device v1"
                     "      ON (v.id = v1.id_asset_element)"
@@ -304,15 +312,16 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
         {
             // for the groups, other select is needed
             // because type of the group should be selected
-            if ( child_type_id == 1 )
+            if ( child_type_id == asset_type::GROUP )
             {
                 st = conn.prepareCached(
                     " SELECT"
-                    "    v.id, v.name, v.id_type, v1.value as dtype_name"                  
+                    "    v.id, v.name, v.id_type, v1.value as dtype_name"
                     " FROM v_bios_asset_element v"
                     "   INNER JOIN t_bios_asset_ext_attributes v1"
-                    "      ON (v.id = v1.id_asset_element AND v1.keytag = 'type')"
-                    " WHERE v.id_parent is NULL  AND "
+                    "      ON ( v.id = v1.id_asset_element AND"
+                    "           v1.keytag = 'type')"
+                    " WHERE v.id_parent is NULL  AND"
                     "       v.id_type = :childtypeid"
                 );
             }
@@ -320,7 +329,7 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             {
                 st = conn.prepareCached(
                     " SELECT"
-                    "    v.id, v.name, v.id_type, v1.name as dtype_name"                  
+                    "    v.id, v.name, v.id_type, v1.name as dtype_name"
                     " FROM v_bios_asset_element v"
                     "    LEFT JOIN v_bios_asset_device v1"
                     "      ON (v.id = v1.id_asset_element)"
@@ -367,55 +376,92 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             zframe_t* rows    = NULL;
             zframe_t* racks   = NULL;
             zframe_t* devices = NULL;
-            zmsg_t* grp       = NULL;
+            zmsg_t*   grp     = NULL;
             
-            if ( ( is_recursive ) && ( child_type_id != DEVICE ) && 
-                        ( current_depth <= MAX_RECURSION_DEPTH ) )
+            // Select childs only if it is not a leaf (is not a device), 
+            // it is recursive search, and we didn't achive max 
+            // recursion depth
+            if (    ( is_recursive ) && 
+                    ( child_type_id != asset_type::DEVICE ) && 
+                    ( current_depth <= MAX_RECURSION_DEPTH ) )
             {
-                if  ( ( child_type_id != 1 ) && ( child_type_id < 2 ) && ( 2 <= filtertype ) )
-                {
-                    log_info ("start select_dcs\n");
-                    dcs     = select_childs (url, id, child_type_id, 2, 
-                                is_recursive, current_depth + 1, filtertype);
-                    log_info ("end select_dcs\n");
-                }
-                if ( ( child_type_id != 1 ) && ( child_type_id < 3 ) && ( 3 <= filtertype ) )
+                // There is no need to select datacenters, because 
+                // they could be seleted only for grops, but for groups
+                // there is a special processing
+                
+                // Select rooms only for datacenters
+                // and TODO filter
+                if (    ( child_type_id == asset_type::DATACENTER ) && 
+                        ( 3 <= filtertype ) )
                 {
                     log_info ("start select_rooms\n");
-                    rooms   = select_childs (url, id, child_type_id, 3, 
-                                is_recursive, current_depth + 1, filtertype);
+                    rooms = select_childs (url, id, child_type_id, 
+                                asset_type::ROOM, is_recursive, 
+                                current_depth + 1, filtertype);
                     log_info ("end select_rooms\n");
                 }
-                if ( ( child_type_id != 1 ) && ( child_type_id < 4 ) && ( 4 <= filtertype ) )
+
+                // Select rows only for datacenters and rooms
+                // and TODO filter
+                if ( (  ( child_type_id == asset_type::DATACENTER ) ||
+                        ( child_type_id == asset_type::ROOM ) )     && 
+                     ( 4 <= filtertype ) )
                 {
                     log_info ("start select_rows\n");
-                    rows    = select_childs (url, id, child_type_id, 4, 
-                            is_recursive, current_depth + 1, filtertype);
+                    rows  = select_childs (url, id, child_type_id,
+                                asset_type::ROW, is_recursive, 
+                                current_depth + 1, filtertype);
                     log_info ("end select_rows\n");
                 }
-                if ( ( child_type_id != 1 ) && ( child_type_id < 5 ) && ( 5 <= filtertype ) )
+                
+                // Select racks only for datacenters, rooms, rows
+                // and TODO filter
+                if ( (  ( child_type_id == asset_type::DATACENTER)  ||
+                        ( child_type_id == asset_type::ROOM )       ||
+                        ( child_type_id == asset_type::ROW ) )     && 
+                     ( 5 <= filtertype ) )
                 {
                     log_info ("start select_racks\n");
-                    racks   = select_childs (url, id, child_type_id, 5, 
-                            is_recursive, current_depth + 1, filtertype);
+                    racks   = select_childs (url, id, child_type_id, 
+                                asset_type::RACK, is_recursive, 
+                                current_depth + 1, filtertype);
                     log_info ("end select_racks\n");
                 }
-                if ( ( child_type_id != 1 ) && ( child_type_id < 6 ) && ( 6 <= filtertype ) )
+                
+                // Select devices only for datacenters, rooms, rows, racks
+                // and TODO filter
+                if ( (  ( child_type_id == asset_type::DATACENTER)  ||
+                        ( child_type_id == asset_type::ROOM )       ||
+                        ( child_type_id == asset_type::ROW )        ||
+                        ( child_type_id == asset_type::RACK ) )     &&
+                     ( 6 <= filtertype ) )
                 {
                     log_info ("start select_devices\n");
-                    devices = select_childs (url, id, child_type_id, 6, 
-                            is_recursive, current_depth + 1, filtertype);
+                    devices = select_childs (url, id, child_type_id,
+                                asset_type::DEVICE, is_recursive, 
+                                current_depth + 1, filtertype);
                     log_info ("end select_devices\n");
                 }
                 
+                // TODO filter
                 // if it is a group, then do a special processing
-                if ( ( child_type_id == 1 )  && ( ( 1 == filtertype ) || (filtertype == 7 ) ) )
+                if (    ( child_type_id == asset_type::GROUP) && 
+                        (   ( asset_type::GROUP == filtertype ) || 
+                            ( filtertype == 7 ) 
+                        ) )
                 {
                     log_info ("start select elements of the grp\n");
-                    grp = select_group_elements (url, id, 1, name.c_str(), dtype_name.c_str(), filtertype);
+                    grp = select_group_elements (url, id, asset_type::GROUP, 
+                                name.c_str(), dtype_name.c_str(), filtertype);
                     log_info ("end select elements of the grp\n");
                 }
             }
+            // all sub elements selected
+
+            // add this asset_element to return result
+            // if   selecting ALL or
+            //      for this element where selected sub elements or
+            //      the type of the element is a filter type
             if ( !( ( filtertype < 7 ) &&
                     ( ( my_size(dcs) == 0 ) && ( my_size(rooms) == 0 ) 
                         && ( my_size(rows) == 0 ) && ( my_size(racks) == 0 ) 
@@ -427,12 +473,14 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
             {
                 
                 zmsg_t* el;
-                if ( ( child_type_id == 1 ) && (is_recursive ) )
-                    el = grp;
+                if (    ( child_type_id == asset_type::GROUP ) && 
+                        ( is_recursive ) )
+                    el = grp;   // because of the special group processing
                 else 
                     el = asset_msg_encode_return_location_from 
-                                (id, id_type, name.c_str(), dtype_name.c_str(), dcs, rooms, 
-                                        rows, racks, devices, NULL);
+                                (id, id_type, name.c_str(), 
+                                 dtype_name.c_str(), dcs, rooms, 
+                                 rows, racks, devices, NULL);
                 assert ( el );
                 log_info ("created msg el for i = %d\n",i);
                 rv = zmsg_addmsg ( ret, &el);
@@ -460,9 +508,14 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
 /**
  * \brief This function processes the ASSET_MSG_GET_LOCATION_FROM message
  *
+ * To correct processing all fields of the message should be set up 
+ * according specification.
+ *
  * In case of success it generates the ASSET_MSG_RETURN_LOCATION_FROM. 
  * In case of failure returns COMMON_MSG_FAIL.
  * 
+ * Din't destroy the getmsg.
+ *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_LOCATION_FROM 
  *                  we would like to process.
@@ -477,7 +530,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     log_info ("start\n");
     // element_id = 0 means, that we are looking for unlocated elements
     // then recursive is false
-    // we are not interested in datacenters and groups
+    // we are not interested in datacenters
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  type_id      = 0;
     bool     is_recursive = false;  
@@ -1284,7 +1337,13 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
- * powerchains: A:B:C:D if A or C is zero it means, that it was not srecified in database 
+ * 
+ * Returns all devices in the group and returns all power links between them.
+ * Links that goes outside the group are not returned.
+ *
+ * A single powerchain link is coded as "A:B:C:D" string ("src_socket:src_id:dst_socket:dst_id").
+ * If A or C is zero then A or C were not srecified in database (were NULL). 
+ *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
  *                  we would like to process.
@@ -1304,6 +1363,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     zlist_t* powers = zlist_new();
     assert ( powers );
     zlist_set_duplicator (powers, void_dup);
+    
+    log_info("start select powers\n"); 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // v_bios_asset_link are only devices, so there is no need to add more constrains
@@ -1376,7 +1437,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     // powers is ok
-    
+    log_info("end select powers\n");
+    log_info("start select the devices\n"); 
     // devices
     zmsg_t*   ret     = zmsg_new();
     assert ( ret );
@@ -1400,6 +1462,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         tntdb::Result result = st.setInt("groupid", element_id).
                                   select();
         
+        log_info("rows selected %d\n", result.size()); 
         for ( auto &row: result )
         {
             // device_name, required
@@ -1427,6 +1490,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( rv != -1 );
             assert ( el == NULL );
         } // end for
+        log_info("end select devices\n"); 
     }
     catch (const std::exception &e) {
         // internal error in database
@@ -1448,12 +1512,17 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     return result;
 }
 
-/**
+/*
  * \brief This function processes the ASSET_MSG_GET_POWER_DATACENTER message
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
- * powerchains: A:B:C:D if A or C is zero it means, that it was not srecified in database 
+ * 
+ * Returns all devices in datacenter and all powerlinks between them.
+ * Links outside the datacenter are not returned.
+ *
+ * A single powerchain link is coded as "A:B:C:D" string ("src_socket:src_id:dst_socket:dst_id").
+ * If A or C is zero then A or C were not srecified in database (were NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
@@ -1533,29 +1602,19 @@ zmsg_t* get_return_power_topology_datacenter(const char* url, asset_msg_t* getms
         // v_bios_asset_link are only devices, so there is no need to add more constrains
         log_info ("start select \n");
         tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.src_out, v.id_asset_element_src, v.dest_in, v.id_asset_element_dest"
+            
+            " SELECT"                
+            "   v.src_out, v.id_asset_element_src, v.dest_in, v.id_asset_element_dest"              
             " FROM"
-            "   v_bios_asset_link v"
+            "   v_bios_asset_link v,"
+            "   v_bios_asset_element_super_parent v1,"
+            "   v_bios_asset_element_super_parent v2"
             " WHERE"
-            "       v.id_asset_link_type = :linktypeid AND"
-            "       v.id_asset_element_src IN ("
-            "                 SELECT"
-            "                   v.id_asset_element" 
-            "                 FROM"
-            "                   v_bios_asset_element_super_parent v"
-            "                 WHERE"
-            "                   :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3 ,v.id_parent4)"
-            "             )"
-            "   AND"
-            "       v.id_asset_element_dest IN ("
-            "               SELECT"
-            "                   v.id_asset_element" 
-            "                 FROM"
-            "                   v_bios_asset_element_super_parent v"
-            "                 WHERE"
-            "                   :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3 ,v.id_parent4)"
-            "             )"
+            "   v.id_asset_link_type = :linktypeid AND"
+            "   v.id_asset_element_dest = v2.id_asset_element AND"
+            "   ( :dcid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3 ,v2.id_parent4) ) AND"
+            "   v.id_asset_element_src = v1.id_asset_element AND" 
+            "   ( :dcid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3 ,v1.id_parent4) )"
         );
         // can return more than one row
         tntdb::Result result = st.setInt("dcid", element_id).
