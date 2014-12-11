@@ -27,18 +27,18 @@ RUN dpkg -i /tmp/libnutclient0_2.7.2-2_amd64.deb
 RUN rm /tmp/*.deb
 
 #Install BIOS binaries & config files
-ADD tntnet.xml /usr/local/etc/tntnet.xml
-ADD simple /usr/local/bin/simple
-ADD netmon /usr/local/bin/netmon
-ADD driver-nmap /usr/local/bin/driver-nmap
-ADD bios_web.so.0.0.0 /usr/local/lib/bios_web.so.0.0.0
+RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
+ADD ./usr/local/share/core-0.1/examples/tntnet.xml.example /etc/tntnet/tntnet.xml
+ADD ./usr/local/bin/simple /usr/local/bin/simple
+ADD ./usr/local/bin/netmon /usr/local/bin/netmon
+ADD ./usr/local/bin/driver-nmap /usr/local/bin/driver-nmap
+RUN mkdir -p /usr/local/lib/core
+ADD ./usr/local/lib/core/bios_web.so.0.0.0 /usr/local/lib/core/bios_web.so.0.0.0
 RUN ln -s /usr/local/lib/bios_web.so.0.0.0 /usr/local/lib/bios_web.so
-RUN mkdir /usr/local/share/web
-RUN mkdir /var/www
+RUN mkdir -p /usr/local/share/core-0.1/web
 
 #User PAM
-RUN mv /etc/default/saslauthd /etc/default/saslauthd.orig
-ADD saslauthd /etc/default/saslauthd
+RUN sed -i 's/START=no/START=yes/' /etc/default/saslauthd
 RUN adduser --quiet --disabled-password -shell /bin/bash --home /home/admin --gecos "User" admin
 RUN echo "admin\nadmin\n" | passwd admin 
 

@@ -2,6 +2,7 @@ BIOS appliance may also work as a Docker Linux container.
 
 Install docker
 --------------
+
  * Install docker
 ----
 :; sudo apt-get install -y docker.io
@@ -10,12 +11,13 @@ Install docker
 Building BIOS docker image
 -------------------------
 the steps are :
+
  * make BIOS application. See INSTALL document:
 ----
 :; ./autogen.sh
 :; mkdir build
 :; cd build && \
-:; ../configure && \
+ ../configure && \
 :; make
 ----
 
@@ -43,7 +45,9 @@ eaton/bios           latest              1d513ac4e269        6 minutes ago      
 
 Running BIOS docker container
 -----------------------------
-BIOS docker container need to work mariadb engine. It is linked to other docker container name "dockerfile/mariadb".
+Considering that BIOS container needs a DB engine, considering that docker
+hub already provides such DB engine, it seem simpler and lighter to link it
+with an external DB container, we've choosen "dockerfile/mariadb".
 dockerfile/mariadb is available on public docker hub.
 As BIOS docker expose port 8000, this port should be available before starting it.
 

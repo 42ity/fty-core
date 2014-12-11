@@ -1,5 +1,6 @@
 #!/bin/sh
 #
+#   Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
 #   Copyright (c) 2014 Eaton Corporation <www.eaton.com>
 #   Copyright other contributors as noted in the AUTHORS file.
 #
@@ -18,16 +19,25 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-#   Description: Script to remove bios|mysql or all (both) containers from local cache
-case "x$1" in
-  "xall" | "x")
-    $0 bios
-    $0 mysql;;
-  *)
-    echo "removing $1 container .."
-    container_id=`sudo docker ps -a | grep $1 | awk '{print $1}'`
-    if [ "x$container_id" != "x" ]
-    then
-      sudo docker rm $container_id
-    fi;;
-esac
+#   Description: Script to generate all required files from fresh git
+#   checkout.
+#   NOTE: It expects to be run in the root of the project directory
+#   (probably the checkout directory, unless you use strange set-ups).
+echo  "initializing db .."
+mysql < /tmp/initdb.sql
+mysql < /tmp/load_data.sql
+mysql < /tmp/patch.sql
+
+echo "Starting SASL auth .."
+service saslauthd start
+
+echo "Starting web srv .."
+service tntnet start
+
+echo "starting nut .."
+service nut-server start
+
+echo "starting simple .."
+cd /usr/local/bin
+./simple 
+
