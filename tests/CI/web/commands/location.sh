@@ -1,5 +1,46 @@
 test_it "topology/location bad_input 1"
-[ "`api_get "/topology/location?from=api/v1/asset/datacenter/5&to=api/v1/asset/root/53" | \
+
+[ "`api_get "/topology/location?from=x" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=21474836470000000000000000" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=asd54" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=%20+%20" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?to=x" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?to=21474836470000000000000000" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?to=" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?to=asd54" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?to=%20+%20" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=5&to=53" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
@@ -11,60 +52,67 @@ print_result $?
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&recursive=yes" | \
+[ "`api_get "/topology/location?to=1&recursive=yes" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&recursive=no" | \
+[ "`api_get "/topology/location?to=1&recursive=no" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&recursive=x" | \
+[ "`api_get "/topology/location?to=41&recursive=x" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&filter=x" | \
+[ "`api_get "/topology/location?to=0&filter=x" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&filter=rooms" | \
+[ "`api_get "/topology/location?to=1&filter=rooms" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?to=api/v1/asset/group/1&filter=rows&recursive=yes" | \
+[ "`api_get "/topology/location?to=1&filter=rows&recursive=yes" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/ass%20et/row/1234" | \
+[ "`api_get "/topology/location?from=1234&filter=datacenters" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/data+center/1234" | \
+[ "`api_get "/topology/location?from=4321&filter=adys" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&filter=datacenters" | \
+[ "`api_get "/topology/location?from=4321&filter=roo%20ms" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&filter=adys" | \
+[ "`api_get "/topology/location?from=4321&filter=row+s" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&recursive=s" | \
+[ "`api_get "/topology/location?from=1111&recursive=s" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&filter=groups&recursive=ysfd" | \
+[ "`api_get "/topology/location?from=5&filter=groups&recursive=ysfd" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&filter=datacenters&recursive=yes" | \
+[ "`api_get "/topology/location?from=1234&filter=datacenters&recursive=yes" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-[ "`api_get "/topology/location?from=api/v1/asset/room/1234&filter=asd&recursive=yes" | \
+[ "`api_get "/topology/location?from=1234&filter=datacenters&recursive=no" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=1234&filter=asd&recursive=yes" | \
+            grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/location?from=1234&filter=d&recursive=no" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 # More tests to come
