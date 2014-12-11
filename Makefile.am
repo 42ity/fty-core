@@ -422,7 +422,8 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
+                      src/web/src/rack_total.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
