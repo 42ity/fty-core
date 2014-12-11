@@ -126,10 +126,13 @@ cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
 # setup debian proxy
-echo 'Acquire::http::Proxy "http://gate:3142";' > "../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+echo 'Acquire::http::Proxy "http://gate.roz.lab.etn.com:3142";' > "../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
+
+# put hostname in resolv.conf
+sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/resolv.conf"
 
 # Start the virtual machine
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
