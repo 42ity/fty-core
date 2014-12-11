@@ -25,6 +25,10 @@ myDEVDOCDIR = docs/develop
 # Locations of child Makefiles
 SUBDIRS = $(myMANDIR) docs/examples tools
 
+# Integrate packaging of files for management of Docker containers
+# Note that docker/README is processed by this root Makefile
+SUBDIRS += docker
+
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
 			  -I$(top_srcdir)/src/include \
@@ -578,6 +582,7 @@ MAPPED_TXT_DOCS_PLAINTEXT = \
 	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
 
 MAPPED_TXT_DOCS_ASCIIDOC = \
+	docker/README:$(myDEVDOCDIR)/README-docker.txt \
 	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
 	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
