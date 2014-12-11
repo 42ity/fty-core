@@ -132,7 +132,7 @@ echo 'Acquire::http::Proxy "http://gate.roz.lab.etn.com:3142";' > "../rootfs/$VM
 echo "$VM" > "../rootfs/$VM/etc/hostname"
 
 # put hostname in resolv.conf
-sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/resolv.conf"
+sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 # Start the virtual machine
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
