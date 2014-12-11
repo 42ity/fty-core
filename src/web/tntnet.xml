@@ -56,6 +56,12 @@
       <url>^/api/v1/metric/current.*$</url>
     </mapping>
 
+    <!-- rack consumption -->
+    <mapping>
+      <target>rack_total@bios_web</target>
+      <url>^/api/v1/metric/computed/rack_total.*$</url>
+    </mapping>
+
     <!-- Network list -->
     <mapping>
       <target>networks@bios_web</target>
@@ -77,6 +83,13 @@
       <args>
         <id>$1</id>
       </args>
+    </mapping>
+
+    <!-- UI/properties -->
+    <mapping>
+      <target>ui_properties@bios_web</target>
+      <method>(GET|PUT)</method>
+      <url>^/api/v1/ui/properties.*$</url>
     </mapping>
  </mappings>
 

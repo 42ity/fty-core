@@ -66,13 +66,13 @@ struct _asset_msg_t {
     size_t element_ids_bytes;           //  Size of dictionary content
     byte recursive;                     //  If the search should be recursive (=1) or not (=0)
     byte filter_type;                   //  Type of the looked elements, if 7 take all
+    char *type_name;                    //  Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string
     zframe_t *dcs;                      //  List of datacenters, matryoshka of this msg
     zframe_t *rooms;                    //  List of rooms, matryoshka of this msg
     zframe_t *rows;                     //  List of rows, matryoshka of this msg
     zframe_t *racks;                    //  List of racks, matryoshka of this msg
     zframe_t *devices;                  //  List of devices, matryoshka of this msg
     zframe_t *grps;                     //  List of groups, matryoshka of this msg
-    char *type_name;                    //  Type of the device
 };
 
 //  --------------------------------------------------------------------------
@@ -248,13 +248,13 @@ asset_msg_destroy (asset_msg_t **self_p)
         free (self->mac);
         zmsg_destroy (&self->msg);
         zhash_destroy (&self->element_ids);
+        free (self->type_name);
         zframe_destroy (&self->dcs);
         zframe_destroy (&self->rooms);
         zframe_destroy (&self->rows);
         zframe_destroy (&self->racks);
         zframe_destroy (&self->devices);
         zframe_destroy (&self->grps);
-        free (self->type_name);
 
         //  Free object itself
         free (self);
@@ -487,6 +487,8 @@ asset_msg_decode (zmsg_t **msg_p)
         case ASSET_MSG_RETURN_LOCATION_TO:
             GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->type);
+            GET_STRING (self->name);
+            GET_STRING (self->type_name);
             //  Get zero or more remaining frames, leaving current
             //  frame untouched
             self->msg = zmsg_new ();
@@ -498,6 +500,7 @@ asset_msg_decode (zmsg_t **msg_p)
             GET_NUMBER4 (self->element_id);
             GET_NUMBER1 (self->type);
             GET_STRING (self->name);
+            GET_STRING (self->type_name);
             {
                 //  Get next frame, leave current untouched
                 zframe_t *dcs = zmsg_pop (msg);
@@ -770,6 +773,14 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size += 4;
             //  type is a 1-byte integer
             frame_size += 1;
+            //  name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->name)
+                frame_size += strlen (self->name);
+            //  type_name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->type_name)
+                frame_size += strlen (self->type_name);
             break;
             
         case ASSET_MSG_RETURN_LOCATION_FROM:
@@ -781,6 +792,10 @@ asset_msg_encode (asset_msg_t **self_p)
             frame_size++;       //  Size is one octet
             if (self->name)
                 frame_size += strlen (self->name);
+            //  type_name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->type_name)
+                frame_size += strlen (self->type_name);
             break;
             
         case ASSET_MSG_GET_POWER_FROM:
@@ -973,6 +988,16 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_RETURN_LOCATION_TO:
             PUT_NUMBER4 (self->element_id);
             PUT_NUMBER1 (self->type);
+            if (self->name) {
+                PUT_STRING (self->name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->type_name) {
+                PUT_STRING (self->type_name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
             break;
 
         case ASSET_MSG_RETURN_LOCATION_FROM:
@@ -980,6 +1005,11 @@ asset_msg_encode (asset_msg_t **self_p)
             PUT_NUMBER1 (self->type);
             if (self->name) {
                 PUT_STRING (self->name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
+            if (self->type_name) {
+                PUT_STRING (self->type_name);
             }
             else
                 PUT_NUMBER1 (0);    //  Empty string
@@ -1496,11 +1526,15 @@ zmsg_t *
 asset_msg_encode_return_location_to (
     uint32_t element_id,
     byte type,
+    const char *name,
+    const char *type_name,
     zmsg_t *msg)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
+    asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_encode (&self);
@@ -1515,6 +1549,7 @@ asset_msg_encode_return_location_from (
     uint32_t element_id,
     byte type,
     const char *name,
+    const char *type_name,
     zframe_t *dcs,
     zframe_t *rooms,
     zframe_t *rows,
@@ -1526,6 +1561,7 @@ asset_msg_encode_return_location_from (
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
     asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zframe_t *dcs_copy = zframe_dup (dcs);
     asset_msg_set_dcs (self, &dcs_copy);
     zframe_t *rooms_copy = zframe_dup (rooms);
@@ -1864,11 +1900,15 @@ asset_msg_send_return_location_to (
     void *output,
     uint32_t element_id,
     byte type,
+    const char *name,
+    const char *type_name,
     zmsg_t *msg)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
+    asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_send (&self, output);
@@ -1884,6 +1924,7 @@ asset_msg_send_return_location_from (
     uint32_t element_id,
     byte type,
     const char *name,
+    const char *type_name,
     zframe_t *dcs,
     zframe_t *rooms,
     zframe_t *rows,
@@ -1895,6 +1936,7 @@ asset_msg_send_return_location_from (
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
     asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zframe_t *dcs_copy = zframe_dup (dcs);
     asset_msg_set_dcs (self, &dcs_copy);
     zframe_t *rooms_copy = zframe_dup (rooms);
@@ -2090,6 +2132,8 @@ asset_msg_dup (asset_msg_t *self)
         case ASSET_MSG_RETURN_LOCATION_TO:
             copy->element_id = self->element_id;
             copy->type = self->type;
+            copy->name = self->name? strdup (self->name): NULL;
+            copy->type_name = self->type_name? strdup (self->type_name): NULL;
             copy->msg = self->msg? zmsg_dup (self->msg): NULL;
             break;
 
@@ -2097,6 +2141,7 @@ asset_msg_dup (asset_msg_t *self)
             copy->element_id = self->element_id;
             copy->type = self->type;
             copy->name = self->name? strdup (self->name): NULL;
+            copy->type_name = self->type_name? strdup (self->type_name): NULL;
             copy->dcs = self->dcs? zframe_dup (self->dcs): NULL;
             copy->rooms = self->rooms? zframe_dup (self->rooms): NULL;
             copy->rows = self->rows? zframe_dup (self->rows): NULL;
@@ -2299,6 +2344,14 @@ asset_msg_print (asset_msg_t *self)
             zsys_debug ("ASSET_MSG_RETURN_LOCATION_TO:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
             zsys_debug ("    type=%ld", (long) self->type);
+            if (self->name)
+                zsys_debug ("    name='%s'", self->name);
+            else
+                zsys_debug ("    name=");
+            if (self->type_name)
+                zsys_debug ("    type_name='%s'", self->type_name);
+            else
+                zsys_debug ("    type_name=");
             zsys_debug ("    msg=");
             if (self->msg)
                 zmsg_print (self->msg);
@@ -2314,6 +2367,10 @@ asset_msg_print (asset_msg_t *self)
                 zsys_debug ("    name='%s'", self->name);
             else
                 zsys_debug ("    name=");
+            if (self->type_name)
+                zsys_debug ("    type_name='%s'", self->type_name);
+            else
+                zsys_debug ("    type_name=");
             zsys_debug ("    dcs=");
             if (self->dcs)
                 zframe_print (self->dcs, NULL);
@@ -3148,6 +3205,29 @@ asset_msg_set_filter_type (asset_msg_t *self, byte filter_type)
 
 
 //  --------------------------------------------------------------------------
+//  Get/set the type_name field
+
+const char *
+asset_msg_type_name (asset_msg_t *self)
+{
+    assert (self);
+    return self->type_name;
+}
+
+void
+asset_msg_set_type_name (asset_msg_t *self, const char *format, ...)
+{
+    //  Format type_name from provided arguments
+    assert (self);
+    va_list argptr;
+    va_start (argptr, format);
+    free (self->type_name);
+    self->type_name = zsys_vprintf (format, argptr);
+    va_end (argptr);
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get the dcs field without transferring ownership
 
 zframe_t *
@@ -3342,29 +3422,6 @@ asset_msg_set_grps (asset_msg_t *self, zframe_t **frame_p)
     zframe_destroy (&self->grps);
     self->grps = *frame_p;
     *frame_p = NULL;
-}
-
-
-//  --------------------------------------------------------------------------
-//  Get/set the type_name field
-
-const char *
-asset_msg_type_name (asset_msg_t *self)
-{
-    assert (self);
-    return self->type_name;
-}
-
-void
-asset_msg_set_type_name (asset_msg_t *self, const char *format, ...)
-{
-    //  Format type_name from provided arguments
-    assert (self);
-    va_list argptr;
-    va_start (argptr, format);
-    free (self->type_name);
-    self->type_name = zsys_vprintf (format, argptr);
-    va_end (argptr);
 }
 
 
@@ -3722,6 +3779,8 @@ asset_msg_test (bool verbose)
 
     asset_msg_set_element_id (self, 123);
     asset_msg_set_type (self, 123);
+    asset_msg_set_name (self, "Life is short but Now lasts for ever");
+    asset_msg_set_type_name (self, "Life is short but Now lasts for ever");
     zmsg_t *return_location_to_msg = zmsg_new ();
     asset_msg_set_msg (self, &return_location_to_msg);
     zmsg_addstr (asset_msg_msg (self), "Hello, World");
@@ -3736,6 +3795,8 @@ asset_msg_test (bool verbose)
         
         assert (asset_msg_element_id (self) == 123);
         assert (asset_msg_type (self) == 123);
+        assert (streq (asset_msg_name (self), "Life is short but Now lasts for ever"));
+        assert (streq (asset_msg_type_name (self), "Life is short but Now lasts for ever"));
         assert (zmsg_size (asset_msg_msg (self)) == 1);
         asset_msg_destroy (&self);
     }
@@ -3749,6 +3810,7 @@ asset_msg_test (bool verbose)
     asset_msg_set_element_id (self, 123);
     asset_msg_set_type (self, 123);
     asset_msg_set_name (self, "Life is short but Now lasts for ever");
+    asset_msg_set_type_name (self, "Life is short but Now lasts for ever");
     zframe_t *return_location_from_dcs = zframe_new ("Captcha Diem", 12);
     asset_msg_set_dcs (self, &return_location_from_dcs);
     zframe_t *return_location_from_rooms = zframe_new ("Captcha Diem", 12);
@@ -3773,6 +3835,7 @@ asset_msg_test (bool verbose)
         assert (asset_msg_element_id (self) == 123);
         assert (asset_msg_type (self) == 123);
         assert (streq (asset_msg_name (self), "Life is short but Now lasts for ever"));
+        assert (streq (asset_msg_type_name (self), "Life is short but Now lasts for ever"));
         assert (zframe_streq (asset_msg_dcs (self), "Captcha Diem"));
         assert (zframe_streq (asset_msg_rooms (self), "Captcha Diem"));
         assert (zframe_streq (asset_msg_rows (self), "Captcha Diem"));

@@ -37,6 +37,8 @@ common_msg_t* get_last_measurements(const char* url, common_msg_t* msg);
 
 zmsg_t* common_msg_process(zmsg_t **msg);
 
+bool insert_new_client_info(const char* url, common_msg_t* msg);
+
 } // namespace persist
 
 #endif // SRC_PERSIST_PERSISTENCELOGIC_H_
