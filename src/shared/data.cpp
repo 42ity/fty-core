@@ -181,27 +181,6 @@ std::string measures_manager::scale(std::string val, std::string i, std::string 
     }
 }
 
-std::string measures_manager::map_names(std::string name) {
-    static std::map<std::string, std::string> map = {
-        { "temperature.ups", "ups.temperature" },
-        { "status.ups", "ups.status" },
-        { "load.ups", "ups.load" },
-        { "realpower.default", "ups.realpower" },
-        { "realpower.L1", "output.L1.realpower" },
-        { "realpower.L2", "output.L2.realpower" },
-        { "realpower.L3", "output.L3.realpower" },
-        { "voltage.default", "output.voltage" },
-        { "voltage.L1", "output.L1-N.voltage" },
-        { "voltage.L2", "output.L2-N.voltage" },
-        { "voltage.L3", "output.L3-N.voltage" },
-    };
-    
-    auto it = map.find(name);
-    if(it != map.end())
-        return it->second;
-    return name;
-}
-
 std::string measures_manager::map_values(std::string name, std::string value) {
     static std::map<std::string, std::map<std::string, std::string>> map = {
         { "status.ups", {
