@@ -7,6 +7,8 @@
 #include "common_msg.h"
 #include "nmap_msg.h"
 
+#include <string>
+
 namespace persist {
 
 /**
@@ -33,6 +35,7 @@ bool insert_new_measurement(const char* url, common_msg_t* msg);
 
 common_msg_t* get_last_measurements(const char* url, common_msg_t* msg);
 
+zmsg_t* common_msg_process(zmsg_t **msg);
 
 } // namespace persist
 
