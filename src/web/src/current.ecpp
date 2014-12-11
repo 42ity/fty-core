@@ -56,7 +56,7 @@ std::string dev;
 
             std::string error;
             std::string msg;
-            int code;
+            unsigned code;
 
             common_msg_to_rest_error(dta, error, msg, &code);
 
