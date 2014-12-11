@@ -1,0 +1,87 @@
+<%pre>
+#include <czmq.h>
+#include <cxxtools/split.h>
+
+#include "asset_msg.h"
+#include "assetmsg.h"
+#include "data.h"
+</%pre>
+<%args>
+std::string arg1;
+std::string arg2;
+</%args>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%cpp>
+    // Check URL validity
+    if( arg1 == "" || arg2 == "" ) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> racks;
+    std::vector<std::string> rackNames;
+    std::vector<std::string> requestedParams;
+    static std::vector<std::string> validParams = {
+        "total_power",
+        "avg_power_last_day",
+        "avg_power_last_week",
+        "avg_power_last_month",
+        "avg_power_last_year"
+    };
+    cxxtools::split(",", arg1, std::back_inserter(racks));
+    // check that racks exists
+for( size_t R = 0; R <racks.size() ; ++R ) {
+    zmsg_t * msg = asset_mgr.get_item("rack",racks[R]);
+    if ( is_asset_msg (msg) ) {
+        asset_msg_t* element = asset_msg_decode (&msg);
+        if ( asset_msg_id( element ) == ASSET_MSG_ELEMENT ) {
+            rackNames.push_back(asset_msg_name(element));
+        } else {
+</%cpp>
+{"error":"invalid_rack_id"}
+<%cpp>
+            asset_msg_destroy (&element);
+            zmsg_destroy(&msg);
+            return HTTP_BAD_REQUEST;
+
+        }
+        asset_msg_destroy (&element);
+    } else {
+</%cpp>
+{"error":"invalid_rack_id"}
+<%cpp>
+        zmsg_destroy(&msg);
+        return HTTP_BAD_REQUEST;
+    }
+    zmsg_destroy(&msg);
+}
+    if( arg2 == "all" ) {
+        requestedParams = validParams;
+    } else {
+        cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+        for(std::string &param: requestedParams) {
+            if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+</%cpp>
+{ "error":"invalid_parameter" }
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            }
+        }
+    }
+</%cpp>
+{
+    "rack_total": [
+%   for( size_t R = 0 ; R < racks.size(); R++ ) {
+        {
+            "id":   "<$ racks[R] $>",
+            "name": "<$ rackNames[R] $>",
+%       for(size_t P = 0; P < requestedParams.size(); P++ ) {
+            "<$ requestedParams[P] $>": <$ (800.0 + (std::rand() % 2000)/10.0 )$><? P < requestedParams.size() -1 ? "," ?>
+%       };
+        }<? R < racks.size() -1 ? "," ?>
+%   };
+    ]
+}
