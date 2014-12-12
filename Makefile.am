@@ -334,7 +334,8 @@ test_web_LDADD = 	libpriv-test-run.la \
 test_web_CPPFLAGS = $(AM_CPPFLAGS) \
 				   -I$(top_srcdir)/tests/include/ \
 				   -I$(top_srcdir)/src/web/include \
-				   -I$(top_srcdir)/src/simple
+				   -I$(top_srcdir)/src/simple \
+				   -I$(top_srcdir)/src/include
 
 
 #test_web_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
@@ -442,7 +443,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp \
                       src/web/src/rack_total.cpp src/web/src/location.cpp \ 
-                      src/web/src/power.cpp 
+                      src/web/src/power.cpp src/web/src/location_helpers.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
