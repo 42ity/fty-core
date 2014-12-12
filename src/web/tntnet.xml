@@ -62,6 +62,12 @@
       <url>^/api/v1/metric/computed/rack_total.*$</url>
     </mapping>
 
+    <!-- rack consumption -->
+    <mapping>
+      <target>datacenter_indicators@bios_web</target>
+      <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+    </mapping>
+
     <!-- Network list -->
     <mapping>
       <target>networks@bios_web</target>

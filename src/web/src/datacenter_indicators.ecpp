@@ -1,0 +1,145 @@
+<%pre>
+#include <czmq.h>
+#include <cxxtools/split.h>
+
+#include "asset_msg.h"
+#include "assetmsg.h"
+#include "data.h"
+
+float random_value(std::string value) {
+    if ( value.find("trend") != std::string::npos ) {
+        return (-5.0 + (std::rand() % 100)/10.0 );
+    }
+    if ( value.find("power") != std::string::npos ) {
+        return (1600.0 + (std::rand() % 20000)/10.0 );
+    }
+    if ( value.find("temperature") != std::string::npos ) {
+        return (15.0 + (std::rand() % 150)/10.0 );
+    }
+    if ( value.find("humidity") != std::string::npos ) {
+        return (5.0 + (std::rand() % 100)/10.0 );
+    }
+    return 0.0;
+}
+
+</%pre>
+<%args>
+std::string arg1;
+std::string arg2;
+</%args>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%cpp>
+    // Check URL validity
+    if( arg1 == "" || arg2 == "" ) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> DCs;
+    std::vector<std::string> DCNames;
+    std::vector<std::string> requestedParams;
+    static std::vector<std::string> validParams = {
+        "power",
+        "avg_power_last_day",
+        "avg_power_last_week",
+        "avg_power_last_month",
+
+        "min_power_last_day",
+        "min_power_last_week",
+        "min_power_last_month",
+
+        "max_power_last_day",
+        "max_power_last_week",
+        "max_power_last_month",
+
+        "trend_power_last_day",
+        "trend_power_last_week",
+        "trend_power_last_month",
+
+        "temperature",
+        "avg_temperature_last_day",
+        "avg_temperature_last_week",
+        "avg_temperature_last_month",
+
+        "min_temperature_last_day",
+        "min_temperature_last_week",
+        "min_temperature_last_month",
+
+        "max_temperature_last_day",
+        "max_temperature_last_week",
+        "max_temperature_last_month",
+
+        "trend_temperature_last_day",
+        "trend_temperature_last_week",
+        "trend_temperature_last_month",
+
+        "humidity",
+        "avg_humidity_last_day",
+        "avg_humidity_last_week",
+        "avg_humidity_last_month"
+
+        "min_humidity_last_day",
+        "min_humidity_last_week",
+        "min_humidity_last_month",
+
+        "max_humidity_last_day",
+        "max_humidity_last_week",
+        "max_humidity_last_month",
+
+        "trend_humidity_last_day",
+        "trend_humidity_last_week",
+        "trend_humidity_last_month"
+        
+    };
+    cxxtools::split(",", arg1, std::back_inserter(DCs));
+    // check that DC exists
+for( size_t D = 0; D <DCs.size() ; ++D ) {
+    zmsg_t * msg = asset_mgr.get_item("datacenter",DCs[D]);
+    if ( is_asset_msg (msg) ) {
+        asset_msg_t* element = asset_msg_decode (&msg);
+        if ( asset_msg_id( element ) == ASSET_MSG_ELEMENT ) {
+            DCNames.push_back(asset_msg_name(element));
+        } else {
+</%cpp>
+{"error":"bad_input", "msg":"invalid DC id"}
+<%cpp>
+            asset_msg_destroy (&element);
+            zmsg_destroy(&msg);
+            return HTTP_BAD_REQUEST;
+        }
+        asset_msg_destroy (&element);
+    } else {
+</%cpp>
+{"error":"bad_input", "msg":"invalid DC id"}
+<%cpp>
+        zmsg_destroy(&msg);
+        return HTTP_BAD_REQUEST;
+    }
+    zmsg_destroy(&msg);
+}
+cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+for(std::string &param: requestedParams) {
+    if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+</%cpp>
+{"error":"bad_input", "invalid parameter" }
+<%cpp>
+      return HTTP_BAD_REQUEST;
+    }
+ }
+</%cpp>
+{
+    "datacenter_indicators": [
+%   for( size_t D = 0 ; D < DCs.size(); D++ ) {
+        {
+            "id":   "<$ DCs[D] $>",
+            "name": "<$ DCNames[D] $>",
+%       for(size_t P = 0; P < requestedParams.size(); P++ ) {
+            "<$ requestedParams[P] $>": <$ random_value( requestedParams[P] ) $><? P < requestedParams.size() -1 ? "," ?>
+%       };
+        }<? D < DCs.size() -1 ? "," ?>
+%   };
+    ]
+}
