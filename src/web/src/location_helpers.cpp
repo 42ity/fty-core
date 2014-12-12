@@ -1,11 +1,47 @@
 #include <cstdio>
-#include <string>
 #include <cstring>
 #include <exception>
 #include <algorithm>
 
 #include "asset_types.h"
+
 #include "location_helpers.h"
+
+int process_return_location_from (asset_msg_t **message_p, std::string& json) {
+        /*
+    log_open ();
+    log_set_level (LOG_DEBUG);
+
+    assert (message_p);
+    if (message_p == NULL) {
+        return -1;
+    }
+    if (*message_p) {
+        asset_msg_t *message = *message_p;
+        if (message == NULL) {
+            return -1;
+        }
+
+
+        
+
+    }
+    else {
+        log_error ("Pointer to null pointer passed as second argument  'asset_msg_t **message_p'.");
+        return_msg = common_msg_encode_fail (0, 0,"Invalid asset message: Pointer to null pointer passed as second argument.", NULL);
+        assert (return_msg);
+        assert (is_common_msg (return_msg));
+    }
+    assert (return_msg); // safeguard non-NULL return value
+    log_close ();
+    */
+    return true;    
+}
+
+bool build_return_location_from (asset_msg_t *message, std::string& json) {
+        return true;
+}
+
 
 // Note: in the future, if more than one operation requires parsing these strings on input,
 //       we should consider moving this to general helpers.cpp file and rewrite these fun-

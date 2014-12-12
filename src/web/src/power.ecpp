@@ -19,7 +19,8 @@
 <%args>
 std::string from;
 std::string to;
-std::string filter;
+std::string filter_dc;
+std::string filter_group;
 </%args>
 
 <%cpp>
@@ -30,7 +31,7 @@ std::string filter;
         return HTTP_BAD_REQUEST;
     }
 
-    if (from.empty() && to.empty() && filter.empty()) {
+    if (from.empty() && to.empty() && filter_dc.empty() && filter_group.empty()) {
 </%cpp>
         {
             "error" :   "bad_input",
@@ -45,7 +46,7 @@ std::string filter;
 //      FROM
 //
     if (!from.empty()) {
-        if (!to.empty() || !filter.empty()) {
+        if (!to.empty() || !filter_dc.empty() || !filter_group.empty()) {
 </%cpp>
             {
                 "error" :   "bad_input",
@@ -94,7 +95,7 @@ std::string filter;
 //      TO
 //
      if (!to.empty()) {
-        if (!from.empty() || !filter.empty()) {
+        if (!from.empty() || !filter_dc.empty() || !filter_group.empty()) {
 </%cpp>
             {
                 "error" :   "bad_input",
@@ -141,10 +142,10 @@ std::string filter;
     } // to block   
 
 //////////////////////
-//      FILTER
+//      FILTER_DC
 //
-    if (!filter.empty()) {
-        if (!to.empty() || !from.empty()) {
+    if (!filter_dc.empty()) {
+        if (!to.empty() || !from.empty() || !filter_group.empty()) {
 </%cpp>
             {
                 "error" :   "bad_input",
@@ -153,18 +154,92 @@ std::string filter;
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-    // BAD SPECIFICATION: How do i decide from an integer value whether i should create
-    //                    'get_power_group' or 'get_power_datacenter' message type?
-    // TODO set up input_msg
+        // Try to convert string to number 
+        int element_id = -1; 
+        try { 
+            element_id = std::stoi (filter_dc); 
+        } catch (std::out_of_range& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Variable 'filter_dc' contains number that falls out of the allowed range." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST; 
+        } catch (std::invalid_argument& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Please specify an integer value for variable 'filter_dc'." 
+            } 
+<%cpp>        
+            return HTTP_BAD_REQUEST; 
+        } catch (std::exception& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Error while converting <$ filter_dc $> to integer value: <$ e.what() $>." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST;
+        }
+        // Call persistence layer
+        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (byte) element_id);
 
+    } // filter_dc block
+
+//////////////////////
+//      FILTER_GROUP
+//
+    if (!filter_group.empty()) {
+        if (!to.empty() || !from.empty() || !filter_dc.empty()) {
 </%cpp>
             {
-                "error" :   "internal_error",
-                "msg"   :   "rfc-11 bad specification. Unable to decide whether id is group or datacenter."
+                "error" :   "bad_input",
+                "msg"   :   "You can specify only one variable."
             }
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
-    } // filter block
+            return HTTP_BAD_REQUEST;
+        }
+        // Try to convert string to number 
+        int element_id = -1; 
+        try { 
+            element_id = std::stoi (filter_group); 
+        } catch (std::out_of_range& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Variable 'filter_group' contains number that falls out of the allowed range." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST; 
+        } catch (std::invalid_argument& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Please specify an integer value for variable 'filter_group'." 
+            } 
+<%cpp>        
+            return HTTP_BAD_REQUEST; 
+        } catch (std::exception& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Error while converting <$ filter_group $> to integer value: <$ e.what() $>." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST;
+        }
+
+        // Call persistence layer
+        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (byte) element_id);
+
+    } // filter_group block
+
 
     zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
