@@ -98,11 +98,15 @@ for daemon in ("simple", "netmon", "mysqld"):
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
 
+assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
+
 # to create some dummy interface?
 nic_name = ipres[0][0]
 assert nic_name, "Name of network card is empty!"
 
-assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
+# reset the environment
+subprocess.call(["/usr/bin/sudo", "/bin/ip", "addr", "del", "203.0.113.42/24", "dev", nic_name])
+time.sleep(4)
 
 db = connect_to_db()
 dbres = read_db(db)
