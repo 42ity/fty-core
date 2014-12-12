@@ -171,7 +171,14 @@ insert into t_bios_monitor_asset_relation
 values
 (
     (select id_discovered_device from t_bios_discovered_device where name = 'select_device' AND id_device_type = @device_unclassified),
-    (select id_asset_element from t_bios_asset_element where name = 'ROW1')
+    (select id_asset_element from t_bios_asset_element where name = 'ups')
+);
+insert into t_bios_monitor_asset_relation
+    (id_discovered_device, id_asset_element)
+values
+(
+    (select id_discovered_device from t_bios_discovered_device where name = 'monitor_asset_measure' AND id_device_type = @device_unclassified),
+    (select id_asset_element from t_bios_asset_element where name = 'epdu')
 );
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
@@ -288,6 +295,7 @@ values
 
 insert into t_bios_discovered_device (id_device_type , name) values (@device_unclassified, "measures");
 
+/* voltage.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -296,9 +304,11 @@ values
     1,
     32,
     "2014-11-12 09:45:59",
-    @client_nmap,
+    @client_nut,
     1
 );
+
+/* voltage.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -307,9 +317,11 @@ values
     1,
     3,
     "2014-11-12 09:46:59",
-    @client_nmap,
+    @client_nut,
     1
 );
+
+/* current.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -318,9 +330,11 @@ values
     1,
     31,
     "2014-11-12 09:47:59",
-    @client_nmap,
+    @client_nut,
     1
 );
+
+/* current.output.L1 */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -329,9 +343,11 @@ values
     2,
     12,
     "2014-11-12 09:48:59",
-    @client_nmap,
+    @client_nut,
     1
 );
+
+/* voltage.output.L1-N */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -340,9 +356,11 @@ values
     2,
     1,
     "2014-11-12 09:49:59",
-    @client_nmap,
+    @client_nut,
     1
 );
+
+/* realpower.output */
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
@@ -351,8 +369,103 @@ values
     1,
     1,
     "2014-11-12 09:59:59",
-    @client_nmap,
+    @client_nut,
     1
+);
+
+/* status.ups */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    7,
+    1,
+    2,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* temperature.default */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    4,
+    1,
+    56,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* load.ups */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    5,
+    1,
+    17,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* charge.battery */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    6,
+    1,
+    931,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    1
+);
+
+/* epdu */
+
+/* realpower.outlet */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    5,
+    2405,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
+);
+
+/* realpower.outlet.1 */
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    6,
+    2405,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
+);
+
+/* realpower.outlet.2 */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    7,
+    500,
+    "2014-11-12 09:59:59",
+    @client_nut,
+    2
 );
 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
