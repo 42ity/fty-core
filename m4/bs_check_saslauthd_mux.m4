@@ -46,17 +46,13 @@ AC_DEFUN_ONCE([BS_CHECK_SASLAUTHD_MUX],
     done
   fi
   if test -z "${SASLAUTHD_MUX}" ; then
-    AC_MSG_RESULT(N/A)
-    AC_MSG_ERROR([
+    SASLAUTHD_MUX="/var/run/saslauthd/mux"
+    AC_MSG_NOTICE([
   ----------------------------------------------------------
-  Could not detect SASLAUTHD_MUX...
-  Is saslauthd installed and running? Are FS permissions set
-  up correctly for the build user to detect the MUX socket?
-  Try to specify the path explicitly with --with-saslauthd-mux
-  option or add the building account to the sasl group in OS.
+  Could not detect SASLAUTHD_MUX... defaulting to /var/run/saslauthd/mux
+  You can change it using --with-saslauthd-mux
   ----------------------------------------------------------
     ])
-    exit 1
   fi
   AC_MSG_RESULT(${SASLAUTHD_MUX})
   if ! test -S "${SASLAUTHD_MUX}" ; then
