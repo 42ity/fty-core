@@ -628,9 +628,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             log_warning ("Error when executing statement: %s", e.what());
             common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
             assert (common_msg);
-            common_msg_set_errmsg (common_msg,
-                                   "Error executing statement: %s",
-                                   e.what());
+            common_msg_set_errmsg (common_msg, "Error executing database statement.");
             zmsg_t *return_msg = common_msg_encode (&common_msg);
             assert (return_msg);
             assert (common_msg == NULL);
@@ -1031,12 +1029,6 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
 
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
-        /* This didn't work
-        tntdb::Statement st = conn.prepare (
-            "SELECT id_type FROM t_bios_asset_element"
-            "WHERE id_asset_element = :v1");        
-        tntdb::Value val = st.setInt("v1", element_id).selectValue();
-        */
         std::string tmp = "SELECT id_type FROM t_bios_asset_element WHERE id_asset_element = ";
         tmp.append (std::to_string (element_id));
         tntdb::Statement st = conn.prepare (tmp.c_str());        
@@ -1058,30 +1050,6 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     }
 
     zmsg_t* result = select_parents (url, element_id, type_id);
-
-    if (is_asset_msg (result)) {
-        zmsg_t *dup = zmsg_dup (result);
-        asset_msg_t *am = asset_msg_decode (&dup);
-        asset_msg_t *orig = am;
-        assert (asset_msg_id (am) == ASSET_MSG_RETURN_LOCATION_TO );
-        bool go = false;
-        do {
-            log_info ("element_id = %d\n", (int) asset_msg_element_id (am));
-            log_info ("type = %d\n", (int) asset_msg_type (am));
-            if (zmsg_size (asset_msg_msg (am)) != 0) {
-                log_info ("inner msg is not null\n");
-                zmsg_t *inner = asset_msg_get_msg (am);
-                assert (inner);
-                am = asset_msg_decode (&inner);
-                assert (am);
-                go = true;
-            } else {
-                go  = false;
-            }
-        } while (go == true);
-
-    }
-
 
     log_info ("end\n");
     return result;
