@@ -392,9 +392,9 @@ std::string filter_group;
                     if (!tokens[0].empty()) {
                         json.append("\"src-socket\" : \"").append(tokens[0]).append("\",");
                     }
-                    json.append("\"dst-id\" : \"").append(tokens[2]).append("\"");
-                    if (!tokens[3].empty()) {
-                        json.append(",\"dst-socket\" : \"").append(tokens[3]).append("\"");
+                    json.append("\"dst-id\" : \"").append(tokens[3]).append("\"");
+                    if (!tokens[2].empty()) {
+                        json.append(",\"dst-socket\" : \"").append(tokens[2]).append("\"");
                     }
                     json.append ("}");
                     item = (const char*) zlist_next (powers);
