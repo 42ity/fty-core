@@ -370,7 +370,7 @@ std::string filter_group;
                 if (devices) {
                     json.append (", ");
                 }
-                json.append ("\"powers\" : [");
+                json.append ("\"powerchains\" : [");
 
                 //
                 const char *item = (const char*) zlist_first (powers);
