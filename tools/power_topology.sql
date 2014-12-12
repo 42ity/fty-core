@@ -36,8 +36,13 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("sink");
 
 SELECT @id_ups := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'ups';
 SELECT @id_sink := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'sink';
+SELECT @id_epdu := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'epdu';
+SELECT @id_main := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'main';
+SELECT @id_server := id_asset_device_type FROM t_bios_asset_device_type WHERE name = 'server';
+
 SELECT @id_device := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='device';
 SELECT @id_link := id_asset_link_type FROM t_bios_asset_link_type WHERE name = 'power chain';
+
 
 /* power topology from: #1 */
 /* no need to insert anything */
@@ -329,3 +334,72 @@ INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_d
 
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6077, NULL, 6076, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6076, NULL, 6077, NULL, @id_link);
+
+/* power topology group/datacenter #1, #2*/
+
+SELECT @ae_group := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='group';
+SELECT @ae_datacenter := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='datacenter';
+SELECT @ae_room := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='room';
+SELECT @ae_row := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='row';
+SELECT @ae_rack := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='rack';
+SELECT @ae_device := id_asset_element_type FROM t_bios_asset_element_type WHERE name ='device';
+
+
+SELECT @asset_link_powerchain := id_asset_link_type FROM t_bios_asset_link_type WHERE name = 'power chain';
+
+/* DC */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5078, "DC-05", @ae_datacenter,  NULL);
+
+/* ROOMS */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5079, "ROOM1-05", @ae_room, 5078);
+
+/* RACKS */
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5080, "RACK1-05", @ae_rack, 5079);
+
+/* DEVICES*/
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5081, "UPS1-05", @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6081, 5081, @id_ups);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5082, "UPS2-05", @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6082, 5082, @id_ups);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5083, "ePDU1-05", @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6083, 5083, @id_epdu);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5084, "ePDU2-05", @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6084, 5084, @id_epdu);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5085, "SRV1-05",  @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6085, 5085, @id_server);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5086, "SRV2-05", @ae_device, 5080);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6086, 5086, @id_server);
+
+INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (5087, "MAIN-05", @ae_device, 5078);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type) VALUES (6087, 5087, @id_main);
+
+/* GROUPS */
+INSERT INTO t_bios_asset_element ( id_asset_element, name , id_type, id_parent) VALUES (5088, "GROUP1-05", @ae_group, 5078);
+INSERT INTO t_bios_asset_ext_attributes ( id_asset_ext_attribute, keytag, value, id_asset_element) VALUES (9001, "type", "input power", 5078);
+
+INSERT INTO t_bios_asset_group_relation
+    (id_asset_group, id_asset_element)
+VALUES
+(
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'GROUP1-05'),
+    (SELECT id_asset_element FROM `t_bios_asset_element` WHERE name = 'MAIN-05')
+);
+
+/* Asset links */
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6087, NULL, 6081, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6087, NULL, 6082, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6081, NULL, 6083, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6082, NULL, 6084, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6083, NULL, 6085, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6083, NULL, 6086, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6084, NULL, 6085, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 6084, NULL, 6086, NULL, @id_link);
