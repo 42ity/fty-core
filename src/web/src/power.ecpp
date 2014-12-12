@@ -390,11 +390,11 @@ std::string filter_group;
                     }
                     json.append("\"src-id\" : \"").append(tokens[1]).append("\",");
                     if (!tokens[0].empty()) {
-                        json.append("\"src-socket\" : \"").append(tokens[0]).append("\",");
+                        json.append("\"src-socket\" : ").append(tokens[0]).append(",");
                     }
                     json.append("\"dst-id\" : \"").append(tokens[3]).append("\"");
                     if (!tokens[2].empty()) {
-                        json.append(",\"dst-socket\" : \"").append(tokens[2]).append("\"");
+                        json.append(",\"dst-socket\" : ").append(tokens[2]);
                     }
                     json.append ("}");
                     item = (const char*) zlist_next (powers);
