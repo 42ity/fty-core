@@ -1,0 +1,307 @@
+<%pre>
+#include <cstdlib>
+#include <string>
+#include <algorithm>
+#include <exception>
+#include <stack>
+#include <sstream>
+#include <iostream>
+#include <vector>
+#include <czmq.h>
+#include "log.h"
+#include "dbpath.h"
+#include "common_msg.h"
+#include "asset_msg.h"
+#include "asset_types.h"
+#include "assettopology.h"
+</%pre>
+
+<%args>
+std::string from;
+std::string to;
+std::string filter;
+</%args>
+
+<%cpp>
+    log_open ();
+    log_set_level (LOG_DEBUG);
+    // GET requests only
+    if (request.isMethodGET() == false) {
+        return HTTP_BAD_REQUEST;
+    }
+
+    if (from.empty() && to.empty() && filter.empty()) {
+</%cpp>
+        {
+            "error" :   "bad_input",
+            "msg"   :   "You have to specify one of the following variables: 'filter=<dc_id|group_id>' or 'to=<device_id>' or 'from=<device_id>'."
+        }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+    asset_msg_t *input_msg = NULL;
+////////////////////////
+//      FROM
+//
+    if (!from.empty()) {
+        if (!to.empty() || !filter.empty()) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "You can specify only one variable."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Try to convert string to number 
+        int element_id = -1; 
+        try { 
+            element_id = std::stoi (from); 
+        } catch (std::out_of_range& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Variable 'from' contains number that falls out of the allowed range." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST; 
+        } catch (std::invalid_argument& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Please specify an integer value for variable 'from'." 
+            } 
+<%cpp>        
+            return HTTP_BAD_REQUEST; 
+        } catch (std::exception& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST;
+        } 
+        // Call persistence layer
+        input_msg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (byte) element_id);
+
+    } // from block
+
+//////////////////
+//      TO
+//
+     if (!to.empty()) {
+        if (!from.empty() || !filter.empty()) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "You can specify only one variable."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Try to convert string to number 
+        int element_id = -1; 
+        try { 
+            element_id = std::stoi (to); 
+        } catch (std::out_of_range& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Variable 'to' contains number that falls out of the allowed range." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST; 
+        } catch (std::invalid_argument& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Please specify an integer value for variable 'from'." 
+            } 
+<%cpp>        
+            return HTTP_BAD_REQUEST; 
+        } catch (std::exception& e) { 
+</%cpp> 
+            { 
+                "error" :   "bad_input", 
+                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
+            } 
+<%cpp> 
+            return HTTP_BAD_REQUEST;
+        }
+    // Call persistence layer
+    input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
+    assert (input_msg);
+    asset_msg_set_element_id (input_msg, (byte) element_id);
+
+
+    } // to block   
+
+//////////////////////
+//      FILTER
+//
+    if (!filter.empty()) {
+        if (!to.empty() || !from.empty()) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "You can specify only one variable."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    // BAD SPECIFICATION: How do i decide from an integer value whether i should create
+    //                    'get_power_group' or 'get_power_datacenter' message type?
+    // TODO set up input_msg
+
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "rfc-11 bad specification. Unable to decide whether id is group or datacenter."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+    } // filter block
+
+    zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+    assert (return_msg);
+    assert (input_msg == NULL);
+
+    if (is_common_msg (return_msg)) {
+        common_msg_t *common_msg = common_msg_decode (&return_msg);
+        assert (common_msg);
+        assert (return_msg == NULL);
+
+        if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+        {
+            "error" :   "internal_error",
+            "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+            "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+            "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+        }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        else {
+</%cpp>
+        {
+            "error" :   "internal_error",
+            "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+        }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+    else if (is_asset_msg (return_msg)) {
+        asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+        assert (asset_msg);
+        assert (return_msg == NULL);
+
+        if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_POWER) {
+            zlist_t *powers = asset_msg_get_powers (asset_msg);
+            zframe_t *devices = asset_msg_get_devices (asset_msg);
+            asset_msg_destroy (&asset_msg);
+    
+            std::string json = "{";
+            if (devices) {
+                byte *buffer = zframe_data (devices);
+                assert (buffer);
+                zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
+                assert (zmsg);
+                assert (zmsg_is (zmsg));
+
+                json.append ("\"devices\" : [");
+
+                zmsg_t *pop = NULL;
+                bool first = true;
+                while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                    if (!is_asset_msg (pop)) {
+                        zmsg_destroy (&zmsg);
+                        // TODO internal error
+                        return HTTP_INTERNAL_SERVER_ERROR; 
+                    }
+                    asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                    assert (item);
+
+                    if (first == false) {
+                        json.append (", ");
+                    } else {
+                        first = false;
+                    }
+                    json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                    json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\",");
+                    json.append("\"type\" : \"").append(asset_msg_type_name (item)).append("\"}");
+
+                    asset_msg_destroy (&item);
+                    assert (pop == NULL);
+                }
+                zmsg_destroy (&zmsg);
+                assert (zmsg == NULL);
+            
+                json.append ("] ");
+            }
+
+            if (powers) {
+                if (devices) {
+                    json.append (", ");
+                }
+                json.append ("\"powers\" : [");
+
+                //
+                const char *item = (const char*) zlist_first (powers);
+                bool first = true;
+                while (item != NULL) {
+                    if (first == false) {
+                        json.append (", ");
+                    } else {
+                        first = false;
+                    }
+                    json.append ("{");
+                    std::vector<std::string> tokens;
+                    std::istringstream f(item);
+                    std::string tmp;    
+                    while (getline(f, tmp, ':')) {
+                        tokens.push_back(tmp);
+                    }
+                    json.append("\"src-id\" : \"").append(tokens[1]).append("\",");
+                    if (!tokens[0].empty()) {
+                        json.append("\"src-socket\" : \"").append(tokens[0]).append("\",");
+                    }
+                    json.append("\"dst-id\" : \"").append(tokens[2]).append("\"");
+                    if (!tokens[3].empty()) {
+                        json.append(",\"dst-socket\" : \"").append(tokens[3]).append("\"");
+                    }
+                    json.append ("}");
+                    item = (const char*) zlist_next (powers);
+                }
+
+                json.append ("] ");
+            }
+
+            json.append ("}");            
+</%cpp>
+    <$$ json $>
+<%cpp>
+        }
+        else {            
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+    else {
+        log_error ("TODO Unknown protocol");
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+
+</%cpp>
+

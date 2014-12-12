@@ -51,12 +51,8 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
             case ASSET_MSG_FAIL:
             case ASSET_MSG_GET_ELEMENTS:
             case ASSET_MSG_RETURN_ELEMENTS:
-            case ASSET_MSG_GET_POWER_FROM:
             case ASSET_MSG_POWERCHAIN_DEVICE:
             case ASSET_MSG_RETURN_POWER:
-            case ASSET_MSG_GET_POWER_TO:
-            case ASSET_MSG_GET_POWER_GROUP:
-            case ASSET_MSG_GET_POWER_DATACENTER:
             case ASSET_MSG_RETURN_LOCATION_TO:
             case ASSET_MSG_RETURN_LOCATION_FROM:
             {
@@ -81,6 +77,30 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
             case ASSET_MSG_GET_LOCATION_TO:
             {
                 return_msg = get_return_topology_to (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_FROM:
+            {
+                return_msg = get_return_power_topology_from(database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_TO:
+            {
+                return_msg = get_return_power_topology_to (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_GROUP:
+            {
+                return_msg = get_return_power_topology_group (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_DATACENTER:
+            {
+                return_msg = get_return_power_topology_datacenter (database_url, message);
                 assert (return_msg);
                 break;
             }
@@ -580,12 +600,16 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         conn = tntdb::connectCached (url);
     }
     catch (const std::exception& e) {
-        common_msg_t *tmp_msg = common_msg_new (COMMON_MSG_FAIL);
-        assert (tmp_msg);
-        common_msg_set_errmsg (tmp_msg, "Error when connecting to database '%s': %s", url, e.what());
-        return_msg = common_msg_encode (&tmp_msg);
-        assert (tmp_msg == NULL);
+        log_warning ("Error when connecting to database '%s': %s", url, e.what());
+        common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+        assert (common_msg);
+        common_msg_set_errmsg (common_msg,
+                               "Error when connecting to database '%s': %s",
+                                url, e.what());
+        zmsg_t *return_msg = common_msg_encode (&common_msg);
         assert (return_msg);
+        assert (common_msg == NULL);
+        assert (is_common_msg (return_msg));
         return return_msg;
     }
 
@@ -594,19 +618,23 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         is_recursive = asset_msg_recursive (getmsg);
         // get type
         try {
-            tntdb::Statement st = conn.prepareCached (
-                "SELECT id_type FROM t_bios_asset_element"
-                "WHERE id_asset_element = :id)");
-            tntdb::Value val = st.setInt("id", element_id).selectValue();
-            val.get (type_id);
+            std::string tmp = "SELECT id_type FROM t_bios_asset_element WHERE id_asset_element = ";
+            tmp.append (std::to_string (element_id));
+            tntdb::Statement st = conn.prepare (tmp.c_str());        
+            tntdb::Value val = st.selectValue();
+            val.get (type_id);           
         }
         catch (const std::exception& e) {
-            common_msg_t *tmp_msg = common_msg_new (COMMON_MSG_FAIL);
-            assert (tmp_msg);
-            common_msg_set_errmsg (tmp_msg, "Error when executing statement: %s", e.what());
-            return_msg = common_msg_encode (&tmp_msg);
-            assert (tmp_msg == NULL);
+            log_warning ("Error when executing statement: %s", e.what());
+            common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+            assert (common_msg);
+            common_msg_set_errmsg (common_msg,
+                                   "Error executing statement: %s",
+                                   e.what());
+            zmsg_t *return_msg = common_msg_encode (&common_msg);
             assert (return_msg);
+            assert (common_msg == NULL);
+            assert (is_common_msg (return_msg));
             return return_msg;
         }
     } 

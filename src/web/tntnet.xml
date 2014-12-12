@@ -40,6 +40,13 @@
       <url>^/api/v1/topology/location.*$</url>
     </mapping>
 
+    <!-- topology/power -->
+    <mapping>
+      <target>power@bios_web</target>
+      <url>^/api/v1/topology/power.*$</url>
+    </mapping>
+
+
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>

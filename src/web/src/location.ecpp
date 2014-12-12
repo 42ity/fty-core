@@ -137,7 +137,8 @@ std::string filter;
             assert (asset_msg);
             assert (return_msg == NULL);
 
-            std::stack<std::tuple<int, int, std::string>> stack; 
+            // <element_id, type, contains, name, type_name>
+            std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack; 
             std::string contains;
             assert (contains.empty());
         
@@ -146,7 +147,9 @@ std::string filter;
                 do {
                     element_id = asset_msg_element_id (asset_msg);
                     int type_id = asset_msg_type (asset_msg);
-                    stack.push (make_tuple(element_id, type_id, contains));
+                    std::string name = asset_msg_name (asset_msg);
+                    std::string type_name = asset_msg_type_name (asset_msg);
+                    stack.push (make_tuple(element_id, type_id, contains, name, type_name));
                     // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
                     switch (type_id) {                        
                         case asset_type::DATACENTER:
@@ -211,7 +214,8 @@ std::string filter;
                 std::string json = "{\n";
 
                 while (stack.size() > 0) {
-                    std::tuple<int, int, std::string> row = stack.top();
+                    // <element_id, type, contains, name, type_name>
+                    std::tuple<int, int, std::string, std::string, std::string> row = stack.top();
                     stack.pop();
 
                     indent++;
@@ -220,13 +224,23 @@ std::string filter;
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
                         }
-                        json.append("\"name\" : \"Not implemented yet.\",\n");
+                        json.append("\"name\" : \"")
+                            .append(std::get<3>(row))
+                            .append("\",\n");
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
                         }
                         json.append("\"id\" : \"")
                             .append(std::to_string(std::get<0>(row)))
                             .append("\",\n");
+                        if (!std::get<4>(row).empty()) {
+                            for (int i = 0; i < indent; i++) {
+                                json.append ("\t");
+                            }
+                            json.append("\"type\" : \"")
+                                .append(std::get<4>(row))
+                                .append("\",\n");
+                        }
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
                         }
@@ -237,23 +251,29 @@ std::string filter;
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
                         }
-                        json.append("\"name\" : \"Not implemented yet.\",\n");
-                        for (int i = 0; i < indent; i++) {
-                            json.append ("\t");
-                        }
-                        json.append("\"id\" : \"")
-                            .append(std::to_string(std::get<0>(row)))
+                        json.append("\"name\" : \"")
+                            .append(std::get<3>(row))
                             .append("\",\n");
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
                         }
-                        json.append("\"type\" : \"")
-                            .append(std::to_string(std::get<1>(row)))
-                            .append("\"\n");
+                        json.append("\"id\" : \"")
+                            .append(std::to_string(std::get<0>(row)));
+                        if (!std::get<4>(row).empty()) {
+                            json.append("\",\n");
+                            for (int i = 0; i < indent; i++) {
+                                json.append ("\t");
+                            }
+                            json.append("\"type\" : \"")
+                                .append(std::get<4>(row))
+                                .append("\",\n");
+                        } else {
+                            json.append("\n");
+                        }
+
                     }
 
                 }
-                log_info ("COUNTER: %d\n", counter);
                 for (int i = counter; i > 0; i--) {                    
                     indent--;
                     for (int j = 0; j < indent; j++) {
@@ -287,6 +307,7 @@ std::string filter;
         std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
         std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
 
+        // recursive
         int is_recursive = 0;
         if (recursive == "yes") {
             is_recursive = 1;        
@@ -299,6 +320,8 @@ std::string filter;
 <%cpp>
             return HTTP_BAD_REQUEST;           
         }
+
+        // filter_type
         int filter_type = 0;
         if (filter.empty()) {
             filter_type = 7;
@@ -324,6 +347,8 @@ std::string filter;
                     return HTTP_BAD_REQUEST;
             }
         }
+
+        // element_id
         int element_id = -1;
         try {
             element_id = std::stoi (from);
@@ -354,6 +379,389 @@ std::string filter;
         }
 
         // TODO asset_msg create, call persistence layer, process returned message
+        // Call persistence layer
+        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (byte) element_id);
+        asset_msg_set_recursive (input_msg, (byte) is_recursive);
+        asset_msg_set_filter_type (input_msg, (byte) filter_type);
+        
+        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        assert (return_msg);
+        assert (input_msg == NULL);
+
+        if (is_common_msg (return_msg)) {
+            common_msg_t *common_msg = common_msg_decode (&return_msg);
+            assert (common_msg);
+            assert (return_msg == NULL);
+
+            if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+                "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+                "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else if (is_asset_msg (return_msg)) {
+            asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            assert (asset_msg);
+            assert (return_msg == NULL);
+
+            // <element_id, type, contains, name, type_name>
+            /*
+            std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack; 
+            std::string contains;
+            assert (contains.empty());
+            */
+            if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_FROM) {                
+//#######################3
+
+//                std::stack <std::tuple <std::string, zframe_t*>> stack;             
+
+                // The following code segment has redundant, copy-pasted parst; but that's ok.
+                // I didn't know at that moment how to proceed with recursive=yes,
+                // given the ambiguous ways to interpret nested matryoshkas.
+                // Code will be 'beautified' once it's clear what should be done
+                // Until then, this is good enough
+
+                element_id = asset_msg_element_id (asset_msg);
+                int type_id = asset_msg_type (asset_msg);
+                std::string name = asset_msg_name (asset_msg);
+                std::string type_name = asset_msg_type_name (asset_msg);
+
+                std::string json = "{"; 
+                int counter = 0;
+                // TODO: later for nice output
+                // int indent = 0;
+
+                json.append("\"name\" : \"").append(name).append("\",");
+                json.append("\"id\" : \"").append(std::to_string(element_id)).append("\",");
+                json.append("\"contains\" : { ");
+
+                zframe_t *datacenters = asset_msg_get_dcs (asset_msg);
+                zframe_t *rooms = asset_msg_get_rooms (asset_msg);
+                zframe_t *rows = asset_msg_get_rows (asset_msg);
+                zframe_t *racks = asset_msg_get_racks (asset_msg);
+                zframe_t *devices = asset_msg_get_devices (asset_msg);
+                zframe_t *groups = asset_msg_get_grps (asset_msg);
+
+                asset_msg_destroy (&asset_msg);
+                assert (asset_msg == NULL);                
+
+                bool first_contains = true;
+                // datacenters
+                if (datacenters) {
+                    //
+                    byte *buffer = zframe_data (datacenters);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (datacenters));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&datacenters);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"datacenters\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\"}");                       
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+
+                // rooms
+                if (rooms) {
+                    //
+                    byte *buffer = zframe_data (rooms);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (rooms));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&rooms);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"rooms\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\"}");                       
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+
+                // rows
+                if (rows) {
+                    //
+                    byte *buffer = zframe_data (rows);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (rows));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&rows);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"rows\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\"}");                       
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+
+                // racks
+                if (racks) {
+                    //
+                    byte *buffer = zframe_data (racks);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (racks));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&racks);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"racks\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\"}");                       
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+ 
+                // devices
+                if (devices) {
+                    //
+                    byte *buffer = zframe_data (devices);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&devices);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"devices\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\",");                       
+                        json.append("\"type\" : \"").append(asset_msg_type_name (item)).append("\"}");
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+                // groups
+                if (groups) {
+                    //
+                    byte *buffer = zframe_data (groups);
+                    assert (buffer);
+                    zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (groups));
+                    assert (zmsg);
+                    assert (zmsg_is (zmsg));
+                    zframe_destroy (&groups);
+
+                    if (first_contains == false) {
+                        json.append (", ");
+                    } else {
+                        first_contains = false;
+                    }
+                    json.append ("\"groups\" : [");
+
+                    zmsg_t *pop = NULL;
+                    bool first = true;
+                    while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
+                        if (!is_asset_msg (pop)) {
+                            zmsg_destroy (&zmsg);
+                            // TODO internal error
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                        assert (item);
+                        assert (pop == NULL);
+
+                        if (first == false) {
+                            json.append (", ");
+                        } else {
+                            first = false;
+                        }
+                        json.append("{ \"name\" : \"").append(asset_msg_name (item)).append("\",");
+                        json.append("\"id\" : \"").append(std::to_string(asset_msg_element_id (item))).append("\",");                       
+                        json.append("\"type\" : \"").append(asset_msg_type_name (item)).append("\"}");
+
+                        asset_msg_destroy (&item);
+                    }
+                    zmsg_destroy (&zmsg);
+                    assert (zmsg == NULL);
+
+                    json.append ("]");
+                }
+              
+
+                json.append("}"); // level-1 "contains"
+                json.append("}"); // json closing curly bracket
+
+//#########################
+</%cpp>
+    <$$ json $>                
+<%cpp>
+
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }  
+
+        }
+        else {
+            log_error ("TODO Unknown protocol");
+            return HTTP_INTERNAL_SERVER_ERROR; 
+        }
+
+/////////////////////
+
     }   
     else {
         // should never reach here
