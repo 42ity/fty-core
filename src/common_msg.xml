@@ -49,7 +49,7 @@
     A failed message indicates that some error had occured
     <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
     <field name = "errorno"     type = "number" size = "4"> An error id</field>
-    <field name = "errmsg"      type = "string"> A user visible error string</field>
+    <field name = "errmsg"      type = "longstr"> A user visible error string</field>
     <field name = "erraux"      type = "hash"> An optional additional information about occured error</field>
 </message>
 

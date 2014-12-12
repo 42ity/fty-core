@@ -387,7 +387,7 @@ common_msg_decode (zmsg_t **msg_p)
         case COMMON_MSG_FAIL:
             GET_NUMBER1 (self->errtype);
             GET_NUMBER4 (self->errorno);
-            GET_STRING (self->errmsg);
+            GET_LONGSTR (self->errmsg);
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
@@ -672,8 +672,8 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 1;
             //  errorno is a 4-byte integer
             frame_size += 4;
-            //  errmsg is a string with 1-byte length
-            frame_size++;       //  Size is one octet
+            //  errmsg is a string with 4-byte length
+            frame_size += 4;
             if (self->errmsg)
                 frame_size += strlen (self->errmsg);
             //  erraux is an array of key=value strings
@@ -923,10 +923,10 @@ common_msg_encode (common_msg_t **self_p)
             PUT_NUMBER1 (self->errtype);
             PUT_NUMBER4 (self->errorno);
             if (self->errmsg) {
-                PUT_STRING (self->errmsg);
+                PUT_LONGSTR (self->errmsg);
             }
             else
-                PUT_NUMBER1 (0);    //  Empty string
+                PUT_NUMBER4 (0);    //  Empty string
             if (self->erraux) {
                 PUT_NUMBER4 (zhash_size (self->erraux));
                 char *item = (char *) zhash_first (self->erraux);
@@ -1237,6 +1237,7 @@ common_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
 
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
@@ -1265,6 +1266,7 @@ common_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {

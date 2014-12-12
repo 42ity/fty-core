@@ -297,4 +297,7 @@ zframe_t* select_childs(
 zmsg_t* select_parents (const char* url, uint32_t element_id, 
                         uint8_t element_type_id);
 
+
+zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p);
+
 #endif // SRC_PERSIST_ASSETTOPOLOGY_H_
