@@ -56,7 +56,7 @@ std::string dev;
 
             std::string error;
             std::string msg;
-            int code;
+            unsigned code;
 
             common_msg_to_rest_error(dta, error, msg, &code);
 
@@ -85,6 +85,7 @@ std::string dev;
             json += "{ \"id\":";
             sprintf(buff, "\"%d\"", common_msg_device_id(dta));
             json += buff;
+            json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
             zlist_t *list = common_msg_measurements(dta);
             for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
                std::vector<std::string> measurements;
@@ -94,7 +95,7 @@ std::string dev;
                     + "." + mes_mgr.int_to_subtype(measurements[1],
                                                    measurements[0]); 
 
-               json += ", \"" + mes_mgr.map_names(name) +
+               json += ", \"" + name +
                        "\": " + mes_mgr.map_values(name,
                        mes_mgr.scale(measurements[2],
                                      measurements[1],
