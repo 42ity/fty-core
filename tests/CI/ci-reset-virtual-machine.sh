@@ -16,15 +16,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
-#            Tomas Halman <TomasHalman@eaton.com>
+#            Tomas Halman <TomasHalman@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
-# Description: Destroys VM latest, deploy new one and starts it
+# Description: Destroys VM "latest" (or named by -m), deploys a new
+# one from image prepared by OBS, and starts it
 
 #
 # TODO:
-# * OBS parameter? [ x"$OBS_IMAGES" = x ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
-# * should latest be a variable
 # * more VM instances support?
+# ** (multiple VMs in one call?)
 # * set debian proxy from parameter or $http_proxy
 #
 
@@ -37,6 +38,11 @@ usage() {
     echo "Usage: $(basename $0) [options...]"
     echo "options:"
     echo "    -m|--machine name    virtual machine name (Default: '$VM')"
+    echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
+    echo "                         see OBS repository for supported types (deploy, devel)"
+    echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
+    echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
+    echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    -h|--help            print this help"
 }
 
@@ -44,6 +50,10 @@ usage() {
 # defaults
 #
 VM="latest"
+[ -z "$IMGTYPE" ] && IMGTYPE="deploy"
+[ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
+[ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
+[ -n "$http_proxy" ] && export http_proxy
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -51,6 +61,23 @@ while [ $# -gt 0 ] ; do
             VM="$2"
             shift 2
             ;;
+	-b|--baseline)
+	    IMGTYPE="$2"
+	    shift 2
+	    ;;
+	-r|--repository)
+	    OBS_IMAGES="$2"
+	    shift 2
+	    ;;
+	-hp|--http-proxy)
+	    http_proxy="$2"
+	    export http_proxy
+	    shift 2
+	    ;;
+	-ap|--apt-proxy)
+	    [ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
+	    shift 2
+	    ;;
         -h|--help)
             usage
             exit 1
@@ -62,6 +89,11 @@ while [ $# -gt 0 ] ; do
             ;;
     esac
 done
+
+# This should not be hit...
+[ -z "$APT_PROXY" ] && APT_PROXY="$http_proxy"
+[ x"$APT_PROXY" = x- ] && APT_PROXY=""
+[ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
 # Make sure we have a loop
 modprobe loop # TODO: die on failure?
@@ -79,7 +111,7 @@ fi
 mkdir -p /srv/libvirt/snapshots
 cd /srv/libvirt/snapshots
 ARCH="`uname -m`"
-IMAGE_URL="`wget -O - http://obs.roz.lab.etn.com/images/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|http://obs.roz.lab.etn.com/images/'"$ARCH"'/\1|p'`"
+IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 wget -c "$IMAGE_URL"
 if [ "$1" ]; then
 	IMAGE="$1"
@@ -111,7 +143,10 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 mkdir -p "../rootfs/$VM"
 # Mount rw image
 if [ "$OVERLAYFS" ]; then
-	mount -t overlayfs -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" overlayfs "../rootfs/$VM" 2> /dev/null || die "Can't mount rw directory"
+	mount -t overlayfs \
+	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" \
+	    overlayfs "../rootfs/$VM" 2> /dev/null \
+	|| die "Can't mount rw directory"
 else
 	mkdir -p "../rootfs/$VM"
 	tar -C "../rootfs/$VM" -xzf "$IMAGE"
@@ -119,14 +154,16 @@ fi
 
 # Bind mount modules
 mkdir -p "../rootfs/$VM/lib/modules"
-mount -o bind "/lib/modules ../rootfs/$VM/lib/modules"
+mount -o bind "/lib/modules" "../rootfs/$VM/lib/modules"
 
 # copy root's ~/.ssh
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
 # setup debian proxy
-echo 'Acquire::http::Proxy "http://gate.roz.lab.etn.com:3142";' > "../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+[ -n "$APT_PROXY" ] && \
+    echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
+	"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
