@@ -69,16 +69,12 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     REQUIRE ( measurements );
     CHECK (name == "select_device");
 
-
-    char* s = (char*) zlist_first(measurements);
-    int i = 0;
-    while (s != NULL) {
-        REQUIRE ( EXP.count(s) == 1 );
-        s = (char*) zlist_next(measurements);
-        i++;
+    REQUIRE (zlist_size(measurements) == EXP.size());
+    std::set<std::string> results;
+    for (char* s = (char*) zlist_first(measurements); s != NULL; s = (char*) zlist_next(measurements)) {
+        results.insert(s);
     }
-    REQUIRE ( i == EXP.size() );
-    REQUIRE ( s == NULL );
+    REQUIRE (results == EXP);
     zlist_destroy (&measurements);
     
     //FAIL
@@ -184,20 +180,16 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     glm = common_msg_decode (&returnmeasurements);
     REQUIRE ( common_msg_id (glm) == COMMON_MSG_RETURN_LAST_MEASUREMENTS );
     REQUIRE ( common_msg_device_id (glm) == id );
-    zlist_t* info = common_msg_get_measurements (glm);
+    zlist_t* measurements = common_msg_get_measurements (glm);
     
-    char* s = (char*) zlist_first(info);
-    int i = 0;
-    while (s != NULL) {
-        REQUIRE ( EXP.count(s) == 1 );
-        s = (char*) zlist_next(info);
-        i++;
+    REQUIRE (zlist_size(measurements) == EXP.size());
+    std::set<std::string> results;
+    for (char* s = (char*) zlist_first(measurements); s != NULL; s = (char*) zlist_next(measurements)) {
+        results.insert(s);
     }
-    REQUIRE (i == EXP.size());
-
-    REQUIRE ( s      == NULL );
+    REQUIRE (results == EXP);
     
-    zlist_destroy (&info);
+    zlist_destroy (&measurements);
     common_msg_destroy (&glm);
 
     //FAIL
