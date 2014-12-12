@@ -81,14 +81,13 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
             case ASSET_MSG_RETURN_LOCATION_TO:
             case ASSET_MSG_RETURN_LOCATION_FROM:
             {
-                log_info ("Processing of messages with ID = '%d' 
-                    not implemented at the moment.\n", id);
+                log_info ("Processing of messages with ID = '%d' " 
+                    "not implemented at the moment.\n", id);
                 common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
                 assert (common_msg);
                 common_msg_set_errmsg (common_msg,
-                                       "Processing of messages with ID = '%d' 
-                                       not implemented at the moment.",
-                                       id);
+                    "Processing of messages with ID = '%d' "
+                    "not implemented at the moment.", id);
                 return_msg = common_msg_encode (&common_msg);
                 assert (return_msg);
                 assert (common_msg == NULL);
@@ -137,14 +136,14 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
             }
             default:
             {
-                log_warning ("Unexpected message type received. Message ID: 
-                                                    '%d'\n", id);
+                log_warning ("Unexpected message type received. "
+                        "Message ID: '%d'\n", id);
                 
                 common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
                 assert (common_msg);
                 common_msg_set_errmsg (common_msg,
-                                       "Unexpected message type received. 
-                                       Message ID: '%d'",  id);
+                                       "Unexpected message type received. " 
+                                       "Message ID: '%d'",  id);
                 return_msg = common_msg_encode (&common_msg);
                 assert (return_msg);
                 assert (common_msg == NULL);

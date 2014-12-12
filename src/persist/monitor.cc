@@ -32,7 +32,7 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** e
     assert ( resultmsg );
     common_msg_set_errtype (resultmsg, BIOS_ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
-    common_msg_set_errmsg  (resultmsg, "%s", errmsg);
+    common_msg_set_errmsg  (resultmsg, errmsg);
     if ( erraux != NULL )
     {
         common_msg_set_erraux  (resultmsg, erraux);
