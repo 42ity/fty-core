@@ -167,13 +167,31 @@ std::string filter;
     } // filter block
 
     zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
-    assert (return_msg);
+    if (return_msg == NULL) {
+</%cpp>
+        {
+            "error" :   "internal_error",
+            "msg"   :   "Function process_assettopology() returned a null pointer."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
     assert (input_msg == NULL);
 
     if (is_common_msg (return_msg)) {
         common_msg_t *common_msg = common_msg_decode (&return_msg);
-        assert (common_msg);
-        assert (return_msg == NULL);
+        if (common_msg == NULL) {
+            if (return_msg != NULL) {
+                zmsg_destroy (&return_msg);
+            }
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "common_msg_decode() failed."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
 
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
 </%cpp>
@@ -198,8 +216,18 @@ std::string filter;
     }
     else if (is_asset_msg (return_msg)) {
         asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
-        assert (asset_msg);
-        assert (return_msg == NULL);
+        if (asset_msg == NULL) {
+            if (return_msg != NULL) {
+                zmsg_destroy (&return_msg);
+            }
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "asset_msg_decode() failed."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
 
         if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_POWER) {
             zlist_t *powers = asset_msg_get_powers (asset_msg);
@@ -211,8 +239,17 @@ std::string filter;
                 byte *buffer = zframe_data (devices);
                 assert (buffer);
                 zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
-                assert (zmsg);
-                assert (zmsg_is (zmsg));
+                if (zmsg == NULL || !zmsg_is (zmsg)) {
+                    zframe_destroy (&devices);
+</%cpp>
+                    {
+                        "error" :   "internal_error",
+                        "msg"   :   "zmsg_decode() failed."
+                    }
+<%cpp>
+                    return HTTP_INTERNAL_SERVER_ERROR;
+                }
+                zframe_destroy (&devices);
 
                 json.append ("\"devices\" : [");
 
@@ -225,7 +262,18 @@ std::string filter;
                         return HTTP_INTERNAL_SERVER_ERROR; 
                     }
                     asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
-                    assert (item);
+                    if (item == NULL) {
+                        if (pop != NULL) {
+                            zmsg_destroy (&pop);
+                        }
+</%cpp>
+                        {
+                            "error" :   "internal_error",
+                            "msg"   :   "asset_msg_decode() failed."
+                        }
+<%cpp>
+                        return HTTP_INTERNAL_SERVER_ERROR;
+                    }
 
                     if (first == false) {
                         json.append (", ");
@@ -237,10 +285,8 @@ std::string filter;
                     json.append("\"type\" : \"").append(asset_msg_type_name (item)).append("\"}");
 
                     asset_msg_destroy (&item);
-                    assert (pop == NULL);
                 }
                 zmsg_destroy (&zmsg);
-                assert (zmsg == NULL);
             
                 json.append ("] ");
             }
