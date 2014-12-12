@@ -1,4 +1,5 @@
-#include <assert.h>
+#include <cassert>
+#include <cstring>
 #include <set>
 #include <tuple>
 
@@ -12,9 +13,10 @@
 #include "log.h"
 #include "assetmsg.h"
 #include "common_msg.h"
-
-
 #include "assettopology.h"
+
+
+
 // TODO HARDCODED CONSTANTS for asset device types
 
 // TODO This parameter should be placed in configure file
@@ -22,6 +24,115 @@
 // So instead of it the constat would be used
 #define MAX_RECURSION_DEPTH 6
 #define DEVICE 6
+
+zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p) {
+    log_open ();
+    log_set_level (LOG_DEBUG);
+
+    assert (message_p);
+    assert (database_url);
+    zmsg_t *return_msg = NULL;
+    if (*message_p) {
+        asset_msg_t *message = *message_p;
+        assert (message);
+
+        int id = asset_msg_id (message);
+        switch (id) {
+            // TODO: Actually some of these messages don't make sense to be implemented (like ASSET_MSG_RETURN_LOCATION_TO),
+            //       someone should sort them out and make a common zmsg errmsg for them. 
+            case ASSET_MSG_ELEMENT:
+            case ASSET_MSG_DEVICE:
+            case ASSET_MSG_GET_ELEMENT:
+            case ASSET_MSG_RETURN_ELEMENT:
+            case ASSET_MSG_UPDATE_ELEMENT:
+            case ASSET_MSG_INSERT_ELEMENT:
+            case ASSET_MSG_DELETE_ELEMENT:
+            case ASSET_MSG_OK:
+            case ASSET_MSG_FAIL:
+            case ASSET_MSG_GET_ELEMENTS:
+            case ASSET_MSG_RETURN_ELEMENTS:
+            case ASSET_MSG_POWERCHAIN_DEVICE:
+            case ASSET_MSG_RETURN_POWER:
+            case ASSET_MSG_RETURN_LOCATION_TO:
+            case ASSET_MSG_RETURN_LOCATION_FROM:
+            {
+                log_info ("Processing of messages with ID = '%d' not implemented at the moment.\n", id);
+                common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+                assert (common_msg);
+                common_msg_set_errmsg (common_msg,
+                                       "Processing of messages with ID = '%d' not implemented at the moment.",
+                                       id);
+                return_msg = common_msg_encode (&common_msg);
+                assert (return_msg);
+                assert (common_msg == NULL);
+                assert (is_common_msg (return_msg));
+                break;
+            }
+            case ASSET_MSG_GET_LOCATION_FROM:
+            {
+                return_msg =  get_return_topology_from (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_LOCATION_TO:
+            {
+                return_msg = get_return_topology_to (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_FROM:
+            {
+                return_msg = get_return_power_topology_from(database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_TO:
+            {
+                return_msg = get_return_power_topology_to (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_GROUP:
+            {
+                return_msg = get_return_power_topology_group (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            case ASSET_MSG_GET_POWER_DATACENTER:
+            {
+                return_msg = get_return_power_topology_datacenter (database_url, message);
+                assert (return_msg);
+                break;
+            }
+            default:
+            {
+                log_warning ("Unexpected message type received. Message ID: '%d'\n", id);
+                
+                common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+                assert (common_msg);
+                common_msg_set_errmsg (common_msg,
+                                       "Unexpected message type received. Message ID: '%d'",
+                                       id);
+                return_msg = common_msg_encode (&common_msg);
+                assert (return_msg);
+                assert (common_msg == NULL);
+                assert (is_common_msg (return_msg));
+                break;
+            }
+        }
+
+        asset_msg_destroy (message_p);
+        assert (*message_p == NULL);
+    } else {
+        log_error ("Pointer to null pointer passed as second argument 'asset_msg_t **message_p'.");
+        return_msg = common_msg_encode_fail (0, 0,"Invalid asset message: Pointer to null pointer passed as second argument.", NULL);
+        assert (return_msg);
+        assert (is_common_msg (return_msg));
+    }
+    assert (return_msg); // safeguard non-NULL return value
+    log_close ();
+    return return_msg;
+}
 
 int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame )
 {
@@ -473,22 +584,61 @@ zframe_t* select_childs(const char* url, uint32_t element_id,
 zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
+    assert (url);
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
     log_info ("start\n");
-    // element_id = 0 means, that we are looking for unlocated elements
-    // then recursive is false
-    // we are not interested in datacenters and groups
+
+    zmsg_t *return_msg = NULL;
+
     uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint8_t  type_id      = 0;
-    bool     is_recursive = false;  
-    if ( element_id != 0 )
-    {   
-        is_recursive      = asset_msg_recursive   (getmsg);
-        type_id           = asset_msg_type        (getmsg);
+    uint8_t filter_type = asset_msg_filter_type (getmsg);
+    int is_recursive = 0;
+    int type_id = 0;
+
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached (url);
     }
-    uint8_t  filter_type  = asset_msg_filter_type (getmsg);
+    catch (const std::exception& e) {
+        log_warning ("Error when connecting to database '%s': %s", url, e.what());
+        common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+        assert (common_msg);
+        common_msg_set_errmsg (common_msg,
+                               "Error when connecting to database '%s': %s",
+                                url, e.what());
+        zmsg_t *return_msg = common_msg_encode (&common_msg);
+        assert (return_msg);
+        assert (common_msg == NULL);
+        assert (is_common_msg (return_msg));
+        return return_msg;
+    }
+
+    // element_id == 0 => we are looking for unlocated elements; recursive := false; 
+    if (element_id != 0) {
+        is_recursive = asset_msg_recursive (getmsg);
+        // get type
+        try {
+            std::string tmp = "SELECT id_type FROM t_bios_asset_element WHERE id_asset_element = ";
+            tmp.append (std::to_string (element_id));
+            tntdb::Statement st = conn.prepare (tmp.c_str());        
+            tntdb::Value val = st.selectValue();
+            val.get (type_id);           
+        }
+        catch (const std::exception& e) {
+            log_warning ("Error when executing statement: %s", e.what());
+            common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+            assert (common_msg);
+            common_msg_set_errmsg (common_msg,
+                                   "Error executing statement: %s",
+                                   e.what());
+            zmsg_t *return_msg = common_msg_encode (&common_msg);
+            assert (return_msg);
+            assert (common_msg == NULL);
+            assert (is_common_msg (return_msg));
+            return return_msg;
+        }
+    } 
     
-    log_info("filter = %d\n", filter_type);
     zframe_t* dcs     = NULL;
     zframe_t* rooms   = NULL;
     zframe_t* rows    = NULL;
@@ -501,8 +651,6 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     if ( element_id != 0 )
     {
         try{
-            tntdb::Connection conn = tntdb::connectCached(url);
-
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "    v.name, v1.name as dtype_name"                  
@@ -875,11 +1023,66 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
 zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
+    assert (url);
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
     log_info ("start\n");
-    uint32_t element_id   = asset_msg_element_id (getmsg);
-    uint8_t  type_id      = asset_msg_type       (getmsg);
+    uint32_t element_id = asset_msg_element_id (getmsg);
+    int type_id = 0;    
+
+    try {
+        tntdb::Connection conn = tntdb::connectCached (url);
+        /* This didn't work
+        tntdb::Statement st = conn.prepare (
+            "SELECT id_type FROM t_bios_asset_element"
+            "WHERE id_asset_element = :v1");        
+        tntdb::Value val = st.setInt("v1", element_id).selectValue();
+        */
+        std::string tmp = "SELECT id_type FROM t_bios_asset_element WHERE id_asset_element = ";
+        tmp.append (std::to_string (element_id));
+        tntdb::Statement st = conn.prepare (tmp.c_str());        
+        tntdb::Value val = st.selectValue();
+        val.get (type_id);
+    }
+    catch (const std::exception& e) {
+        log_warning ("Error connecting to database or querying a database '%s': %s\n", url, e.what());
+        common_msg_t *common_msg = common_msg_new (COMMON_MSG_FAIL);
+        assert (common_msg);
+        common_msg_set_errmsg (common_msg,
+                               "Error connecting to database or querying a database '%s': %s",
+                               url, e.what());
+        zmsg_t *return_msg = common_msg_encode (&common_msg);
+        assert (return_msg);
+        assert (common_msg == NULL);
+        assert (is_common_msg (return_msg));
+        return return_msg;
+    }
+
     zmsg_t* result = select_parents (url, element_id, type_id);
+
+    if (is_asset_msg (result)) {
+        zmsg_t *dup = zmsg_dup (result);
+        asset_msg_t *am = asset_msg_decode (&dup);
+        asset_msg_t *orig = am;
+        assert (asset_msg_id (am) == ASSET_MSG_RETURN_LOCATION_TO );
+        bool go = false;
+        do {
+            log_info ("element_id = %d\n", (int) asset_msg_element_id (am));
+            log_info ("type = %d\n", (int) asset_msg_type (am));
+            if (zmsg_size (asset_msg_msg (am)) != 0) {
+                log_info ("inner msg is not null\n");
+                zmsg_t *inner = asset_msg_get_msg (am);
+                assert (inner);
+                am = asset_msg_decode (&inner);
+                assert (am);
+                go = true;
+            } else {
+                go  = false;
+            }
+        } while (go == true);
+
+    }
+
+
     log_info ("end\n");
     return result;
 }

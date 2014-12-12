@@ -22,10 +22,16 @@ void print_frame (zframe_t* frame,uint32_t parent_id);
 void print_frame_devices (zframe_t* frame);
 bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type, const char* name, const char* dtype_name);
 
+zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p);
+
 zmsg_t* get_return_topology_to (const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_topology_from (const char* url, asset_msg_t* getmsg);
+
+
 zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_to(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
 zmsg_t* get_return_power_topology_datacenter(const char* url, asset_msg_t* getmsg);
+
+
 #endif // SRC_PERSIST_ASSETTOPOLOGY_H_
