@@ -181,27 +181,6 @@ std::string measures_manager::scale(std::string val, std::string i, std::string 
     }
 }
 
-std::string measures_manager::map_names(std::string name) {
-    static std::map<std::string, std::string> map = {
-        { "temperature.ups", "ups.temperature" },
-        { "status.ups", "ups.status" },
-        { "load.ups", "ups.load" },
-        { "realpower.default", "ups.realpower" },
-        { "realpower.L1", "output.L1.realpower" },
-        { "realpower.L2", "output.L2.realpower" },
-        { "realpower.L3", "output.L3.realpower" },
-        { "voltage.default", "output.voltage" },
-        { "voltage.L1", "output.L1-N.voltage" },
-        { "voltage.L2", "output.L2-N.voltage" },
-        { "voltage.L3", "output.L3-N.voltage" },
-    };
-    
-    auto it = map.find(name);
-    if(it != map.end())
-        return it->second;
-    return name;
-}
-
 std::string measures_manager::map_values(std::string name, std::string value) {
     static std::map<std::string, std::map<std::string, std::string>> map = {
         { "status.ups", {
@@ -294,35 +273,34 @@ std::string ui_props_manager::put(const std::string& ext) {
 /**
  * \brief get the error string, msg string and HTTP code from common_msg
  */
-void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, int* p_code) {
+void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::string& msg, unsigned* code) {
 
     assert(cm_msg);
-
-    int code = *p_code;
 
     if (common_msg_id(cm_msg) == COMMON_MSG_FAIL) {
         switch (common_msg_errorno(cm_msg)) {
             case DB_ERROR_NOTFOUND:
                 error = "not_found";
-                code = HTTP_NOT_FOUND;
+                *code = HTTP_NOT_FOUND;
                 break;
             case DB_ERROR_BADINPUT:
                 error = "bad_input";
-                code = HTTP_BAD_REQUEST;
+                *code = HTTP_BAD_REQUEST;
                 break;
             case DB_ERROR_NOTIMPLEMENTED:
                 error = "not_implemented";
-                code = HTTP_NOT_IMPLEMENTED;
+                *code = HTTP_NOT_IMPLEMENTED;
             default:
                 error = "internal_error";
-                code = HTTP_INTERNAL_SERVER_ERROR;
+                *code = HTTP_INTERNAL_SERVER_ERROR;
                 break;
         }
-        msg = common_msg_errmsg(cm_msg);
+        const char *cmsg = common_msg_errmsg(cm_msg);
+        msg = (cmsg == NULL) ? "" : cmsg;
     }
     else {
         error = "internal_error";
         msg = "unexpected message";
-        code = HTTP_INTERNAL_SERVER_ERROR;
+        *code = HTTP_INTERNAL_SERVER_ERROR;
     }
 }

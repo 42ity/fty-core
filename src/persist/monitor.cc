@@ -32,7 +32,7 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** e
     assert ( resultmsg );
     common_msg_set_errtype (resultmsg, BIOS_ERROR_DB);
     common_msg_set_errorno (resultmsg, errorid);
-    common_msg_set_errmsg  (resultmsg, errmsg);
+    common_msg_set_errmsg  (resultmsg, "%s", (errmsg ? errmsg:"") );
     if ( erraux != NULL )
     {
         common_msg_set_erraux  (resultmsg, erraux);
@@ -1002,13 +1002,14 @@ common_msg_t* generate_return_measurements (uint32_t device_id, zlist_t** measur
  *
  * \param url       - connection url to database.
  * \param device_id - id of the monitor device that was measured.
+ * \param name      - output parameter for name
  *
  *
  * \return NULL            in case of errors.
  *         empty zlist_t   in case of nothing was found
  *         filled zlist_t  in case of succcess.
  */
-zlist_t* select_last_measurements(const char* url, uint32_t device_id)
+zlist_t* select_last_measurements(const char* url, uint32_t device_id, std::string& name)
 {
     assert ( device_id ); // is required
     
@@ -1023,7 +1024,7 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
-            " id_key, value, id_subkey, scale"
+            " id_key, value, id_subkey, scale, name"
             " FROM"
             " v_bios_client_info_measurements_last"
             " WHERE id_discovered_device=:deviceid"
@@ -1031,7 +1032,6 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
 
         tntdb::Result result = st.setInt("deviceid", device_id).
                                   select();
-
         uint32_t rsize = result.size();
 
         char buff[42];     // 10+10+10+10 2
@@ -1059,7 +1059,10 @@ zlist_t* select_last_measurements(const char* url, uint32_t device_id)
                 // scale
                 int32_t scale = 0;
                 row[3].get(scale);
-                
+
+                // name
+                row[4].get(name);
+
                 sprintf(buff, "%d:%d:%d:%d", keytag_id, subkeytag_id, 
                               value, scale);
                 zlist_push (measurements, buff);
@@ -1085,15 +1088,19 @@ zmsg_t* get_last_measurements(const char* url, common_msg_t* msg)
     if ( device_id_monitor == 0 )
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, "No monitoring device found for given device id" , NULL);
 
+    std::string device_name;
     zlist_t* last_measurements = 
-            select_last_measurements(url, device_id_monitor);
+            select_last_measurements(url, device_id_monitor, device_name);
     if ( last_measurements == NULL )
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, NULL , NULL);
     else if ( zlist_size(last_measurements) == 0 )
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, NULL , NULL);
     else
     {
-        zmsg_t* return_measurements = common_msg_encode_return_last_measurements(device_id, last_measurements);
+        zmsg_t* return_measurements = common_msg_encode_return_last_measurements(
+                device_id,
+                device_name.c_str(),
+                last_measurements);
         zlist_destroy (&last_measurements);
         return return_measurements;
     }

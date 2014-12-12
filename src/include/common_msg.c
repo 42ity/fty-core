@@ -387,7 +387,7 @@ common_msg_decode (zmsg_t **msg_p)
         case COMMON_MSG_FAIL:
             GET_NUMBER1 (self->errtype);
             GET_NUMBER4 (self->errorno);
-            GET_STRING (self->errmsg);
+            GET_LONGSTR (self->errmsg);
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
@@ -559,6 +559,7 @@ common_msg_decode (zmsg_t **msg_p)
 
         case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             GET_NUMBER4 (self->device_id);
+            GET_STRING (self->device_name);
             {
                 size_t list_size;
                 GET_NUMBER4 (list_size);
@@ -672,8 +673,8 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 1;
             //  errorno is a 4-byte integer
             frame_size += 4;
-            //  errmsg is a string with 1-byte length
-            frame_size++;       //  Size is one octet
+            //  errmsg is a string with 4-byte length
+            frame_size += 4;
             if (self->errmsg)
                 frame_size += strlen (self->errmsg);
             //  erraux is an array of key=value strings
@@ -838,6 +839,10 @@ common_msg_encode (common_msg_t **self_p)
         case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             //  device_id is a 4-byte integer
             frame_size += 4;
+            //  device_name is a string with 1-byte length
+            frame_size++;       //  Size is one octet
+            if (self->device_name)
+                frame_size += strlen (self->device_name);
             //  measurements is an array of strings
             frame_size += 4;    //  Size is 4 octets
             if (self->measurements) {
@@ -923,10 +928,10 @@ common_msg_encode (common_msg_t **self_p)
             PUT_NUMBER1 (self->errtype);
             PUT_NUMBER4 (self->errorno);
             if (self->errmsg) {
-                PUT_STRING (self->errmsg);
+                PUT_LONGSTR (self->errmsg);
             }
             else
-                PUT_NUMBER1 (0);    //  Empty string
+                PUT_NUMBER4 (0);    //  Empty string
             if (self->erraux) {
                 PUT_NUMBER4 (zhash_size (self->erraux));
                 char *item = (char *) zhash_first (self->erraux);
@@ -1075,6 +1080,11 @@ common_msg_encode (common_msg_t **self_p)
 
         case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             PUT_NUMBER4 (self->device_id);
+            if (self->device_name) {
+                PUT_STRING (self->device_name);
+            }
+            else
+                PUT_NUMBER1 (0);    //  Empty string
             if (self->measurements) {
                 PUT_NUMBER4 (zlist_size (self->measurements));
                 char *measurements = (char *) zlist_first (self->measurements);
@@ -1237,6 +1247,7 @@ common_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
 
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
@@ -1265,6 +1276,7 @@ common_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1800,10 +1812,12 @@ common_msg_encode_get_last_measurements (
 zmsg_t * 
 common_msg_encode_return_last_measurements (
     uint32_t device_id,
+    const char *device_name,
     zlist_t *measurements)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
     common_msg_set_device_id (self, device_id);
+    common_msg_set_device_name (self, "%s", device_name);
     zlist_t *measurements_copy = zlist_dup (measurements);
     common_msg_set_measurements (self, &measurements_copy);
     return common_msg_encode (&self);
@@ -2314,10 +2328,12 @@ int
 common_msg_send_return_last_measurements (
     void *output,
     uint32_t device_id,
+    const char *device_name,
     zlist_t *measurements)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
     common_msg_set_device_id (self, device_id);
+    common_msg_set_device_name (self, device_name);
     zlist_t *measurements_copy = zlist_dup (measurements);
     common_msg_set_measurements (self, &measurements_copy);
     return common_msg_send (&self, output);
@@ -2489,6 +2505,7 @@ common_msg_dup (common_msg_t *self)
 
         case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             copy->device_id = self->device_id;
+            copy->device_name = self->device_name? strdup (self->device_name): NULL;
             copy->measurements = self->measurements? zlist_dup (self->measurements): NULL;
             break;
 
@@ -2773,6 +2790,10 @@ common_msg_print (common_msg_t *self)
         case COMMON_MSG_RETURN_LAST_MEASUREMENTS:
             zsys_debug ("COMMON_MSG_RETURN_LAST_MEASUREMENTS:");
             zsys_debug ("    device_id=%ld", (long) self->device_id);
+            if (self->device_name)
+                zsys_debug ("    device_name='%s'", self->device_name);
+            else
+                zsys_debug ("    device_name=");
             zsys_debug ("    measurements=");
             if (self->measurements) {
                 char *measurements = (char *) zlist_first (self->measurements);
@@ -4295,6 +4316,7 @@ common_msg_test (bool verbose)
     common_msg_destroy (&copy);
 
     common_msg_set_device_id (self, 123);
+    common_msg_set_device_name (self, "Life is short but Now lasts for ever");
     common_msg_measurements_append (self, "Name: %s", "Brutus");
     common_msg_measurements_append (self, "Age: %d", 43);
     //  Send twice from same object
@@ -4307,6 +4329,7 @@ common_msg_test (bool verbose)
         assert (common_msg_routing_id (self));
         
         assert (common_msg_device_id (self) == 123);
+        assert (streq (common_msg_device_name (self), "Life is short but Now lasts for ever"));
         assert (common_msg_measurements_size (self) == 2);
         assert (streq (common_msg_measurements_first (self), "Name: Brutus"));
         assert (streq (common_msg_measurements_next (self), "Age: 43"));

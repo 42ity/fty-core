@@ -49,7 +49,7 @@
     A failed message indicates that some error had occured
     <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
     <field name = "errorno"     type = "number" size = "4"> An error id</field>
-    <field name = "errmsg"      type = "string"> A user visible error string</field>
+    <field name = "errmsg"      type = "longstr"> A user visible error string</field>
     <field name = "erraux"      type = "hash"> An optional additional information about occured error</field>
 </message>
 
@@ -214,6 +214,7 @@ Request for the last measurements about the device with asset_element_id
 <message name = "return_last_measurements"   id = "240">
 The last measurements about the device with asset_element_id
     <field name = "device_id"    type = "number" size = "4"> An asset_element_id of the device</field>
+    <field name = "device_name" type = "string"> device name </field>
     <field name = "measurements"  type = "strings"> A list of string values "keytagid:subkeytagid:value:scale"</field>
 </message>
 

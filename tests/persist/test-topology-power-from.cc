@@ -199,7 +199,8 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     assert ( zmsg_is (zmsg) );
     
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 2 ; i ++ )
+    int n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -218,6 +219,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
@@ -262,7 +264,8 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     REQUIRE ( powers );
 
     char* a = NULL;
-    for ( int i = 1; i <= 3; i++ )
+    int n = zlist_size(powers);
+    for ( int i = 1; i <= n; i++ )
     {
         if ( i == 1 )
             a = (char*)zlist_first (powers);
@@ -273,7 +276,8 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
         REQUIRE ( it != spowers.end() );
         spowers.erase(it);
     }
-    REQUIRE ( zlist_next (powers)   == NULL );
+    REQUIRE ( zlist_next (powers) == NULL );
+    REQUIRE ( spowers.empty() );
     zlist_destroy (&powers);
     
     // check the devices, should be four devices
@@ -286,7 +290,8 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 4 ; i ++ )
+    n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -305,6 +310,8 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
+
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
@@ -349,7 +356,8 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     REQUIRE ( powers );
 
     char* a = NULL;
-    for ( int i = 1; i <= 3; i++ )
+    int n = zlist_size(powers);
+    for ( int i = 1; i <= n; i++ )
     {
         if ( i == 1 )
             a = (char*)zlist_first (powers);
@@ -360,7 +368,8 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
         REQUIRE ( it != spowers.end() );
         spowers.erase(it);
     }
-    REQUIRE ( zlist_next (powers)   == NULL );
+    REQUIRE ( zlist_next (powers) == NULL );
+    REQUIRE ( spowers.empty() );
 
     zlist_destroy (&powers);
 
@@ -374,7 +383,8 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 4 ; i ++ )
+    n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -393,6 +403,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
@@ -446,7 +457,8 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 2 ; i ++ )
+    int n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -465,6 +477,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
     
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
@@ -534,7 +547,8 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 1 ; i ++ )
+    int n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -553,6 +567,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
     
     // check powers, should be one link
     zlist_t* powers = asset_msg_get_powers (cretTopology);
@@ -602,7 +617,8 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     REQUIRE ( powers );
 
     char* a = NULL;
-    for ( int i = 1; i <= 2; i++ )
+    int n = zlist_size(powers);
+    for ( int i = 1; i <= n; i++ )
     {
         if ( i == 1 )
             a = (char*)zlist_first (powers);
@@ -614,7 +630,8 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
         spowers.erase(it);
     }
     REQUIRE ( zlist_next (powers) == NULL );
-
+    REQUIRE ( spowers.empty() );
+ 
     zlist_destroy (&powers);
 
     // check the devices, should be two devices
@@ -627,7 +644,8 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 2 ; i ++ )
+    n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -646,6 +664,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
@@ -685,7 +704,8 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     REQUIRE ( powers );
 
     char* a = NULL;
-    for ( int i = 1; i <= 1; i++ )
+    int n = zlist_size(powers);
+    for ( int i = 1; i <= n; i++ )
     {
         if ( i == 1 )
             a = (char*)zlist_first (powers);
@@ -697,6 +717,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
         spowers.erase(it);
     }
     REQUIRE ( zlist_next (powers) == NULL );
+    REQUIRE ( spowers.empty() );
 
     zlist_destroy (&powers);
 
@@ -710,7 +731,8 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     assert ( zmsg_is (zmsg) );
 
     zmsg_t* pop = NULL;
-    for (int i = 1 ; i <= 2 ; i ++ )
+    n = sdevices.size();
+    for (int i = 1 ; i <= n ; i ++ )
     {   
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
@@ -729,6 +751,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     // there is no more devices
     pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
+    REQUIRE ( sdevices.empty() );
 
     asset_msg_destroy (&getmsg);
     asset_msg_destroy (&cretTopology);
