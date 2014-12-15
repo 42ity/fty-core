@@ -60,28 +60,28 @@ std::string filter_group;
         try { 
             element_id = std::stoi (from); 
         } catch (std::out_of_range& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Variable 'from' contains number that falls out of the allowed range." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::invalid_argument& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Please specify an integer value for variable 'from'." 
             } 
-<%cpp>        
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::exception& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST;
         } 
         // Call persistence layer
@@ -109,28 +109,28 @@ std::string filter_group;
         try { 
             element_id = std::stoi (to); 
         } catch (std::out_of_range& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Variable 'to' contains number that falls out of the allowed range." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::invalid_argument& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Please specify an integer value for variable 'from'." 
             } 
-<%cpp>        
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::exception& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST;
         }
     // Call persistence layer
@@ -159,28 +159,28 @@ std::string filter_group;
         try { 
             element_id = std::stoi (filter_dc); 
         } catch (std::out_of_range& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Variable 'filter_dc' contains number that falls out of the allowed range." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::invalid_argument& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Please specify an integer value for variable 'filter_dc'." 
             } 
-<%cpp>        
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::exception& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Error while converting <$ filter_dc $> to integer value: <$ e.what() $>." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST;
         }
         // Call persistence layer
@@ -208,28 +208,28 @@ std::string filter_group;
         try { 
             element_id = std::stoi (filter_group); 
         } catch (std::out_of_range& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Variable 'filter_group' contains number that falls out of the allowed range." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::invalid_argument& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Please specify an integer value for variable 'filter_group'." 
             } 
-<%cpp>        
+<%cpp>
             return HTTP_BAD_REQUEST; 
         } catch (std::exception& e) { 
-</%cpp> 
+</%cpp>
             { 
                 "error" :   "bad_input", 
                 "msg"   :   "Error while converting <$ filter_group $> to integer value: <$ e.what() $>." 
             } 
-<%cpp> 
+<%cpp>
             return HTTP_BAD_REQUEST;
         }
 

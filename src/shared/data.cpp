@@ -109,8 +109,11 @@ std::string measures_manager::int_to_subtype(std::string i, std::string t) {
 }
 
 static std::string s_scale(const std::string& val, int8_t scale) {
-
+// TODO: Refactor away multiple calls to val.size(),
+// they seem redundant (val does not change here?)
     assert(val != "");
+// The string.size() is a size_t (unsigned int or larger), and
+// our scale is a signed byte; make sure they fit each other
     assert(val.size() <= SCHAR_MAX);
 
     std::string ret{val};
@@ -129,9 +132,9 @@ static std::string s_scale(const std::string& val, int8_t scale) {
     }
 
     //3. scale is "bigger" than size of string,
-    if (scale <= -val.size()) {
+    if (-scale >= (int8_t)val.size()) {
         //3a. prepend zeroes
-        while (scale != -val.size()) {
+        while (-scale != (int8_t)val.size()) {
             ret.insert(0, "0");
             scale++;
         }
