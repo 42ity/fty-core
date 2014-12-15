@@ -42,7 +42,10 @@ Currently these optional modifier are supported on the command-line:
 
  * '--warnless-unused' -- this suppresses the compiler warnings about
 unused variables (see details below in the 'WARNLESS_UNUSED' envvar
-description).
+description)
+ * '--warn-fatal' or '-Werror' -- this sets up the compiler to fail when
+it has warnings to report, allowing easier tracing and recompilation of
+not-yet-perfect pieces of source code
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
@@ -238,6 +241,30 @@ the `builder.sh` script appends some compiler options to 'CFLAGS' and
 this writing, the added `gcc` flags are:
 ----
   -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable
+----
+
+Note that these changes to compiler options require regeneration of the
+`configure` script, to become enforced (or disabled later on).
+
+
+=== 'WARN_FATAL' toggle
+`export WARN_FATAL=yes` is one of two ways to quickly enforce failures
+of compilations if the flaky code has warnings to report. Cumulative with
+'WARNLESS_UNUSED' (if both are enabled, then the "unused" warnings are not
+reported and thus are not fatal to the build).
+
+Note that these changes to compiler options require regeneration of the
+`configure` script, to become enforced (or disabled later on).
+
+This option allows to easily reiterate compilation of just the source files
+being improved to counter the warnings, e.g.:
+----
+:; ./tools/builder.sh -Werror --warnless-unused build
+...
+:; ./tools/builder.sh make
+...
+:; ./tools/builder.sh make
+...
 ----
 
 
