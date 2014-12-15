@@ -112,6 +112,8 @@ fi
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
+#[ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""
+
 # enable timing of the steps
 case "$TIME_MAKE" in
     time|*bin/time)	;;
@@ -213,7 +215,7 @@ do_build() {
 
 buildSamedir() {
 	do_make -k distclean
-	verb_run $TIME_CONF ./configure && \
+	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS && \
 	{ do_make -k clean; do_build "$@"; }
 }
 
@@ -223,7 +225,7 @@ buildSubdir() {
 	  rm -rf "${BUILDSUBDIR}"; \
 	  mkdir "${BUILDSUBDIR}" && \
 	  cd "${BUILDSUBDIR}"; } && \
-	verb_run $TIME_CONF "$CHECKOUTDIR/configure" && \
+	verb_run $TIME_CONF "$CHECKOUTDIR/configure" $CONFIGURE_FLAGS && \
 	do_build "$@" )
 }
 
@@ -266,6 +268,7 @@ usage() {
 	echo "    [--disable-parallel-make] [--show-builder-flags] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
+	echo "    [--configure-flags '...'] \ "
 	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
 	echo ""
@@ -279,10 +282,10 @@ usage() {
 	echo "'--debug-makefile' flag quickly enables several options at once, including"
 	echo "verbosity, -Werror, and enforced sequential builds to trace make failures."
 	echo ""
-	echo "Some special uses without further parameters:"
-	echo "Usage: $0 distcheck"
+	echo "Some special uses without further parameters (--options above are accepted):"
+	echo "Usage: $0 distcheck [<list of configure flags>]"
 	echo "		- execute the distclean, configure and make distcheck"
-	echo "Usage: $0 configure"
+	echo "Usage: $0 configure [<list of configure flags>]"
 	echo "		- execute the distclean and configure step and exit"
 	echo "Usage: $0 distclean"
 	echo "		- execute the distclean step and exit"
@@ -330,6 +333,7 @@ showBuilderFlags() {
 	CHECKOUTDIR workspace:	$CHECKOUTDIR
 	BUILDSUBDIR (subdirs):	$BUILDSUBDIR
 	DESTDIR (for install):	$DESTDIR
+	CONFIGURE_FLAGS:	$CONFIGURE_FLAGS
 	MAKE command to use:	$MAKE"
 	[ -n "$MAKE_OPTS" ] && echo \
 "	 Common MAKE command options (for build/install/make explicit targets):	$MAKE_OPTS"
@@ -372,6 +376,10 @@ showBuilderFlags() {
 # fall through on an unknown keyword - considering it a potential option.
 while [ $# -gt 0 ]; do
 	case "$1" in
+	    --configure-flags)
+		CONFIGURE_FLAGS="$2"
+		shift 2
+		;;
 	    --warnless-unused)
 		WARNLESS_UNUSED=yes
 		shift
@@ -485,13 +493,15 @@ case "$1" in
 	do_make -k distclean
 	;;
     distcheck)
+	shift
 	do_make -k distclean
-	verb_run $TIME_CONF ./configure && \
+	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@" && \
 	do_make distcheck
 	;;
     conf|configure)
+	shift
 	do_make -k distclean
-	verb_run $TIME_CONF ./configure
+	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@"
 	;;
     help|-help|--help|-h)
 	usage
