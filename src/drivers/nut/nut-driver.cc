@@ -26,7 +26,7 @@ static const std::vector<std::string> physicsNUT {
     "output.L3-N.voltage",
     "output.L3.realpower",
     "output.L3.current",
-    "batery.charge",
+    "battery.charge",
     "outlet.realpower",
     "outlet.#.current",
     "outlet.#.voltage",

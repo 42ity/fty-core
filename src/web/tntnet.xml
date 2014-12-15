@@ -28,6 +28,25 @@
     </mapping>
     <!-- API itself -->
 
+    <!-- topology/location -->
+    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
+    <mapping>
+      <target>topology_inputcheck@bios_web</target>
+      <url>^/api/v1/topology/.*$</url>
+    </mapping>
+    -->     
+    <mapping>
+      <target>location@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
+    <!-- topology/power -->
+    <mapping>
+      <target>power@bios_web</target>
+      <url>^/api/v1/topology/power.*$</url>
+    </mapping>
+
+
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>
@@ -60,6 +79,12 @@
     <mapping>
       <target>rack_total@bios_web</target>
       <url>^/api/v1/metric/computed/rack_total.*$</url>
+    </mapping>
+
+    <!-- datacenter indicators -->
+    <mapping>
+      <target>datacenter_indicators@bios_web</target>
+      <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
     </mapping>
 
     <!-- Network list -->

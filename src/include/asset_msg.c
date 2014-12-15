@@ -474,14 +474,12 @@ asset_msg_decode (zmsg_t **msg_p)
 
         case ASSET_MSG_GET_LOCATION_FROM:
             GET_NUMBER4 (self->element_id);
-            GET_NUMBER1 (self->type);
             GET_NUMBER1 (self->recursive);
             GET_NUMBER1 (self->filter_type);
             break;
 
         case ASSET_MSG_GET_LOCATION_TO:
             GET_NUMBER4 (self->element_id);
-            GET_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_RETURN_LOCATION_TO:
@@ -753,8 +751,6 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_GET_LOCATION_FROM:
             //  element_id is a 4-byte integer
             frame_size += 4;
-            //  type is a 1-byte integer
-            frame_size += 1;
             //  recursive is a 1-byte integer
             frame_size += 1;
             //  filter_type is a 1-byte integer
@@ -764,8 +760,6 @@ asset_msg_encode (asset_msg_t **self_p)
         case ASSET_MSG_GET_LOCATION_TO:
             //  element_id is a 4-byte integer
             frame_size += 4;
-            //  type is a 1-byte integer
-            frame_size += 1;
             break;
             
         case ASSET_MSG_RETURN_LOCATION_TO:
@@ -975,14 +969,12 @@ asset_msg_encode (asset_msg_t **self_p)
 
         case ASSET_MSG_GET_LOCATION_FROM:
             PUT_NUMBER4 (self->element_id);
-            PUT_NUMBER1 (self->type);
             PUT_NUMBER1 (self->recursive);
             PUT_NUMBER1 (self->filter_type);
             break;
 
         case ASSET_MSG_GET_LOCATION_TO:
             PUT_NUMBER4 (self->element_id);
-            PUT_NUMBER1 (self->type);
             break;
 
         case ASSET_MSG_RETURN_LOCATION_TO:
@@ -1214,6 +1206,8 @@ asset_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1241,6 +1235,7 @@ asset_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
+    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1316,7 +1311,7 @@ asset_msg_encode_element (
     zhash_t *ext)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_ELEMENT);
-    asset_msg_set_name (self, name);
+    asset_msg_set_name (self, "%s", name);
     asset_msg_set_location (self, location);
     asset_msg_set_location_type (self, location_type);
     asset_msg_set_type (self, type);
@@ -1341,15 +1336,15 @@ asset_msg_encode_device (
     zmsg_t *msg)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_DEVICE);
-    asset_msg_set_device_type (self, device_type);
+    asset_msg_set_device_type (self, "%s", device_type);
     zlist_t *groups_copy = zlist_dup (groups);
     asset_msg_set_groups (self, &groups_copy);
     zlist_t *powers_copy = zlist_dup (powers);
     asset_msg_set_powers (self, &powers_copy);
-    asset_msg_set_ip (self, ip);
-    asset_msg_set_hostname (self, hostname);
-    asset_msg_set_fqdn (self, fqdn);
-    asset_msg_set_mac (self, mac);
+    asset_msg_set_ip (self, "%s", ip);
+    asset_msg_set_hostname (self, "%s", hostname);
+    asset_msg_set_fqdn (self, "%s", fqdn);
+    asset_msg_set_mac (self, "%s", mac);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_encode (&self);
@@ -1491,13 +1486,11 @@ asset_msg_encode_return_elements (
 zmsg_t * 
 asset_msg_encode_get_location_from (
     uint32_t element_id,
-    byte type,
     byte recursive,
     byte filter_type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type (self, type);
     asset_msg_set_recursive (self, recursive);
     asset_msg_set_filter_type (self, filter_type);
     return asset_msg_encode (&self);
@@ -1509,12 +1502,10 @@ asset_msg_encode_get_location_from (
 
 zmsg_t * 
 asset_msg_encode_get_location_to (
-    uint32_t element_id,
-    byte type)
+    uint32_t element_id)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type (self, type);
     return asset_msg_encode (&self);
 }
 
@@ -1533,8 +1524,8 @@ asset_msg_encode_return_location_to (
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
-    asset_msg_set_name (self, name);
-    asset_msg_set_type_name (self, type_name);
+    asset_msg_set_name (self, "%s", name);
+    asset_msg_set_type_name (self, "%s", type_name);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_encode (&self);
@@ -1560,8 +1551,8 @@ asset_msg_encode_return_location_from (
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
-    asset_msg_set_name (self, name);
-    asset_msg_set_type_name (self, type_name);
+    asset_msg_set_name (self, "%s", name);
+    asset_msg_set_type_name (self, "%s", type_name);
     zframe_t *dcs_copy = zframe_dup (dcs);
     asset_msg_set_dcs (self, &dcs_copy);
     zframe_t *rooms_copy = zframe_dup (rooms);
@@ -1602,8 +1593,8 @@ asset_msg_encode_powerchain_device (
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_POWERCHAIN_DEVICE);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type_name (self, type_name);
-    asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, "%s", type_name);
+    asset_msg_set_name (self, "%s", name);
     return asset_msg_encode (&self);
 }
 
@@ -1863,13 +1854,11 @@ int
 asset_msg_send_get_location_from (
     void *output,
     uint32_t element_id,
-    byte type,
     byte recursive,
     byte filter_type)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type (self, type);
     asset_msg_set_recursive (self, recursive);
     asset_msg_set_filter_type (self, filter_type);
     return asset_msg_send (&self, output);
@@ -1882,12 +1871,10 @@ asset_msg_send_get_location_from (
 int
 asset_msg_send_get_location_to (
     void *output,
-    uint32_t element_id,
-    byte type)
+    uint32_t element_id)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type (self, type);
     return asset_msg_send (&self, output);
 }
 
@@ -2119,14 +2106,12 @@ asset_msg_dup (asset_msg_t *self)
 
         case ASSET_MSG_GET_LOCATION_FROM:
             copy->element_id = self->element_id;
-            copy->type = self->type;
             copy->recursive = self->recursive;
             copy->filter_type = self->filter_type;
             break;
 
         case ASSET_MSG_GET_LOCATION_TO:
             copy->element_id = self->element_id;
-            copy->type = self->type;
             break;
 
         case ASSET_MSG_RETURN_LOCATION_TO:
@@ -2329,7 +2314,6 @@ asset_msg_print (asset_msg_t *self)
         case ASSET_MSG_GET_LOCATION_FROM:
             zsys_debug ("ASSET_MSG_GET_LOCATION_FROM:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
-            zsys_debug ("    type=%ld", (long) self->type);
             zsys_debug ("    recursive=%ld", (long) self->recursive);
             zsys_debug ("    filter_type=%ld", (long) self->filter_type);
             break;
@@ -2337,7 +2321,6 @@ asset_msg_print (asset_msg_t *self)
         case ASSET_MSG_GET_LOCATION_TO:
             zsys_debug ("ASSET_MSG_GET_LOCATION_TO:");
             zsys_debug ("    element_id=%ld", (long) self->element_id);
-            zsys_debug ("    type=%ld", (long) self->type);
             break;
             
         case ASSET_MSG_RETURN_LOCATION_TO:
@@ -3730,7 +3713,6 @@ asset_msg_test (bool verbose)
     asset_msg_destroy (&copy);
 
     asset_msg_set_element_id (self, 123);
-    asset_msg_set_type (self, 123);
     asset_msg_set_recursive (self, 123);
     asset_msg_set_filter_type (self, 123);
     //  Send twice from same object
@@ -3743,7 +3725,6 @@ asset_msg_test (bool verbose)
         assert (asset_msg_routing_id (self));
         
         assert (asset_msg_element_id (self) == 123);
-        assert (asset_msg_type (self) == 123);
         assert (asset_msg_recursive (self) == 123);
         assert (asset_msg_filter_type (self) == 123);
         asset_msg_destroy (&self);
@@ -3756,7 +3737,6 @@ asset_msg_test (bool verbose)
     asset_msg_destroy (&copy);
 
     asset_msg_set_element_id (self, 123);
-    asset_msg_set_type (self, 123);
     //  Send twice from same object
     asset_msg_send_again (self, output);
     asset_msg_send (&self, output);
@@ -3767,7 +3747,6 @@ asset_msg_test (bool verbose)
         assert (asset_msg_routing_id (self));
         
         assert (asset_msg_element_id (self) == 123);
-        assert (asset_msg_type (self) == 123);
         asset_msg_destroy (&self);
     }
     self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
