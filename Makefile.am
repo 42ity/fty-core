@@ -280,6 +280,8 @@ bin_PROGRAMS += 			test-dbtopology
 test_dbtopology_SOURCES = tests/persist/test-topology.cc \
 						tests/persist/test-topology-power-to.cc \
 						tests/persist/test-topology-power-from.cc \
+						tests/persist/test-topology-power-datacenter.cc \
+						tests/persist/test-topology-power-group.cc \
 						tests/persist/test-topology-location-from.cc \
 						tests/persist/test-topology-location-to.cc
 
@@ -319,6 +321,25 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 				   -I$(top_builddir)/tools
 
 test_database_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+
+###
+bin_PROGRAMS += 			test-web
+
+test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
+							src/web/src/location_helpers.cpp
+
+test_web_LDADD = 	libpriv-test-run.la \
+					libpriv-log.la
+
+test_web_CPPFLAGS = $(AM_CPPFLAGS) \
+				   -I$(top_srcdir)/tests/include/ \
+				   -I$(top_srcdir)/src/web/include \
+				   -I$(top_srcdir)/src/simple \
+				   -I$(top_srcdir)/src/include
+
+
+#test_web_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+
 
 ###
 check_PROGRAMS += 			test-nmap-parse
@@ -441,7 +462,9 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
                       src/web/src/time.cpp  src/web/src/tokens.cpp       \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp \
-                      src/web/src/rack_total.cpp
+                      src/web/src/rack_total.cpp src/web/src/location.cpp \
+                      src/web/src/power.cpp src/web/src/location_helpers.cpp \
+                      src/web/src/datacenter_indicators.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \

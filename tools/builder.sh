@@ -247,19 +247,43 @@ suppressWarningsUnused() {
 	_WARNLESS_UNUSED=1
 }
 
+_WARN_FATAL=0
+makeWarningsFatal() {
+	[ "$_WARN_FATAL" != 0 ] && return
+	CFLAGS="$CFLAGS -Werror"
+	CXXFLAGS="$CXXFLAGS -Werror"
+	CPPFLAGS="$CPPFLAGS -Werror"
+	export CFLAGS CXXFLAGS CPPFLAGS
+	echo "INFO: Fixed up CFLAGS, CXXFLAGS and CPPFLAGS to make reported warnings fatal"
+	_WARN_FATAL=1
+}
+
 usage() {
-	echo "Usage: $0 [--warnless-unused] [--disable-parallel-make] [--show-builder-flags] \ "
-	echo "    [--show-repository-metadata] [--show-timing|[--show-timing-make|[--show-timing-conf] \ "
+	echo "Usage: $0"
+	echo "		- without parameters does just a classic autogen.sh job"
+	echo ""
+	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
+	echo "    [--disable-parallel-make] [--show-builder-flags] \ "
+	echo "    [--show-repository-metadata] \ "
+	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
+	echo "    [--verbose] [--debug-makefile] \ "
 	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
-	echo "This script (re-)creates the configure script and optionally either just rebuilds,"
-	echo "or rebuilds and installs into a DESTDIR, or makes the requested project targets."
-	echo "Note that the 'make' actions do not involve clearing and reconfiguring the build area."
-	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
-	echo "Some uses without further parameters:"
-	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
-	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
-	echo "Usage: $0 distclean	- execute the distclean step and exit"
+	echo "This mode (re-)creates the configure script and optionally either just"
+	echo "rebuilds, or rebuilds and installs into a DESTDIR, or makes the requested"
+	echo "project targets. Note that the 'make' actions do not involve clearing and"
+	echo "reconfiguring the build area. For output clarity you can avoid the parallel"
+	echo "pre-build step with 'export NOPARMAKE=Y' or '--noparmake' flag, while the"
+	echo "'--debug-makefile' flag quickly enables several options at once, including"
+	echo "verbosity, -Werror, and enforced sequential builds to trace make failures."
+	echo ""
+	echo "Some special uses without further parameters:"
+	echo "Usage: $0 distcheck"
+	echo "		- execute the distclean, configure and make distcheck"
+	echo "Usage: $0 configure"
+	echo "		- execute the distclean and configure step and exit"
+	echo "Usage: $0 distclean"
+	echo "		- execute the distclean step and exit"
 }
 
 showGitFlags() {
@@ -316,7 +340,8 @@ showBuilderFlags() {
 "	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
-	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)"
+	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)
+	WARN_FATAL:		$WARN_FATAL"
 	[ -n "$CFLAGS" ] && echo \
 "	 CFLAGS (the C compiler):	$CFLAGS"
 	[ -n "$CXXFLAGS" ] && echo \
@@ -347,6 +372,10 @@ while [ $# -gt 0 ]; do
 	case "$1" in
 	    --warnless-unused)
 		WARNLESS_UNUSED=yes
+		shift
+		;;
+	    -Werror|--warn-fatal)
+		WARN_FATAL=yes
 		shift
 		;;
 	    --noparmake|--disable-parallel-make)
@@ -390,6 +419,7 @@ while [ $# -gt 0 ]; do
 		SHOW_BUILDER_FLAGS=yes
 		SHOW_REPOSITORY_METADATA_GIT=yes
 		WARNLESS_UNUSED=yes
+		WARN_FATAL=yes
 		TIME_MAKE=time
 		TIME_CONF=time
 		# Enforce first a sequential build with little verbosity and
@@ -404,6 +434,7 @@ done
 
 ### The flags can be set in environment rather than passed on command line
 [ x"$WARNLESS_UNUSED" = xyes ] && suppressWarningsUnused
+[ x"$WARN_FATAL" = xyes ] && makeWarningsFatal
 
 ### This is the last flag-reaction in the stack of such
 [ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"

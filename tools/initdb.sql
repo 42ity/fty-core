@@ -457,7 +457,8 @@ SELECT  v.id,
         v.id_subkey,
         v.value,
         v.timestamp,
-        sk.scale
+        sk.scale,
+        dd.name
 FROM    v_bios_client_info_measurements v
         INNER JOIN v_bios_measurements_lastdate grp 
               ON v.id_key = grp.id_key AND
@@ -465,8 +466,11 @@ FROM    v_bios_client_info_measurements v
                  v.timestamp = grp.maxdate  AND
                  v.id_discovered_device = grp.id_discovered_device
         INNER JOIN t_bios_measurement_subtypes sk
-                ON v.id_subkey = sk.id AND
-		   v.id_key = sk.id_type;
+              ON v.id_subkey = sk.id AND
+                 v.id_key = sk.id_type
+        INNER JOIN v_bios_discovered_device dd
+              ON v.id_discovered_device = dd.id
+        ;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
 SELECT v1.id_asset_element, 
@@ -516,6 +520,7 @@ INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3,
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3, "output.L1", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "outlet", -1);
 /* temperature */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
 /* load */
