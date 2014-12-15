@@ -156,7 +156,6 @@ if anything is needed to be done here.
 -> configure.ac -- replace "echo" with appropriate "AC_..." message macros
 
 ==== builder.sh script ====
--> suggest a way to pass custom options to configure (one big token?)
 -> use "builder make" from CI scripts instead of their inferior "make" calls
 
 
