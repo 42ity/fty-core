@@ -124,7 +124,7 @@ cxxtools::split(",", arg2, std::back_inserter(requestedParams));
 for(std::string &param: requestedParams) {
     if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
 </%cpp>
-{"error":"bad_input", "invalid parameter" }
+{"error":"bad_input", "msg":"invalid parameter" }
 <%cpp>
       return HTTP_BAD_REQUEST;
     }
