@@ -5,7 +5,7 @@ AC_INIT([core], [0.1])
 AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile docker/Makefile])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -14,6 +14,25 @@ LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
+
+# the default value may be revised, so we have two layers of conditionals here
+ENABLE_DOCKER_SUPPORT=1
+AC_ARG_ENABLE(docker-support,
+	[  --enable-docker-support   configure Makefile to deliver Docker helpers],
+	[AS_IF( [test "x$enable_docker_support" = "xyes"],
+		[ENABLE_DOCKER_SUPPORT=1],
+		[test "x$enable_docker_support" = "xno"],
+		[ENABLE_DOCKER_SUPPORT=0])])
+# value for both Makefile conditionals as well as the AM_COND_IF macro below
+AM_CONDITIONAL([ENABLE_DOCKER_SUPPORT],
+	[test x"$ENABLE_DOCKER_SUPPORT" != x0])
+AM_COND_IF([ENABLE_DOCKER_SUPPORT],
+	[AC_MSG_NOTICE([Not enabling Docker support files])],
+	[AC_MSG_NOTICE([Enabling Docker support files])
+	 AC_CONFIG_FILES([docker/Makefile])])
+# a define-flag into config.h just in case some C code would need it later on?
+AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$ENABLE_DOCKER_SUPPORT],
+     [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
 
 # display source/build paths of interest to us
 echo "Value of srcdir...        '$srcdir'"
@@ -251,6 +270,8 @@ Summary:
         asciidoc:                ${ASCIIDOC:-none}
         doxygen:                 ${DOXYGEN:-none}
         ecppc:                   ${ECPPC:-none}
+
+	ENABLE_DOCKER_SUPPORT:   ${ENABLE_DOCKER_SUPPORT}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
