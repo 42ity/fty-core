@@ -42,7 +42,6 @@ PARAMS=("output.current" "output.voltage" "ups.load" "ups.temperature" "outlet.1
 SAMPLES=(
   6 250 42 80  201 203 OB
   5 229 64 103 251 252 OL
-  4 245 50 102 230 230 OB
   3 200 80 -5  201 203 CHRG
 )
 
