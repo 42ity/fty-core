@@ -87,7 +87,7 @@ std::string filter_group;
         // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, (byte) element_id);
+        asset_msg_set_element_id (input_msg,  element_id);
 
     } // from block
 
@@ -136,7 +136,7 @@ std::string filter_group;
     // Call persistence layer
     input_msg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert (input_msg);
-    asset_msg_set_element_id (input_msg, (byte) element_id);
+    asset_msg_set_element_id (input_msg, element_id);
 
 
     } // to block   
@@ -186,7 +186,7 @@ std::string filter_group;
         // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, (byte) element_id);
+        asset_msg_set_element_id (input_msg, element_id);
 
     } // filter_dc block
 
@@ -236,7 +236,7 @@ std::string filter_group;
         // Call persistence layer
         input_msg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, (byte) element_id);
+        asset_msg_set_element_id (input_msg, element_id);
 
     } // filter_group block
 
