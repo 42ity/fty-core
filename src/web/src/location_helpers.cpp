@@ -2,46 +2,12 @@
 #include <cstring>
 #include <exception>
 #include <algorithm>
+#include <list>
+#include <tnt/http.h>
 
 #include "asset_types.h"
-
+#include "asset_msg.h"
 #include "location_helpers.h"
-
-int process_return_location_from (asset_msg_t **message_p, std::string& json) {
-        /*
-    log_open ();
-    log_set_level (LOG_DEBUG);
-
-    assert (message_p);
-    if (message_p == NULL) {
-        return -1;
-    }
-    if (*message_p) {
-        asset_msg_t *message = *message_p;
-        if (message == NULL) {
-            return -1;
-        }
-
-
-        
-
-    }
-    else {
-        log_error ("Pointer to null pointer passed as second argument  'asset_msg_t **message_p'.");
-        return_msg = common_msg_encode_fail (0, 0,"Invalid asset message: Pointer to null pointer passed as second argument.", NULL);
-        assert (return_msg);
-        assert (is_common_msg (return_msg));
-    }
-    assert (return_msg); // safeguard non-NULL return value
-    log_close ();
-    */
-    return true;    
-}
-
-bool build_return_location_from (asset_msg_t *message, std::string& json) {
-        return true;
-}
-
 
 // Note: in the future, if more than one operation requires parsing these strings on input,
 //       we should consider moving this to general helpers.cpp file and rewrite these fun-
@@ -70,6 +36,103 @@ int element_id (const std::string& from, int& element_id) {
     return 0;
 }
 
+int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
+    int element_id = asset_msg_element_id(*asset_msg);
+    int type_id = asset_msg_type(*asset_msg);
+    std::string name = asset_msg_name(*asset_msg);
+    std::string type_name = asset_msg_type_name(*asset_msg);
+
+    json += "{"; 
+    json += "\"name\" : \"" + name + "\", ";
+    json += "\"id\" : \"" + std::to_string(element_id) + "\"";
+    if((streq(asset_msg_type_name(*asset_msg), "device")) || 
+       (streq(asset_msg_type_name(*asset_msg), "group"))) {
+        json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
+    }
+
+    std::list<zframe_t *> frames;
+    std::list<std::string> names;
+
+    frames.push_back(asset_msg_get_dcs(*asset_msg));
+    names.push_back("datacenters");
+    frames.push_back(asset_msg_get_rooms(*asset_msg));
+    names.push_back("rooms");
+    frames.push_back(asset_msg_get_rows(*asset_msg));
+    names.push_back("rows");
+    frames.push_back(asset_msg_get_racks(*asset_msg));
+    names.push_back("racks");
+    frames.push_back(asset_msg_get_devices(*asset_msg));
+    names.push_back("devices");
+    frames.push_back(asset_msg_get_grps(*asset_msg));
+    names.push_back("groups");
+
+    asset_msg_destroy(asset_msg);
+
+    bool first_contains = true;
+    zframe_t *it_f = NULL;
+    zmsg_t *zmsg = NULL;
+    asset_msg_t *item = NULL;
+    while(!(frames.empty() || names.empty())) {
+        it_f = frames.front();
+        frames.pop_front();
+        std::string name_it = names.front();
+        names.pop_front();
+        if(it_f == NULL)
+            continue;
+        byte *buffer = zframe_data(it_f);
+        if(buffer == NULL)
+            goto err_cleanup;               
+        zmsg = zmsg_decode(buffer, zframe_size(it_f));
+        if(zmsg == NULL || !zmsg_is (zmsg))
+            goto err_cleanup;               
+        zframe_destroy(&it_f);
+
+        zmsg_t *pop = NULL;
+        bool first = true;
+        while((pop = zmsg_popmsg(zmsg)) != NULL) { // caller owns zmgs_t
+            if(!is_asset_msg (pop))
+                goto err_cleanup;
+            item = asset_msg_decode(&pop); // zmsg_t is freed
+            if(item == NULL)
+                goto err_cleanup;
+            if(first == false) {
+                json += ", ";
+            } else {
+                if(first_contains == false) {
+                    json += ", ";
+                } else {
+                    first_contains = false;
+                    json += ", \"contains\" : { ";
+                }
+                json += "\"" + name_it + "\" : [";
+                first = false;
+            }
+            if(asset_location_r(&item, json) != HTTP_OK)
+                goto err_cleanup;               
+            asset_msg_destroy(&item);
+        }
+        zmsg_destroy(&zmsg);
+
+        if(first == false)
+            json += "]";
+    }
+    if(!first_contains)
+        json += "}"; // level-1 "contains"
+    json += "}"; // json closing curly bracket
+    return HTTP_OK;
+
+err_cleanup:
+    zmsg_destroy (&zmsg);
+    asset_msg_destroy (&item);
+    zframe_destroy(&it_f);
+    while(!(frames.empty())) {
+        it_f = frames.front();
+        frames.pop_front();
+        zframe_destroy(&it_f);
+    }
+    json = "";
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
 
 int asset (const std::string& from) {
     if (from.empty()) {
