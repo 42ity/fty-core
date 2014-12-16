@@ -15,14 +15,12 @@
 #include "asset_types.h"
 #include "assettopology.h"
 </%pre>
-
 <%args>
 std::string from;
 std::string to;
 std::string filter_dc;
 std::string filter_group;
 </%args>
-
 <%cpp>
     log_open ();
     log_set_level (LOG_DEBUG);
@@ -425,4 +423,3 @@ std::string filter_group;
 
 
 </%cpp>
-
