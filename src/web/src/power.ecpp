@@ -369,7 +369,7 @@ std::string filter_group;
             }
 
             if (powers) {
-                if (devices) {
+                if (json != "{") {
                     json.append (", ");
                 }
                 json.append ("\"powerchains\" : [");
