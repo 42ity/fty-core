@@ -9,10 +9,14 @@ optimizations to run a parallelized build when possible, into a
 single script with several short-named methods to quickly run the
 frequently needed building scenarios.
 
-NOTE: Currently the `./configure` script is called uncustomized, without
-any of its usual tweaking command-line parameters. Any environment
-variables which influence its progress and results (like 'CFLAGS')
-should quite pass through from the caller's shell, though.
+Calls to the `./configure` script can be customized with any of its
+usual tweaking command-line parameters, using either the 'configure'
+or 'configure-subdir' methods (with all flags passed verbatim to the
+`configure` script) followed by execution of the 'make*' methods,
+or by use of the 'CONFIGURE_FLAGS' enccar or '--configure-flags'
+option. See below for more details on usage of these possibilities.
+Any environment variables which influence its progress and results
+(like 'CFLAGS') should quite pass through from the caller's shell, too.
 
 As part of development and maintenance of the 'Makefile' and related
 build files, it occasionally happens that something happens differently
