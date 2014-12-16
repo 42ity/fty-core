@@ -58,7 +58,7 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
     if (*message_p) {
         asset_msg_t *message = *message_p;
         assert (message);
-
+//        asset_msg_print(message);
         int id = asset_msg_id (message);
         switch (id) {
             // TODO: Actually some of these messages don't make sense to 
@@ -678,8 +678,6 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
     log_info ("start\n");
 
-    zmsg_t *return_msg = NULL;
-
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  filter_type  = asset_msg_filter_type (getmsg);
     bool     is_recursive = 0;
@@ -1233,6 +1231,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     log_info ("start\n");
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  linktype = INPUT_POWER_CHAIN;
+    log_debug ("element_id = %d\n", element_id);
+    log_debug ("linktype_id = %d\n", linktype);
 
     std::string device_name = "";
     std::string device_type_name = "";
@@ -1256,9 +1256,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         // device name, required
         row[0].get(device_name);
         assert ( device_name != "" ); // database is corrupted
+        log_debug ("selected device name = %s\n", device_name.c_str());
         
         // device type name, would be NULL if it is not a device
         row[1].get(device_type_name);
+        log_debug ("selected device type name = %s\n", device_type_name.c_str());
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
