@@ -151,8 +151,9 @@ if anything is needed to be done here.
 -> generate and deliver another file with the build host info, timestamps, etc
 -> (?) refactor some scripts to become generated with substitution of default
    passwords, user/group names, etc. instead of current hardcoding.
--> SASL MUX path - test not only the socket file, but also container directory
-   (if the sasl service was running and then stopped - it should be around)
+-> SASL MUX path - test the sasl service startup/config files for the mux
+   path or directory that contains it (at least the few predefined variants)
+   as a further fallback option
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
