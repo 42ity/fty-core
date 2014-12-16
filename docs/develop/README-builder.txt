@@ -46,6 +46,9 @@ description)
  * '--warn-fatal' or '-Werror' -- this sets up the compiler to fail when
 it has warnings to report, allowing easier tracing and recompilation of
 not-yet-perfect pieces of source code
+ * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
+to the single-token parameter with values that would be passed to `configure`
+as its set of command-line parameters, should it be invoked in this run
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
@@ -104,10 +107,15 @@ from the relevant (base or "relocated") directory; that is -- do not
 cleanup and reconfigure the build area
 
 Any parameters on the command line after the method specification
-are processed according to the method. Currently this means the
-optional list of 'Makefile' targets for the 'make-samedir',
+are processed according to the method. Currently this means:
+
+ * the optional list of 'Makefile' targets for the 'make-samedir',
 'make-subdir', 'build-samedir', 'build-subdir', 'install-samedir'
-and 'install-subdir' methods, and ignored for others.
+and 'install-subdir' methods;
+ * the optional list of `configure` command-line parameters (one per
+token as is normally done for `configure`) can be passed to 'configure'
+and 'distcheck' methods;
+ * and ignored for others.
 
 
 
@@ -184,6 +192,32 @@ The values default to empty (no measurements), can accept the `time`
 program name or shell builtin, or the yes/no values for simplicity.
 Unknown values are considered as empty with a warning.
 
+
+=== 'CONFIGURE_FLAGS' list of parameters
+Set as an environment variable or overridden by command-line parameter
+'--configure-flags="string"', this variable holds a space-separated list
+of tokens that would be passed to the `configure` command should one be
+called (as part of the 'build*', 'install*', 'configure' or 'distcheck'
+methods).
+
+The following invokations are equivalent:
+----
+:; CONFIGURE_FLAGS='--disable-docker-support --help' ./autogen.sh configure
+:; ./autogen.sh --configure-flags '--disable-docker-support --help' configure
+----
+
+This overrides the variable from environment by the value on command-line,
+in this example resetting it to empty (defaults picked by `configure`):
+----
+:; CONFIGURE_FLAGS='--enable-docker-support' \
+   ./autogen.sh --configure-flags '' configure
+----
+
+Also, this convenient syntax with natural command-line arguments is only
+available to the 'configure' and 'distcheck' methods:
+----
+:; ./autogen.sh configure --disable-docker-support --help
+----
 
 
 === 'BLDARCH' tag
