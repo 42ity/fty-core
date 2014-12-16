@@ -21,42 +21,39 @@ AC_DEFUN_ONCE([BS_CHECK_SASLAUTHD_MUX],
                               [path to saslauthd mux socket \
                                (default is first predefined path found)])],
              [
-                if test "x${withval}" = xyes
-                then
-                  SASLAUTHD_MUX=
-                elif test "x${withval}" = xno
-                then
-	          SASLAUTHD_MUX=
-	        else
-                  SASLAUTHD_MUX=${withval}
-                fi
+                AS_IF(	[test "x${withval}" = xyes], [SASLAUTHD_MUX=""],
+            		[test "x${withval}" = xno],  [SASLAUTHD_MUX=""],
+                	[SASLAUTHD_MUX=${withval}]
+                )
               ],
               [
-	        SASLAUTHD_MUX=
-              ])
+	        SASLAUTHD_MUX=""
+              ]
+  )
 
-  if test -z "${SASLAUTHD_MUX}"; then
-    for sock in /var/run/saslauthd/mux \
-               /var/run/sasl2/mux \
-               ; do
-       if test -S $sock; then
-         SASLAUTHD_MUX=$sock
-	 break
-       fi
+  AS_IF([test -z "${SASLAUTHD_MUX}"],
+    [for sock in \
+	/var/run/saslauthd/mux \
+	/var/run/sasl2/mux \
+    ; do
+       AS_IF([test -S $sock], [SASLAUTHD_MUX=$sock; break])
     done
-  fi
-  if test -z "${SASLAUTHD_MUX}" ; then
-    SASLAUTHD_MUX="/var/run/saslauthd/mux"
+  ])
+
+  AS_IF([test -z "${SASLAUTHD_MUX}"],
+    [SASLAUTHD_MUX="/var/run/saslauthd/mux"
     AC_MSG_NOTICE([
   ----------------------------------------------------------
   Could not detect SASLAUTHD_MUX... defaulting to /var/run/saslauthd/mux
   You can change it using --with-saslauthd-mux
   ----------------------------------------------------------
     ])
-  fi
+  ])
+
   AC_MSG_RESULT(${SASLAUTHD_MUX})
-  if ! test -S "${SASLAUTHD_MUX}" ; then
-    AC_MSG_NOTICE([
+
+  AS_IF([! test -S "${SASLAUTHD_MUX}"],
+    [AC_MSG_NOTICE([
   ----------------------------------------------------------
   NOTE: Can't verify existence of the SASLAUTHD_MUX socket
   file at this moment, just using what was passed explicitly.
@@ -64,6 +61,7 @@ AC_DEFUN_ONCE([BS_CHECK_SASLAUTHD_MUX],
   `ls -lad "`dirname ${SASLAUTHD_MUX}`"`
   ----------------------------------------------------------
     ])
-  fi
+  ])
+
   AC_SUBST(SASLAUTHD_MUX)
 ])

@@ -42,9 +42,9 @@ AC_MSG_NOTICE(AS_HELP_STRING([Value of _curdir_abs:], ['$_curdir_abs']))
 AS_CASE(["x$srcdir"],
     [x/*], [_srcdir_abs="$srcdir"],
     [*],   [_srcdir_abs="$_curdir_abs/$srcdir"
-	    if test -d "$_srcdir_abs" ; then
-		_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
-	    fi])
+	    AS_IF([test -d "$_srcdir_abs"],
+		  [_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"])
+])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
 
 # toolchain
@@ -64,8 +64,9 @@ PACKAGE_GIT_HASH_S=""
 PACKAGE_GIT_HASH_L=""
 PACKAGE_GIT_STATUS=""
 AC_PATH_PROGS([GIT], [git])
-if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
-	AC_MSG_NOTICE([Getting Git workspace attributes...])
+
+AS_IF([test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git"],
+	[AC_MSG_NOTICE([Getting Git workspace attributes...])
 	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
@@ -73,12 +74,11 @@ if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
 	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
 	### We need to convert a multi-line value into a single-line token for C macros or Makefiles
 	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s | sed 's,\$,\\\\n,g' | tr -d '\\n'`"
-	if test $? = 0 -a x"$PACKAGE_GIT_STATUS" != x -a x"$PACKAGE_GIT_STATUS" != 'x\n' ; then
-		HAVE_PACKAGE_GIT=1
-	else
-		PACKAGE_GIT_STATUS=""
-	fi
-fi
+	AS_IF([test $? = 0 -a x"$PACKAGE_GIT_STATUS" != x -a x"$PACKAGE_GIT_STATUS" != 'x\n'],
+		[HAVE_PACKAGE_GIT=1],
+		[PACKAGE_GIT_STATUS=""])
+])
+
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging metadata: Git branch in the build workspace repository])
@@ -92,12 +92,12 @@ HAVE_PACKAGE_BUILD_HOST=0
 PACKAGE_BUILD_HOST_UNAME=""
 PACKAGE_BUILD_HOST_NAME=""
 PACKAGE_BUILD_HOST_OS=""
-if test ! -z "$UNAME" -a -x "$UNAME" ; then
-	AC_MSG_NOTICE([Getting buildhost attributes...])
+AS_IF([test ! -z "$UNAME" -a -x "$UNAME"],
+	[AC_MSG_NOTICE([Getting buildhost attributes...])
 	PACKAGE_BUILD_HOST_UNAME="`$UNAME -a`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_NAME="`$UNAME -n`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v`"	&& HAVE_PACKAGE_BUILD_HOST=1
-fi
+])
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  [$HAVE_PACKAGE_BUILD_HOST],    [Packaging metadata: Are build-host details available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME], ["$PACKAGE_BUILD_HOST_UNAME"], [Packaging metadata: Full 'uname -a' of the building host])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],  ["$PACKAGE_BUILD_HOST_NAME"],  [Packaging metadata: Hostname of the building host])
@@ -106,10 +106,10 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],    ["$PACKAGE_BUILD_HOST_OS"],    [P
 AC_PATH_PROGS([DATE], [gdate date])
 HAVE_PACKAGE_BUILD_TSTAMP=0
 PACKAGE_BUILD_TSTAMP=""
-if test ! -z "$DATE" -a -x "$DATE" ; then
-	AC_MSG_NOTICE([Recording the configuration timestamp...])
+AS_IF([test ! -z "$DATE" -a -x "$DATE"],
+	[AC_MSG_NOTICE([Recording the configuration timestamp...])
 	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s'`"		&& HAVE_PACKAGE_BUILD_TSTAMP=1
-fi
+])
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	[$HAVE_PACKAGE_BUILD_TSTAMP],	[Packaging metadata: Is the build-host timestamp available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Current timestamp at the build host (as of configuration)])
 
@@ -165,14 +165,14 @@ dnl script is in m4
 #doxygen
 AC_PROG_TRY_DOXYGEN
 
-if test -z "$DOXYGEN"; then
-  AC_MSG_NOTICE([
+AS_IF([test -z "$DOXYGEN"],
+  [AC_MSG_NOTICE([
   -----------------------------------------
   No Doxygen program found - continuing
   without Doxygen documentation support.
   -----------------------------------------
   ])
-fi
+])
 myDOXDIR="docs/doxygen"
 mydoxylog="doxylog.txt"
 mysrcDIR="src" 
@@ -205,14 +205,14 @@ AC_PATH_PROGS([ASCIIDOC], [asciidoc])
 dnl TODO  MVY a2x - is it ok?
 AC_PATH_PROGS([A2X], [a2x])
 
-if test -z "$ASCIIDOC" -a -z "$A2X"; then
-  AC_MSG_NOTICE([
+AS_IF([test -z "$ASCIIDOC" -a -z "$A2X"],
+  [AC_MSG_NOTICE([
   -----------------------------------------
   No asciidoc or a2x program found - continuing
   without ASCIIDOC documentation support.
   -----------------------------------------
   ])
-fi
+])
 AM_CONDITIONAL([HAVE_ASCIIDOC],[test -n "$ASCIIDOC"])
 AM_CONDITIONAL([HAVE_A2X],[test -n "$A2X"])
 

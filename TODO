@@ -153,8 +153,6 @@ if anything is needed to be done here.
    passwords, user/group names, etc. instead of current hardcoding.
 -> SASL MUX path - test not only the socket file, but also container directory
    (if the sasl service was running and then stopped - it should be around)
--> configure.ac -- replace shell constructs with appropriate "AC_..." macros
-   (if, case, etc.)
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
