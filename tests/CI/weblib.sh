@@ -58,6 +58,10 @@ api_get_json() {
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
+api_get_jsonv() {
+    api_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.load(sys.stdin); print(s)"
+}
+
 api_post() {
     curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
