@@ -1325,11 +1325,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_dest );
    
             // src_out 
-            uint32_t src_out = 0;
+            uint32_t src_out = 999;
             row[1].get(src_out);
             
             // dest_in
-            uint32_t dest_in = 0;
+            uint32_t dest_in = 999;
             row[2].get(dest_in);
             
             // device_name, required
