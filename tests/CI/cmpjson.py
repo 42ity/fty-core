@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from __future__ import print_function
 
-__doc__ """
+__doc__ = """
 Compare REST API calls output with expected ones - it assumes one JSON document per line to support more results in one file!
 
 Usage: python cmpjson.py file1 file2
