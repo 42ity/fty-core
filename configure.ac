@@ -36,7 +36,8 @@ AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
 
 # display source/build paths of interest to us
 echo "Value of srcdir...        '$srcdir'"
-echo "Value of current dir...   '`pwd`'"
+_curdir_abs="`pwd`"
+echo "Value of current dir...   '$_curdir_abs'"
 case "$srcdir" in
     /*)	_srcdir_abs="$srcdir" ;;
     *)  _srcdir_abs="`pwd`/$srcdir"
@@ -61,14 +62,22 @@ PACKAGE_GIT_BRANCH=""
 PACKAGE_GIT_TSTAMP=""
 PACKAGE_GIT_HASH_S=""
 PACKAGE_GIT_HASH_L=""
+PACKAGE_GIT_STATUS=""
 AC_PATH_PROGS([GIT], [git])
 if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
 	echo "Getting Git workspace attributes..."
 	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	### We need to convert a multi-line value into a single-line token for C macros or Makefiles
+	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s | sed 's,\$,\\\\n,g' | tr -d '\\n'`"
+	if test $? = 0 -a x"$PACKAGE_GIT_STATUS" != x -a x"$PACKAGE_GIT_STATUS" != 'x\n' ; then
+		HAVE_PACKAGE_GIT=1
+	else
+		PACKAGE_GIT_STATUS=""
+	fi
 fi
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
@@ -76,6 +85,7 @@ AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging met
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP], ["$PACKAGE_GIT_TSTAMP"], [Packaging metadata: Git timestamp of the commit used for the build])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S], ["$PACKAGE_GIT_HASH_S"], [Packaging metadata: Git short-hash of the commit used for the build])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L], ["$PACKAGE_GIT_HASH_L"], [Packaging metadata: Git long-hash of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS], ["$PACKAGE_GIT_STATUS"], [Packaging metadata: short list of possible differences against the committed repository])
 
 AC_PATH_PROGS([UNAME], [uname])
 HAVE_PACKAGE_BUILD_HOST=0
@@ -253,6 +263,7 @@ Summary:
         Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
+	Git status (uncommitted files):	'${PACKAGE_GIT_STATUS}'
 
         Build-host 'uname -a':   ${PACKAGE_BUILD_HOST_UNAME}
         Build-host system name:  ${PACKAGE_BUILD_HOST_NAME}
@@ -294,6 +305,7 @@ Summary:
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
 
 	absolute SRC DIR:        ${_srcdir_abs}
+	absolute CUR DIR:        ${_curdir_abs}
 ])
 
 unset _srcdir_abs
