@@ -36,17 +36,16 @@ AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
 
 # display source/build paths of interest to us
 AC_MSG_NOTICE([Determining source code paths:])
-AC_MSG_NOTICE(AS_HELP_STRING([Value of srcdir...], ['$srcdir']))
+AC_MSG_NOTICE(AS_HELP_STRING([Value of srcdir:], ['$srcdir']))
 _curdir_abs="`pwd`"
-AC_MSG_NOTICE(AS_HELP_STRING([Value of current dir...], ['$_curdir_abs']))
-case "$srcdir" in
-    /*)	_srcdir_abs="$srcdir" ;;
-    *)  _srcdir_abs="`pwd`/$srcdir"
-	if test -d "$_srcdir_abs" ; then
-	    _srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
-	fi ;;
-esac
-AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs...], ['$_srcdir_abs']))
+AC_MSG_NOTICE(AS_HELP_STRING([Value of _curdir_abs:], ['$_curdir_abs']))
+AS_CASE(["x$srcdir"],
+    [x/*], [_srcdir_abs="$srcdir"],
+    [*],   [_srcdir_abs="$_curdir_abs/$srcdir"
+	    if test -d "$_srcdir_abs" ; then
+		_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
+	    fi])
+AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
 
 # toolchain
 AC_PROG_CC
