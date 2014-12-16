@@ -45,6 +45,19 @@ Example:
 
 #pragma once
 
+// Trick to avoid conflict with CXXTOOLS logger, currently the BIOS code
+// prefers OUR logger macros
+#if defined(LOG_CXXTOOLS_H) || defined(CXXTOOLS_LOG_CXXTOOLS_H)
+# undef log_error
+# undef log_debug
+# undef log_info
+# undef log_fatal
+# undef log_warn
+#else
+# define LOG_CXXTOOLS_H
+# define CXXTOOLS_LOG_CXXTOOLS_H
+#endif
+
 #include <syslog.h>
 #include <stdarg.h>
 
