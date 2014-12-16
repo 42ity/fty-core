@@ -486,7 +486,7 @@ exampleconf_DATA = tntnet.xml.example
 EXTRA_DIST += $(exampleconf_DATA)
 
 web-test: tntnet.xml bios_web.la
-	${TNTNET} tntnet.xml
+	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
