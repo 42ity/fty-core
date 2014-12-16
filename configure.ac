@@ -172,13 +172,16 @@ AS_IF([test -z "$DOXYGEN"],
   without Doxygen documentation support.
   -----------------------------------------
   ])
-])
+  HAVE_DOXYGEN=0],
+  [HAVE_DOXYGEN=1])
 myDOXDIR="docs/doxygen"
 mydoxylog="doxylog.txt"
 mysrcDIR="src" 
 dnl the directory to search source file that must be included in documentation
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile tools/run-test-doc.sh],[chmod +x tools/run-test-doc.sh])])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile])])
+AC_CONFIG_FILES([tools/run-test-doc.sh],[chmod +x tools/run-test-doc.sh])
+AC_SUBST([HAVE_DOXYGEN])
 AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
@@ -227,6 +230,7 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
   AC_MSG_ERROR([TNTnet not found!])
 ])
 
+# sourced from an m4/*.m4 include file during configure script compilation
 BS_CHECK_SASLAUTHD_MUX
 
 # set flags CFLAGS
