@@ -35,9 +35,10 @@ AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
      [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
 
 # display source/build paths of interest to us
-echo "Value of srcdir...        '$srcdir'"
+AC_MSG_NOTICE([Determining source code paths:])
+AC_MSG_NOTICE(AS_HELP_STRING([Value of srcdir...], ['$srcdir']))
 _curdir_abs="`pwd`"
-echo "Value of current dir...   '$_curdir_abs'"
+AC_MSG_NOTICE(AS_HELP_STRING([Value of current dir...], ['$_curdir_abs']))
 case "$srcdir" in
     /*)	_srcdir_abs="$srcdir" ;;
     *)  _srcdir_abs="`pwd`/$srcdir"
@@ -45,7 +46,7 @@ case "$srcdir" in
 	    _srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
 	fi ;;
 esac
-echo "Value of _srcdir_abs...   '$_srcdir_abs'"
+AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs...], ['$_srcdir_abs']))
 
 # toolchain
 AC_PROG_CC
@@ -65,7 +66,7 @@ PACKAGE_GIT_HASH_L=""
 PACKAGE_GIT_STATUS=""
 AC_PATH_PROGS([GIT], [git])
 if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
-	echo "Getting Git workspace attributes..."
+	AC_MSG_NOTICE([Getting Git workspace attributes...])
 	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
@@ -93,7 +94,7 @@ PACKAGE_BUILD_HOST_UNAME=""
 PACKAGE_BUILD_HOST_NAME=""
 PACKAGE_BUILD_HOST_OS=""
 if test ! -z "$UNAME" -a -x "$UNAME" ; then
-	echo "Getting buildhost attributes..."
+	AC_MSG_NOTICE([Getting buildhost attributes...])
 	PACKAGE_BUILD_HOST_UNAME="`$UNAME -a`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_NAME="`$UNAME -n`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v`"	&& HAVE_PACKAGE_BUILD_HOST=1
@@ -107,7 +108,7 @@ AC_PATH_PROGS([DATE], [gdate date])
 HAVE_PACKAGE_BUILD_TSTAMP=0
 PACKAGE_BUILD_TSTAMP=""
 if test ! -z "$DATE" -a -x "$DATE" ; then
-	echo "Recording the configuration timestamp..."
+	AC_MSG_NOTICE([Recording the configuration timestamp...])
 	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s'`"		&& HAVE_PACKAGE_BUILD_TSTAMP=1
 fi
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	[$HAVE_PACKAGE_BUILD_TSTAMP],	[Packaging metadata: Is the build-host timestamp available?])
