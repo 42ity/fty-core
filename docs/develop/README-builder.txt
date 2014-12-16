@@ -156,6 +156,18 @@ is redefined to contain the full filesystem path of the root of project
 sources.
 
 
+=== 'FORCE_AUTORECONF' flag
+An environment variable that can be passed to `autogen.sh` (or `builder.sh`)
+to enforce regeneration of the `configure` script even if it is not detected
+to be obsolete.
+
+Currently there is no corresponding command-line option equivalent to this.
+
+The accepted values are case-sensitive 'yes' (enforce a rebuild), 
+'no' (don't enforce a rebuild even if it would be detected obsolete --
+but that logic is effectively skipped by this value) and 'auto' (default).
+
+
 === 'MAKE' program
 In some systems, there may be a need to specify an exact `make` program
 (such as `gmake` where non-GNU `make` may be available as a default).
