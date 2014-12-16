@@ -8,7 +8,7 @@
 #include <iostream>
 #include <vector>
 #include <czmq.h>
-#include "log.h"
+#include "defs.h"
 #include "dbpath.h"
 #include "common_msg.h"
 #include "asset_msg.h"
@@ -22,8 +22,6 @@ std::string filter_dc;
 std::string filter_group;
 </%args>
 <%cpp>
-    log_open ();
-    log_set_level (LOG_DEBUG);
     // GET requests only
     if (request.isMethodGET() == false) {
         return HTTP_BAD_REQUEST;
@@ -269,13 +267,19 @@ std::string filter_group;
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
 </%cpp>
         {
-            "error" :   "internal_error",
             "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
             "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
             "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
         }
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    return HTTP_BAD_REQUEST;
+                case(DB_ERROR_NOTFOUND):
+                    return HTTP_NOT_FOUND;
+                default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
         else {
 </%cpp>
@@ -417,7 +421,12 @@ std::string filter_group;
         }
     }
     else {
-        log_error ("TODO Unknown protocol");
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Uknown protocol!"
+            }
+<%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
