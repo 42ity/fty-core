@@ -146,8 +146,6 @@ if anything is needed to be done here.
 -> research and refactor generation of doxygen/ docs, preferably to have
    them really generated (5+ Mbytes worth) in the build directory but
    with relative URL-links to src/* rather than build-host absolute paths
--> instead of the disabled rule for documentation tests, have the script
-   run_test_doc.sh executed but returning 77 ("test skipped" status)
 
 ==== configure and .in processed files ====
 -> generate and deliver a file with the repository info, including output
