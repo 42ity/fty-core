@@ -1,6 +1,19 @@
 #ifndef SRC_INCLUDE_DEFS_H_
 #define SRC_INCLUDE_DEFS_H_
 
+// Trick to avoid conflict with CXXTOOLS logger, currently the BIOS code
+// prefers OUR logger macros
+#if defined(LOG_CXXTOOLS_H) || defined(CXXTOOLS_LOG_CXXTOOLS_H)
+# undef log_error
+# undef log_debug
+# undef log_info
+# undef log_fatal
+# undef log_warn
+#else
+# define LOG_CXXTOOLS_H
+# define CXXTOOLS_LOG_CXXTOOLS_H
+#endif
+
 // marker to tell humans and GCC that the unused parameter is there for some
 // reason (i.e. API compatibility) and compiler should not warn if not used
 #if !defined(UNUSED_PARAM) && defined (__GNUC__)
