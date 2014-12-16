@@ -287,6 +287,8 @@ usage() {
 	echo "		- execute the distclean, configure and make distcheck"
 	echo "Usage: $0 configure [<list of configure flags>]"
 	echo "		- execute the distclean and configure step and exit"
+	echo "Usage: $0 configure-subdir [<list of configure flags>]"
+	echo "		- execute the configure step in a freshly made subdir and exit"
 	echo "Usage: $0 distclean"
 	echo "		- execute the distclean step and exit"
 }
@@ -502,6 +504,15 @@ case "$1" in
 	shift
 	do_make -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@"
+	;;
+    conf-subdir|configure-subdir)
+	shift
+	do_make -k distclean
+	{ echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
+	  rm -rf "${BUILDSUBDIR}"; \
+	  mkdir "${BUILDSUBDIR}" && \
+	  cd "${BUILDSUBDIR}"; } && \
+	verb_run $TIME_CONF "$CHECKOUTDIR/configure" $CONFIGURE_FLAGS "$@"
 	;;
     help|-help|--help|-h)
 	usage
