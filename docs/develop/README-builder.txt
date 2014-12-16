@@ -95,6 +95,10 @@ followed by a `make install`
 a `make install`
  * 'configure' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, and run `./configure`
+ * 'configure-subdir' -- (re)create `configure` if needed, wipe (if
+needed), create and cahange into the subdirectory for the build, and
+run `configure` (possibly with flags); the project can be further
+compiled with `builder.sh make-subdir` from this point
  * 'distcheck' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, run `./configure`
 in the project root directory, and finally run `make distcheck`
