@@ -97,7 +97,8 @@ wait_for_web() {
 
 # do the webserver
   # make clean
-  export BIOS_USER BIOS_PASSWD
+  LC_ALL=C
+  export BIOS_USER BIOS_PASSWD LC_ALL
   make web-test &
   MAKEPID=$!
   wait_for_web
