@@ -79,7 +79,7 @@ asset_manager asset_mgr;
         "humidity",
         "avg_humidity_last_day",
         "avg_humidity_last_week",
-        "avg_humidity_last_month"
+        "avg_humidity_last_month",
 
         "min_humidity_last_day",
         "min_humidity_last_week",
