@@ -8,24 +8,20 @@
 #include <iostream>
 #include <vector>
 #include <czmq.h>
-#include "log.h"
+#include "defs.h"
 #include "dbpath.h"
 #include "common_msg.h"
 #include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
 </%pre>
-
 <%args>
 std::string from;
 std::string to;
 std::string filter_dc;
 std::string filter_group;
 </%args>
-
 <%cpp>
-    log_open ();
-    log_set_level (LOG_DEBUG);
     // GET requests only
     if (request.isMethodGET() == false) {
         return HTTP_BAD_REQUEST;
@@ -271,13 +267,19 @@ std::string filter_group;
         if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
 </%cpp>
         {
-            "error" :   "internal_error",
             "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
             "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
             "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
         }
 <%cpp>
-            return HTTP_INTERNAL_SERVER_ERROR;
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    return HTTP_BAD_REQUEST;
+                case(DB_ERROR_NOTFOUND):
+                    return HTTP_NOT_FOUND;
+                default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
         else {
 </%cpp>
@@ -367,7 +369,7 @@ std::string filter_group;
             }
 
             if (powers) {
-                if (devices) {
+                if (json != "{") {
                     json.append (", ");
                 }
                 json.append ("\"powerchains\" : [");
@@ -389,11 +391,11 @@ std::string filter_group;
                         tokens.push_back(tmp);
                     }
                     json.append("\"src-id\" : \"").append(tokens[1]).append("\",");
-                    if (!tokens[0].empty()) {
+                    if (!(tokens[0].empty() || tokens[2]=="999")) {
                         json.append("\"src-socket\" : ").append(tokens[0]).append(",");
                     }
                     json.append("\"dst-id\" : \"").append(tokens[3]).append("\"");
-                    if (!tokens[2].empty()) {
+                    if (!(tokens[2].empty() || tokens[2]=="999")) {
                         json.append(",\"dst-socket\" : ").append(tokens[2]);
                     }
                     json.append ("}");
@@ -419,10 +421,14 @@ std::string filter_group;
         }
     }
     else {
-        log_error ("TODO Unknown protocol");
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Uknown protocol!"
+            }
+<%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
 
 </%cpp>
-
