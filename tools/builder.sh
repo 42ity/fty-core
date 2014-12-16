@@ -269,6 +269,7 @@ usage() {
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--configure-flags '...'] \ "
+	echo "    [--install-dir 'dirname'] [--build-subdir 'dirname'] \ "
 	echo "    { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir  | make-subdir } [maketargets...]"
 	echo ""
@@ -379,6 +380,15 @@ showBuilderFlags() {
 # fall through on an unknown keyword - considering it a potential option.
 while [ $# -gt 0 ]; do
 	case "$1" in
+	    --build-subdir|--build-dir)
+		BUILDSUBDIR="$2"
+		shift 2
+		;;
+	    --install-dir)
+		DESTDIR="$2"
+		export DESTDIR
+		shift 2
+		;;
 	    --configure-flags)
 		CONFIGURE_FLAGS="$2"
 		shift 2
