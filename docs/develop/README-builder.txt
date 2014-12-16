@@ -50,6 +50,11 @@ description)
  * '--warn-fatal' or '-Werror' -- this sets up the compiler to fail when
 it has warnings to report, allowing easier tracing and recompilation of
 not-yet-perfect pieces of source code
+ * '--build-subdir' -- relative (to source code root) or absolute path
+for a relocated build directory (used if the '*-subdir' methods are called);
+this overrides the 'BUILD_SUBDIR' environment variable or automatic value
+ * '--install-dir' -- this overrides the 'DESTDIR' environment variable
+or automatic value for the 'install*' actions
  * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
 to the single-token parameter with values that would be passed to `configure`
 as its set of command-line parameters, should it be invoked in this run
