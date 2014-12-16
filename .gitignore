@@ -75,6 +75,7 @@ build-*/
 core-*.*/
 
 core-*.*.tar.?z
+core-*.deb
 
 src/utils/messages/json_schemas.h
 tools/dbpath.h
