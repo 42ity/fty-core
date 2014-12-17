@@ -125,6 +125,10 @@ if anything is needed to be done here.
 ==== src/simple ====
 -> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
 
+==== src/include/defs.h ====
+-> should become a file with only declarations; move all definitions to some
+   .c file and link consumers with that, so there are no conflicts if several
+   objects in one program #include this defs.h
 
 === The building infrastructure ===
 
@@ -142,8 +146,6 @@ if anything is needed to be done here.
 -> research and refactor generation of doxygen/ docs, preferably to have
    them really generated (5+ Mbytes worth) in the build directory but
    with relative URL-links to src/* rather than build-host absolute paths
--> instead of the disabled rule for documentation tests, have the script
-   run_test_doc.sh executed but returning 77 ("test skipped" status)
 
 ==== configure and .in processed files ====
 -> generate and deliver a file with the repository info, including output
@@ -151,9 +153,9 @@ if anything is needed to be done here.
 -> generate and deliver another file with the build host info, timestamps, etc
 -> (?) refactor some scripts to become generated with substitution of default
    passwords, user/group names, etc. instead of current hardcoding.
--> SASL MUX path - test not only the socket file, but also container directory
-   (if the sasl service was running and then stopped - it should be around)
--> configure.ac -- replace "echo" with appropriate "AC_..." message macros
+-> SASL MUX path - test the sasl service startup/config files for the mux
+   path or directory that contains it (at least the few predefined variants)
+   as a further fallback option
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls

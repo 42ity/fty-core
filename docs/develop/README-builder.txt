@@ -9,10 +9,14 @@ optimizations to run a parallelized build when possible, into a
 single script with several short-named methods to quickly run the
 frequently needed building scenarios.
 
-NOTE: Currently the `./configure` script is called uncustomized, without
-any of its usual tweaking command-line parameters. Any environment
-variables which influence its progress and results (like 'CFLAGS')
-should quite pass through from the caller's shell, though.
+Calls to the `./configure` script can be customized with any of its
+usual tweaking command-line parameters, using either the 'configure'
+or 'configure-subdir' methods (with all flags passed verbatim to the
+`configure` script) followed by execution of the 'make*' methods,
+or by use of the 'CONFIGURE_FLAGS' enccar or '--configure-flags'
+option. See below for more details on usage of these possibilities.
+Any environment variables which influence its progress and results
+(like 'CFLAGS') should quite pass through from the caller's shell, too.
 
 As part of development and maintenance of the 'Makefile' and related
 build files, it occasionally happens that something happens differently
@@ -46,6 +50,11 @@ description)
  * '--warn-fatal' or '-Werror' -- this sets up the compiler to fail when
 it has warnings to report, allowing easier tracing and recompilation of
 not-yet-perfect pieces of source code
+ * '--build-subdir' -- relative (to source code root) or absolute path
+for a relocated build directory (used if the '*-subdir' methods are called);
+this overrides the 'BUILD_SUBDIR' environment variable or automatic value
+ * '--install-dir' -- this overrides the 'DESTDIR' environment variable
+or automatic value for the 'install*' actions
  * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
 to the single-token parameter with values that would be passed to `configure`
 as its set of command-line parameters, should it be invoked in this run
@@ -95,6 +104,10 @@ followed by a `make install`
 a `make install`
  * 'configure' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, and run `./configure`
+ * 'configure-subdir' -- (re)create `configure` if needed, wipe (if
+needed), create and cahange into the subdirectory for the build, and
+run `configure` (possibly with flags); the project can be further
+compiled with `builder.sh make-subdir` from this point
  * 'distcheck' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, run `./configure`
 in the project root directory, and finally run `make distcheck`
@@ -141,6 +154,18 @@ as specified by 'CHECKOUTDIR' if present, or guessed from the script's
 own path name by default. Then during the script's work the variable
 is redefined to contain the full filesystem path of the root of project
 sources.
+
+
+=== 'FORCE_AUTORECONF' flag
+An environment variable that can be passed to `autogen.sh` (or `builder.sh`)
+to enforce regeneration of the `configure` script even if it is not detected
+to be obsolete.
+
+Currently there is no corresponding command-line option equivalent to this.
+
+The accepted values are case-sensitive 'yes' (enforce a rebuild), 
+'no' (don't enforce a rebuild even if it would be detected obsolete --
+but that logic is effectively skipped by this value) and 'auto' (default).
 
 
 === 'MAKE' program
