@@ -14,6 +14,7 @@
 #include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
+#include "log.h"
 </%pre>
 <%args>
 std::string from;
@@ -293,6 +294,7 @@ std::string filter_group;
     }
     else if (is_asset_msg (return_msg)) {
         asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+
         if (asset_msg == NULL) {
             if (return_msg != NULL) {
                 zmsg_destroy (&return_msg);
@@ -387,15 +389,16 @@ std::string filter_group;
                     std::vector<std::string> tokens;
                     std::istringstream f(item);
                     std::string tmp;    
+                    // "src_socket:src_id:dst_socket:dst_id"
                     while (getline(f, tmp, ':')) {
                         tokens.push_back(tmp);
                     }
                     json.append("\"src-id\" : \"").append(tokens[1]).append("\",");
-                    if (!(tokens[0].empty() || tokens[2]=="999")) {
+                    if (tokens[0].compare("999") != 0) {
                         json.append("\"src-socket\" : ").append(tokens[0]).append(",");
                     }
                     json.append("\"dst-id\" : \"").append(tokens[3]).append("\"");
-                    if (!(tokens[2].empty() || tokens[2]=="999")) {
+                    if (tokens[2].compare("999") != 0) {
                         json.append(",\"dst-socket\" : ").append(tokens[2]);
                     }
                     json.append ("}");
