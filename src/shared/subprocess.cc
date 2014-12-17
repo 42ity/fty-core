@@ -82,7 +82,7 @@ std::string SubProcess::argvString() const
 bool SubProcess::run() {
 
     // do nothing if some process has been already started
-    if (_outpair[0] != -1) {
+    if (_state != SubProcessState::NOT_STARTED) {
         return true;
     }
 
