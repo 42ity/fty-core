@@ -27,7 +27,7 @@ int valid = VALID_FOR;
 {
     "access_token":"<$ tokens::get_instance()->gen_token(valid) $>",
     "token_type":"bearer",
-    "expires_in":"<$ valid $>",
+    "expires_in":<$ valid $>
 }
 % } else {
 {
