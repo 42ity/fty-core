@@ -18,6 +18,8 @@ Usage:
     test-nmap-list-scan.py path/to/main/daemon's/cwd
 """
 
+from __future__ import print_function
+
 import time
 import io
 import collections
@@ -134,11 +136,11 @@ def compare(nmap, dbres):
 try:
     DAEMON_CWD=sys.argv[1]
 except IndexError:
-    print("FATAL: expects path to deamon's working directory")
+    print("FATAL: expects path to deamon's working directory", file=sys.stderr)
     sys.exit(1)
 
 if not os.path.isdir(DAEMON_CWD):
-    print("FATAL: given daemon dir '%s' does not exists or not a directory" % DAEMON_CWD)
+    print("FATAL: given daemon dir '%s' does not exists or not a directory" % DAEMON_CWD, file=sys.stderr)
     sys.exit(1)
 
 db = connect_to_db()
@@ -146,6 +148,7 @@ networks = []
 for i in range(10):
     networks = db_read_ip_to_scan(db)
     if networks == []:
+        print("[INFO]: trying to read list of networks from database, sleep %d seconds" % (i+1), file=sys.stderr)
         time.sleep(i+1)
         continue
     break
@@ -157,13 +160,13 @@ for i in range(10):
     netfiles = glob.glob(DAEMON_CWD + "/nmap-defaultlistscan-*.xml")
     if len(netfiles) == len(networks):
         break
+    print("[INFO]: trying to read dump files from driver-nmap" % (i+1), file=sys.stderr)
     time.sleep(i+1)
 
-assert len(netfiles) == len(networks), "02-check-netfiles: FATAL length of network does not match found files"
+assert len(netfiles) == len(networks), "02-check-netfiles: FATAL length of network does not match found files, did you use BIOS_DEBUG=1?"
 
 nmapres = list_scanx(netfiles)
 
 dbres = db_read_discovered_ip(db)
 ldf = compare(nmapres, dbres)
-assert ldf == (set(), set()), "03-list-scan-compare: output of db and nmap does not match, '%s', did you run it in stable network?" % repr(ldf)
-
+assert ldf == (set(), set()), "03-list-scan-compare: output of db and nmap does not match, '%s'" % repr(ldf)
