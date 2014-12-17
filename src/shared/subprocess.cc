@@ -43,10 +43,10 @@ SubProcess::SubProcess(Argv cxx_argv) :
     _return_code(-1),
     _core_dumped(false)
 {
-    _outpair[0] = -1;
-    _outpair[1] = -1;
-    _errpair[0] = -1;
-    _errpair[1] = -1;
+    _outpair[0] = PIPE_DEFAULT;
+    _outpair[1] = PIPE_DEFAULT;
+    _errpair[0] = PIPE_DEFAULT;
+    _errpair[1] = PIPE_DEFAULT;
 }
 
 SubProcess::~SubProcess() {

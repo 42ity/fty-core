@@ -80,6 +80,7 @@ class SubProcess {
     public:
        
         static const int codeRunning = INT_MIN;
+        static const int PIPE_DEFAULT = -1;
 
         // \brief construct instance
         //
