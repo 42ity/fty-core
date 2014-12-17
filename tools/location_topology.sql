@@ -1,3 +1,4 @@
+/* When modifying this data set, please keep in mind that you might need to modify REST API & DB topology tests as well */
 USE box_utf8;
 
 /* t_bios_asset_element_type */
