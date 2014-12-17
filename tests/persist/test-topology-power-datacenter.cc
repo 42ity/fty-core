@@ -34,14 +34,14 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5087:0:5081"); 
-    spowers.insert ("0:5087:0:5082"); 
-    spowers.insert ("0:5081:0:5083"); 
-    spowers.insert ("0:5082:0:5084"); 
-    spowers.insert ("0:5083:0:5085"); 
-    spowers.insert ("0:5083:0:5086"); 
-    spowers.insert ("0:5084:0:5085"); 
-    spowers.insert ("0:5084:0:5086"); 
+    spowers.insert ("999:5087:999:5081"); 
+    spowers.insert ("999:5087:999:5082"); 
+    spowers.insert ("999:5081:999:5083"); 
+    spowers.insert ("999:5082:999:5084"); 
+    spowers.insert ("999:5083:999:5085"); 
+    spowers.insert ("999:5083:999:5086"); 
+    spowers.insert ("999:5084:999:5085"); 
+    spowers.insert ("999:5084:999:5086"); 
     
     zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
     assert ( retTopology );
