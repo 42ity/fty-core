@@ -1,3 +1,4 @@
+/* When modifying this data set, please keep in mind that you might need to modify REST API & DB power tests as well */
 use box_utf8;
 
 insert into t_bios_asset_element ( id_asset_element , name   , id_type , id_parent ) values (5000, "serv2", 6 , NULL); 

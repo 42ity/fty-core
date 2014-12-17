@@ -1,0 +1,1 @@
+{"devices":[{"name":"UPSFROM5","id":"5028","type":"ups"},{"name":"SINK8","id":"5031","type":"sink"},{"name":"SINK9","id":"5032","type":"sink"},{"name":"SINK10","id":"5033","type":"sink"}],"powerchains":[{"src-id":"5028","src-socket":4,"dst-id":"5033"},{"src-id":"5028","dst-id":"5032"},{"src-id":"5028","dst-id":"5031","dst-socket":3}]}

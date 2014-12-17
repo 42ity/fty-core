@@ -61,7 +61,6 @@ print_result $?
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
-
 [ "`api_get "/topology/power?from=x&to=y" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
@@ -81,4 +80,19 @@ print_result $?
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
 
+[ "`api_get "/topology/power?from=5019" | \
+                    grep "HTTP/1.1 404 Not Found"`" ]
+print_result $?
+
+[ "`api_get "/topology/power?from=4998" | \
+                    grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
+
+[ "`api_get "/topology/power?to=5019" | \
+                    grep "HTTP/1.1 404 Not Found"`" ]
+print_result $?
+
+[ "`api_get "/topology/power?to=4998" | \
+                    grep "HTTP/1.1 400 Bad Request"`" ]
+print_result $?
 
