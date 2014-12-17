@@ -393,3 +393,27 @@ TEST_CASE("subprocess-que", "[subprocess][processque]") {
 
 }
 
+TEST_CASE("subprocess-no-pipe", "[subprocess][fd]") {
+    std::vector<std::string> argv{"/usr/bin/printf", "the-test\n"};
+    char buf[1023];
+    ssize_t ret;
+    bool bret;
+
+    SubProcess proc(argv, false, false);
+    bret = proc.run();
+    CHECK(bret);
+    ret = proc.wait();
+
+    //nothing on stderr -2 is invalid fd
+    memset((void*) buf, '\0', 1023);
+    ret = read(proc.getStderr(), (void*) buf, 1023);
+    CHECK(strlen(buf) == 0);
+    CHECK(ret == -1);
+
+    //nothing on stdout -2 is invalid fd
+    memset((void*) buf, '\0', 1023);
+    ret = read(proc.getStdout(), (void*) buf, 1023);
+    CHECK(strlen(buf) == 0);
+    CHECK(ret == -1);
+
+}
