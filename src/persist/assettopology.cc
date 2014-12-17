@@ -680,7 +680,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  filter_type  = asset_msg_filter_type (getmsg);
-    bool     is_recursive = 0;
+    bool     is_recursive = false;
     uint16_t type_id      = 0;
 
     // element_id == 0 => we are looking for unlocated elements;
@@ -704,7 +704,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         // if looking for a lockated elements
         try{
-            tntdb::Connection conn = tntdb::connectCached(url); 
+            tntdb::Connection conn = tntdb::connectCached(url);
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "    v.name, v1.name as dtype_name, v.id_type"
@@ -721,9 +721,10 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( strcmp(name.c_str(), "") );
 
             row[1].get(dtype_name);
-
+            // assert (dtype_name != "" if type_id == DEVICE
             row[2].get(type_id);
             assert ( type_id );
+   
         }
         catch (const tntdb::NotFound &e) {
             // element with specified id was not found
@@ -737,7 +738,49 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
         }
+
+        if ( type_id == asset_type::GROUP ) 
+        {
+            try{
+                tntdb::Connection conn = tntdb::connectCached(url);
+                tntdb::Statement st = conn.prepareCached(
+                    " SELECT"
+                    "    v.value"
+                    " FROM"
+                    "    t_bios_asset_ext_attributes v"
+                    " WHERE v.id_asset_element = :elementid AND "
+                    "       v.keytag = 'type'"
+                );
+                log_debug("element_id = %d\n", element_id);
+                
+                tntdb::Row row = st.setInt("elementid", element_id).
+
+                                    selectRow();
+    
+                log_debug("element_id = %d\n", element_id);
+                row[0].get(dtype_name);
+                assert ( dtype_name.compare("") != 0 ) ; 
+            }
+            catch (const tntdb::NotFound &e) {
+                // atribute type for the group was not specified, 
+                // but it is a mandatory
+                log_warning ("abort type for the group was not specified"
+                                " err = '%s'\n", e.what());
+                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_DBCORRUPTED, 
+                                                        e.what(), NULL);
+            }
+            catch (const std::exception &e) {
+                // internal error in database
+                log_warning ("abort select element with err = '%s'\n", e.what());
+                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+            }
+
+        }
+
     }
+
+
     // Select sub elements by types
 
     // Select datacenters
@@ -767,7 +810,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select rows
     // only for rooms, datacenters, unlockated
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER)  ||
+    if ( ( ( type_id == asset_type::DATACENTER )  ||
            ( type_id == asset_type::ROOM )       || 
            ( element_id == 0 ) ) &&
          ( 4 <= filter_type ) )
@@ -859,11 +902,21 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_grps\n");
     }
+    
+    zmsg_t* el = NULL; 
     log_info ("creating return element\n");
-    zmsg_t* el = asset_msg_encode_return_location_from 
-                       (element_id, type_id, name.c_str(), 
-                        dtype_name.c_str(), dcs, rooms, rows, 
-                        racks, devices, grps);
+    if ( type_id == asset_type::GROUP )
+    {
+        el = select_group_elements (url, element_id, type_id, name.c_str(), 
+                                    dtype_name.c_str(), filter_type);
+    }
+    else
+    {
+        el = asset_msg_encode_return_location_from 
+                    (element_id, type_id, name.c_str(), 
+                     dtype_name.c_str(), dcs, rooms, rows, 
+                     racks, devices, grps);
+    }
     log_info ("end normal\n");
     return el;
 }
