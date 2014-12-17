@@ -50,15 +50,47 @@ if [ ! -d ./config ]; then
     fi
 fi
 
-_OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
-if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
-    echo "autogen.sh: info: configure does not exist or is older than configure.ac - rebuilding."
-    autoreconf --install --force --verbose -I config
-    if [ $? -ne 0 ]; then
-	echo "autogen.sh: error: autoreconf exited with status $?" 1>&2
-	exit 1
+[ x"$FORCE_AUTORECONF" != xyes -a x"$FORCE_AUTORECONF" != xno ] && \
+    FORCE_AUTORECONF=auto
+
+if [ x"$FORCE_AUTORECONF" = xauto -a ! -s "./configure" ]; then
+    echo "autogen.sh: info: configure does not exist."
+    FORCE_AUTORECONF=yes
+fi
+
+if [ x"$FORCE_AUTORECONF" = xauto ]; then
+    _OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
+    if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
+	echo "autogen.sh: info: configure is older than configure.ac."
+	FORCE_AUTORECONF=yes
     fi
 fi
+
+if [ x"$FORCE_AUTORECONF" = xauto -a -s "./configure" ]; then
+    _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
+    if [ $? != 0 -o x"$_OUT" != x ]; then
+	echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
+	echo "$_OUT"
+	FORCE_AUTORECONF=yes
+    fi
+fi
+
+case x"$FORCE_AUTORECONF" in
+xyes)
+    echo "autogen.sh: info: rebuilding the configure script."
+    autoreconf --install --force --verbose -I config
+    RES=$?
+    if [ $RES -ne 0 ]; then
+	echo "autogen.sh: error: autoreconf exited with status $RES" 1>&2
+	exit 1
+    fi
+    ;;
+xno)
+    echo "autogen.sh: info: not rebuilding the configure script due to explicit request (not checked if it is obsolete)."
+    ;;
+esac
+
+chmod +x "./configure"
 
 if [ ! -s "./configure" -o ! -x "./configure" ]; then
     echo "autogen.sh: error: configure does not exist or is not executable!" 1>&2

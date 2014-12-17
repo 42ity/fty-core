@@ -269,10 +269,12 @@ usage() {
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--configure-flags '...'] \ "
-	echo "    [ { build-samedir | build-subdir | install-samedir | install-subdir \ "
-	echo "      | make-samedir  | make-subdir } [maketargets...] ]"
+	echo "    [--install-dir 'dirname'] [--build-subdir 'dirname'] \ "
+	echo "    { build-samedir | build-subdir | install-samedir | install-subdir \ "
+	echo "      | make-samedir  | make-subdir } [maketargets...]"
 	echo ""
-	echo "Usage: $0 [--debug-makefile] [ { build*|install*|make* } [maketargets...] ]"
+	echo "Usage: $0 [--debug-makefile] \ "
+	echo "           { build*|install*|make*|conf* } [maketargets...]"
 	echo ""
 	echo "These modes (re-)create the configure script and optionally either just"
 	echo "rebuild, or rebuild and install into a DESTDIR, or make the requested"
@@ -287,6 +289,8 @@ usage() {
 	echo "		- execute the distclean, configure and make distcheck"
 	echo "Usage: $0 configure [<list of configure flags>]"
 	echo "		- execute the distclean and configure step and exit"
+	echo "Usage: $0 configure-subdir [<list of configure flags>]"
+	echo "		- execute the configure step in a freshly made subdir and exit"
 	echo "Usage: $0 distclean"
 	echo "		- execute the distclean step and exit"
 }
@@ -376,6 +380,15 @@ showBuilderFlags() {
 # fall through on an unknown keyword - considering it a potential option.
 while [ $# -gt 0 ]; do
 	case "$1" in
+	    --build-subdir|--build-dir)
+		BUILDSUBDIR="$2"
+		shift 2
+		;;
+	    --install-dir)
+		DESTDIR="$2"
+		export DESTDIR
+		shift 2
+		;;
 	    --configure-flags)
 		CONFIGURE_FLAGS="$2"
 		shift 2
@@ -502,6 +515,15 @@ case "$1" in
 	shift
 	do_make -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@"
+	;;
+    conf-subdir|configure-subdir)
+	shift
+	do_make -k distclean
+	{ echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
+	  rm -rf "${BUILDSUBDIR}"; \
+	  mkdir "${BUILDSUBDIR}" && \
+	  cd "${BUILDSUBDIR}"; } && \
+	verb_run $TIME_CONF "$CHECKOUTDIR/configure" $CONFIGURE_FLAGS "$@"
 	;;
     help|-help|--help|-h)
 	usage

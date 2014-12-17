@@ -139,13 +139,8 @@ DISTCLEANFILES +=		docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
-if HAVE_DOXYGEN
-@echo "WARNING: Source code documentation was built with 'doxygen', but the check with 'tools/run-test-doc.sh' is skipped since it is known that it currently fails!" >&2
-#check_SCRIPTS += tools/run-test-doc.sh
-#else !HAVE_DOXYGEN
-# AQU note: this would need a target to work...
-#@echo "Source code documentation check not available since 'doxygen' was not found."
-endif
+# Tester for the doxygen output sanity
+check_SCRIPTS += tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST += tools/run-test.sh
