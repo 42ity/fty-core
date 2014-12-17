@@ -545,7 +545,6 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 # Component lists (populated manually, reprocessed into MAPPED_* lists);
 # Note that these lists reference files tracked as part of the project
 # sources (not auto-copied, named or generated as in some lists above):
-#  BASE_DOCS_TXT (obsol?)
 #  BASE_DOCS_ASCIIDOC and BASE_DOCS_PLAINTEXT - the text files without
 #	extension, saved in the root of project sources. These variables
 #	are used to populate the relevant MAPPED_TXT_DOCS_* lists.
@@ -601,21 +600,6 @@ TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
 # below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
 TXT_DOCS_PLAINTEXT =
 
-# Note that the installation targets are similarly named files with
-# an added ".txt" extension in the "docs/develop" subdirectory
-# Note these should have paths relative to project root dir.
-#BASE_DOCS_TXT = 	$(BASE_DOCS_PLAINTEXT:%=$(myDEVDOCDIR)/%.txt)
-#BASE_DOCS_TXT +=	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.txt)
-
-# These are also redistributed into the build area...
-#EXTRA_DIST +=		$(TXT_DOCS_ASCIIDOC)
-#EXTRA_DIST +=		$(BASE_DOCS_PLAINTEXT)
-#EXTRA_DIST +=		$(BASE_DOCS_ASCIIDOC)
-
-# As these files are "generated" (copied in this case),
-# we may want a way to kill them from build area)
-#DISTCLEANFILES +=	$(BASE_DOCS_TXT)
-
 
 #----------------------------------------------------------------------
 #  List of source texts dispersed in the code with automated targeting
@@ -626,12 +610,6 @@ TXT_DOCS_PLAINTEXT =
 # copied into "docs/develop"), and also maybe compiled into HTML
 # (as in case of the _ASCIIDOC list).
 # Filenames here should not have spaces and should have the '.txt' suffix.
-
-# TODO: The makefile could actually be simplified by automated addtion
-# of the files listed in variables above to the pattern below, so many
-# explicit rules and dependencies listed further below can be cut away.
-# After all, conversion rules are known and stable: same=same for one
-# group, and name = subdir/name.txt for another...
 
 MAPPED_TXT_DOCS_PLAINTEXT = \
 	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
@@ -646,17 +624,16 @@ MAPPED_TXT_DOCS_ASCIIDOC += \
 	docker/README:$(myDEVDOCDIR)/README-docker.txt
 endif
 
-
+#################################################################
+# Items below are intended for automatic generation and appendage
+#################################################################
 # Historically some original docs have *.txt names and some don't
 # but we solve it by having a target to ensure presence of *.txt
 # copies now for all needed files in the same docs directory
 # See the MAPPED_TXT_DOCS_ASCIIDOC parsing around this Makefile.
 # Here we predefine the HTMLS_ASCIIDOC list as anything that is
 # not converted from the MAPPED_TXT_DOCS_ASCIIDOC list, so empty.
-
 HTMLS_ASCIIDOC =
-#HTMLS_ASCIIDOC +=	$(TXT_DOCS_ASCIIDOC:%.txt=%.html)
-#HTMLS_ASCIIDOC +=	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.html)
 
 # Ultimate list of HTMLs from generally many sources (except doxygen,
 # since that list of targets is not known in advance). Predefined (and
@@ -684,8 +661,6 @@ develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
 # Like above, this list is initially empty (or maybe explicit later on)
 # and is appended by some macros below.
 develdoc_DATA =
-#develdoc_DATA +=	$(TXT_DOCS_ASCIIDOC)
-#develdoc_DATA +=	$(BASE_DOCS_TXT)
 
 ###----------------------------------------------------------------------
 ###   Magic macros to expand the patterns for text to text file copying
@@ -848,22 +823,9 @@ clean-docs: clean-man clean-doxygen clean-html clean-txt
 # want to deliver them to common docs/devel subdirectory in install.
 #----------------------------------------------------------------------
 
-# TODO: The dependencies for TXT and HTML-asciidocs below as they are
-# implemented now, actually define several files as the rule target,
-# then parsed with percent-tags, and become several dependencies in
-# the end. So a requested rebuild of one file actually causes attempts
-# to rebuild/recopy all of the source texts of the relevant type.
-# The TODO is to rewrite into a foreach() pattern with one target
-# per each file, for correctness.
-
-
 # A copy of TXT_DOCS_ASCIIDOC in the build area is needed for unified
-# rules of asciidoc to html parsing, defined below
+# rules of asciidoc to html parsing, defined below; see MAPPED_* above.
 txt-docs: $(addprefix $(abs_top_builddir)/,$(TEXTS))
-
-# 	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
-#	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)) \
-# $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
 
 # alias for manual typing errors
 docs-txt: txt-docs
@@ -873,14 +835,6 @@ clean-txt: clean-txt-built clean-txt-txt_docs
 clean-txt-built:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TEXTS_BUILT))
 
-#clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
-
-#clean-txt-basedocs:
-#	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
-
-#clean-txt-plaintext:
-#	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT))
-
 # Only clean up the copies in the builddir, if applicable
 # Do not kill the originals in the source tree
 clean-txt-txt_docs:
@@ -889,21 +843,6 @@ clean-txt-txt_docs:
 	    /bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC) $(TXT_DOCS_PLAINTEXT)); \
 	else true; fi
 
-# Copy over the *.txt files into symmetrically named build path,
-# if required and not there (messed up with EXT_DIST)
-#$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
-#	@$(call copy-file,$<,$@)
-
-# This is hardcoded to copy documents from project root directory into
-# the build area's "docs/develop" subdirectory and with ".txt" suffix
-#$(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
-#	@$(call copy-file,$<,$@)
-
-# Fake targets for simple pathnames (not needed for the same-to-same
-# copies like TXT_DOCS_ASCIIDOC)
-#$(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
-
-
 
 #----------------------------------------------------------------------
 #                       asciidoc html generation
@@ -911,24 +850,16 @@ clean-txt-txt_docs:
 
 # Technically we only implement building of HTMLS_ASCIIDOC now.
 # If others appear and are not handled, they will fail to make.
-# That is a good thing by design ;)
+# That is a good thing by design - we'll know to add more logic ;)
 
 
-
-html-docs: txt-docs $(HTMLS)
+html-docs: txt-docs $(addprefix $(abs_top_builddir)/,$(HTMLS))
 
 # alias for manual typing errors
 docs-html: html-docs
 
 clean-html:
 	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS_BUILT))
-
-
-# Fake targets for simple pathnames (not needed for the same-to-same
-# copies like TXT_DOCS_ASCIIDOC)
-#$(HTMLS): $(addprefix $(abs_top_builddir)/,$(HTMLS))
-
-
 
 
 #----------------------------------------------------------------------
