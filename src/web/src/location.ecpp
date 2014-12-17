@@ -19,7 +19,6 @@ std::string to;
 std::string recursive;
 std::string filter;
 </%args>
-
 <%cpp>    
     log_open ();
     log_set_level (LOG_DEBUG);
@@ -321,8 +320,6 @@ std::string filter;
                     json.append ("}]}\n"); 
                 }
                 json.append ("}");
-
-// json
 </%cpp>
     <$$ json $>                
 <%cpp>
@@ -389,6 +386,10 @@ std::string filter;
 
         // element_id
         int element_id = -1;
+        if (from == "none") {
+            element_id = 0;
+        }
+        else {
         try {
             element_id = std::stoi (from);
         } catch (std::out_of_range& e) {
@@ -415,6 +416,7 @@ std::string filter;
             }
 <%cpp>
             return HTTP_BAD_REQUEST;
+        }
         }
 
         // Call persistence layer
@@ -522,9 +524,6 @@ std::string filter;
             log_error ("TODO Unknown protocol");
             return HTTP_INTERNAL_SERVER_ERROR; 
         }
-
-/////////////////////
-
     }   
     else {
         // should never reach here
@@ -536,4 +535,3 @@ std::string filter;
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 </%cpp>
-
