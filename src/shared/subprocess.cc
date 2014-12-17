@@ -36,17 +36,17 @@ char * const * _mk_argv(Argv vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
         
-SubProcess::SubProcess(Argv cxx_argv) :
+SubProcess::SubProcess(Argv cxx_argv, bool stdout_pipe, bool stderr_pipe) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
     _cxx_argv(cxx_argv),
     _return_code(-1),
     _core_dumped(false)
 {
-    _outpair[0] = PIPE_DEFAULT;
-    _outpair[1] = PIPE_DEFAULT;
-    _errpair[0] = PIPE_DEFAULT;
-    _errpair[1] = PIPE_DEFAULT;
+    _outpair[0] = stdout_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
+    _outpair[1] = stdout_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
+    _errpair[0] = stderr_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
+    _errpair[1] = stderr_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
 }
 
 SubProcess::~SubProcess() {
@@ -86,21 +86,24 @@ bool SubProcess::run() {
         return true;
     }
 
-    if (::pipe(_outpair) == -1) {
+    if (_outpair[0] != PIPE_DISABLED && ::pipe(_outpair) == -1) {
         return false;
     }
-    if (::pipe(_errpair) == -1) {
+    if (_errpair[0] != PIPE_DISABLED && ::pipe(_errpair) == -1) {
         return false;
     }
 
     _fork.fork();
     if (_fork.child()) {
 
-        //FIXME: error checking!
-        ::close(_outpair[0]);
-        ::close(_errpair[0]);
-        ::dup2(_outpair[1], STDOUT_FILENO);
-        ::dup2(_errpair[1], STDERR_FILENO);
+        if (_outpair[0] != PIPE_DISABLED) {
+            ::close(_outpair[0]);
+            ::dup2(_outpair[1], STDOUT_FILENO);
+        }
+        if (_errpair[0] != PIPE_DISABLED) {
+            ::close(_errpair[0]);
+            ::dup2(_errpair[1], STDERR_FILENO);
+        }
 
         auto argv = _mk_argv(_cxx_argv);
         if (!argv) {
