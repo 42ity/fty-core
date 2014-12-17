@@ -59,7 +59,7 @@ api_get_json() {
 }
 
 api_get_jsonv() {
-    api_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.load(sys.stdin); print(s)"
+    api_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
 }
 
 api_post() {
