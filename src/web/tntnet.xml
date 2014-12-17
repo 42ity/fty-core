@@ -12,6 +12,10 @@
       <pathinfo>./static/$1</pathinfo>
       <url>^/static/(.*)</url>
     </mapping>
+    <!-- Make sure everybody speaks json from now on -->
+    <mapping>
+      <target>json@bios_web</target>
+    </mapping>
     <!-- We are getting authorized -->
     <mapping>
       <target>auth@bios_web</target>
@@ -21,10 +25,6 @@
     <mapping>
       <target>auth-verify@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
-    </mapping>
-    <!-- Make sure everybody speaks json from now on -->
-    <mapping>
-      <target>json@bios_web</target>
     </mapping>
     <!-- API itself -->
 

@@ -17,11 +17,6 @@ std::string client_id="";
 #endif //VALID_FOR
 
 int valid = VALID_FOR;
-
-reply.setContentType("application/json;charset=UTF-8");
-
-reply.setHeader(tnt::httpheader::cacheControl, "no-store");
-reply.setHeader(tnt::httpheader::pragma, "no-cache");
 </%cpp>
 % if(grant_type != "password") {
 {
