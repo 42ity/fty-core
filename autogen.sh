@@ -75,6 +75,19 @@ if [ x"$FORCE_AUTORECONF" = xauto -a -s "./configure" ]; then
     fi
 fi
 
+if [ x"$FORCE_AUTORECONF" = xauto -a ! -s "./Makefile.in" ]; then
+    echo "autogen.sh: info: Missing Makefile.in"
+    FORCE_AUTORECONF=yes
+fi
+
+if [ x"$FORCE_AUTORECONF" = xauto -a -s "./Makefile.in" ]; then
+    _OUT="`find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
+    if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
+	echo "autogen.sh: info: Makefile.in is older than Makefile.am."
+	FORCE_AUTORECONF=yes
+    fi
+fi
+
 case x"$FORCE_AUTORECONF" in
 xyes)
     echo "autogen.sh: info: rebuilding the configure script."
