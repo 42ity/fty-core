@@ -45,8 +45,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     json += "{"; 
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";
-    if((streq(asset_msg_type_name(*asset_msg), "device")) || 
-       (streq(asset_msg_type_name(*asset_msg), "group"))) {
+    if (type_id == asset_type::DEVICE || type_id == asset_type::GROUP) { 
         json += ", \"type\" : \"" + std::string(asset_msg_type_name(*asset_msg)) + "\"";
     }
 
