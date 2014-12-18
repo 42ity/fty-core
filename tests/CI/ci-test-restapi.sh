@@ -106,7 +106,7 @@ wait_for_web() {
 # do the test
 set +e
 echo "============================================================"
-/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD"
+/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -topology
 RESULT=$?
 echo "============================================================"
 
