@@ -1222,6 +1222,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
     log_info ("start\n");
     uint32_t element_id = asset_msg_element_id (getmsg);
+    log_debug("element_id=%d\n", element_id);
     uint16_t type_id = 0;    
  
     // select additional information about starting device
@@ -1253,6 +1254,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
                                                     e.what(), NULL);
     }
     
+    log_debug("type_id=%d\n", type_id);
     zmsg_t* result = select_parents (url, element_id, type_id);
 
     log_info ("end\n");
