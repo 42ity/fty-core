@@ -50,62 +50,75 @@ if [ ! -d ./config ]; then
     fi
 fi
 
+# This flag changes to yes if some obsolete/missing files are found
+# and unless FORCE_AUTORECONF=no, will trigger an autoreconf/automake
+# For FORCE_AUTORECONF="no" or "auto", we trace all such dependencies
+# to be at least informed of whether changes should be done, anyhow.
+SHOULD_AUTORECONF=no
 [ x"$FORCE_AUTORECONF" != xyes -a x"$FORCE_AUTORECONF" != xno ] && \
     FORCE_AUTORECONF=auto
 
-if [ x"$FORCE_AUTORECONF" = xauto -a ! -s "./configure" ]; then
-    echo "autogen.sh: info: configure does not exist."
-    FORCE_AUTORECONF=yes
-fi
+if [ x"$FORCE_AUTORECONF" != xyes ]; then
+    if [ ! -s "./configure" ]; then
+	echo "autogen.sh: info: configure does not exist."
+	SHOULD_AUTORECONF=yes
+    else
+	_OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
+	if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
+	    echo "autogen.sh: info: configure is older than configure.ac."
+	    SHOULD_AUTORECONF=yes
+	fi
 
-if [ x"$FORCE_AUTORECONF" = xauto ]; then
-    _OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
-    if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
-	echo "autogen.sh: info: configure is older than configure.ac."
-	FORCE_AUTORECONF=yes
-    fi
-fi
-
-if [ x"$FORCE_AUTORECONF" = xauto -a -s "./configure" ]; then
-    _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
-    if [ $? != 0 -o x"$_OUT" != x ]; then
-	echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
-	echo "$_OUT"
-	FORCE_AUTORECONF=yes
-    fi
-fi
-
-[ x"$FORCE_AUTORECONF" = xauto ] && \
-for M_am in `find . -name Makefile.am`; do
-    DIR="`dirname ${M_am}`"
-    if [ x"$FORCE_AUTORECONF" = xauto -a ! -s "$DIR/Makefile.in" ]; then
-	echo "autogen.sh: info: Missing $DIR/Makefile.in"
-	FORCE_AUTORECONF=yes
-    fi
-
-    if [ x"$FORCE_AUTORECONF" = xauto -a -s "$DIR/Makefile.in" ]; then
-	_OUT="`cd "$DIR" && find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
-	if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
-	    echo "autogen.sh: info: $DIR/Makefile.in is older than $DIR/Makefile.am."
-	    FORCE_AUTORECONF=yes
+	if [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ]; then
+	    _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
+	    if [ $? != 0 -o x"$_OUT" != x ]; then
+		echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
+		echo "$_OUT"
+		SHOULD_AUTORECONF=yes
+	    fi
 	fi
     fi
-done
+
+    [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ] && \
+    for M_am in `find . -name Makefile.am`; do
+	DIR="`dirname ${M_am}`"
+	if [ ! -s "$DIR/Makefile.in" ]; then
+	    echo "autogen.sh: info: Missing $DIR/Makefile.in"
+	    SHOULD_AUTORECONF=yes
+	else
+	    _OUT="`cd "$DIR" && find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
+	    if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
+		echo "autogen.sh: info: $DIR/Makefile.in is older than $DIR/Makefile.am."
+		SHOULD_AUTORECONF=yes
+	    fi
+	fi
+    done
+fi
 
 case x"$FORCE_AUTORECONF" in
-xyes)
-    echo "autogen.sh: info: rebuilding the configure script."
+    xauto)
+	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+	    FORCE_AUTORECONF=yes
+	else
+	    echo "autogen.sh: info: no prerequisite changes detected for the configure script or Makefiles."
+	fi
+	;;
+    xno)
+	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+	    echo "autogen.sh: info: not rebuilding the configure script due to explicit request, but prerequisite changes were detected for the configure script or Makefiles." >&2
+	fi # else = don't want and don't have to rebuild configure, noop
+	;;
+esac
+
+if [ x"$FORCE_AUTORECONF" = xyes ]; then
+    echo "autogen.sh: info: rebuilding the configure script and Makefiles."
     autoreconf --install --force --verbose -I config
     RES=$?
     if [ $RES -ne 0 ]; then
 	echo "autogen.sh: error: autoreconf exited with status $RES" 1>&2
 	exit 1
     fi
-    ;;
-xno)
-    echo "autogen.sh: info: not rebuilding the configure script due to explicit request (not checked if it is obsolete)."
-    ;;
-esac
+fi
 
 chmod +x "./configure"
 
