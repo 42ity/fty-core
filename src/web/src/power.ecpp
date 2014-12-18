@@ -14,7 +14,6 @@
 #include "asset_msg.h"
 #include "asset_types.h"
 #include "assettopology.h"
-#include "log.h"
 </%pre>
 <%args>
 std::string from;
