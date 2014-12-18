@@ -135,11 +135,6 @@ if anything is needed to be done here.
 ==== Makefile.am =====
 -> new feature: validate the built binaries and .so libraries that their
    run-time linking dependencies can be satisfied (ldd | grep unresolved)
--> refactor the documentation generation rules into population of the new
-   common MAPPED_* variables introduced recently and kill the extra recipes
--> use foreach() to generate from MAPPED_* lists the dependency lists for
-   copied *.txt and generated *.html files (now "all depend on all", so
-   rules are always triggered)
 -> Generate a docs/devel/index.html with the list of generated HTML and
    unprocessed text files and a link into "doxygen/" and deliver it;
    add a footer with the build information (git, host, timestamps...)

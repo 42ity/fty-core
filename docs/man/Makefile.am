@@ -59,3 +59,7 @@ all-local:
 	@echo "SKIP: Missing 'a2x' program, manpage generation skipped!" >&2
 
 endif
+
+# Needed for automake, remains empty
+clean-local:
+

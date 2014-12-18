@@ -12,6 +12,7 @@ config.h.in~
 confdefs.h
 config.log
 config.status
+conftest.*
 configure
 !configure.ac
 .deps
