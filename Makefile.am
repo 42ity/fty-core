@@ -4,6 +4,12 @@
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
+# http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
+# NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
+# generate a gzipped tar file and other flavors of archive for distribution.
+# Sometimes there are files that must be distributed, but which are not covered
+# in the automatic rules. These files should be listed in the EXTRA_DIST
+# variable. You can mention files from subdirectories in EXTRA_DIST.
 EXTRA_DIST =
 
 bin_PROGRAMS =
@@ -14,6 +20,11 @@ pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
 BUILT_SOURCES =
+# http://www.gnu.org/software/automake/manual/html_node/Clean.html
+# * If make built it, and it is commonly something that one would want to
+#   rebuild (for instance, a .o file), then mostlyclean should delete it.
+# * Otherwise, if make built it, then clean should delete it.
+# * If configure built it, then distclean should delete it.
 CLEANFILES =
 DISTCLEANFILES =
 TESTS =
