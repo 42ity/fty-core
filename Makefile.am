@@ -532,6 +532,8 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 #  HTMLS - list of *.html files (except doxygen) that are delivered by the
 #	project (built via target rules if needed); currently this only
 #	includes HTMLS_ASCIIDOC. Required by "docs-html" target.
+#  CLEAN_TEXTS and CLEAN_HTMLS - list of files generated/copied by dynamic
+#	rules lower in this Makefile, so they can be cleaned up too.
 #
 # Half-manual, half automation:
 #  MAPPED_TXT_DOCS_PLAINTEXT and MAPPED_TXT_DOCS_ASCIIDOC - lists of all
@@ -643,8 +645,8 @@ TEXTS =
 
 # These variables track the compiled/generated/etc. text/html files
 # so they can be removed in *clean requests
-HTMLS_BUILT =
-TEXTS_BUILT =
+CLEAN_HTMLS =
+CLEAN_TEXTS =
 
 ##################################################
 # Define delivery of developer documentation:
@@ -722,7 +724,7 @@ $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
 ### Cleanup in build
 $(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
-$(eval TEXTS_BUILT +=		$(_MAP_DST_REL) )
+$(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
 endef
 
 # Convert the simple lists defined above into the common mapping tables
@@ -767,6 +769,15 @@ $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 # Per dependencies, all the text files should be available in the
 # builddir/docs/develop/*.txt and the *.html will appear nearby
 
+define compile-asciidoc-to-html =
+if HAVE_ASCIIDOC
+	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
+	$(ASCIIDOC) -b html -o $(2) $(1)
+else
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$(1)' -> '$(2)'!" >&2
+endif
+endef
+
 define depend-txt-html =
 $(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
 $(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
@@ -774,20 +785,14 @@ $(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL
 $(eval override _HTML_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_HTML_DST_REL)) )
 
 # Define the dependency and the rule
-if HAVE_ASCIIDOC
 $(_HTML_DST_ABS): $(_MAP_DST_ABS)
-	@test -d "`dirname $$@`" || mkdir -p "`dirname $$@`"
-	$(ASCIIDOC) -b html -o $$@ $$<
+	@$$(call compile-asciidoc-to-html,$$<,$$@)
 
 # Fake dependency for subdir/dist builds
 $(_HTML_DST_REL): $(_HTML_DST_ABS)
 	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
 
-$(eval HTMLS_BUILT +=		$(_HTML_DST_REL) )
-else
-$(_HTML_DST_ABS) $(_HTML_DST_REL):
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$$@'!" >&2
-endif
+$(eval CLEAN_HTMLS +=		$(_HTML_DST_REL) )
 
 $(eval HTMLS_ASCIIDOC +=	$(_HTML_DST_REL) )
 endef
@@ -833,7 +838,7 @@ docs-txt: txt-docs
 clean-txt: clean-txt-built clean-txt-txt_docs
 
 clean-txt-built:
-	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TEXTS_BUILT))
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_TEXTS))
 
 # Only clean up the copies in the builddir, if applicable
 # Do not kill the originals in the source tree
@@ -859,7 +864,7 @@ html-docs: txt-docs $(addprefix $(abs_top_builddir)/,$(HTMLS))
 docs-html: html-docs
 
 clean-html:
-	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS_BUILT))
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_HTMLS))
 
 
 #----------------------------------------------------------------------
