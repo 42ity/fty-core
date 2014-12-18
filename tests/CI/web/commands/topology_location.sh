@@ -115,7 +115,11 @@ print_result $?
 [ "`api_get "/topology/location?from=1234&filter=d&recursive=no" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
 print_result $?
-# More tests to come
+
+[ "`api_get "/topology/location?from=5019" | \
+            grep "HTTP/1.1 404 Not Found"`" ]
+print_result $?
+
 
 
 
