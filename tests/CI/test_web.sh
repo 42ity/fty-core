@@ -28,14 +28,14 @@ TOTAL=0
 
 while [ $# -gt 0 ]; do
     case "$1" in
-	-u|--user)
-	    BIOS_USER="$2"
-	    shift 2
-	    ;;
-	-p|--passwd)
-	    BIOS_PASSWD="$2"
-	    shift 2
-	    ;;
+    -u|--user)
+        BIOS_USER="$2"
+        shift 2
+        ;;
+    -p|--passwd)
+        BIOS_PASSWD="$2"
+        shift 2
+        ;;
     *)
         break
         ;;
@@ -79,9 +79,26 @@ cd "`dirname "$0"`"
 mkdir -p "$LOG_DIR" || exit 4
 CMP="`pwd`/cmpjson.py"
 cd web/commands
-[ "$1" ] || set *
+POSITIVE=""
+NEGATIVE=""
 while [ "$1" ]; do
-    for NAME in *$1*; do
+    if [ -z "`echo "x$1" | grep "^x-"`" ]; then
+        POSITIVE="$POSITIVE $1"
+    else
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`"
+    fi
+    shift
+done
+[ -n "$POSITIVE" ] || POSITIVE="*"
+for i in $POSITIVE; do
+    for NAME in *$i*; do
+    SKIP=""
+    for n in $NEGATIVE; do
+        if expr match $NAME .\*"$n".\* > /dev/null; then
+            SKIP="true"
+        fi
+    done
+    [ -z "$SKIP" ] || continue
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res
