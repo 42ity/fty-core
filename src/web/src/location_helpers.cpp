@@ -42,6 +42,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     std::string name = asset_msg_name(*asset_msg);
     std::string type_name = asset_msg_type_name(*asset_msg);
 
+
     json += "{"; 
     json += "\"name\" : \"" + name + "\", ";
     json += "\"id\" : \"" + std::to_string(element_id) + "\"";

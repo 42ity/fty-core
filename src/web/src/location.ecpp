@@ -101,7 +101,7 @@ std::string filter;
         // Call persistence layer
         asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
         assert (input_msg);
-        asset_msg_set_element_id (input_msg, (byte) element_id);
+        asset_msg_set_element_id (input_msg, element_id);
         
         zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
@@ -284,7 +284,7 @@ std::string filter;
                             }
                             json.append("\"type\" : \"")
                                 .append(std::get<4>(row))
-                                .append("\",\n");
+                                .append("\"\n");
                         }
                         for (int i = 0; i < indent; i++) {
                             json.append ("\t");
@@ -303,15 +303,16 @@ std::string filter;
                             json.append ("\t");
                         }
                         json.append("\"id\" : \"")
-                            .append(std::to_string(std::get<0>(row)));
+                            .append(std::to_string(std::get<0>(row)))
+                            .append("\"");
                         if (!std::get<4>(row).empty()) {
-                            json.append("\",\n");
+                            json.append(",\n");
                             for (int i = 0; i < indent; i++) {
                                 json.append ("\t");
                             }
                             json.append("\"type\" : \"")
                                 .append(std::get<4>(row))
-                                .append("\",\n");
+                                .append("\"\n");
                         } else {
                             json.append("\n");
                         }
