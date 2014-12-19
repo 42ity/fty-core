@@ -734,7 +734,7 @@ $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
 $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
 ### Cleanup in build
-$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
+$(eval CLEANFILES +=		$(_MAP_DST_REL) )
 $(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
 endef
 
@@ -816,7 +816,7 @@ $(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
 if HAVE_ASCIIDOC
 HTMLS +=		$(HTMLS_ASCIIDOC)
 develdoc_DATA +=	$(HTMLS_ASCIIDOC)
-DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
+CLEANFILES +=		$(HTMLS_ASCIIDOC)
 endif
 
 
@@ -937,7 +937,7 @@ endif
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
-DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
+CLEANFILES +=				$(top_builddir)/${myMANDIR}/*.?
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
