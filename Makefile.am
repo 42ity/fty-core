@@ -4,12 +4,16 @@
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
+
 # http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
 # NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
 # generate a gzipped tar file and other flavors of archive for distribution.
 # Sometimes there are files that must be distributed, but which are not covered
 # in the automatic rules. These files should be listed in the EXTRA_DIST
 # variable. You can mention files from subdirectories in EXTRA_DIST.
+# You can also mention a directory in EXTRA_DIST; in this case the entire
+# directory will be recursively copied into the distribution... you can
+# use the dist-hook feature to filter the contents (remove ".svn/" etc).
 EXTRA_DIST =
 
 bin_PROGRAMS =
@@ -27,6 +31,7 @@ BUILT_SOURCES =
 # * If configure built it, then distclean should delete it.
 CLEANFILES =
 DISTCLEANFILES =
+
 TESTS =
 
 # Named by analogy from configure'd myDOXDIR for doxygen
