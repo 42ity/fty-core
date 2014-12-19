@@ -159,6 +159,7 @@
   <!-- <user>tntnet</user> -->
   <!-- <group>tntnet</group> -->
   <!-- <dir>/</dir> -->
+  <!-- <documentRoot>/var/www</documentRoot> -->
   <!-- <chrootdir>/var/safedir</chrootdir> -->
   <!-- <pidfile>/var/run/tntnet.pid</pidfile> -->
   <!-- <daemon>0</daemon> -->
