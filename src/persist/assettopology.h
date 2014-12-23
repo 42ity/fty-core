@@ -93,7 +93,10 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg);
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
  * 
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database (was NULL). 
  * 
@@ -115,8 +118,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  *
  * Can not distinguish multiple links from device B to device C if
  * src_out and dest_in are not specified.
-
- * A single powerchain link is coded as "A:B:C:D" string 
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
@@ -139,7 +142,10 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg);
  * Returns all devices in the group and returns all power links between them.
  * Links that goes outside the group are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
@@ -162,7 +168,10 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
  * Returns all devices in datacenter and all powerlinks between them.
  * Links outside the datacenter are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
@@ -242,7 +251,7 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
                             const char* name, const char* dtype_name);
 
 // ===============================================================
-// Functions for direct interacting with  database
+// Helper functions for direct interacting with  database
 // ===============================================================
 
 /**
@@ -334,6 +343,31 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
 std::pair <std::string, std::string>
     select_element_name_device_tname  ( const char* url, 
                                         uint32_t asset_element_id);
+
+// ===============================================================
+// Helper functions 
+// ===============================================================
+
+/**
+ * \brief Converts a set of device_info_t elements into matryoshka
+ *
+ * \param devices - set of device_info_t elements
+ *
+ * \return zmsg_t - encoded matryoshka of ASSET_MSG_POWERCHAIN_DEVICE messages
+ */
+zmsg_t* convert_powerchain_devices2matryoshka (std::set <device_info_t > const &devices);
+
+/**
+ * \brief Generates an ASSET_MSG_RETURN_POWER message from the given arfuments
+ *
+ * Both argumens would be destroyed.
+ * 
+ * \param devices_msg - a matryoshka msg of ASSET_MSG_POWERCHAIN_DEVICE
+ * \param powers      - a list of powerchains
+ *
+ * \return zmsg_t - encoded ASSET_MSG_RETURN_POWER message
+ */
+zmsg_t* generate_return_power (zmsg_t** devices_msg, zlist_t** powers);
 
 // ===============================================================
 // Function for processing assettopology messages

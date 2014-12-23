@@ -781,7 +781,6 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
 
     }
 
-
     // Select sub elements by types
 
     // Select datacenters
@@ -1310,15 +1309,61 @@ std::pair <std::string, std::string>
 }
 
 /**
+ * \brief Converts a set of device_info_t elements into matryoshka
+ *
+ * \param devices - set of device_info_t elements
+ *
+ * \return zmsg_t - encoded matryoshka of ASSET_MSG_POWERCHAIN_DEVICE messages
+ */
+zmsg_t* convert_powerchain_devices2matryoshka (std::set <device_info_t > const &devices)
+{
+    // tuple: ( id,  device_name, device_type_name )
+    // encode: id, device_type_name, device_name
+    zmsg_t* ret = zmsg_new();
+    for ( auto it = devices.begin(); it != devices.end(); ++it )
+    {
+        auto adevice = *it;
+
+        zmsg_t* el = asset_msg_encode_powerchain_device
+                    (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
+                    (std::get<1>(adevice)).c_str() );
+        int rv = zmsg_addmsg (ret, &el);
+        assert ( rv != -1 );
+        assert ( el == NULL );
+    }
+    return ret;
+}
+
+/**
+ * \brief Generates an ASSET_MSG_RETURN_POWER message from the given arfuments
+ *
+ * Both argumens would be destroyed.
+ * 
+ * \param devices_msg - a matryoshka msg of ASSET_MSG_POWERCHAIN_DEVICE
+ * \param powers      - a list of powerchains
+ *
+ * \return zmsg_t - encoded ASSET_MSG_RETURN_POWER message
+ */
+zmsg_t* generate_return_power (zmsg_t** devices_msg, zlist_t** powers)
+{
+    zframe_t* devices = NULL;
+    int rv = matryoshka2frame (devices_msg, &devices);
+    assert ( rv == 0 );
+    zmsg_t* result = asset_msg_encode_return_power (devices, *powers);
+    zlist_destroy (powers);
+    zframe_destroy (&devices);
+    return result;
+}
+
+/**
  * \brief This function processes the ASSET_MSG_GET_POWER_FROM message
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
  * 
- * A single powerchain link is coded as "A:B:C:D" string 
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C was not srecified in database 
- * (it was NULL).
+ * If A or C is 999 then A or C was not srecified in database (was NULL).
  *
  * Can not distinguish multiple links from device B to device C if
  * src_out and dest_in are not specified.
@@ -1380,7 +1425,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     zlist_set_duplicator (powers, void_dup);
     //      all destination devices are included into "resultdevices"
     std::set< device_info_t > resultdevices;
-    //      start device should be also into the result set
+    //      start device should be included also into the result set
     resultdevices.insert (
         std::make_tuple(element_id, device_name, device_type_name));
     
@@ -1402,6 +1447,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                   setInt("idlinktype", linktype).
                                   select();
         
+        log_debug ("links selected: %d\n", result.size());
         // uint32_t has 10 characters
         // uint16_t has 5 characters
         char buff[30];     // 10+5+5+10
@@ -1455,29 +1501,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    
-    // encode devices into matryoshka
-    zmsg_t* ret = zmsg_new();
-    for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
-    {
-        auto adevice = *it;
-
-    // tuple: ( id,  device_name, device_type_name )
-    // encode: id, device_type_name, device_name
-        zmsg_t* el = asset_msg_encode_powerchain_device
-                    (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
-                    (std::get<1>(adevice)).c_str() );
-        int rv = zmsg_addmsg (ret, &el);
-        assert ( rv != -1 );
-        assert ( el == NULL );
-    }
-
-    zframe_t* devices = NULL;
-    int rv = matryoshka2frame (&ret, &devices);
-    assert ( rv == 0 );
-    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
-    zlist_destroy (&powers);
-    zframe_destroy (&devices);
+    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka(resultdevices);
+    zmsg_t* result = generate_return_power (&devices_msg, &powers);
     log_info ("end normal\n");
     return result;
 }
@@ -1513,12 +1538,14 @@ void print_frame_devices (zframe_t* frame)
  * \brief This function processes the ASSET_MSG_GET_POWER_TO message
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
- * In case of failure returns COMMON_MSG_FAIL.
+ * In case of failure returns the COMMON_MSG_FAIL.
  * 
- * A single powerchain link is coded as "A:B:C:D" string 
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C was not srecified in database 
- * (it was NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ *
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_TO
@@ -1532,8 +1559,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
     log_info ("start\n");
-    uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint8_t  linktype = INPUT_POWER_CHAIN;
+    uint32_t element_id = asset_msg_element_id (getmsg);
+    uint8_t  linktype   = INPUT_POWER_CHAIN;
 
     std::string device_name = "";
     std::string device_type_name = "";
@@ -1567,20 +1594,28 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                             "specified element is not a device", NULL);
     }
 
-    std::set< device_info_t > newdevices, resultdevices;
+    // devices that should be searche for powerlinks
+    // (used for the elimination of duplicated devices and powerlinks)
+    std::set< device_info_t > newdevices;
+    // result set of found devices 
+    std::set< device_info_t > resultdevices;
                                                       
     auto adevice = std::make_tuple(element_id, device_name, device_type_name);
+    // start device should be included also into the result set
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
 
     zlist_t* powers = zlist_new();
     zlist_set_duplicator (powers, void_dup);
 
+    // indicates if we have devices that were not processed yet
     bool ncontinue = true;
     while ( ncontinue )
     {
+        // 1. current element id we are looking powerlinks from
         uint32_t cur_element_id = std::get<0>(adevice);
         
+        // 2. select and process process powerlinks
         try{
             tntdb::Connection conn = tntdb::connectCached(url);
 
@@ -1599,6 +1634,9 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
             tntdb::Result result = st.setInt("id", cur_element_id).
                                       setInt("idlinktype", linktype).
                                       select();
+            
+            log_debug ("for element_id= %d was %d powerlinks selected\n", 
+                                            cur_element_id, result.size());
             // uint32_t has 10 characters
             // uint16_t has 5 characters
             char buff[30];     // 10+5+5+10
@@ -1642,7 +1680,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, 
                                                     dest_in, cur_element_id);
                 zlist_push(powers, buff);
-
+                
+                // add new devices to process
                 newdevices.insert (std::make_tuple(
                         id_asset_element_src, device_name_src, 
                         device_type_name_src));
@@ -1656,8 +1695,10 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
         }
 
-        // find the next dest device 
+        // 3. find the next dest device 
         ncontinue = false;
+        // go through all found devices
+        // and select one that was not yet processed (is not in resultdevices)
         for ( auto it = newdevices.begin(); it != newdevices.end(); ++it )
         {
             adevice = *it;
@@ -1670,27 +1711,9 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 break;
             }
         }
-    }
-    zmsg_t* ret = zmsg_new();
-    for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
-    {
-        adevice = *it;
-
-        zmsg_t* el = asset_msg_encode_powerchain_device
-                    (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
-                    (std::get<1>(adevice)).c_str() );
-        int rv = zmsg_addmsg (ret, &el);
-        assert ( rv != -1 );
-        assert ( el == NULL );
-    }
-    
-    zframe_t* devices = NULL;
-    int rv = matryoshka2frame (&ret, &devices);
-    assert ( rv == 0 );
-    
-    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
-    zlist_destroy (&powers);
-    zframe_destroy (&devices);
+    }   // end of processing one of the new devices
+    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka(resultdevices);
+    zmsg_t* result = generate_return_power (&devices_msg, &powers);
     log_info ("end normal\n");
     return result;
 }
@@ -1704,9 +1727,12 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
  * Returns all devices in the group and returns all power links between them.
  * Links that goes outside the group are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -1868,14 +1894,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-
-    zframe_t* devices = NULL;
-    int rv = matryoshka2frame (&ret, &devices);
-    assert ( rv == 0 );
-    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
-    zlist_destroy  (&powers);
-    zframe_destroy (&devices);
-    zmsg_destroy   (&ret);
+    zmsg_t* result = generate_return_power (&ret, &powers);
     log_info ("end normal\n");
     return result;
 }
@@ -1889,9 +1908,12 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
  * Returns all devices in datacenter and all powerlinks between them.
  * Links outside the datacenter are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url    - the connection to database.
  * \param getmsg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
@@ -2038,14 +2060,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
                                                         e.what(), NULL);
     }
     // powers is ok
-
-    zframe_t* devices = NULL;
-    int rv = matryoshka2frame (&ret, &devices);
-    assert ( rv == 0 );
-    zmsg_t* result = asset_msg_encode_return_power (devices, powers);
-    zlist_destroy  (&powers);
-    zframe_destroy (&devices);
-    zmsg_destroy   (&ret);
+    zmsg_t* result = generate_return_power (&ret, &powers);
     log_info ("end normal\n");
     return result;
 }
