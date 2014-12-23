@@ -490,7 +490,6 @@ zframe_t* select_childs(
         log_debug("rows selected %d\n", result.size());
         int rv = 0;
         zmsg_t* ret = zmsg_new();
-        assert (ret);
         int i = 0;
         for ( auto &row: result )
         {
@@ -761,7 +760,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     
                 log_debug("element_id = %d\n", element_id);
                 row[0].get(dtype_name);
-                assert ( dtype_name.compare("") != 0 ) ; 
+                assert ( !dtype_name.empty() ) ; 
             }
             catch (const tntdb::NotFound &e) {
                 // atribute type for the group was not specified, 
@@ -979,7 +978,6 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id,
 
     zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
-    assert ( zmsg_is (zmsg) );
      
     zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
@@ -1061,7 +1059,6 @@ void print_frame (zframe_t* frame, uint32_t parent_id)
 
     zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
-    assert ( zmsg_is (zmsg) );
      
     zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
@@ -1374,7 +1371,6 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                         NULL);
     }
     zlist_t* powers = zlist_new();
-    assert ( powers );
     zlist_set_duplicator (powers, void_dup);
 
     zframe_t* devices = NULL;
@@ -1423,12 +1419,12 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             // device_name, required
             std::string device_name = "";
             row[3].get(device_name);
-            assert ( device_name != "" );
+            assert ( !device_name.empty() );
 
             // device_type_name, requiured
             std::string device_type_name = "";
             row[4].get(device_type_name);
-            assert ( device_type_name != "" );
+            assert ( !device_type_name.empty() );
 
             log_debug ("for\n");
             log_debug ("asset_element_id_src = %d\n", element_id);
@@ -1456,7 +1452,6 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     }
     
     zmsg_t* ret = zmsg_new();
-    assert ( ret );
     for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
     {
         auto adevice = *it;
@@ -1494,7 +1489,6 @@ void print_frame_devices (zframe_t* frame)
 
     zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
-    assert ( zmsg_is (zmsg) );
      
     zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
@@ -1575,7 +1569,6 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     newdevices.insert (adevice);
 
     zlist_t* powers = zlist_new();
-    assert ( powers );
     zlist_set_duplicator (powers, void_dup);
 
     bool ncontinue = true;
@@ -1623,12 +1616,12 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 // device_name_src, required
                 std::string device_name_src = "";
                 row[3].get(device_name_src);
-                assert ( device_name_src != "" );
+                assert ( !device_name_src.empty() );
     
                 // device_type_name_src, requiured
                 std::string device_type_name_src = "";
                 row[4].get(device_type_name_src);
-                assert ( device_type_name_src != "" );
+                assert ( !device_type_name_src.empty() );
     
                 log_debug ("for\n");
                 log_debug ("asset_element_id_dest = %d\n", cur_element_id);
@@ -1673,7 +1666,6 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
         }
     }
     zmsg_t* ret = zmsg_new();
-    assert ( ret );
     for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
     {
         adevice = *it;
@@ -1727,7 +1719,6 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
 
     // powers
     zlist_t* powers = zlist_new();
-    assert ( powers );
     zlist_set_duplicator (powers, void_dup);
     
     log_info("start select powers\n"); 
@@ -1810,7 +1801,6 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     log_info("start select the devices\n"); 
     // devices
     zmsg_t* ret = zmsg_new();
-    assert ( ret );
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // select is done from pure t_bios_asset_element, 
@@ -1838,12 +1828,12 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             // device_name, required
             std::string device_name = "";
             row[0].get(device_name);
-            assert ( device_name != "" );
+            assert ( !device_name.empty() );
             
             // device_type_name, required 
             std::string device_type_name = "";
             row[1].get(device_type_name);
-            assert ( device_type_name != "" );
+            assert ( !device_type_name.empty() );
 
             // id_asset_element, required
             uint32_t id_asset_element = 0;
@@ -1914,8 +1904,6 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
 
     // devices
     zmsg_t* ret = zmsg_new();
-    assert ( ret );
-
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         tntdb::Statement st = conn.prepareCached(
@@ -1940,12 +1928,12 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             // device_name, required
             std::string device_name = "";
             row[1].get(device_name);
-            assert ( device_name != "" );
+            assert ( !device_name.empty() );
             
             // device_type_name, required 
             std::string device_type_name = "";
             row[2].get(device_type_name);
-            assert ( device_type_name != "" );
+            assert ( !device_type_name.empty() );
 
             log_debug ("for\n");
             log_debug ("device_name = %s\n", device_name.c_str());
@@ -1970,7 +1958,6 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
 
     // powers
     zlist_t* powers = zlist_new();
-    assert ( powers );
     zlist_set_duplicator (powers, void_dup);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
