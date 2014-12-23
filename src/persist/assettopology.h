@@ -79,8 +79,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg);
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
- * (it was NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  * 
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_FROM 
@@ -100,8 +99,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
- * (it was NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_TO
@@ -124,7 +122,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -147,7 +145,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url    - the connection to database.
  * \param getmsg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
@@ -160,7 +158,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
                                     asset_msg_t* getmsg);
 
 // ===============================================================
-// Helper function for testing
+// Helper functions and types for testing
 // ===============================================================
 
 typedef std::set<std::tuple<int,int,std::string,std::string,int,int,std::string,std::string>> edge_lf;
@@ -297,6 +295,29 @@ zframe_t* select_childs(
 zmsg_t* select_parents (const char* url, uint32_t element_id, 
                         uint8_t element_type_id);
 
+/**
+ * \brief Selects a name of the specified asset element, in case of device 
+ * additionally selects device type name.
+ *
+ * If the specified asset element is not a device, then a device type name 
+ * would be an empty string.
+ *
+ * Throws exceptions: tntdb::NotFound - in case if no rows were selected.
+ *                    std::exception  - in case any other error.
+ *                     
+ * \param url              - the connection to database.
+ * \param asset_element_id - id of the asset element.
+ *
+ * \return  A pair of strings: 
+ *              First  - name of the asset element.
+ *              Second - device type name.
+ */
+std::pair <std::string, std::string>
+    select_element_name_device_tname  (const char* url, uint32_t asset_element_id);
+
+// ===============================================================
+// Function for processing assettopology messages
+// ===============================================================
 
 zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p);
 
