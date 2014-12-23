@@ -291,13 +291,13 @@ zmsg_t* select_group_elements(
             i++;
             uint32_t id = 0;
             row[0].get(id);
-            assert ( id );
+            assert ( id );      // required field, otherwise db is corrupted
     
             std::string name = "";
             row[1].get(name);
-            assert ( strcmp(name.c_str(), "") );
+            assert ( !name.empty() ); // otherwise db is corrupted
 
-            uint16_t id_type = 0;
+            uint16_t id_type = 0;   // tntdb could not work properly with uint8_t
             row[2].get(id_type);
             assert ( id_type );
             
@@ -314,6 +314,8 @@ zmsg_t* select_group_elements(
             // we are interested in this element if we are interested in 
             // all elements ( filtertype == 7) or if this element has 
             // exactly the type of the filter (filtertype == id_type)
+            // or we are interested in groups details 
+            // ( filtertype == asset_type::GROUP )
             if ( ( filtertype == 7 ) || ( filtertype == asset_type::GROUP )
                     || ( filtertype == id_type ) )
             {
@@ -499,7 +501,7 @@ zframe_t* select_childs(
     
             std::string name = "";
             row[1].get(name);
-            assert ( strcmp(name.c_str(), "") );
+            assert ( !name.empty() );
 
             uint16_t id_type = 0;
             row[2].get(id_type);
@@ -718,7 +720,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                                 selectRow();
             
             row[0].get(name);
-            assert ( strcmp(name.c_str(), "") );
+            assert ( !name.empty() );
 
             row[1].get(dtype_name);
             // assert (dtype_name != "" if type_id == DEVICE
@@ -1269,7 +1271,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
+ * If A or C is 999 than A or C was not srecified in database 
  * (it was NULL). 
  * 
  * \param url - the connection to database.
@@ -1483,7 +1485,7 @@ void print_frame_devices (zframe_t* frame)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
+ * If A or C is 999 than A or C was not srecified in database 
  * (it was NULL). 
  *
  * \param url - the connection to database.
