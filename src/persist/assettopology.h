@@ -112,7 +112,10 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
- * 
+ *
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database (was NULL). 

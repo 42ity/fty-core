@@ -1318,7 +1318,10 @@ std::pair <std::string, std::string>
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
  * If A or C is 999 then A or C was not srecified in database 
- * (it was NULL). 
+ * (it was NULL).
+ *
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
  * 
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_FROM 
@@ -1375,7 +1378,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     //      all powerlinks are included into "powers"
     zlist_t* powers = zlist_new();
     zlist_set_duplicator (powers, void_dup);
-    //      all destimation devices are included into "resultdevices"
+    //      all destination devices are included into "resultdevices"
     std::set< device_info_t > resultdevices;
     //      start device should be also into the result set
     resultdevices.insert (
@@ -1399,7 +1402,9 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                   setInt("idlinktype", linktype).
                                   select();
         
-        char buff[28];     // 10+3+3+10+ safe 2
+        // uint32_t has 10 characters
+        // uint16_t has 5 characters
+        char buff[30];     // 10+5+5+10
         
         // Go through the selected links
         for ( auto row: result )
@@ -1451,6 +1456,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     
+    // encode devices into matryoshka
     zmsg_t* ret = zmsg_new();
     for ( auto it = resultdevices.begin(); it != resultdevices.end(); ++it )
     {
@@ -1461,7 +1467,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         zmsg_t* el = asset_msg_encode_powerchain_device
                     (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
                     (std::get<1>(adevice)).c_str() );
-        int rv = zmsg_addmsg ( ret, &el);
+        int rv = zmsg_addmsg (ret, &el);
         assert ( rv != -1 );
         assert ( el == NULL );
     }
@@ -1593,8 +1599,9 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
             tntdb::Result result = st.setInt("id", cur_element_id).
                                       setInt("idlinktype", linktype).
                                       select();
-            
-            char buff[28];     // 10+3+3+10+ safe 2
+            // uint32_t has 10 characters
+            // uint16_t has 5 characters
+            char buff[30];     // 10+5+5+10
             
             // Go through the selected links
             for ( auto &row: result )
@@ -1753,9 +1760,10 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         tntdb::Result result = st.setInt("groupid", element_id).
                                   setInt("linktypeid", linktype).
                                   select();
-        
-        char buff[28];     // 10+3+3+10+ safe 2
-        
+        // uint32_t has 10 charecters
+        // uint16_t has 5 charecters
+        char buff[30];     // 10+5+5+10
+
         // Go through the selected links
         for ( auto &row: result )
         {
@@ -1986,7 +1994,9 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
                                   select();
         
         log_info ("end select \n");
-        char buff[28];     // 10+3+3+10+ safe 2
+        // uint32_t has 10 charecters
+        // uint16_t has 5 charecters
+        char buff[30];     // 10+5+5+10
         
         // Go through the selected links
         for ( auto &row: result )
