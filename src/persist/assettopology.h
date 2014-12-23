@@ -369,6 +369,30 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set <device_info_t > const &
  */
 zmsg_t* generate_return_power (zmsg_t** devices_msg, zlist_t** powers);
 
+/**
+ * \brief Converts a matryoshka mmsg into frame
+ *
+ * Destroyes matryosshka.
+ * 
+ * \param matryoshka - a matryoshka msg to convert
+ * \param frame      - an output parameter: frame
+ *
+ * \return 0  in case of success
+ *         -2 in case of failure
+ */
+int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame );
+
+/**
+ * \brief Helper function
+ *
+ * Calculates zframe_t size even for NULL value.
+ *
+ * \param frame - frame
+ *
+ * \return size of the frame
+ */
+size_t my_size(zframe_t* frame);
+
 // ===============================================================
 // Function for processing assettopology messages
 // ===============================================================
