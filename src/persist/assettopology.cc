@@ -1264,6 +1264,55 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
 }
 
 /**
+ * \brief Selects a name of the specified asset element, in case of device 
+ * additionally selects device type name.
+ *
+ * If the specified asset element is not a device, then a device type name 
+ * would be an empty string.
+ *
+ * Throws exceptions: tntdb::NotFound - in case if no rows were selected.
+ *                    std::exception  - in case any other error.
+ *                     
+ * \param url              - the connection to database.
+ * \param asset_element_id - id of the asset element.
+ *
+ * \return  A pair of strings. 
+ *          First  - name of the asset element,
+ *          Second - device type name.
+ */
+std::pair <std::string, std::string>
+    select_element_name_device_tname  (const char* url, uint32_t asset_element_id)
+{
+    // select information about specidied asset element
+    tntdb::Connection conn = tntdb::connectCached(url);
+
+    tntdb::Statement st = conn.prepareCached(
+        " SELECT"
+        "   v.name, v1.name as type_name"
+        " FROM"
+        "   v_bios_asset_element v"
+        " LEFT JOIN  v_bios_asset_device v1"
+        "   ON ( v1.id_asset_element = v.id )"
+        " WHERE v.id = :id"
+    );
+    tntdb::Row row = st.setInt("id", asset_element_id).
+                        selectRow();
+    
+    // asset element name, required
+    std::string element_name = "";
+    row[0].get(element_name);
+    assert ( !element_name.empty() ); // database is corrupted
+    log_debug ("selected device name = %s\n", element_name.c_str());
+     
+    // device type name, would be NULL if it is not a device
+    std::string device_type_name = "";
+    row[1].get(device_type_name);
+    log_debug ("selected device type name = %s\n", device_type_name.c_str());
+    return std::make_pair (element_name, device_type_name);
+}
+
+
+/**
  * \brief This function processes the ASSET_MSG_GET_POWER_FROM message
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
@@ -1271,7 +1320,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C was not srecified in database 
+ * If A or C is 999 then A or C was not srecified in database 
  * (it was NULL). 
  * 
  * \param url - the connection to database.
@@ -1286,8 +1335,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_FROM );
     log_info ("start\n");
-    uint32_t element_id   = asset_msg_element_id  (getmsg);
-    uint8_t  linktype = INPUT_POWER_CHAIN;
+    uint32_t element_id = asset_msg_element_id  (getmsg);
+    uint8_t  linktype   = INPUT_POWER_CHAIN;
     log_debug ("element_id = %d\n", element_id);
     log_debug ("linktype_id = %d\n", linktype);
 
@@ -1296,28 +1345,10 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
     // select information about the start device
     try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.name, v1.name as type_name"
-            " FROM"
-            "   v_bios_asset_element v"
-            " LEFT JOIN  v_bios_asset_device v1"
-            "   ON ( v1.id_asset_element = v.id )"
-            " WHERE v.id = :id"
-        );
-        tntdb::Row row = st.setInt("id", element_id).
-                            selectRow();
-        
-        // device name, required
-        row[0].get(device_name);
-        assert ( device_name != "" ); // database is corrupted
-        log_debug ("selected device name = %s\n", device_name.c_str());
-        
-        // device type name, would be NULL if it is not a device
-        row[1].get(device_type_name);
-        log_debug ("selected device type name = %s\n", device_type_name.c_str());
+        std::pair <std::string, std::string> names = 
+            select_element_name_device_tname (url, element_id);
+        device_name = names.first;
+        device_type_name = names.second;
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1332,9 +1363,9 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     
-    // check, if selected element has a device type
-    if ( device_type_name == "" )
-    {   // than it is not a device
+    // check, if selected element is device
+    if ( device_type_name.empty() )
+    {   // then it is not a device
         log_warning ("abort with err = '%s %d %s'\n", 
                         "specified element id =", element_id, 
                         " is not a device");
@@ -1485,7 +1516,7 @@ void print_frame_devices (zframe_t* frame)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C was not srecified in database 
+ * If A or C is 999 then A or C was not srecified in database 
  * (it was NULL). 
  *
  * \param url - the connection to database.
@@ -1508,26 +1539,10 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     
     // select information about the start device
     try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.name, v1.name as type_name"
-            " FROM"
-            "   v_bios_asset_element v"
-            " LEFT JOIN  v_bios_asset_device v1"
-            "   ON ( v1.id_asset_element = v.id )"
-            " WHERE v.id = :id"
-        );
-        tntdb::Row row = st.setInt("id", element_id).
-                            selectRow();
-        
-        // device name, required
-        row[0].get(device_name);
-        assert ( device_name != "" ); // database is corrupted
-        
-        // device type name, would be NULL if it is not a device
-        row[1].get(device_type_name);
+        std::pair <std::string, std::string> names = 
+            select_element_name_device_tname (url, element_id);
+        device_name = names.first;
+        device_type_name = names.second;
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1542,9 +1557,9 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     
-    // check, if selected element has a device type
-    if ( device_type_name == "" )
-    {   // than it is not a device
+    // check, if selected element is a device
+    if ( device_type_name.empty() )
+    {   // then it is not a device
         log_warning ("abort with err = '%s %d %s'\n", 
                 "specified element id =", element_id, " is not a device");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
