@@ -27,6 +27,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_msg.h"
 
 // ===============================================================
+// Helper types
+// ===============================================================
+
+/**
+ * \brief A type for storing basic information about device.
+ *
+ * First  -- id
+ *              asset element id of the device in database
+ * Second -- device_name
+ *              asset element name of the device in database
+ * Third  -- device_type_name
+ *              name of the device type in database
+ */
+typedef std::tuple< uint32_t, std::string, std::string > device_info_t;
+
+// ===============================================================
 // Functions for processing a special message type
 // ===============================================================
 
@@ -313,7 +329,8 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
  *              Second - device type name.
  */
 std::pair <std::string, std::string>
-    select_element_name_device_tname  (const char* url, uint32_t asset_element_id);
+    select_element_name_device_tname  ( const char* url, 
+                                        uint32_t asset_element_id);
 
 // ===============================================================
 // Function for processing assettopology messages

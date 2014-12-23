@@ -1273,12 +1273,13 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
  * \param url              - the connection to database.
  * \param asset_element_id - id of the asset element.
  *
- * \return  A pair of strings. 
- *          First  - name of the asset element,
- *          Second - device type name.
+ * \return  A pair of strings: 
+ *              First  - name of the asset element.
+ *              Second - device type name.
  */
 std::pair <std::string, std::string>
-    select_element_name_device_tname  (const char* url, uint32_t asset_element_id)
+    select_element_name_device_tname  ( const char* url, 
+                                        uint32_t asset_element_id)
 {
     // select information about specidied asset element
     tntdb::Connection conn = tntdb::connectCached(url);
@@ -1307,7 +1308,6 @@ std::pair <std::string, std::string>
     log_debug ("selected device type name = %s\n", device_type_name.c_str());
     return std::make_pair (element_name, device_type_name);
 }
-
 
 /**
  * \brief This function processes the ASSET_MSG_GET_POWER_FROM message
@@ -1370,15 +1370,16 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                         "specified element is not a device", 
                                         NULL);
     }
+
+    // select powerlinks from start device, but only first level connections
+    //      all powerlinks are included into "powers"
     zlist_t* powers = zlist_new();
     zlist_set_duplicator (powers, void_dup);
-
-    zframe_t* devices = NULL;
- 
-    std::set<std::tuple<int,std::string,std::string>> resultdevices;
-    // ( id,  device_name, device_type_name )
-    resultdevices.insert (std::make_tuple(
-                        element_id, device_name, device_type_name));
+    //      all destimation devices are included into "resultdevices"
+    std::set< device_info_t > resultdevices;
+    //      start device should be also into the result set
+    resultdevices.insert (
+        std::make_tuple(element_id, device_name, device_type_name));
     
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -1409,11 +1410,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_dest );
    
             // src_out 
-            uint32_t src_out = 999;
+            uint16_t src_out = 999;
             row[1].get(src_out);
             
             // dest_in
-            uint32_t dest_in = 999;
+            uint16_t dest_in = 999;
             row[2].get(dest_in);
             
             // device_name, required
@@ -1445,7 +1446,6 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&powers);
-        zframe_destroy (&devices);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
@@ -1466,6 +1466,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         assert ( el == NULL );
     }
 
+    zframe_t* devices = NULL;
     int rv = matryoshka2frame (&ret, &devices);
     assert ( rv == 0 );
     zmsg_t* result = asset_msg_encode_return_power (devices, powers);
@@ -1560,10 +1561,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                             "specified element is not a device", NULL);
     }
 
-    std::set<std::tuple<int,std::string,std::string>> newdevices, 
-                                                      resultdevices;
+    std::set< device_info_t > newdevices, resultdevices;
                                                       
-    // ( id,  device_name, device_type_name )
     auto adevice = std::make_tuple(element_id, device_name, device_type_name);
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
@@ -1606,11 +1605,11 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 assert ( id_asset_element_src );
        
                 // src_out 
-                uint32_t src_out = 999;
+                uint16_t src_out = 999;
                 row[1].get(src_out);
                 
                 // dest_in
-                uint32_t dest_in = 999;
+                uint16_t dest_in = 999;
                 row[2].get(dest_in);
                 
                 // device_name_src, required
@@ -1761,7 +1760,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         for ( auto &row: result )
         {
             // src_out 
-            uint32_t src_out = 999;
+            uint16_t src_out = 999;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -1770,7 +1769,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_src );
             
             // dest_in
-            uint32_t dest_in = 999;
+            uint16_t dest_in = 999;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
@@ -1993,7 +1992,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         for ( auto &row: result )
         {
             // src_out 
-            uint32_t src_out = 999;
+            uint16_t src_out = 999;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -2002,7 +2001,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( id_asset_element_src );
             
             // dest_in
-            uint32_t dest_in = 999;
+            uint16_t dest_in = 999;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
