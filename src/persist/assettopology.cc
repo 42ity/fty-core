@@ -243,7 +243,7 @@ zmsg_t* select_group_elements(
             );
             
         // Could return more than one row
-        tntdb::Result result = st.setInt("elementid", element_id).
+        tntdb::Result result = st.set("elementid", element_id).
                                   select();
         
         log_debug("rows selected %d\n", result.size());
@@ -401,9 +401,9 @@ zframe_t* select_childs(
                 );
             }
             // Could return more than one row
-            result = st.setInt("elementid", element_id).
-                        setInt("elementtypeid", element_type_id).
-                        setInt("childtypeid", child_type_id).
+            result = st.set("elementid", element_id).
+                        set("elementtypeid", element_type_id).
+                        set("childtypeid", child_type_id).
                         select();
         }
         else
@@ -436,7 +436,7 @@ zframe_t* select_childs(
                 );
             }
             // Could return more than one row
-            result = st.setInt("childtypeid", child_type_id).
+            result = st.set("childtypeid", child_type_id).
                         select();
         }
         log_debug("rows selected %d\n", result.size());
@@ -645,7 +645,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                 " WHERE v.id = :id"
             );
     
-            tntdb::Row row = st.setInt("id", element_id).
+            tntdb::Row row = st.set("id", element_id).
                                 selectRow();
             
             row[0].get(name);
@@ -684,7 +684,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                 );
                 log_debug("element_id = %d\n", element_id);
                 
-                tntdb::Row row = st.setInt("elementid", element_id).
+                tntdb::Row row = st.set("elementid", element_id).
 
                                     selectRow();
     
@@ -1023,8 +1023,8 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         }
 
         // Could return one row or nothing
-        tntdb::Row row = st.setInt("elementid", element_id).
-                            setInt("elementtypeid", element_type_id).
+        tntdb::Row row = st.set("elementid", element_id).
+                            set("elementtypeid", element_type_id).
                             selectRow();
     
         uint32_t parent_id = 0;
@@ -1096,7 +1096,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
             " WHERE v.id = :id"
         );
 
-        tntdb::Row row = st.setInt("id", element_id).
+        tntdb::Row row = st.set("id", element_id).
                             selectRow();
         
         row[0].get(type_id);
@@ -1138,7 +1138,7 @@ std::pair <std::string, std::string>
         "   ON ( v1.id_asset_element = v.id )"
         " WHERE v.id = :id"
     );
-    tntdb::Row row = st.setInt("id", asset_element_id).
+    tntdb::Row row = st.set("id", asset_element_id).
                         selectRow();
     
     // asset element name, required
@@ -1154,7 +1154,7 @@ std::pair <std::string, std::string>
     return std::make_pair (element_name, device_type_name);
 }
 
-zmsg_t* convert_powerchain_devices2matryoshka (std::set <device_info_t > const &devices)
+zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const &devices)
 {
     // tuple: ( id,  device_name, device_type_name )
     // encode: id, device_type_name, device_name
@@ -1173,14 +1173,40 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set <device_info_t > const &
     return ret;
 }
 
-zmsg_t* generate_return_power (zmsg_t** devices_msg, zlist_t** powers)
+zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const &powerlinks)
 {
-    zframe_t* devices = NULL;
-    int rv = matryoshka2frame (devices_msg, &devices);
+    zlist_t* powers = zlist_new();
+    zlist_set_duplicator (powers, void_dup);
+    // TODO 30 move to *.h file as a constant
+    // uint32_t has 10 characters
+    // uint16_t has 5 characters
+    char buff[30];     // 10+5+5+10
+    for ( auto it = powerlinks.begin(); it != powerlinks.end(); ++it )
+    {
+        auto apowerlink = *it;
+
+        sprintf(buff, "%d:%d:%d:%d", std::get<1>(apowerlink), 
+                                     std::get<0>(apowerlink),
+                                     std::get<3>(apowerlink),
+                                     std::get<2>(apowerlink)
+                );
+        zlist_push(powers, buff);
+    }
+    return powers;
+}
+
+zmsg_t* generate_return_power (std::set < device_info_t >    const &devices, 
+                               std::set < powerlink_info_t > const &powerlinks)
+{
+    zmsg_t  *devices_msg = convert_powerchain_devices2matryoshka (devices);
+    zlist_t *powers_list = convert_powerchain_powerlink2list     (powerlinks);
+    
+    zframe_t* devices_frame = NULL;
+    int rv = matryoshka2frame (&devices_msg, &devices_frame);
     assert ( rv == 0 );
-    zmsg_t* result = asset_msg_encode_return_power (devices, *powers);
-    zlist_destroy (powers);
-    zframe_destroy (&devices);
+    zmsg_t* result = asset_msg_encode_return_power (devices_frame, powers_list);
+    zlist_destroy  (&powers_list);
+    zframe_destroy (&devices_frame);
     return result;
 }
 
@@ -1229,9 +1255,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     }
 
     // select powerlinks from start device, but only first level connections
-    //      all powerlinks are included into "powers"
-    zlist_t* powers = zlist_new();
-    zlist_set_duplicator (powers, void_dup);
+    //      all powerlinks are included into "resultpowers"
+    std::set< powerlink_info_t > resultpowers;
     //      all destination devices are included into "resultdevices"
     std::set< device_info_t > resultdevices;
     //      start device should be included also into the result set
@@ -1252,14 +1277,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             "  v.id_asset_element_src = :id"
         );
         // can return more than one value
-        tntdb::Result result = st.setInt("id", element_id).
-                                  setInt("idlinktype", linktype).
+        tntdb::Result result = st.set("id", element_id).
+                                  set("idlinktype", linktype).
                                   select();
         
         log_debug ("links selected: %d\n", result.size());
-        // uint32_t has 10 characters
-        // uint16_t has 5 characters
-        char buff[30];     // 10+5+5+10
         
         // Go through the selected links
         for ( auto row: result )
@@ -1295,23 +1317,19 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             log_debug ("device_name = %s\n", device_name.c_str());
             log_debug ("device_type_name = %s\n", device_type_name.c_str());
 
-            sprintf(buff, "%d:%d:%d:%d", src_out, element_id, dest_in, 
-                            id_asset_element_dest);
-            zlist_push(powers, buff);
-            
+            resultpowers.insert  (std::make_tuple(
+                    element_id, src_out, id_asset_element_dest, dest_in)); 
             resultdevices.insert (std::make_tuple(
                     id_asset_element_dest, device_name, device_type_name));
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        zlist_destroy (&powers);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka (resultdevices);
-    zmsg_t* result = generate_return_power (&devices_msg, &powers);
+    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal\n");
     return result;
 }
@@ -1376,7 +1394,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                             "specified element is not a device", NULL);
     }
 
-    // devices that should be searche for powerlinks
+    // devices that should be searched for powerlinks
     // (used for the elimination of duplicated devices and powerlinks)
     std::set< device_info_t > newdevices;
     // result set of found devices 
@@ -1387,8 +1405,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
 
-    zlist_t* powers = zlist_new();
-    zlist_set_duplicator (powers, void_dup);
+    // all powerlinks are included into "resultpowers"
+    std::set< powerlink_info_t > resultpowers;
 
     // indicates if we have devices that were not processed yet
     bool ncontinue = true;
@@ -1413,15 +1431,12 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
             );
             
             // can return more than one value
-            tntdb::Result result = st.setInt("id", cur_element_id).
-                                      setInt("idlinktype", linktype).
+            tntdb::Result result = st.set("id", cur_element_id).
+                                      set("idlinktype", linktype).
                                       select();
             
             log_debug ("for element_id= %d was %d powerlinks selected\n", 
                                             cur_element_id, result.size());
-            // uint32_t has 10 characters
-            // uint16_t has 5 characters
-            char buff[30];     // 10+5+5+10
             
             // Go through the selected links
             for ( auto &row: result )
@@ -1459,10 +1474,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 log_debug ("device_type_name_src = %s\n", 
                                                 device_type_name_src.c_str());
     
-                sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, 
-                                                    dest_in, cur_element_id);
-                zlist_push(powers, buff);
-                
+                resultpowers.insert  (std::make_tuple(
+                    id_asset_element_src, src_out, cur_element_id, dest_in)); 
                 // add new devices to process
                 newdevices.insert (std::make_tuple(
                         id_asset_element_src, device_name_src, 
@@ -1471,7 +1484,6 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
         }
         catch (const std::exception &e) {
             // internal error in database
-            zlist_destroy (&powers);
             log_warning ("abort with err = '%s'\n", e.what());
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
@@ -1494,8 +1506,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
             }
         }
     }   // end of processing one of the new devices
-    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka (resultdevices);
-    zmsg_t* result = generate_return_power (&devices_msg, &powers);
+    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal\n");
     return result;
 }
@@ -1509,8 +1520,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     uint8_t  linktype   = INPUT_POWER_CHAIN;
 
     log_info ("start select powers\n"); 
-    zlist_t* powers = zlist_new();
-    zlist_set_duplicator (powers, void_dup);
+    //  all powerlinks are included into "resultpowers"
+    std::set< powerlink_info_t > resultpowers;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // v_bios_asset_link are only devices, 
@@ -1540,14 +1551,10 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             "             )"
         );
         // can return more than one row
-        tntdb::Result result = st.setInt("groupid", element_id).
-                                  setInt("linktypeid", linktype).
+        tntdb::Result result = st.set("groupid", element_id).
+                                  set("linktypeid", linktype).
                                   select();
         log_debug("rows selected %d\n", result.size()); 
-
-        // uint32_t has 10 charecters
-        // uint16_t has 5 charecters
-        char buff[30];     // 10+5+5+10
 
         // Go through the selected links
         for ( auto &row: result )
@@ -1576,14 +1583,12 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             log_debug ("src_out = %d\n", src_out);
             log_debug ("dest_in = %d\n", dest_in);
 
-            sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, 
-                                            dest_in, id_asset_element_dest);
-            zlist_push (powers, buff);
+            resultpowers.insert  (std::make_tuple(
+                id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        zlist_destroy (&powers);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
@@ -1611,7 +1616,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             "   v2.id_asset_element = v.id_asset_element"
         );
         // can return more than one row
-        tntdb::Result result = st.setInt("groupid", element_id).
+        tntdb::Result result = st.set("groupid", element_id).
                                   select();
         log_debug("rows selected %d\n", result.size());
         
@@ -1643,15 +1648,12 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     }
     catch (const std::exception &e) {
         // internal error in database
-        zlist_destroy (&powers);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
     log_info("end select devices\n");
-
-    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka (resultdevices);
-    zmsg_t* result = generate_return_power (&devices_msg, &powers);
+    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal\n");
     return result;
 }
@@ -1679,7 +1681,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             "                   v.id_parent4)"
         );
         // can return more than one row
-        tntdb::Result result = st.setInt("dcid", element_id).
+        tntdb::Result result = st.set("dcid", element_id).
                                   select();
         log_debug("rows selected %d\n", result.size());
         
@@ -1718,8 +1720,8 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
     log_info("end select devices\n");
 
     log_info ("start select powers\n"); 
-    zlist_t* powers = zlist_new();
-    zlist_set_duplicator (powers, void_dup);
+    //      all powerlinks are included into "resultpowers"
+    std::set< powerlink_info_t > resultpowers;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         // v_bios_asset_link are only devices, 
@@ -1742,14 +1744,10 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             "               v1.id_parent4) )"
         );
         // can return more than one row
-        tntdb::Result result = st.setInt("dcid", element_id).
-                                  setInt("linktypeid", linktype).
+        tntdb::Result result = st.set("dcid", element_id).
+                                  set("linktypeid", linktype).
                                   select();
         log_debug("rows selected %d\n", result.size());
-        
-        // uint32_t has 10 charecters
-        // uint16_t has 5 charecters
-        char buff[30];     // 10+5+5+10
         
         // Go through the selected links
         for ( auto &row: result )
@@ -1778,21 +1776,18 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             log_debug ("src_out = %d\n", src_out);
             log_debug ("dest_in = %d\n", dest_in);
 
-            sprintf(buff, "%d:%d:%d:%d", src_out, id_asset_element_src, 
-                                            dest_in, id_asset_element_dest);
-            zlist_push (powers, buff);
+            resultpowers.insert  (std::make_tuple(
+                id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        zlist_destroy (&powers);
         log_warning ("abort with err = '%s'\n", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
     log_info ("end select powers\n");
-    zmsg_t* devices_msg = convert_powerchain_devices2matryoshka (resultdevices);
-    zmsg_t* result = generate_return_power (&devices_msg, &powers);
+    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal\n");
     return result;
 }
