@@ -24,19 +24,18 @@
 PASS=0
 TOTAL=0
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+. "`dirname $0`/weblib.sh"
 
 while [ $# -gt 0 ]; do
     case "$1" in
-	-u|--user)
-	    BIOS_USER="$2"
-	    shift 2
-	    ;;
-	-p|--passwd)
-	    BIOS_PASSWD="$2"
-	    shift 2
-	    ;;
+    -u|--user)
+        BIOS_USER="$2"
+        shift 2
+        ;;
+    -p|--passwd)
+        BIOS_PASSWD="$2"
+        shift 2
+        ;;
     *)
         break
         ;;
@@ -44,70 +43,6 @@ while [ $# -gt 0 ]; do
 done
 
 PATH="$PATH:/sbin:/usr/sbin"
-
-BASE_URL="http://127.0.0.1:8000/api/v1"
-
-_TOKEN_=""
-
-print_result() {
-    _ret=0
-    if [ "$1" -eq 0 ]; then
-        echo " * PASSED"
-        PASS="`expr $PASS + 1`"
-    else
-        echo " * FAILED"
-        _ret=1
-        FAILED="$FAILED $NAME"
-    fi
-    TOTAL="`expr $TOTAL + 1`"
-    echo
-    return $_ret
-}
-
-test_it() {
-    if [ "$1" ]; then
-        NAME="$1"
-    fi
-    [ "$NAME" ] || NAME="`basename "$0" .sh`"
-    echo "Running test $NAME:"
-}
-
-api_get() {
-    curl -v --progress-bar "$BASE_URL$1" 2>&1
-}
-
-api_get_json() {
-    curl -v --progress-bar "$BASE_URL$1" 2> /dev/null \
-    | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
-}
-
-api_post() {
-    curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
-}
-
-_api_get_token() {
-    if [ -z "$_TOKEN_" ]; then
-	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
-	_TOKEN_RAW_="`api_get "$AUTH_URL"`"
-	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`"
-    fi
-    echo "$_TOKEN_"
-}
-
-api_auth_post() {
-    TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
-}
-
-api_auth_delete() {
-    TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
-}
-
-api_auth_put() {
-    TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
-}
 
 # fixture ini
 if ! pidof saslauthd > /dev/null; then
@@ -144,9 +79,26 @@ cd "`dirname "$0"`"
 mkdir -p "$LOG_DIR" || exit 4
 CMP="`pwd`/cmpjson.py"
 cd web/commands
-[ "$1" ] || set *
+POSITIVE=""
+NEGATIVE=""
 while [ "$1" ]; do
-    for NAME in *$1*; do
+    if [ -z "`echo "x$1" | grep "^x-"`" ]; then
+        POSITIVE="$POSITIVE $1"
+    else
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`"
+    fi
+    shift
+done
+[ -n "$POSITIVE" ] || POSITIVE="*"
+for i in $POSITIVE; do
+    for NAME in *$i*; do
+    SKIP=""
+    for n in $NEGATIVE; do
+        if expr match $NAME .\*"$n".\* > /dev/null; then
+            SKIP="true"
+        fi
+    done
+    [ -z "$SKIP" ] || continue
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res

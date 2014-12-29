@@ -15,17 +15,37 @@ LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
 
+# the default value may be revised, so we have two layers of conditionals here
+_ENABLE_DOCKER_SUPPORT=1
+AC_ARG_ENABLE(docker-support,
+	[AS_HELP_STRING([--enable-docker-support],
+		[configure Makefile to deliver Docker helpers])],
+	[AS_CASE(["x$enableval"],
+		["xyes"],[_ENABLE_DOCKER_SUPPORT=1],
+		["xno"],[_ENABLE_DOCKER_SUPPORT=0])])
+# value for both Makefile conditionals as well as the AM_COND_IF macro below
+AM_CONDITIONAL([ENABLE_DOCKER_SUPPORT],
+	[test "x$_ENABLE_DOCKER_SUPPORT" != x0])
+AM_COND_IF([ENABLE_DOCKER_SUPPORT],
+	[AC_MSG_NOTICE([Enabling Docker support files])
+	 AC_CONFIG_FILES([docker/Makefile])],
+	[AC_MSG_NOTICE([Not enabling Docker support files])])
+# a define-flag into config.h just in case some C code would need it later on?
+AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
+     [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
+
 # display source/build paths of interest to us
-echo "Value of srcdir...        '$srcdir'"
-echo "Value of current dir...   '`pwd`'"
-case "$srcdir" in
-    /*)	_srcdir_abs="$srcdir" ;;
-    *)  _srcdir_abs="`pwd`/$srcdir"
-	if test -d "$_srcdir_abs" ; then
-	    _srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"
-	fi ;;
-esac
-echo "Value of _srcdir_abs...   '$_srcdir_abs'"
+AC_MSG_NOTICE([Determining source code paths:])
+AC_MSG_NOTICE(AS_HELP_STRING([Value of srcdir:], ['$srcdir']))
+_curdir_abs="`pwd`"
+AC_MSG_NOTICE(AS_HELP_STRING([Value of _curdir_abs:], ['$_curdir_abs']))
+AS_CASE(["x$srcdir"],
+    [x/*], [_srcdir_abs="$srcdir"],
+    [*],   [_srcdir_abs="$_curdir_abs/$srcdir"
+	    AS_IF([test -d "$_srcdir_abs"],
+		  [_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"])
+])
+AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
 
 # toolchain
 AC_PROG_CC
@@ -42,33 +62,42 @@ PACKAGE_GIT_BRANCH=""
 PACKAGE_GIT_TSTAMP=""
 PACKAGE_GIT_HASH_S=""
 PACKAGE_GIT_HASH_L=""
+PACKAGE_GIT_STATUS=""
 AC_PATH_PROGS([GIT], [git])
-if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
-	echo "Getting Git workspace attributes..."
+
+AS_IF([test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git"],
+	[AC_MSG_NOTICE([Getting Git workspace attributes...])
 	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
-	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"		&& HAVE_PACKAGE_GIT=1
-fi
+	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	### We need to convert a multi-line value into a single-line token for C macros or Makefiles
+	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s | sed 's,\$,\\\\n,g' | tr -d '\\n'`"
+	AS_IF([test $? = 0 -a x"$PACKAGE_GIT_STATUS" != x -a x"$PACKAGE_GIT_STATUS" != 'x\n'],
+		[HAVE_PACKAGE_GIT=1],
+		[PACKAGE_GIT_STATUS=""])
+])
+
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging metadata: Git branch in the build workspace repository])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP], ["$PACKAGE_GIT_TSTAMP"], [Packaging metadata: Git timestamp of the commit used for the build])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S], ["$PACKAGE_GIT_HASH_S"], [Packaging metadata: Git short-hash of the commit used for the build])
 AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L], ["$PACKAGE_GIT_HASH_L"], [Packaging metadata: Git long-hash of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS], ["$PACKAGE_GIT_STATUS"], [Packaging metadata: short list of possible differences against the committed repository])
 
 AC_PATH_PROGS([UNAME], [uname])
 HAVE_PACKAGE_BUILD_HOST=0
 PACKAGE_BUILD_HOST_UNAME=""
 PACKAGE_BUILD_HOST_NAME=""
 PACKAGE_BUILD_HOST_OS=""
-if test ! -z "$UNAME" -a -x "$UNAME" ; then
-	echo "Getting buildhost attributes..."
+AS_IF([test ! -z "$UNAME" -a -x "$UNAME"],
+	[AC_MSG_NOTICE([Getting buildhost attributes...])
 	PACKAGE_BUILD_HOST_UNAME="`$UNAME -a`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_NAME="`$UNAME -n`"		&& HAVE_PACKAGE_BUILD_HOST=1
 	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v`"	&& HAVE_PACKAGE_BUILD_HOST=1
-fi
+])
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  [$HAVE_PACKAGE_BUILD_HOST],    [Packaging metadata: Are build-host details available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME], ["$PACKAGE_BUILD_HOST_UNAME"], [Packaging metadata: Full 'uname -a' of the building host])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],  ["$PACKAGE_BUILD_HOST_NAME"],  [Packaging metadata: Hostname of the building host])
@@ -77,10 +106,10 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],    ["$PACKAGE_BUILD_HOST_OS"],    [P
 AC_PATH_PROGS([DATE], [gdate date])
 HAVE_PACKAGE_BUILD_TSTAMP=0
 PACKAGE_BUILD_TSTAMP=""
-if test ! -z "$DATE" -a -x "$DATE" ; then
-	echo "Recording the configuration timestamp..."
+AS_IF([test ! -z "$DATE" -a -x "$DATE"],
+	[AC_MSG_NOTICE([Recording the configuration timestamp...])
 	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s'`"		&& HAVE_PACKAGE_BUILD_TSTAMP=1
-fi
+])
 AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	[$HAVE_PACKAGE_BUILD_TSTAMP],	[Packaging metadata: Is the build-host timestamp available?])
 AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Current timestamp at the build host (as of configuration)])
 
@@ -137,20 +166,23 @@ dnl script is in m4
 #doxygen
 AC_PROG_TRY_DOXYGEN
 
-if test -z "$DOXYGEN"; then
-  AC_MSG_NOTICE([
+AS_IF([test -z "$DOXYGEN"],
+  [AC_MSG_NOTICE([
   -----------------------------------------
   No Doxygen program found - continuing
   without Doxygen documentation support.
   -----------------------------------------
   ])
-fi
+  HAVE_DOXYGEN=0],
+  [HAVE_DOXYGEN=1])
 myDOXDIR="docs/doxygen"
 mydoxylog="doxylog.txt"
 mysrcDIR="src" 
 dnl the directory to search source file that must be included in documentation
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile tools/run-test-doc.sh],[chmod +x tools/run-test-doc.sh])])
+AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile])])
+AC_CONFIG_FILES([tools/run-test-doc.sh],[chmod +x tools/run-test-doc.sh])
+AC_SUBST([HAVE_DOXYGEN])
 AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
@@ -177,14 +209,14 @@ AC_PATH_PROGS([ASCIIDOC], [asciidoc])
 dnl TODO  MVY a2x - is it ok?
 AC_PATH_PROGS([A2X], [a2x])
 
-if test -z "$ASCIIDOC" -a -z "$A2X"; then
-  AC_MSG_NOTICE([
+AS_IF([test -z "$ASCIIDOC" -a -z "$A2X"],
+  [AC_MSG_NOTICE([
   -----------------------------------------
   No asciidoc or a2x program found - continuing
   without ASCIIDOC documentation support.
   -----------------------------------------
   ])
-fi
+])
 AM_CONDITIONAL([HAVE_ASCIIDOC],[test -n "$ASCIIDOC"])
 AM_CONDITIONAL([HAVE_A2X],[test -n "$A2X"])
 
@@ -199,6 +231,7 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
   AC_MSG_ERROR([TNTnet not found!])
 ])
 
+# sourced from an m4/*.m4 include file during configure script compilation
 BS_CHECK_SASLAUTHD_MUX
 
 # set flags CFLAGS
@@ -235,6 +268,7 @@ Summary:
         Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
+	Git status (uncommitted files):	'${PACKAGE_GIT_STATUS}'
 
         Build-host 'uname -a':   ${PACKAGE_BUILD_HOST_UNAME}
         Build-host system name:  ${PACKAGE_BUILD_HOST_NAME}
@@ -252,6 +286,8 @@ Summary:
         asciidoc:                ${ASCIIDOC:-none}
         doxygen:                 ${DOXYGEN:-none}
         ecppc:                   ${ECPPC:-none}
+
+	ENABLE_DOCKER_SUPPORT:   ${_ENABLE_DOCKER_SUPPORT}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
@@ -276,6 +312,7 @@ Summary:
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
 
 	absolute SRC DIR:        ${_srcdir_abs}
+	absolute CUR DIR:        ${_curdir_abs}
 ])
 
 unset _srcdir_abs

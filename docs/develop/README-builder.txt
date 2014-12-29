@@ -9,10 +9,14 @@ optimizations to run a parallelized build when possible, into a
 single script with several short-named methods to quickly run the
 frequently needed building scenarios.
 
-NOTE: Currently the `./configure` script is called uncustomized, without
-any of its usual tweaking command-line parameters. Any environment
-variables which influence its progress and results (like 'CFLAGS')
-should quite pass through from the caller's shell, though.
+Calls to the `./configure` script can be customized with any of its
+usual tweaking command-line parameters, using either the 'configure'
+or 'configure-subdir' methods (with all flags passed verbatim to the
+`configure` script) followed by execution of the 'make*' methods,
+or by use of the 'CONFIGURE_FLAGS' enccar or '--configure-flags'
+option. See below for more details on usage of these possibilities.
+Any environment variables which influence its progress and results
+(like 'CFLAGS') should quite pass through from the caller's shell, too.
 
 As part of development and maintenance of the 'Makefile' and related
 build files, it occasionally happens that something happens differently
@@ -46,6 +50,14 @@ description)
  * '--warn-fatal' or '-Werror' -- this sets up the compiler to fail when
 it has warnings to report, allowing easier tracing and recompilation of
 not-yet-perfect pieces of source code
+ * '--build-subdir' -- relative (to source code root) or absolute path
+for a relocated build directory (used if the '*-subdir' methods are called);
+this overrides the 'BUILD_SUBDIR' environment variable or automatic value
+ * '--install-dir' -- this overrides the 'DESTDIR' environment variable
+or automatic value for the 'install*' actions
+ * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
+to the single-token parameter with values that would be passed to `configure`
+as its set of command-line parameters, should it be invoked in this run
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
@@ -92,6 +104,10 @@ followed by a `make install`
 a `make install`
  * 'configure' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, and run `./configure`
+ * 'configure-subdir' -- (re)create `configure` if needed, wipe (if
+needed), create and cahange into the subdirectory for the build, and
+run `configure` (possibly with flags); the project can be further
+compiled with `builder.sh make-subdir` from this point
  * 'distcheck' -- (re)create `configure` if needed, clean up the
 project root directory with a `make distclean`, run `./configure`
 in the project root directory, and finally run `make distcheck`
@@ -104,10 +120,15 @@ from the relevant (base or "relocated") directory; that is -- do not
 cleanup and reconfigure the build area
 
 Any parameters on the command line after the method specification
-are processed according to the method. Currently this means the
-optional list of 'Makefile' targets for the 'make-samedir',
+are processed according to the method. Currently this means:
+
+ * the optional list of 'Makefile' targets for the 'make-samedir',
 'make-subdir', 'build-samedir', 'build-subdir', 'install-samedir'
-and 'install-subdir' methods, and ignored for others.
+and 'install-subdir' methods;
+ * the optional list of `configure` command-line parameters (one per
+token as is normally done for `configure`) can be passed to 'configure'
+and 'distcheck' methods;
+ * and ignored for others.
 
 
 
@@ -133,6 +154,18 @@ as specified by 'CHECKOUTDIR' if present, or guessed from the script's
 own path name by default. Then during the script's work the variable
 is redefined to contain the full filesystem path of the root of project
 sources.
+
+
+=== 'FORCE_AUTORECONF' flag
+An environment variable that can be passed to `autogen.sh` (or `builder.sh`)
+to enforce regeneration of the `configure` script even if it is not detected
+to be obsolete.
+
+Currently there is no corresponding command-line option equivalent to this.
+
+The accepted values are case-sensitive 'yes' (enforce a rebuild), 
+'no' (don't enforce a rebuild even if it would be detected obsolete --
+but that logic is effectively skipped by this value) and 'auto' (default).
 
 
 === 'MAKE' program
@@ -184,6 +217,32 @@ The values default to empty (no measurements), can accept the `time`
 program name or shell builtin, or the yes/no values for simplicity.
 Unknown values are considered as empty with a warning.
 
+
+=== 'CONFIGURE_FLAGS' list of parameters
+Set as an environment variable or overridden by command-line parameter
+'--configure-flags="string"', this variable holds a space-separated list
+of tokens that would be passed to the `configure` command should one be
+called (as part of the 'build*', 'install*', 'configure' or 'distcheck'
+methods).
+
+The following invokations are equivalent:
+----
+:; CONFIGURE_FLAGS='--disable-docker-support --help' ./autogen.sh configure
+:; ./autogen.sh --configure-flags '--disable-docker-support --help' configure
+----
+
+This overrides the variable from environment by the value on command-line,
+in this example resetting it to empty (defaults picked by `configure`):
+----
+:; CONFIGURE_FLAGS='--enable-docker-support' \
+   ./autogen.sh --configure-flags '' configure
+----
+
+Also, this convenient syntax with natural command-line arguments is only
+available to the 'configure' and 'distcheck' methods:
+----
+:; ./autogen.sh configure --disable-docker-support --help
+----
 
 
 === 'BLDARCH' tag
