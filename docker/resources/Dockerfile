@@ -34,7 +34,7 @@ ADD ./usr/local/bin/netmon /usr/local/bin/netmon
 ADD ./usr/local/bin/driver-nmap /usr/local/bin/driver-nmap
 RUN mkdir -p /usr/local/lib/core
 ADD ./usr/local/lib/core/bios_web.so.0.0.0 /usr/local/lib/core/bios_web.so.0.0.0
-RUN ln -s /usr/local/lib/bios_web.so.0.0.0 /usr/local/lib/bios_web.so
+RUN ln -s /usr/local/lib/core/bios_web.so.0.0.0 /usr/local/lib/core/bios_web.so
 RUN mkdir -p /usr/local/share/core-0.1/web
 
 #User PAM

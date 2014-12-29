@@ -9,8 +9,10 @@ config/
 config.h
 config.h.in
 config.h.in~
+confdefs.h
 config.log
 config.status
+conftest.*
 configure
 !configure.ac
 .deps
@@ -74,6 +76,7 @@ build-*/
 core-*.*/
 
 core-*.*.tar.?z
+core-*.deb
 
 src/utils/messages/json_schemas.h
 tools/dbpath.h

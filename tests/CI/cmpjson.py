@@ -1,8 +1,10 @@
 #!/usr/bin/python
 from __future__ import print_function
 
-"""
-Compare REST API calls output with expected ones
+__doc__ = """
+Compare REST API calls output with expected ones - it assumes one JSON document per line to support more results in one file!
+
+Usage: python cmpjson.py file1 file2
 """
 
 import json
@@ -30,7 +32,7 @@ if len(sys.argv) <= 1:
     sys.exit(0)
 
 if len(sys.argv) != 3:
-    print("Usage: %s api_output.json result.json")
+    print(__doc__)
     sys.exit(1)
 
 with open(sys.argv[1]) as f:

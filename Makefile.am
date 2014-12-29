@@ -25,6 +25,12 @@ myDEVDOCDIR = docs/develop
 # Locations of child Makefiles
 SUBDIRS = $(myMANDIR) docs/examples tools
 
+if ENABLE_DOCKER_SUPPORT
+# Integrate packaging of resource files for management of Docker containers
+# Note that docker/README is processed by this root Makefile, below...
+SUBDIRS += docker
+endif
+
 AM_CPPFLAGS = -include $(top_builddir)/config.h \
 			  -I$(top_srcdir)/src/shared \
 			  -I$(top_srcdir)/src/include \
@@ -133,13 +139,8 @@ DISTCLEANFILES +=		docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
-if HAVE_DOXYGEN
-@echo "WARNING: Source code documentation was built with 'doxygen', but the check with 'tools/run-test-doc.sh' is skipped since it is known that it currently fails!" >&2
-#check_SCRIPTS += tools/run-test-doc.sh
-#else !HAVE_DOXYGEN
-# AQU note: this would need a target to work...
-#@echo "Source code documentation check not available since 'doxygen' was not found."
-endif
+# Tester for the doxygen output sanity
+check_SCRIPTS += tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST += tools/run-test.sh
@@ -500,7 +501,7 @@ exampleconf_DATA = tntnet.xml.example
 EXTRA_DIST += $(exampleconf_DATA)
 
 web-test: tntnet.xml bios_web.la
-	${TNTNET} tntnet.xml
+	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
@@ -535,6 +536,62 @@ BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
 # same as the checked-out source directory, both ways SHOULD work).
 #----------------------------------------------------------------------
 
+# For legacy/simplicity several types of file list variables are defined
+# below to reference the manually maintained and repository-tracked files
+# with documentation in text format, including the sources for automated
+# conversion from asciidoc to html (i.e. not doxygen, not manpages).
+# See comments below for path/extension expectations for different file types.
+# Variables below include:
+#
+# Auto-generated:
+#  TEXTS - list of *.txt files that are delivered by the project. Generated
+#	from MAPPED_TXT_DOCS_* lists. Required by "docs-txt" target.
+#  HTMLS_ASCIIDOC - list of files generated automatically from asciidoc
+#	into HTML (1:1 relation, same dirname/basename, changes extension);
+#	the list is generated from MAPPED_TXT_DOCS_ASCIIDOC.
+#  HTMLS - list of *.html files (except doxygen) that are delivered by the
+#	project (built via target rules if needed); currently this only
+#	includes HTMLS_ASCIIDOC. Required by "docs-html" target.
+#  CLEAN_TEXTS and CLEAN_HTMLS - list of files generated/copied by dynamic
+#	rules lower in this Makefile, so they can be cleaned up too.
+#
+# Half-manual, half automation:
+#  MAPPED_TXT_DOCS_PLAINTEXT and MAPPED_TXT_DOCS_ASCIIDOC - lists of all
+#	colon-separated couples of source and destination text filenames
+#	which may involve a copy to another directory, another naming,
+#	changes of extension, etc. Populated manually and then from the
+#	other lists (BASE_DOCS_*, TXT_DOCS_*) with simple deterministic
+#	conversion rules from list to mapping entry. These mappings are
+#	used to dynamically determine make-recipes and targets for files.
+#
+# Component lists (populated manually, reprocessed into MAPPED_* lists);
+# Note that these lists reference files tracked as part of the project
+# sources (not auto-copied, named or generated as in some lists above):
+#  BASE_DOCS_ASCIIDOC and BASE_DOCS_PLAINTEXT - the text files without
+#	extension, saved in the root of project sources. These variables
+#	are used to populate the relevant MAPPED_TXT_DOCS_* lists.
+#  TXT_DOCS_ASCIIDOC and TXT_DOCS_PLAINTEXT - lists of *.txt files that
+#	would actually be installed; as seen below, the list starts with
+#	some files already tracked in the needed location (under docs/).
+#	These variables are used to populate MAPPED_TXT_DOCS_* lists.
+#
+# The definition/processing order should be as follows:
+# * Populate the manually tracked lists (BASE_DOCS_*, TXT_DOCS_*) and the
+#   initial entries in MAPPED_TXT_DOCS_* (set those mappings which rename
+#   text files from tracked source to delivery under "docs/develop/").
+# * Define as empty (or very exceptionally pre-populated) the lists in
+#   HTMLS_ASCIIDOC, HTMLS, TEXTS as well as automated installation targets
+#   like develdoc_DATA.
+# * Run macros to populate the rest of MAPPED_TXT_DOCS_* with trivial
+#   conversions from BASE_DOCS_* and TXT_DOCS_*.
+# * Run macros to define the build targets and recipes for all text files
+#   (copying) and add to our targets (TEXTS) and other common lists like
+#   EXTRA_DIST and DISTCLEAN automatically.
+# * Run macros to define the build targets and recipes for the HTML files
+#   created from texts by asciidoc (append to HTMLS_ASCIIDOC).
+# * Add the resulting HTMLS_ASCIIDOC to HTMLS.
+# * Define the practical targets - to build or clean the whole set of our
+#   documentation files.
 
 # Documentation files saved in the project source-code root directory
 # as text files without extensions in the name (following GNU standards)
@@ -549,8 +606,8 @@ BASE_DOCS_ASCIIDOC =	INSTALL INSTALL-referenceOS-debian8 \
 # Note these should have paths relative to project root dir.
 BASE_DOCS_PLAINTEXT =	AUTHORS COPYING NEWS ChangeLog
 
-# These two seem to have some markup or similar structuring, but it is
-# not asciidoc so consider them plaintext for now
+# These two seem to have some markup or similar structuring,
+# but it is not asciidoc so consider them plaintext for now.
 # Note these should have paths relative to project root dir.
 BASE_DOCS_PLAINTEXT +=	README
 BASE_DOCS_PLAINTEXT +=	TODO
@@ -565,20 +622,6 @@ TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
 # below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
 TXT_DOCS_PLAINTEXT =
 
-# Note that the installation targets are similarly named files with
-# an added ".txt" extension in the "docs/develop" subdirectory
-# Note these should have paths relative to project root dir.
-BASE_DOCS_TXT = 	$(BASE_DOCS_PLAINTEXT:%=$(myDEVDOCDIR)/%.txt)
-BASE_DOCS_TXT +=	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.txt)
-
-# These are also redistributed into the build area...
-EXTRA_DIST +=		$(TXT_DOCS_ASCIIDOC)
-EXTRA_DIST +=		$(BASE_DOCS_PLAINTEXT) $(BASE_DOCS_ASCIIDOC)
-
-# As these files are "generated" (copied in this case),
-# we may want a way to kill them from build area)
-DISTCLEANFILES +=	$(BASE_DOCS_TXT)
-
 
 #----------------------------------------------------------------------
 #  List of source texts dispersed in the code with automated targeting
@@ -590,12 +633,6 @@ DISTCLEANFILES +=	$(BASE_DOCS_TXT)
 # (as in case of the _ASCIIDOC list).
 # Filenames here should not have spaces and should have the '.txt' suffix.
 
-# TODO: The makefile could actually be simplified by automated addtion
-# of the files listed in variables above to the pattern below, so many
-# explicit rules and dependencies listed further below can be cut away.
-# After all, conversion rules are known and stable: same=same for one
-# group, and name = subdir/name.txt for another...
-
 MAPPED_TXT_DOCS_PLAINTEXT = \
 	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
 
@@ -604,20 +641,36 @@ MAPPED_TXT_DOCS_ASCIIDOC = \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
 	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
 
-##################################################
-# The stuff HTML docs are made of...
+if ENABLE_DOCKER_SUPPORT
+MAPPED_TXT_DOCS_ASCIIDOC += \
+	docker/README:$(myDEVDOCDIR)/README-docker.txt
+endif
+
+#################################################################
+# Items below are intended for automatic generation and appendage
+#################################################################
 # Historically some original docs have *.txt names and some don't
 # but we solve it by having a target to ensure presence of *.txt
 # copies now for all needed files in the same docs directory
+# See the MAPPED_TXT_DOCS_ASCIIDOC parsing around this Makefile.
+# Here we predefine the HTMLS_ASCIIDOC list as anything that is
+# not converted from the MAPPED_TXT_DOCS_ASCIIDOC list, so empty.
+HTMLS_ASCIIDOC =
 
-HTMLS_ASCIIDOC =	$(BASE_DOCS_ASCIIDOC:%=$(myDEVDOCDIR)/%.html)
-HTMLS_ASCIIDOC +=	$(TXT_DOCS_ASCIIDOC:%.txt=%.html)
+# Ultimate list of HTMLs from generally many sources (except doxygen,
+# since that list of targets is not known in advance). Predefined (and
+# empty) here, appended later on. Similarly for ultimate text files.
+HTMLS =
+TEXTS =
 
+# These variables track the compiled/generated/etc. text/html files
+# so they can be removed in *clean requests
+CLEAN_HTMLS =
+CLEAN_TEXTS =
 
-# Ultimate list of HTMLs from generally many sources (except doxygen)
-HTMLS =			$(HTMLS_ASCIIDOC)
-
-
+##################################################
+# Define delivery of developer documentation:
+##################################################
 # Target directory for developer documentation after installation
 develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
 
@@ -627,25 +680,9 @@ develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
 # Note that other HTML component targets must be listed explicitly as they
 # might appear in the project later on; as for example HTMLS_ASCIIDOC needs
 # a conditional enablement (try install only if generatable at all).
-develdoc_DATA =		$(TXT_DOCS_ASCIIDOC) $(BASE_DOCS_TXT)
-
-if HAVE_ASCIIDOC
-develdoc_DATA +=	$(HTMLS_ASCIIDOC)
-DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
-endif
-
-
-
-#----------------------------------------------------------------------
-#                One rule to generate and wipe documentation
-#----------------------------------------------------------------------
-
-all-docs: man-docs doxygen-docs html-docs txt-docs
-
-# alias for manual typing errors
-docs-all: all-docs
-
-clean-docs: clean-man clean-doxygen clean-html clean-txt
+# Like above, this list is initially empty (or maybe explicit later on)
+# and is appended by some macros below.
+develdoc_DATA =
 
 ###----------------------------------------------------------------------
 ###   Magic macros to expand the patterns for text to text file copying
@@ -674,6 +711,9 @@ define copy-file =
 	$(call copy-file-install,$1,$2) || $(call copy-file-cp,$1,$2)
 endef
 
+# This macro defines the dependencies and rules to copy the text file
+# into the build area. Also adds the filename into lists for install,
+# cleanup, ultimately used dependencies, etc.
 define depend-copy-file =
 $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
 $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
@@ -686,24 +726,120 @@ $(_MAP_DST_ABS): $(_MAP_SRC_ABS)
 
 # Fake dependency for subdir/dist builds
 $(_MAP_DST_REL): $(_MAP_DST_ABS)
-	@echo "DEBUG-MAKEFILE: Mapped target '$$@' to source '$$<'"
+	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
 
 ### Target as a text file
-$(eval TXT_DOCS_PLAINTEXT +=	$(_MAP_DST_REL) )
+$(eval TEXTS +=			$(_MAP_DST_REL) )
 
 ### Copy for installation:
 $(eval develdoc_DATA +=		$(_MAP_DST_REL) )
-
-### Cleanup in build
-$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
 
 ### Copy in make dist
 $(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
 endef
 
-# Run the logic for patterns that define file-copying
+define canclean-txt-file =
+$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+
+### Cleanup in build
+$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
+$(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
+endef
+
+# Convert the simple lists defined above into the common mapping tables
+# for unprocessable and for asciidoc-able text files:
+
+$(foreach m,$(BASE_DOCS_ASCIIDOC), \
+	$(eval MAPPED_TXT_DOCS_ASCIIDOC += ${m}:${myDEVDOCDIR}/${m}.txt ))
+
+$(foreach m,$(BASE_DOCS_PLAINTEXT), \
+	$(eval MAPPED_TXT_DOCS_PLAINTEXT += ${m}:${myDEVDOCDIR}/${m}.txt ))
+
+# Add to automatic removal ONLY the files which are relocated while mapping
+# That is, TXT_DOCS_* which remain in-place should not be removed (i.e. the
+# originals during an in-tree build)
+
+$(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
+	$(eval $(call canclean-txt-file,$(m))))
+
+# Convert the 1:1 simple lists defined above into the common mapping tables
+# for unprocessable and for asciidoc-able text files:
+
+$(foreach m,$(TXT_DOCS_ASCIIDOC), \
+	$(eval MAPPED_TXT_DOCS_ASCIIDOC += ${m}:${m} ))
+
+$(foreach m,$(TXT_DOCS_PLAINTEXT), \
+	$(eval MAPPED_TXT_DOCS_PLAINTEXT += ${m}:${m} ))
+
+# Finally, run the logic for patterns that define file-copying
+# Note that for 1:1 mapped files there may be harmless messages like
+# "make: Circular...dependency dropped." during an in-directory build.
 $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 	$(eval $(call depend-copy-file,$(m))))
+
+
+
+##################################################
+# The stuff HTML docs are made of...
+# Similar activity for ASCIIDOC-HTML mapping
+# The dependencies for the text file via patterns in the standard dir
+# were defined above. Now just add the dependency for HTML building
+# into the same basename...
+# Per dependencies, all the text files should be available in the
+# builddir/docs/develop/*.txt and the *.html will appear nearby
+
+define compile-asciidoc-to-html =
+if HAVE_ASCIIDOC
+	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
+	$(ASCIIDOC) -b html -o $(2) $(1)
+else
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$(1)' -> '$(2)'!" >&2
+endif
+endef
+
+define depend-txt-html =
+$(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
+$(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
+$(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+$(eval override _HTML_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_HTML_DST_REL)) )
+
+# Define the dependency and the rule
+$(_HTML_DST_ABS): $(_MAP_DST_ABS)
+	@$$(call compile-asciidoc-to-html,$$<,$$@)
+
+# Fake dependency for subdir/dist builds
+$(_HTML_DST_REL): $(_HTML_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
+
+$(eval CLEAN_HTMLS +=		$(_HTML_DST_REL) )
+
+$(eval HTMLS_ASCIIDOC +=	$(_HTML_DST_REL) )
+endef
+
+# Some HTMLS_ASCIIDOCs may have been defined above, maybe with other recipes
+# Convert the remainder of HTMLS_ASCIIDOC from MAPPED_TXT_DOCS_ASCIIDOC
+$(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
+
+
+if HAVE_ASCIIDOC
+HTMLS +=		$(HTMLS_ASCIIDOC)
+develdoc_DATA +=	$(HTMLS_ASCIIDOC)
+DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
+endif
+
+
+
+#----------------------------------------------------------------------
+#                One rule to generate and wipe documentation
+#----------------------------------------------------------------------
+
+all-docs: man-docs doxygen-docs html-docs txt-docs
+
+# alias for manual typing errors
+docs-all: all-docs
+
+clean-docs: clean-man clean-doxygen clean-html clean-txt
 
 
 #----------------------------------------------------------------------
@@ -712,54 +848,25 @@ $(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
 # want to deliver them to common docs/devel subdirectory in install.
 #----------------------------------------------------------------------
 
-# TODO: The dependencies for TXT and HTML-asciidocs below as they are
-# implemented now, actually define several files as the rule target,
-# then parsed with percent-tags, and become several dependencies in
-# the end. So a requested rebuild of one file actually causes attempts
-# to rebuild/recopy all of the source texts of the relevant type.
-# The TODO is to rewrite into a foreach() pattern with one target
-# per each file, for correctness.
-
-
 # A copy of TXT_DOCS_ASCIIDOC in the build area is needed for unified
-# rules of asciidoc to html parsing, defined below
-txt-docs: $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)) \
-	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT)) \
-	$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC))
+# rules of asciidoc to html parsing, defined below; see MAPPED_* above.
+txt-docs: $(addprefix $(abs_top_builddir)/,$(TEXTS))
 
 # alias for manual typing errors
 docs-txt: txt-docs
 
-clean-txt: clean-txt-basedocs clean-txt-asciidocs clean-txt-plaintext
+clean-txt: clean-txt-built clean-txt-txt_docs
 
-clean-txt-basedocs:
-	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
-
-clean-txt-plaintext:
-	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_PLAINTEXT))
+clean-txt-built:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_TEXTS))
 
 # Only clean up the copies in the builddir, if applicable
 # Do not kill the originals in the source tree
-clean-txt-asciidocs:
+clean-txt-txt_docs:
 	if test x"$(abs_top_srcdir)" != x"$(abs_top_builddir)" -a \
 	    x"$(abs_top_srcdir)" != x -a x"$(abs_top_builddir)" != x ; then \
-	    /bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)); \
+	    /bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC) $(TXT_DOCS_PLAINTEXT)); \
 	else true; fi
-
-# Copy over the *.txt files into symmetrically named build path,
-# if required and not there (messed up with EXT_DIST)
-$(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC)): $(abs_top_builddir)/%.txt: $(abs_top_srcdir)/%.txt
-	@$(call copy-file,$<,$@)
-
-# This is hardcoded to copy documents from project root directory into
-# the build area's "docs/develop" subdirectory and with ".txt" suffix
-$(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT)): $(abs_top_builddir)/$(myDEVDOCDIR)/%.txt: $(abs_top_srcdir)/%
-	@$(call copy-file,$<,$@)
-
-# Fake targets for simple pathnames (not needed for the same-to-same
-# copies like TXT_DOCS_ASCIIDOC)
-$(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
-
 
 
 #----------------------------------------------------------------------
@@ -768,43 +875,16 @@ $(BASE_DOCS_TXT): $(addprefix $(abs_top_builddir)/,$(BASE_DOCS_TXT))
 
 # Technically we only implement building of HTMLS_ASCIIDOC now.
 # If others appear and are not handled, they will fail to make.
-# That is a good thing by design ;)
+# That is a good thing by design - we'll know to add more logic ;)
 
-html-docs: txt-docs $(HTMLS)
+
+html-docs: txt-docs $(addprefix $(abs_top_builddir)/,$(HTMLS))
 
 # alias for manual typing errors
 docs-html: html-docs
 
 clean-html:
-	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(HTMLS))
-
-
-# The dependencies for the text file via patterns in the standard dir
-# were defined above. Now just add the dependency for HTML building
-# into the same basename...
-define depend-txt-html =
-$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
-$(eval HTMLS_ASCIIDOC +=	$(_MAP_DST_REL:%.txt=%.html) )
-endef
-
-$(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
-
-
-# Fake targets for simple pathnames (not needed for the same-to-same
-# copies like TXT_DOCS_ASCIIDOC)
-$(HTMLS): $(addprefix $(abs_top_builddir)/,$(HTMLS))
-
-
-if HAVE_ASCIIDOC
-# Per dependencies, all the text files should be available in the
-# builddir/docs/develop/*.txt and the *.html will appear nearby
-$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)): %.html: %.txt
-	@test -d "`dirname $@`" || mkdir -p "`dirname $@`"
-	$(ASCIIDOC) -b html -o $@ $<
-else
-$(addprefix $(abs_top_builddir)/,$(HTMLS_ASCIIDOC)):
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$@'!" >&2
-endif
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_HTMLS))
 
 
 #----------------------------------------------------------------------
