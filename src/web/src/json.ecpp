@@ -1,4 +1,14 @@
+<%pre>
+#include <locale.h>
+</%pre>
 <%cpp>
+	// Get rid of locales
+	setlocale(LC_ALL, "C");
+	std::setlocale(LC_ALL, "C");
+	std::locale default_locale("C");
+	reply.out().imbue(default_locale);
+	reply.sout().imbue(default_locale);
+	reply.uout().imbue(default_locale);
     // No matter what, we are speaking JSON
     reply.setContentType("application/json;charset=UTF-8");
     reply.setHeader(tnt::httpheader::cacheControl, "no-store");

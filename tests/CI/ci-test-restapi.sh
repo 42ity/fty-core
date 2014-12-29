@@ -19,7 +19,7 @@
 #            Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # Description: sets up the sandbox and runs the tests of REST API for
-# the $BIOS project (Note: please also run `ci-fill-db.sh` beforehand!)
+# the $BIOS project.
 
 [ "x$CHECKOUTDIR" = "x" ] && \
     case "`dirname $0`" in
@@ -32,6 +32,12 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB_BASE="initdb.sql"
+DB_DATA="load_data.sql"
+DB_TOPOP="power_topology.sql"
+DB_TOPOL="location_topology.sql"
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
@@ -97,17 +103,42 @@ wait_for_web() {
 
 # do the webserver
   # make clean
-  export BIOS_USER BIOS_PASSWD
+  LC_ALL=C
+  export BIOS_USER BIOS_PASSWD LC_ALL
   make web-test &
   MAKEPID=$!
   wait_for_web
 
 # do the test
 set +e
+echo "-------------------- reset db --------------------"
+mysql -u root < "$DB_LOADDIR/$DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_DATA"
 echo "============================================================"
-/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD"
+/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -topology
 RESULT=$?
 echo "============================================================"
+if [ "$RESULT" -eq 0 ]; then
+  echo "-------------------- reset db --------------------"
+  mysql -u root < "$DB_LOADDIR/$DB_BASE"
+  mysql -u root < "$DB_LOADDIR/$DB_TOPOP"
+  echo "============================================================"
+  /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" topology_power
+  RESULT=$?
+  echo "============================================================"
+fi
+if [ "$RESULT" -eq 0 ]; then
+  echo "-------------------- reset db --------------------"
+  mysql -u root < "$DB_LOADDIR/$DB_BASE"
+  mysql -u root < "$DB_LOADDIR/$DB_TOPOL"
+  echo "============================================================"
+  /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" topology_location
+  RESULT=$?
+  echo "============================================================"
+fi
+echo "-------------------- reset db --------------------"
+mysql -u root < "$DB_LOADDIR/$DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_DATA"
 
 # cleanup
 kill $MAKEPID 2>/dev/null

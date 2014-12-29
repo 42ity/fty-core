@@ -79,7 +79,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg);
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero than A or C it was not srecified in database 
+ * If A or C is 999 than A or C it was not srecified in database 
  * (it was NULL). 
  * 
  * \param url - the connection to database.
@@ -100,7 +100,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero than A or C it was not srecified in database 
+ * If A or C is 999 than A or C it was not srecified in database 
  * (it was NULL). 
  *
  * \param url - the connection to database.
@@ -124,7 +124,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C were not srecified in database (were NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -147,7 +147,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C were not srecified in database (were NULL). 
  *
  * \param url    - the connection to database.
  * \param getmsg - the message of the type ASSET_MSG_GET_POWER_DATACENTER

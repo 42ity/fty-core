@@ -2425,3 +2425,99 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     log_close();
 }
 
+
+TEST_CASE("Location topology from #27","[db][topology][location][location_topology.sql][from][lf27]")
+{
+    log_open();
+//    log_set_level(LOG_DEBUG);
+ 
+    // TODO hardcoded constants
+    uint8_t id_dc     = 2;
+    uint8_t id_room   = 3;
+    uint8_t id_row    = 4;
+    uint8_t id_rack   = 5;
+    uint8_t id_device = 6;
+    uint8_t id_group  = 1;
+
+    uint32_t    start_id                = 7025;
+    uint8_t     start_type_id           = id_group;
+    const char* start_name              = "inputpowergroup DC_LOC_01";
+    const char* start_device_type_name  = "happynewyear"; 
+    uint8_t     start_filter_type_id    = 7;
+    bool        start_recursive         = true;
+
+    log_info ("=============== LOCATION FROM #27 ==================\n");
+    
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    assert ( getmsg );
+    asset_msg_set_element_id  (getmsg, start_id);
+    asset_msg_set_type        (getmsg, start_type_id);
+    asset_msg_set_filter_type (getmsg, start_filter_type_id);
+    asset_msg_set_recursive   (getmsg, start_recursive);
+//    asset_msg_print (getmsg);
+
+    // expected childs in the tree
+    // (child, parent)
+    // id, id_type, name, device_type_name
+    edge_lf expected;
+   
+    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1","main",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
+    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
+    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
+ 
+    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    assert ( retTopology );   
+    REQUIRE ( is_asset_msg (retTopology) );
+
+    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    assert ( cretTopology );
+//    asset_msg_print (cretTopology);
+    // check if the root is ok
+    REQUIRE ( compare_start_element (cretTopology, start_id, start_type_id, start_name, start_device_type_name) );
+   
+    // take edges from each group, and union step by step into r1
+    auto r1 = print_frame_to_edges (asset_msg_dcs (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    auto r2 = print_frame_to_edges (asset_msg_rooms (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_rows    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_racks   (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_devices (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+
+    r2 = print_frame_to_edges (asset_msg_grps    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
+    r1.insert(r2.begin(), r2.end());
+    r2.clear();
+    
+    // check if edges are ok
+    for (auto  it = r1.begin(); it != r1.end(); ++it )
+    {   
+        auto itr = expected.find ( *it );
+        INFO(std::get<0>(*it));
+        INFO(std::get<1>(*it));
+        INFO(std::get<2>(*it));
+        INFO(std::get<3>(*it));
+        INFO(std::get<4>(*it));
+        INFO(std::get<5>(*it));
+        INFO(std::get<6>(*it));
+        INFO(std::get<7>(*it));
+        REQUIRE ( itr != expected.end() );
+        expected.erase (itr); 
+    }
+
+    REQUIRE ( (int)expected.size() == 0 );
+    r1.clear();
+    expected.clear();
+
+    asset_msg_destroy (&getmsg);
+    asset_msg_destroy (&cretTopology);
+    log_close();
+}

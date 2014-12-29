@@ -80,13 +80,17 @@ class SubProcess {
     public:
        
         static const int codeRunning = INT_MIN;
+        static const int PIPE_DEFAULT = -1;
+        static const int PIPE_DISABLED = -2;
 
         // \brief construct instance
         //
         // @param argv - C-like string of argument, see execvpe(2) for details
+        // @param stdout_pipe - create a pipe for stdout (default yes)
+        // @param stderr_pipe - create a pipe for stderr (default yes)
         //
         // \todo does not deal with a command line limit
-        explicit SubProcess(Argv cxx_argv);
+        explicit SubProcess(Argv cxx_argv, bool stdout_pipe = true, bool stderr_pipe = true);
 
         // \brief close all pipes, waits on process termination
         //

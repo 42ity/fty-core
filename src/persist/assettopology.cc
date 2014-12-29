@@ -58,7 +58,7 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
     if (*message_p) {
         asset_msg_t *message = *message_p;
         assert (message);
-
+//        asset_msg_print(message);
         int id = asset_msg_id (message);
         switch (id) {
             // TODO: Actually some of these messages don't make sense to 
@@ -678,11 +678,9 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
     log_info ("start\n");
 
-    zmsg_t *return_msg = NULL;
-
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  filter_type  = asset_msg_filter_type (getmsg);
-    bool     is_recursive = 0;
+    bool     is_recursive = false;
     uint16_t type_id      = 0;
 
     // element_id == 0 => we are looking for unlocated elements;
@@ -706,7 +704,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     {
         // if looking for a lockated elements
         try{
-            tntdb::Connection conn = tntdb::connectCached(url); 
+            tntdb::Connection conn = tntdb::connectCached(url);
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "    v.name, v1.name as dtype_name, v.id_type"
@@ -723,9 +721,10 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( strcmp(name.c_str(), "") );
 
             row[1].get(dtype_name);
-
+            // assert (dtype_name != "" if type_id == DEVICE
             row[2].get(type_id);
             assert ( type_id );
+   
         }
         catch (const tntdb::NotFound &e) {
             // element with specified id was not found
@@ -739,7 +738,49 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
         }
+
+        if ( type_id == asset_type::GROUP ) 
+        {
+            try{
+                tntdb::Connection conn = tntdb::connectCached(url);
+                tntdb::Statement st = conn.prepareCached(
+                    " SELECT"
+                    "    v.value"
+                    " FROM"
+                    "    t_bios_asset_ext_attributes v"
+                    " WHERE v.id_asset_element = :elementid AND "
+                    "       v.keytag = 'type'"
+                );
+                log_debug("element_id = %d\n", element_id);
+                
+                tntdb::Row row = st.setInt("elementid", element_id).
+
+                                    selectRow();
+    
+                log_debug("element_id = %d\n", element_id);
+                row[0].get(dtype_name);
+                assert ( dtype_name.compare("") != 0 ) ; 
+            }
+            catch (const tntdb::NotFound &e) {
+                // atribute type for the group was not specified, 
+                // but it is a mandatory
+                log_warning ("abort type for the group was not specified"
+                                " err = '%s'\n", e.what());
+                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_DBCORRUPTED, 
+                                                        e.what(), NULL);
+            }
+            catch (const std::exception &e) {
+                // internal error in database
+                log_warning ("abort select element with err = '%s'\n", e.what());
+                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+            }
+
+        }
+
     }
+
+
     // Select sub elements by types
 
     // Select datacenters
@@ -769,7 +810,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     // Select rows
     // only for rooms, datacenters, unlockated
     // TODO filter
-    if ( ( ( type_id == asset_type::DATACENTER)  ||
+    if ( ( ( type_id == asset_type::DATACENTER )  ||
            ( type_id == asset_type::ROOM )       || 
            ( element_id == 0 ) ) &&
          ( 4 <= filter_type ) )
@@ -861,11 +902,21 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_grps\n");
     }
+    
+    zmsg_t* el = NULL; 
     log_info ("creating return element\n");
-    zmsg_t* el = asset_msg_encode_return_location_from 
-                       (element_id, type_id, name.c_str(), 
-                        dtype_name.c_str(), dcs, rooms, rows, 
-                        racks, devices, grps);
+    if ( type_id == asset_type::GROUP )
+    {
+        el = select_group_elements (url, element_id, type_id, name.c_str(), 
+                                    dtype_name.c_str(), filter_type);
+    }
+    else
+    {
+        el = asset_msg_encode_return_location_from 
+                    (element_id, type_id, name.c_str(), 
+                     dtype_name.c_str(), dcs, rooms, rows, 
+                     racks, devices, grps);
+    }
     log_info ("end normal\n");
     return el;
 }
@@ -1171,6 +1222,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
     log_info ("start\n");
     uint32_t element_id = asset_msg_element_id (getmsg);
+    log_debug("element_id=%d\n", element_id);
     uint16_t type_id = 0;    
  
     // select additional information about starting device
@@ -1202,6 +1254,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
                                                     e.what(), NULL);
     }
     
+    log_debug("type_id=%d\n", type_id);
     zmsg_t* result = select_parents (url, element_id, type_id);
 
     log_info ("end\n");
@@ -1216,7 +1269,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero than A or C it was not srecified in database 
+ * If A or C is 999 than A or C it was not srecified in database 
  * (it was NULL). 
  * 
  * \param url - the connection to database.
@@ -1233,6 +1286,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     log_info ("start\n");
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  linktype = INPUT_POWER_CHAIN;
+    log_debug ("element_id = %d\n", element_id);
+    log_debug ("linktype_id = %d\n", linktype);
 
     std::string device_name = "";
     std::string device_type_name = "";
@@ -1256,9 +1311,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         // device name, required
         row[0].get(device_name);
         assert ( device_name != "" ); // database is corrupted
+        log_debug ("selected device name = %s\n", device_name.c_str());
         
         // device type name, would be NULL if it is not a device
         row[1].get(device_type_name);
+        log_debug ("selected device type name = %s\n", device_type_name.c_str());
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1323,11 +1380,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_dest );
    
             // src_out 
-            uint32_t src_out = 0;
+            uint32_t src_out = 999;
             row[1].get(src_out);
             
             // dest_in
-            uint32_t dest_in = 0;
+            uint32_t dest_in = 999;
             row[2].get(dest_in);
             
             // device_name, required
@@ -1426,7 +1483,7 @@ void print_frame_devices (zframe_t* frame)
  * 
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero than A or C it was not srecified in database 
+ * If A or C is 999 than A or C it was not srecified in database 
  * (it was NULL). 
  *
  * \param url - the connection to database.
@@ -1539,11 +1596,11 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 assert ( id_asset_element_src );
        
                 // src_out 
-                uint32_t src_out = 0;
+                uint32_t src_out = 999;
                 row[1].get(src_out);
                 
                 // dest_in
-                uint32_t dest_in = 0;
+                uint32_t dest_in = 999;
                 row[2].get(dest_in);
                 
                 // device_name_src, required
@@ -1634,7 +1691,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C were not srecified in database (were NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -1696,7 +1753,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         for ( auto &row: result )
         {
             // src_out 
-            uint32_t src_out = 0;
+            uint32_t src_out = 999;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -1705,7 +1762,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_src );
             
             // dest_in
-            uint32_t dest_in = 0;
+            uint32_t dest_in = 999;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
@@ -1820,7 +1877,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
  *
  * A single powerchain link is coded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is zero then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C were not srecified in database (were NULL). 
  *
  * \param url    - the connection to database.
  * \param getmsg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
@@ -1932,7 +1989,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         for ( auto &row: result )
         {
             // src_out 
-            uint32_t src_out = 0;
+            uint32_t src_out = 999;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -1941,7 +1998,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( id_asset_element_src );
             
             // dest_in
-            uint32_t dest_in = 0;
+            uint32_t dest_in = 999;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required

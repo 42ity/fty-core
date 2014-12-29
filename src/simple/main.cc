@@ -22,10 +22,10 @@
 
 // netmon child process
 static const shared::Argv netmon_args{"./netmon"};
-static shared::SubProcess netmon_proc{netmon_args};
+static shared::SubProcess netmon_proc{netmon_args, false, false};
 // nmap scanner child process
 static const shared::Argv nmap_args{"./driver-nmap"};
-static shared::SubProcess nmap_proc{nmap_args};
+static shared::SubProcess nmap_proc{nmap_args, false, false};
 
 //  netmon 
 void filip_actor (zsock_t *pipe, void *args) {

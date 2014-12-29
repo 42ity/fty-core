@@ -198,8 +198,8 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
     
     //the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5052:0:5049"); 
-    spowers.insert ("0:5053:0:5049"); 
+    spowers.insert ("999:5052:999:5049"); 
+    spowers.insert ("999:5053:999:5049"); 
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -291,13 +291,13 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
 
     //the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5058:0:5054"); 
-    spowers.insert ("3:5057:0:5058"); 
-    spowers.insert ("0:5057:4:5059"); 
-    spowers.insert ("0:5057:0:5054"); 
-    spowers.insert ("0:5059:0:5054"); 
+    spowers.insert ("999:5058:999:5054"); 
+    spowers.insert ("3:5057:999:5058"); 
+    spowers.insert ("999:5057:4:5059"); 
+    spowers.insert ("999:5057:999:5054"); 
+    spowers.insert ("999:5059:999:5054"); 
     spowers.insert ("1:5055:2:5057"); 
-    spowers.insert ("0:5056:0:5057"); 
+    spowers.insert ("999:5056:999:5057"); 
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -472,9 +472,9 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
 
     //the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5064:0:5062"); 
-    spowers.insert ("0:5063:0:5064"); 
-    spowers.insert ("0:5062:0:5063"); 
+    spowers.insert ("999:5064:999:5062"); 
+    spowers.insert ("999:5063:999:5064"); 
+    spowers.insert ("999:5062:999:5063"); 
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -568,14 +568,14 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5066:0:5070"); 
-    spowers.insert ("0:5067:0:5070"); 
-    spowers.insert ("0:5068:0:5071"); 
-    spowers.insert ("0:5069:0:5071"); 
-    spowers.insert ("0:5070:0:5072"); 
-    spowers.insert ("0:5071:0:5073"); 
-    spowers.insert ("0:5072:0:5065"); 
-    spowers.insert ("0:5073:0:5065"); 
+    spowers.insert ("999:5066:999:5070"); 
+    spowers.insert ("999:5067:999:5070"); 
+    spowers.insert ("999:5068:999:5071"); 
+    spowers.insert ("999:5069:999:5071"); 
+    spowers.insert ("999:5070:999:5072"); 
+    spowers.insert ("999:5071:999:5073"); 
+    spowers.insert ("999:5072:999:5065"); 
+    spowers.insert ("999:5073:999:5065"); 
 
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -660,8 +660,8 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5075:0:5074"); 
-    spowers.insert ("5:5075:0:5074"); 
+    spowers.insert ("999:5075:999:5074"); 
+    spowers.insert ("5:5075:999:5074"); 
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -748,8 +748,8 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("0:5077:0:5076"); 
-    spowers.insert ("0:5076:0:5077"); 
+    spowers.insert ("999:5077:999:5076"); 
+    spowers.insert ("999:5076:999:5077"); 
     
     zmsg_t* retTopology = get_return_power_topology_to (url.c_str(), getmsg);
     assert ( retTopology );

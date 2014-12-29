@@ -25,8 +25,8 @@ static const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 #define DB_ERROR_NOTFOUND 3
 #define DB_ERROR_UNKNOWN 4
 #define DB_ERROR_NOTIMPLEMENTED 5
+#define DB_ERROR_DBCORRUPTED 6
 
 #define BIOS_ERROR_DB 1
 
 #endif // SRC_INCLUDE_DEFS_H_
-
