@@ -359,7 +359,7 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
  * would be an empty string.
  *
  * Throws exceptions: tntdb::NotFound - in case if no rows were selected.
- *                    std::exception  - in case any other error.
+ *                    std::exception  - in case of any other error.
  *                     
  * \param url              - the connection to database.
  * \param asset_element_id - id of the asset element.
@@ -371,6 +371,31 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
 std::pair <std::string, std::string>
     select_element_name_device_tname  ( const char* url, 
                                         uint32_t asset_element_id);
+
+
+/**
+ * \brief Selects devices and powerlinks for "power topology to"
+ * from the specified start element.
+ *
+ * Throws exceptions: bios::NotFound - in case start element was not found.
+ *                    bios::ElementIsNotDevice - in case start lement is 
+ *                                      not a device.
+ *                    bios::InternalDBError - in case of any database errors.
+ *                    std::exception  - in case of any other error.
+ *
+ * \param url          - the connection to database.
+ * \param element_id   - asset element id of the start element.
+ * \param linktype     - id of the linktype.
+ * \param is_recursive - if the search is recursive (selects all levels)
+ *                           or not recursive (selects only 1 level).
+ *
+ * \return  A pair of sets: 
+ *              First  - set of devices.
+ *              Second - set of powerlinks.
+ */
+std::pair < std::set < device_info_t >, std::set < powerlink_info_t > > 
+select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
+                          bool is_recursive);
 
 // ===============================================================
 // Helper functions 

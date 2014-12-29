@@ -39,6 +39,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_types.h"
 
 #include "assettopology.h"
+#include "persist_error.h"
 
 // TODO HARDCODED CONSTANTS for asset device types
 
@@ -1329,6 +1330,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
+
+
     zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal\n");
     return result;
@@ -1354,14 +1357,10 @@ void print_frame_devices (zframe_t* frame)
    zmsg_destroy (&zmsg);
 }
 
-zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
+std::pair < std::set < device_info_t >, std::set < powerlink_info_t > > 
+select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
+                          bool is_recursive)
 {
-    assert ( getmsg );
-    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
-    log_info ("start\n");
-    uint32_t element_id = asset_msg_element_id (getmsg);
-    uint8_t  linktype   = INPUT_POWER_CHAIN;
-
     std::string device_name = "";
     std::string device_type_name = "";
     
@@ -1374,25 +1373,16 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
-        log_warning ("abort with err = '%s'\n", e.what());
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                                                        e.what(), NULL);
+        throw bios::NotFound();
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
-                                                        e.what(), NULL);
+        throw bios::InternalDBError(e.what());
     }
     
     // check, if selected element is a device
     if ( device_type_name.empty() )
-    {   // then it is not a device
-        log_warning ("abort with err = '%s %d %s'\n", 
-                "specified element id =", element_id, " is not a device");
-        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
-                            "specified element is not a device", NULL);
-    }
+        throw bios::ElementIsNotDevice(); // then it is not a device
 
     // devices that should be searched for powerlinks
     // (used for the elimination of duplicated devices and powerlinks)
@@ -1477,16 +1467,15 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                 resultpowers.insert  (std::make_tuple(
                     id_asset_element_src, src_out, cur_element_id, dest_in)); 
                 // add new devices to process
-                newdevices.insert (std::make_tuple(
-                        id_asset_element_src, device_name_src, 
-                        device_type_name_src));
+                if ( is_recursive )
+                    newdevices.insert (std::make_tuple(
+                            id_asset_element_src, device_name_src, 
+                            device_type_name_src));
             } // end for
         }
         catch (const std::exception &e) {
             // internal error in database
-            log_warning ("abort with err = '%s'\n", e.what());
-            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
-                                                        e.what(), NULL);
+            throw bios::InternalDBError(e.what());
         }
 
         // 3. find the next dest device 
@@ -1506,10 +1495,55 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
             }
         }
     }   // end of processing one of the new devices
-    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
+    log_info ("end normal\n");
+    return std::make_pair (resultdevices, resultpowers);
+}
+
+zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
+{
+    assert ( getmsg );
+    assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
+    log_info ("start\n");
+    uint32_t element_id = asset_msg_element_id (getmsg);
+    uint8_t  linktype   = INPUT_POWER_CHAIN;
+    
+    std::pair <std::set<device_info_t>, std::set <powerlink_info_t>> topology;
+
+    // Always do a recursive search
+    try{
+        topology = select_power_topology_to (url, element_id, linktype, true);
+    }
+    catch (const bios::NotFound &e) {
+        // device with specified id was not found
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                                        e.what(), NULL);
+    }
+    catch (const bios::InternalDBError &e) {
+        // internal error in database
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                                        e.what(), NULL);
+    }
+    catch (const bios::ElementIsNotDevice &e) {
+        // specified element is not a device
+        log_warning ("abort with err = '%s %d %s'\n", 
+                "specified element id =", element_id, " is not a device");
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+                                                        e.what(), NULL);
+    }
+    catch (const std::exception &e) {
+        // unexpected error
+        log_warning ("abort with err = '%s'\n", e.what());
+        return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_UNKNOWN, 
+                                                        e.what(), NULL);
+    }
+
+    zmsg_t* result = generate_return_power (topology.first, topology.second);
+    
     log_info ("end normal\n");
     return result;
-}
+} 
 
 zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
 {
