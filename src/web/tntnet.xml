@@ -52,6 +52,13 @@
       <target>time@bios_web</target>
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
+
+    <!-- SysInfo mapping -->
+    <mapping>
+      <target>sysinfo@bios_web</target>
+      <url>^/api/v1/admin/sysinfo$</url>
+    </mapping>
+
     <!-- Asset management -->
     <mapping>
       <target>item@bios_web</target>
