@@ -487,10 +487,15 @@ dist_noinst_HEADERS +=	src/shared/data.h \
 			tools/dbpath.h
 
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' \
+	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(abs_top_srcdir)/src/web</documentRoot>|' $< > $@ || \
+	rm -f $@
 
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' \
+	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' \
+	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(datarootdir)/@PACKAGE@-@VERSION@/web</documentRoot>|' $< > $@ || \
+	rm -f $@
 
 exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
 exampleconf_DATA = tntnet.xml.example
