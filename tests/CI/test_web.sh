@@ -24,7 +24,16 @@
 PASS=0
 TOTAL=0
 
-. "`dirname $0`/weblib.sh"
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+	*/tests/CI|tests/CI)
+	   CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+	   CHECKOUTDIR="" ;;
+    esac
+[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+
+. "`dirname $0`/weblib.sh" || exit $?
 
 while [ $# -gt 0 ]; do
     case "$1" in
