@@ -111,7 +111,6 @@ for i in $POSITIVE; do
         print_result $RES
     fi
     done
-    shift
 done
 
 echo "Testing completed, $PASS/$TOTAL tests passed"
