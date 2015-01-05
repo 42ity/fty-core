@@ -53,6 +53,10 @@ api_get() {
     curl -v --progress-bar "$BASE_URL$1" 2>&1
 }
 
+api_get_content() {
+    curl "$BASE_URL$1" 2>/dev/null
+}
+
 api_get_json() {
     curl -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
