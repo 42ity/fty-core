@@ -17,6 +17,7 @@ configure
 !configure.ac
 .deps
 .libs/
+nbproject
 libtool
 lib*.a
 lib*.la
