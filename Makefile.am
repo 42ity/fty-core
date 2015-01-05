@@ -492,7 +492,8 @@ tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	rm -f $@
 
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' \
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' \
+	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' \
 	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(datarootdir)/@PACKAGE@-@VERSION@/web</documentRoot>|' $< > $@ || \
 	rm -f $@
 
