@@ -17,7 +17,7 @@ asset_manager asset_mgr;
     // Check URL validity
     if( arg1 == "" || arg2 == "" ) {
 </%cpp>
-{ "error":"bad_input" }
+{ "error":"bad_input", "msg":"missing argument" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
@@ -41,7 +41,7 @@ for( size_t R = 0; R <racks.size() ; ++R ) {
             rackNames.push_back(asset_msg_name(element));
         } else {
 </%cpp>
-{"error":"invalid_rack_id"}
+{ "error":"bad_input", "msg":"invalid rack id"}
 <%cpp>
             asset_msg_destroy (&element);
             zmsg_destroy(&msg);
@@ -51,24 +51,20 @@ for( size_t R = 0; R <racks.size() ; ++R ) {
         asset_msg_destroy (&element);
     } else {
 </%cpp>
-{"error":"invalid_rack_id"}
+{"error":"bad_input", "msg":"invalid rack id"}
 <%cpp>
         zmsg_destroy(&msg);
         return HTTP_BAD_REQUEST;
     }
     zmsg_destroy(&msg);
 }
-    if( arg2 == "all" ) {
-        requestedParams = validParams;
-    } else {
-        cxxtools::split(",", arg2, std::back_inserter(requestedParams));
-        for(std::string &param: requestedParams) {
-            if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+    for(std::string &param: requestedParams) {
+        if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
 </%cpp>
-{ "error":"invalid_parameter" }
+{ "error":"bad_input", "msg":"invalid_parameter" }
 <%cpp>
-                return HTTP_BAD_REQUEST;
-            }
+            return HTTP_BAD_REQUEST;
         }
     }
 </%cpp>

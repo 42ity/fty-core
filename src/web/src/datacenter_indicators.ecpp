@@ -34,7 +34,7 @@ asset_manager asset_mgr;
     // Check URL validity
     if( arg1 == "" || arg2 == "" ) {
 </%cpp>
-{ "error":"bad_input" }
+{ "error":"bad_input", "msg":"missing argument" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
