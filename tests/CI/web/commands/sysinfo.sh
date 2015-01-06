@@ -31,7 +31,8 @@ echo "$SYSINFO_PARSED" | egrep '^\[\"' && \
 # Properly here, no json result was returned so string should become empty
 # JSON.sh generally returns an error, but may return an empty token name
 # like '[] 123' - which is wrong for our usecase
-[ $RES = 0 -a -z "$SYSINFO_PARSED" ]
+# So the expected GOOD outcome is a parsing error or empty parser output.
+[ $RES != 0 -o -z "$SYSINFO_PARSED" ]
 print_result $?
 
 ###############################################################
