@@ -80,6 +80,9 @@ _api_get_token() {
 }
 
 api_auth_post() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
     TOKEN="`_api_get_token`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
@@ -90,6 +93,31 @@ api_auth_delete() {
 }
 
 api_auth_put() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	PUT data
     TOKEN="`_api_get_token`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
 }
+
+api_auth_get() {
+    TOKEN="`_api_get_token`"
+    curl -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
+}
+
+api_auth_get_content() {
+    TOKEN="`_api_get_token`"
+    curl -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+}
+
+api_auth_get_json() {
+    TOKEN="`_api_get_token`"
+    curl -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
+    | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
+}
+
+api_auth_get_jsonv() {
+    TOKEN="`_api_get_token`"
+    api_auth_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
+}
+
