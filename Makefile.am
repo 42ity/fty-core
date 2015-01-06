@@ -117,6 +117,8 @@ libpriv_db_la_SOURCES = 	src/persist/persistence.h \
 				src/persist/nethistory.h \
 				src/persist/assetmsg.cc \
 				src/persist/assettopology.cc \
+				src/persist/persist_error.cc \
+				src/persist/persist_error.h \
 				src/persist/assettopology.h \
 				src/persist/assetmsg.h \
 				src/persist/persistencelogic.cc \
