@@ -78,7 +78,7 @@ cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
 CMP="`pwd`/cmpjson.py"
-[ -e "$CMP" ] || exit 5
+[ -s "$CMP" ] || exit 5
 cd web/commands
 POSITIVE=""
 NEGATIVE=""
