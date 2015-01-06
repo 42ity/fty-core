@@ -2,7 +2,7 @@
 EXTRA_DIST =
 
 helperdir	= $(datadir)/@PACKAGE@-@VERSION@/scripts
-helper_SCRIPTS	= init-os-accounts.sh resolveip.sh
+helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh
 
 mysqldir	= $(datadir)/@PACKAGE@-@VERSION@/sql/mysql
 mysql_DATA	= initdb.sql
