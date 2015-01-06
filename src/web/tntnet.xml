@@ -26,6 +26,13 @@
       <target>auth-verify@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
     </mapping>
+    <!-- Requests for sensitive system information should not be anonymous -->
+    <!-- TODO: Later this should be extended to allow a particular level of authorization, not just any user -->
+    <mapping>
+      <target>auth-verify@bios_web</target>
+      <url>^/api/v1/admin/sysinfo$</url>
+    </mapping>
+
     <!-- API itself -->
 
     <!-- topology/location -->
