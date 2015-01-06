@@ -1,10 +1,17 @@
-# Check getting server system info (TODO: authorized only?)
+# Check getting server system info as unprivileged user
+test_it "unauth_sysinfo_get"
+[ "`api_get '/admin/sysinfo' | \
+    grep 'HTTP/1.1 401 Unauthorized'`" ]
+print_result $?
+
+# Check getting server system info (authorized only?)
 test_it "sysinfo_get"
 SYSINFO="`api_get_content '/admin/sysinfo'`"
 RES=$?
 echo "=== SYSINFO:" >&2
 echo "$SYSINFO" >&2
-print_result $RES
+[ $RES = 0 -a -n "$SYSINFO" ]
+print_result $?
 
 test_it "sysinfo_parsable"
 SYSINFO_PARSED="`echo "$SYSINFO" | $CHECKOUTDIR/tools/JSON.sh -b`"
@@ -15,15 +22,15 @@ echo "$SYSINFO_PARSED" >&2
 print_result $?
 
 getval() {
-    echo "$SYSINFO_PARSED" | egrep "$1" | \
+    echo "$SYSINFO_PARSED" | egrep "^\[$1\]" | \
     while read _C _T; do echo "$_T"; done | \
     sed 's,^"*,,' | sed 's,"*$,,'
 }
 
 test_it "sysinfo_runs_in_container"
 RES=0
-SYSINFO_CONTAINER_TYPE="`getval '^\["server-os-features","virt","container","type"\]'`" || RES=$?
-SYSINFO_CONTAINER_FLAG="`getval '^\["server-os-features","virt","container","flag"\]'`" || RES=$?
+SYSINFO_CONTAINER_TYPE="`getval '"server-os-features","virt","container","type"'`" || RES=$?
+SYSINFO_CONTAINER_FLAG="`getval '"server-os-features","virt","container","flag"'`" || RES=$?
 echo "=== SYSINFO_CONTAINER_TYPE: '$SYSINFO_CONTAINER_TYPE' (code '$SYSINFO_CONTAINER_FLAG')" >&2
 [ $RES = 0 -a -n "$SYSINFO_CONTAINER_TYPE" -a \
     x"$SYSINFO_CONTAINER_TYPE" != x'""' ]
@@ -31,8 +38,8 @@ print_result $?
 
 test_it "sysinfo_runs_in_virtmachine"
 RES=0
-SYSINFO_VIRTMACHINE_TYPE="`getval '^\["server-os-features","virt","virtmachine","type"\]'`" || RES=$?
-SYSINFO_VIRTMACHINE_FLAG="`getval '^\["server-os-features","virt","virtmachine","flag"\]'`" || RES=$?
+SYSINFO_VIRTMACHINE_TYPE="`getval '"server-os-features","virt","virtmachine","type"'`" || RES=$?
+SYSINFO_VIRTMACHINE_FLAG="`getval '"server-os-features","virt","virtmachine","flag"'`" || RES=$?
 echo "=== SYSINFO_VIRTMACHINE_TYPE: '$SYSINFO_VIRTMACHINE_TYPE' (code '$SYSINFO_VIRTMACHINE_FLAG')" >&2
 [ $RES = 0 -a -n "$SYSINFO_VIRTMACHINE_TYPE" -a \
     x"$SYSINFO_VIRTMACHINE_TYPE" != x'""' ]
