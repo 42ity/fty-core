@@ -73,7 +73,7 @@ print_result $?
 
 test_it "sysinfo_runs_in_virtmachine"
 RES=0
-SYSINFO_VIRTMACHINE="`getval '"operating-system","hypervizor"'`" || RES=$?
+SYSINFO_VIRTMACHINE="`getval '"operating-system","hypervisor"'`" || RES=$?
 echo "=== SYSINFO_VIRTMACHINE: '$SYSINFO_VIRTMACHINE'" >&2
 [ $RES = 0 -a -n "$SYSINFO_VIRTMACHINE" -a \
     x"$SYSINFO_VIRTMACHINE" != x'""' ]
