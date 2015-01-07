@@ -40,7 +40,7 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
 </%cpp>
-    "hypervizor": "<$ ret == 0 ? cmdout : NA $>",
+    "hypervisor": "<$ ret == 0 ? cmdout : NA $>",
     "uname": {
 <%cpp>
     struct utsname u;
