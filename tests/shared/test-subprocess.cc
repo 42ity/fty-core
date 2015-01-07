@@ -102,6 +102,32 @@ TEST_CASE("subprocess-read-stdout", "[subprocess][fd]") {
     CHECK(ret == 0);
 }
 
+TEST_CASE("subprocess-output", "[subprocess][fd]") {
+    Argv argv{"/usr/bin/printf", "the-test\n"};
+    std::string o;
+    std::string e;
+
+    int r = output(argv, o, e);
+    CHECK(r == 0);
+    CHECK(o == "the-test\n");
+    CHECK(e == "");
+
+    Argv argv2{"/usr/bin/printf"};
+
+    r = output(argv2, o, e);
+    CHECK(r == 1);
+    CHECK(o == "");
+    CHECK(e.size() > 0);
+
+}
+
+TEST_CASE("subprocess-call", "[subprocess]") {
+    int ret = call({"/bin/false"});
+    CHECK(ret == 1);
+    ret = call({"/bin/true"});
+    CHECK(ret == 0);
+}
+
 TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
     std::vector<std::string> argv{"/bin/sleep", "3"};
     int ret, i;

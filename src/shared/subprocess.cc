@@ -341,6 +341,41 @@ std::pair<std::string, std::string> ProcCacheMap::pop(pid_t pid) {
     return ret;
 }
 
+std::string read_all(int fd) {
+    static size_t BUF_SIZE = 4096;
+    char buf[BUF_SIZE+1];
+    ssize_t r;
+
+    std::stringbuf sbuf;
+
+    while (true) {
+        memset(buf, '\0', BUF_SIZE+1);
+        r = ::read(fd, buf, BUF_SIZE);
+        //TODO what to do if errno != EAGAIN | EWOULDBLOCK
+        if (r <= 0) {
+            break;
+        }
+        sbuf.sputn(buf, strlen(buf));
+    }
+    return sbuf.str();
+}
+
+int call(const Argv& args) {
+    SubProcess p(args, false, false);
+    p.run();
+    return p.wait();
+}
+
+int output(const Argv& args, std::string& o, std::string& e) {
+    SubProcess p(args);
+    p.run();
+    int ret = p.wait();
+
+    o.assign(read_all(p.getStdout()));
+    e.assign(read_all(p.getStderr()));
+    return ret;
+}
+
 // ### helper functions ###
 char * const * _mk_argv(Argv vec) {
 
