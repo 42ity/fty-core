@@ -4,6 +4,7 @@
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
 #include "subprocess.h"
+#include <sys/utsname.h>
 
 static std::string chomp(std::string data) {
 	/* TODO: replace inner newlines by "\n" strings */
@@ -20,15 +21,14 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 
 </%pre>
 {
-"server-os-features": {
+  "operating-system" : {
 <%cpp>
 	std::string cmdout;
 	std::string cmderr;
-    static const std::string NA = "Not found";
+    static const std::string NA = "unknown";
     int ret;
 
 </%cpp>
-  "virt": {
 <%cpp>
 	/* TODO: This currently relies on "systemd-detect-virt" - what about OSes that do not have it? */
 
@@ -40,40 +40,20 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
 </%cpp>
-    "VM": "<$ ret == 0 ? cmdout : NA $>"
-  },
-  "uname": {
+    "hypervizor": "<$ ret == 0 ? cmdout : NA $>",
+    "uname": {
 <%cpp>
-	ret = output2({"/bin/uname", "-a"}, cmdout, cmderr);
+    struct utsname u;
+    ret = uname(&u);
+    if (ret == -1) {
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
 </%cpp>
-    "all": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-s"}, cmdout, cmderr);
-</%cpp>
-    "kernel-name": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-r"}, cmdout, cmderr);
-</%cpp>
-    "kernel-release": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-v"}, cmdout, cmderr);
-</%cpp>
-    "kernel-version": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-m"}, cmdout, cmderr);
-</%cpp>
-    "machine-hw": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-i"}, cmdout, cmderr);
-</%cpp>
-    "platform-hw": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-p"}, cmdout, cmderr);
-</%cpp>
-    "processor": "<$ cmdout $>",
-<%cpp>
-	ret = output2({"/bin/uname", "-o"}, cmdout, cmderr);
-</%cpp>
-    "operating-system": "<$ cmdout $>" }
+      "sysname": "<$ (char*) u.sysname $>",
+      "nodename" : "<$ (char*) u.nodename $>",
+      "release": "<$ (char*) u.release $>",
+      "version": "<$ (char*) u.version $>",
+      "machine": "<$ (char*) u.machine $>"
+    }
   }
 }
