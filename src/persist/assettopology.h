@@ -16,8 +16,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file assettopology.h
-    \brief Functions for getting the topology (location andpower) from the
-           database
+    \brief Functions for getting the topology (location and power) from the
+           database.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
@@ -27,13 +27,44 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_msg.h"
 
 // ===============================================================
+// Helper types
+// ===============================================================
+
+/**
+ * \brief A type for storing basic information about device.
+ *
+ * First  -- id
+ *              asset element id of the device in database
+ * Second -- device_name
+ *              asset element name of the device in database
+ * Third  -- device_type_name
+ *              name of the device type in database
+ */
+typedef std::tuple< uint32_t, std::string, std::string > device_info_t;
+
+
+/**
+ * \brief A type for storing basic information about powerlink.
+ *
+ * First  -- src_id
+ *              asset element id of the source device
+ * Second -- src_out
+ *              output port on the source device
+ * Third  -- dest_id
+ *              asset element id of the destination device
+ * Forth  -- dest_in
+ *              input port on the destination device
+ */
+typedef std::tuple< uint32_t, uint16_t, uint32_t, uint16_t > powerlink_info_t;
+
+// ===============================================================
 // Functions for processing a special message type
 // ===============================================================
 
 /**
  * \brief This function processes the ASSET_MSG_GET_LOCATION_FROM message
  *
- * To correct processing all fields of the message should be set up 
+ * For the correct processing of all message fields message should be set up 
  * according specification.
  * 
  * To select unlockated elements need to set element_id to 0.
@@ -77,10 +108,12 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg);
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
  * 
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device D if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
- * (it was NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  * 
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_FROM 
@@ -97,11 +130,13 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  *
  * In case of success it generates the ASSET_MSG_RETURN_POWER. 
  * In case of failure returns COMMON_MSG_FAIL.
- * 
- * A single powerchain link is coded as "A:B:C:D" string 
+ *
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 than A or C it was not srecified in database 
- * (it was NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_TO
@@ -122,9 +157,12 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg);
  * Returns all devices in the group and returns all power links between them.
  * Links that goes outside the group are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -145,9 +183,11 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg);
  * Returns all devices in datacenter and all powerlinks between them.
  * Links outside the datacenter are not returned.
  *
- * A single powerchain link is coded as "A:B:C:D" string 
- * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C were not srecified in database (were NULL). 
+ * Can not distinguish multiple links from device B to device C if
+ * src_out and dest_in are not specified.
+ *
+ * A single powerchain link is encoded as string according to the 
+ * convert_powerchain_powerlink2list function. 
  *
  * \param url    - the connection to database.
  * \param getmsg - the message of the type ASSET_MSG_GET_POWER_DATACENTER
@@ -160,10 +200,24 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
                                     asset_msg_t* getmsg);
 
 // ===============================================================
-// Helper function for testing
+// Helper functions and types for testing
 // ===============================================================
 
-typedef std::set<std::tuple<int,int,std::string,std::string,int,int,std::string,std::string>> edge_lf;
+/**
+ * \brief Helper type for testing
+ *  
+ *  First  -- CHILD:asset element id
+ *  Second -- CHILD:device type id
+ *  Third  -- CHILD:device name
+ *  Forth  -- CHILD:device type name
+ *  Fifth  -- PARENT:asset element id
+ *  Sixth  -- PARENT:device type id
+ *  Sevens -- PARENT:device name
+ *  Eighth -- PARENT:device type name
+ */
+typedef std::set < std::tuple < int, int, std::string, std::string,
+                                int, int, std::string, std::string>> edge_lf;
+
 
 /**
  * \brief Helper function for testing
@@ -225,7 +279,7 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
                             const char* name, const char* dtype_name);
 
 // ===============================================================
-// Functions for direct interacting with  database
+// Helper functions for direct interacting with  database
 // ===============================================================
 
 /**
@@ -236,9 +290,9 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
  * 
  *  In case of success it generates the ASEET_MSG_RETURN_LOCATION_FROM. 
  *  In case of failure returns COMMON_MSG_FAIL.
-
+ *
  * \param url             - connection to database
- * \param element_id      - asset element id of group
+ * \param element_id      - asset element id of the group
  * \param element_type_id - asset_element_type_id of the group
  * \param group_name      - name of the group
  * \param filter_type     - id of the type of the searched elements
@@ -297,6 +351,120 @@ zframe_t* select_childs(
 zmsg_t* select_parents (const char* url, uint32_t element_id, 
                         uint8_t element_type_id);
 
+/**
+ * \brief Selects a name of the specified asset element, in case of device 
+ * additionally selects device type name.
+ *
+ * If the specified asset element is not a device, then a device type name 
+ * would be an empty string.
+ *
+ * Throws exceptions: tntdb::NotFound - in case if no rows were selected.
+ *                    std::exception  - in case of any other error.
+ *                     
+ * \param url              - the connection to database.
+ * \param asset_element_id - id of the asset element.
+ *
+ * \return  A pair of strings: 
+ *              First  - name of the asset element.
+ *              Second - device type name.
+ */
+std::pair <std::string, std::string>
+    select_element_name_device_tname  ( const char* url, 
+                                        uint32_t asset_element_id);
+
+
+/**
+ * \brief Selects devices and powerlinks for "power topology to"
+ * from the specified start element.
+ *
+ * Throws exceptions: bios::NotFound - in case start element was not found.
+ *                    bios::ElementIsNotDevice - in case start lement is 
+ *                                      not a device.
+ *                    bios::InternalDBError - in case of any database errors.
+ *                    std::exception  - in case of any other error.
+ *
+ * \param url          - the connection to database.
+ * \param element_id   - asset element id of the start element.
+ * \param linktype     - id of the linktype.
+ * \param is_recursive - if the search is recursive (selects all levels)
+ *                           or not recursive (selects only 1 level).
+ *
+ * \return  A pair of sets: 
+ *              First  - set of devices.
+ *              Second - set of powerlinks.
+ */
+std::pair < std::set < device_info_t >, std::set < powerlink_info_t > > 
+select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
+                          bool is_recursive);
+
+// ===============================================================
+// Helper functions 
+// ===============================================================
+
+/**
+ * \brief Converts a set of device_info_t elements into matryoshka
+ *
+ * \param devices - set of device_info_t elements
+ *
+ * \return zmsg_t - encoded matryoshka of ASSET_MSG_POWERCHAIN_DEVICE messages
+ */
+zmsg_t* convert_powerchain_devices2matryoshka (
+                        std::set <device_info_t > const &devices);
+
+/**
+ * \brief Converts a set of powerlink_info_t elements into list
+ *
+ * Every element in the list is a string 
+ * "A:B:C:D"="src_socket:src_id:dst_socket:dst_id".
+ * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ *
+ * \param powerlinks - set of powerlink_info_t elements
+ *
+ * \return zlist_t - link of strings "A:B:C:D"
+ */
+zlist_t* convert_powerchain_powerlink2list (
+                        std::set < powerlink_info_t > const &powerlinks);
+
+/**
+ * \brief Generates an ASSET_MSG_RETURN_POWER message from the given arguments
+ *
+ * Both argumens would be left untouched.
+ * 
+ * \param devices    - a set of device_info_t elements 
+ * \param powerlinks - a set of powerlink_info_t elements
+ *
+ * \return zmsg_t - encoded ASSET_MSG_RETURN_POWER message
+ */
+zmsg_t* generate_return_power (std::set < device_info_t >    const &devices, 
+                               std::set < powerlink_info_t > const &powerlinks);
+
+/**
+ * \brief Converts a matryoshka mmsg into frame
+ *
+ * Destroyes matryosshka.
+ * 
+ * \param matryoshka - a matryoshka msg to convert
+ * \param frame      - an output parameter: frame
+ *
+ * \return 0  in case of success
+ *         -2 in case of failure
+ */
+int matryoshka2frame (zmsg_t **matryoshka, zframe_t **frame );
+
+/**
+ * \brief Helper function
+ *
+ * Calculates zframe_t size even for NULL value.
+ *
+ * \param frame - frame
+ *
+ * \return size of the frame
+ */
+size_t my_size(zframe_t* frame);
+
+// ===============================================================
+// Function for processing assettopology messages
+// ===============================================================
 
 zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p);
 

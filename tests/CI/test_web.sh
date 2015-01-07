@@ -87,6 +87,7 @@ cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
 CMP="`pwd`/cmpjson.py"
+[ -s "$CMP" ] || exit 5
 cd web/commands
 POSITIVE=""
 NEGATIVE=""
@@ -112,7 +113,11 @@ for i in $POSITIVE; do
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
-        python "$CMP" "$RESULT" "$EXPECT"
+        if [ -x "../results/$NAME".cmp ]; then
+            ../results/"$NAME".cmp "$RESULT" "$EXPECT"
+        else
+            python "$CMP" "$RESULT" "$EXPECT"
+        fi
         RES=$?
         if [ $RES -ne 0 ]; then
             diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log

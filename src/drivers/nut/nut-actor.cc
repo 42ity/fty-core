@@ -41,7 +41,7 @@ zmsg_t *nut_device_to_powerdev_msg(const NUTDevice &dev) {
 
     // check for unknown device type
     if( ! dev.hasProperty("type") ) return NULL;
-    if( ( dev.property("type") != "ups" ) && ( dev.property("type") != "epdu" ) ) return NULL;
+    if( ( dev.property("type") != "ups" ) && ( dev.property("type") != "epdu" ) && ( dev.property("type") != "pdu" ) ) return NULL;
 
     zhash_t *otherProperties = zhash_new();
     assert(otherProperties);
@@ -177,9 +177,9 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
     }
     if( dev.hasProperty("type") ) {
         std::string type = dev.property("type");
-        if( type == "ups" || type == "epdu" ) {
+        if( type == "ups" || type == "epdu" || type == "pdu" ) {
             zmsg = common_msg_encode_new_measurement(
-                "NUT",          
+                "NUT",
                 dev.name().c_str(),
                 type.c_str(),
                 IDs[name].type,
