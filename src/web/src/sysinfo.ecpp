@@ -3,42 +3,19 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
+#include "subprocess.h"
 
-/**
- * Execute a command and get the result.
- * http://stackoverflow.com/questions/2655374/how-to-redirect-the-output-of-a-system-call-to-inside-the-program-in-c-c
- *
- * @param   cmd - The system command to run.
- * @param   exitcode - Optional storage for process exit code.
- * @return  The string command line output of the command.
- */
-std::string GetStdoutFromCommand(std::string cmd, int *exitcode = NULL) {
-	std::string data = "";
-	FILE * stream;
-	const int max_buffer = 256;
-	char buffer[max_buffer];
-//	cmd.append(" 2>&1"); // Do we want STDERR?
-
-	stream = popen(cmd.c_str(), "r");
-	if (stream) {
-		while (!feof(stream))
-			if (fgets(buffer, max_buffer, stream) != NULL)
-				data.append(buffer);
-		int ecode = pclose(stream);
-		if (exitcode!=NULL) {
-			*exitcode = (int)ecode;
-		}
-	} else {
-		if (exitcode!=NULL)
-			*exitcode = -1;
-	}
-	return data;
-}
-
-std::string chomp(std::string data) {
+static std::string chomp(std::string data) {
 	/* TODO: replace inner newlines by "\n" strings */
 	data.resize( data.find_last_not_of('\n')+1 );
 	return data;
+}
+
+static int output2(const shared::Argv& args, std::string& o, std::string& e) {
+    int ret = shared::output(args, o, e);
+    o = chomp(o);
+    e = chomp(e);
+    return ret;
 }
 
 </%pre>
@@ -46,7 +23,9 @@ std::string chomp(std::string data) {
 "server-os-features": {
 <%cpp>
 	std::string cmdout;
-	int cmderr = -1;
+	std::string cmderr;
+    static const std::string NA = "Not found";
+    int ret;
 
 </%cpp>
   "virt": {
@@ -54,50 +33,46 @@ std::string chomp(std::string data) {
 	/* TODO: This currently relies on "systemd-detect-virt" - what about OSes that do not have it? */
 
 	/* Detect container virtualization */
-	cmdout = chomp(GetStdoutFromCommand("systemd-detect-virt -c", &cmderr));
+    ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
 </%cpp>
-    "container": {
-      "type" : "<$ cmdout $>",
-      "flag" : <$ cmderr $> },
+    "container": "<$ ret == 0 ? cmdout : NA $>",
 <%cpp>
 	/* Detect VM virtualization */
-	cmdout = chomp(GetStdoutFromCommand("systemd-detect-virt -v", &cmderr));
+    ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
 </%cpp>
-    "virtmachine": {
-      "type" : "<$ cmdout $>",
-      "flag" : <$ cmderr $> }
+    "VM": "<$ ret == 0 ? cmdout : NA $>"
   },
   "uname": {
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -a"));
+	ret = output2({"/bin/uname", "-a"}, cmdout, cmderr);
 </%cpp>
     "all": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -s"));
+	ret = output2({"/bin/uname", "-s"}, cmdout, cmderr);
 </%cpp>
     "kernel-name": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -r"));
+	ret = output2({"/bin/uname", "-r"}, cmdout, cmderr);
 </%cpp>
     "kernel-release": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -v"));
+	ret = output2({"/bin/uname", "-v"}, cmdout, cmderr);
 </%cpp>
     "kernel-version": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -m"));
+	ret = output2({"/bin/uname", "-m"}, cmdout, cmderr);
 </%cpp>
     "machine-hw": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -i"));
+	ret = output2({"/bin/uname", "-i"}, cmdout, cmderr);
 </%cpp>
     "platform-hw": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -p"));
+	ret = output2({"/bin/uname", "-p"}, cmdout, cmderr);
 </%cpp>
     "processor": "<$ cmdout $>",
 <%cpp>
-	cmdout = chomp(GetStdoutFromCommand("uname -o"));
+	ret = output2({"/bin/uname", "-o"}, cmdout, cmderr);
 </%cpp>
     "operating-system": "<$ cmdout $>" }
   }
