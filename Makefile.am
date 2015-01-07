@@ -481,7 +481,7 @@ bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 					  -module -lm -ltntdb -ltntnet -lcidr
 bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la libpriv-proto.la \
-                     libpriv-log.la
+                     libpriv-log.la libpriv-subprocess.la
 
 dist_noinst_HEADERS +=	src/shared/data.h \
 			src/web/include/sasl.h \
