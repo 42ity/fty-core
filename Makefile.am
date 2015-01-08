@@ -455,6 +455,7 @@ BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
 bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/auth-require.cpp                       \
                       src/shared/data.cpp   src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
