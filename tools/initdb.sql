@@ -535,6 +535,7 @@ INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 7,
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
 INSERT INTO t_bios_device_type (name) VALUES ("ups");
 INSERT INTO t_bios_device_type (name) VALUES ("epdu");
+INSERT INTO t_bios_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_device_type (name) VALUES ("server");
 
 /* t_bios_client */
@@ -556,6 +557,7 @@ INSERT INTO t_bios_asset_element_type (name) VALUES ("device");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("ups");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("genset");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("epdu");
+INSERT INTO t_bios_asset_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
 
