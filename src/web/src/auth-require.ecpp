@@ -1,0 +1,35 @@
+<%pre>
+#include "tokens.h"
+#include <tnt/httpmessage.h>
+#include <tnt/httpheader.h>
+</%pre>
+<%request scope="global">
+int access_auth_level;
+</%request>
+<%cpp>
+switch (access_auth_level) {
+case -1:
+case 0:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+	reply.setContentType("text/html;charset=UTF-8");
+</%cpp>
+<html><body><h1>Not authorized, <a href="/api/1.0/token">get token</a> first!</h1></body></html>
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+case -2:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+</%cpp>
+{
+    "error":"invalid_token"
+}
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+case -3:
+	return DECLINED;
+	break;
+}
+
+//HTTP_OK?
+</%cpp>
