@@ -7,6 +7,13 @@
 int access_auth_level;
 </%request>
 <%cpp>
+
+char buff[16];
+sprintf(buff, "%i", access_auth_level);
+buff[15]='\0';
+reply.setHeader( (std::string)"X-Auth-Require: ",
+    (std::string)"access_auth_level=\"" + buff + "\"");
+
 switch (access_auth_level) {
 case -1:
 case 0:

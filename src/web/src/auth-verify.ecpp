@@ -37,6 +37,6 @@ if(request.hasHeader(tnt::httpheader::authorization)) {
 char buff[16];
 sprintf(buff, "%i", access_auth_level);
 buff[15]='\0';
-reply.setHeader( (std::string)"X-Auth: ",
+reply.setHeader( (std::string)"X-Auth-Verify: ",
     (std::string)"access_auth_level=\"" + buff + "\"");
 </%cpp>
