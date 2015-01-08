@@ -20,6 +20,7 @@ if(request.hasHeader(tnt::httpheader::authorization)) {
 	}
 
 	if(access_token.empty()) {
+		/* Token header was presented but empty */
 		access_auth_level=-1;
 	} else {
 		access_auth_level=1;
@@ -27,14 +28,15 @@ if(request.hasHeader(tnt::httpheader::authorization)) {
 //			"error":"invalid_token"
 //			return HTTP_UNAUTHORIZED;
 			access_auth_level=-2;
-	 	} else {
-//?//			return DECLINED;
-			access_auth_level=-3;
+//	 	} else {
+//???//			return DECLINED;
+//			access_auth_level=-3;
 		}
 	}
 }
 char buff[16];
 sprintf(buff, "%i", access_auth_level);
-reply.setHeader( (std::string)"X-Auth",
+buff[15]='\0';
+reply.setHeader( (std::string)"X-Auth: ",
     (std::string)"access_auth_level=\"" + buff + "\"");
 </%cpp>
