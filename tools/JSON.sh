@@ -16,7 +16,11 @@ SORTDATA=""
 NORMALIZE=0
 EXTRACT_JPATH=""
 TOXIC_NEWLINE=0
-DEBUG=0
+COOKASTRING=0
+
+### Beside command-line, debugging can be enabled by envvars from the caller
+[ x"$DEBUG" = xy -o x"$DEBUG" = xyes ] && DEBUG=1
+[ -n "$DEBUG" -a "$DEBUG" -ge 0 ] 2>/dev/null || DEBUG=0
 
 usage() {
   echo
@@ -34,7 +38,7 @@ usage() {
   echo "     brackets not included) e.g. regex='^\"level1\",\"level2arr\",0'"
   echo "--no-newline - rather than concatenating detected line breaks in markup,"
   echo "     return with error when this is seen in input"
-  echo "-d - Enable debugging traces to stderr"
+  echo "-d - Enable debugging traces to stderr (repeat or use -d=NUM to bump)"
   echo
   echo "Sorting is also available, although limited to single-line strings in"
   echo "the markup (multilines are automatically escaped into backslash+n):"
@@ -50,11 +54,52 @@ usage() {
   echo "     output with contents sorted like for -S='args', e.g. use -N='-n'"
   echo "     This is equivalent to -N -S='args', just more compact to write"
   echo
+  echo "To help JSON-related scripting, with '-Q' an input plaintext can be cooked"
+  echo "into a string valid for JSON (backslashes, quotes and newlines escaped,"
+  echo "with no trailing newline); after cooking, the script exits:"
+  echo '       COOKEDSTRING="`somecommand 2>&1 | JSON.sh -Q`"'
+  echo "This can also be used to pack JSON in JSON."
+  echo
 }
 
 unquote() {
     # Remove single or double quotes surrounding the token
     sed "s,^'\(.*\)'\$,\1," | sed 's,^\"\(.*\)\"$,\1,'
+}
+
+### Empty and non-numeric and non-positive values should be filtered out here
+is_positive() {
+    [ -n "$1" -a "$1" -gt 0 ] 2>/dev/null
+}
+default_posval() {
+    eval is_positive "\$$1" || eval "$1"="$2"
+}
+
+print_debug() {
+    # Required params:
+    #   $1	Debug level of the message
+    #   $2..	The message to print to stderr (if $DEBUG>=$1)
+    local DL="$1"
+    shift
+    [ "$DEBUG" -ge "$DL" ] 2>/dev/null && \
+        echo -E "[$$]DEBUG($DL): $@" >&2
+    :
+}
+
+tee_stderr() {
+    TEE_TAG="TEE_STDERR: "
+    [ -n "$1" ] && TEE_TAG="$1:"
+    [ -n "$2" -a "$2" -ge 0 ] 2>/dev/null && \
+        TEE_DEBUG="$2" || \
+        TEE_DEBUG=$DEBUGLEVEL_PRINTTOKEN_PIPELINE
+
+    ### If debug is not enabled, skip tee'ing quickly with little impact
+    [ "$DEBUG" -lt "$TEE_DEBUG" ] 2>/dev/null && cat || \
+    while IFS= read -r LINE; do
+        echo -E "$LINE"
+        print_debug "$TEE_DEBUG" "$TEE_TAG" "$LINE"
+    done
+    :
 }
 
 parse_options() {
@@ -91,6 +136,10 @@ parse_options() {
       ;;
       -d) DEBUG=$(($DEBUG+1))
       ;;
+      -d=*) DEBUG="`echo "$1" | sed 's,^-d=,,'`"
+      ;;
+      -Q) COOKASTRING=1
+      ;;
       ?*) echo "ERROR: Unknown option '$1'."
           usage
           exit 0
@@ -126,8 +175,10 @@ strip_newlines() {
   local INSTRING=0
   local LINENUM=0
 
-  # the first "grep" should ensure that input has a trailing newline
-  grep '' | while IFS="" read -r ILINE; do
+  # The first "grep" should ensure that input has a trailing newline
+  grep '' | \
+  tee_stderr BEFORE_STRIP $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
+  while IFS="" read -r ILINE; do
     # Remove escaped quotes:
     LINESTRIP="${ILINE//\\\"}"
     # Remove all chars but remaining quotes:
@@ -139,7 +190,7 @@ strip_newlines() {
 
     if [ "$ODD" -eq 1 -a "$INSTRING" -eq 0 ]; then
       [ "$TOXIC_NEWLINE" = 1 ] && \
-        echo "Invalid JSON markup detected: newline in a string value: at line #$LINENUM" >&2 && \
+        echo "ERROR: Invalid JSON markup detected: newline in a string value: at line #$LINENUM" >&2 && \
         exit 121
       printf '%s\\n' "$ILINE"
       INSTRING=1
@@ -165,6 +216,16 @@ strip_newlines() {
   :
 }
 
+cook_a_string() {
+    ### Escape backslashes, double-quotes, tabs and newlines, in this order
+    grep '' | sed -e 's,\\,\\\\,g' -e 's,\",\\",g' -e 's,\t,\\t,g' | \
+    { FIRST=''; while IFS="" read -r ILINE; do
+      printf '%s%s' "$FIRST" "$ILINE"
+      [ -z "$FIRST" ] && FIRST='\n'
+      done; }
+    :
+}
+
 tokenize () {
   local GREP
   local ESCAPE
@@ -187,13 +248,17 @@ tokenize () {
     CHAR='[^[:cntrl:]"\\\\]'
   fi
 
-  local STRINGVAL="$CHAR*($ESCAPE$CHAR*)*"
+  # Allow tabs inside strings
+  local CHART="($CHAR|[[:blank:]])"
+  local STRINGVAL="$CHART*($ESCAPE$CHART*)*"
   local STRING="(\"$STRINGVAL\")"
   local NUMBER='-?(0|[1-9][0-9]*)([.][0-9]*)?([eE][+-]?[0-9]*)?'
   local KEYWORD='null|false|true'
   local SPACE='[[:space:]]+'
 
-  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | egrep -v "^$SPACE$"
+  tee_stderr BEFORE_TOKENIZER $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
+  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | egrep -v "^$SPACE$" | \
+  tee_stderr AFTER_TOKENIZER $DEBUGLEVEL_PRINTTOKEN_PIPELINE
 }
 
 parse_array () {
@@ -201,6 +266,7 @@ parse_array () {
   local ary=''
   local aryml=''
   read -r token
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(1):" "token=$token"
   case "$token" in
     ']') ;;
     *)
@@ -214,12 +280,14 @@ parse_array () {
 $value"
         fi
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(2):" "token=$token"
         case "$token" in
           ']') break ;;
           ',') ary="$ary," ;;
           *) throw "EXPECTED , or ] GOT ${token:-EOF}" ;;
         esac
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(3):" "token=$token"
       done
       ;;
   esac
@@ -235,6 +303,7 @@ parse_object () {
   local obj=''
   local objml=''
   read -r token
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(1):" "token=$token"
   case "$token" in
     '}') ;;
     *)
@@ -245,11 +314,13 @@ parse_object () {
           *) throw "EXPECTED string GOT ${token:-EOF}" ;;
         esac
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(2):" "token=$token"
         case "$token" in
           ':') ;;
           *) throw "EXPECTED : GOT ${token:-EOF}" ;;
         esac
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(3):" "token=$token"
         parse_value "$1" "$key"
         obj="$obj$key:$value"
         if [ -n "$SORTDATA" ]; then
@@ -257,12 +328,14 @@ parse_object () {
 $key:$value"
         fi
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(4):" "token=$token"
         case "$token" in
           '}') break ;;
           ',') obj="$obj," ;;
           *) throw "EXPECTED , or } GOT ${token:-EOF}" ;;
         esac
         read -r token
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(5):" "token=$token"
       done
     ;;
   esac
@@ -292,7 +365,11 @@ parse_value () {
 
   if [ "$NORMALIZE" -eq 1 ]; then
     # Ensure a "true" output from the "if" for "return"
-    [ "$jpath" != '' ] || printf "%s\n" "$value"
+    if [ "$jpath" != '' ]; then : ; else
+        print_debug $DEBUGLEVEL_PRINTPATHVAL \
+            "Non-root keys were skipped due to normalization mode"
+	printf "%s\n" "$value"
+    fi
     return
   fi
 
@@ -314,8 +391,8 @@ parse_value () {
     [[ ${jpath} =~ ${EXTRACT_JPATH} ]] || print=-1
   fi
 
-  [ "$DEBUG" -gt 0 ] && \
-    echo "=== KEY='$jpath' VALUE='$value' B='$BRIEF'" \
+  print_debug $DEBUGLEVEL_PRINTPATHVAL \
+	"JPATH='$jpath' VALUE='$value' B='$BRIEF'" \
 	"isleaf='$isleaf'/L='$LEAFONLY' isempty='$isempty'/P='$PRUNE':" \
 	"print='$print'" >&2
 
@@ -325,8 +402,10 @@ parse_value () {
 
 parse () {
   read -r token
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(1):" "token=$token"
   parse_value
   read -r token
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(2):" "token=$token"
   case "$token" in
     '') ;;
     *) throw "EXPECTED EOF GOT $token" ;;
@@ -343,8 +422,50 @@ smart_parse() {
     fi
 }
 
+###########################################################
+### Active logic
+
+### Caller can disable specific debuggers by setting their level too high
+default_posval DEBUGLEVEL_PRINTPATHVAL		1
+default_posval DEBUGLEVEL_PRINTTOKEN		2
+default_posval DEBUGLEVEL_PRINTTOKEN_PIPELINE	3
+default_posval DEBUGLEVEL_TRACE_X		4
+default_posval DEBUGLEVEL_TRACE_V		5
+default_posval DEBUGLEVEL_MERGE_ERROUT		4
+
 if ([ "$0" = "$BASH_SOURCE" ] || ! [ -n "$BASH_SOURCE" ]);
 then
   parse_options "$@"
-  smart_parse
+  # Note that the options enable some debug level
+
+  [ "$DEBUG" -ge "$DEBUGLEVEL_MERGE_ERROUT" ] && \
+    exec 2>&1 && \
+    echo "[$$]DEBUG: Merge stderr and stdout for easier tracing with less" \
+	"(DEBUGLEVEL_MERGE_ERROUT=$DEBUGLEVEL_MERGE_ERROUT)" >&2
+  [ "$DEBUG" -gt 0 ] && \
+    echo "[$$]DEBUG: Enabled (debugging level $DEBUG)" >&2
+  [ "$DEBUG" -ge "$DEBUGLEVEL_PRINTPATHVAL" ] && \
+    echo "[$$]DEBUG: Enabled tracing of path:value printing decisions" \
+	"(DEBUGLEVEL_PRINTPATHVAL=$DEBUGLEVEL_PRINTPATHVAL)" >&2
+  [ "$DEBUG" -ge "$DEBUGLEVEL_PRINTTOKEN" ] && \
+    echo "[$$]DEBUG: Enabled printing of each processed token" \
+	"(DEBUGLEVEL_PRINTTOKEN=$DEBUGLEVEL_PRINTTOKEN)" >&2
+  [ "$DEBUG" -ge "$DEBUGLEVEL_PRINTTOKEN_PIPELINE" ] && \
+    echo "[$$]DEBUG: Enabled tracing of read-in token conversions" \
+	"(DEBUGLEVEL_PRINTTOKEN_PIPELINE=$DEBUGLEVEL_PRINTTOKEN_PIPELINE)" >&2
+  [ "$DEBUG" -ge "$DEBUGLEVEL_TRACE_V" ] && \
+    echo "[$$]DEBUG: Enable execution tracing (-v)" \
+	"(DEBUGLEVEL_TRACE_V=$DEBUGLEVEL_TRACE_V)" >&2 && \
+    set +v
+  [ "$DEBUG" -ge "$DEBUGLEVEL_TRACE_X" ] && \
+    echo "[$$]DEBUG: Enable execution tracing (-x)" \
+	"(DEBUGLEVEL_TRACE_X=$DEBUGLEVEL_TRACE_X)" >&2 && \
+    set -x
+
+  tee_stderr RAW_INPUT $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
+  if [ "$COOKASTRING" -eq 1 ]; then
+    cook_a_string
+  else
+    smart_parse
+  fi
 fi
