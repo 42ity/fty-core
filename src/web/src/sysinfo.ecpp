@@ -1,0 +1,59 @@
+<%pre>
+#include <iostream>
+#include <sstream>
+#include <cxxtools/regex.h>
+#include <cxxtools/jsondeserializer.h>
+#include "subprocess.h"
+#include <sys/utsname.h>
+
+static std::string chomp(std::string data) {
+	/* TODO: replace inner newlines by "\n" strings */
+	data.resize( data.find_last_not_of('\n')+1 );
+	return data;
+}
+
+static int output2(const shared::Argv& args, std::string& o, std::string& e) {
+    int ret = shared::output(args, o, e);
+    o = chomp(o);
+    e = chomp(e);
+    return ret;
+}
+
+</%pre>
+{
+  "operating-system" : {
+<%cpp>
+	std::string cmdout;
+	std::string cmderr;
+    static const std::string NA = "unknown";
+    int ret;
+
+</%cpp>
+<%cpp>
+	/* TODO: This currently relies on "systemd-detect-virt" - what about OSes that do not have it? */
+
+	/* Detect container virtualization */
+    ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
+</%cpp>
+    "container": "<$ ret == 0 ? cmdout : NA $>",
+<%cpp>
+	/* Detect VM virtualization */
+    ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
+</%cpp>
+    "hypervisor": "<$ ret == 0 ? cmdout : NA $>",
+    "uname": {
+<%cpp>
+    struct utsname u;
+    ret = uname(&u);
+    if (ret == -1) {
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+</%cpp>
+      "sysname": "<$ (char*) u.sysname $>",
+      "nodename" : "<$ (char*) u.nodename $>",
+      "release": "<$ (char*) u.release $>",
+      "version": "<$ (char*) u.version $>",
+      "machine": "<$ (char*) u.machine $>"
+    }
+  }
+}

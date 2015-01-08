@@ -24,7 +24,16 @@
 PASS=0
 TOTAL=0
 
-. "`dirname $0`/weblib.sh"
+[ "x$CHECKOUTDIR" = "x" ] && \
+    case "`dirname $0`" in
+	*/tests/CI|tests/CI)
+	   CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+	   CHECKOUTDIR="" ;;
+    esac
+[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+
+. "`dirname $0`/weblib.sh" || exit $?
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -77,7 +86,9 @@ fi
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
-CMP="`pwd`/cmpjson.py"
+#[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
+[ -z "$CMP" ] && CMP="`pwd`/cmpjson.sh"
+[ -s "$CMP" ] || exit 5
 cd web/commands
 POSITIVE=""
 NEGATIVE=""
@@ -103,7 +114,11 @@ for i in $POSITIVE; do
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
-        python "$CMP" "$RESULT" "$EXPECT"
+        if [ -x "../results/$NAME".cmp ]; then
+            ../results/"$NAME".cmp "$RESULT" "$EXPECT"
+        else
+            "$CMP" "$RESULT" "$EXPECT"
+        fi
         RES=$?
         if [ $RES -ne 0 ]; then
             diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
@@ -111,7 +126,6 @@ for i in $POSITIVE; do
         print_result $RES
     fi
     done
-    shift
 done
 
 echo "Testing completed, $PASS/$TOTAL tests passed"
