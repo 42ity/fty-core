@@ -175,7 +175,7 @@ asset_manager asset_mgr;
 
         char *type = NULL;
         if ( ext_count > 0 ) {
-            type = (char*) zhash_lookup(ext, (void*) "type");
+            type = (char*) zhash_lookup(ext, "type");
         }
         if ( type == NULL ) {
             type = (char*) "";

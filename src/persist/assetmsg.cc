@@ -20,10 +20,6 @@
 #include "monitor.h"
 #include "asset_types.h"
 
-// TODO: move to some common section
-// duplicates the items for zlist/zhash
-void* void_dup(const void* a) { return strdup((char*)a); }
-
 /**
  * \brief This function is a general function to process 
  * the asset_msg_t message
@@ -117,7 +113,8 @@ zlist_t* select_asset_element_groups(const char* url,
 
     zlist_t* groups = zlist_new();
     assert ( groups );
-    zlist_set_duplicator (groups, void_dup);
+
+    zlist_autofree(groups);
 
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -192,7 +189,8 @@ zlist_t* select_asset_device_link(const char* url,
 
     zlist_t* links = zlist_new();
     assert ( links );
-    zlist_set_duplicator (links, void_dup);
+
+    zlist_autofree(links);
     
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -266,8 +264,8 @@ zhash_t* select_asset_element_attributes(const char* url,
     assert ( element_id );
     zhash_t* extAttributes = zhash_new();
     assert ( extAttributes );
-    // in older versions this function is called zhash_set_item_duplicator
-    zhash_set_duplicator (extAttributes, void_dup);
+
+    zhash_autofree(extAttributes);
 
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -297,7 +295,7 @@ zhash_t* select_asset_element_attributes(const char* url,
             row[1].get(value);
             assert ( value != "" );   // database is corrupted
 
-            zhash_insert (extAttributes, (void*)keytag.c_str(), 
+            zhash_insert (extAttributes, keytag.c_str(),
                           (void*)value.c_str());
         }
     }
@@ -563,8 +561,9 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENTS );
 
     zhash_t *elements = zhash_new();
-    zhash_set_duplicator (elements, void_dup);
     assert(elements);
+
+    zhash_autofree(elements);
 
     try{
         const unsigned int element_type_id = asset_msg_type (msg);

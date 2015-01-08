@@ -35,8 +35,10 @@ References: BIOS-397
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
+#include "measure_types.h"
 #include "monitor.h"
 #include "log.h"
+#include "dbpath.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -600,6 +602,58 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
     } // end switch
 
     return result;
+}
+
+zmsg_t* common_msg_process(zmsg_t **msg) {
+    common_msg_t *cmsg = common_msg_decode(msg);
+    zmsg_t *ret = NULL;
+    if(cmsg != NULL) {
+        int msg_id = common_msg_id (cmsg);
+        switch (msg_id) {
+            case COMMON_MSG_NEW_MEASUREMENT: {
+                insert_new_measurement(url.c_str(), cmsg);
+                break;
+            }
+            case COMMON_MSG_INSERT_DEVICE: {
+                zmsg_t *tmpz = common_msg_msg(cmsg);
+                if(tmpz != NULL) {
+                common_msg_t *tmpc = common_msg_decode(&tmpz);
+                if(tmpc != NULL) {
+                common_msg_t *retc = insert_device(url.c_str(),
+                                                   common_msg_devicetype_id(tmpc),
+                                                   common_msg_name(tmpc));
+                common_msg_destroy(&tmpc);
+                ret = common_msg_encode(&retc);
+                }}
+                break;
+            }
+            case COMMON_MSG_INSERT_CLIENT: {
+                zmsg_t *tmpz = common_msg_msg(cmsg);
+                if(tmpz != NULL) {
+                common_msg_t *tmpc = common_msg_decode(&tmpz);
+                if(tmpc != NULL) {
+                common_msg_t *retc = insert_client(url.c_str(),
+                                                   common_msg_name(tmpc));
+                common_msg_destroy(&tmpc);
+                ret = common_msg_encode(&retc);
+                }}
+                break;
+            }
+            case COMMON_MSG_GET_MEASURE_TYPE_I:
+            case COMMON_MSG_GET_MEASURE_TYPE_S:
+            case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
+            case COMMON_MSG_GET_MEASURE_SUBTYPE_S: {
+                ret = process_measures_meta(&cmsg);
+                break;
+            }
+            default: {
+                break;
+            }
+        }
+    } else
+        printf("Got non-common message - weird!\n");
+    //common_msg_destroy(&cmsg);
+    return ret;
 }
 
 } // namespace persist
