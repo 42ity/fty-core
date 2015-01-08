@@ -24,12 +24,12 @@
     <!-- Set (int)access_auth_level variable if the request is authenticated -->
     <mapping>
       <target>auth-verify@bios_web</target>
-      <url>^/api/v1/(.*)</url>
+<!--      <url>^/api/v1/(.*)</url> -->
     </mapping>
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
       <target>auth-require@bios_web</target>
-      <url>^/api/v1/(.*)</url>
+<!--      <url>^/api/v1/(.*)</url> -->
       <method>(POST|PUT|DELETE)</method>
     </mapping>
     <!-- Requests for sensitive system information should not be anonymous -->

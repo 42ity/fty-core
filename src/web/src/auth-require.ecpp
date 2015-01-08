@@ -8,11 +8,13 @@ int access_auth_level;
 </%request>
 <%cpp>
 
+#ifdef DEBUG
 char buff[16];
 sprintf(buff, "%i", access_auth_level);
 buff[15]='\0';
 reply.setHeader( (std::string)"X-Auth-Require: ",
     (std::string)"access_auth_level=\"" + buff + "\"");
+#endif
 
 switch (access_auth_level) {
 case -1:
@@ -33,10 +35,8 @@ case -2:
 <%cpp>
 	return HTTP_UNAUTHORIZED;
 	break;
-case -3:
-	return DECLINED;
-	break;
 }
 
-//HTTP_OK?
+/* Go on to next module in tntnet.xml */
+return DECLINED;
 </%cpp>
