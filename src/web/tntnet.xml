@@ -24,19 +24,11 @@
     <!-- Set (int)access_auth_level variable if the request is authenticated -->
     <mapping>
       <target>auth-verify@bios_web</target>
-<!--      <url>^/api/v1/(.*)</url> -->
     </mapping>
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
       <target>auth-require@bios_web</target>
-<!--      <url>^/api/v1/(.*)</url> -->
       <method>(POST|PUT|DELETE)</method>
-    </mapping>
-    <!-- Requests for sensitive system information should not be anonymous -->
-    <!-- TODO: Later this should be extended to allow a particular level of authorization, not just any user -->
-    <mapping>
-      <target>auth-require@bios_web</target>
-      <url>^/api/v1/admin/sysinfo$</url>
     </mapping>
 
     <!-- API itself -->
@@ -67,6 +59,7 @@
     </mapping>
 
     <!-- SysInfo mapping -->
+    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
     <mapping>
       <target>sysinfo@bios_web</target>
       <url>^/api/v1/admin/sysinfo$</url>

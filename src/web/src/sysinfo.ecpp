@@ -20,13 +20,27 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 }
 
 </%pre>
+<%request scope="global">
+int access_auth_level;
+</%request>
+<%cpp>
+
+#ifdef DEBUG
+char buff[16];
+sprintf(buff, "%i", access_auth_level);
+buff[15]='\0';
+reply.setHeader( (std::string)"X-Auth-Require: ",
+    (std::string)"access_auth_level=\"" + buff + "\"");
+#endif
+</%cpp>
 {
   "operating-system" : {
 <%cpp>
 	std::string cmdout;
 	std::string cmderr;
-    static const std::string NA = "unknown";
-    int ret;
+	static const std::string NOTAVAIL = "unknown";
+	static const std::string NOTAUTHD = "unauthd";
+	int ret;
 
 </%cpp>
 <%cpp>
@@ -35,12 +49,12 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 	/* Detect container virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
 </%cpp>
-    "container": "<$ ret == 0 ? cmdout : NA $>",
+    "container": "<$ ret == 0 ? cmdout : NOTAVAIL $>",
 <%cpp>
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
 </%cpp>
-    "hypervisor": "<$ ret == 0 ? cmdout : NA $>",
+    "hypervisor": "<$ ret == 0 ? cmdout : NOTAVAIL $>",
     "uname": {
 <%cpp>
     struct utsname u;
@@ -51,8 +65,8 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
 </%cpp>
       "sysname": "<$ (char*) u.sysname $>",
       "nodename" : "<$ (char*) u.nodename $>",
-      "release": "<$ (char*) u.release $>",
-      "version": "<$ (char*) u.version $>",
+      "release": "<$ (access_auth_level<=0) ? NOTAUTHD : (char*) u.release $>",
+      "version": "<$ (access_auth_level<=0) ? NOTAUTHD : (char*) u.version $>",
       "machine": "<$ (char*) u.machine $>"
     }
   }
