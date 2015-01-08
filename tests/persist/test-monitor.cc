@@ -48,7 +48,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
     zhash_t* errauxnew   = zhash_new();
     char     keytag[]    = "mykey";
     char     value[]     = "myvalue";
-    zhash_insert (errauxnew, &keytag, &value);
+    zhash_insert (errauxnew, keytag, value);
 
     fail = generate_db_fail (errnonew, errmsgnew, &errauxnew);
     REQUIRE ( fail );

@@ -1,6 +1,7 @@
 #ifndef SRC_PERSIST_MONITOR_H_
 #define SRC_PERSIST_MONITOR_H_
 #include "common_msg.h"
+#include <string>
 
 common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux);
 

@@ -322,6 +322,26 @@ class ProcCacheMap {
         void _push_str(pid_t pid, const std::string& str, bool push_stdout);
 };
 
+// \brief read all things from file descriptor
+//
+// try to read as much as possible from file descriptor and return it as std::string
+std::string read_all(int fd);
+
+// \brief Run command with arguments.  Wait for complete and return the return value.
+//
+// @return see \SubProcess.wait
+int call(const Argv& args);
+
+// \brief Run command with arguments and return its output as a string.
+//
+// @param args list of command line arguments
+// @param o reference to variable will contain stdout
+// @param e reference to variable will contain stderr
+// @return see \SubProcess.wait for meaning
+//
+// \warning use only for commands producing less than default pipe capacity (65536 on Linux).
+//          Otherwise this call would be blocked indefinitelly.
+int output(const Argv& args, std::string& o, std::string& e);
 
 } //namespace shared
 
