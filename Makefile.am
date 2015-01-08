@@ -400,7 +400,27 @@ netmon_LDADD = libpriv-log.la \
 
 netmon_LDFLAGS =			-lnetlink $(LIBCZMQ_LIBS)
 
-bin_PROGRAMS += simple
+bin_PROGRAMS += simple server-agent db-ng
+
+server_agent_SOURCES = src/drivers/server-agent/server-agent.cpp
+
+server_agent_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
+
+server_agent_LDADD = libpriv-proto.la
+
+server_agent_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
+
+db_ng_SOURCES = src/persist/db-ng.cpp
+
+db_ng_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -ltntdb -lcidr
+
+db_ng_LDADD = libpriv-proto.la \
+                           libpriv-db.la \
+			   libpriv-cidr.la \
+			   libpriv-log.la \
+                           libpriv-proto.la
+
+db_ng_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
 
 simple_SOURCES = src/simple/main.cc \
 				 src/include/defs.h \
@@ -482,7 +502,7 @@ bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 					  -module -lm -ltntdb -ltntnet -lcidr
 bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la libpriv-proto.la \
-                     libpriv-log.la
+                     libpriv-log.la libpriv-subprocess.la
 
 dist_noinst_HEADERS +=	src/shared/data.h \
 			src/web/include/sasl.h \
