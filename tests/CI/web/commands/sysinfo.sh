@@ -1,4 +1,5 @@
 ###############################################################
+JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 # Check getting server system info as unprivileged user
 # As of now, this should work, just in a limited manner
 test_it "unauth_sysinfo_get"
@@ -35,7 +36,7 @@ test_it "unauth_sysinfo_get_nonjson_parse"
 SYSINFO="`api_get_content '/admin/sysinfo'`"
 RES=$?
 JPATH='"operating-system","uname","version"'
-SYSINFO_PARSED="`echo "$SYSINFO" | $CHECKOUTDIR/tools/JSON.sh -x="$JPATH" | grep unauthd`"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH" | grep unauthd`"
 echo "=== SYSINFO_PARSED ($RES):" >&2
 echo "$SYSINFO_PARSED" >&2
 RES=$?
@@ -69,8 +70,7 @@ esac
 print_result $?
 
 test_it "sysinfo_auth_accessgranted"
-#SYSINFO_PARSED="`echo "$SYSINFO" | $CHECKOUTDIR/tools/JSON.sh -b | grep version | grep -v unauthd`"
-SYSINFO_PARSED="`echo "$SYSINFO" | $CHECKOUTDIR/tools/JSON.sh -x 'version' | grep -v unauthd`"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x 'version' | grep -v unauthd`"
 RES=$?
 echo "=== SYSINFO_PARSED ($RES):" >&2
 echo "$SYSINFO_PARSED" >&2
@@ -78,22 +78,17 @@ echo "$SYSINFO_PARSED" >&2
 print_result $?
 
 test_it "sysinfo_parsable"
-SYSINFO_PARSED="`echo "$SYSINFO" | $CHECKOUTDIR/tools/JSON.sh -b`"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -l`"
 RES=$?
 echo "=== SYSINFO_PARSED ($RES):" >&2
 echo "$SYSINFO_PARSED" >&2
 [ $RES = 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
-getval() {
-    echo "$SYSINFO_PARSED" | egrep "^\[$1\]" | \
-    while read _C _T; do echo "$_T"; done | \
-    sed 's,^"*,,' | sed 's,"*$,,'
-}
-
 test_it "sysinfo_runs_in_container"
 RES=0
-SYSINFO_CONTAINER="`getval '"operating-system","container"'`" || RES=$?
+JPATH='"operating-system","container"'
+SYSINFO_CONTAINER="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH"`" || RES=$?
 echo "=== SYSINFO_CONTAINER ($RES): '$SYSINFO_CONTAINER'" >&2
 [ $RES = 0 -a -n "$SYSINFO_CONTAINER" -a \
     x"$SYSINFO_CONTAINER" != x'""' ]
@@ -101,8 +96,10 @@ print_result $?
 
 test_it "sysinfo_runs_in_virtmachine"
 RES=0
-SYSINFO_VIRTMACHINE="`getval '"operating-system","hypervisor"'`" || RES=$?
+JPATH='"operating-system","hypervisor"'
+SYSINFO_VIRTMACHINE="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH"`" || RES=$?
 echo "=== SYSINFO_VIRTMACHINE ($RES): '$SYSINFO_VIRTMACHINE'" >&2
 [ $RES = 0 -a -n "$SYSINFO_VIRTMACHINE" -a \
     x"$SYSINFO_VIRTMACHINE" != x'""' ]
 print_result $?
+
