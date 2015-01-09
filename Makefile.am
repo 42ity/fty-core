@@ -400,7 +400,27 @@ netmon_LDADD = libpriv-log.la \
 
 netmon_LDFLAGS =			-lnetlink $(LIBCZMQ_LIBS)
 
-bin_PROGRAMS += simple
+bin_PROGRAMS += simple server-agent db-ng
+
+server_agent_SOURCES = src/drivers/server-agent/server-agent.cpp
+
+server_agent_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
+
+server_agent_LDADD = libpriv-proto.la
+
+server_agent_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
+
+db_ng_SOURCES = src/persist/db-ng.cpp
+
+db_ng_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -ltntdb -lcidr
+
+db_ng_LDADD = libpriv-proto.la \
+                           libpriv-db.la \
+			   libpriv-cidr.la \
+			   libpriv-log.la \
+                           libpriv-proto.la
+
+db_ng_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
 
 simple_SOURCES = src/simple/main.cc \
 				 src/include/defs.h \
@@ -454,19 +474,23 @@ driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
+
+# Many but not all of CPP files with bios_web.la are generated from ECPP files
+# List them explicitly as separate sets, so that generated files can be cleaned
 BUILT_SOURCES_bios_web_la = \
                       src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/auth-require.cpp                       \
                       src/shared/data.cpp   src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
-                      src/web/src/time.cpp  src/web/src/power.cpp        \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp \
-                      src/web/src/sysinfo.cpp 				 \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/power.cpp                              \
                       src/web/src/datacenter_indicators.cpp
 
-bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)			 \
-                      src/web/src/location_helpers.cpp 			 \
+bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
+                      src/web/src/location_helpers.cpp                   \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/tokens.cpp
 
