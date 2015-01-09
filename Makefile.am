@@ -57,13 +57,30 @@ endif
 # Clean up products of configure script
 DISTCLEANFILES += \
 		$(addsuffix /Makefile.in,$(SUBDIRS) .) \
-		aclocal.m4 m4/libtool.m4 m4/ltoptions.m4 \
-		m4/ltsugar.m4 m4/ltversion.m4 m4/lt~obsolete.m4 \
-		config.h.in config.h.in~ config.log
+		aclocal.m4 config.h.in config.h.in~ config.log \
+		m4/libtool.m4 \
+		m4/ltoptions.m4 \
+		m4/ltsugar.m4 \
+		m4/ltversion.m4 \
+		m4/lt~obsolete.m4 \
+		build-aux/compile* \
+		build-aux/config* \
+		build-aux/depcomp* \
+		build-aux/install* \
+		build-aux/ltmain* \
+		build-aux/missing* \
+		build-aux/test* \
+		autom4te.cache/output* \
+		autom4te.cache/traces* \
+		autom4te.cache/requests \
+		tests/CI/web/log/*.log
 
+# These are deleted by "distclean-local-dirs" if they exist and are empty
+# The "distclean-generic" with "rm DISTCLEANFILES" is a dependency for this
 DISTCLEANDIRS += \
 		autom4te.cache \
 		build-aux \
+		config \
 		tests/CI/web/log
 
 AM_CPPFLAGS = \
@@ -1062,13 +1079,20 @@ clean-junit:
 
 clean-local: clean-docs clean-junit
 
-distclean-local: distclean-generic
-	/bin/rm -rf $(addprefix $(abs_top_builddir)/,$(DISTCLEANDIRS))
-	( cd $(abs_top_builddir)/ && { \
+# This may and should complain on non-empty dirs; "distclean-generic"
+# with proper list of DISTCLEANFILES should have taken care of that
+distclean-local-dirs: distclean-generic
+	for D in $(addprefix $(abs_top_builddir)/,$(DISTCLEANDIRS)); do \
+	  [ ! -d "$$D" ] || /bin/rmdir "$$D"; done || true
+
+distclean-local-deps: distclean-generic
+	cd $(abs_top_builddir)/ && { \
 	  find . -type f -name '*.Plo' -exec /bin/rm -f '{}' \; ; \
 	  find . -type f -name '*.Po' -exec /bin/rm -f '{}' \; ; \
-	  find . -type d -name '.deps' -exec /bin/rmdir '{}' \; ; \
-	} ); true
+	  find . -type d -name '.deps' -exec /bin/rmdir '{}' \; || true ; \
+	}
+
+distclean-local: distclean-local-dirs distclean-local-deps
 	/bin/rm -f $(abs_top_builddir)/configure
 
 #----------------------------------------------------------------------
