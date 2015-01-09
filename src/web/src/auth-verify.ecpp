@@ -2,12 +2,20 @@
 #include "tokens.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
+
+#ifdef DEBUG
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <string>
+#endif
+
 </%pre>
 <%args>
 std::string access_token="";
 </%args>
 <%request scope="global">
-int access_auth_level;
+int8_t access_auth_level;
 </%request>
 <%cpp>
 access_auth_level=0;
@@ -22,22 +30,26 @@ if(request.hasHeader(tnt::httpheader::authorization)) {
 	if(access_token.empty()) {
 		/* Token header was presented but empty */
 		access_auth_level=-1;
-	} else {
-		access_auth_level=1;
-		if(!tokens::get_instance()->verify_token(access_token)) {
+	}
+}
+
+/* We can get the token from header, or from GET or POST request args */
+if(!access_token.empty()) {
+	/* Per RFC-11, we currently implement one access level,
+	    that of a power-user == 2 */
+	access_auth_level=2;
+
+	if(!tokens::get_instance()->verify_token(access_token)) {
 //			"error":"invalid_token"
 //			return HTTP_UNAUTHORIZED;
-			access_auth_level=-2;
-		}
+		access_auth_level=-2;
 	}
 }
 
 #ifdef DEBUG
-char buff[16];
-sprintf(buff, "%i", access_auth_level);
-buff[15]='\0';
-reply.setHeader( (std::string)"X-Auth-Verify: ",
-    (std::string)"access_auth_level=\"" + buff + "\"");
+	std::ostringstream os;
+	os << "access_auth_level=\"" << access_auth_level << "\"";
+	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
 #endif
 
 /* Go on to next module in tntnet.xml */

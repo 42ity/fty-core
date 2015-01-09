@@ -36,7 +36,7 @@ test_it "unauth_sysinfo_get_nonjson_parse"
 SYSINFO="`api_get_content '/admin/sysinfo'`"
 RES=$?
 JPATH='"operating-system","uname","version"'
-SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH" | grep unauthd`"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH" | grep unauthorized`"
 echo "=== SYSINFO_PARSED ($RES):" >&2
 echo "$SYSINFO_PARSED" >&2
 RES=$?
@@ -70,7 +70,7 @@ esac
 print_result $?
 
 test_it "sysinfo_auth_accessgranted"
-SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x 'version' | grep -v unauthd`"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -x 'version' | grep -v unauthorized`"
 RES=$?
 echo "=== SYSINFO_PARSED ($RES):" >&2
 echo "$SYSINFO_PARSED" >&2
