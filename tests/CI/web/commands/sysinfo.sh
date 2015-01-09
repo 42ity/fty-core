@@ -1,5 +1,5 @@
 ###############################################################
-JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 # Check getting server system info as unprivileged user
 # As of now, this should work, just in a limited manner
 test_it "unauth_sysinfo_get"
