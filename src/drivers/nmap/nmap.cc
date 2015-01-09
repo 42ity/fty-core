@@ -96,7 +96,9 @@ static void xzloop_unregisterfd(zloop_t *loop, int fd) {
     return zloop_poller_end (loop, &it);
 }
 
-static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
+static int timer_handler(zloop_t *loop,
+	    __attribute__((unused)) int timer_id,
+	    __attribute__((unused)) void *arg) {
 
     _que.schedule();
     for (auto proc_it = _que.cbegin(); proc_it != _que.cend(); proc_it++) {
@@ -144,7 +146,8 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
     return 0;
 }
 
-static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
+static int fd_handler (__attribute__((unused)) zloop_t *loop,
+		zmq_pollitem_t *item, void *arg) {
     const SubProcess *proc = static_cast<const SubProcess*>(arg);
 
     if (proc->getStdout() == item->fd) {
@@ -155,7 +158,9 @@ static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
     return 0;
 }
 
-static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
+static int command_handler (__attribute__((unused)) zloop_t *loop,
+		zsock_t *reader,
+		__attribute__((unused)) void *_arg) {
     log_info ("start\n");
 
     nmap_msg_t *msg = nmap_msg_recv (reader);
@@ -245,7 +250,7 @@ static int command_handler (zloop_t *loop, zsock_t *reader, void *_arg) {
     return 0;
 }
 
-void nmap_actor (zsock_t *pipe, void *args) {
+void nmap_actor (zsock_t *pipe, __attribute__((unused)) void *args) {
 
     log_info ("start\n");
 
@@ -276,7 +281,8 @@ void nmap_actor (zsock_t *pipe, void *args) {
     log_info ("end\n");
 }
 
-void nmap_stdout (zsock_t *pipe, void *args) {
+void nmap_stdout (__attribute__((unused)) zsock_t *pipe,
+		  __attribute__((unused)) void *args) {
 /*
     log_info ("%s", "nmap_stdout() start\n");
 
@@ -376,7 +382,8 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             // get the result and print it
             nmap_msg_t *msg = nmap_msg_recv (router);
             assert (msg != NULL);
-            int msg_id = nmap_msg_id (msg);
+	    // FIXME: JIM: Commented away as unused
+            // int msg_id = nmap_msg_id (msg);
             nmap_msg_print (msg);
             nmap_msg_destroy (&msg);
 
@@ -389,6 +396,9 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
 
         while (!zpoller_terminated (poller)) {
             zsock_t *which = (zsock_t *) zpoller_wait (poller, -1);
+	    // FIXME: JIM: Use the variable somehow to avout unused warning
+	    if (which==NULL)
+    		log_info ("zpoller_wait() timed out or was aborted\n");
             if (zpoller_terminated (poller)) {            
                 log_info ("SIGINT received. Quitting.\n");
             }

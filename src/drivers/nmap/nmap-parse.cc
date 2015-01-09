@@ -744,6 +744,9 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
                 in_osmatch = true;
 
+		// FIXME: Access just to shut up -Werror=unused-variable
+		assert(in_osmatch);
+
                 assert (osmatch == NULL);
                 osmatch = nmap_msg_new (NMAP_MSG_OSMATCH);
                 assert (osmatch != NULL);

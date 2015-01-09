@@ -28,7 +28,7 @@ static const shared::Argv nmap_args{"./driver-nmap"};
 static shared::SubProcess nmap_proc{nmap_args, false, false};
 
 //  netmon 
-void filip_actor (zsock_t *pipe, void *args) {
+void filip_actor (zsock_t *pipe, __attribute__((unused)) void *args) {
     log_info ("start\n");
 
     zsock_t * incoming = zsock_new_router (FILIP_SOCK);
@@ -102,7 +102,7 @@ void filip_actor (zsock_t *pipe, void *args) {
     log_info ("end\n");
 }
 
-void persistence_actor(zsock_t *pipe, void *args) {
+void persistence_actor(zsock_t *pipe, __attribute__((unused)) void *args) {
     log_info ("start\n");
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
@@ -123,6 +123,8 @@ void persistence_actor(zsock_t *pipe, void *args) {
 
         try {
             bool b = persist::process_message (url, msg);
+	    if (!b)
+    		log_debug ("message processing returned false\n");
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "To resolve this problem, please see README file\n");
@@ -137,13 +139,13 @@ void persistence_actor(zsock_t *pipe, void *args) {
     log_info ("end\n");
 }
  
-void netmon_actor(zsock_t *pipe, void *args) {
+void netmon_actor(zsock_t *pipe, __attribute__((unused)) void *args) {
 
     log_info ("start\n");
 
-    const int names_len = 6;    
-    const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };     
-    
+    const int names_len = 6;
+    const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };
+
     zsock_t * dbsock = zsock_new_dealer (DB_SOCK);
     assert(dbsock);
     zpoller_t *poller = zpoller_new (dbsock, pipe, NULL);
@@ -157,7 +159,7 @@ void netmon_actor(zsock_t *pipe, void *args) {
     // sleep for (800, 2000) ms
     std::vector<std::tuple<std::string, byte, std::string, byte, std::string>> stored;         
     while(!zpoller_terminated (poller)) {        
-       zsock_t *which = (zsock_t *) zpoller_wait(poller, randof(1200) + 800);
+        zsock_t *which = (zsock_t *) zpoller_wait(poller, randof(1200) + 800);
         if (which == pipe) {
                 break;
         }
@@ -278,14 +280,17 @@ int main(int argc, char **argv) {
 
     zactor_t *nut = zactor_new (drivers::nut::nut_actor, NULL);
     assert(nut);
-    
-    zpoller_t *poller = zpoller_new(netmon, db, nut, filip,  NULL);
+
+    zpoller_t *poller = zpoller_new(netmon, db, nut, filip, NULL);
     assert(poller);
 
     while (!zpoller_terminated(poller)) {
         zsock_t *which = (zsock_t *)zpoller_wait (poller, -1);
+	// FIXME: JIM: Use the variable somehow to avout unused warning
+	if (which==NULL)
+	    log_info ("zpoller_wait() timed out or was aborted\n");
     }
-    
+
     if (test_mode) {    
         zactor_destroy(&netmon);        
         log_info ("%s", "destroying netmon_actor\n"); 

@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Author: Alena Chernikava <alenachernikava@eaton.com>
- 
+
 Description: ...
 References: BIOS-397
 */
@@ -225,6 +225,7 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
     std::string mac (netdisc_msg_mac (&msg_nc));
     char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
     assert(command);    // fail on unsupported type
+    assert(ipver==0 || ipver==1);
     shared::CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
@@ -305,11 +306,11 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
         //          Are we going to return 'false', that usually means db fatal error, and
         //          make the caller crash/quit? OR does it make more sense to say, OK, message
         //          has been processed and we'll log a warning about unexpected message type
-            result = true;        
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
+            result = true;
+            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
             break;
         }
-        
+
     }
     return result;
 };
@@ -357,7 +358,11 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
         case COMMON_MSG_NEW_MEASUREMENT:
         {
             bool r = insert_new_measurement(url.c_str(), &msg_nc);
+//FIXME: JIM: 20150109 - if there was an error inserting the value, what should
+//we return? it was not "ignored" but did not end up in database either...
             result = true;
+	    if (!r)
+        	log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
             break;
         }
         default:
@@ -368,7 +373,7 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
         //          make the caller crash/quit? OR does it make more sense to say, OK, message
         //          has been processed and we'll log a warning about unexpected message type
             result = true;
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
+            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
             break;
         }
         
@@ -449,9 +454,9 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
 bool insert_new_client_info(const char* url, common_msg_t* msg)
 {
     uint32_t client_id = common_msg_client_id (msg);
-    uint32_t device_id = common_msg_device_id (msg);
+    uint32_t device_id __attribute__((unused)) = common_msg_device_id (msg);
     zchunk_t* info = common_msg_info (msg);
-    uint32_t date = common_msg_date (msg);
+    uint32_t date __attribute__((unused)) = common_msg_date (msg);
 
     bool result = false;
 
@@ -463,7 +468,7 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
 
     if ( msgid  == COMMON_MSG_FAIL )
         // the client info was not found
-        log_error("client infor for UI/properties not found, message was ignored\n");
+        log_error("client info for UI/properties not found, message was ignored\n");
     else if ( msgid == COMMON_MSG_DB_OK )
         result = true;
     else

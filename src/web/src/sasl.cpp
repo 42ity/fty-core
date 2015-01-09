@@ -132,9 +132,7 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
     struct sockaddr_un srvaddr;
     int r;
     unsigned short count;
-    void *context;
     char pwpath[sizeof(srvaddr.sun_path)];
-    const char *p = NULL;
 
     if (!service) {
         service = "bios";
@@ -151,7 +149,6 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
      * count authid count password count service count realm
      */
     unsigned short u_len, p_len, s_len, r_len;
-    struct iovec iov[8];
 
     u_len = htons(strlen(userid));
     p_len = htons(strlen(passwd));
