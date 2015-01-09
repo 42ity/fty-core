@@ -195,20 +195,21 @@ libpriv_proto_la_SOURCES = \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
-noinst_LTLIBRARIES += 		libpriv-nmap-parse.la
-libpriv_nmap_parse_la_SOURCES = src/drivers/nmap/nmap-parse.h \
-					  src/drivers/nmap/nmap-parse.cc
+noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
+libpriv_nmap_parse_la_SOURCES = \
+			src/drivers/nmap/nmap-parse.h \
+			src/drivers/nmap/nmap-parse.cc
 
-DISTCLEANFILES +=		docs/doxygen/Doxyfile
+DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
 # Tester for the doxygen output sanity
-check_SCRIPTS += tools/run-test-doc.sh
+check_SCRIPTS +=	tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
-EXTRA_DIST += tools/run-test.sh
-LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
+EXTRA_DIST +=		tools/run-test.sh
+LOG_COMPILER =		$(top_srcdir)/tools/run-test.sh
 
 
 #Test case examples:
@@ -419,6 +420,7 @@ check_PROGRAMS += 	test-nmap-parse
 test_nmap_parse_SOURCES = tests/drivers/nmap/test-nmap-parse.cc
 test_nmap_parse_LDADD = \
 			libpriv-nmap-parse.la \
+			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libpriv-test-run.la
