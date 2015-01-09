@@ -88,6 +88,7 @@ tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
 
 src/web/src/auth-verify.cpp
+src/web/src/auth-require.cpp
 src/web/src/auth.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp
@@ -105,4 +106,3 @@ src/web/src/ui_properties.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
-

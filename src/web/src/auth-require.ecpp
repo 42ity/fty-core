@@ -1,0 +1,42 @@
+<%pre>
+#include "tokens.h"
+#include <tnt/httpmessage.h>
+#include <tnt/httpheader.h>
+</%pre>
+<%request scope="global">
+int access_auth_level;
+</%request>
+<%cpp>
+
+#ifdef DEBUG
+char buff[16];
+sprintf(buff, "%i", access_auth_level);
+buff[15]='\0';
+reply.setHeader( (std::string)"X-Auth-Require: ",
+    (std::string)"access_auth_level=\"" + buff + "\"");
+#endif
+
+switch (access_auth_level) {
+case -1:
+case 0:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+	reply.setContentType("text/html;charset=UTF-8");
+</%cpp>
+<html><body><h1>Not authorized, <a href="/api/1.0/token">get token</a> first!</h1></body></html>
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+case -2:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+</%cpp>
+{
+    "error":"invalid_token"
+}
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+}
+
+/* Go on to next module in tntnet.xml */
+return DECLINED;
+</%cpp>
