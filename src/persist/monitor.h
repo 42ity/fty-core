@@ -1,6 +1,9 @@
 #ifndef SRC_PERSIST_MONITOR_H_
 #define SRC_PERSIST_MONITOR_H_
+
 #include "common_msg.h"
+#include "dbtypes.h"
+
 
 common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, zhash_t** erraux);
 
@@ -160,14 +163,17 @@ common_msg_t* select_device (const char* url, const char* devicetype_name, const
 
 common_msg_t* insert_device(const char* url, const char* devicetype_name, const char* name);
 
-common_msg_t* insert_measurement(const char* url,uint32_t client_id,uint32_t device_id,uint32_t keytag_id,uint32_t subkeytag, uint64_t value);
+common_msg_t* insert_measurement(const char* url, m_clnt_id_t client_id, 
+                                 m_dvc_id_t device_id, 
+                                 m_msrmnt_tp_id_t keytag_id, 
+                                 m_msrmnt_sbtp_id_t subkeytag_id, 
+                                 m_msrmnt_value_t value);
 
-zmsg_t* get_last_measurements(const char* url, common_msg_t* msg);
+zmsg_t* _get_last_measurements(const char* url, common_msg_t* msg);
 
-zmsg_t* _get_last_measurements(zmsg_t** msg);
+zmsg_t* get_last_measurements(zmsg_t** getmsg);
 
-zlist_t* select_last_measurements(const char* url, uint32_t device_id, std::string& name);
+zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id, std::string& name);
 
-common_msg_t* generate_return_measurements (uint32_t device_id, zlist_t** measurements);
+common_msg_t* generate_return_last_measurements (a_elmnt_id_t device_id, zlist_t** measurements);
 #endif // SRC_PERSIST_MONITOR_H_
-

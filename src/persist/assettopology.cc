@@ -1160,10 +1160,8 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const 
     // tuple: ( id,  device_name, device_type_name )
     // encode: id, device_type_name, device_name
     zmsg_t* ret = zmsg_new();
-    for ( auto it = devices.begin(); it != devices.end(); ++it )
+    for ( auto &adevice : devices )
     {
-        auto adevice = *it;
-
         zmsg_t* el = asset_msg_encode_powerchain_device
                     (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
                     (std::get<1>(adevice)).c_str() );
