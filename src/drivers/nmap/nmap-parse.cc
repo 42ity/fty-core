@@ -13,11 +13,10 @@
 #include "nmap-parse.h"
 #include "nmap_msg.h"
 #include "log.h"
+#include "defs.h"
 
 using namespace cxxtools::xml;
 using namespace cxxtools;
-
-static const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 
 enum class ListState {
     START,
