@@ -1028,3 +1028,12 @@ checkstyle:
 style:
 	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 endif
+
+#----------------------------------------------------------------------
+#                        some popular testing targets
+#----------------------------------------------------------------------
+
+ci-test-restapi: test-restapi
+test-restapi: all
+	$(top_srcdir)/tests/CI/ci-test-restapi.sh
+
