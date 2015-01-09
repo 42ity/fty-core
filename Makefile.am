@@ -23,6 +23,12 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+# http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
+# http://www.gnu.org/software/automake/manual/html_node/Sources.html
+# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
+# (or even ‘make install’) before other targets are processed. However, such
+# a source file is not compiled unless explicitly requested by mentioning it
+# in some other _SOURCES variable. 
 BUILT_SOURCES =
 # http://www.gnu.org/software/automake/manual/html_node/Clean.html
 # * If make built it, and it is commonly something that one would want to
@@ -494,7 +500,11 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
                       src/web/src/tokens.cpp
 
+# Ensure these files are auto-made before others
 BUILT_SOURCES += $(BUILT_SOURCES_bios_web_la)
+
+# Ensure these files are cleaned away too
+CLEANFILES += $(BUILT_SOURCES_bios_web_la)
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
