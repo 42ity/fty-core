@@ -4,6 +4,16 @@
 
 ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
 AUTOMAKE_OPTIONS = color-tests parallel-tests
+
+# http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
+# NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
+# generate a gzipped tar file and other flavors of archive for distribution.
+# Sometimes there are files that must be distributed, but which are not covered
+# in the automatic rules. These files should be listed in the EXTRA_DIST
+# variable. You can mention files from subdirectories in EXTRA_DIST.
+# You can also mention a directory in EXTRA_DIST; in this case the entire
+# directory will be recursively copied into the distribution... you can
+# use the dist-hook feature to filter the contents (remove ".svn/" etc).
 EXTRA_DIST =
 
 bin_PROGRAMS =
@@ -14,8 +24,14 @@ pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
 BUILT_SOURCES =
+# http://www.gnu.org/software/automake/manual/html_node/Clean.html
+# * If make built it, and it is commonly something that one would want to
+#   rebuild (for instance, a .o file), then mostlyclean should delete it.
+# * Otherwise, if make built it, then clean should delete it.
+# * If configure built it, then distclean should delete it.
 CLEANFILES =
 DISTCLEANFILES =
+
 TESTS =
 
 # Named by analogy from configure'd myDOXDIR for doxygen
@@ -384,7 +400,27 @@ netmon_LDADD = libpriv-log.la \
 
 netmon_LDFLAGS =			-lnetlink $(LIBCZMQ_LIBS)
 
-bin_PROGRAMS += simple
+bin_PROGRAMS += simple server-agent db-ng
+
+server_agent_SOURCES = src/drivers/server-agent/server-agent.cpp
+
+server_agent_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
+
+server_agent_LDADD = libpriv-proto.la
+
+server_agent_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
+
+db_ng_SOURCES = src/persist/db-ng.cpp
+
+db_ng_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -ltntdb -lcidr
+
+db_ng_LDADD = libpriv-proto.la \
+                           libpriv-db.la \
+			   libpriv-cidr.la \
+			   libpriv-log.la \
+                           libpriv-proto.la
+
+db_ng_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
 
 simple_SOURCES = src/simple/main.cc \
 				 src/include/defs.h \
@@ -447,6 +483,7 @@ bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp \
                       src/web/src/rack_total.cpp src/web/src/location.cpp \
                       src/web/src/power.cpp src/web/src/location_helpers.cpp \
+                      src/web/src/sysinfo.cpp \
                       src/web/src/datacenter_indicators.cpp
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
@@ -464,7 +501,7 @@ bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 					  -module -lm -ltntdb -ltntnet -lcidr
 bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la libpriv-proto.la \
-                     libpriv-log.la
+                     libpriv-log.la libpriv-subprocess.la
 
 dist_noinst_HEADERS +=	src/shared/data.h \
 			src/web/include/sasl.h \
@@ -473,10 +510,15 @@ dist_noinst_HEADERS +=	src/shared/data.h \
 			tools/dbpath.h
 
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' \
+	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(abs_top_srcdir)/src/web</documentRoot>|' $< > $@ || \
+	rm -f $@
 
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || rm -f $@
+	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' \
+	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' \
+	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(datarootdir)/@PACKAGE@-@VERSION@/web</documentRoot>|' $< > $@ || \
+	rm -f $@
 
 exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
 exampleconf_DATA = tntnet.xml.example
@@ -725,7 +767,7 @@ $(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
 $(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
 
 ### Cleanup in build
-$(eval DISTCLEANFILES +=	$(_MAP_DST_REL) )
+$(eval CLEANFILES +=		$(_MAP_DST_REL) )
 $(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
 endef
 
@@ -807,7 +849,7 @@ $(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
 if HAVE_ASCIIDOC
 HTMLS +=		$(HTMLS_ASCIIDOC)
 develdoc_DATA +=	$(HTMLS_ASCIIDOC)
-DISTCLEANFILES +=	$(HTMLS_ASCIIDOC)
+CLEANFILES +=		$(HTMLS_ASCIIDOC)
 endif
 
 
@@ -928,7 +970,7 @@ endif
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
-DISTCLEANFILES +=			$(top_builddir)/${myMANDIR}/*.?
+CLEANFILES +=				$(top_builddir)/${myMANDIR}/*.?
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
