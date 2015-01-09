@@ -9,12 +9,13 @@
 # define UNUSED_PARAM
 #endif
 
-static const char* DB_SOCK = "ipc://@/poord/persistence";
-static const char* FILIP_SOCK = "ipc://@/poord/netlogic";
-static const char* CLI_SOCK = "ipc://@/poord/cli";
+/* Implemented in defs.c, link with that if you use any of these values */
+extern const char* DB_SOCK;
+extern const char* FILIP_SOCK;
+extern const char* CLI_SOCK;
 
-static const char* DRIVER_NMAP_SOCK = "ipc://@/bios/driver/nmap";
-static const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
+extern const char* DRIVER_NMAP_SOCK;
+extern const char* DRIVER_NMAP_REPLY;
 
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
