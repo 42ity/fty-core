@@ -57,25 +57,6 @@ static std::map<NmapMethod, Argv> _map = {
     {NmapMethod::DefaultDeviceScan, {SUDO_BIN, NMAP_BIN, "-oX", "-", "-R", "-sT", "-sU"}}
 };
 
-static std::string read_all(int fd) {
-    static size_t BUF_SIZE = 4096;
-    char buf[BUF_SIZE+1];
-    ssize_t r;
-
-    std::stringbuf sbuf;
-
-    while (true) {
-        memset(buf, '\0', BUF_SIZE+1);
-        r = ::read(fd, buf, BUF_SIZE);
-        //TODO if errno != EAGAIN | EWOULDBLOCK, unregister fd?
-        if (r <= 0) {
-            break;
-        }
-        sbuf.sputn(buf, strlen(buf));
-    }
-    return sbuf.str();
-}
-
 static void s_dump_nmap_xml(const std::string& _path, const std::string& input) {
     std::string path = _path;
     size_t pos = 0;
@@ -132,8 +113,8 @@ static int timer_handler(zloop_t *loop, int timer_id, void *arg) {
         xzloop_unregisterfd(loop, proc->getStdout());
         xzloop_unregisterfd(loop, proc->getStderr());
 
-        _pcmap.pushStdout(proc->getPid(), read_all(proc->getStdout()));
-        _pcmap.pushStderr(proc->getPid(), read_all(proc->getStderr()));
+        _pcmap.pushStdout(proc->getPid(), shared::read_all(proc->getStdout()));
+        _pcmap.pushStderr(proc->getPid(), shared::read_all(proc->getStderr()));
 
         //TBD: sending code!
         std::pair<std::string, std::string> p = _pcmap.pop(proc->getPid());
@@ -167,9 +148,9 @@ static int fd_handler (zloop_t *loop, zmq_pollitem_t *item, void *arg) {
     const SubProcess *proc = static_cast<const SubProcess*>(arg);
 
     if (proc->getStdout() == item->fd) {
-        _pcmap.pushStdout(proc->getPid(), read_all(proc->getStdout()));
+        _pcmap.pushStdout(proc->getPid(), shared::read_all(proc->getStdout()));
     } else {
-        _pcmap.pushStderr(proc->getPid(), read_all(proc->getStderr()));
+        _pcmap.pushStderr(proc->getPid(), shared::read_all(proc->getStderr()));
     }
     return 0;
 }

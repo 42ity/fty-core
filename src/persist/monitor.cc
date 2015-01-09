@@ -107,6 +107,7 @@ common_msg_t* select_client(const char* url, const char* name)
             " FROM"
             " v_bios_client v"
             " WHERE v.name = :name"
+            " LIMIT 1"
         );
           
         tntdb::Value val = st.setString("name", name).selectValue();
@@ -682,7 +683,8 @@ common_msg_t* insert_device_type(const char* url, const char* name)
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
             " v_bios_device_type (id,name)"
-            " VALUES (NULL,:name)"
+            " select NULL,:name from dual where not exists"
+            " (select id from v_bios_device_type where name=:name)"
         );
     
         // TODO set
@@ -1033,6 +1035,7 @@ common_msg_t* select_device (const char* url, m_dvc_tp_id_t device_type_id,
             " FROM"
             " v_bios_discovered_device v"
             " WHERE v.name = :name AND v.id_device_type = :devicetypeid"
+            " LIMIT 1"
         );
         
         // TODO set
@@ -1327,7 +1330,9 @@ zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id,
     assert ( device_id ); // is required
     
     zlist_t* measurements = zlist_new();
-    zlist_set_duplicator (measurements, void_dup);
+
+    zlist_autofree(measurements);
+
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);

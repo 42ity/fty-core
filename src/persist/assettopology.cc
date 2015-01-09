@@ -1175,7 +1175,7 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const 
 zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const &powerlinks)
 {
     zlist_t* powers = zlist_new();
-    zlist_set_duplicator (powers, void_dup);
+    zlist_autofree (powers);
     // TODO 30 move to *.h file as a constant
     // uint32_t has 10 characters
     // uint16_t has 5 characters

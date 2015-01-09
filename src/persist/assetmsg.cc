@@ -41,10 +41,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "persist_error.h"
 #include "asset_types.h"
 
-// TODO: move to some common section
-// duplicates the items for zlist/zhash
-void* void_dup(const void* a) { return strdup((char*)a); }
-
 /**
  * \brief This function is a general function to process 
  * the asset_msg_t message
@@ -123,7 +119,7 @@ zlist_t* select_asset_element_groups(const char* url,
     assert ( element_id );
 
     zlist_t* groups = zlist_new();
-    zlist_set_duplicator (groups, void_dup);
+    zlist_autofree(groups);
 
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -176,7 +172,8 @@ zlist_t* select_asset_device_link(const char* url,
 
     zlist_t* links = zlist_new();
     assert ( links );
-    zlist_set_duplicator (links, void_dup);
+
+    zlist_autofree(links);
     
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -240,7 +237,7 @@ zhash_t* select_asset_element_attributes(const char* url,
     log_info("%s \n","start");
     assert ( element_id );
     zhash_t* extAttributes = zhash_new();
-    zhash_set_duplicator (extAttributes, void_dup);
+    zhash_autofree(extAttributes);
 
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -271,6 +268,7 @@ zhash_t* select_asset_element_attributes(const char* url,
             std::string value = "";
             row[1].get(value);
             assert ( !value.empty() );   // database is corrupted
+
 
             // TODO type convertions
             zhash_insert (extAttributes, keytag.c_str(), 
@@ -522,7 +520,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENTS );
 
     zhash_t *elements = zhash_new();
-    zhash_set_duplicator (elements, void_dup);
+    zhash_autofree(elements);
 
     try{
         const a_elmnt_tp_id_t element_type_id = asset_msg_type (msg);
