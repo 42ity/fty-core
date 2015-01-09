@@ -117,6 +117,11 @@ AM_LDFLAGS = \
 dist_noinst_HEADERS = 
 
 #----------------------------------------------------------------------
+noinst_LTLIBRARIES += 		libpriv-defs.la
+
+libpriv_defs_la_SOURCES = 	src/include/defs.c \
+				src/include/defs.h
+
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
@@ -446,6 +451,7 @@ netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
 netmon_LDADD = \
+			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libpriv-utils.la
@@ -469,7 +475,6 @@ db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr
 
 db_ng_LDADD = \
-			libpriv-proto.la \
                         libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
@@ -501,6 +506,7 @@ simple_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/drivers/nut
 
 simple_LDADD = \
+			libpriv-defs.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
@@ -522,12 +528,15 @@ driver_nmap_SOURCES = \
 			src/drivers/nmap/nmap.cc
 
 driver_nmap_LDADD = \
+			libpriv-defs.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libpriv-nmap-parse.la \
 			libpriv-subprocess.la
+
 driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
+
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
