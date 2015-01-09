@@ -70,6 +70,8 @@ test-log
 test-utils
 test-dbtopology
 test-web
+db-ng
+server-agent
 
 tests/junit/
 tests/CI/web/log/
