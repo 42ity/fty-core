@@ -382,13 +382,13 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             // get the result and print it
             nmap_msg_t *msg = nmap_msg_recv (router);
             assert (msg != NULL);
-	    // FIXME: JIM: Commented away as unused
+            // FIXME: JIM: Commented away as unused
             // int msg_id = nmap_msg_id (msg);
             nmap_msg_print (msg);
             nmap_msg_destroy (&msg);
 
         }
-        zsock_destroy (&router);        
+        zsock_destroy (&router);
         assert (router == NULL);
     } else {
         poller = zpoller_new (nmap, NULL);
@@ -396,11 +396,12 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
 
         while (!zpoller_terminated (poller)) {
             zsock_t *which = (zsock_t *) zpoller_wait (poller, -1);
-	    // FIXME: JIM: Use the variable somehow to avout unused warning
-	    if (which==NULL)
-    		log_info ("zpoller_wait() timed out or was aborted\n");
-            if (zpoller_terminated (poller)) {            
-                log_info ("SIGINT received. Quitting.\n");
+            // FIXME: JIM: Use the variable somehow to avoid unused warning
+            if (which==NULL) {
+                log_info ("zpoller_wait() timed out or was aborted\n");
+            }
+            if (zpoller_terminated (poller)) {
+            log_info ("SIGINT received. Quitting.\n");
             }
         }
     }

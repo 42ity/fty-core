@@ -361,8 +361,8 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
 //FIXME: JIM: 20150109 - if there was an error inserting the value, what should
 //we return? it was not "ignored" but did not end up in database either...
             result = true;
-	    if (!r)
-        	log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
+            if (!r)
+                log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
             break;
         }
         default:
