@@ -106,9 +106,11 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   # make sure sasl is running
-  $RUNAS systemctl restart saslauthd || \
-    [ x"$RUNAS" = x ] || \
-    echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  if ! $RUNAS systemctl --quiet is-active saslauthd; then
+    $RUNAS systemctl start saslauthd || \
+      [ x"$RUNAS" = x ] || \
+      echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  fi
   # check SASL is working
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
