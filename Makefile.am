@@ -23,6 +23,12 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+# http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
+# http://www.gnu.org/software/automake/manual/html_node/Sources.html
+# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
+# (or even ‘make install’) before other targets are processed. However, such
+# a source file is not compiled unless explicitly requested by mentioning it
+# in some other _SOURCES variable. 
 BUILT_SOURCES =
 # http://www.gnu.org/software/automake/manual/html_node/Clean.html
 # * If make built it, and it is commonly something that one would want to
@@ -474,17 +480,30 @@ driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
-bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
-                      src/shared/data.cpp   src/web/src/item.cpp         \
+
+# Many but not all of CPP files with bios_web.la are generated from ECPP files
+# List them explicitly as separate sets, so that generated files can be cleaned
+BUILT_SOURCES_bios_web_la = \
+                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/auth-require.cpp                       \
+                      src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
-                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
-                      src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp \
-                      src/web/src/power.cpp src/web/src/location_helpers.cpp \
-                      src/web/src/sysinfo.cpp \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp
+
+bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
+                      src/web/src/location_helpers.cpp                   \
+                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
+                      src/web/src/tokens.cpp src/shared/data.cpp
+
+# Ensure these files are auto-made before others
+BUILT_SOURCES += $(BUILT_SOURCES_bios_web_la)
+
+# Ensure these files are cleaned away too
+CLEANFILES += $(BUILT_SOURCES_bios_web_la)
 
 bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
                        ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
@@ -1009,3 +1028,12 @@ checkstyle:
 style:
 	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 endif
+
+#----------------------------------------------------------------------
+#                        some popular testing targets
+#----------------------------------------------------------------------
+
+ci-test-restapi: test-restapi
+test-restapi: all
+	$(top_srcdir)/tests/CI/ci-test-restapi.sh
+
