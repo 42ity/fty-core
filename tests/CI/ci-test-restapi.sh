@@ -158,4 +158,11 @@ kill $MAKEPID 2>/dev/null
 sleep 2
 killall tntnet 2>/dev/null
 sleep 2
+
+if [ "$RESULT" = 0 ]; then
+    echo "$0: Overall result: SUCCESS"
+else
+    echo "$0: Overall result: FAILED ($RESULT) seek details above" >&2
+fi
+
 exit $RESULT
