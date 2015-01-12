@@ -33,6 +33,14 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
+BUILDSUBDIR=$CHECKOUTDIR
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+if [ ! -x "$BUILDSUBDIR/config.status" ]; then
+    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "Search path: $CHECKOUTDIR, $PWD"
+    exit 1
+fi
+
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 
@@ -108,7 +116,7 @@ wait_for_web() {
   # make clean
   LC_ALL=C
   export BIOS_USER BIOS_PASSWD LC_ALL
-  make web-test &
+  make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
   wait_for_web
 
