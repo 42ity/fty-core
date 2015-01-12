@@ -90,7 +90,8 @@ static int filter_scopemask = -1;
 static int preferred_family = 0;
 
 // wheter to use zmq or print to stdout
-static bool use_zmq = false;
+// FIXME: JIM: 20150109: Variable commented away as unused
+//static bool use_zmq = false;
 
 // include/utils.h
 struct dn_naddr
@@ -221,19 +222,18 @@ const char *qd_mac(const char* ethname) {
 }
 
 static int
-print_addrinfo (const struct sockaddr_nl *who, struct nlmsghdr *n,
-                void *requester) {    
-    int ret = -1;
-
+print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
+		struct nlmsghdr *n,
+                void *requester) {
     struct ifaddrmsg *ifa = NLMSG_DATA(n);
-	//struct ifinfomsg *ifi = NLMSG_DATA(n);
-	int len = n->nlmsg_len;
-	int deprecated = 0;
-	/* Use local copy of ifa_flags to not interfere with filtering code */
-	unsigned int ifa_flags;
-	struct rtattr * rta_tb[IFA_MAX+1];
-	char abuf[256];
-	SPRINT_BUF(b1);
+    //struct ifinfomsg *ifi = NLMSG_DATA(n);
+    int len = n->nlmsg_len;
+    // FIXME: JIM: 20150109: Variables commented away as unused
+    //int deprecated = 0;
+    /* Use local copy of ifa_flags to not interfere with filtering code */
+    //unsigned int ifa_flags;
+    struct rtattr * rta_tb[IFA_MAX+1];
+    char abuf[256];
 
     const char *ethname = ll_index_to_name(ifa->ifa_index);
     uint8_t ipfamily;
@@ -281,27 +281,27 @@ print_addrinfo (const struct sockaddr_nl *who, struct nlmsghdr *n,
 					      RTA_DATA(rta_tb[IFA_LOCAL]),
 					      abuf, sizeof(abuf));
 
-        
 		if (rta_tb[IFA_ADDRESS] == NULL ||
-		    memcmp(RTA_DATA(rta_tb[IFA_ADDRESS]), RTA_DATA(rta_tb[IFA_LOCAL]),
+		    memcmp(RTA_DATA(rta_tb[IFA_ADDRESS]),
+			   RTA_DATA(rta_tb[IFA_LOCAL]),
 			   ifa->ifa_family == AF_INET ? 4 : 16) == 0) {
-            prefixlen = ifa->ifa_prefixlen;
-        }
+        			prefixlen = ifa->ifa_prefixlen;
+    		}
 	}
 		
     /* XXX: following code does not work! The problem is in ifa/ifi above, so we have qd_mac function!
     if (rta_tb[IFLA_ADDRESS]) {
-			mac = ll_addr_n2a(RTA_DATA(rta_tb[IFLA_ADDRESS]),
-						      RTA_PAYLOAD(rta_tb[IFLA_ADDRESS]),
-						      ifi->ifi_type,
-						      abuf, sizeof(abuf));
+	mac = ll_addr_n2a(RTA_DATA(rta_tb[IFLA_ADDRESS]),
+			  RTA_PAYLOAD(rta_tb[IFLA_ADDRESS]),
+			  ifi->ifi_type,
+			  abuf, sizeof(abuf));
     }
     */
     
     // two sends; one for DB_SOCK, one for FILIP_SOCK (because DEALER)
     netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
     netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
-	return 0;
+    return 0;
 }
 
 
@@ -343,7 +343,8 @@ static void ipaddr_filter(struct nlmsg_chain *linfo, struct nlmsg_chain *ainfo)
 			struct nlmsghdr *n = &a->h;
 			struct ifaddrmsg *ifa = NLMSG_DATA(n);
 			struct rtattr *tb[IFA_MAX + 1];
-			unsigned int ifa_flags;
+		        // FIXME: JIM: 20150109: Variable commented away as unused
+			unsigned int ifa_flags UNUSED_PARAM;
 
 			if ((int)ifa->ifa_index != ifi->ifi_index)
 				continue;
@@ -416,8 +417,9 @@ static int ipaddr_list(void* requester)
 	struct nlmsg_chain linfo = { NULL, NULL};
 	struct nlmsg_chain ainfo = { NULL, NULL};
 	struct nlmsg_list *l;
-	char *filter_dev = NULL;
-	int no_link = 0;
+	//FIXME: JIM: 20150109: Variables commented away as unused
+	//char *filter_dev = NULL;
+	//int no_link = 0;
 
 	if (rtnl_wilddump_request(&rth, preferred_family, RTM_GETLINK) < 0) {
 		perror("Cannot send dump request");
@@ -499,13 +501,14 @@ static int accept_msg(const struct sockaddr_nl *who,
 int main(int argc, char **argv) {
 
     if (isatty(STDERR_FILENO)) {
-        fprintf(stderr, "%s", "WARNING: netmon does communicate through zeromq bus, so does not prints anything to stdout\n");
-        fprintf(stderr, "%s", "         Please start simple, which will autospawn netmon internally\n");
-        fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented, use kill -9 for now\n");
+        fprintf(stderr, "%s", "WARNING: netmon does communicate through zeromq bus, so it does not print\n");
+        fprintf(stderr, "%s", "         anything to stdout. Please start simple, which will autospawn netmon\n");
+        fprintf(stderr, "%s", "         internally.\n");
+        fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
+        fprintf(stderr, "%s", "         use kill -9 for now\n");
     }
 
     unsigned groups = ~RTMGRP_TC;
-	const char *prog = *argv; 
 
     zsock_t * dbsock = zsock_new (ZMQ_DEALER);
     assert (dbsock);
@@ -520,7 +523,7 @@ int main(int argc, char **argv) {
     groups |= nl_mgrp(RTNLGRP_IPV4_IFADDR);
     groups |= nl_mgrp(RTNLGRP_IPV6_IFADDR);
 
-	if (rtnl_open(&rth, groups) < 0)
+    if (rtnl_open(&rth, groups) < 0)
 		exit(1);
 
     ipaddr_list(dbsock);
@@ -529,6 +532,6 @@ int main(int argc, char **argv) {
 
     zsock_destroy(&dbsock);
     assert (dbsock == NULL);
-	
-	return 0;
+
+    return 0;
 }
