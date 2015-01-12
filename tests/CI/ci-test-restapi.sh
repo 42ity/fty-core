@@ -33,6 +33,14 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
+BUILDSUBDIR=$CHECKOUTDIR
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+if [ ! -x "$BUILDSUBDIR/config.status" ]; then
+    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "Search path: $CHECKOUTDIR, $PWD"
+    exit 1
+fi
+
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 
@@ -98,9 +106,11 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   # make sure sasl is running
-  $RUNAS systemctl restart saslauthd || \
-    [ x"$RUNAS" = x ] || \
-    echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  if ! $RUNAS systemctl --quiet is-active saslauthd; then
+    $RUNAS systemctl start saslauthd || \
+      [ x"$RUNAS" = x ] || \
+      echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  fi
   # check SASL is working
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
@@ -108,7 +118,7 @@ wait_for_web() {
   # make clean
   LC_ALL=C
   export BIOS_USER BIOS_PASSWD LC_ALL
-  make web-test &
+  make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
   wait_for_web
 
