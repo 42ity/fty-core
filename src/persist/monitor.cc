@@ -843,7 +843,7 @@ common_msg_t* delete_device (const char* url, uint32_t device_id)
  * \return COMMON_MSG_FAIL if update failed.
  *         COMMON_MSG_DB_OK   if update was successful.
  */
-common_msg_t* update_device (__attribute__((unused))const char* url, __attribute__((unused))common_msg_t** newdevice)
+common_msg_t* update_device (UNUSED_PARAM const char* url, UNUSED_PARAM common_msg_t** newdevice)
 {
     return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  // TODO NOT IMPLEMENTED
 }

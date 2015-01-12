@@ -361,8 +361,8 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
 //FIXME: JIM: 20150109 - if there was an error inserting the value, what should
 //we return? it was not "ignored" but did not end up in database either...
             result = true;
-            if (!r)
-                log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
+	    if (!r)
+        	log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
             break;
         }
         default:
@@ -454,9 +454,9 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
 bool insert_new_client_info(const char* url, common_msg_t* msg)
 {
     uint32_t client_id = common_msg_client_id (msg);
-    uint32_t device_id __attribute__((unused)) = common_msg_device_id (msg);
+    uint32_t device_id UNUSED_PARAM = common_msg_device_id (msg);
     zchunk_t* info = common_msg_info (msg);
-    uint32_t date __attribute__((unused)) = common_msg_date (msg);
+    uint32_t date UNUSED_PARAM = common_msg_date (msg);
 
     bool result = false;
 

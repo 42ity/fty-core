@@ -222,7 +222,7 @@ const char *qd_mac(const char* ethname) {
 }
 
 static int
-print_addrinfo (__attribute__((unused)) const struct sockaddr_nl *who,
+print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
 		struct nlmsghdr *n,
                 void *requester) {
     struct ifaddrmsg *ifa = NLMSG_DATA(n);
@@ -240,7 +240,7 @@ print_addrinfo (__attribute__((unused)) const struct sockaddr_nl *who,
     const char *ipaddress = NULL;
     uint8_t prefixlen = 0;
     const char *mac = qd_mac(ethname);
-
+	
     // sanity check
     if (n->nlmsg_type != RTM_NEWADDR && n->nlmsg_type != RTM_DELADDR)
 		return 0;
@@ -343,9 +343,8 @@ static void ipaddr_filter(struct nlmsg_chain *linfo, struct nlmsg_chain *ainfo)
 			struct nlmsghdr *n = &a->h;
 			struct ifaddrmsg *ifa = NLMSG_DATA(n);
 			struct rtattr *tb[IFA_MAX + 1];
-			// FIXME: JIM: 20150109: Variable marked unused
-			// (a value is assigned and then ignored below)
-			unsigned int ifa_flags __attribute__((unused));
+		        // FIXME: JIM: 20150109: Variable commented away as unused
+			unsigned int ifa_flags UNUSED_PARAM;
 
 			if ((int)ifa->ifa_index != ifi->ifi_index)
 				continue;

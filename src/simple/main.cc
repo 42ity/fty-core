@@ -28,7 +28,7 @@ static const shared::Argv nmap_args{"./driver-nmap"};
 static shared::SubProcess nmap_proc{nmap_args, false, false};
 
 //  netmon 
-void filip_actor (zsock_t *pipe, __attribute__((unused)) void *args) {
+void filip_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
     log_info ("start\n");
 
     zsock_t * incoming = zsock_new_router (FILIP_SOCK);
@@ -102,7 +102,7 @@ void filip_actor (zsock_t *pipe, __attribute__((unused)) void *args) {
     log_info ("end\n");
 }
 
-void persistence_actor(zsock_t *pipe, __attribute__((unused)) void *args) {
+void persistence_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
     log_info ("start\n");
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
@@ -139,7 +139,7 @@ void persistence_actor(zsock_t *pipe, __attribute__((unused)) void *args) {
     log_info ("end\n");
 }
  
-void netmon_actor(zsock_t *pipe, __attribute__((unused)) void *args) {
+void netmon_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
 
     log_info ("start\n");
 
