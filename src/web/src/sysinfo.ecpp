@@ -5,6 +5,7 @@
 #include <cxxtools/jsondeserializer.h>
 #include "subprocess.h"
 #include <sys/utsname.h>
+#include "config.h"
 
 static std::string chomp(std::string data) {
 	/* TODO: replace inner newlines by "\n" strings */
@@ -69,4 +70,61 @@ int8_t access_auth_level;
       "machine": "<$ (char*) u.machine $>"
     }
   }
+<%cpp>
+    if (access_auth_level>=1) {
+</%cpp>
+, "$BIOS": {
+    "packages": [
+      { "package-name": "<$ PACKAGE $>",
+        "package-version": "<$ PACKAGE_VERSION $>",
+        "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
+        "package-url": "<$ PACKAGE_URL $>",
+        "vendor": "Eaton" }
+    ],
+    "main-process-status" : "unknown"
+<%cpp>
+      if (access_auth_level>1) {
+#ifdef HAVE_PACKAGE_GIT
+</%cpp>
+  , "source-repo": {
+      "scm": "git",
+      "origin": "<$ PACKAGE_GIT_ORIGIN_ESCAPED $>",
+      "branch": "<$ PACKAGE_GIT_BRANCH_ESCAPED $>",
+      "commit": "<$ PACKAGE_GIT_HASH_L_ESCAPED $>",
+      "commit-timestamp": "<$ PACKAGE_GIT_TSTAMP_ESCAPED $>",
+      "status": "<$$ PACKAGE_GIT_STATUS_ESCAPED $>"
+    }
+<%cpp>
+#endif // HAVE_PACKAGE_GIT
+#if defined(HAVE_PACKAGE_BUILD_HOST) || defined(HAVE_PACKAGE_BUILD_TSTAMP)
+</%cpp>
+  , "build-info": {
+<%cpp>
+#ifdef HAVE_PACKAGE_BUILD_HOST
+</%cpp>
+      "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
+      "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
+      "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
+      "build-timestamp":
+<%cpp>
+#endif
+#if defined(HAVE_PACKAGE_BUILD_TSTAMP) && defined(PACKAGE_BUILD_TSTAMP)
+</%cpp>
+             "<$ PACKAGE_BUILD_TSTAMP_ESCAPED $>"
+<%cpp>
+#else // HAVE_PACKAGE_BUILD_TSTAMP
+</%cpp>
+             "<$ UNKNOWN $>"
+<%cpp>
+#endif // HAVE_PACKAGE_BUILD_TSTAMP
+</%cpp>
+    }
+<%cpp>
+#endif // HAVE_PACKAGE_GIT
+      } // if (access_auth_level>1)
+</%cpp>
+  }
+<%cpp>
+    } // if (access_auth_level>=1)
+</%cpp>
 }

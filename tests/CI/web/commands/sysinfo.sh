@@ -103,3 +103,29 @@ echo "=== SYSINFO_VIRTMACHINE ($RES): '$SYSINFO_VIRTMACHINE'" >&2
     x"$SYSINFO_VIRTMACHINE" != x'""' ]
 print_result $?
 
+test_it "sysinfo_build_version_package"
+RES=0
+JPATH='"\$BIOS","packages",[0-9]*,"package-name"$'
+SYSINFO_VERSION="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH"`" || RES=$?
+echo "=== SYSINFO_VERSION ($RES): '$SYSINFO_VERSION'" >&2
+[ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
+    x"$SYSINFO_VERSION" != x'""' ]
+print_result $?
+
+test_it "sysinfo_build_version_source"
+RES=0
+JPATH='"\$BIOS","(source-repo|build-info)"$'
+SYSINFO_VERSION="`echo "$SYSINFO" | ${JSONSH} -x="$JPATH"`" || RES=$?
+echo "=== SYSINFO_VERSION ($RES): '$SYSINFO_VERSION'" >&2
+[ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
+    x"$SYSINFO_VERSION" != x'""' ]
+print_result $?
+
+
+# Finally, test if JSON is valid
+test_it "sysinfo_json_is_valid"
+SYSINFO_PARSED="`echo "$SYSINFO" | ${JSONSH} -l --no-newline`"
+RES=$?
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
