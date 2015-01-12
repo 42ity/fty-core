@@ -70,9 +70,6 @@ int8_t access_auth_level;
       "machine": "<$ (char*) u.machine $>"
     }
   }
-<%cpp>
-    if (access_auth_level>=1) {
-</%cpp>
 , "$BIOS": {
     "packages": [
       { "package-name": "<$ PACKAGE $>",
@@ -80,8 +77,11 @@ int8_t access_auth_level;
         "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
         "package-url": "<$ PACKAGE_URL $>",
         "vendor": "Eaton" }
-    ],
-    "main-process-status" : "unknown"
+    ]
+<%cpp>
+    if (access_auth_level>=1) {
+</%cpp>
+  , "main-process-status" : "unknown"
 <%cpp>
       if (access_auth_level>1) {
 #ifdef HAVE_PACKAGE_GIT
@@ -122,9 +122,7 @@ int8_t access_auth_level;
 <%cpp>
 #endif // HAVE_PACKAGE_GIT
       } // if (access_auth_level>1)
-</%cpp>
-  }
-<%cpp>
     } // if (access_auth_level>=1)
 </%cpp>
+  }
 }
