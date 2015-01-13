@@ -293,7 +293,7 @@ usage() {
 	echo "    [--configure-flags '...'] \ "
 	echo "    [--install-dir 'dirname'] [--build-subdir 'dirname'] \ "
 	echo "    { build-samedir | build-subdir | install-samedir | install-subdir \ "
-	echo "      | make-samedir  | make-subdir } [maketargets...]"
+	echo "      | make-samedir | make-subdir } [maketargets...]"
 	echo ""
 	echo "Usage: $0 [--debug-makefile] \ "
 	echo "           { build*|install*|make*|conf* } [maketargets...]"
@@ -315,6 +315,8 @@ usage() {
 	echo "		- execute the configure step in a freshly made subdir and exit"
 	echo "Usage: $0 distclean"
 	echo "		- execute the distclean step and exit"
+	echo "Usage: $0 run-subdir cmd [args...]"
+	echo "		- change into the build subdir and run the command"
 }
 
 showGitFlags() {
@@ -534,12 +536,12 @@ case "$1" in
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@" && \
 	do_make distcheck
 	;;
-    conf|configure)
+    conf|config|configure)
 	shift
 	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@"
 	;;
-    conf-subdir|configure-subdir)
+    conf-subdir|config-subdir|configure-subdir)
 	shift
 	do_make_dc -k distclean
 	{ echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
@@ -547,6 +549,17 @@ case "$1" in
 	  mkdir "${BUILDSUBDIR}" && \
 	  cd "${BUILDSUBDIR}"; } && \
 	verb_run $TIME_CONF "$CHECKOUTDIR/configure" $CONFIGURE_FLAGS "$@"
+	;;
+    run-subdir)
+	shift
+	if [ $# -le 0 -o ! -d "${BUILDSUBDIR}" ]; then
+	    echo "FAIL: Cannot run '$@' under build dir '${BUILDSUBDIR}'" >&2
+	    exit 2
+	else
+	    echo "INFO: Running '$@' under build directory '${BUILDSUBDIR}'..."
+	    ( cd "${BUILDSUBDIR}" && \
+	      verb_run "$@" )
+	fi
 	;;
     help|-help|--help|-h)
 	usage
@@ -557,3 +570,4 @@ case "$1" in
 	exit 2
 	;;
 esac
+
