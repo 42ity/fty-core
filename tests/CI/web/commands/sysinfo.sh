@@ -76,18 +76,6 @@ RES=$?
 print_result $?
 
 
-### Obsolete checks (when unauth was to be empty):
-#echo "$SYSINFO_PARSED" | egrep '^\[\]' && \
-#    echo "ERROR: Got empty branch name" >&2 && RES=125
-#echo "$SYSINFO_PARSED" | egrep '^\[\"' && \
-#    echo "ERROR: Got parsed markup where none was expected" >&2 && RES=124
-# Properly here, no json result was returned so string should become empty
-# JSON.sh generally returns an error, but may return an empty token name
-# like '[] 123' - which is wrong for our usecase
-# So the expected GOOD outcome is a parsing error or empty parser output.
-#[ $RES != 0 -o -z "$SYSINFO_PARSED" ]
-#print_result $?
-
 ###############################################################
 # Check getting server system info (authorized only?)
 test_it "sysinfo_get_auth=2"
