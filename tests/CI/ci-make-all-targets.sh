@@ -17,7 +17,7 @@
 #
 # Author(s): Tomas Halman <TomasHalman@eaton.com>
 #
-# Description: installs dependecies and compiles the project
+# Description: installs dependencies and compiles the project
 
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 

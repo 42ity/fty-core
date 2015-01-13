@@ -13,11 +13,10 @@
 #include "nmap-parse.h"
 #include "nmap_msg.h"
 #include "log.h"
+#include "defs.h"
 
 using namespace cxxtools::xml;
 using namespace cxxtools;
-
-static const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 
 enum class ListState {
     START,
@@ -744,6 +743,9 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                 assert (in_os);
 
                 in_osmatch = true;
+
+		// FIXME: Access just to shut up -Werror=unused-variable
+		assert(in_osmatch);
 
                 assert (osmatch == NULL);
                 osmatch = nmap_msg_new (NMAP_MSG_OSMATCH);

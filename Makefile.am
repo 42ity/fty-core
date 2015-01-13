@@ -2,8 +2,8 @@
 # Note: relies on GNU make syntax and features, may fail to work in
 # other make programs.
 
-ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-AUTOMAKE_OPTIONS = color-tests parallel-tests
+ACLOCAL_AMFLAGS =	-I m4 ${ACLOCAL_FLAGS}
+AUTOMAKE_OPTIONS =	color-tests parallel-tests
 
 # http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
 # NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
@@ -23,6 +23,12 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+# http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
+# http://www.gnu.org/software/automake/manual/html_node/Sources.html
+# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
+# (or even ‘make install’) before other targets are processed. However, such
+# a source file is not compiled unless explicitly requested by mentioning it
+# in some other _SOURCES variable. 
 BUILT_SOURCES =
 # http://www.gnu.org/software/automake/manual/html_node/Clean.html
 # * If make built it, and it is commonly something that one would want to
@@ -31,44 +37,77 @@ BUILT_SOURCES =
 # * If configure built it, then distclean should delete it.
 CLEANFILES =
 DISTCLEANFILES =
+DISTCLEANDIRS =
 
 TESTS =
 
 # Named by analogy from configure'd myDOXDIR for doxygen
-myMANDIR = docs/man
-myDEVDOCDIR = docs/develop
+myMANDIR =	docs/man
+myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS = $(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
 # Note that docker/README is processed by this root Makefile, below...
-SUBDIRS += docker
+SUBDIRS +=	docker
 endif
 
-AM_CPPFLAGS = -include $(top_builddir)/config.h \
-			  -I$(top_srcdir)/src/shared \
-			  -I$(top_srcdir)/src/include \
-			  -DDEBUG \
-			  -DDEVEL
+# Clean up products of configure script
+DISTCLEANFILES += \
+		$(addsuffix /Makefile.in,$(SUBDIRS) .) \
+		aclocal.m4 config.h.in config.h.in~ config.log \
+		m4/libtool.m4 \
+		m4/ltoptions.m4 \
+		m4/ltsugar.m4 \
+		m4/ltversion.m4 \
+		m4/lt~obsolete.m4 \
+		build-aux/compile* \
+		build-aux/config* \
+		build-aux/depcomp* \
+		build-aux/install* \
+		build-aux/ltmain* \
+		build-aux/missing* \
+		build-aux/test* \
+		autom4te.cache/output* \
+		autom4te.cache/traces* \
+		autom4te.cache/requests \
+		tests/CI/web/log/*.log
 
+# These are deleted by "distclean-local-dirs" if they exist and are empty
+# The "distclean-generic" with "rm DISTCLEANFILES" is a dependency for this
+DISTCLEANDIRS += \
+		autom4te.cache \
+		build-aux \
+		config \
+		tests/CI/web/log
 
-AM_CFLAGS =			${my_CFLAGS} \
-				-fvisibility=hidden \
-				-ffunction-sections \
-				-fdata-sections \
-				$(LIBZMQ_CFLAGS) \
-				$(LIBCZMQ_CFLAGS) \
-				$(LIBVARIANT_CFLAGS)
+AM_CPPFLAGS = \
+		-include $(top_builddir)/config.h \
+		-I$(top_srcdir)/src/shared \
+		-I$(top_srcdir)/src/include \
+		-DDEBUG \
+		-DDEVEL
 
-AM_CXXFLAGS =			${my_CXXFLAGS} \
-				-fvisibility=hidden \
-				-ffunction-sections \
-				-fdata-sections
+AM_CFLAGS = \
+		${my_CFLAGS} \
+		-fvisibility=hidden \
+		-ffunction-sections \
+		-fdata-sections \
+		$(LIBZMQ_CFLAGS) \
+		$(LIBCZMQ_CFLAGS) \
+		$(LIBVARIANT_CFLAGS)
 
-AM_LDFLAGS = 			-Wl,--gc-sections \
-				-Wl,--as-needed
+AM_CXXFLAGS = \
+		${my_CXXFLAGS} \
+		-fvisibility=hidden \
+		-ffunction-sections \
+		-fdata-sections
+
+AM_LDFLAGS = \
+	 	-Wl,--gc-sections \
+		-Wl,--as-needed
 
 # ----------------------------------------------------------------------
 # List of header files. The purpose of this list is not dependency
@@ -78,6 +117,11 @@ AM_LDFLAGS = 			-Wl,--gc-sections \
 dist_noinst_HEADERS = 
 
 #----------------------------------------------------------------------
+noinst_LTLIBRARIES += 		libpriv-defs.la
+
+libpriv_defs_la_SOURCES = 	src/include/defs.c \
+				src/include/defs.h
+
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
@@ -106,63 +150,66 @@ libpriv_cidr_la_SOURCES = 	src/shared/cidr.h \
 
 noinst_LTLIBRARIES += 		libpriv-db.la
 
-libpriv_db_la_SOURCES = 	src/persist/persistence.h \
-				src/persist/databaseobject.cc \
-				src/persist/databaseobject.h \
-				src/persist/databasetimeobject.cc \
-				src/persist/databasetimeobject.h \
-				src/persist/ip.cc \
-				src/persist/ip.h \
-				src/persist/nethistory.cc \
-				src/persist/nethistory.h \
-				src/persist/assetmsg.cc \
-				src/persist/assettopology.cc \
-				src/persist/persist_error.cc \
-				src/persist/persist_error.h \
-				src/persist/assettopology.h \
-				src/persist/assetmsg.h \
-				src/persist/persistencelogic.cc \
-				src/persist/persistencelogic.h \
-				src/persist/monitor.cc \
-				src/persist/monitor.h \
-				src/persist/measure_types.cc \
-				src/persist/measure_types.h
+libpriv_db_la_SOURCES = \
+			src/persist/persistence.h \
+			src/persist/databaseobject.cc \
+			src/persist/databaseobject.h \
+			src/persist/databasetimeobject.cc \
+			src/persist/databasetimeobject.h \
+			src/persist/ip.cc \
+			src/persist/ip.h \
+			src/persist/nethistory.cc \
+			src/persist/nethistory.h \
+			src/persist/assetmsg.cc \
+			src/persist/assettopology.cc \
+			src/persist/persist_error.cc \
+			src/persist/persist_error.h \
+			src/persist/assettopology.h \
+			src/persist/assetmsg.h \
+			src/persist/persistencelogic.cc \
+			src/persist/persistencelogic.h \
+			src/persist/monitor.cc \
+			src/persist/monitor.h \
+			src/persist/measure_types.cc \
+			src/persist/measure_types.h
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
-					-I$(top_srcdir)/src/include \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/shared \
-					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+			-I$(top_srcdir)/src/include \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/shared \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
 
-noinst_LTLIBRARIES += 		libpriv-proto.la
-libpriv_proto_la_SOURCES = src/include/asset_msg.c \
-						   src/include/asset_msg.h \
-						   src/include/common_msg.c \
-						   src/include/common_msg.h \
-						   src/include/defs.h \
-						   src/include/netdisc_msg.c \
-						   src/include/netdisc_msg.h \
-						   src/include/nmap_msg.c \
-						   src/include/nmap_msg.h \
-						   src/include/powerdev_msg.c \
-						   src/include/powerdev_msg.h
+noinst_LTLIBRARIES += 	libpriv-proto.la
+libpriv_proto_la_SOURCES = \
+			src/include/asset_msg.c \
+			src/include/asset_msg.h \
+			src/include/common_msg.c \
+			src/include/common_msg.h \
+			src/include/defs.h \
+			src/include/netdisc_msg.c \
+			src/include/netdisc_msg.h \
+			src/include/nmap_msg.c \
+			src/include/nmap_msg.h \
+			src/include/powerdev_msg.c \
+			src/include/powerdev_msg.h
 
-noinst_LTLIBRARIES += 		libpriv-nmap-parse.la
-libpriv_nmap_parse_la_SOURCES = src/drivers/nmap/nmap-parse.h \
-					  src/drivers/nmap/nmap-parse.cc
+noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
+libpriv_nmap_parse_la_SOURCES = \
+			src/drivers/nmap/nmap-parse.h \
+			src/drivers/nmap/nmap-parse.cc
 
-DISTCLEANFILES +=		docs/doxygen/Doxyfile
+DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
 # Tester for the doxygen output sanity
-check_SCRIPTS += tools/run-test-doc.sh
+check_SCRIPTS +=	tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
-EXTRA_DIST += tools/run-test.sh
-LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
+EXTRA_DIST +=		tools/run-test.sh
+LOG_COMPILER =		$(top_srcdir)/tools/run-test.sh
 
 
 #Test case examples:
@@ -215,28 +262,28 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 #                        Unit tests
 #----------------------------------------------------------------------
 
-check_PROGRAMS += 			test-utils
+check_PROGRAMS += 	test-utils
 
 test_utils_SOURCES = 	src/shared/utils.h \
-						tests/shared/test-utils.cc
+			tests/shared/test-utils.cc
 
-test_utils_LDADD = 		libpriv-utils.la \
-						libpriv-test-run.la
+test_utils_LDADD = 	libpriv-utils.la \
+			libpriv-test-run.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
-						-I$(top_srcdir)/tests/include/
+			-I$(top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-log
+check_PROGRAMS += 	test-log
 
-test_log_SOURCES = 		src/shared/log.h \
-						src/shared/utils.h \
-						tests/shared/test-log.cc
+test_log_SOURCES = 	src/shared/log.h \
+			src/shared/utils.h \
+			tests/shared/test-log.cc
 
-test_log_LDADD = 			libpriv-log.la \
-					libpriv-utils.la \
-					libpriv-test-run.la
-test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+test_log_LDADD = 	libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-test-run.la
+test_log_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
@@ -247,131 +294,141 @@ test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
 					-I$(top_srcdir)/tests/include/
 test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr
 
-check_PROGRAMS += 			test-cidr
-test_cidr_SOURCES = 			src/shared/cidr.cc \
-					tests/shared/test-cidr.cc
-test_cidr_LDADD = 			libpriv-test-run.la
-test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
-test_cidr_LDFLAGS =			-lcidr
+check_PROGRAMS += 	test-cidr
+test_cidr_SOURCES = 	src/shared/cidr.cc \
+			tests/shared/test-cidr.cc
+test_cidr_LDADD = 	libpriv-test-run.la
+test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/
+test_cidr_LDFLAGS =	-lcidr
 
 
-bin_PROGRAMS += 			test-db
+bin_PROGRAMS += 	test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
-test_db_LDADD = 			libpriv-db.la \
-					libpriv-cidr.la \
-					libpriv-test-run.la
+test_db_LDADD = \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la
 
-test_db_CPPFLAGS = $(AM_CPPFLAGS) \
-				   -I$(top_srcdir)/tests/include/ \
-				   -I$(top_srcdir)/src/persist \
-				   -I$(top_srcdir)/tools \
-				   -I$(top_builddir)/tools
+test_db_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
 
-test_db_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr
+test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
-bin_PROGRAMS += 			test-db2
+bin_PROGRAMS += 	test-db2
 
-test_db2_SOURCES = tests/persist/test-monitor.cc \
-				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-realdatamonitor.cc
+test_db2_SOURCES = \
+			tests/persist/test-monitor.cc \
+			tests/persist/test-monitor-clientinfo.cc \
+			tests/persist/test-realdatamonitor.cc
 
-test_db2_LDADD = libpriv-db.la \
-				 libpriv-cidr.la \
-				 libpriv-proto.la \
-				 libpriv-test-run.la \
-				 libpriv-log.la
+test_db2_LDADD = \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
 
-test_db2_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-bin_PROGRAMS += 			test-dbtopology
+bin_PROGRAMS += 	test-dbtopology
 
-test_dbtopology_SOURCES = tests/persist/test-topology.cc \
-						tests/persist/test-topology-power-to.cc \
-						tests/persist/test-topology-power-from.cc \
-						tests/persist/test-topology-power-datacenter.cc \
-						tests/persist/test-topology-power-group.cc \
-						tests/persist/test-topology-location-from.cc \
-						tests/persist/test-topology-location-to.cc
+test_dbtopology_SOURCES = \
+			tests/persist/test-topology.cc \
+			tests/persist/test-topology-power-to.cc \
+			tests/persist/test-topology-power-from.cc \
+			tests/persist/test-topology-power-datacenter.cc \
+			tests/persist/test-topology-power-group.cc \
+			tests/persist/test-topology-location-from.cc \
+			tests/persist/test-topology-location-to.cc
 
-test_dbtopology_LDADD = libpriv-db.la \
-				 libpriv-proto.la \
-				 libpriv-test-run.la \
-				 libpriv-log.la
+test_dbtopology_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
 
 
-test_dbtopology_CPPFLAGS =	$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+test_dbtopology_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
 
-test_dbtopology_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
 ###
-bin_PROGRAMS += 			test-database
+bin_PROGRAMS += 	test-database
 
-test_database_SOURCES = 	tests/persist/test-database.cc \
-							src/persist/persistencelogic.cc
+test_database_SOURCES = tests/persist/test-database.cc \
+			src/persist/persistencelogic.cc
 
-test_database_LDADD = 			libpriv-db.la \
-					libpriv-proto.la \
-					libpriv-cidr.la \
-					libpriv-test-run.la \
-					libpriv-log.la
+test_database_LDADD = 	libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la \
+			libpriv-log.la
 
 test_database_CPPFLAGS = $(AM_CPPFLAGS) \
-				   -I$(top_srcdir)/tests/include/ \
-				   -I$(top_srcdir)/src/persist \
-				   -I$(top_srcdir)/src/include \
-				   -I$(top_srcdir)/tools \
-				   -I$(top_builddir)/tools
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/include \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
 
-test_database_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
 ###
-bin_PROGRAMS += 			test-web
+bin_PROGRAMS +=		test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
-							src/web/src/location_helpers.cpp
+			src/web/src/location_helpers.cpp
 
 test_web_LDADD = 	libpriv-test-run.la \
-					libpriv-log.la
+			libpriv-log.la
 
-test_web_CPPFLAGS = $(AM_CPPFLAGS) \
-				   -I$(top_srcdir)/tests/include/ \
-				   -I$(top_srcdir)/src/web/include \
-				   -I$(top_srcdir)/src/simple \
-				   -I$(top_srcdir)/src/include
+test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/web/include \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/src/include
 
 
-#test_web_LDFLAGS =			-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+#test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
 
 ###
-check_PROGRAMS += 			test-nmap-parse
+check_PROGRAMS += 	test-nmap-parse
 test_nmap_parse_SOURCES = tests/drivers/nmap/test-nmap-parse.cc
-test_nmap_parse_LDADD = libpriv-nmap-parse.la \
-						libpriv-log.la \
-						libpriv-proto.la \
-						libpriv-test-run.la
+test_nmap_parse_LDADD = \
+			libpriv-nmap-parse.la \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libpriv-test-run.la
 test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
 test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
-				   -I$(top_srcdir)/tests/include/ \
-				   -I$(top_srcdir)/src/drivers/nmap/ \
-				   -DTDIR=$(top_srcdir)/tests/drivers/nmap/
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/drivers/nmap/ \
+			-DTDIR=$(top_srcdir)/tests/drivers/nmap/
 EXTRA_DIST += $(top_srcdir)/tests/drivers/nmap/mbt-lab.xml
 
 ###
@@ -383,127 +440,157 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-bin_PROGRAMS += 			netmon
-netmon_SOURCES = src/drivers/netmon/linux \
-				 src/drivers/netmon/netmon.c \
-				 src/drivers/netmon/msg_send.cc \
-				 src/drivers/netmon/msg_send.h
+bin_PROGRAMS += 	netmon
+netmon_SOURCES = \
+			src/drivers/netmon/linux \
+			src/drivers/netmon/netmon.c \
+			src/drivers/netmon/msg_send.cc \
+			src/drivers/netmon/msg_send.h
 
-netmon_CPPFLAGS = $(AM_CPPFLAGS) \
-				  -I$(top_srcdir)/src/drivers/netmon \
-				  -D_GNU_SOURCE \
-				  -I$(top_srcdir)/src/simple
+netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/drivers/netmon \
+			-D_GNU_SOURCE \
+			-I$(top_srcdir)/src/simple
 
-netmon_LDADD = libpriv-log.la \
-			   libpriv-proto.la \
-			   libpriv-utils.la
+netmon_LDADD = \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libpriv-utils.la
 
-netmon_LDFLAGS =			-lnetlink $(LIBCZMQ_LIBS)
+netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
 
-bin_PROGRAMS += simple server-agent db-ng
+bin_PROGRAMS += 	simple server-agent db-ng
 
-server_agent_SOURCES = src/drivers/server-agent/server-agent.cpp
+server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
 
-server_agent_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
+server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
 
-server_agent_LDADD = libpriv-proto.la
+server_agent_LDADD =	libpriv-proto.la
 
-server_agent_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
+server_agent_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
 
-db_ng_SOURCES = src/persist/db-ng.cpp
+db_ng_SOURCES =		src/persist/db-ng.cpp
 
-db_ng_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -ltntdb -lcidr
+db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
+			${LIBMLM_LIBS} -ltntdb -lcidr
 
-db_ng_LDADD = libpriv-proto.la \
-                           libpriv-db.la \
-			   libpriv-cidr.la \
-			   libpriv-log.la \
-                           libpriv-proto.la
+db_ng_LDADD = \
+                        libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-log.la \
+                        libpriv-proto.la
 
-db_ng_CPPFLAGS = $(AM_CPPFLAGS) -I$(top_srcdir)/src/include
+db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
 
-simple_SOURCES = src/simple/main.cc \
-				 src/include/defs.h \
-				 $(top_srcdir)/tools/dbinit.h \
-				 src/persist/persistence.h \
-				 src/shared/upsstatus.cc \
-				 src/drivers/nut/nut-actor.cc \
-				 src/drivers/nut/nut-driver.cc
+simple_SOURCES = \
+			src/simple/main.cc \
+			src/include/defs.h \
+			$(top_srcdir)/tools/dbinit.h \
+			src/persist/persistence.h \
+			src/shared/upsstatus.cc \
+			src/drivers/nut/nut-actor.cc \
+			src/drivers/nut/nut-driver.cc
 
-simple_LDFLAGS = -lcidr \
-				 ${LIBCZMQ_LIBS} \
-				 ${LIBNUTCLIENT_LIBS} \
-				 ${CXXTOOLS_LIBS} \
-				 -ltntdb
+simple_LDFLAGS = \
+			${LIBCZMQ_LIBS} \
+			${LIBNUTCLIENT_LIBS} \
+			${CXXTOOLS_LIBS} \
+			-lcidr -ltntdb
 
-simple_CPPFLAGS = $(AM_CPPFLAGS) \
-				  -I$(top_srcdir)/tools/ \
-				  -I$(top_builddir)/tools/ \
-				  -I$(top_srcdir)/src/persist \
-				  -I$(top_srcdir)/src/simple/ \
-				  -I$(top_srcdir)/src/drivers/nut
+simple_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tools/ \
+			-I$(top_builddir)/tools/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple/ \
+			-I$(top_srcdir)/src/drivers/nut
 
-simple_LDADD = libpriv-db.la \
-			   libpriv-cidr.la \
-			   libpriv-log.la \
-			   libpriv-proto.la \
-			   libpriv-subprocess.la
+simple_LDADD = \
+			libpriv-defs.la \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libpriv-subprocess.la
 
-dist_noinst_HEADERS += src/include/asset_msg.h \
-					   src/simple/asset_types.h \
-					   src/include/powerdev_msg.h \
-					   src/drivers/nut/nut-actor.h \
-					   src/drivers/nut/nut-driver.h
+dist_noinst_HEADERS += \
+			src/include/asset_msg.h \
+			src/simple/asset_types.h \
+			src/include/powerdev_msg.h \
+			src/drivers/nut/nut-actor.h \
+			src/drivers/nut/nut-driver.h
 
 
-bin_PROGRAMS += driver-nmap
+bin_PROGRAMS +=		driver-nmap
 
-driver_nmap_SOURCES = src/drivers/nmap/nmap-driver.h \
-					  src/drivers/nmap/nmap.cc
+driver_nmap_SOURCES = \
+			src/drivers/nmap/nmap-driver.h \
+			src/drivers/nmap/nmap.cc
 
-driver_nmap_LDADD = libpriv-cidr.la \
-					libpriv-log.la \
-					libpriv-proto.la \
-					libpriv-nmap-parse.la \
-					libpriv-subprocess.la
-driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
-driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
-			   		   -I$(top_srcdir)/src/simple
+driver_nmap_LDADD = \
+			libpriv-defs.la \
+			libpriv-cidr.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libpriv-nmap-parse.la \
+			libpriv-subprocess.la
+
+driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
+
+driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/simple
 
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
-bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
-                      src/shared/data.cpp   src/web/src/item.cpp         \
+
+# Many but not all of CPP files with bios_web.la are generated from ECPP files
+# List them explicitly as separate sets, so that generated files can be cleaned
+BUILT_SOURCES_bios_web_la = \
+                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/auth-require.cpp                       \
+                      src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
-                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
                       src/web/src/network.cpp src/web/src/networks.cpp   \
-                      src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp \
-                      src/web/src/power.cpp src/web/src/location_helpers.cpp \
-                      src/web/src/sysinfo.cpp \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp
 
-bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
-                       ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
-                       ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
-					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
-					   -I$(top_srcdir)/src/simple \
-					   -I$(top_srcdir)/src/shared \
-				   	   -I$(top_srcdir)/src/web/include \
-					   -I$(top_srcdir)/tools \
-				   	   -I$(top_builddir)/tools \
-					   -I$(top_srcdir)/src/persist
+bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
+                      src/web/src/location_helpers.cpp                   \
+                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
+                      src/web/src/tokens.cpp src/shared/data.cpp
 
-bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
-					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-					  -module -lm -ltntdb -ltntnet -lcidr
-bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la libpriv-proto.la \
-                     libpriv-log.la libpriv-subprocess.la
+# Ensure these files are auto-made before others
+BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
 
-dist_noinst_HEADERS +=	src/shared/data.h \
+# Ensure these files are cleaned away too
+CLEANFILES +=		$(BUILT_SOURCES_bios_web_la)
+
+bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
+			${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
+			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
+			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/src/shared \
+			-I$(top_srcdir)/src/web/include \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools \
+			-I$(top_srcdir)/src/persist
+
+bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
+			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
+			-module -lm -ltntdb -ltntnet -lcidr
+bios_web_la_LIBADD = \
+			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
+			libpriv-log.la libpriv-subprocess.la
+
+dist_noinst_HEADERS += \
+			src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
 			src/persist/assetmsg.h \
@@ -520,9 +607,11 @@ tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(datarootdir)/@PACKAGE@-@VERSION@/web</documentRoot>|' $< > $@ || \
 	rm -f $@
 
-exampleconfdir = $(datarootdir)/@PACKAGE@-@VERSION@/examples
-exampleconf_DATA = tntnet.xml.example
-EXTRA_DIST += $(exampleconf_DATA)
+exampleconfdir =	$(datarootdir)/@PACKAGE@-@VERSION@/examples
+exampleconf_DATA =	tntnet.xml.example
+EXTRA_DIST +=		$(exampleconf_DATA)
+
+CLEANFILES +=		tntnet.xml tntnet.xml.example
 
 web-test: tntnet.xml bios_web.la
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
@@ -531,26 +620,26 @@ web-test: tntnet.xml bios_web.la
 #                        Extra files and sources
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/tools/dbpath.h.in \
-					$(top_builddir)/tools/dbpath.h \
-					$(top_srcdir)/src/*_msg.xml \
-					$(top_srcdir)/src/simple/*.h \
-					$(top_srcdir)/src/include/*.h \
-					$(top_srcdir)/src/drivers/netmon/*.h \
-					$(top_srcdir)/src/drivers/netmon/*/*.h \
-					$(top_srcdir)/src/drivers/netmon/*/*/*.h \
-					$(top_srcdir)/src/drivers/*/*.h \
-					$(top_srcdir)/src/cli/*.h \
-					$(top_srcdir)/src/shared/*.h \
-					$(top_srcdir)/src/web/include/*.h
+EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
+			$(top_srcdir)/tools/dbpath.h.in \
+			$(top_builddir)/tools/dbpath.h \
+			$(top_srcdir)/src/*_msg.xml \
+			$(top_srcdir)/src/simple/*.h \
+			$(top_srcdir)/src/include/*.h \
+			$(top_srcdir)/src/drivers/netmon/*.h \
+			$(top_srcdir)/src/drivers/netmon/*/*.h \
+			$(top_srcdir)/src/drivers/netmon/*/*/*.h \
+			$(top_srcdir)/src/drivers/*/*.h \
+			$(top_srcdir)/src/cli/*.h \
+			$(top_srcdir)/src/shared/*.h \
+			$(top_srcdir)/src/web/include/*.h
 
 # add CI tests to dist
-EXTRA_DIST +=				$(top_srcdir)/tests/CI
+EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
-DISTCLEANFILES +=			$(top_builddir)/tools/dbpath.h
+DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.h
 
-BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
+BUILT_SOURCES +=	$(top_srcdir)/tools/dbinit.h
 
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
@@ -918,9 +1007,9 @@ clean-html:
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
 endif
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
@@ -933,14 +1022,15 @@ doxygen-docs: ${myDOXDIR}/html
 docs-doxygen: doxygen-docs
 
 clean-doxygen:
-	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
+	( test -w $(top_srcdir)/${myDOXDIR}/html && \
+	  /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
 
 # Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
-develdocdoxygendir = $(develdocdir)/doxygen
+develdocdoxygendir =	$(develdocdir)/doxygen
 develdocdoxygen: doxygen-docs
 
 if HAVE_DOXYGEN
-develdocdoxygen_DATA = ${myDOXDIR}/html/*
+develdocdoxygen_DATA =	${myDOXDIR}/html/*
 
 # Such-named target is required by the _DATA above, so have a rule to build it
 ${myDOXDIR}/html/*: doxygen-docs
@@ -969,8 +1059,8 @@ endif
 #                 manpage generation (delegated to sub-make)
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=				$(top_srcdir)/${myMANDIR}/*.txt
-CLEANFILES +=				$(top_builddir)/${myMANDIR}/*.?
+EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
+CLEANFILES +=		$(top_builddir)/${myMANDIR}/*.?
 
 man-docs:
 	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
@@ -979,7 +1069,9 @@ man-docs:
 docs-man: man-docs
 
 clean-man:
-	( cd $(top_builddir)/$(myMANDIR) && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
+	( cd $(top_builddir)/$(myMANDIR) && \
+	  { $(MAKE) clean || /bin/true; } && \
+	  /bin/rm -f *.[123456789] *.xml *.html )
 	/bin/rm -f $(top_builddir)/$(myMANDIR)/*.?
 
 #----------------------------------------------------------------------
@@ -998,14 +1090,41 @@ clean-junit:
 
 clean-local: clean-docs clean-junit
 
+# This may and should complain on non-empty dirs; "distclean-generic"
+# with proper list of DISTCLEANFILES should have taken care of that
+distclean-local-dirs: distclean-generic
+	for D in $(addprefix $(abs_top_builddir)/,$(DISTCLEANDIRS)); do \
+	  [ ! -d "$$D" ] || /bin/rmdir "$$D"; done || true
+
+distclean-local-deps: distclean-generic
+	cd $(abs_top_builddir)/ && { \
+	  find . -type f -name '*.Plo' -exec /bin/rm -f '{}' \; ; \
+	  find . -type f -name '*.Po' -exec /bin/rm -f '{}' \; ; \
+	  find . -type d -name '.deps' -exec /bin/rmdir '{}' \; || true ; \
+	}
+
+distclean-local: distclean-local-dirs distclean-local-deps
+	/bin/rm -f $(abs_top_builddir)/configure
+
 #----------------------------------------------------------------------
 #                        astyle formating
 #----------------------------------------------------------------------
 if HAVE_ASTYLE
-EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
-	$(top_srcdir)/tools/astyle-bios
+EXTRA_DIST +=		$(top_srcdir)/tools/astyle.conf \
+			$(top_srcdir)/tools/astyle-bios
 checkstyle:
-	$(top_srcdir)/tools/astyle-bios -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(top_srcdir)/tools/astyle-bios \
+	    -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 style:
-	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(top_srcdir)/tools/astyle-bios \
+	    $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
 endif
+
+#----------------------------------------------------------------------
+#                        some popular testing targets
+#----------------------------------------------------------------------
+
+ci-test-restapi: test-restapi
+test-restapi: all
+	$(top_srcdir)/tests/CI/ci-test-restapi.sh
+

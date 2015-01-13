@@ -1022,7 +1022,7 @@ common_msg_t* delete_device (const char* url, m_dvc_id_t device_id)
 common_msg_t* update_device (const char* url, common_msg_t** new_device)
 {
     return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  
-    // TODO NOT INMPLEMENTED
+    // TODO NOT IMPLEMENTED
 }
 
 common_msg_t* select_device (const char* url, m_dvc_tp_id_t device_type_id, 
