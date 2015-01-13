@@ -28,12 +28,15 @@
 #   - mariadb running
 #   - db user root without password
 
-[ "x$CHECKOUTDIR" = "x" ] && \
-    case "`dirname $0`" in
-       */tests/CI|tests/CI)
-           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+if [ "x$CHECKOUTDIR" = "x" ]; then
+    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
+    SCRIPTDIR="`dirname $0`"
+    case "$SCRIPTDIR" in
+        */tests/CI|tests/CI)
+           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
            CHECKOUTDIR="" ;;
     esac
+fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
