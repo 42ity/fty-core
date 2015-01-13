@@ -21,14 +21,25 @@
 # Description: sets up the sandbox and runs the tests of REST API for
 # the $BIOS project.
 
-[ "x$CHECKOUTDIR" = "x" ] && \
-    case "`dirname $0`" in
-       */tests/CI|tests/CI)
-           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
+if [ "x$CHECKOUTDIR" = "x" ]; then
+    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
+    SCRIPTDIR="`dirname $0`"
+    case "$SCRIPTDIR" in
+        */tests/CI|tests/CI)
+           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
            CHECKOUTDIR="" ;;
     esac
+fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+
+BUILDSUBDIR=$CHECKOUTDIR
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+if [ ! -x "$BUILDSUBDIR/config.status" ]; then
+    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "Search path: $CHECKOUTDIR, $PWD"
+    exit 1
+fi
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
@@ -95,9 +106,11 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   # make sure sasl is running
-  $RUNAS systemctl restart saslauthd || \
-    [ x"$RUNAS" = x ] || \
-    echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  if ! $RUNAS systemctl --quiet is-active saslauthd; then
+    $RUNAS systemctl start saslauthd || \
+      [ x"$RUNAS" = x ] || \
+      echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+  fi
   # check SASL is working
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
 
@@ -105,7 +118,7 @@ wait_for_web() {
   # make clean
   LC_ALL=C
   export BIOS_USER BIOS_PASSWD LC_ALL
-  make web-test &
+  make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
   wait_for_web
 
@@ -145,4 +158,11 @@ kill $MAKEPID 2>/dev/null
 sleep 2
 killall tntnet 2>/dev/null
 sleep 2
+
+if [ "$RESULT" = 0 ]; then
+    echo "$0: Overall result: SUCCESS"
+else
+    echo "$0: Overall result: FAILED ($RESULT) seek details above" >&2
+fi
+
 exit $RESULT
