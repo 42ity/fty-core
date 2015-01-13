@@ -21,6 +21,12 @@
 #
 # Description: This script automates tests of REST API for the $BIOS project
 
+if [ $# -eq 0 ]; then
+    echo "ERROR: test_web.sh is no longer suitable to run all REST API tests"
+    echo "       either use ci-test-restapi.sh or specify test on a commandline"
+    exit 1
+fi
+
 PASS=0
 TOTAL=0
 
