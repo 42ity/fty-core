@@ -96,19 +96,45 @@ AS_IF([test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git"],
 		[PACKAGE_GIT_STATUS=""])
 ])
 
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],   [$HAVE_PACKAGE_GIT],     [Packaging metadata: Is Git metadata available?])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN], ["$PACKAGE_GIT_ORIGIN"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH], ["$PACKAGE_GIT_BRANCH"], [Packaging metadata: Git branch in the build workspace repository])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP], ["$PACKAGE_GIT_TSTAMP"], [Packaging metadata: Git timestamp of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S], ["$PACKAGE_GIT_HASH_S"], [Packaging metadata: Git short-hash of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L], ["$PACKAGE_GIT_HASH_L"], [Packaging metadata: Git long-hash of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS], ["$PACKAGE_GIT_STATUS"], [Packaging metadata: short list of possible differences against the committed repository])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN_ESCAPED], ["$PACKAGE_GIT_ORIGIN_ESCAPED"], [Packaging metadata: URL of the Git origin repository (parent of the build workspace) (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH_ESCAPED], ["$PACKAGE_GIT_BRANCH_ESCAPED"], [Packaging metadata: Git branch in the build workspace repository (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP_ESCAPED], ["$PACKAGE_GIT_TSTAMP_ESCAPED"], [Packaging metadata: Git timestamp of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S_ESCAPED], ["$PACKAGE_GIT_HASH_S_ESCAPED"], [Packaging metadata: Git short-hash of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L_ESCAPED], ["$PACKAGE_GIT_HASH_L_ESCAPED"], [Packaging metadata: Git long-hash of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS_ESCAPED], ["$PACKAGE_GIT_STATUS_ESCAPED"], [Packaging metadata: short list of possible differences against the committed repository (escaped)])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],
+	[$HAVE_PACKAGE_GIT],
+	[Packaging metadata: Is Git metadata available?])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN],
+	["$PACKAGE_GIT_ORIGIN"],
+	[Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH],
+	["$PACKAGE_GIT_BRANCH"],
+	[Packaging metadata: Git branch in the build workspace repository])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP],
+	["$PACKAGE_GIT_TSTAMP"],
+	[Packaging metadata: Git timestamp of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S],
+	["$PACKAGE_GIT_HASH_S"],
+	[Packaging metadata: Git short-hash of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L],
+	["$PACKAGE_GIT_HASH_L"],
+	[Packaging metadata: Git long-hash of the commit used for the build])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS],
+	["$PACKAGE_GIT_STATUS"],
+	[Packaging metadata: short list of possible differences against the committed repository])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN_ESCAPED],
+	["$PACKAGE_GIT_ORIGIN_ESCAPED"],
+	[Packaging metadata: URL of the Git origin repository (parent of the build workspace) (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH_ESCAPED],
+	["$PACKAGE_GIT_BRANCH_ESCAPED"],
+	[Packaging metadata: Git branch in the build workspace repository (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP_ESCAPED],
+	["$PACKAGE_GIT_TSTAMP_ESCAPED"],
+	[Packaging metadata: Git timestamp of the commit used for the build (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S_ESCAPED],
+	["$PACKAGE_GIT_HASH_S_ESCAPED"],
+	[Packaging metadata: Git short-hash of the commit used for the build (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L_ESCAPED],
+	["$PACKAGE_GIT_HASH_L_ESCAPED"],
+	[Packaging metadata: Git long-hash of the commit used for the build (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS_ESCAPED],
+	["$PACKAGE_GIT_STATUS_ESCAPED"],
+	[Packaging metadata: short list of possible differences against the committed repository (escaped)])
 
 AC_PATH_PROGS([UNAME], [uname])
 HAVE_PACKAGE_BUILD_HOST=0
@@ -127,26 +153,46 @@ AS_IF([test ! -z "$UNAME" -a -x "$UNAME"],
 	    HAVE_PACKAGE_BUILD_HOST=1 && \
 	    PACKAGE_BUILD_HOST_OS_ESCAPED="`echo -E "$PACKAGE_BUILD_HOST_OS" | $JSONSH -Q`"
 ])
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],  [$HAVE_PACKAGE_BUILD_HOST],    [Packaging metadata: Are build-host details available?])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME], ["$PACKAGE_BUILD_HOST_UNAME"], [Packaging metadata: Full 'uname -a' of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],  ["$PACKAGE_BUILD_HOST_NAME"],  [Packaging metadata: Hostname of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],    ["$PACKAGE_BUILD_HOST_OS"],    [Packaging metadata: OS/kernel of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME_ESCAPED], ["$PACKAGE_BUILD_HOST_UNAME_ESCAPED"], [Packaging metadata: Full 'uname -a' of the building host (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME_ESCAPED],  ["$PACKAGE_BUILD_HOST_NAME_ESCAPED"],  [Packaging metadata: Hostname of the building host (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS_ESCAPED],    ["$PACKAGE_BUILD_HOST_OS_ESCAPED"],    [Packaging metadata: OS/kernel of the building host (escaped)])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],
+	[$HAVE_PACKAGE_BUILD_HOST],
+	[Packaging metadata: Are build-host details available?])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME],
+	["$PACKAGE_BUILD_HOST_UNAME"],
+	[Packaging metadata: Full 'uname -a' of the building host])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],
+	["$PACKAGE_BUILD_HOST_NAME"],
+	[Packaging metadata: Hostname of the building host])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],
+	["$PACKAGE_BUILD_HOST_OS"],
+	[Packaging metadata: OS/kernel of the building host])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME_ESCAPED],
+	["$PACKAGE_BUILD_HOST_UNAME_ESCAPED"],
+	[Packaging metadata: Full 'uname -a' of the building host (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME_ESCAPED],
+	["$PACKAGE_BUILD_HOST_NAME_ESCAPED"],
+	[Packaging metadata: Hostname of the building host (escaped)])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS_ESCAPED],
+	["$PACKAGE_BUILD_HOST_OS_ESCAPED"],
+	[Packaging metadata: OS/kernel of the building host (escaped)])
 
 AC_PATH_PROGS([DATE], [gdate date])
 HAVE_PACKAGE_BUILD_TSTAMP=0
 PACKAGE_BUILD_TSTAMP=""
 AS_IF([test ! -z "$DATE" -a -x "$DATE"],
 	[AC_MSG_NOTICE([Recording the configuration timestamp...])
-	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s' | $JSONSH -Q`"	&& \
+	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s' | $JSONSH -Q`" && \
 	    HAVE_PACKAGE_BUILD_TSTAMP=1 && \
 	    PACKAGE_BUILD_TSTAMP_ESCAPED="`echo -E "$PACKAGE_BUILD_TSTAMP" | $JSONSH -Q`"
 ])
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],	[$HAVE_PACKAGE_BUILD_TSTAMP],	[Packaging metadata: Is the build-host timestamp available?])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],	["$PACKAGE_BUILD_TSTAMP"],	[Packaging metadata: Current timestamp at the build host (as of configuration)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP_ESCAPED],	["$PACKAGE_BUILD_TSTAMP_ESCAPED"],	[Packaging metadata: Current timestamp at the build host (as of configuration) (escaped)])
+AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],
+	[$HAVE_PACKAGE_BUILD_TSTAMP],
+	[Packaging metadata: Is the build-host timestamp available?])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],
+	["$PACKAGE_BUILD_TSTAMP"],
+	[Packaging metadata: Current timestamp at the build host (as of configuration)])
+AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP_ESCAPED],
+	["$PACKAGE_BUILD_TSTAMP_ESCAPED"],
+	[Packaging metadata: Current timestamp at the build host (as of configuration) (escaped)])
 
 ### Revise the packaging strings in config.h
 m4_define([__AC_UNDEFINE],[_AC_DEFINE_UNQUOTED([#ifdef $1
@@ -163,25 +209,34 @@ AS_IF([test -n "$PACKAGE_GIT_HASH_S" -a "$HAVE_PACKAGE_GIT" = 1],
 
 if test x"$_FIX_PACKAGE_NAME" = xy; then
 	__AC_UNDEFINE([PACKAGE_NAME])
-	AC_DEFINE_UNQUOTED([PACKAGE_NAME], ["$PACKAGE_NAME"], [Packaging metadata: distro source code name])
+	AC_DEFINE_UNQUOTED([PACKAGE_NAME],
+	    ["$PACKAGE_NAME"],
+	    [Packaging metadata: distro source code name])
 fi
 if test x"$_FIX_PACKAGE_VERSION" = xy; then
 	__AC_UNDEFINE([PACKAGE_VERSION])
-	AC_DEFINE_UNQUOTED([PACKAGE_VERSION], ["$PACKAGE_VERSION"], [Packaging metadata: distro source code version])
+	AC_DEFINE_UNQUOTED([PACKAGE_VERSION],
+	    ["$PACKAGE_VERSION"],
+	    [Packaging metadata: distro source code version])
 fi
 if test x"$_FIX_PACKAGE_STRING" = xy; then
 	__AC_UNDEFINE([PACKAGE_STRING])
-	AC_DEFINE_UNQUOTED([PACKAGE_STRING], ["$PACKAGE_STRING"], [Packaging metadata: distro source code name+version])
+	AC_DEFINE_UNQUOTED([PACKAGE_STRING],
+	    ["$PACKAGE_STRING"],
+	    [Packaging metadata: distro source code name+version])
 fi
 if test x"$_FIX_PACKAGE_URL" = xy; then
 	__AC_UNDEFINE([PACKAGE_URL])
-	AC_DEFINE_UNQUOTED([PACKAGE_URL], ["$PACKAGE_URL"], [Packaging metadata: distro contact])
+	AC_DEFINE_UNQUOTED([PACKAGE_URL],
+	    ["$PACKAGE_URL"],
+	    [Packaging metadata: distro contact])
 fi
 if test x"$_FIX_PACKAGE_BUGREPORT" = xy; then
 	__AC_UNDEFINE([PACKAGE_BUGREPORT])
-	AC_DEFINE_UNQUOTED([PACKAGE_BUGREPORT], ["$PACKAGE_BUGREPORT"], [Packaging metadata: distro contact])
+	AC_DEFINE_UNQUOTED([PACKAGE_BUGREPORT],
+	    ["$PACKAGE_BUGREPORT"],
+	    [Packaging metadata: distro contact])
 fi
-
 
 
 # Checks for the header files
