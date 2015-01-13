@@ -118,6 +118,10 @@ project root directory to create the proper 'Makefile', and run
 and sequential 'make' routine for the optionally specified target(s)
 from the relevant (base or "relocated") directory; that is -- do not
 cleanup and reconfigure the build area
+ * 'run-subdir' -- change into the build sub-directory (if exists)
+and run the specified command and arguments (if any), so that the
+caller generally does not have to think in which exact sub-directory
+name a particular build was made (see example below).
 
 Any parameters on the command line after the method specification
 are processed according to the method. Currently this means:
@@ -130,7 +134,11 @@ token as is normally done for `configure`) can be passed to 'configure'
 and 'distcheck' methods;
  * and ignored for others.
 
-
+The 'run-subdir' mode can be used along with automated testing like this:
+----
+:; ./autogen.sh build-subdir all test-web && \
+   ./autogen.sh run-subdir ../tests/CI/ci-test-restapi.sh sysinfo
+----
 
 == Environment variables
 The script's behavior can be tuned by environment variables, which 
