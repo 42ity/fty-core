@@ -40,6 +40,7 @@ int8_t access_auth_level;
 	std::string cmderr;
 	static const std::string UNKNOWN = "unknown";
 	static const std::string UNAUTHORIZED = "unauthorized";
+	static const std::string AVAILABLE = "available";
 	int ret;
 
 </%cpp>
@@ -120,6 +121,52 @@ int8_t access_auth_level;
 </%cpp>
       }
     ],
-    "main-process-status" : "<$ (access_auth_level<1) ? UNAUTHORIZED : UNKNOWN $>"
+    "main-process-status" :
+<%cpp>
+      if (access_auth_level<1) {
+</%cpp>
+        "<$ UNAUTHORIZED $>"
+<%cpp>
+      } else { // (access_auth_level>=1)
+          /* The monster shell below should be parsable by about any POSIX shell
+             I am less sure about capabilities of "ps" programs in constrained
+             environments and/or other OSes... however for a predefined target
+             platform this should do :) */
+
+          // A glob usable by shell "case":
+          std::string interesting_basenames;
+          interesting_basenames = "mysqld|upsd|saslauthd|tntnet|simple|netmon|driver-nmap";
+          //testing-hack// interesting_basenames = "abc";
+
+          std::ostringstream psgrep;
+          /* TODO: Consider escaping the $ARGS, possibly $CMD and maybe others */
+          psgrep  << "/bin/ps -ewww -o pid,ppid,user,tty,state,time,command | "
+                  << "( NF=\"\"; "
+                  << "while read _P _PP _U _TTY _STATE _TIMECPU CMD ARGS; do "
+                  << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
+                  << interesting_basenames <<") echo \"$NF\"\'{"
+                  << "\"process\":\"\'\"$CMD\"\'\",\"args\":\"\'\"$ARGS\"\'\","
+                  << "\"process-pid\":\'\"$_P\"\',\"parent-pid\":\'\"$_PP\"\',"
+                  << "\"user-name\":\"\'\"$_U\"\'\",\"tty\":\"\'\"$_TTY\"\'\","
+                  << "\"process-state\":\"\'\"$_STATE\"\'\","
+                  << "\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
+                  << "}\'; NF=\",\"; esac; done )" ;
+
+          ret = output2({"/bin/sh", "-c", psgrep.str()},
+                        cmdout, cmderr);
+          if (ret != 0 || cmdout == "") {
+</%cpp>
+        "<$ UNKNOWN $>"
+<%cpp>
+          } else { // ret == 0
+</%cpp>
+        "<$ AVAILABLE $>"
+  , "main-process-details": [
+<$$ cmdout $>
+    ]
+<%cpp>
+          } // ret == 0
+      } // if (access_auth_level>=1)
+</%cpp>
   }
 }

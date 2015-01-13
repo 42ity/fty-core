@@ -53,7 +53,7 @@ RES=$?
 print_result $?
 
 # Check getting server system info as unprivileged user
-test_it "sysinfo_auth=0_accessNOTgranted"
+test_it "sysinfo_auth=0_accessNOTgranted_OSversion"
 ### The finer details on server OS are only available after auth
 JPATH='"operating-system","uname","version"'
 SYSINFO_PARSED="`echo "$SYSINFOU" | ${JSONSH} -x="$JPATH" | grep unauthorized`"
@@ -63,7 +63,28 @@ echo "$SYSINFO_PARSED" >&2
 [ $RES = 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
-test_it "sysinfo_auth=0_build_version_source_accessNOTgranted"
+test_it "sysinfo_auth=0_accessNOTgranted_process_status"
+### The finer details on server OS are only available after auth
+JPATH='"\$BIOS","main-process-status"$'
+SYSINFO_PARSED="`echo "$SYSINFOU" | ${JSONSH} -l -x="$JPATH" | grep unauthorized`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_auth=0_accessNOTgranted_process_details"
+### The finer details on server OS are only available after auth
+JPATH='"\$BIOS","main-process-details"'
+SYSINFO_PARSED="`echo "$SYSINFOU" | ${JSONSH} -l -x="$JPATH"`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+# The process details should be empty
+[ $RES = 0 -a -z "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_auth=0_accessNOTgranted_build_source"
 JPATH='"\$BIOS","packages",[0-9]*,"(source-repo|build-info)"$'
 SYSINFO_VERSION="`echo "$SYSINFOU" | ${JSONSH} -x="$JPATH"`"
 RES=$?
@@ -135,6 +156,39 @@ RES=$?
 echo "=== SYSINFO_VIRTMACHINE ($RES): '$SYSINFO_VIRTMACHINE'" >&2
 [ $RES = 0 -a -n "$SYSINFO_VIRTMACHINE" -a \
     x"$SYSINFO_VIRTMACHINE" != x'""' ]
+print_result $?
+
+test_it "sysinfo_auth=2_process_status"
+### The finer details on server OS are only available after auth
+JPATH='"\$BIOS","main-process-status"$'
+SYSINFO_PARSED="`echo "$SYSINFOA" | ${JSONSH} -l -x="$JPATH" | egrep 'unknown|available'`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_auth=2_process_details"
+### The finer details on server OS are only available after auth
+### At least the "tntnet" process which is on the list of interesting
+### ones should be visible
+JPATH='"\$BIOS","main-process-details"'
+SYSINFO_PARSED="`echo "$SYSINFOA" | ${JSONSH} -l -x="$JPATH"`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+# The process details should not be empty
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_auth=2_process_details_tntnet"
+JPATH='"\$BIOS","main-process-details",[0-9]*$'
+SYSINFO_PARSED="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | grep tntnet`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+# The process details should not be empty
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
 print_result $?
 
 test_it "sysinfo_auth=2_build_version_package"
