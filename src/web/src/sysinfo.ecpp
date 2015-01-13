@@ -95,27 +95,27 @@ int8_t access_auth_level;
 </%cpp>
       , "build-info": {
 <%cpp>
-#ifdef HAVE_PACKAGE_BUILD_HOST
+# ifdef HAVE_PACKAGE_BUILD_HOST
 </%cpp>
           "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
           "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
           "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
           "build-timestamp":
 <%cpp>
-#endif
-#if defined(HAVE_PACKAGE_BUILD_TSTAMP) && defined(PACKAGE_BUILD_TSTAMP)
+# endif // HAVE_PACKAGE_BUILD_HOST
+# if defined(HAVE_PACKAGE_BUILD_TSTAMP) && defined(PACKAGE_BUILD_TSTAMP)
 </%cpp>
               "<$ PACKAGE_BUILD_TSTAMP_ESCAPED $>"
 <%cpp>
-#else // HAVE_PACKAGE_BUILD_TSTAMP
+# else // not HAVE_PACKAGE_BUILD_TSTAMP
 </%cpp>
               "<$ UNKNOWN $>"
 <%cpp>
-#endif // HAVE_PACKAGE_BUILD_TSTAMP
+# endif // HAVE_PACKAGE_BUILD_TSTAMP
 </%cpp>
         }
 <%cpp>
-#endif // HAVE_PACKAGE_GIT
+#endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
       } // if (access_auth_level>1)
 </%cpp>
       }
