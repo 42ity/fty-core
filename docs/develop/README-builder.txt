@@ -137,11 +137,11 @@ and 'distcheck' methods;
 The 'run-subdir' mode can be used along with automated testing like this:
 ----
 :; ./autogen.sh build-subdir all test-web && \
-   ./autogen.sh run-subdir ../tests/CI/ci-test-restapi.sh sysinfo
+   ./autogen.sh run-subdir "`pwd`"/tests/CI/ci-test-restapi.sh sysinfo
 ----
 
 == Environment variables
-The script's behavior can be tuned by environment variables, which 
+The script's behavior can be tuned by environment variables, which
 allows for repetitive tuning during the development and rebuild
 cycle, while the command-line to execute the build remains short.
 
