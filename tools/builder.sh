@@ -193,6 +193,28 @@ do_make() {
 	return $RES
 }
 
+do_make_dc() {
+    # Wrapper for "make distclean" after which we intend to go on
+    # Ensure that ./configure still exists after this, if it did exist before
+    REMAKE_CONFIGURE=n
+    [ -s ./configure -a -x ./configure ] && REMAKE_CONFIGURE=y
+
+    ( BUILDER_RETAIN_CONFIGURE=yes; export BUILDER_RETAIN_CONFIGURE
+      do_make "$@" )
+    RES=$?
+
+    # If the script was there but disappeared, remake it
+    # If there were some dependencies like Makefile.in or automake scripts
+    # this also ensures they exist again
+    if [ x"$REMAKE_CONFIGURE" = xy ]; then
+        verb_run ./autogen.sh || exit
+	[ -s ./configure -a -x ./configure ] || exit
+    fi
+
+    return $RES
+}
+
+
 do_build() {
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
@@ -214,13 +236,13 @@ do_build() {
 }
 
 buildSamedir() {
-	do_make -k distclean
+	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS && \
 	{ do_make -k clean; do_build "$@"; }
 }
 
 buildSubdir() {
-	do_make -k distclean
+	do_make_dc -k distclean
 	( { echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
 	  rm -rf "${BUILDSUBDIR}"; \
 	  mkdir "${BUILDSUBDIR}" && \
@@ -271,7 +293,7 @@ usage() {
 	echo "    [--configure-flags '...'] \ "
 	echo "    [--install-dir 'dirname'] [--build-subdir 'dirname'] \ "
 	echo "    { build-samedir | build-subdir | install-samedir | install-subdir \ "
-	echo "      | make-samedir  | make-subdir } [maketargets...]"
+	echo "      | make-samedir | make-subdir } [maketargets...]"
 	echo ""
 	echo "Usage: $0 [--debug-makefile] \ "
 	echo "           { build*|install*|make*|conf* } [maketargets...]"
@@ -293,6 +315,8 @@ usage() {
 	echo "		- execute the configure step in a freshly made subdir and exit"
 	echo "Usage: $0 distclean"
 	echo "		- execute the distclean step and exit"
+	echo "Usage: $0 run-subdir cmd [args...]"
+	echo "		- change into the build subdir and run the command"
 }
 
 showGitFlags() {
@@ -502,28 +526,40 @@ case "$1" in
 	exit
 	;;
     distclean)
+	### No "do_make_dc" wrapper for the explicit request for distclean
 	verb_run $TIME_CONF ./configure && \
 	do_make -k distclean
 	;;
     distcheck)
 	shift
-	do_make -k distclean
+	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@" && \
 	do_make distcheck
 	;;
-    conf|configure)
+    conf|config|configure)
 	shift
-	do_make -k distclean
+	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS "$@"
 	;;
-    conf-subdir|configure-subdir)
+    conf-subdir|config-subdir|configure-subdir)
 	shift
-	do_make -k distclean
+	do_make_dc -k distclean
 	{ echo "INFO: (Re-)Creating the relocated build directory in '${BUILDSUBDIR}'..."
 	  rm -rf "${BUILDSUBDIR}"; \
 	  mkdir "${BUILDSUBDIR}" && \
 	  cd "${BUILDSUBDIR}"; } && \
 	verb_run $TIME_CONF "$CHECKOUTDIR/configure" $CONFIGURE_FLAGS "$@"
+	;;
+    run-subdir)
+	shift
+	if [ $# -le 0 -o ! -d "${BUILDSUBDIR}" ]; then
+	    echo "FAIL: Cannot run '$@' under build dir '${BUILDSUBDIR}'" >&2
+	    exit 2
+	else
+	    echo "INFO: Running '$@' under build directory '${BUILDSUBDIR}'..."
+	    ( cd "${BUILDSUBDIR}" && \
+	      verb_run "$@" )
+	fi
 	;;
     help|-help|--help|-h)
 	usage
@@ -534,3 +570,4 @@ case "$1" in
 	exit 2
 	;;
 esac
+
