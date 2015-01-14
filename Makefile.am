@@ -599,17 +599,15 @@ dist_noinst_HEADERS += \
 ### This file contains the TNTNET settings relevant for our test runs
 ### Note: in non-daemon mode, stderr is logged to stderr
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
-	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' \
-	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(abs_top_srcdir)/src/web</documentRoot>|' $< > $@ || \
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
 ### This file contains the TNTNET settings distributed as an example for users
 ### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} -e 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' \
-	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' \
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
 	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
-	       -e 's|<!--\ <documentRoot>/var/www</documentRoot>\ -->|<documentRoot>$(datarootdir)/@PACKAGE@-@VERSION@/web</documentRoot>|' $< > $@ || \
+	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
 exampleconfdir =	$(datarootdir)/@PACKAGE@-@VERSION@/examples
