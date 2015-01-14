@@ -38,6 +38,7 @@ int8_t access_auth_level;
 <%cpp>
 	std::string cmdout;
 	std::string cmderr;
+	std::ostringstream cmderr_total;
 	static const std::string UNKNOWN = "unknown";
 	static const std::string UNAUTHORIZED = "unauthorized";
 	static const std::string AVAILABLE = "available";
@@ -49,11 +50,19 @@ int8_t access_auth_level;
 
 	/* Detect container virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
+    if (!ret) {
+        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -c"
+                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+    }
 </%cpp>
     "container": "<$ ret == 0 ? cmdout : UNKNOWN $>",
 <%cpp>
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
+    if (!ret) {
+        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -v"
+                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+    }
 </%cpp>
     "hypervisor": "<$ ret == 0 ? cmdout : UNKNOWN $>",
     "uname": {
@@ -147,13 +156,13 @@ int8_t access_auth_level;
           std::string interesting_basenames;
           interesting_basenames = "mysqld|upsd|saslauthd|tntnet|simple|netmon|driver-nmap";
           //testing-hack// interesting_basenames = "abc";
+          //testing-hack// interesting_basenames = "netm*|upsd*|my*";
 
           std::ostringstream psgrep;
           /* TODO: Consider escaping the $ARGS, possibly $CMD and maybe others */
-          psgrep  << "/bin/ps -ewww -o "
-                  << "pid,ppid,user,tty,state,time,size,pcpu,pmem,command"
-                  << " | ( NF=\"\"; "
-                  << "while read _P _PP _U _TTY _STATE"
+          psgrep  << "NF=\"\"; PSLIST=\"`/bin/ps -ewww -o "
+                  << "pid,ppid,user,tty,state,time,size,pcpu,pmem,command`\"; "
+                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
                   << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
                   << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
                   << interesting_basenames <<") echo \"$NF\"\'{"
@@ -169,15 +178,36 @@ int8_t access_auth_level;
                   << ",\"process-percent-cpu\":\"\'\"$_PCPU\"\'\""
                   << ",\"process-percent-mem\":\"\'\"$_PMEM\"\'\""
                   << ",\"process-mem-size\":\"\'\"$_SIZE\"\'\""
-                  << "}\'; NF=\",\"; esac; done )" ;
+                  << "}\'; NF=\",\"; esac; done; [ x\"$NF\" = x, ] )" ;
+
+          /* Use the PSLIST and "interesting_basenames" definition above to
+           * pick out the interesting processes that are not running now.
+           * Note that this requires that the "interesting_basenames" definition
+           * contains complete basenames separated by pipes (no asterisks)
+           * for output to be reasonable (e.g. "mysqld" is "notrunning", 
+           * not "mysql*" process is "notrunning" */
+          psgrep  << " && NF=,; IBN=\"" << interesting_basenames << "\";"
+                  << "IFS=\"|$IFS\"; export IFS; for CMDPAT in $IBN; do { "
+                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
+                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
+                  << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
+                  << " $CMDPAT) exit 0;; "
+                  << "esac; done; exit 1; ) || { echo \"$NF\"\'{"
+                  << "\"process\":\"\'\"$CMDPAT\"\'\""
+                  << ",\"process-basename\":\"\'\"`basename \"$CMDPAT\"`\"\'\""
+                  << ",\"process-pid\":-1"
+                  << ",\"process-state\":\"notrunning\""
+                  << "}\'; NF=\",\";} ; }; done" ;
 
           ret = output2({"/bin/sh", "-c", psgrep.str()},
                         cmdout, cmderr);
           if (ret != 0 || cmdout == "") {
+              cmderr_total << "=== Ran:\n" << psgrep.str()
+                      << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
 </%cpp>
         "<$ UNKNOWN $>"
 <%cpp>
-          } else { // ret == 0
+          } else { // ret == 0 and output is not empty
 </%cpp>
         "<$ AVAILABLE $>"
   , "main-process-details": [
@@ -188,4 +218,12 @@ int8_t access_auth_level;
       } // if (access_auth_level>=1)
 </%cpp>
   }
+<%cpp>
+#if (DEBUG>1)
+</%cpp>
+  , "stderr-unescaped": "<$$ chomp(cmderr_total.str()) $>"
+<%cpp>
+#endif // DEBUG
+    std::cerr << cmderr_total.str();
+</%cpp>
 }
