@@ -9,9 +9,15 @@
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>
-      <pathinfo>./static/$1</pathinfo>
-      <url>^/static/(.*)</url>
+      <pathinfo>./$1</pathinfo>
+      <url>^/((assets|[b-z]).*)</url>
     </mapping>
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>./index.html</pathinfo>
+      <url>^/$</url>
+    </mapping>
+
     <!-- Make sure everybody speaks json from now on -->
     <mapping>
       <target>json@bios_web</target>
