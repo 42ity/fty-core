@@ -132,24 +132,40 @@ int8_t access_auth_level;
              I am less sure about capabilities of "ps" programs in constrained
              environments and/or other OSes... however for a predefined target
              platform this should do :) */
+          
+          /* TODO: This implementation is considered as a temporary solution,
+           * just so we don't use random fake data in the lists below - but
+           * rather have something realistic. The "correct" solution would be
+           * to check the state of "systemd" units or equivalent services
+           * (server OS dependent) and report those details rather than to
+           * parse "ps" outputs like this. */
 
-          // A glob usable by shell "case":
+          // A glob usable by shell "case" and "egrep":
           std::string interesting_basenames;
           interesting_basenames = "mysqld|upsd|saslauthd|tntnet|simple|netmon|driver-nmap";
           //testing-hack// interesting_basenames = "abc";
 
           std::ostringstream psgrep;
           /* TODO: Consider escaping the $ARGS, possibly $CMD and maybe others */
-          psgrep  << "/bin/ps -ewww -o pid,ppid,user,tty,state,time,command | "
-                  << "( NF=\"\"; "
-                  << "while read _P _PP _U _TTY _STATE _TIMECPU CMD ARGS; do "
+          psgrep  << "/bin/ps -ewww -o "
+                  << "pid,ppid,user,tty,state,time,size,pcpu,pmem,command"
+                  << " | ( NF=\"\"; "
+                  << "while read _P _PP _U _TTY _STATE"
+                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
                   << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
                   << interesting_basenames <<") echo \"$NF\"\'{"
                   << "\"process\":\"\'\"$CMD\"\'\",\"args\":\"\'\"$ARGS\"\'\","
+                  << "\"process-basename\":\"\'\"`basename \"$CMD\"`\"\'\","
                   << "\"process-pid\":\'\"$_P\"\',\"parent-pid\":\'\"$_PP\"\',"
                   << "\"user-name\":\"\'\"$_U\"\'\",\"tty\":\"\'\"$_TTY\"\'\","
-                  << "\"process-state\":\"\'\"$_STATE\"\'\","
-                  << "\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
+                  << "\"process-state-raw\":\"\'\"$_STATE\"\'\","
+                  << "\"process-state\":\"\'\"`case \"$_STATE\" in "
+                  <<  "D*|R*|S*|T*|W*) echo running;; Z*) echo zombie;; "
+                  <<  "X*) echo dead;; *) echo " << UNKNOWN << " ; esac`\"\'\""
+                  << ",\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
+                  << ",\"process-percent-cpu\":\"\'\"$_PCPU\"\'\""
+                  << ",\"process-percent-mem\":\"\'\"$_PMEM\"\'\""
+                  << ",\"process-mem-size\":\"\'\"$_SIZE\"\'\""
                   << "}\'; NF=\",\"; esac; done )" ;
 
           ret = output2({"/bin/sh", "-c", psgrep.str()},
