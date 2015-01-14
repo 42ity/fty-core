@@ -77,8 +77,11 @@ int8_t access_auth_level;
         "package-version": "<$ PACKAGE_VERSION $>",
         "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
         "package-url": "<$ PACKAGE_URL $>",
-        "vendor": "Eaton"
+        "vendor": "<$ PACKAGE_VENDOR $>"
 <%cpp>
+      /* Note that PACKAGE_VENDOR above is NOT an automake default variable,
+       * we define it locally in our project configuration. */
+
       if (access_auth_level>1) {
 #ifdef HAVE_PACKAGE_GIT
 </%cpp>
