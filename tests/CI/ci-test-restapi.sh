@@ -59,7 +59,7 @@ CURID="`id -u`" || CURID=""
 [ "$CURID" = 0 ] || RUNAS="sudo"
 
 usage(){
-    echo "Usage: $(basename $0) [options...]"
+    echo "Usage: $(basename $0) [options...] [test_name...]"
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
@@ -75,11 +75,14 @@ while [ $# -gt 0 ] ; do
             BIOS_PASSWD="$2"
             shift
             ;;
-        *)
-            echo "Invalid option '$1'" >&2
+	--help|-h)
             usage
             exit 1
             ;;
+        *)  # Assume that list of test names follows
+    	    # (positive or negative, see test_web.sh)
+            break
+    	    ;;
     esac
     shift
 done
@@ -122,36 +125,75 @@ wait_for_web() {
   MAKEPID=$!
   wait_for_web
 
+test_web() {
+    echo "============================================================"
+    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" "$@"
+    RESULT=$?
+    echo "============================================================"
+    return $RESULT
+}
+
+loaddb_file() {
+    mysql -u root < "$1" > /dev/null
+}
+
+loaddb_default() {
+    echo "--------------- reset db: default ----------------"
+    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_DATA"
+}
+
+test_web_default() {
+    loaddb_default && \
+    test_web "$@"
+}
+
+test_web_topo_p() {
+    echo "----------- reset db: topology : power -----------"
+    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_TOPOP" && \
+    test_web "$@"
+}
+
+test_web_topo_l() {
+    echo "---------- reset db: topology : location ---------"
+    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_TOPOL" && \
+    test_web "$@"
+}
+
 # do the test
 set +e
-echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_DATA"
-echo "============================================================"
-/bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -topology
-RESULT=$?
-echo "============================================================"
-if [ "$RESULT" -eq 0 ]; then
-  echo "-------------------- reset db --------------------"
-  mysql -u root < "$DB_LOADDIR/$DB_BASE"
-  mysql -u root < "$DB_LOADDIR/$DB_TOPOP"
-  echo "============================================================"
-  /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" topology_power
-  RESULT=$?
-  echo "============================================================"
+if [ $# = 0 ]; then
+    # default test routine
+    test_web_default -topology
+    RESULT=$?
+    if [ "$RESULT" -eq 0 ]; then
+	test_web_topo_p topology_power
+	RESULT=$?
+    fi
+    if [ "$RESULT" -eq 0 ]; then
+	test_web_topo_l topology_location
+	RESULT=$?
+    fi
+else
+    # selective test routine
+    while [ $# -gt 0 ]; do
+	case "$1" in
+	    topology_location*)
+		test_web_topo_l "$1"
+		RESULT=$? ;;
+	    topology_power*)
+		test_web_topo_p "$1"
+		RESULT=$? ;;
+	    *)	test_web_default "$1"
+		RESULT=$? ;;
+	esac
+	shift
+	[ "$RESULT" != 0 ] && break
+    done
 fi
-if [ "$RESULT" -eq 0 ]; then
-  echo "-------------------- reset db --------------------"
-  mysql -u root < "$DB_LOADDIR/$DB_BASE"
-  mysql -u root < "$DB_LOADDIR/$DB_TOPOL"
-  echo "============================================================"
-  /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" topology_location
-  RESULT=$?
-  echo "============================================================"
-fi
-echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_DATA"
+loaddb_default
 
 # cleanup
 kill $MAKEPID 2>/dev/null

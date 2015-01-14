@@ -1101,8 +1101,14 @@ distclean-local-deps: distclean-generic
 	  find . -type d -name '.deps' -exec /bin/rmdir '{}' \; || true ; \
 	}
 
+# BUILDER_RETAIN_CONFIGURE=yes may be exported by builder.sh
 distclean-local: distclean-local-dirs distclean-local-deps
-	/bin/rm -f $(abs_top_builddir)/configure
+	@if [ x"$(BUILDER_RETAIN_CONFIGURE)" = xyes ]; then \
+	    echo "INFO: Retaining the configure script because I was asked to"; \
+	else \
+	    echo "INFO: Removing the configure script as part of distclean"; \
+	    /bin/rm -f $(abs_top_builddir)/configure; \
+	fi >&2 || true
 
 #----------------------------------------------------------------------
 #                        astyle formating
