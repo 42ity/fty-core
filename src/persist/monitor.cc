@@ -672,7 +672,7 @@ common_msg_t* select_ui_properties(const char* url)
         
         row[3].get(device_id);
         // ui_properties are not tied to *any* device
-        assert ( device_id == NULL);
+        assert ( device_id == 0);
     }
     catch (const tntdb::NotFound &e) {
         log_info ("nothing was found %s \n", "end");
