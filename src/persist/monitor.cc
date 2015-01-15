@@ -1414,7 +1414,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
     }
     catch (const bios::NotFound &e){
         log_info ("asset element notfound %s \n", "end");
-        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND,
                                                         e.what(), NULL);
     }
     catch (const bios::ElementIsNotDevice &e) {
