@@ -39,8 +39,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *              asset element name of the device in database.
  * Third  -- device_type_name
  *              name of the device type in database.
+ * Forth  -- device_type_id
+ *              id of the device type in database.
  */
-typedef std::tuple< uint32_t, std::string, std::string > device_info_t;
+typedef std::tuple< uint32_t, std::string, std::string, uint32_t > device_info_t;
 
 
 /**
@@ -315,7 +317,7 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
  *
  * \return zmsg_t  - encoded ASEET_MSG_RETURN_LOCATION_FROM or 
  *                           COMMON_MSG_FAIL message.
- */
+*/
 zmsg_t* select_group_elements(
             const char* url             , uint32_t    element_id, 
             uint8_t     element_type_id , const char* group_name, 
@@ -379,13 +381,14 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
  * \param url              - the connection to database.
  * \param asset_element_id - id of the asset element.
  *
- * \return  A pair of strings: 
+ * \return  A tuple: 
  *              First  - name of the asset element.
  *              Second - device type name.
+ *              Third  - device type id.
  */
-std::pair <std::string, std::string>
-    select_element_name_device_tname  ( const char* url, 
-                                        uint32_t asset_element_id);
+std::tuple <std::string, std::string, uint32_t>
+    select_add_device_info  ( const char* url, 
+                              uint32_t asset_element_id);
 
 
 /**
