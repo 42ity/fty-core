@@ -25,19 +25,19 @@ extern const char* DRIVER_NMAP_REPLY;
 
 //! Possible error types
 enum errtypes {
-    DB_ERR = 1,
+    DB_ERR,
     BAD_INPUT,
     INTERNAL_ERR,
 };
 
 //! Constants for database errors
 enum db_err_nos {
-    DB_ERROR_INTERNAL = 1,
-    DB_ERROR_BADINPUT = 2,
-    DB_ERROR_NOTFOUND = 3,
-    DB_ERROR_UNKNOWN = 4,
-    DB_ERROR_NOTIMPLEMENTED = 5,
-    DB_ERROR_DBCORRUPTED = 6,
+    DB_ERROR_INTERNAL,
+    DB_ERROR_BADINPUT,
+    DB_ERROR_NOTFOUND,
+    DB_ERROR_UNKNOWN,
+    DB_ERROR_NOTIMPLEMENTED,
+    DB_ERROR_DBCORRUPTED,
 };
 
 //! Constants for bad input type of error
@@ -46,6 +46,7 @@ enum bad_input_err {
     BAD_INPUT_OUT_OF_BOUNDS,
 };
 
+//! Constants for internal errors
 enum internal_err {
     NOT_IMPLEMENTED
 };
