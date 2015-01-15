@@ -10,6 +10,7 @@
 
 #include "common_msg.h"
 #include "assetmsg.h"
+#include "persist_error.h"
 #include "monitor.h"
 
 #include "dbpath.h"
@@ -100,7 +101,7 @@ TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor
     );
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id_asset));
-    REQUIRE ( convert_asset_to_monitor (url.c_str(), id_asset) == -DB_ERROR_NOTFOUND );
+    REQUIRE_THROWS_AS(convert_asset_to_monitor (url.c_str(), id_asset), bios::NotFound );
 
     st = conn.prepareCached(
        "select id_asset_element from t_bios_asset_element where name = 'ROW1'"
@@ -149,7 +150,7 @@ TEST_CASE("helper functions: convert_monitor_to_asset", "[db][convert_to_asset]"
     REQUIRE ( convert_monitor_to_asset (url.c_str(), id_monitor) == id_asset );
 
     id_monitor = 65530;
-    REQUIRE ( convert_monitor_to_asset (url.c_str(), id_monitor) == -DB_ERROR_NOTFOUND );
+    REQUIRE_THROWS_AS ( convert_monitor_to_asset (url.c_str(), id_monitor),  bios::NotFound );
 }
 
 
@@ -170,7 +171,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     zmsg_t* getlastmeasurements = common_msg_encode_get_last_measurements (id);
     common_msg_t* glm = common_msg_decode (&getlastmeasurements);
     common_msg_print (glm);
-    zmsg_t* returnmeasurements = get_last_measurements (url.c_str(), glm);
+    zmsg_t* returnmeasurements = _get_last_measurements (url.c_str(), glm);
     common_msg_print (glm);
     REQUIRE ( returnmeasurements );
 
@@ -196,7 +197,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     id = 65531;
     getlastmeasurements = common_msg_encode_get_last_measurements (id);
     glm = common_msg_decode (&getlastmeasurements);
-    returnmeasurements = get_last_measurements (url.c_str(), glm);
+    returnmeasurements = _get_last_measurements (url.c_str(), glm);
     REQUIRE ( returnmeasurements );
     REQUIRE ( is_common_msg (returnmeasurements) );
     common_msg_destroy (&glm);
@@ -208,7 +209,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
 
 }
 
-TEST_CASE("generate_return_measurements", "[db][generate][return_measurements]")
+TEST_CASE("generate_return_last_measurements", "[db][generate][return_last_measurements]")
 {
     char fifth1[10]  = "3:1:1:0";
     char forth1[10]  = "1:1:3:-2";
@@ -224,7 +225,7 @@ TEST_CASE("generate_return_measurements", "[db][generate][return_measurements]")
     zlist_push (measurements, first1);
 
     uint32_t id = 4;
-    common_msg_t* gm = generate_return_measurements (id, &measurements);
+    common_msg_t* gm = generate_return_last_measurements (id, &measurements);
     REQUIRE ( gm );
     REQUIRE ( measurements == NULL );
     REQUIRE ( common_msg_device_id (gm) == id );
