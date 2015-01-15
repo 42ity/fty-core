@@ -173,6 +173,9 @@ libpriv_db_la_SOURCES = \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
 
+#		src/persist/calc_power.cc \
+#		src/persist/calc_power.h 
+
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
 			-I$(top_srcdir)/src/persist \
@@ -187,7 +190,6 @@ libpriv_proto_la_SOURCES = \
 			src/include/asset_msg.h \
 			src/include/common_msg.c \
 			src/include/common_msg.h \
-			src/include/defs.h \
 			src/include/netdisc_msg.c \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
@@ -355,6 +357,8 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-power-group.cc \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
+
+#			tests/persist/test-rack-power.cc 
 
 test_dbtopology_LDADD = \
 			libpriv-db.la \
