@@ -204,7 +204,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
 
     glm = common_msg_decode (&returnmeasurements);
     REQUIRE ( common_msg_id (glm) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (glm) == DB_ERROR_BADINPUT );
+    REQUIRE ( common_msg_errorno (glm) == DB_ERROR_NOTFOUND );
     common_msg_destroy (&glm);
 
 }

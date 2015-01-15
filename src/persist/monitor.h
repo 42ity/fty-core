@@ -290,6 +290,21 @@ common_msg_t* update_client_info
     (const char* url, m_clnt_info_id_t client_info_id, zchunk_t** blob);
 
 
+/**
+ * \brief Updates the ui properties.
+ *
+ * Blob would be destroyed.
+ *
+ * In case of success it generates COMMON_MSG_OK message. 
+ * In case of failure returns COMMON_MSG_FAIL message.
+ *
+ * \param url            - connection url to database
+ * \param blob           - an information as a flow of bytes.
+ *
+ * \return - a COMMON_MSG_FAIL or COMMON_MSG_OK message.
+ */
+common_msg_t* update_ui_properties
+    (const char* url, zchunk_t** blob);
 
 /** 
  * \brief Selects last information about device gathered by client.

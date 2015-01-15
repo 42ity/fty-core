@@ -263,7 +263,7 @@ std::string ui_props_manager::put(const std::string& ext) {
         return std::string("fail to create zchunk");
 
     //FIXME: where to store client_id?
-    common_msg_t *reply = update_client_info(url.c_str(), UI_PROPERTIES_CLIENT_ID, &chunk);
+    common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
     uint32_t msg_id = common_msg_id(reply);
     common_msg_destroy(&reply);
 
