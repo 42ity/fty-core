@@ -476,6 +476,7 @@ CREATE VIEW v_bios_asset_element_super_parent AS
 SELECT v1.id_asset_element, 
        v1.name , 
        v5.name AS type_name,
+       v5.id_asset_device_type,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
