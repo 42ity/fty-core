@@ -465,6 +465,7 @@ common_msg_t* update_client_info
         );          // time is the time of inserting into database
         tntdb::Blob blobData((const char*) zchunk_data(*blob), 
                              zchunk_size (*blob));
+        zchunk_destroy (blob);
 
         n = st.set("idclientinfo", client_info_id).
                setBlob("ext", blobData).
@@ -473,10 +474,8 @@ common_msg_t* update_client_info
     }
     catch (const std::exception &e) {
         log_warning ("abnormal %s \n", "end");
-        zchunk_destroy (blob);
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    zchunk_destroy (blob);
     if ( n == 1 )
     {
         log_info ("normal %s \n", "end");
@@ -510,6 +509,7 @@ common_msg_t* update_ui_properties
         );          // time is the time of inserting into database
         tntdb::Blob blobData((const char*) zchunk_data(*blob), 
                              zchunk_size (*blob));
+        zchunk_destroy (blob);
 
         n = st.set("idclient", UI_PROPERTIES_CLIENT_ID).
                setBlob("ext", blobData).
@@ -518,10 +518,8 @@ common_msg_t* update_ui_properties
     }
     catch (const std::exception &e) {
         log_warning ("abnormal %s \n", "end");
-        zchunk_destroy (blob);
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    zchunk_destroy (blob);
     if ( n == 1 )
     {
         log_info ("normal %s \n", "end");
