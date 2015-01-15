@@ -490,6 +490,51 @@ common_msg_t* update_client_info
     }
 }
 
+// update ui_properties
+common_msg_t* update_ui_properties
+    (const char* url, zchunk_t** blob)
+{
+    log_info ("%s \n", "start");
+    assert ( blob );
+    assert ( *blob );      // is required
+
+    m_clnt_id_t n = 0;     // number of rows affected
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " UPDATE t_bios_client_info"
+            " SET ext=:ext, timestamp=UTC_TIMESTAMP()"
+            " WHERE id_client=:idclient"
+        );          // time is the time of inserting into database
+        tntdb::Blob blobData((const char*) zchunk_data(*blob), 
+                             zchunk_size (*blob));
+
+        n = st.set("idclient", UI_PROPERTIES_CLIENT_ID).
+               setBlob("ext", blobData).
+               execute();
+        log_debug ("was updated %d rows \n", n);
+    }
+    catch (const std::exception &e) {
+        log_warning ("abnormal %s \n", "end");
+        zchunk_destroy (blob);
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    zchunk_destroy (blob);
+    if ( n == 1 )
+    {
+        log_info ("normal %s \n", "end");
+        return generate_ok (UI_PROPERTIES_CLIENT_ID);
+    }
+    else
+    {
+        log_info ("nothing was updated %s \n", "end");
+        return generate_db_fail (DB_ERROR_BADINPUT, 
+                                            "nothing was updated", NULL);
+    }
+}
+
 common_msg_t* select_client_info_last(const char  * url, 
                                       m_clnt_id_t client_id, 
                                       m_dvc_id_t  device_id)
@@ -628,7 +673,8 @@ common_msg_t* select_ui_properties(const char* url)
         assert ( client_info_id );
         
         row[3].get(device_id);
-        assert ( device_id );
+        // ui_properties are not tied to *any* device
+        assert ( device_id == NULL);
     }
     catch (const tntdb::NotFound &e) {
         log_info ("nothing was found %s \n", "end");
