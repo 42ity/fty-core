@@ -14,9 +14,10 @@ dockerres_SCRIPTS =	resources/start_bios.sh
 dockerres_DATA = 	resources/Dockerfile \
 			resources/patch.sql \
 			resources/ePDU1-LAB.dev \
+			resources/ePDU2-LAB.dev \
 			resources/UPS1-LAB.dev \
+			resources/UPS2-LAB.dev \
 			resources/ups.conf \
-			resources/ups.dev \
 			resources/upsmon.conf
 
 EXTRA_DIST += $(docker_SCRIPTS) $(dockerres_SCRIPTS) $(dockerres_DATA)
