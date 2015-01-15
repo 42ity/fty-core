@@ -40,8 +40,7 @@ namespace bios
     };
 
     /*
-     * \brief Exception thrown when started element in 
-     * power topology is not a device.
+     * \brief Exception thrown when specified element is not a device.
      */
     class ElementIsNotDevice : public BiosError
     {
@@ -50,6 +49,17 @@ namespace bios
         ElementIsNotDevice();
     };
     
+    /*
+     * \brief Exception thrown when for specified device 
+     *  monitor counterpart was not found.
+     */
+    class MonitorCounterpartNotFound : public BiosError
+    {
+        public:
+        // Constructor
+        MonitorCounterpartNotFound();
+    };
+
     /*
      * \brief Exception thrown when speified element was not
      * found in database.
