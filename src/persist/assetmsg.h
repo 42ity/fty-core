@@ -7,9 +7,13 @@
 #define MAX_NAME_LENGTH 25 // For now it the maximum length of all fields nam
 #define MAX_DESCRIPTION_LENGTH 255
 
-zmsg_t *asset_msg_process(const char *url, asset_msg_t *msg);
-void* void_dup(const void* a); 
-
+/**
+ * \brief Processes message of type asset_msg_t
+ *
+ * Broken down processing of generic database zmsg_t, this time asset message
+ * case.
+ */
+zmsg_t *asset_msg_process(zmsg_t **msg);
 
 //---------------
 //internal functions for processing the asset_messages

@@ -17,77 +17,56 @@
 
 #include "log.h"
 #include "assetmsg.h"
+#include "dbpath.h"
 #include "monitor.h"
 #include "asset_types.h"
 
-/**
- * \brief This function is a general function to process 
- * the asset_msg_t message
- */
-zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
-{
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
-    log_info ("%s", "start\n");
-
+zmsg_t* asset_msg_process(zmsg_t **msg) {
+    log_debug("Processing asset message in persistence layer\n");
     zmsg_t *result = NULL;
 
-    int msg_id = asset_msg_id (msg);
+    asset_msg_t *amsg = asset_msg_decode(msg);
+    if(amsg == NULL) {
+        log_warning ("Malformed asset message received!");
+        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	                                    "Malformed asset message message received!", NULL);
+    }
+
+    int msg_id = asset_msg_id (amsg);
     
     switch (msg_id) {
 
-        case ASSET_MSG_GET_ELEMENT:
-        {   //datacenter/room/row/rack/group/device
-            result = get_asset_element(url, msg);
+        case ASSET_MSG_GET_ELEMENT: {
+            // datacenter|room|row|rack|group|device
+            result = get_asset_element(url.c_str(), amsg);
             break;
         }
         case ASSET_MSG_UPDATE_ELEMENT:
-        {           
-            //not implemented yet
-            break;
-        }
         case ASSET_MSG_INSERT_ELEMENT:
-        {
+        case ASSET_MSG_DELETE_ELEMENT: {
             //not implemented yet
             break;
         }
-        case ASSET_MSG_DELETE_ELEMENT:
-        {
-            //not implemented yet
+        case ASSET_MSG_GET_ELEMENTS: {
+            // datacenters|rooms|rows|racks|groups
+            result = get_asset_elements(url.c_str(), amsg);
             break;
         }
-        case ASSET_MSG_GET_ELEMENTS:
-        {   //datacenters/rooms/rows/racks/groups
-            result = get_asset_elements(url, msg);
-            break;
-        }
-       // case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
         case ASSET_MSG_ELEMENT:
         case ASSET_MSG_RETURN_ELEMENT:
         case ASSET_MSG_OK:
         case ASSET_MSG_FAIL:
         case ASSET_MSG_RETURN_ELEMENTS:
-            // these messages are not recived by persistence
-            // forget about it
-            break;;
-        default:
-        {
-        // Example: Let's suppose we are listening on a ROUTER socket 
-        //          from a range of producers.
-        //          Someone sends us a message from older protocol 
-        //          that has been dropped. Are we going to return 
-        //          'false', that usually means db fatal error, and
-        //          make the caller crash/quit? OR does it make more 
-        //          sense to say, OK, message has been processed and 
-        //          we'll log a warning about unexpected message type.
-                  
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
-            break;       
+        default: {
+            log_warning ("Wrong asset message (id %d) received!", msg_id);
+            result = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	                                        "Wrong asset message message received!", NULL);
+
+            break;
         }
     }
-    log_info ("%s", "end\n");
-    log_close ();       
+
+    asset_msg_destroy(&amsg);
     return result;
 };
 

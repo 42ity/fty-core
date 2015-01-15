@@ -9,10 +9,10 @@
 
 #include <cxxtools/directory.h>
 #include <cxxtools/regex.h>
-#include "dbpath.h"
-#include "assetmsg.h"
+#include "persistencelogic.h"
 
 zmsg_t *asset_manager::get_item(std::string type, std::string id) {
+    log_debug("Trying to get element %s of type %s", id.c_str(), type.c_str());
     byte real_type = asset_manager::type_to_byte(type);
     if(real_type == (byte)asset_type::UNKNOWN) {
         return NULL;
@@ -21,72 +21,35 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
     if(real_id == 0) {
         return NULL;
     }
-    asset_msg_t *get_element = asset_msg_new(ASSET_MSG_GET_ELEMENT);
-    asset_msg_set_type(get_element, real_type);
-    asset_msg_set_element_id(get_element, real_id);
-    asset_msg_print(get_element);
-
-    // Currently not needed
-    zmsg_t *ret = asset_msg_process (url.c_str(), get_element);
-    asset_msg_destroy (&get_element);
-    /*
-        FILE *fl = fopen(("data/" + type + "/" + id).c_str(), "r");
-        asset_msg_t *ret;
-
-        if(fl == NULL) {
-            return NULL;
-        }
-        zmsg_t *msg = zmsg_load(NULL, fl);
-        fclose(fl);
-
-        if(msg == NULL) {
-            return NULL;
-        }
-
-        ret = asset_msg_decode(&msg);
-    */
-    // vratim return_element anebo fail
+    zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
+    zmsg_t *ret = persist::process_message(&get_element);
+    zmsg_destroy(&get_element);
     assert(ret != NULL);
-    if (is_common_msg(ret) ) {  
+    if (is_common_msg(ret) ) {
         return ret;          // it can be only COMMON_MSG_FAIL
     }
-    // ASSET_RETURN_ELEMENT
-    asset_msg_t* msg = asset_msg_decode (&ret);
-    assert ( msg != NULL );
-    asset_msg_print (msg);
+    // Return directly element message which is packed inside return element
+    asset_msg_t* msg = asset_msg_decode(&ret);
+    if(msg == NULL) {
+        log_error("Decoding reply from persistence failed!");
+        return NULL;
+    }
 
-    ret = asset_msg_get_msg (msg);
-    assert ( ret != NULL );
-    asset_msg_destroy (&msg);
-    assert ( ret != NULL );
+    ret = asset_msg_get_msg(msg);
+    asset_msg_destroy(&msg);
     return ret;
 }
 
 zmsg_t *asset_manager::get_items(std::string type) {
+    log_debug("Trying to get elements of type %s", type.c_str());
     byte real_type = asset_manager::type_to_byte(type);
     if ( real_type == (byte)asset_type::UNKNOWN ) {
         return NULL;
     }
 
-    asset_msg_t *get_elements = asset_msg_new (ASSET_MSG_GET_ELEMENTS);
-    asset_msg_set_type (get_elements, real_type);
-    asset_msg_print (get_elements);
+    zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
+    zmsg_t *ret = persist::process_message(&get_elements);
+    zmsg_destroy(&get_elements);
 
-    // Currently not needed
-    zmsg_t *ret = asset_msg_process (url.c_str(), get_elements);
-    asset_msg_destroy (&get_elements);
-    /*
-        asset_msg_t *ret = asset_msg_new(ASSET_MSG_RETURN_ELEMENTS);
-        cxxtools::Directory dir("data/" + type);
-        cxxtools::Regex reg("^[0-9]+$");
-
-        for(auto it = dir.begin(); it != dir.end(); ++it) {
-            if(reg.match(*it)) {
-                asset_msg_element_ids_insert(ret, it->c_str(), "TBD");
-            }
-        }
-    */
-
-    zmsg_print(ret);
     return ret;
 }

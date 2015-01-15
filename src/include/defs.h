@@ -21,13 +21,33 @@ extern const char* DRIVER_NMAP_REPLY;
 #define UI_PROPERTIES_CLIENT_ID 5
 
 /*\brief Database error constanst*/
-#define DB_ERROR_INTERNAL 1
-#define DB_ERROR_BADINPUT 2
-#define DB_ERROR_NOTFOUND 3
-#define DB_ERROR_UNKNOWN 4
-#define DB_ERROR_NOTIMPLEMENTED 5
-#define DB_ERROR_DBCORRUPTED 6
+#define BIOS_ERROR_DB DB_ERR
 
-#define BIOS_ERROR_DB 1
+//! Possible error types
+enum errtypes {
+    DB_ERR = 1,
+    BAD_INPUT,
+    INTERNAL_ERR,
+};
+
+//! Constants for database errors
+enum db_err_nos {
+    DB_ERROR_INTERNAL = 1,
+    DB_ERROR_BADINPUT = 2,
+    DB_ERROR_NOTFOUND = 3,
+    DB_ERROR_UNKNOWN = 4,
+    DB_ERROR_NOTIMPLEMENTED = 5,
+    DB_ERROR_DBCORRUPTED = 6,
+};
+
+//! Constants for bad input type of error
+enum bad_input_err {
+    BAD_INPUT_WRONG_INPUT,
+    BAD_INPUT_OUT_OF_BOUNDS,
+};
+
+enum internal_err {
+    NOT_IMPLEMENTED
+};
 
 #endif // SRC_INCLUDE_DEFS_H_
