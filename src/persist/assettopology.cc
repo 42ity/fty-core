@@ -782,13 +782,15 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_racks\n");
     }
+
+
     // Select devices
     // only for rooms, datacenters, rows, racks, unlockated
     // TODO filter
     if ( ( ( type_id == asset_type::DATACENTER)  ||
            ( type_id == asset_type::ROOM )       ||
            ( type_id == asset_type::ROW )        ||
-           ( type_id == asset_type::DEVICE )     || 
+           ( type_id == asset_type::RACK )     ||
            ( element_id == 0 )  ) &&
          ( 6 <= filter_type ) )
     {
@@ -807,6 +809,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_devices\n");
     }
+
     // Select groups
     // Groups can be selected
     //      - only for datacenter (if selecting all childs  or only groups).
