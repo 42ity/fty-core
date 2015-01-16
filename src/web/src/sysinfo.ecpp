@@ -43,7 +43,7 @@ int8_t access_auth_level;
         }
         access_auth_level_str = chomp(access_auth_level_str);
 
-        reply.setHeader( (std::string)"X-Auth-Require: ",
+        reply.setHeader( (std::string)"X-Auth-SysInfo: ",
                 (std::string)"access_auth_level=\"" +
                 access_auth_level_str + "\"");
 #endif // DEBUG

@@ -19,7 +19,7 @@ int8_t access_auth_level;
 
 #ifdef DEBUG
 	std::ostringstream os;
-	os << "access_auth_level=\"" << access_auth_level << "\"";
+	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
 	reply.setHeader( (std::string)"X-Auth-Require: ", os.str() );
 #endif
 
