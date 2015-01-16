@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file calc_power.h
+/*! \file calc_power.cc
     \brief Functions for calculating a total rack and DC power from 
      database values.
     \author Alena Chernikava <alenachernikava@eaton.com>
@@ -70,9 +70,8 @@ bool is_it_device (const device_info_t &device)
         return false;
 }
 
-//TODO move device_info_t to map
 power_sources_t
-    doA ( const char* url,
+    extract_power_sources ( const char* url,
           std::pair < std::set < device_info_t >, 
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device )
@@ -83,13 +82,15 @@ power_sources_t
     auto powerlinks = power_topology.second;
     
     log_debug ("number of devices is %ld \n", devices.size());
-    log_debug ("number of powerdevices is %ld \n", powerlinks.size());
+    log_debug ("number of powerlinks is %ld \n", powerlinks.size());
 
     // start_device can be
     // - IT device     - if it is the first call
     // - Power device  - if it is a recursive call, because somewhere before
     //                      we found an PDU power source
    
+    // TODO add max_recursive_level
+
     // a result sets of devices to ask for a power measurement
     std::set < device_info_t > pow_src_epdu;
     std::set < device_info_t > pow_src_ups;
@@ -102,7 +103,7 @@ power_sources_t
         a_elmnt_id_t src_id = std::get<0>(link);
 
         device_info_t src_device;
-        // find more info about device
+        // find more info about device from device set
         for ( auto &adevice : devices )
         {
             if ( std::get<0>(adevice) == src_id )
@@ -129,23 +130,37 @@ power_sources_t
             try{
                 auto pdu_pow_top = select_power_topology_to 
                      (url, std::get<0>(src_device), INPUT_POWER_CHAIN, false);
-                auto pdu_pow_srcs = doA (url, pdu_pow_top, src_device);
-          
-                pow_src_epdu.insert (std::get<0>(pdu_pow_srcs).begin(), std::get<0>(pdu_pow_srcs).end());
-                pow_src_ups.insert (std::get<1>(pdu_pow_srcs).begin(), std::get<1>(pdu_pow_srcs).end());
-                pow_src_it_device.insert (std::get<2>(pdu_pow_srcs).begin(), std::get<2>(pdu_pow_srcs).end());
+                auto pdu_pow_srcs = extract_power_sources 
+                                            (url, pdu_pow_top, src_device);
+                pow_src_epdu.insert (std::get<0>(pdu_pow_srcs).begin(), 
+                                     std::get<0>(pdu_pow_srcs).end());
+                pow_src_ups.insert (std::get<1>(pdu_pow_srcs).begin(), 
+                                    std::get<1>(pdu_pow_srcs).end());
+                pow_src_it_device.insert (std::get<2>(pdu_pow_srcs).begin(), 
+                                          std::get<2>(pdu_pow_srcs).end());
             }
             // TODO what should we do with the errors
             catch (const bios::NotFound &e) {
+                // TODO od prvniho vyberu z database uz probehlo spousta casu,
+                // a ten device mohl nekdo smazat z DB.
+                // for now ignore such device
             }
             catch (const bios::InternalDBError &e) {
+                // propagate error to higher level
+                log_warning ("abnormal end with %s \n", e.what());
+                throw bios::InternalDBError(e.what());
             }
             catch (const bios::ElementIsNotDevice &e) {
+                log_error ("Database is corrupted, in power chain there is a"
+                            "non device");
+                // TODO
+                // for now ignore this element
             }
         }
         else
         {   
             // TODO issue some warning, because this is not normal
+            log_warning ("device is not connected to epdu, ups, pdu \n");
             pow_src_it_device.insert (start_device);
         }
     }
@@ -153,7 +168,8 @@ power_sources_t
     return std::make_tuple (pow_src_epdu, pow_src_ups, pow_src_it_device);
 }
     
-std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t element_id)
+std::set <device_info_t> select_rack_devices(const char* url, 
+                                             a_elmnt_id_t element_id)
 {
     // ASSUMPTION
     // specified element_id is already in DB and has type asset_type::RACK
@@ -165,7 +181,8 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
         // TODO get rid of duplicate device processing
         tntdb::Statement st = conn.prepareCached(
                 " SELECT"
-                "    v.id, v.name, v1.name as type_name, v1.id_asset_device_type"
+                "   v.id, v.name, v1.name as type_name,"
+                "   v1.id_asset_device_type"
                 " FROM"
                 "   v_bios_asset_element v"
                 " INNER JOIN v_bios_asset_device v1"
@@ -197,9 +214,12 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
             assert ( device_type_id );
             
             result_set.insert (std::make_tuple(device_asset_id, device_name, 
-                                               device_type_name, device_type_id));
+                                device_type_name, device_type_id));
         }
         log_info ("end\n");
+        // result_set is empty if:
+        //  - someone removed a rack from DB (but this should never happen)
+        //  - there is no any device in a rack
         return result_set;
     }
     catch (const std::exception &e) {
@@ -208,7 +228,8 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
     }
 }
 
-a_elmnt_tp_id_t select_element_type (const char* url, a_elmnt_id_t asset_element_id)
+a_elmnt_tp_id_t select_element_type (const char* url, 
+                                     a_elmnt_id_t asset_element_id)
 {
     log_info ("start \n");
     assert (asset_element_id);
@@ -268,7 +289,7 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
         {
             auto pow_top_to = select_power_topology_to (url, std::get<0>(adevice), 
                                                         INPUT_POWER_CHAIN, false);
-            auto new_power_srcs = doA(url, pow_top_to, adevice);
+            auto new_power_srcs = extract_power_sources(url, pow_top_to, adevice);
             
             std::get<0>(power_sources).insert ( 
                             std::get<0>(new_power_srcs).begin(), std::get<0>(new_power_srcs).end() );
