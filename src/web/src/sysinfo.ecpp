@@ -67,7 +67,7 @@ int8_t access_auth_level;
 
 	/* Detect container virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
-    if (!ret) {
+    if (ret!=0) {
         cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -c"
                 << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
     }
@@ -76,7 +76,7 @@ int8_t access_auth_level;
 <%cpp>
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
-    if (!ret) {
+    if (ret!=0) {
         cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -v"
                 << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
     }
