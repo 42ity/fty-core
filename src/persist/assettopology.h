@@ -23,7 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #ifndef SRC_PERSIST_ASSETTOPOLOGY_H_
 #define SRC_PERSIST_ASSETTOPOLOGY_H_
-
+#include <set>
+#include <tuple>
 #include "asset_msg.h"
 
 // ===============================================================

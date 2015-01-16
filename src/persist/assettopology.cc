@@ -1366,6 +1366,7 @@ std::pair < std::set < device_info_t >, std::set < powerlink_info_t > >
 select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
                           bool is_recursive)
 {
+    log_info ("start\n");
     std::string device_name = "";
     std::string device_type_name = "";
     uint32_t device_type_id = 0;
@@ -1419,7 +1420,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "  v.id_asset_element_src, v.src_out, v.dest_in, v.src_name,"
-                "  v.src_type_name"
+                "  v.src_type_name, v.src_type_id "
                 " FROM"
                 "  v_bios_asset_link_topology v"
                 " WHERE"
@@ -1460,7 +1461,12 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 std::string device_type_name_src = "";
                 row[4].get(device_type_name_src);
                 assert ( !device_type_name_src.empty() );
-    
+                
+                // device_type_src_id, required
+                uint32_t device_type_src_id = 0;
+                row[5].get(device_type_src_id);
+                assert ( device_type_src_id );
+                
                 log_debug ("for\n");
                 log_debug ("asset_element_id_dest = %d\n", cur_element_id);
                 log_debug ("asset_element_id_src = %d\n", 
@@ -1477,7 +1483,11 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 if ( is_recursive )
                     newdevices.insert (std::make_tuple(
                             id_asset_element_src, device_name_src, 
-                            device_type_name_src, device_type_id));
+                            device_type_name_src, device_type_src_id));
+                else
+                    resultdevices.insert (std::make_tuple(
+                            id_asset_element_src, device_name_src, 
+                            device_type_name_src, device_type_src_id));
             } // end for
         }
         catch (const std::exception &e) {
