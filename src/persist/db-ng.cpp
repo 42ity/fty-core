@@ -30,17 +30,16 @@ int main (int argc, char *argv []) {
     while(!zsys_interrupted) {
         zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
-            break;
+            continue;
         printf("Command is %s\n", mlm_client_command(client));
         // Mailbox deliver is direct message
         if(streq (mlm_client_command(client), "MAILBOX DELIVER")) {
             // Verify it is for us
-            if(!streq(mlm_client_subject(client), "persistence"))
+            if(!streq(mlm_client_subject(client), "persistence")) {
+                log_warning("Got direct message with wrong subject, discarding!\n");
                 continue;
+            }
 
-            // Currently only measures meta is supported
-            if(!is_common_msg(msg))
-                continue;
             zmsg_t *rep = persist::process_message(&msg);
             if(rep != NULL) {
                 // Send a reply back
