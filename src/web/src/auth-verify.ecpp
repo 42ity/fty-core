@@ -20,18 +20,41 @@ int8_t access_auth_level;
 </%request>
 <%cpp>
 access_auth_level=AUTH_LEVEL_ANONYMOUS;
+#ifdef DEBUG
+std::string access_auth_level_passedBy = "none";
+#endif // DEBUG
+
 if(request.hasHeader(tnt::httpheader::authorization)) {
 	access_token = request.getHeader(tnt::httpheader::authorization);
+
 	if(access_token.compare(0,7,"Bearer ")) {
 		access_token = "";
+#ifdef DEBUG
+                access_auth_level_passedBy = "auth_header_notBearer";
+#endif // DEBUG
 	} else {
 		access_token = access_token.substr(7);
+#ifdef DEBUG
+                if(access_token.empty()) {
+                    access_auth_level_passedBy = "auth_header_empty";
+                } else {
+                    access_auth_level_passedBy = "auth_header_value";
+                }
+#endif // DEBUG
 	}
 
 	if(access_token.empty()) {
 		/* Token header was presented but empty */
 		access_auth_level=AUTH_LEVEL_ERROR_EMPTY;
 	}
+#ifdef DEBUG
+} else {
+    /* TODO? Differentiate absent access_token attribute from present and empty.
+     * TODO? Differentiate GET and POST sources? Prefer some specific one? */
+    if(!access_token.empty()) {
+        access_auth_level_passedBy = "query_params_value";
+    }
+#endif // DEBUG
 }
 
 /* We can get the token from header, or from GET or POST request args */
@@ -48,10 +71,16 @@ if(!access_token.empty()) {
 }
 
 #ifdef DEBUG
+	reply.setHeader( (std::string)"X-Auth-Token-Presented: ",
+                "\"" + access_token + "\"" );
+
+        reply.setHeader( (std::string)"X-Auth-Token-PassedBy: ",
+                "\"" + access_auth_level_passedBy + "\"" );
+
 	std::ostringstream os;
 	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
 	reply.setHeader( (std::string)"X-Auth-Verify: ", os.str() );
-#endif
+#endif // DEBUG
 
 /* Go on to next module in tntnet.xml */
 return DECLINED;
