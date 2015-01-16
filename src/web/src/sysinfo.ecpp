@@ -38,6 +38,7 @@ int8_t access_auth_level;
 <%cpp>
 	std::string cmdout;
 	std::string cmderr;
+	std::ostringstream cmderr_total;
 	static const std::string UNKNOWN = "unknown";
 	static const std::string UNAUTHORIZED = "unauthorized";
 	static const std::string AVAILABLE = "available";
@@ -49,11 +50,19 @@ int8_t access_auth_level;
 
 	/* Detect container virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
+    if (!ret) {
+        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -c"
+                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+    }
 </%cpp>
     "container": "<$ ret == 0 ? cmdout : UNKNOWN $>",
 <%cpp>
 	/* Detect VM virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-v"}, cmdout, cmderr);
+    if (!ret) {
+        cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -v"
+                << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+    }
 </%cpp>
     "hypervisor": "<$ ret == 0 ? cmdout : UNKNOWN $>",
     "uname": {
@@ -77,8 +86,11 @@ int8_t access_auth_level;
         "package-version": "<$ PACKAGE_VERSION $>",
         "package-bugreport": "<$ PACKAGE_BUGREPORT $>",
         "package-url": "<$ PACKAGE_URL $>",
-        "vendor": "Eaton"
+        "vendor": "<$ PACKAGE_VENDOR $>"
 <%cpp>
+      /* Note that PACKAGE_VENDOR above is NOT an automake default variable,
+       * we define it locally in our project configuration. */
+
       if (access_auth_level>1) {
 #ifdef HAVE_PACKAGE_GIT
 </%cpp>
@@ -132,33 +144,70 @@ int8_t access_auth_level;
              I am less sure about capabilities of "ps" programs in constrained
              environments and/or other OSes... however for a predefined target
              platform this should do :) */
+          
+          /* TODO: This implementation is considered as a temporary solution,
+           * just so we don't use random fake data in the lists below - but
+           * rather have something realistic. The "correct" solution would be
+           * to check the state of "systemd" units or equivalent services
+           * (server OS dependent) and report those details rather than to
+           * parse "ps" outputs like this. */
 
-          // A glob usable by shell "case":
+          // A glob usable by shell "case" and "egrep":
           std::string interesting_basenames;
           interesting_basenames = "mysqld|upsd|saslauthd|tntnet|simple|netmon|driver-nmap";
           //testing-hack// interesting_basenames = "abc";
+          //testing-hack// interesting_basenames = "netm*|upsd*|my*";
 
           std::ostringstream psgrep;
           /* TODO: Consider escaping the $ARGS, possibly $CMD and maybe others */
-          psgrep  << "/bin/ps -ewww -o pid,ppid,user,tty,state,time,command | "
-                  << "( NF=\"\"; "
-                  << "while read _P _PP _U _TTY _STATE _TIMECPU CMD ARGS; do "
+          psgrep  << "NF=\"\"; PSLIST=\"`/bin/ps -ewww -o "
+                  << "pid,ppid,user,tty,state,time,size,pcpu,pmem,command`\"; "
+                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
+                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
                   << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
                   << interesting_basenames <<") echo \"$NF\"\'{"
                   << "\"process\":\"\'\"$CMD\"\'\",\"args\":\"\'\"$ARGS\"\'\","
+                  << "\"process-basename\":\"\'\"`basename \"$CMD\"`\"\'\","
                   << "\"process-pid\":\'\"$_P\"\',\"parent-pid\":\'\"$_PP\"\',"
                   << "\"user-name\":\"\'\"$_U\"\'\",\"tty\":\"\'\"$_TTY\"\'\","
-                  << "\"process-state\":\"\'\"$_STATE\"\'\","
-                  << "\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
-                  << "}\'; NF=\",\"; esac; done )" ;
+                  << "\"process-state-raw\":\"\'\"$_STATE\"\'\","
+                  << "\"process-state\":\"\'\"`case \"$_STATE\" in "
+                  <<  "D*|R*|S*|T*|W*) echo running;; Z*) echo zombie;; "
+                  <<  "X*) echo dead;; *) echo " << UNKNOWN << " ; esac`\"\'\""
+                  << ",\"process-time-cpu\":\"\'\"$_TIMECPU\"\'\""
+                  << ",\"process-percent-cpu\":\"\'\"$_PCPU\"\'\""
+                  << ",\"process-percent-mem\":\"\'\"$_PMEM\"\'\""
+                  << ",\"process-mem-size\":\"\'\"$_SIZE\"\'\""
+                  << "}\'; NF=\",\"; esac; done; [ x\"$NF\" = x, ] )" ;
+
+          /* Use the PSLIST and "interesting_basenames" definition above to
+           * pick out the interesting processes that are not running now.
+           * Note that this requires that the "interesting_basenames" definition
+           * contains complete basenames separated by pipes (no asterisks)
+           * for output to be reasonable (e.g. "mysqld" is "notrunning", 
+           * not "mysql*" process is "notrunning" */
+          psgrep  << " && NF=,; IBN=\"" << interesting_basenames << "\";"
+                  << "IFS=\"|$IFS\"; export IFS; for CMDPAT in $IBN; do { "
+                  << "echo -E \"$PSLIST\" | ( while read _P _PP _U _TTY _STATE"
+                  << " _TIMECPU _SIZE _PCPU _PMEM CMD ARGS; do "
+                  << "case \"`basename \"$CMD\" 2>/dev/null`\" in "
+                  << " $CMDPAT) exit 0;; "
+                  << "esac; done; exit 1; ) || { echo \"$NF\"\'{"
+                  << "\"process\":\"\'\"$CMDPAT\"\'\""
+                  << ",\"process-basename\":\"\'\"`basename \"$CMDPAT\"`\"\'\""
+                  << ",\"process-pid\":-1"
+                  << ",\"process-state\":\"notrunning\""
+                  << "}\'; NF=\",\";} ; }; done" ;
 
           ret = output2({"/bin/sh", "-c", psgrep.str()},
                         cmdout, cmderr);
           if (ret != 0 || cmdout == "") {
+              cmderr_total << "=== Ran:\n" << psgrep.str()
+                      << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
 </%cpp>
         "<$ UNKNOWN $>"
 <%cpp>
-          } else { // ret == 0
+          } else { // ret == 0 and output is not empty
 </%cpp>
         "<$ AVAILABLE $>"
   , "main-process-details": [
@@ -169,4 +218,12 @@ int8_t access_auth_level;
       } // if (access_auth_level>=1)
 </%cpp>
   }
+<%cpp>
+#if (DEBUG>1)
+</%cpp>
+  , "stderr-unescaped": "<$$ chomp(cmderr_total.str()) $>"
+<%cpp>
+#endif // DEBUG
+    std::cerr << cmderr_total.str();
+</%cpp>
 }
