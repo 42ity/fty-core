@@ -99,7 +99,7 @@ CREATE TABLE t_bios_client(
 CREATE TABLE t_bios_client_info(
     id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED,
+    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
     ext                     BLOB                NOT NULL,
 
@@ -538,6 +538,12 @@ INSERT INTO t_bios_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_device_type (name) VALUES ("server");
 
+/* insert dummy device to be used as a refferences for t_bios_client_info, which is not linked to any device */
+SELECT @device_unclassified := id_device_type FROM t_bios_device_type WHERE name = 'not_classified';
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES
+    (1, "DUMMY_DEVICE", @device_unclassified);
+SELECT @dummy_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "DUMMY_DEVICE";
+
 /* t_bios_client */
 INSERT INTO t_bios_client (name) VALUES ("nmap");
 INSERT INTO t_bios_client (name) VALUES ("mymodule");
@@ -566,4 +572,4 @@ INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* ui/properties are somewhat special */
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-INSERT INTO t_bios_client_info (id_client, timestamp, ext) VALUES (@client_ui_properties, NOW(), "{}");
+INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, NOW(), "{}");
