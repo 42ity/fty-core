@@ -1,6 +1,7 @@
 # autoconf/automake basis
 AC_PREREQ([2.5])
 AC_INIT([core], [0.1])
+PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,6 +15,15 @@ LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
+
+AC_ARG_WITH([package-vendor],
+	[AS_HELP_STRING([--with-package-vendor=ARG],
+		[name of the entity which distributes this build
+		 of the package (default is '$PACKAGE_VENDOR')])],
+	[PACKAGE_VENDOR="${withval}"
+	 AC_MSG_NOTICE([Using requested PACKAGE_VENDOR='$PACKAGE_VENDOR'])]
+	# This may be left empty by explicit request
+)
 
 # the default value may be revised, so we have two layers of conditionals here
 _ENABLE_DOCKER_SUPPORT=1
@@ -237,7 +247,9 @@ if test x"$_FIX_PACKAGE_BUGREPORT" = xy; then
 	    ["$PACKAGE_BUGREPORT"],
 	    [Packaging metadata: distro contact])
 fi
-
+AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
+	    ["$PACKAGE_VENDOR"],
+	    [Packaging metadata: name of the entity which distributes this build of the package])
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
