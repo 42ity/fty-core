@@ -1,8 +1,25 @@
-#include "calc_power.h"
-#include "dbtypes.h"
-#include "dbpath.h"
-#include "log.h"
-#include "persist_error.h"
+/*
+Copyright (C) 2015 Eaton
+ 
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3 of the License, or
+(at your option) any later version.
+ 
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+ 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+/*! \file calc_power.h
+    \brief Functions for calculating a total rack and DC power from 
+     database values.
+    \author Alena Chernikava <alenachernikava@eaton.com>
+*/
 
 #include <tntdb/connect.h>
 #include <tntdb/row.h>
@@ -10,17 +27,16 @@
 #include <tntdb/value.h>
 #include <tntdb/result.h>
 
+#include "calc_power.h"
+#include "dbtypes.h"
+#include "dbpath.h"
+#include "log.h"
+#include "persist_error.h"
+
 #include "common_msg.h"
 #include "monitor.h"
 #include "defs.h"
 #include "asset_types.h"
-#include "log.h"
-#include "dbtypes.h"
-
-#define DEVICE_TYPE_EPDU 3
-#define DEVICE_TYPE_PDU 4
-#define DEVICE_TYPE_UPS 1
-#define DEVICE_TYPE_SERVER 5
 
 bool is_epdu (const device_info_t &device)
 {
@@ -55,7 +71,8 @@ bool is_it_device (const device_info_t &device)
     else
         return false;
 }
-//TODO move to map also
+
+//TODO move device_info_t to map
 power_sources_t
     doA ( const char* url,
           std::pair < std::set < device_info_t >, 
@@ -86,9 +103,8 @@ power_sources_t
         // get src device id
         a_elmnt_id_t src_id = std::get<0>(link);
 
-        // find more info about device
-        // TODO rewrite devices to MAP!!!!! for better effectivity
         device_info_t src_device;
+        // find more info about device
         for ( auto &adevice : devices )
         {
             if ( std::get<0>(adevice) == src_id )
@@ -131,11 +147,10 @@ power_sources_t
         }
         else
         {   
-            //issue some warning, because this is not normal
+            // TODO issue some warning, because this is not normal
             pow_src_it_device.insert (start_device);
         }
     }
-
     log_info ("end \n");
     return std::make_tuple (pow_src_epdu, pow_src_ups, pow_src_it_device);
 }
@@ -196,6 +211,8 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
 
 a_elmnt_tp_id_t select_element_type (const char* url, a_elmnt_id_t asset_element_id)
 {
+    log_info ("start \n");
+    assert (asset_element_id);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         tntdb::Statement st = conn.prepareCached(

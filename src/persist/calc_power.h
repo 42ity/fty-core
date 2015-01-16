@@ -28,6 +28,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <set>
 #include <tuple>
 
+#define DEVICE_TYPE_EPDU 3
+#define DEVICE_TYPE_PDU 4
+#define DEVICE_TYPE_UPS 1
+#define DEVICE_TYPE_SERVER 5
+
 
 typedef 
         std::tuple < std::set < device_info_t >, 
