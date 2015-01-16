@@ -87,6 +87,30 @@ api_auth_post() {
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+api_auth_post_content() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
+}
+
+api_auth_post_wToken() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
+}
+
+api_auth_post_content_wToken() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
+}
+
 api_auth_delete() {
     TOKEN="`_api_get_token`"
     curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
@@ -105,9 +129,27 @@ api_auth_get() {
     curl -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+api_auth_get_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    curl -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
+}
+
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
     curl -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+}
+
+api_auth_get_content_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    curl "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
 }
 
 api_auth_get_json() {
