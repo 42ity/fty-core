@@ -12,12 +12,12 @@
 #include "calc_power.h"
 
 
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
+TEST_CASE("Rack power #0","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
+//    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== RACK POWER #1 ==================\n");
+    log_info ("=============== RACK POWER #0 ==================\n");
     auto t = select_power_topology_to (url.c_str(), 8003, 1, false);
 
     auto devices = t.first;
@@ -42,6 +42,63 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
     {
         printf ("%d \n",std::get<0>(adevice));
     }
+    log_close();
+    
+}
+
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
+{
+    log_open();
+//    log_set_level(LOG_DEBUG);
+
+    log_info ("=============== RACK POWER #1 ==================\n");
+    
+    common_msg_t* res = calc_total_rack_power (url.c_str(), 8000);
+    common_msg_destroy (&res);
+
+
+    log_close();
+    
+}
+TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
+{
+    log_open();
+ //   log_set_level(LOG_DEBUG);
+
+    log_info ("=============== RACK POWER #2 ==================\n");
+    
+    common_msg_t* res = calc_total_rack_power (url.c_str(), 8006);
+    common_msg_destroy (&res);
+
+
+    log_close();
+    
+}
+TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql][trp3]")
+{
+    log_open();
+  //  log_set_level(LOG_DEBUG);
+
+    log_info ("=============== RACK POWER #3 ==================\n");
+    
+    common_msg_t* res = calc_total_rack_power (url.c_str(), 8013);
+    common_msg_destroy (&res);
+
+
+    log_close();
+    
+}
+TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql][trp4]")
+{
+    log_open();
+  //  log_set_level(LOG_DEBUG);
+
+    log_info ("=============== RACK POWER #4 ==================\n");
+    
+    common_msg_t* res = calc_total_rack_power (url.c_str(), 8023);
+    common_msg_destroy (&res);
+
+
     log_close();
     
 }

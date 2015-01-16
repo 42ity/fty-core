@@ -24,9 +24,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_CALC_POWER_H_
 #define SRC_PERSIST_CALC_POWER_H_
 
-#include "assettopology.h"
 #include <set>
 #include <tuple>
+
+#include "common_msg.h"
+#include "dbtypes.h"
+
+#include "assettopology.h"
 
 #define DEVICE_TYPE_EPDU 3
 #define DEVICE_TYPE_PDU 4
@@ -47,4 +51,6 @@ power_sources_t doA ( const char* url,
                       std::pair < std::set < device_info_t >, 
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device );
+
+common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_

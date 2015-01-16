@@ -28,12 +28,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 
 #include "calc_power.h"
-#include "dbtypes.h"
 #include "dbpath.h"
 #include "log.h"
 #include "persist_error.h"
 
-#include "common_msg.h"
 #include "monitor.h"
 #include "defs.h"
 #include "asset_types.h"
@@ -159,6 +157,7 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
 {
     // ASSUMPTION
     // specified element_id is already in DB and has type asset_type::RACK
+    log_info ("start \n");
     std::set <device_info_t> result_set;
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -204,7 +203,7 @@ std::set <device_info_t> select_rack_devices(const char* url, a_elmnt_id_t eleme
         return result_set;
     }
     catch (const std::exception &e) {
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abnormal end with '%s'\n", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -229,20 +228,23 @@ a_elmnt_tp_id_t select_element_type (const char* url, a_elmnt_id_t asset_element
         a_elmnt_tp_id_t asset_element_type_id = 0;
         val.get(asset_element_type_id);
         assert ( asset_element_type_id );
+        log_info ("end \n");
         return asset_element_type_id;
     }
     catch (const tntdb::NotFound &e) {
+        log_info ("specified element was not found \n");
         // element with specified id was not found
         return 0;
     }
     catch (const std::exception &e){
-        // log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abnormal end with '%s'\n", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
                      
 common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
+    log_info ("start \n");
     // check if specified device has a rack type
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
@@ -275,6 +277,19 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
             std::get<2>(power_sources).insert (
                             std::get<2>(new_power_srcs).begin(), std::get<2>(new_power_srcs).end() );
         }
-
-   return NULL;
+    log_debug ("start to print \n");
+    for (auto &adevice: std::get<0>(power_sources))
+    {
+        log_debug ("%d \n", std::get<0>(adevice));
+    }
+    for (auto &adevice: std::get<1>(power_sources))
+    {
+        log_debug ("%d \n", std::get<0>(adevice));
+    }
+    for (auto &adevice: std::get<2>(power_sources))
+    {
+        log_debug ("%d \n", std::get<0>(adevice));
+    }
+    log_info ("end \n");
+    return NULL;
 }
