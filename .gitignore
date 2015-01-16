@@ -72,6 +72,7 @@ test-dbtopology
 test-web
 db-ng
 server-agent
+!src/drivers/server-agent
 
 tests/junit/
 tests/CI/web/log/
