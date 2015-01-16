@@ -1275,7 +1275,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
-            "  v.dest_type_name"
+            "  v.dest_type_name, v.dest_type_id"
             " FROM"
             "  v_bios_asset_link_topology v"
             " WHERE"
@@ -1314,7 +1314,12 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             std::string device_type_name = "";
             row[4].get(device_type_name);
             assert ( !device_type_name.empty() );
-
+            
+            // id_asset_element_dest, requiured
+            uint32_t device_type_dest_id = 0;
+            row[5].get(device_type_dest_id);
+            assert ( device_type_dest_id );
+   
             log_debug ("for\n");
             log_debug ("asset_element_id_src = %d\n", element_id);
             log_debug ("asset_element_id_dest = %d\n", id_asset_element_dest);
@@ -1322,11 +1327,12 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             log_debug ("dest_in = %d\n", dest_in);
             log_debug ("device_name = %s\n", device_name.c_str());
             log_debug ("device_type_name = %s\n", device_type_name.c_str());
+            log_debug ("dest_type_id = %d\n", dest_type_id);
 
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 
             resultdevices.insert (std::make_tuple(
-                    id_asset_element_dest, device_name, device_type_name, device_type_id));
+                    id_asset_element_dest, device_name, device_type_name, device_type_dest_id));
         } // end for
     }
     catch (const std::exception &e) {
