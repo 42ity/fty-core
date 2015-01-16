@@ -1327,7 +1327,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             log_debug ("dest_in = %d\n", dest_in);
             log_debug ("device_name = %s\n", device_name.c_str());
             log_debug ("device_type_name = %s\n", device_type_name.c_str());
-            log_debug ("dest_type_id = %d\n", dest_type_id);
+            log_debug ("dest_type_id = %d\n", device_type_dest_id);
 
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 

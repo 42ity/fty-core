@@ -24,7 +24,7 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 
     REQUIRE (std::get<0>(*devices.begin()) == 8001 );
 
-    auto b = doA (t, std::make_tuple (8003, "","", 5) );
+    auto b = doA (url.c_str(), t, std::make_tuple (8003, "","", 5) );
     
     log_debug( "start epdu \n");
     for ( auto &adevice : std::get<0>(b))

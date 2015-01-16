@@ -15,10 +15,12 @@
 #include "defs.h"
 #include "asset_types.h"
 #include "log.h"
+#include "dbtypes.h"
 
 #define DEVICE_TYPE_EPDU 3
 #define DEVICE_TYPE_PDU 4
 #define DEVICE_TYPE_UPS 1
+#define DEVICE_TYPE_SERVER 5
 
 bool is_epdu (const device_info_t &device)
 {
@@ -44,12 +46,19 @@ bool is_ups (const device_info_t &device)
         return false;
 }
 
-
+bool is_it_device (const device_info_t &device)
+{
+    auto device_type_id = std::get<3>(device);
+    // TODO add all IT devices
+    if ( device_type_id == DEVICE_TYPE_SERVER )
+        return true;
+    else
+        return false;
+}
 //TODO move to map also
-std::tuple < std::set < device_info_t >, 
-             std::set < device_info_t >, 
-             std::set < device_info_t>  >
-    doA ( std::pair < std::set < device_info_t >, 
+power_sources_t
+    doA ( const char* url,
+          std::pair < std::set < device_info_t >, 
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device )
 {
@@ -105,8 +114,8 @@ std::tuple < std::set < device_info_t >,
             // select_power_topology_to  PDU
             try{
                 auto pdu_pow_top = select_power_topology_to 
-                     (url.c_str(), std::get<0>(src_device), INPUT_POWER_CHAIN, false);
-                auto pdu_pow_srcs = doA (pdu_pow_top, src_device);
+                     (url, std::get<0>(src_device), INPUT_POWER_CHAIN, false);
+                auto pdu_pow_srcs = doA (url, pdu_pow_top, src_device);
           
                 pow_src_epdu.insert (std::get<0>(pdu_pow_srcs).begin(), std::get<0>(pdu_pow_srcs).end());
                 pow_src_ups.insert (std::get<1>(pdu_pow_srcs).begin(), std::get<1>(pdu_pow_srcs).end());
@@ -224,10 +233,31 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
             return generate_db_fail (DB_ERROR_NOTFOUND, "specified element was not found", NULL);
         if (  type_id != asset_type::RACK ) 
             return generate_db_fail (DB_ERROR_BADINPUT, "specified element is not a rack", NULL);
-        return NULL;
     }
-    catch ( bios::InternalDBError() )
+    catch (const bios::InternalDBError &e)
     {
-        return generate_db_fail(DB_ERROR_INTERNAL,"",NULL);
+        return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
+
+    // continue, select all devices in a rack
+    auto rack_devices = select_rack_devices(url, rack_element_id);
+
+    power_sources_t power_sources;
+
+    for (auto &adevice: rack_devices)
+        if ( is_it_device (adevice) )
+        {
+            auto pow_top_to = select_power_topology_to (url, std::get<0>(adevice), 
+                                                        INPUT_POWER_CHAIN, false);
+            auto new_power_srcs = doA(url, pow_top_to, adevice);
+            
+            std::get<0>(power_sources).insert ( 
+                            std::get<0>(new_power_srcs).begin(), std::get<0>(new_power_srcs).end() );
+            std::get<1>(power_sources).insert (
+                            std::get<1>(new_power_srcs).begin(), std::get<1>(new_power_srcs).end() );
+            std::get<2>(power_sources).insert (
+                            std::get<2>(new_power_srcs).begin(), std::get<2>(new_power_srcs).end() );
+        }
+
+   return NULL;
 }

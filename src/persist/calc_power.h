@@ -27,10 +27,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "assettopology.h"
 #include <set>
 #include <tuple>
-std::tuple < std::set < device_info_t >, 
-             std::set < device_info_t >, 
-             std::set < device_info_t>  >
-    doA ( std::pair < std::set < device_info_t >, 
+
+
+typedef 
+        std::tuple < std::set < device_info_t >, 
+                     std::set < device_info_t >, 
+                     std::set < device_info_t>  
+                    >
+        power_sources_t;
+
+
+
+power_sources_t doA ( const char* url,
+                      std::pair < std::set < device_info_t >, 
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device );
 #endif //SRC_PERSIST_CALC_POWER_H_
