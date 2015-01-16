@@ -79,7 +79,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) V
 /* DEVICES*/
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (8014, "pdu3_1", @ae_device, 8013); 
-INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9014, 8014, @device_epdu);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9014, 8014, @device_pdu);
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (8015, "ups3_1", @ae_device, 8013); 
 INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9015, 8015, @device_ups);
@@ -110,7 +110,7 @@ INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_d
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 9015, NULL, 9014, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 9021, NULL, 9020, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 9020, 7, 9019, 8, @id_link);
-INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 9016, NULL, 9022, 6, @id_link);
+INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type ) VALUES (NULL, 9022, NULL, 9016, 6, @id_link);
 
 /* Rack power #4 */
 
@@ -119,7 +119,7 @@ INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) V
 /* DEVICES*/
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (8024, "pdu4_1", @ae_device, 8023); 
-INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9024, 8024, @device_epdu);
+INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9024, 8024, @device_pdu);
 
 INSERT INTO t_bios_asset_element ( id_asset_element, name, id_type, id_parent) VALUES (8025, "epdu4_1", @ae_device, 8023); 
 INSERT INTO t_bios_asset_device  ( id_asset_device, id_asset_element, id_asset_device_type ) VALUES (9025, 8025, @device_epdu);
