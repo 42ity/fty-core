@@ -170,11 +170,11 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \ 
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
 
-#		src/persist/calc_power.cc \
-#		src/persist/calc_power.h 
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
@@ -356,9 +356,9 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-power-datacenter.cc \
 			tests/persist/test-topology-power-group.cc \
 			tests/persist/test-topology-location-from.cc \
-			tests/persist/test-topology-location-to.cc
+			tests/persist/test-topology-location-to.cc \
+			tests/persist/test-rack-power.cc 
 
-#			tests/persist/test-rack-power.cc 
 
 test_dbtopology_LDADD = \
 			libpriv-db.la \
