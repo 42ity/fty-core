@@ -95,8 +95,10 @@ fi
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
+CMPJSON_SH="`pwd`/cmpjson.sh"
+CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
-[ -z "$CMP" ] && CMP="`pwd`/cmpjson.sh"
+[ -z "$CMP" ] && CMP="$CMPJSON_SH"
 [ -s "$CMP" ] || exit 5
 cd web/commands
 POSITIVE=""
