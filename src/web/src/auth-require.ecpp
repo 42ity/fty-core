@@ -1,5 +1,6 @@
 <%pre>
 #include "tokens.h"
+#include "auth_levels.h"
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 
@@ -23,8 +24,8 @@ int8_t access_auth_level;
 #endif
 
 switch (access_auth_level) {
-case -1:
-case 0:
+case AUTH_LEVEL_ERROR_EMPTY:
+case AUTH_LEVEL_ANONYMOUS:
 	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
 	reply.setContentType("text/html;charset=UTF-8");
 
@@ -36,7 +37,7 @@ case 0:
 <%cpp>
 	return HTTP_UNAUTHORIZED;
 	break;
-case -2:
+case AUTH_LEVEL_ERROR_INVALID:
 	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
 </%cpp>
 {
@@ -47,7 +48,7 @@ case -2:
 	break;
 }
 
-if (access_auth_level<0) {
+if (access_auth_level<AUTH_LEVEL__MIN || access_auth_level>AUTH_LEVEL__MAX) {
 	/* Some other level of error that we do not know - mismatch with
 	    auth-verify.ecpp and/or RFC-11 definitions */
 	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
@@ -59,6 +60,6 @@ if (access_auth_level<0) {
 	return HTTP_UNAUTHORIZED;
 }
 
-/* Go on to next module in tntnet.xml */
+/* Go on to next module in tntnet.xml, user is authorized with a known level */
 return DECLINED;
 </%cpp>

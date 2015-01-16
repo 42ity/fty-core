@@ -3,9 +3,14 @@
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
+#include "auth_levels.h"
 #include "subprocess.h"
 #include <sys/utsname.h>
 #include "config.h"
+
+#ifdef DEBUG
+#include <exception>
+#endif
 
 static std::string chomp(std::string data) {
 	/* TODO: replace inner newlines by "\n" strings */
@@ -27,10 +32,21 @@ int8_t access_auth_level;
 <%cpp>
 
 #ifdef DEBUG
-	std::ostringstream os;
-	os << "access_auth_level=\"" << access_auth_level << "\"";
-	reply.setHeader( (std::string)"X-Auth-Require: ", os.str() );
-#endif
+        std::string access_auth_level_str;
+        try { // Temporary discardable output stream
+            std::ostringstream access_auth_level_os;
+            access_auth_level_os << (int)access_auth_level;
+            access_auth_level_str = access_auth_level_os.str();
+        } catch (const std::exception& e) {
+            access_auth_level_str = "decoding-error: " ;
+            access_auth_level_str += e.what();
+        }
+        access_auth_level_str = chomp(access_auth_level_str);
+
+        reply.setHeader( (std::string)"X-Auth-Require: ",
+                (std::string)"access_auth_level=\"" +
+                access_auth_level_str + "\"");
+#endif // DEBUG
 
 </%cpp>
 {
@@ -46,7 +62,8 @@ int8_t access_auth_level;
 
 </%cpp>
 <%cpp>
-	/* TODO: This currently relies on "systemd-detect-virt" - what about OSes that do not have it? */
+	/* TODO: This currently relies on "systemd-detect-virt" -
+         * so what about OSes that do not have it? */
 
 	/* Detect container virtualization */
     ret = output2({"/usr/bin/systemd-detect-virt", "-c"}, cmdout, cmderr);
@@ -75,8 +92,8 @@ int8_t access_auth_level;
 </%cpp>
       "sysname": "<$ (char*) u.sysname $>",
       "nodename" : "<$ (char*) u.nodename $>",
-      "release": "<$ (access_auth_level<1) ? UNAUTHORIZED : (char*) u.release $>",
-      "version": "<$ (access_auth_level<1) ? UNAUTHORIZED : (char*) u.version $>",
+      "release": "<$ (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.release $>",
+      "version": "<$ (access_auth_level<=AUTH_LEVEL_ANONYMOUS) ? UNAUTHORIZED : (char*) u.version $>",
       "machine": "<$ (char*) u.machine $>"
     }
   },
@@ -91,7 +108,7 @@ int8_t access_auth_level;
       /* Note that PACKAGE_VENDOR above is NOT an automake default variable,
        * we define it locally in our project configuration. */
 
-      if (access_auth_level>1) {
+      if (access_auth_level>=AUTH_LEVEL_POWERUSER) {
 #ifdef HAVE_PACKAGE_GIT
 </%cpp>
       , "source-repo": {
@@ -129,17 +146,17 @@ int8_t access_auth_level;
         }
 <%cpp>
 #endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
-      } // if (access_auth_level>1)
+      } // if (access_auth_level>=AUTH_LEVEL_POWERUSER)
 </%cpp>
       }
     ],
     "main-process-status" :
 <%cpp>
-      if (access_auth_level<1) {
+      if (access_auth_level<=AUTH_LEVEL_ANONYMOUS) {
 </%cpp>
         "<$ UNAUTHORIZED $>"
 <%cpp>
-      } else { // (access_auth_level>=1)
+      } else { // (access_auth_level>=AUTH_LEVEL_USER)
           /* The monster shell below should be parsable by about any POSIX shell
              I am less sure about capabilities of "ps" programs in constrained
              environments and/or other OSes... however for a predefined target
@@ -215,15 +232,22 @@ int8_t access_auth_level;
     ]
 <%cpp>
           } // ret == 0
-      } // if (access_auth_level>=1)
+      } // if (access_auth_level>=AUTH_LEVEL_USER)
 </%cpp>
   }
 <%cpp>
+#ifdef DEBUG
+</%cpp>
+  , "auth-level": "<$$ access_auth_level_str $>"
+<%cpp>
+#endif // DEBUG
 #if (DEBUG>1)
 </%cpp>
   , "stderr-unescaped": "<$$ chomp(cmderr_total.str()) $>"
 <%cpp>
-#endif // DEBUG
+#endif // DEBUG>1
+    /* If we've collected any errors, dump them here to tntnet's stderr or
+     * its configured errorLog (used in daemon mode only) or /dev/null ;) */
     std::cerr << cmderr_total.str();
 </%cpp>
 }
