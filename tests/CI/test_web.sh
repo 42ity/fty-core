@@ -110,6 +110,11 @@ while [ "$1" ]; do
     shift
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
+
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+set -o pipefail 2>/dev/null || true
+
 for i in $POSITIVE; do
     for NAME in *$i*; do
     SKIP=""
