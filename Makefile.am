@@ -616,8 +616,11 @@ EXTRA_DIST +=		$(exampleconf_DATA)
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
+# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+web-test-deps: tntnet.xml bios_web.la
+
 # Execute the test web-server for $BIOS REST API
-web-test: tntnet.xml bios_web.la
+web-test: web-test-deps
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
