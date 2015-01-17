@@ -1,6 +1,7 @@
 <%pre>
 #include "sasl.h"
 #include "tokens.h"
+#include <iostream>
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include <stdio.h>
@@ -17,6 +18,20 @@ std::string client_id="";
 #endif //VALID_FOR
 
 int valid = VALID_FOR;
+
+if ( ! request.isSsl() ) {
+    std::cerr << "WARNING: non-SSL Auth Request was received!";
+#ifndef DEBUG
+</%cpp>
+{
+    "error":"non_ssl_auth"
+}
+<%cpp>
+    std::cerr << "\n";
+    return HTTP_UNAUTHORIZED;
+#endif // DEBUG
+    std::cerr << " Completing the request anyway for DEBUG build...\n";
+}
 </%cpp>
 % if(grant_type != "password") {
 {
