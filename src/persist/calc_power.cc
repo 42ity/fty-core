@@ -35,6 +35,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "monitor.h"
 #include "defs.h"
 #include "asset_types.h"
+#include "compute_msg.h"
 
 bool is_epdu (const device_info_t &device)
 {
@@ -292,20 +293,20 @@ power_sources_t choose_power_sources (const char* url, std::set <device_info_t> 
     return power_sources;
 }
                      
-common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
+zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
     log_info ("start \n");
     // check if specified device has a rack type
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
-            return generate_db_fail (DB_ERROR_NOTFOUND, "specified element was not found", NULL);
+            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_NOTFOUND, "specified element was not found", NULL);
         if (  type_id != asset_type::RACK ) 
-            return generate_db_fail (DB_ERROR_BADINPUT, "specified element is not a rack", NULL);
+            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, "specified element is not a rack", NULL);
     }
     catch (const bios::InternalDBError &e)
     {
-        return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
+        return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, e.what(), NULL);
     }
 
     // continue, select all devices in a rack
@@ -316,7 +317,20 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
 
     // calc sum
     
+
+    // transform number to string
+    // ASSUMPTION: we are interested only in 4 digits
+     double value = 4.5;
+    char buff [40];
+    sprintf(buff, "%.4f", value);
+
+    zhash_t* result = zhash_new();
+    zhash_autofree (result);
+    zhash_insert (result, "value", buff);
+        
     // fill the return message
+    compute_msg_t* retmsg = compute_msg_new(COMPUTE_MSG_RETURN_COMPUTATION);
+    compute_msg_set_results (retmsg, &result);
 
     log_debug ("start to print \n");
     log_debug ("ePDU \n");

@@ -7,7 +7,6 @@
 #include "log.h"
 
 #include "assettopology.h"
-#include "common_msg.h"
 #include "assetmsg.h"
 #include "calc_power.h"
 
@@ -53,8 +52,8 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 
     log_info ("=============== RACK POWER #1 ==================\n");
     
-    common_msg_t* res = calc_total_rack_power (url.c_str(), 8000);
-    common_msg_destroy (&res);
+    zmsg_t* res = calc_total_rack_power (url.c_str(), 8000);
+    zmsg_destroy (&res);
 
 
     log_close();
@@ -67,8 +66,8 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 
     log_info ("=============== RACK POWER #2 ==================\n");
     
-    common_msg_t* res = calc_total_rack_power (url.c_str(), 8006);
-    common_msg_destroy (&res);
+    zmsg_t* res = calc_total_rack_power (url.c_str(), 8006);
+    zmsg_destroy (&res);
 
 
     log_close();
@@ -81,8 +80,8 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql][trp3]")
 
     log_info ("=============== RACK POWER #3 ==================\n");
     
-    common_msg_t* res = calc_total_rack_power (url.c_str(), 8013);
-    common_msg_destroy (&res);
+    zmsg_t* res = calc_total_rack_power (url.c_str(), 8013);
+    zmsg_destroy (&res);
 
 
     log_close();
@@ -95,8 +94,8 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql][trp4]")
 
     log_info ("=============== RACK POWER #4 ==================\n");
     
-    common_msg_t* res = calc_total_rack_power (url.c_str(), 8023);
-    common_msg_destroy (&res);
+    zmsg_t* res = calc_total_rack_power (url.c_str(), 8023);
+    zmsg_destroy (&res);
 
 
     log_close();

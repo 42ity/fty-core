@@ -128,5 +128,5 @@ power_sources_t
 
 
 
-common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
+zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_
