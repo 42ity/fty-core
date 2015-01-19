@@ -194,6 +194,8 @@ libpriv_proto_la_SOURCES = \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
 			src/include/nmap_msg.h \
+			src/include/compute_msg.c \
+			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
