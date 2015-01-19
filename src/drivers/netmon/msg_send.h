@@ -47,7 +47,7 @@ netmon_msg_send (
     const char *ipaddr,
     uint8_t prefixlen,
     const char *mac,
-    void *socket);
+    void *client);
 
 #ifdef __cplusplus
 }
