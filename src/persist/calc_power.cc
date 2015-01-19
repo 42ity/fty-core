@@ -314,6 +314,10 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
     // find all power sources for in-rack devices
     power_sources_t power_sources = choose_power_sources(url, rack_devices);
 
+    // calc sum
+    
+    // fill the return message
+
     log_debug ("start to print \n");
     log_debug ("ePDU \n");
     for (auto &adevice: std::get<0>(power_sources))

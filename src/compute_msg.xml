@@ -14,13 +14,12 @@
 
 <message name = "get_computation">
     <field name="module_name" type="string">Name of the computational module</field>
-    <field name="args" type="strings">A list of arguments for computation</field>
-    <field name="params" type="strings">A list of module parameters</field>
+    <field name="args" type="hash">A list of arguments for computation</field>
+    <field name="params" type="hash">A list of module parameters</field>
 </message>
 
 <message name = "return_computation">
-    <field name="results" type="strings">List of numerical results according to the list of parameters</field>
-    <field name="comment" type="strings">List of nonnumerical results according to the list of paramenters.</field>
+    <field name="results" type="hash">List of results according to the list of parameters</field>
 </message>
 
 </class>
