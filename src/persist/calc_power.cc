@@ -217,6 +217,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
                                 device_type_name, device_type_id));
         }
         log_info ("end\n");
+        // TODO
         // result_set is empty if:
         //  - someone removed a rack from DB (but this should never happen)
         //  - there is no any device in a rack
@@ -262,6 +263,34 @@ a_elmnt_tp_id_t select_element_type (const char* url,
         throw bios::InternalDBError(e.what());
     }
 }
+
+
+power_sources_t choose_power_sources (const char* url, std::set <device_info_t> rack_devices)
+{
+    power_sources_t power_sources;
+
+    for (auto &adevice: rack_devices)
+        if ( is_it_device (adevice) )
+        {
+            auto pow_top_to = select_power_topology_to (url, std::get<0>(adevice), 
+                                                        INPUT_POWER_CHAIN, false);
+            auto new_power_srcs = extract_power_sources(url, pow_top_to, adevice);
+            
+            // in V1 if power_source should be taken in account iff it is in rack
+            for ( auto &bdevice: std::get<0>(new_power_srcs) )
+                if ( rack_devices.count(bdevice) == 1 )
+                    std::get<0>(power_sources).insert (bdevice); 
+            
+            for ( auto &bdevice: std::get<1>(new_power_srcs) )
+                if ( rack_devices.count(bdevice) == 1 )
+                    std::get<1>(power_sources).insert (bdevice);
+            
+            for ( auto &bdevice: std::get<2>(new_power_srcs) )
+                if ( rack_devices.count(bdevice) == 1 )
+                    std::get<2>(power_sources).insert (bdevice);
+        }
+    return power_sources;
+}
                      
 common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
@@ -282,31 +311,21 @@ common_msg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_
     // continue, select all devices in a rack
     auto rack_devices = select_rack_devices(url, rack_element_id);
 
-    power_sources_t power_sources;
+    // find all power sources for in-rack devices
+    power_sources_t power_sources = choose_power_sources(url, rack_devices);
 
-    for (auto &adevice: rack_devices)
-        if ( is_it_device (adevice) )
-        {
-            auto pow_top_to = select_power_topology_to (url, std::get<0>(adevice), 
-                                                        INPUT_POWER_CHAIN, false);
-            auto new_power_srcs = extract_power_sources(url, pow_top_to, adevice);
-            
-            std::get<0>(power_sources).insert ( 
-                            std::get<0>(new_power_srcs).begin(), std::get<0>(new_power_srcs).end() );
-            std::get<1>(power_sources).insert (
-                            std::get<1>(new_power_srcs).begin(), std::get<1>(new_power_srcs).end() );
-            std::get<2>(power_sources).insert (
-                            std::get<2>(new_power_srcs).begin(), std::get<2>(new_power_srcs).end() );
-        }
     log_debug ("start to print \n");
+    log_debug ("ePDU \n");
     for (auto &adevice: std::get<0>(power_sources))
     {
         log_debug ("%d \n", std::get<0>(adevice));
     }
+    log_debug ("UPS \n");
     for (auto &adevice: std::get<1>(power_sources))
     {
         log_debug ("%d \n", std::get<0>(adevice));
     }
+    log_debug ("IT devices \n");
     for (auto &adevice: std::get<2>(power_sources))
     {
         log_debug ("%d \n", std::get<0>(adevice));
