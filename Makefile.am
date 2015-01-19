@@ -458,7 +458,7 @@ netmon_LDADD = \
 			libpriv-proto.la \
 			libpriv-utils.la
 
-netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
+netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
 bin_PROGRAMS += 	simple server-agent db-ng
 
