@@ -1,7 +1,9 @@
 #ifndef SRC_PERSIST_PERSISTENCELOGIC_H_
 #define SRC_PERSIST_PERSISTENCELOGIC_H_
 
-#include "czmq.h"
+#include <czmq.h>
+
+// To be deleted - we should be fine with just zmsg_t
 #include "netdisc_msg.h"
 #include "powerdev_msg.h"
 #include "common_msg.h"
@@ -12,10 +14,16 @@
 namespace persist {
 
 /**
- * \brief Processes the network discovery messages.
+ * \brief Basic message processing function
  *
- * \return true if processing was successful and false if message was bad
+ * Highest level abstraction for persistence layer. Consumes one message which
+ * it destroys as well and if there is a need for any reply, it will return it,
+ * otherwise returns nullptr.
+ *
  */
+zmsg_t* process_message(zmsg_t** msg);
+
+// List of obsolete functions deemed to die
 bool
 process_message(const std::string& url, zmsg_t *msg);
 
