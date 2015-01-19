@@ -3,22 +3,15 @@
 #include <ctime>
 #include "nut-driver.h"
 #include "powerdev_msg.h"
-//#include "measure_types.h"
 #include "common_msg.h"
 #include "defs.h"
 #include "log.h"
 #include "upsstatus.h"
 
 using namespace drivers::nut;
-/*
-namespace drivers
-{
-namespace nut
-{
-*/
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
-#define NUT_MESSAGE_REPEAT_AFTER 60
+#define NUT_MESSAGE_REPEAT_AFTER 300
 // TODO: read this from configuration (check with upsd ever 5s)
 #define NUT_POLLING_INTERVAL  5000
 
@@ -250,10 +243,6 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
     }
 }
 
-// we know that *args param in nut_actor() is unused parameter
-//#pragma GCC diagnostic push
-//#pragma GCC diagnostic ignored "-Wunused-parameter"
-
 /**
  * \brief main nut-driver loop. Checks NUT every 5 second for changes.
  *        detected changes are propagated immediatelly. Once in
@@ -346,9 +335,4 @@ int main(int argc, char *argv[] ) {
     return 0;
 }
 
-//#pragma GCC diagnostic pop
 
-/*
-} // namespace drivers::nut
-} // namespace drivers
-*/
