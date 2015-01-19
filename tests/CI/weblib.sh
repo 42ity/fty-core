@@ -76,7 +76,7 @@ _api_get_token() {
     _RES_=0
     if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
 	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
-	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true"
+	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
 	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
 	echo "=== DEBUG: weblib.sh: got ($_RES_) new token '$_TOKEN_'" >&2
