@@ -1,6 +1,7 @@
 <%pre>
 #include "sasl.h"
 #include "tokens.h"
+#include <string>
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include <stdio.h>
@@ -10,6 +11,7 @@ std::string grant_type="";
 std::string username="";
 std::string password="";
 std::string client_id="";
+std::string grant_reset="";
 </%args>
 <%cpp>
 #ifndef VALID_FOR
@@ -23,9 +25,19 @@ int valid = VALID_FOR;
     "error":" unsupported_grant_type"
 }
 % } else {
-% if(authenticate(username.c_str(), password.c_str())) {
+<%cpp>
+    if(authenticate(username.c_str(), password.c_str())) {
+    std::string aToken;
+    if(grant_reset == "true") {
+	// Token is based on a fresh timestamp (one-second precision)
+	aToken = tokens::get_instance(true)->gen_token(valid, false);
+    } else {
+	// Token is based on a timestamp rounded to ROUND(=60) seconds
+	aToken = tokens::get_instance()->gen_token(valid, true);
+    }
+</%cpp>
 {
-    "access_token":"<$ tokens::get_instance()->gen_token(valid) $>",
+    "access_token":"<$$ aToken $>",
     "token_type":"bearer",
     "expires_in":<$ valid $>
 }
