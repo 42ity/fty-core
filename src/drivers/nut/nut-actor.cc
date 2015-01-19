@@ -252,7 +252,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
 int main(int argc, char *argv[] ) {
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("%s", "nut_driver start\n");
+    log_info ("%s", "driver-nut started\n");
 
     NUTDeviceList listOfUPS;
     bool advertise;
@@ -260,19 +260,13 @@ int main(int argc, char *argv[] ) {
     std::time_t timestamp = std::time(NULL);
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
 
-    mlm_client_t *bcast = mlm_client_new(addr, 1000, "NUT0");
-    if (!bcast) {
-        log_error ("nut-agent: server not reachable at ipc://@/malamute\n");
+    mlm_client_t *client = mlm_client_new(addr, 1000, "NUT");
+    if (!client) {
+        log_error ("driver-nut: server not reachable at ipc://@/malamute\n");
         return 1;
     }
-    mlm_client_set_producer(bcast,"measurements");
-    mlm_client_t *persistence = mlm_client_new(addr, 1000, "NUT1");
-    if (!persistence) {
-        log_error ("nut-agent: server not reachable at ipc://@/malamute\n");
-        return 1;
-    }
+    mlm_client_set_producer(client,"measurements");
     while(!zsys_interrupted) {
-        //log_debug ("nut-agent: processing upses\n"); 
         if( timestamp + NUT_MESSAGE_REPEAT_AFTER < time(NULL) ) {
             // timestamp + NUT_MESSAGE_REPEAT_AFTER is in past
             advertise = true;
@@ -288,14 +282,10 @@ int main(int argc, char *argv[] ) {
                 // something has changed or we should advertise status
                 // go trough measurements
                 for(auto &measurement : it->second.physics( ! advertise ) ) {
-                    //mlm_client_set_producer(client, "");
-                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true, persistence);
+                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true, client);
                     if(msg) {
                         log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
-                        //mlm_client_sendto(client,"persistence","persistence",NULL,0,&msg);
-                        mlm_client_send(bcast,deviceID.c_str(),&msg);
-                        //zmsg_t *reply = mlm_client_recv(client);
-                        //zmsg_destroy(&reply);
+                        mlm_client_send(client,deviceID.c_str(),&msg);
                     }
                     zmsg_destroy(&msg);
                 }
@@ -303,13 +293,10 @@ int main(int argc, char *argv[] ) {
                 if( it->second.hasProperty("status") && ( advertise || it->second.changed("status") ) ) {
                     std::string status_s = it->second.property("status");
                     uint16_t    status_i = shared::upsstatus_to_int( status_s );
-                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false, persistence);
+                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false, client);
                     if(msg) {
                         log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
-                        //mlm_client_sendto(client,"persistence","persistence",NULL,0,&msg);
-                        mlm_client_send(bcast,deviceID.c_str(),&msg);
-                        //zmsg_t *reply = mlm_client_recv(client);
-                        //zmsg_destroy(&reply);
+                        mlm_client_send(client,deviceID.c_str(),&msg);
                     }
                     zmsg_destroy(&msg);
                 }
@@ -318,7 +305,7 @@ int main(int argc, char *argv[] ) {
                 if(msg) {
                     log_debug ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
                     //mlm_client_sendto(client,"persistence","persistence",NULL,0,&msg);
-                    mlm_client_send(bcast,deviceID.c_str(),&msg);
+                    mlm_client_send(client,deviceID.c_str(),&msg);
                     //zmsg_t *reply = mlm_client_recv(client);
                     //zmsg_destroy(&reply);
                }
@@ -326,12 +313,10 @@ int main(int argc, char *argv[] ) {
                 it->second.setChanged(false);
             }
         }
-        // if( ! zsys_interrupted )
-        zclock_sleep(NUT_POLLING_INTERVAL);
+        if( ! zsys_interrupted ) zclock_sleep(NUT_POLLING_INTERVAL);
     }
-    mlm_client_destroy(&bcast);
-    mlm_client_destroy(&persistence);
-    log_info ("%s", "nut_actor end\n");
+    mlm_client_destroy(&client);
+    log_info ("driver-nut ended\n");
     return 0;
 }
 
