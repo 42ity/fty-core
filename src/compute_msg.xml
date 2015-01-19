@@ -1,0 +1,26 @@
+<!-- see https://github.com/zeromq/zproto/blob/master/src/zproto_example.xml -->
+<class
+    name = "compute_msg"
+    signature = "10"
+    title = "compute messages"
+    script = "zproto_codec_c_v1"
+    package_dir = "."
+    include = "czmq.h"
+    >
+
+<include filename = "license.xml" />
+
+<define name = "VERSION" value = "1.0" />
+
+<message name = "get_computation">
+    <field name="module_name" type="string">Name of the computational module</field>
+    <field name="args" type="strings">A list of arguments for computation</field>
+    <field name="params" type="strings">A list of module parameters</field>
+</message>
+
+<message name = "return_computation">
+    <field name="results" type="strings">List of numerical results according to the list of parameters</field>
+    <field name="comment" type="strings">List of nonnumerical results according to the list of paramenters.</field>
+</message>
+
+</class>
