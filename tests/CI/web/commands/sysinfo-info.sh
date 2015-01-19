@@ -334,4 +334,3 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
 #    [ x"$SYSINFOA_WT_P" = x"$SYSINFOA" ]
 #    print_result $?
 fi
-
