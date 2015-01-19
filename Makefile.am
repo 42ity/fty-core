@@ -171,7 +171,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
 			src/persist/calc_power.cc \
-			src/persist/calc_power.h \ 
+			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
 
@@ -376,6 +376,31 @@ test_dbtopology_CPPFLAGS = \
 			-I$(top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+#### total power tests
+bin_PROGRAMS += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc 
+
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
