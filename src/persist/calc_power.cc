@@ -317,8 +317,10 @@ int convert_str_to_double (const char* value_str, double *value)
 
 void compute_result_value_set (zhash_t *results, double value)
 {
+    log_debug ("value is %f \n", value);
     char buff[20];
     sprintf(buff, "%f", value);
+    log_debug ("converted value is %s \n", buff);
     zhash_insert (results, "value_d", buff);
 }
 
@@ -332,27 +334,33 @@ int compute_result_value_get (zhash_t *results, double *value)
 void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
+    log_debug ("value is %ld \n", value);
     char buff[21];
     sprintf(buff, "%ld", value);
     zhash_insert (results, "value", buff);
+    log_debug ("converted value is %s \n", buff);
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value");
+    log_debug ("In hash there is %s value \n", value_str);
     int r = sscanf(value_str ,"%ld", value);
+    log_debug ("Converted value is %ld \n", *value);
     return r;
 }
 
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
+    log_debug ("scale is %d \n", scale);
     char buff[21];
     sprintf(buff, "%d", scale);
     zhash_insert (results, "scale", buff);
+    log_debug ("converted scale is %s \n", buff);
 }
 
-int compute_result_value_get (zhash_t *results, m_msrmnt_scale_t *scale)
+int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
     int r = sscanf(value_str ,"%d", scale);
@@ -396,9 +404,17 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     compute_result_value_set (result, value);
     compute_result_scale_set (result, scale);
     
+
+    m_msrmnt_scale_t scale_get = 8;
+    m_msrmnt_value_t value_get = 88;
+    int r = compute_result_value_get (result, &value_get);
+    int r1 = compute_result_scale_get (result, &scale_get);
+   
+    log_debug("errcode: %d, this is value: %ld \n", r, value_get);
+    log_debug("errcode: %d, this is scale: %d \n", r1, scale_get);
+    
     // fill the return message
-    compute_msg_t* retmsg = compute_msg_new(COMPUTE_MSG_RETURN_COMPUTATION);
-    compute_msg_set_results (retmsg, &result);
+    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
 
     log_debug ("start to print \n");
     log_debug ("ePDU \n");
@@ -417,5 +433,5 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
         log_debug ("%d \n", std::get<0>(adevice));
     }
     log_info ("end \n");
-    return NULL;
+    return retmsg;
 }

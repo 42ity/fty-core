@@ -194,7 +194,7 @@ int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value);
 
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale);
 
-int compute_result_value_get (zhash_t *results, m_msrmnt_scale_t *scale);
+int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale);
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_
