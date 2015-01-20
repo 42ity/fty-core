@@ -27,15 +27,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/value.h>
 #include <tntdb/result.h>
 
-#include "calc_power.h"
-#include "dbpath.h"
 #include "log.h"
+#include "defs.h"
+#include "asset_types.h"
 #include "persist_error.h"
 
 #include "monitor.h"
-#include "defs.h"
-#include "asset_types.h"
-#include "compute_msg.h"
+#include "calc_power.h"
 
 bool is_epdu (const device_info_t &device)
 {
@@ -265,19 +263,21 @@ a_elmnt_tp_id_t select_element_type (const char* url,
     }
 }
 
-
-power_sources_t choose_power_sources (const char* url, std::set <device_info_t> rack_devices)
+power_sources_t choose_power_sources (const char* url, 
+                                        std::set <device_info_t> rack_devices)
 {
     power_sources_t power_sources;
 
     for (auto &adevice: rack_devices)
         if ( is_it_device (adevice) )
         {
-            auto pow_top_to = select_power_topology_to (url, std::get<0>(adevice), 
-                                                        INPUT_POWER_CHAIN, false);
-            auto new_power_srcs = extract_power_sources(url, pow_top_to, adevice);
+            auto pow_top_to = select_power_topology_to 
+                        (url, std::get<0>(adevice), INPUT_POWER_CHAIN, false);
+            auto new_power_srcs = extract_power_sources
+                        (url, pow_top_to, adevice);
             
-            // in V1 if power_source should be taken in account iff it is in rack
+            // in V1 if power_source should be taken in account iff 
+            // it is in rack
             for ( auto &bdevice: std::get<0>(new_power_srcs) )
                 if ( rack_devices.count(bdevice) == 1 )
                     std::get<0>(power_sources).insert (bdevice); 
@@ -292,7 +292,73 @@ power_sources_t choose_power_sources (const char* url, std::set <device_info_t> 
         }
     return power_sources;
 }
-                     
+
+int convert_str_to_double (const char* value_str, double *value)
+{
+    if ( value_str == NULL )
+        return -1;
+    else
+    {
+        char *p;
+        errno = 0; // strtod could change this value
+        *value = strtod(value_str, &p);
+        
+        // (p == vulue_str) detects if the input string was empty
+        if ( ( p == value_str ) || ( *p != '\0' ) )
+            return -3;
+        // Value is ok, if pointer points to the end of the string
+
+        if ( errno == ERANGE ) // the value is out of range
+            return -2;
+
+        return 0;
+    }
+}
+
+void compute_result_value_set (zhash_t *results, double value)
+{
+    char buff[20];
+    sprintf(buff, "%f", value);
+    zhash_insert (results, "value_d", buff);
+}
+
+int compute_result_value_get (zhash_t *results, double *value)
+{
+    char* value_str = (char *) zhash_lookup (results, "value_d");
+    int r = convert_str_to_double (value_str, value);
+    return r;
+}
+
+void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
+{
+    // 21 = 20+1 , 20 charecters has a uint64_t
+    char buff[21];
+    sprintf(buff, "%ld", value);
+    zhash_insert (results, "value", buff);
+}
+
+int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
+{
+    char* value_str = (char *) zhash_lookup (results, "value");
+    int r = sscanf(value_str ,"%ld", value);
+    return r;
+}
+
+void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
+{
+    // 21 = 20+1 , 20 charecters has a uint64_t
+    char buff[21];
+    sprintf(buff, "%d", scale);
+    zhash_insert (results, "scale", buff);
+}
+
+int compute_result_value_get (zhash_t *results, m_msrmnt_scale_t *scale)
+{
+    char* value_str = (char *) zhash_lookup (results, "scale");
+    int r = sscanf(value_str ,"%d", scale);
+    return r;
+}
+
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
     log_info ("start \n");
@@ -300,13 +366,16 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
-            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_NOTFOUND, "specified element was not found", NULL);
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                    "specified element was not found", NULL);
         if (  type_id != asset_type::RACK ) 
-            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, "specified element is not a rack", NULL);
+            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+                                    "specified element is not a rack", NULL);
     }
     catch (const bios::InternalDBError &e)
     {
-        return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, e.what(), NULL);
+        return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                    e.what(), NULL);
     }
 
     // continue, select all devices in a rack
@@ -319,15 +388,14 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     
 
     // transform number to string
-    // ASSUMPTION: we are interested only in 4 digits
-     double value = 4.5;
-    char buff [40];
-    sprintf(buff, "%.4f", value);
+    m_msrmnt_scale_t scale = -1;
+    m_msrmnt_value_t value = 999993;
 
     zhash_t* result = zhash_new();
     zhash_autofree (result);
-    zhash_insert (result, "value", buff);
-        
+    compute_result_value_set (result, value);
+    compute_result_scale_set (result, scale);
+    
     // fill the return message
     compute_msg_t* retmsg = compute_msg_new(COMPUTE_MSG_RETURN_COMPUTATION);
     compute_msg_set_results (retmsg, &result);

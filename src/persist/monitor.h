@@ -31,6 +31,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // !!!!!!!!!                ATTENTION           !!!!!!!!!!!!!!!!!!
 // Date is always UTC time as UNIX_TIMESTAMP.
 
+void generate_measurements (const char         *url, 
+                            m_clnt_id_t        client_id, 
+                            m_dvc_id_t         device_id, 
+                            m_msrmnt_tp_id_t   type_id, 
+                            m_msrmnt_sbtp_id_t subtype_id,
+                            uint32_t max_seconds);
+
 // ===============================================================
 // Helper common functions
 // ===============================================================

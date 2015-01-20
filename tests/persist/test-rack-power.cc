@@ -8,6 +8,7 @@
 
 #include "assettopology.h"
 #include "assetmsg.h"
+#include "monitor.h"
 #include "calc_power.h"
 
 
@@ -45,12 +46,24 @@ TEST_CASE("Rack power #0","[db][power][rack][calc][rack_power.sql]")
     
 }
 
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][wwww]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
-
+    log_set_level(LOG_DEBUG);
     log_info ("=============== RACK POWER #1 ==================\n");
+    m_clnt_id_t         client_id  = 2; // mymodule
+    m_msrmnt_tp_id_t    type_id    = 3;
+    m_msrmnt_sbtp_id_t  subtype_id = 1;
+
+    std::set <m_dvc_id_t> ids;
+    ids.insert(convert_asset_to_monitor(url.c_str(), 8003));
+    ids.insert(convert_asset_to_monitor(url.c_str(), 8004));
+    ids.insert(convert_asset_to_monitor(url.c_str(), 8005));
+    ids.insert(convert_asset_to_monitor(url.c_str(), 8002));
+    ids.insert(convert_asset_to_monitor(url.c_str(), 8001));
+    for ( auto &device_id: ids )
+       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300);
+    
     
     zmsg_t* res = calc_total_rack_power (url.c_str(), 8000);
     zmsg_destroy (&res);

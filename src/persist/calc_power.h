@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tuple>
 
 #include "common_msg.h"
+#include "compute_msg.h"
 #include "dbtypes.h"
 
 #include "assettopology.h"
@@ -103,16 +104,18 @@ bool is_it_device (const device_info_t &device);
 
 //TODO move device_info_t to map
 /**
- * \brief Extracts power sources from power topology and sort them by device type into three cathegories.
+ * \brief Extracts power sources from power topology and sort them by device 
+ * type into three cathegories.
  *
- * \param url - connection to a database
- * \param power_topology - a power topology represented as a pair (set of devices + set of powelinks)
- * \param start_device - a device we look sources for
+ * \param url            - connection to a database.
+ * \param power_topology - a power topology represented as a pair (set of 
+ *                            devices + set of powelinks).
+ * \param start_device   - a device we look sources for.
  *
  * \result a tuple:
- *              first  - set of epdu
- *              second - set of ups
- *              third  - set of devices
+ *              first  - set of epdu.
+ *              second - set of ups.
+ *              third  - set of devices.
  */
 power_sources_t
     extract_power_sources ( const char* url,
@@ -121,12 +124,77 @@ power_sources_t
           device_info_t start_device );
 
 
+/**
+ * \brief Selects devices from database that are placed in the specified rack.
+ *
+ * throw bios::InternalDBError;
+ *
+ * \param url     - connection to database.
+ * \param rack_id - id of the rack we look devices belong to.
+ *
+ * \return a set of devices placed in the rack.
+ */
+std::set <device_info_t> select_rack_devices(const char* url, 
+                                             a_elmnt_id_t rack_id);
+
+/**
+ * \brief For a specified asset element selects is type.
+ *
+ * throw bios::InternalDBError;
+ *
+ * \param url              - connection to database.
+ * \param asset_element_id - id of the asset element.
+ *
+ * \return 0  - if nothing was found.
+ *         id - type id of found asset.
+ */
+a_elmnt_tp_id_t select_element_type (const char* url, 
+                                     a_elmnt_id_t asset_element_id);
 
 
+/**
+ * \brief For every PSU (power supply unit) of every device selects 
+ * a power device.
+ *
+ * \param url - connection to database.
+ * \param rackdevices - a set of all devices contained in some rack.
+ *
+ * \return sources devided by its types.
+ */
+power_sources_t choose_power_sources (const char* url, 
+                                   std::set <device_info_t> rack_devices);
 
 
+/**
+ * \brief Converts a c-string to double and indicate possible errors
+ *
+ * Changes a global variable errno if value is out of range
+ *
+ * \param value_str - a number in a string format
+ * \param value     - an output parameter for double value
+ *
+ * \result 0 - success
+ *         -1 a NULL pointer was recieved as an input string
+ *         -2 a srting is a number, but  is out of the range (1.7E +/- 308)
+ *         -3 it is not a number
+ */
+int convert_str_to_double (const char* value_str, double *value);
 
 
+void compute_result_value_set (zhash_t *results, double value);
+
+
+int compute_result_value_get (zhash_t *results, double *value);
+
+
+void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value);
+
+
+int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value);
+
+void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale);
+
+int compute_result_value_get (zhash_t *results, m_msrmnt_scale_t *scale);
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_

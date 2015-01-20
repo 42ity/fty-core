@@ -1233,6 +1233,85 @@ common_msg_t* insert_device(const char* url, const char* device_type_name,
 /////////////////           MEASUREMENT              ///////////////////
 ////////////////////////////////////////////////////////////////////////
 
+
+common_msg_t* test_insert_measurement(const char         *url, 
+                                 m_clnt_id_t        client_id, 
+                                 m_dvc_id_t         device_id, 
+                                 m_msrmnt_tp_id_t   type_id, 
+                                 m_msrmnt_sbtp_id_t subtype_id, 
+                                 m_msrmnt_value_t   value,
+                                 uint32_t seconds)
+{
+    log_info ("%s \n", "start");
+    assert ( client_id );    // is required
+    assert ( device_id );    // is required (if not device was measured, 
+                             // then use "dummy_monitor_device") 
+    assert ( type_id );      // is required
+    assert ( subtype_id );   // is required
+
+    m_msrmnt_id_t n     = 0;     // number of rows affected.
+    m_msrmnt_id_t newid = 0;
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+
+        tntdb::Statement st = conn.prepareCached(
+            " INSERT INTO"
+            " v_bios_client_info_measurements"
+            "   (id, id_client, id_discovered_device, id_key,"
+            "    id_subkey, value, timestamp)"
+            " VALUES"
+            "   (NULL, :clientid, :deviceid, :keytagid, :subkeytagid,"
+            "   :val, DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND))" // TODO
+        );
+    
+        // Insert one row or nothing
+        // TODO set
+        n  = st.set("clientid", client_id).
+                set("deviceid", device_id).
+                set("keytagid", type_id).
+                set("subkeytagid", subtype_id).
+                set("val", value).
+                set("seconds", seconds).
+                execute();
+        // TODO use apropriate format strings
+        log_info ("was inserted %ld rows\n", n);
+
+        newid = conn.lastInsertId();
+    }
+    catch (const std::exception &e) {
+        log_warning ("abnormal end with %s \n", e.what());
+        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+    }
+    if ( n == 1 )
+    {
+        log_info ("normal %s \n", "end");
+        return generate_ok (newid);
+    }
+    else
+    {
+        // TODO need to return existing ID????
+        log_info ("nothing was inserted %s \n", "end");
+        return generate_db_fail (DB_ERROR_NOTHINGINSERTED, 
+                                                "nothing was inserted", NULL);
+    }
+}
+
+
+void generate_measurements (const char         *url, 
+                            m_clnt_id_t        client_id, 
+                            m_dvc_id_t         device_id, 
+                            m_msrmnt_tp_id_t   type_id, 
+                            m_msrmnt_sbtp_id_t subtype_id,
+                            uint32_t max_seconds)
+{
+    auto ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
+    
+    for ( int i = 1; i <= 10 ; i++ )
+        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, i, max_seconds - i);
+}
+
+
 common_msg_t* insert_measurement(const char         *url, 
                                  m_clnt_id_t        client_id, 
                                  m_dvc_id_t         device_id, 
