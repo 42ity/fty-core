@@ -485,6 +485,10 @@ db_ng_LDADD = \
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
+# TODO: remove simple at the end
+EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
+			$(top_srcdir)/tools/dbinit.h
+
 dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
 			src/simple/asset_types.h \
