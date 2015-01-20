@@ -7,6 +7,10 @@
 
 <%cpp>
     std::vector<persist::NetHistory> nets = persist::NetHistory::getHistory(url);
+
+    // Silence the warning about unused "request" variable
+    request.keepAlive();
+
 </%cpp>
 {
     "networks": [
