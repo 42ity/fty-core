@@ -148,7 +148,6 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
     std::string typeName = "" , subtypeName = "";
     std::size_t i = name.find(".");
     zsock_t *pipe = mlm_client_msgpipe(client);
-    zpoller_t *poller = zpoller_new(pipe, NULL);
     if( i ) {
         typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
@@ -201,7 +200,6 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
     } else {
         log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
     }
-    zpoller_destroy(&poller);
     return ID;
 }
 
