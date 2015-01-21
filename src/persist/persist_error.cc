@@ -40,7 +40,12 @@ namespace bios
     }
 
     ElementIsNotDevice::ElementIsNotDevice()
-    : BiosError("An element is not a device")
+    : BiosError("Specified element is not a device")
     { 
+    }
+
+    MonitorCounterpartNotFound::MonitorCounterpartNotFound()
+    :BiosError("For specified device monitor counterpart was not found")
+    {
     }
 }

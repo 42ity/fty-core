@@ -38,7 +38,7 @@ std::string dev;
             return HTTP_BAD_REQUEST;
         }
         zmsg_t *req = common_msg_encode_get_last_measurements(id);
-        zmsg_t *rep = _get_last_measurements(&req);
+        zmsg_t *rep = get_last_measurements(&req);
         if(!is_common_msg(rep)){
 </%cpp>
 { "error":"internal_error" }
