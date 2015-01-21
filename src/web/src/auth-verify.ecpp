@@ -24,7 +24,12 @@ access_auth_level=AUTH_LEVEL_ANONYMOUS;
 std::string access_auth_level_passedBy = "none";
 #endif // DEBUG
 
+/* Fix back the "pluses" that could be changed into "spaces" by query
+ * parameter parser. Tokens in headers should be correct anyhow. */
+std::replace( access_token.begin(), access_token.end(), ' ', '+' );
+
 if(request.hasHeader(tnt::httpheader::authorization)) {
+	/* Auth header overrides GET/POST parameters even if header is wrong */
 	access_token = request.getHeader(tnt::httpheader::authorization);
 
 	if(access_token.compare(0,7,"Bearer ")) {
@@ -59,6 +64,7 @@ if(request.hasHeader(tnt::httpheader::authorization)) {
 
 /* We can get the token from header, or from GET or POST request args */
 if(!access_token.empty()) {
+
 	/* Per RFC-11, we currently implement one access level,
 	    that of a power-user == 2 */
 	access_auth_level=AUTH_LEVEL_POWERUSER;
