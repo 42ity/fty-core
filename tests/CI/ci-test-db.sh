@@ -40,6 +40,14 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
+BUILDSUBDIR=$CHECKOUTDIR
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+if [ ! -x "$BUILDSUBDIR/config.status" ]; then
+    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "Search path: $CHECKOUTDIR, $PWD"
+    exit 1
+fi
+
 set -u
 set -e
 
@@ -58,7 +66,7 @@ mysql -u root < "$DB_LOADDIR/$DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
-make test-db && ./test-db
+make -C "$BUILDSUBDIR" test-db && "$BUILDSUBDIR"/test-db
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db failed"
@@ -66,7 +74,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 echo "-------------------- test-db2 --------------------"
-make test-db2 && ./test-db2
+make -C "$BUILDSUBDIR" test-db2 && "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db2 failed"
@@ -74,14 +82,14 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 
-make test-dbtopology
+make -C "$BUILDSUBDIR" test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
     mysql -u root < "$DB_LOADDIR/$DB_BASE"
     mysql -u root < "$DB_LOADDIR/$P"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
-    ./test-dbtopology "[$P]"
+    "$BUILDSUBDIR"/test-dbtopology "[$P]"
     if [ "$?" != 0 ] ; then
         echo "----------------------------------------"
         echo "ERROR: test-dbtopology $P failed"
