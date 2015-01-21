@@ -12,41 +12,7 @@
 #include "calc_power.h"
 
 
-TEST_CASE("Rack power #0","[db][power][rack][calc][rack_power.sql]")
-{
-    log_open();
-//    log_set_level(LOG_DEBUG);
-
-    log_info ("=============== RACK POWER #0 ==================\n");
-    auto t = select_power_topology_to (url.c_str(), 8003, 1, false);
-
-    auto devices = t.first;
-
-    REQUIRE (std::get<0>(*devices.begin()) == 8001 );
-
-    auto b = extract_power_sources (url.c_str(), t, std::make_tuple (8003, "","", 5) );
-    
-    log_debug( "start epdu \n");
-    for ( auto &adevice : std::get<0>(b))
-    {
-        printf ("%d \n",std::get<0>(adevice));
-    }
-    log_debug( "start ups \n");
-    for ( auto &adevice : std::get<1>(b))
-    {
-        printf ("%d \n",std::get<0>(adevice));
-    }
-
-    log_debug( "start device \n");
-    for ( auto &adevice : std::get<2>(b))
-    {
-        printf ("%d \n",std::get<0>(adevice));
-    }
-    log_close();
-    
-}
-
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][wwww]")
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
@@ -92,7 +58,6 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][wwww]")
     REQUIRE ( num_missed == 0 );
 
     zmsg_destroy (&res);
-
     log_close();
 }
 
@@ -146,19 +111,16 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
     REQUIRE ( !rv2 );
-
     
     REQUIRE ( value == expected_value );
     REQUIRE ( scale == -1 );
     REQUIRE ( num_missed == 0 );
 
     zmsg_destroy (&res);
-
-
     log_close();
-    
 }
-TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql][trp3]")
+
+TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
   //  log_set_level(LOG_DEBUG);
@@ -211,21 +173,19 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql][trp3]")
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
     REQUIRE ( !rv2 );
-
     
     REQUIRE ( value == expected_value );
     REQUIRE ( scale == -1 );
     REQUIRE ( num_missed == 0 );
 
     zmsg_destroy (&res);
-
     log_close();
-    
 }
-TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql][trp4]")
+    
+TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
+  //  log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #4 ==================\n");
     
@@ -274,17 +234,12 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql][trp4]")
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
     REQUIRE ( !rv2 );
-
     
     REQUIRE ( value == expected_value );
     REQUIRE ( scale == -1 );
     REQUIRE ( num_missed == 0 );
 
     zmsg_destroy (&res);
-zmsg_destroy (&res);
-
-
     log_close();
-    
 }
 
