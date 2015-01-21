@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # NOTE this script should be run as root
 
@@ -7,9 +7,14 @@
 # later install brctl and add own iface
 # vlan 
 
+DEBUG=
+if [ -n "$1" ] && [ "$1" = "-d" ]; then
+    DEBUG=1
+fi
+
 dirname=$(dirname $0)
 topsrc_dir=$(realpath -e "$dirname")
-# For those of us with operating systems that don't have bourne again shell :)
+# For those of us with weird operating systems :)
 if [ -z "$topsrc_dir" ]; then
     topsrc_dir=$(cd "$dirname" && pwd -P)
     if [ -z "$topsrc_dir" ]; then
@@ -17,11 +22,21 @@ if [ -z "$topsrc_dir" ]; then
     fi
 fi
 topsrc_dir=${topsrc_dir%tests/CI}
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: topsrc_dir='$topsrc_dir'"
+fi
 
 export PATH="$PATH:$topsrc_dir:$topsrc_dir/tools"
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: PATH='$PATH'"
+fi
 
 killall malamute
 dsh_file=$(mktemp -p"$topsrc_dir/tests/CI/")
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: dsh_file='$dsh_file'"
+fi
+
 malamute "$topsrc_dir/tools/malamute.cfg" &
 dshell.sh networks ".*" >"$dsh_file" &
 netmon &
