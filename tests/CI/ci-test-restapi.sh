@@ -33,13 +33,15 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
-BUILDSUBDIR=$CHECKOUTDIR
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+BUILDSUBDIR="$CHECKOUTDIR"
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "Search path: $CHECKOUTDIR, $PWD"
+    echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "CI-ERROR: Search path checked: $CHECKOUTDIR, $PWD"
     exit 1
 fi
+
+echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
@@ -98,7 +100,7 @@ wait_for_web() {
             return 0
         fi
     done
-    echo "ERROR: Port 8000 still not in LISTEN state" >&2
+    echo "CI-ERROR: Port 8000 still not in LISTEN state" >&2
     return 1
 }
 
@@ -112,18 +114,28 @@ wait_for_web() {
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
-      echo "WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+      echo "CI-WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
   fi
   # check SASL is working
-  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios
+  echo "CI-INFO: Checking local SASL Auth Daemon"
+  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios && \
+    echo "CI-INFO: saslauthd is responsive and configured well!" || \
+    echo "CI-ERROR: saslauthd is NOT responsive or not configured!"
 
 # do the webserver
   # make clean
   LC_ALL=C
-  export BIOS_USER BIOS_PASSWD LC_ALL
+  LANG=C
+  export BIOS_USER BIOS_PASSWD LC_ALL LANG
+  echo "CI-INFO: Ensure files for web-test exist and are up-to-date..."
+  make -C "$BUILDSUBDIR" V=0 web-test-deps || exit
+  echo "CI-INFO: Spawn the web-server in the background..."
   make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
-  wait_for_web
+  echo "CI-INFO: Wait for web-server to begin responding..."
+  wait_for_web && \
+    echo "CI-INFO: Web-server is responsive!" || \
+    echo "CI-ERROR: Web-server is NOT responsive!"
 
 test_web() {
     echo "============================================================"

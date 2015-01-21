@@ -1,11 +1,12 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
 RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
+RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
 ENV http_proxy http://proxy.eur.etn.com:8080 
 RUN apt-get update
 #RUN apt-get install -y apt-utils
-RUN apt-get install -y nut-server nut-client nut 
-RUN apt-get install -y tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 
+RUN apt-get install -y --force-yes nut-server nut-client nut 
+RUN apt-get install -y --force-yes tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 
 RUN apt-get install -y libsasl2-2 sasl2-bin
 RUN apt-get install -y libpgm-5.1-0 libsodium13
 RUN apt-get install -y nmap
@@ -14,17 +15,18 @@ RUN apt-get install -y sudo
 RUN apt-get install -y vim-tiny
 RUN apt-get clean
 
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/cidrcalc_1.2.3-1_amd64.deb /tmp/cidrcalc_1.2.3-1_amd64.deb
 ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libcidr0_1.2.3-1_amd64.deb /tmp/libcidr0_1.2.3-1_amd64.deb
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libzmq3_4.0.4+dfsg-2_amd64.deb /tmp/libzmq3_4.0.4+dfsg-2_amd64.deb
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libczmq1_3.0.0~20141104git59a4f16-2_amd64.deb /tmp/libczmq1_3.0.0~20141104git59a4f16-1_amd64.deb
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-2_amd64.deb /tmp/libnutclient0_2.7.2-2_amd64.deb
-RUN dpkg -i /tmp/libcidr0_1.2.3-1_amd64.deb
-RUN dpkg -i /tmp/cidrcalc_1.2.3-1_amd64.deb
-RUN dpkg -i /tmp/libzmq3_4.0.4+dfsg-2_amd64.deb
-RUN dpkg -i /tmp/libczmq1_3.0.0~20141104git59a4f16-1_amd64.deb
-RUN dpkg -i /tmp/libnutclient0_2.7.2-2_amd64.deb
-RUN rm /tmp/*.deb
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/cidrcalc_1.2.3-1_amd64.deb /tmp/cidrcalc_1.2.3-1_amd64.deb
+#in case of network timeout between mbt and roz, force the way for getting libcidr0 and cidrcalc packages like this :
+#ADD ./libcidr0_1.2.3-1_amd64.deb /tmp/libcidr0_1.2.3-1_amd64.deb
+#ADD ./cidrcalc_1.2.3-1_amd64.deb /tmp/cidrcalc_1.2.3-1_amd64.deb
+#RUN dpkg -i /tmp/libcidr0_1.2.3-1_amd64.deb
+#RUN dpkg -i /tmp/cidrcalc_1.2.3-1_amd64.deb
+
+RUN apt-get install -y libzmq3
+RUN apt-get install -y --force-yes libczmq1
+RUN apt-get install -y --force-yes libmlm1
+RUN apt-get install -y --force-yes libnutclient0
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
@@ -57,9 +59,10 @@ ADD patch.sql /tmp/patch.sql
 #Install NUT dumy drivers and config
 ADD ups.conf /etc/nut/ups.conf
 ADD upsmon.conf /etc/nut/upsmon.conf
-ADD ups.dev /etc/nut/ups.dev
 ADD UPS1-LAB.dev /etc/nut/UPS1-LAB.dev
+ADD UPS2-LAB.dev /etc/nut/UPS2-LAB.dev
 ADD ePDU1-LAB.dev /etc/nut/ePDU1-LAB.dev
+ADD ePDU2-LAB.dev /etc/nut/ePDU2-LAB.dev
 RUN echo "MODE=standalone" > /etc/nut/nut.conf
 RUN chmod 644 /etc/nut/*
 RUN chown root:nut /etc/nut/*
