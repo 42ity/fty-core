@@ -39,6 +39,8 @@ select @client_nut := id_client from t_bios_client where name = 'NUT';
 
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
+SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "select_device";
+SELECT @monitor_asset_measure := id_discovered_device FROM t_bios_discovered_device WHERE name = "monitor_asset_measure";
 
 /* NOTE: subquery is current mysql Error 1093 workaround */
 insert into t_bios_asset_element (name, id_type, id_parent) values ("DC1",     @asset_element_datacenter, NULL);
@@ -293,7 +295,8 @@ values
     (select id_asset_element from t_bios_asset_element where name = 'ROOM4')
 );
 
-insert into t_bios_discovered_device (id_device_type , name) values (@device_unclassified, "measures");
+INSERT INTO t_bios_discovered_device (id_device_type, name) values (@device_unclassified, "measures");
+SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "measures";
 
 /* voltage.output */
 insert into t_bios_measurements
@@ -305,7 +308,7 @@ values
     32,
     "2014-11-12 09:45:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* voltage.output */
@@ -318,7 +321,7 @@ values
     3,
     "2014-11-12 09:46:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* current.output */
@@ -331,7 +334,7 @@ values
     31,
     "2014-11-12 09:47:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* current.output.L1 */
@@ -344,7 +347,7 @@ values
     12,
     "2014-11-12 09:48:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* voltage.output.L1-N */
@@ -357,7 +360,7 @@ values
     1,
     "2014-11-12 09:49:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* realpower.output */
@@ -370,7 +373,7 @@ values
     1,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* status.ups */
@@ -383,7 +386,7 @@ values
     2,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* temperature.default */
@@ -396,7 +399,7 @@ values
     56,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* load.ups */
@@ -409,7 +412,7 @@ values
     17,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* charge.battery */
@@ -422,7 +425,7 @@ values
     931,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* epdu */
@@ -437,7 +440,7 @@ values
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
 
 /* realpower.outlet.1 */
@@ -452,7 +455,7 @@ values
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
 
 /* realpower.outlet.2 */
@@ -465,7 +468,7 @@ values
     500,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
