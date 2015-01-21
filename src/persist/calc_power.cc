@@ -19,25 +19,22 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \brief Functions for calculating a total rack and DC power from 
      database values.
     \author Alena Chernikava <alenachernikava@eaton.com>
+            Michal Vyskocil  <michalvyskocil@eaton.com>
 */
 
-#include <sstream>
-#include <cstdint>
-
 #include <tntdb/connect.h>
-#include <tntdb/row.h>
 #include <tntdb/error.h>
 #include <tntdb/value.h>
 #include <tntdb/result.h>
 
 #include "log.h"
 #include "defs.h"
+#include "calc_power.h"
+
 #include "asset_types.h"
 #include "persist_error.h"
 #include "assetmsg.h"
-
 #include "monitor.h"
-#include "calc_power.h"
 
 bool is_epdu (const device_info_t &device)
 {
@@ -81,7 +78,7 @@ power_sources_t
 {
     log_info ("start \n");
 
-    auto devices = power_topology.first;
+    auto devices    = power_topology.first;
     auto powerlinks = power_topology.second;
     
     log_debug ("number of devices is %ld \n", devices.size());
@@ -100,6 +97,7 @@ power_sources_t
     std::set < device_info_t > pow_src_it_device;
    
     // process links
+    // one power link correcpond to one PSU
     for ( auto &link : powerlinks )
     {
         // get src device id
@@ -131,6 +129,7 @@ power_sources_t
             // ??? da se spocitat power z PDU???
             // select_power_topology_to  PDU
             try{
+                // select only one step back => false
                 auto pdu_pow_top = select_power_topology_to 
                      (url, std::get<0>(src_device), INPUT_POWER_CHAIN, false);
                 auto pdu_pow_srcs = extract_power_sources 
@@ -142,7 +141,6 @@ power_sources_t
                 pow_src_it_device.insert (std::get<2>(pdu_pow_srcs).begin(), 
                                           std::get<2>(pdu_pow_srcs).end());
             }
-            // TODO what should we do with the errors
             catch (const bios::NotFound &e) {
                 // TODO od prvniho vyberu z database uz probehlo spousta casu,
                 // a ten device mohl nekdo smazat z DB.
@@ -150,12 +148,13 @@ power_sources_t
             }
             catch (const bios::InternalDBError &e) {
                 // propagate error to higher level
-                log_warning ("abnormal end with %s \n", e.what());
+                log_warning ("abnormal end with '%s' \n", e.what());
                 throw bios::InternalDBError(e.what());
             }
             catch (const bios::ElementIsNotDevice &e) {
                 log_error ("Database is corrupted, in power chain there is a"
-                            "non device");
+                            "non device with asset id %d \n",  
+                            std::get<0>(src_device));
                 // TODO
                 // for now ignore this element
             }
@@ -163,7 +162,10 @@ power_sources_t
         else
         {   
             // TODO issue some warning, because this is not normal
-            log_warning ("device is not connected to epdu, ups, pdu \n");
+            // that device directly is not connected to epdu/pdu/ups
+            if ( is_it_device (src_device) )
+                log_warning ("device with asset id %d is not connected "
+                        "to epdu, ups, pdu \n", std::get<0>(src_device));
             pow_src_it_device.insert (start_device);
         }
     }
@@ -257,12 +259,12 @@ a_elmnt_tp_id_t select_element_type (const char* url,
         return asset_element_type_id;
     }
     catch (const tntdb::NotFound &e) {
-        log_info ("specified element was not found \n");
+        log_info ("specified element %d was not found \n", asset_element_id);
         // element with specified id was not found
         return 0;
     }
     catch (const std::exception &e){
-        log_warning ("abnormal end with '%s'\n", e.what());
+        log_warning ("abnormal end with '%s' \n", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -272,7 +274,7 @@ power_sources_t choose_power_sources (const char* url,
 {
     power_sources_t power_sources;
 
-    for (auto &adevice: rack_devices)
+    for ( auto &adevice: rack_devices )
         if ( is_it_device (adevice) )
         {
             auto pow_top_to = select_power_topology_to 
@@ -321,11 +323,10 @@ int convert_str_to_double (const char* value_str, double *value)
 
 void compute_result_value_set (zhash_t *results, double value)
 {
-    log_debug ("value is %f \n", value);
     char buff[20];
     sprintf(buff, "%f", value);
-    log_debug ("converted value is %s \n", buff);
     zhash_insert (results, "value_d", buff);
+    log_debug ("conv value from %f to '%s' \n", value, buff);
 }
 
 // 0 ok, else false
@@ -333,36 +334,34 @@ int compute_result_value_get (zhash_t *results, double *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value_d");
     int r = convert_str_to_double (value_str, value);
+    log_debug ("conv value from '%s' to %f \n", value_str, *value);
     return r;
 }
 
 void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
-    log_debug ("value is %ld \n", value);
     char buff[21];
     sprintf(buff, "%ld", value);
     zhash_insert (results, "value", buff);
-    log_debug ("converted value is %s \n", buff);
+    log_debug ("conv value from %ld to '%s' \n", value, buff);
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value");
-    log_debug ("In hash there is %s value \n", value_str);
     int r = sscanf(value_str ,"%ld", value);
-    log_debug ("Converted value is %ld \n", *value);
+    log_debug ("conv value from '%s' to %ld \n", value_str, *value);
     return (r == 0 ? 1:0);
 }
 
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
-    log_debug ("scale is %d \n", scale);
     char buff[21];
     sprintf(buff, "%d", scale);
     zhash_insert (results, "scale", buff);
-    log_debug ("converted scale is %s \n", buff);
+    log_debug ("conv scale from %hd to '%s' \n", scale, buff);
 }
 
 // 0 ok, 1 false
@@ -370,6 +369,7 @@ int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
     int r = sscanf(value_str ,"%hd", scale);
+    log_debug ("conv scale from '%s' to %hd \n", value_str, *scale);
     return (r == 0 ? 1:0);
 }
 
@@ -379,7 +379,7 @@ void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
     char buff[21];
     sprintf(buff, "%d", num_missed);
     zhash_insert (results, "num_missed", buff);
-    log_debug ("conv num_missed from %d to %s \n", num_missed, buff);
+    log_debug ("conv num_missed from %d to '%s' \n", num_missed, buff);
 }
 
 // 0 ok, 1 false
@@ -387,9 +387,9 @@ int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
 {
     char* value_str = (char *) zhash_lookup (results, "num_missed");
     int r = sscanf(value_str ,"%u", num_missed);
+    log_debug ("conv num_missed from '%s' to %u \n", value_str, *num_missed);
     return (r == 0 ? 1:0);
 }
-
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
@@ -398,14 +398,21 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
+        {
+            log_info ("end, %d rack not found \n", rack_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                                    "specified element was not found", NULL);
+                                    "specified rack was not found", NULL);
+        }
         if (  type_id != asset_type::RACK ) 
+        {
+            log_info ("end, %d isn't rack \n", rack_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                     "specified element is not a rack", NULL);
+        }
     }
     catch (const bios::InternalDBError &e)
     {
+        log_warning ("abnormal end with '%s' \n", e.what());
         return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                     e.what(), NULL);
     }
@@ -417,44 +424,31 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     power_sources_t power_sources = choose_power_sources(url, rack_devices);
 
     // calc sum
-    auto ret_results = compute_total_rack_power_v1 (url, std::get<1> (power_sources), 
-                                                        std::get<0> (power_sources), 
-                                                        std::get<2> (power_sources), 300) ;
-    
+    auto ret_results = compute_total_rack_power_v1 (
+            url, std::get<1> (power_sources), 
+            std::get<0> (power_sources), 
+            std::get<2> (power_sources), 
+            300);
 
-    // transform number to string and fill hash
+    // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
     zhash_autofree (result);
     compute_result_value_set (result, ret_results.power);
     compute_result_scale_set (result, ret_results.scale);
+    // TODO process missed ids
     compute_result_num_missed_set (result, ret_results.missed.size());
+
     // fill the return message
     zmsg_t* retmsg = compute_msg_encode_return_computation(result);
-
-    log_debug ("start to print \n");
-    log_debug ("ePDU \n");
-    for (auto &adevice: std::get<0>(power_sources))
-    {
-        log_debug ("%d \n", std::get<0>(adevice));
-    }
-    log_debug ("UPS \n");
-    for (auto &adevice: std::get<1>(power_sources))
-    {
-        log_debug ("%d \n", std::get<0>(adevice));
-    }
-    log_debug ("IT devices \n");
-    for (auto &adevice: std::get<2>(power_sources))
-    {
-        log_debug ("%d \n", std::get<0>(adevice));
-    }
-    log_info ("end \n");
     return retmsg;
 }
 
 //! \brief rescale number to the new scale - upscalling loses information
 //
 // assert's to prevent integer overflow
-static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale) {
+static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, 
+                m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale)
+{
     if (old_scale == new_scale) {
         return value;
     }
@@ -471,11 +465,12 @@ static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, m_msrmnt_scale_t old_s
         value /= 10;
     }
     return value;
-
 }
 
 //! \brief add a value with a respect to the scale - downscale all the time
-static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, m_msrmnt_scale_t scale) {
+static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, 
+                                                m_msrmnt_scale_t scale)
+{
     if (ret.scale > scale) {
         ret.power = s_rescale(ret.power, ret.scale, scale);
         ret.scale = scale;
@@ -483,7 +478,9 @@ static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, m_msrmnt_scal
     ret.power += s_rescale(value, ret.scale, scale);
 }
 
-static std::string s_generate_in_clause(const std::map<m_dvc_id_t, a_elmnt_id_t>& map) {
+static std::string s_generate_in_clause(
+                            const std::map<m_dvc_id_t, a_elmnt_id_t>& map)
+{
     std::ostringstream o;
     size_t i = 0;
     for (const auto el: map) {
@@ -498,15 +495,19 @@ static std::string s_generate_in_clause(const std::map<m_dvc_id_t, a_elmnt_id_t>
 
 //! \brief compute total rack power V1
 //
-// FIXME: leave three arguments - one per device type, maybe in the future we'll use it, or change
-// TODO: ask for id_key/id_subkey, see measurement_id_t nut_get_measurement_id(const std::string &name) 
+// FIXME: leave three arguments - one per device type, maybe in the future 
+// we'll use it, or change
+// TODO: ask for id_key/id_subkey, 
+// see measurement_id_t nut_get_measurement_id(const std::string &name) 
 // TODO: quality computation - to be defined, leave with 255
 //
 // \param upses - list of ups'es
 // \param epdus - list of epdu's
-// \param devs - list of devices
+// \param devs  - list of devices
 // \param max_age - maximum age we'd like to take into account in secs
-// \return rc_power_t - total power, quality of metric and list of id's, which were requested, but missed
+//
+// \return rc_power_t - total power, quality of metric and list of id's, 
+//                          which were requested, but missed
 
 rack_power_t
 compute_total_rack_power_v1(
@@ -514,17 +515,20 @@ compute_total_rack_power_v1(
         const std::set<device_info_t> &upses,
         const std::set<device_info_t> &epdus,
         const std::set<device_info_t> &devs,
-        uint32_t max_age) {
-
+        uint32_t max_age)
+{
     log_info("start \n");
 
     assert(max_age != 0);
 
     std::set<a_elmnt_id_t> all_asset_ids{};
     //FIXME: this is stupid - aren't there union operations on sets in std C++?
-    for (const device_info_t& d : upses)  all_asset_ids.insert(device_info_id(d));
-    for (const device_info_t& d : epdus)  all_asset_ids.insert(device_info_id(d));
-    for (const device_info_t& d : devs)   all_asset_ids.insert(device_info_id(d));
+    for (const device_info_t& d : upses)  
+        all_asset_ids.insert(device_info_id(d));
+    for (const device_info_t& d : epdus)  
+        all_asset_ids.insert(device_info_id(d));
+    for (const device_info_t& d : devs)   
+        all_asset_ids.insert(device_info_id(d));
     rack_power_t ret{0, 0, 255, all_asset_ids};
 
     try{
@@ -535,7 +539,17 @@ compute_total_rack_power_v1(
             idmap[dev_id] = asset_id;
         }
 
-        //NOTE: cannot cache as SQL query is not stable
+        // NOTE: cannot cache as SQL query is not stable
+        
+        // XXX: SQL placeholders can't deal with list of values, 
+        // as we're using plain int, there is no issue in generating 
+        // SQL by hand
+        
+        //TODO: read realpower.default from database, 
+        // SELECT v.id as id_subkey, v.id_type as id_key 
+        // FROM v_bios_measurement_subtypes v 
+        // WHERE name='default' AND typename='realpower';
+
         tntdb::Connection conn = tntdb::connect(url);
         tntdb::Statement st = conn.prepare(
             " SELECT"
@@ -543,21 +557,24 @@ compute_total_rack_power_v1(
             " FROM"
             "   v_bios_client_info_measurements_last v"
             " WHERE"
-            "   v.id_discovered_device IN (" + s_generate_in_clause(idmap) + ")"  //XXX: SQL placeholders can't deal with list of values, as we're using plain int, there is no issue in generating SQL by hand
-            "   AND v.id_key=3 AND v.id_subkey=1 "  //TODO: read realpower.default from database, SELECT v.id as id_subkey, v.id_type as id_key FROM v_bios_measurement_subtypes v WHERE name='default' AND typename='realpower';
+            "   v.id_discovered_device IN (" 
+                    + s_generate_in_clause(idmap) + ")"  // XXX
+                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
             "   AND v.timestamp BETWEEN"
             "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
             "       AND UTC_TIMESTAMP()"
         );
 
         tntdb::Result result = st.set("seconds", max_age).
-                              select();
+                                  select();
         log_debug("rows selected %d\n", result.size());
         for ( auto &row: result )
         {
             m_dvc_id_t dev_id = 0;
             row[0].get(dev_id);
-            ret.missed.erase(idmap[dev_id]);  //<- no assert needed, invalid value will raise an exception, converts from device id back to asset id
+            ret.missed.erase(idmap[dev_id]);  //<- no assert needed, 
+            // invalid value will raise an exception, 
+            // converts from device id back to asset id
 
             m_msrmnt_value_t value = 0;
             row[1].get(value);
@@ -567,7 +584,6 @@ compute_total_rack_power_v1(
 
             s_add_scale(ret, value, scale);
         }
-
     }
     catch (const std::exception &e) {
         log_warning ("abnormal end with '%s'\n", e.what());

@@ -33,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "assettopology.h"
 
+// TODO deal with hardcoded values
 #define DEVICE_TYPE_EPDU 3
 #define DEVICE_TYPE_PDU 4
 #define DEVICE_TYPE_UPS 1
@@ -53,16 +54,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef 
         std::tuple < std::set < device_info_t >, 
                      std::set < device_info_t >, 
-                     std::set < device_info_t>  
+                     std::set < device_info_t >  
                     >
         power_sources_t;
 
-
+/**
+ * \brief A structure that represents information about total rack power
+ *
+ * result_total_power = power * 10 ^scale.
+ */
 typedef struct _rack_power_t {
-    m_msrmnt_value_t power;             //! total power with scale -1, so 2000 == 200W
-    m_msrmnt_scale_t   scale;   //! scale of result
-    uint8_t  quality;           //! quality of total power ^ (0 - no results found, 100 all results found)
-    std::set<a_elmnt_id_t>  missed; //! devices not found in DB
+    m_msrmnt_value_t           power;   //! total power with scale (see below)
+    m_msrmnt_scale_t           scale;   //! scale of result
+    uint8_t                    quality; //! quality of total power (0 - no results found, 100 all results found)
+    std::set < a_elmnt_id_t >  missed;  //! devices not found in DB
 } rack_power_t;
 
 /**
@@ -144,7 +149,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
                                              a_elmnt_id_t rack_id);
 
 /**
- * \brief For a specified asset element selects is type.
+ * \brief Selects a type of specified asset element from database.
  *
  * throw bios::InternalDBError;
  *
@@ -160,9 +165,9 @@ a_elmnt_tp_id_t select_element_type (const char* url,
 
 /**
  * \brief For every PSU (power supply unit) of every device selects 
- * a power device.
+ * a power source device.
  *
- * \param url - connection to database.
+ * \param url         - connection to database.
  * \param rackdevices - a set of all devices contained in some rack.
  *
  * \return sources devided by its types.
@@ -179,43 +184,166 @@ power_sources_t choose_power_sources (const char* url,
  * \param value_str - a number in a string format
  * \param value     - an output parameter for double value
  *
- * \result 0 - success
- *         -1 a NULL pointer was recieved as an input string
- *         -2 a srting is a number, but  is out of the range (1.7E +/- 308)
- *         -3 it is not a number
+ * \result  0 - success
+ *         -1 - a NULL pointer was recieved as an input string
+ *         -2 - a srting is a number, but  is out of the range (1.7E +/- 308)
+ *         -3 - it is not a number
  */
 int convert_str_to_double (const char* value_str, double *value);
 
-
+/**
+ * \brief Inserts a double value into hash.
+ *
+ * Usage: fill a compute_msg_return message.
+ *
+ * Value insetred with key "value_d"
+ *
+ * For extracting use compute_result_value_get.
+ *
+ * \param results - a hash
+ * \param value   - a value to be inserted
+ */
 void compute_result_value_set (zhash_t *results, double value);
 
 
+/**
+ * \brief Take a double value from hash.
+ *
+ * A value associated with key "value_d".
+ * 
+ * Usage: unpack a compute_msg_return message.
+ *
+ * For setting use compute_result_value_set.
+ *
+ * \param results - a hash.
+ * \param value   - an output parameter, where value would be selected.
+ *
+ * \return errorcode: 0 is ok otherwise with errors.
+ */
 int compute_result_value_get (zhash_t *results, double *value);
 
 
+/**
+ * \brief Inserts a integer value into hash.
+ *
+ * Usage: fill a compute_msg_return message.
+ *
+ * Value insetred with key "value"
+ *
+ * For extracting use compute_result_value_get.
+ *
+ * \param results - a hash.
+ * \param value   - a value to be inserted.
+ */
 void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value);
 
 
+/**
+ * \brief Take a integer value from hash.
+ *
+ * A value associated with key "value".
+ * 
+ * Usage: unpack a compute_msg_return message.
+ *
+ * For setting use compute_result_value_set.
+ *
+ * \param results - a hash.
+ * \param value   - an output parameter, where value would be selected.
+ *
+ * \return errorcode: 0 is ok otherwise with errors.
+ */
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value);
 
+
+/**
+ * \brief Inserts a scale into hash.
+ *
+ * Usage: fill a compute_msg_return message.
+ *
+ * Value insetred with key "scale"
+ *
+ * For extracting use compute_result_scale_get.
+ *
+ * \param results - a hash.
+ * \param scale   - a scale to be inserted.
+ */
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale);
 
+
+/**
+ * \brief Take a scale from hash.
+ *
+ * A value associated with key "scale".
+ * 
+ * Usage: unpack a compute_msg_return message.
+ *
+ * For setting use compute_result_scale_set.
+ *
+ * \param results - a hash.
+ * \param value   - an output parameter, where scale would be selected.
+ *
+ * \return errorcode: 0 is ok otherwise with errors.
+ */
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale);
 
-void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed);
+
+/**
+ * \brief Inserts a number ids for which measurements are missing into hash.
+ *
+ * Usage: fill a compute_msg_return message.
+ *
+ * Value insetred with key "num_missed"
+ *
+ * For extracting use compute_result_num_missed_get.
+ *
+ * \param results    - a hash.
+ * \param num_missed - a number ids for which measurements are missing
+ */
+void compute_result_num_missed_set (zhash_t *results, 
+                                                    a_elmnt_id_t num_missed);
+
+/**
+ * \brief Take a number ids for which measurements are missing from hash.
+ *
+ * A value associated with key "num_missed".
+ * 
+ * Usage: unpack a compute_msg_return message.
+ *
+ * For setting use compute_result_num_missed_set.
+ *
+ * \param results - a hash.
+ * \param value   - an output parameter, where number ids for which 
+ *                  measurements are missing would be selected.
+ *
+ * \return errorcode: 0 is ok otherwise with errors.
+ */
+int compute_result_num_missed_get (zhash_t *results, 
+                                                    a_elmnt_id_t *num_missed);
+
+
+/**
+ * \brief calculates a total rack power for a specified rack
+ *
+ * \param url             - connection to database
+ * \param rack_element_id - an id of the rack
+ *
+ * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN
+ */
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
-int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed);
+
+
 
 //! \brief compute total rack power V1
 //
-// FIXME: leave three arguments - one per device type, maybe in the future we'll use it, or change
+// FIXME: leave three arguments - one per device type, maybe in the 
+// future we'll use it, or change
 //
-// \param upses - list of ups'es
-// \param epdus - list of epdu's
-// \param devs - list of devices
+// \param upses   - list of ups'es
+// \param epdus   - list of epdu's
+// \param devs    - list of devices
 // \param max_age - maximum age we'd like to take into account in secs
+//
 // \return rc_power_t - total power, quality of metric and list of id's, which were requested, but missed
-
 rack_power_t
 compute_total_rack_power_v1(
         const char* url,
@@ -223,21 +351,4 @@ compute_total_rack_power_v1(
         const std::set<device_info_t>& epdus,
         const std::set<device_info_t>& devs,
         uint32_t max_age);
-
-inline
-rack_power_t
-compute_total_rack_power_v1(
-        const char* url,
-        const power_sources_t& s,
-        uint32_t max_age) {
-
-    return compute_total_rack_power_v1(
-            url,
-            std::get<1>(s),
-            std::get<0>(s),
-            std::get<2>(s),
-            max_age
-            );
-}
-
 #endif //SRC_PERSIST_CALC_POWER_H_
