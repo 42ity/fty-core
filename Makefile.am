@@ -651,6 +651,7 @@ web-test-deps: tntnet.xml bios_web.la
 
 # Execute the test web-server for $BIOS REST API
 web-test: web-test-deps
+	@echo "=== Running target $@ as: "; id || true; echo ""
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------

@@ -6,10 +6,14 @@
 
 #include "tokens.h"
 
-tokens *tokens::get_instance() {
+tokens *tokens::get_instance(bool recreate) {
     static tokens *inst = NULL;
     static std::mutex mtx;
     mtx.lock();
+    if (recreate && inst!=NULL) {
+	delete inst;
+	inst=NULL;
+    }
     if (!inst) {
         inst = new tokens;
         randombytes_buf(inst->nonce, sizeof nonce);
@@ -19,12 +23,15 @@ tokens *tokens::get_instance() {
     return inst;
 }
 
-std::string tokens::gen_token(int& valid) {
+std::string tokens::gen_token(int& valid, bool do_round) {
     unsigned char ciphertext[CIPHERTEXT_LEN];
     char buff[MESSAGE_LEN + 1];
-    long int tme = (time(NULL) + valid) / ROUND;
-    tme *= ROUND;
-    valid = (tme - time(NULL));
+    long int tme = (time(NULL) + valid);
+    if (do_round) {
+	tme /= ROUND;
+	tme *= ROUND;
+	valid = (tme - time(NULL));
+    }
 
     for (int i = 0; i < MESSAGE_LEN; i++) {
         buff[i] = 0x20;
