@@ -595,12 +595,17 @@ dist_noinst_HEADERS += \
 			src/persist/assetmsg.h \
 			tools/dbpath.h
 
+### This file contains the TNTNET settings relevant for our test runs
+### Note: in non-daemon mode, stderr is logged to stderr
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
+### This file contains the TNTNET settings distributed as an example for users
+### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
@@ -611,7 +616,11 @@ dist_noinst_DATA += tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
-web-test: tntnet.xml bios_web.la
+# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+web-test-deps: tntnet.xml bios_web.la
+
+# Execute the test web-server for $BIOS REST API
+web-test: web-test-deps
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
