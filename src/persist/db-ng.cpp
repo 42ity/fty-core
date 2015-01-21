@@ -37,7 +37,7 @@ int main (int argc, char *argv []) {
             // Currently only measures meta is supported
             if(!is_common_msg(msg))
                 continue;
-            zmsg_t *rep = persist::common_msg_process(&msg);
+            zmsg_t *rep = persist::process_message(&msg);
             if(rep != NULL) {
                 // Send a reply back
                 mlm_client_sendto(client, (char*)mlm_client_sender(client),
@@ -46,7 +46,7 @@ int main (int argc, char *argv []) {
                 continue;
         // Other option is stream aka publish subscribe
         } else {
-            persist::common_msg_process(&msg);
+            persist::process_message(&msg);
         }
         zmsg_destroy(&msg);
     }
