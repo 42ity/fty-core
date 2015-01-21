@@ -58,6 +58,13 @@ typedef
         power_sources_t;
 
 
+typedef struct _rack_power_t {
+    m_msrmnt_value_t power;             //! total power with scale -1, so 2000 == 200W
+    m_msrmnt_scale_t   scale;   //! scale of result
+    uint8_t  quality;           //! quality of total power ^ (0 - no results found, 100 all results found)
+    std::set<a_elmnt_id_t>  missed; //! devices not found in DB
+} rack_power_t;
+
 /**
  * \brief Checks the type of device.
  *
@@ -122,7 +129,6 @@ power_sources_t
           std::pair < std::set < device_info_t >, 
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device );
-
 
 /**
  * \brief Selects devices from database that are placed in the specified rack.
@@ -197,4 +203,39 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale);
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale);
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
+
+//! \brief compute total rack power V1
+//
+// FIXME: leave three arguments - one per device type, maybe in the future we'll use it, or change
+//
+// \param upses - list of ups'es
+// \param epdus - list of epdu's
+// \param devs - list of devices
+// \param max_age - maximum age we'd like to take into account in secs
+// \return rc_power_t - total power, quality of metric and list of id's, which were requested, but missed
+
+rack_power_t
+compute_total_rack_power_v1(
+        const char* url,
+        const std::set<device_info_t>& upses,
+        const std::set<device_info_t>& epdus,
+        const std::set<device_info_t>& devs,
+        uint32_t max_age);
+
+inline
+rack_power_t
+compute_total_rack_power_v1(
+        const char* url,
+        const power_sources_t& s,
+        uint32_t max_age) {
+
+    return compute_total_rack_power_v1(
+            url,
+            std::get<1>(s),
+            std::get<0>(s),
+            std::get<2>(s),
+            max_age
+            );
+}
+
 #endif //SRC_PERSIST_CALC_POWER_H_

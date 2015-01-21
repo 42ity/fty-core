@@ -45,6 +45,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 typedef std::tuple< uint32_t, std::string, std::string, uint32_t > device_info_t;
 
+inline uint32_t device_info_id(const device_info_t& d) {
+    return std::get<0>(d);
+}
+inline uint32_t device_info_type_id(const device_info_t& d) {
+    return std::get<3>(d);
+}
+inline std::string device_info_name(const device_info_t& d) {
+    return std::get<1>(d);
+}
+inline std::string device_info_type_name(const device_info_t& d) {
+    return std::get<2>(d);
+}
+
 
 /**
  * \brief A type for storing basic information about powerlink.

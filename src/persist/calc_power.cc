@@ -21,6 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
+#include <sstream>
+#include <cstdint>
+
 #include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/error.h>
@@ -31,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "asset_types.h"
 #include "persist_error.h"
+#include "assetmsg.h"
 
 #include "monitor.h"
 #include "calc_power.h"
@@ -363,7 +367,7 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
-    int r = sscanf(value_str ,"%d", scale);
+    int r = sscanf(value_str ,"%hd", scale);
     return r;
 }
 
@@ -434,4 +438,132 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     }
     log_info ("end \n");
     return retmsg;
+}
+
+//! \brief rescale number to the new scale - upscalling loses information
+//
+// assert's to prevent integer overflow
+static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale) {
+    if (old_scale == new_scale) {
+        return value;
+    }
+
+    if (old_scale > new_scale) {
+        for (auto i = 0; i != abs(old_scale - new_scale); i++) {
+            assert(value < (INT64_MAX / 10));
+            value *= 10;
+        }
+        return value;
+    }
+
+    for (auto i = 0; i != abs(old_scale - new_scale); i++) {
+        value /= 10;
+    }
+    return value;
+
+}
+
+//! \brief add a value with a respect to the scale - downscale all the time
+static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, m_msrmnt_scale_t scale) {
+    if (ret.scale > scale) {
+        ret.power = s_rescale(ret.power, ret.scale, scale);
+        ret.scale = scale;
+    }
+    ret.power += s_rescale(value, ret.scale, scale);
+}
+
+static std::string s_generate_in_clause(const std::set<m_dvc_id_t>& lst) {
+    std::ostringstream o;
+    size_t i = 0;
+    for (auto el: lst) {
+        o << el;
+        i++;
+        if (i != lst.size()) {
+            o << ", ";
+        }
+    }
+    return o.str();
+}
+
+//! \brief compute total rack power V1
+//
+// FIXME: leave three arguments - one per device type, maybe in the future we'll use it, or change
+// TODO: ask for id_key/id_subkey, see measurement_id_t nut_get_measurement_id(const std::string &name) 
+// TODO: quality computation - to be defined, leave with 255
+// TODO: map a_elmnt_id_t -> m_dvc_id_t and back
+//
+// \param upses - list of ups'es
+// \param epdus - list of epdu's
+// \param devs - list of devices
+// \param max_age - maximum age we'd like to take into account in secs
+// \return rc_power_t - total power, quality of metric and list of id's, which were requested, but missed
+
+rack_power_t
+compute_total_rack_power_v1(
+        const char *url,
+        std::set<device_info_t> upses,
+        std::set<device_info_t> epdus,
+        std::set<device_info_t> devs,
+        uint32_t max_age) {
+
+    log_info("start \n");
+
+    assert(max_age != 0);
+
+    std::set<a_elmnt_id_t> all_asset_ids{};
+    //FIXME: this is stupid - aren't there union operations on sets in std C++?
+    for (const device_info_t& d : upses)  all_asset_ids.insert(device_info_id(d));
+    for (const device_info_t& d : epdus)  all_asset_ids.insert(device_info_id(d));
+    for (const device_info_t& d : devs)   all_asset_ids.insert(device_info_id(d));
+    rack_power_t ret{0, 0, 255, all_asset_ids};
+
+    try{
+        std::map<a_elmnt_id_t, m_dvc_id_t> idmap;
+        std::set<m_dvc_id_t> all_dev_ids{};
+        for (a_elmnt_id_t asset_id : all_asset_ids) {
+            m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
+            all_dev_ids.insert(dev_id);
+            idmap[dev_id] = asset_id;
+        }
+
+        //NOTE: cannot cache as SQL query is not stable
+        tntdb::Connection conn = tntdb::connect(url);
+        tntdb::Statement st = conn.prepare(
+            " SELECT"
+            "    v.id_discovered_device, v.value, v.scale"
+            " FROM"
+            "   v_bios_client_info_measurements_last v"
+            " WHERE"
+            "   v.id_discovered_device IN (" + s_generate_in_clause(all_dev_ids) + ")"  //XXX: SQL placeholders can't deal with list of values, as we're using plain int, there is no issue in generating SQL by hand
+            "   AND v.id_key=3 AND v.id_subkey=1 "  //TODO: read realpower.default from database, SELECT v.id as id_subkey, v.id_type as id_key FROM v_bios_measurement_subtypes v WHERE name='default' AND typename='realpower';
+            "   AND v.timestamp BETWEEN"
+            "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
+            "       AND UTC_TIMESTAMP()"
+        );
+
+        tntdb::Result result = st.set("seconds", max_age).
+                              select();
+        log_debug("rows selected %d\n", result.size());
+        for ( auto &row: result )
+        {
+            m_dvc_id_t dev_id = 0;
+            row[0].get(dev_id);
+            ret.missed.erase(idmap[dev_id]);  //<- no assert needed, invalid value will raise an exception, converts from device id back to asset id
+
+            m_msrmnt_value_t value = 0;
+            row[1].get(value);
+
+            m_msrmnt_scale_t scale = 0;
+            row[2].get(scale);
+
+            s_add_scale(ret, value, scale);
+        }
+
+    }
+    catch (const std::exception &e) {
+        log_warning ("abnormal end with '%s'\n", e.what());
+        throw bios::InternalDBError(e.what());
+    }
+
+    return ret;
 }
