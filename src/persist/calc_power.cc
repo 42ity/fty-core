@@ -472,13 +472,13 @@ static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, m_msrmnt_scal
     ret.power += s_rescale(value, ret.scale, scale);
 }
 
-static std::string s_generate_in_clause(const std::set<m_dvc_id_t>& lst) {
+static std::string s_generate_in_clause(const std::map<m_dvc_id_t, a_elmnt_id_t>& map) {
     std::ostringstream o;
     size_t i = 0;
-    for (auto el: lst) {
-        o << el;
+    for (const auto el: map) {
+        o << el.first;
         i++;
-        if (i != lst.size()) {
+        if (i != map.size()) {
             o << ", ";
         }
     }
@@ -490,7 +490,6 @@ static std::string s_generate_in_clause(const std::set<m_dvc_id_t>& lst) {
 // FIXME: leave three arguments - one per device type, maybe in the future we'll use it, or change
 // TODO: ask for id_key/id_subkey, see measurement_id_t nut_get_measurement_id(const std::string &name) 
 // TODO: quality computation - to be defined, leave with 255
-// TODO: map a_elmnt_id_t -> m_dvc_id_t and back
 //
 // \param upses - list of ups'es
 // \param epdus - list of epdu's
@@ -518,11 +517,10 @@ compute_total_rack_power_v1(
     rack_power_t ret{0, 0, 255, all_asset_ids};
 
     try{
-        std::map<a_elmnt_id_t, m_dvc_id_t> idmap;
-        std::set<m_dvc_id_t> all_dev_ids{};
+        // FIXME: asking for mapping each time sounds slow
+        std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
         for (a_elmnt_id_t asset_id : all_asset_ids) {
             m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
-            all_dev_ids.insert(dev_id);
             idmap[dev_id] = asset_id;
         }
 
@@ -534,7 +532,7 @@ compute_total_rack_power_v1(
             " FROM"
             "   v_bios_client_info_measurements_last v"
             " WHERE"
-            "   v.id_discovered_device IN (" + s_generate_in_clause(all_dev_ids) + ")"  //XXX: SQL placeholders can't deal with list of values, as we're using plain int, there is no issue in generating SQL by hand
+            "   v.id_discovered_device IN (" + s_generate_in_clause(idmap) + ")"  //XXX: SQL placeholders can't deal with list of values, as we're using plain int, there is no issue in generating SQL by hand
             "   AND v.id_key=3 AND v.id_subkey=1 "  //TODO: read realpower.default from database, SELECT v.id as id_subkey, v.id_type as id_key FROM v_bios_measurement_subtypes v WHERE name='default' AND typename='realpower';
             "   AND v.timestamp BETWEEN"
             "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
