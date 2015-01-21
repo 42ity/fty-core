@@ -23,6 +23,7 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+dist_noinst_DATA =
 # http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 # http://www.gnu.org/software/automake/manual/html_node/Sources.html
 # A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
@@ -38,6 +39,9 @@ BUILT_SOURCES =
 CLEANFILES =
 DISTCLEANFILES =
 DISTCLEANDIRS =
+# autoconf does not allow pkglib_PROGRAMS for some reason
+clientdir = ${pkglibdir}
+client_PROGRAMS =
 
 TESTS =
 
@@ -82,6 +86,10 @@ DISTCLEANDIRS += \
 		build-aux \
 		config \
 		tests/CI/web/log
+
+# recommended by deamon(7)
+DISTCHECK_CONFIGURE_FLAGS = \
+        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 
 AM_CPPFLAGS = \
 		-include $(top_builddir)/config.h \
@@ -440,7 +448,7 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-bin_PROGRAMS += 	netmon
+client_PROGRAMS += 	netmon
 netmon_SOURCES = \
 			src/drivers/netmon/linux \
 			src/drivers/netmon/netmon.c \
@@ -460,7 +468,7 @@ netmon_LDADD = \
 
 netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
-bin_PROGRAMS += 	server-agent db-ng
+bin_PROGRAMS += 	server-agent
 
 server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
 
@@ -471,6 +479,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
+client_PROGRAMS +=	db-ng
 db_ng_SOURCES =		src/persist/db-ng.cpp
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -496,7 +505,7 @@ dist_noinst_HEADERS += \
 			src/drivers/nut/nut-driver.h
 
 
-bin_PROGRAMS +=		driver-nmap
+client_PROGRAMS +=		driver-nmap
 
 driver_nmap_SOURCES = \
 			src/drivers/nmap/nmap-driver.h \
@@ -515,7 +524,7 @@ driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
-bin_PROGRAMS +=		driver-nut
+client_PROGRAMS +=		driver-nut
 
 driver_nut_SOURCES = \
 			src/drivers/nut/nut-driver.cc \
@@ -598,6 +607,7 @@ tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 exampleconfdir =	$(datarootdir)/@PACKAGE@-@VERSION@/examples
 exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
+dist_noinst_DATA += tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
@@ -611,6 +621,7 @@ web-test: tntnet.xml bios_web.la
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbpath.h.in \
 			$(top_builddir)/tools/dbpath.h \
+			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
@@ -629,6 +640,28 @@ DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.h
 
 BUILT_SOURCES +=	$(top_srcdir)/tools/dbinit.h
 
+# systemd integration
+if HAVE_SYSTEMD
+
+# copy from autoconf manual, note signle suffix rules can't be used there!!
+edit = sed \
+	-e 's|@libdir[@]|$(libdir)|g'
+
+bios-driver-nut.service bios-driver-netmon.service bios-db.service: Makefile
+	rm -f $@
+	$(edit) '$(srcdir)/tools/$@.in' > $@
+
+bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
+bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
+bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
+
+systemdsystemunit_DATA = \
+			$(top_builddir)/bios-driver-nut.service \
+			$(top_builddir)/bios-driver-netmon.service \
+			$(top_builddir)/bios-db.service
+
+CLEANFILES += $(top_builddir)/bios-*.service
+endif
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
 # Note that the basic filenames in these variables are relative to the
