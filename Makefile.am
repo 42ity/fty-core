@@ -542,6 +542,17 @@ driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
+bin_PROGRAMS += $(top_srcdir)/tools/dshell
+
+__top_srcdir__tools_dshell_SOURCES =	tools/dshell.cc
+
+__top_srcdir__tools_dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+
+__top_srcdir__tools_dshell_LDADD =	libpriv-proto.la
+
+__top_srcdir__tools_dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
+
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
 
