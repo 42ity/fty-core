@@ -483,7 +483,8 @@ db_ng_LDADD = \
                         libpriv-proto.la
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
+			-I$(top_srcdir)/src/include \
+			-I$(top_srcdir)/tools
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
