@@ -328,6 +328,7 @@ void compute_result_value_set (zhash_t *results, double value)
     zhash_insert (results, "value_d", buff);
 }
 
+// 0 ok, else false
 int compute_result_value_get (zhash_t *results, double *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value_d");
@@ -351,7 +352,7 @@ int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
     log_debug ("In hash there is %s value \n", value_str);
     int r = sscanf(value_str ,"%ld", value);
     log_debug ("Converted value is %ld \n", *value);
-    return r;
+    return (r == 0 ? 1:0);
 }
 
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
@@ -364,12 +365,31 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
     log_debug ("converted scale is %s \n", buff);
 }
 
+// 0 ok, 1 false
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
     int r = sscanf(value_str ,"%hd", scale);
-    return r;
+    return (r == 0 ? 1:0);
 }
+
+void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
+{
+    // 21 = 20+1 , 20 charecters has a uint64_t
+    char buff[21];
+    sprintf(buff, "%d", num_missed);
+    zhash_insert (results, "num_missed", buff);
+    log_debug ("conv num_missed from %d to %s \n", num_missed, buff);
+}
+
+// 0 ok, 1 false
+int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
+{
+    char* value_str = (char *) zhash_lookup (results, "num_missed");
+    int r = sscanf(value_str ,"%u", num_missed);
+    return (r == 0 ? 1:0);
+}
+
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
@@ -397,26 +417,17 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     power_sources_t power_sources = choose_power_sources(url, rack_devices);
 
     // calc sum
+    auto ret_results = compute_total_rack_power_v1 (url, std::get<1> (power_sources), 
+                                                        std::get<0> (power_sources), 
+                                                        std::get<2> (power_sources), 300) ;
     
 
-    // transform number to string
-    m_msrmnt_scale_t scale = -1;
-    m_msrmnt_value_t value = 999993;
-
+    // transform number to string and fill hash
     zhash_t* result = zhash_new();
     zhash_autofree (result);
-    compute_result_value_set (result, value);
-    compute_result_scale_set (result, scale);
-    
-
-    m_msrmnt_scale_t scale_get = 8;
-    m_msrmnt_value_t value_get = 88;
-    int r = compute_result_value_get (result, &value_get);
-    int r1 = compute_result_scale_get (result, &scale_get);
-   
-    log_debug("errcode: %d, this is value: %ld \n", r, value_get);
-    log_debug("errcode: %d, this is scale: %d \n", r1, scale_get);
-    
+    compute_result_value_set (result, ret_results.power);
+    compute_result_scale_set (result, ret_results.scale);
+    compute_result_num_missed_set (result, ret_results.missed.size());
     // fill the return message
     zmsg_t* retmsg = compute_msg_encode_return_computation(result);
 
@@ -500,9 +511,9 @@ static std::string s_generate_in_clause(const std::map<m_dvc_id_t, a_elmnt_id_t>
 rack_power_t
 compute_total_rack_power_v1(
         const char *url,
-        std::set<device_info_t> upses,
-        std::set<device_info_t> epdus,
-        std::set<device_info_t> devs,
+        const std::set<device_info_t> &upses,
+        const std::set<device_info_t> &epdus,
+        const std::set<device_info_t> &devs,
         uint32_t max_age) {
 
     log_info("start \n");

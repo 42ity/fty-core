@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/value.h>
 #include <tntdb/result.h>
 
-#include "common_msg.h"
+#include "monitor.h"
 #include "log.h"
 #include "dbpath.h"
 #include "defs.h"
@@ -1242,7 +1242,6 @@ common_msg_t* test_insert_measurement(const char         *url,
                                  m_msrmnt_value_t   value,
                                  uint32_t seconds)
 {
-    log_info ("%s \n", "start");
     assert ( client_id );    // is required
     assert ( device_id );    // is required (if not device was measured, 
                              // then use "dummy_monitor_device") 
@@ -1285,7 +1284,6 @@ common_msg_t* test_insert_measurement(const char         *url,
     }
     if ( n == 1 )
     {
-        log_info ("normal %s \n", "end");
         return generate_ok (newid);
     }
     else
@@ -1307,8 +1305,8 @@ void generate_measurements (const char         *url,
 {
     auto ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
     
-    for ( int i = 1; i <= 10 ; i++ )
-        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, i, max_seconds - i);
+    for ( int i = 1; i <= GEN_MEASUREMENTS_MAX ; i++ )
+        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id+i, max_seconds - i);
 }
 
 

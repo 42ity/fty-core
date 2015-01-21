@@ -28,6 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common_msg.h"
 #include "dbtypes.h"
 
+#define GEN_MEASUREMENTS_MAX 10
+
 // !!!!!!!!!                ATTENTION           !!!!!!!!!!!!!!!!!!
 // Date is always UTC time as UNIX_TIMESTAMP.
 

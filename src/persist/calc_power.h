@@ -202,7 +202,9 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale);
 
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale);
 
+void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed);
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
+int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed);
 
 //! \brief compute total rack power V1
 //
