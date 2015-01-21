@@ -2,22 +2,26 @@
 #include "measure_types.h"
 #include "monitor.h"
 #include "persistencelogic.h"
+#include "dbpath.h"
+#include "log.h"
 
 #include <stdio.h>
 #include <zsys.h>
 
 int main (int argc, char *argv []) {
     // Basic settings
-    if (argc > 1) {
-        printf ("syntax: server-agent [ ipc://...|tcp://... ]\n");
+    if (argc > 2) {
+        printf ("syntax: db-ng [ ipc://...|tcp://... [ mysql:db=bios;user=bios;password=test ] ]\n");
         return 0;
     }
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
+    if(argc == 2)
+        url = argv[2];
 
     // Create a client
     mlm_client_t *client = mlm_client_new(addr, 1000, "persistence");
     if (!client) {
-        zsys_error ("server-agent: server not reachable at ipc://@/malamute");
+        zsys_error ("db-ng: server not reachable at ipc://@/malamute");
         return 0;
     }
 
