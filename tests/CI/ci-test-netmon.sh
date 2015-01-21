@@ -1,12 +1,18 @@
 #!/bin/bash
 
-# NOTE this script should be run as root
+# REQUIRES
+#   built project
+#   ran as root
+
+# USAGE $0 [-d]
+#   -d  print extra debug output
 
 # TODO (nice to have, if there is nothing to do):
 # try to grep second iface and do a couple add/del on it as well (lo is special)
 # later install brctl and add own iface
 # vlan 
 
+### Section: setting necessary variables
 DEBUG=
 if [ -n "$1" ] && [ "$1" = "-d" ]; then
     DEBUG=1
@@ -21,10 +27,32 @@ if [ -z "$topsrc_dir" ]; then
         exit 1
     fi
 fi
-topsrc_dir=${topsrc_dir%tests/CI}
+topsrc_dir=${topsrc_dir%/tests/CI}
 if [ -n "$DEBUG" ]; then
     echo "DEBUG: topsrc_dir='$topsrc_dir'"
 fi
+
+dsh_file=$(mktemp -p"$topsrc_dir/tests/CI/")
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: dsh_file='$dsh_file'"
+fi
+
+LOCKFILE=/tmp/ci-test-netmon.lock
+if [ -f $LOCKFILE ]; then
+    [ -n "$DEBUG" ] && echo "Script already running!"
+    exit 0
+fi
+touch "$LOCKFILE"
+
+### Section: actual steps being performed
+function cleanup {
+    rm -f "$LOCKFILE" "$dsh_file"
+    killall malamute
+    killall dshell
+    killall -9 netmon
+}
+
+trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
 export PATH="$PATH:$topsrc_dir:$topsrc_dir/tools"
 if [ -n "$DEBUG" ]; then
@@ -32,10 +60,6 @@ if [ -n "$DEBUG" ]; then
 fi
 
 killall malamute
-dsh_file=$(mktemp -p"$topsrc_dir/tests/CI/")
-if [ -n "$DEBUG" ]; then
-    echo "DEBUG: dsh_file='$dsh_file'"
-fi
 
 malamute "$topsrc_dir/tools/malamute.cfg" &
 dshell.sh networks ".*" >"$dsh_file" &
@@ -97,7 +121,5 @@ if [[ ! "$file" =~ $re ]]; then
     exit 1
 fi
 
-killall malamute dshell netmon
-rm -f "$dsh_file"
 exit 0
 
