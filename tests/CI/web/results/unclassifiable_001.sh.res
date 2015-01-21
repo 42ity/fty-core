@@ -1,0 +1,1 @@
+{"name":"RACK1-LAB","id":"21","contains":{"devices":[{"name":"UPS1-LAB","id":"22","type":"ups"},{"name":"UPS2-LAB","id":"23","type":"ups"},{"name":"ePDU1-LAB","id":"24","type":"epdu"},{"name":"ePDU2-LAB","id":"25","type":"epdu"},{"name":"SRV1-LAB","id":"26","type":"server"},{"name":"SRV2-LAB","id":"27","type":"server"}]}}
