@@ -358,8 +358,7 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-power-datacenter.cc \
 			tests/persist/test-topology-power-group.cc \
 			tests/persist/test-topology-location-from.cc \
-			tests/persist/test-topology-location-to.cc \
-			tests/persist/test-rack-power.cc 
+			tests/persist/test-topology-location-to.cc
 
 
 test_dbtopology_LDADD = \
