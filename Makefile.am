@@ -460,7 +460,7 @@ netmon_LDADD = \
 
 netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
-bin_PROGRAMS += 	simple server-agent db-ng
+bin_PROGRAMS += 	server-agent db-ng
 
 server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
 
@@ -485,41 +485,14 @@ db_ng_LDADD = \
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-simple_SOURCES = \
-			src/simple/main.cc \
-			src/include/defs.h \
-			$(top_srcdir)/tools/dbinit.h \
-			src/persist/persistence.h \
-			src/shared/upsstatus.cc \
-			src/drivers/nut/nut-actor.cc \
-			src/drivers/nut/nut-driver.cc
-
-simple_LDFLAGS = \
-			${LIBCZMQ_LIBS} \
-			${LIBNUTCLIENT_LIBS} \
-			${CXXTOOLS_LIBS} \
-			-lcidr -ltntdb
-
-simple_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tools/ \
-			-I$(top_builddir)/tools/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple/ \
-			-I$(top_srcdir)/src/drivers/nut
-
-simple_LDADD = \
-			libpriv-defs.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-subprocess.la
+# TODO: remove simple at the end
+EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
+			$(top_srcdir)/tools/dbinit.h
 
 dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
 			src/simple/asset_types.h \
 			src/include/powerdev_msg.h \
-			src/drivers/nut/nut-actor.h \
 			src/drivers/nut/nut-driver.h
 
 
@@ -541,6 +514,23 @@ driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
+
+bin_PROGRAMS +=		driver-nut
+
+driver_nut_SOURCES = \
+			src/drivers/nut/nut-driver.cc \
+			src/drivers/nut/nut-actor.cc \
+			src/shared/upsstatus.cc
+
+driver_nut_LDADD = \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la
+
+driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
+
+driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
 
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
