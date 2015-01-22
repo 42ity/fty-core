@@ -69,6 +69,7 @@ test-db2
 test-log
 test-utils
 test-dbtopology
+test-totalpower
 test-web
 db-ng
 server-agent

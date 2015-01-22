@@ -15,7 +15,7 @@ TEST_CASE("Location topology from #1","[db][topology][location][location_topolog
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION FROM #1 ==================\n");
+    log_info ("=============== LOCATION FROM #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     // t_bios_asset_element with id 5019 should not exist
@@ -59,7 +59,7 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = 7;    // take all, 7 means without the filter
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #3 ==================\n");
+    log_info ("=============== LOCATION FROM #3 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -164,7 +164,7 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = 7;    // take all, 7 means without the filter
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #4 ==================\n");
+    log_info ("=============== LOCATION FROM #4 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -292,7 +292,7 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #5 ==================\n");
+    log_info ("=============== LOCATION FROM #5 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -339,14 +339,14 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     r2.clear();
 
     r2 = print_frame_to_edges (asset_msg_grps    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
-    log_info ("r1.size before grp = %d \n",(int)r1.size());
+    log_info ("r1.size before grp = %d ",(int)r1.size());
     r1.insert(r2.begin(), r2.end());
     r2.clear();
-    log_info ("r1.size after grp = %d\n",(int)r1.size());
+    log_info ("r1.size after grp = %d",(int)r1.size());
 
-    log_info ("start print group elements\n");
+    log_info ("start print group elements");
     print_frame (asset_msg_grps    (cretTopology),7000 );
-    log_info ("end print group elements\n");
+    log_info ("end print group elements");
 
 
     // check if edges are ok
@@ -393,7 +393,7 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #5.1 ==================\n");
+    log_info ("=============== LOCATION FROM #5.1 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -487,7 +487,7 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #6 ==================\n");
+    log_info ("=============== LOCATION FROM #6 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -585,7 +585,7 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #6.1 ==================\n");
+    log_info ("=============== LOCATION FROM #6.1 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -662,7 +662,7 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #7 ==================\n");
+    log_info ("=============== LOCATION FROM #7 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -755,7 +755,7 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #8 ==================\n");
+    log_info ("=============== LOCATION FROM #8 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -849,7 +849,7 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
     uint8_t     start_filter_type_id    = id_rack;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #9 ==================\n");
+    log_info ("=============== LOCATION FROM #9 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -958,7 +958,7 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_group;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #10 ==================\n");
+    log_info ("=============== LOCATION FROM #10 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1051,7 +1051,7 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #11 ==================\n");
+    log_info ("=============== LOCATION FROM #11 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1147,7 +1147,7 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #12 ==================\n");
+    log_info ("=============== LOCATION FROM #12 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1251,7 +1251,7 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #13 ==================\n");
+    log_info ("=============== LOCATION FROM #13 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1351,7 +1351,7 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 6;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #14 ==================\n");
+    log_info ("=============== LOCATION FROM #14 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1447,7 +1447,7 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #15 ==================\n");
+    log_info ("=============== LOCATION FROM #15 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1525,7 +1525,7 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #16 ==================\n");
+    log_info ("=============== LOCATION FROM #16 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1604,7 +1604,7 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #17 ==================\n");
+    log_info ("=============== LOCATION FROM #17 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1683,7 +1683,7 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #18 ==================\n");
+    log_info ("=============== LOCATION FROM #18 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1762,7 +1762,7 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #19 ==================\n");
+    log_info ("=============== LOCATION FROM #19 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1842,7 +1842,7 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #20 ==================\n");
+    log_info ("=============== LOCATION FROM #20 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -1921,7 +1921,7 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_rack;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #21 ==================\n");
+    log_info ("=============== LOCATION FROM #21 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2000,7 +2000,7 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #22 ==================\n");
+    log_info ("=============== LOCATION FROM #22 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2078,7 +2078,7 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_rack;    // take all, 7 means without the filter
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #23 ==================\n");
+    log_info ("=============== LOCATION FROM #23 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2171,7 +2171,7 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 6;
     bool        start_recursive         = false;
 
-    log_info ("=============== LOCATION FROM #24 ==================\n");
+    log_info ("=============== LOCATION FROM #24 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2246,7 +2246,7 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #25 ==================\n");
+    log_info ("=============== LOCATION FROM #25 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2348,7 +2348,7 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = id_group;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #26 ==================\n");
+    log_info ("=============== LOCATION FROM #26 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
@@ -2446,7 +2446,7 @@ TEST_CASE("Location topology from #27","[db][topology][location][location_topolo
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = true;
 
-    log_info ("=============== LOCATION FROM #27 ==================\n");
+    log_info ("=============== LOCATION FROM #27 ==================");
     
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
