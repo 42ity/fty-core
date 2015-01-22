@@ -21,6 +21,26 @@
 
 DAEMONS="db-ng driver-nut driver-nmap netmon"
 
+restart_malamute(){
+    systemctl stop malamute || true
+    cat >/etc/malamute/malamute.cfg <<[eof]
+
+#   Apply to the whole broker
+server
+    timeout = 10000     #   Client connection timeout, msec
+    background = 0      #   Run as background process
+    workdir = .         #   Working directory for daemon
+    verbose = 0         #   Do verbose logging of activity?
+
+#   Apply to the Malamute service
+mlm_server
+    echo = binding Malamute service to 'ipc://@/malamute'
+    bind
+        endpoint = ipc://@/malamute
+[eof]
+    systemctl start malamute
+}
+
 start_daemon(){
     if [ -x ~/bin/$1 ] ; then
         /bin/rm -rf ~/$1.log
@@ -78,6 +98,7 @@ done
 case "$OPERATION" in
     start)
         stop
+	restart_malamute
         start
         ;;
     stop)
