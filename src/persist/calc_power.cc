@@ -76,13 +76,13 @@ power_sources_t
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device )
 {
-    log_info ("start \n");
+    log_info ("start ");
 
     auto devices    = power_topology.first;
     auto powerlinks = power_topology.second;
     
-    log_debug ("number of devices is %ld \n", devices.size());
-    log_debug ("number of powerlinks is %ld \n", powerlinks.size());
+    log_debug ("number of devices is %ld ", devices.size());
+    log_debug ("number of powerlinks is %ld ", powerlinks.size());
 
     // start_device can be
     // - IT device     - if it is the first call
@@ -114,11 +114,11 @@ power_sources_t
             }
         }
 
-        log_debug (" start to process \n");
-        log_debug ( "src_id is %d \n", std::get<0>(src_device));
-        log_debug (" src_type_id is %d \n", std::get<3>(src_device));
-        log_debug (" src_type_name is %s \n", std::get<2>(src_device).c_str());
-        log_debug (" src_name is %s \n", std::get<1>(src_device).c_str());
+        log_debug (" start to process ");
+        log_debug ( "src_id is %d ", std::get<0>(src_device));
+        log_debug (" src_type_id is %d ", std::get<3>(src_device));
+        log_debug (" src_type_name is %s ", std::get<2>(src_device).c_str());
+        log_debug (" src_name is %s ", std::get<1>(src_device).c_str());
 
         if ( is_epdu (src_device) )
             pow_src_epdu.insert(src_device);
@@ -148,7 +148,7 @@ power_sources_t
             }
             catch (const bios::InternalDBError &e) {
                 // propagate error to higher level
-                log_warning ("abnormal end with '%s' \n", e.what());
+                log_warning ("abnormal end with '%s' ", e.what());
                 throw bios::InternalDBError(e.what());
             }
             catch (const bios::ElementIsNotDevice &e) {
@@ -169,7 +169,7 @@ power_sources_t
             pow_src_it_device.insert (start_device);
         }
     }
-    log_info ("end \n");
+    log_info ("end ");
     return std::make_tuple (pow_src_epdu, pow_src_ups, pow_src_it_device);
 }
     
@@ -178,7 +178,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
 {
     // ASSUMPTION
     // specified element_id is already in DB and has type asset_type::RACK
-    log_info ("start \n");
+    log_info ("start ");
     std::set <device_info_t> result_set;
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -198,7 +198,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         // Could return more than one row
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
 
         for ( auto &row: result )
         {
@@ -221,7 +221,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
             result_set.insert (std::make_tuple(device_asset_id, device_name, 
                                 device_type_name, device_type_id));
         }
-        log_info ("end\n");
+        log_info ("end");
         // TODO
         // result_set is empty if:
         //  - someone removed a rack from DB (but this should never happen)
@@ -229,7 +229,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         return result_set;
     }
     catch (const std::exception &e) {
-        log_warning ("abnormal end with '%s'\n", e.what());
+        log_warning ("abnormal end with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -237,7 +237,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
 a_elmnt_tp_id_t select_element_type (const char* url, 
                                      a_elmnt_id_t asset_element_id)
 {
-    log_info ("start \n");
+    log_info ("start ");
     assert (asset_element_id);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -255,16 +255,16 @@ a_elmnt_tp_id_t select_element_type (const char* url,
         a_elmnt_tp_id_t asset_element_type_id = 0;
         val.get(asset_element_type_id);
         assert ( asset_element_type_id );
-        log_info ("end \n");
+        log_info ("end ");
         return asset_element_type_id;
     }
     catch (const tntdb::NotFound &e) {
-        log_info ("specified element %d was not found \n", asset_element_id);
+        log_info ("specified element %d was not found ", asset_element_id);
         // element with specified id was not found
         return 0;
     }
     catch (const std::exception &e){
-        log_warning ("abnormal end with '%s' \n", e.what());
+        log_warning ("abnormal end with '%s' ", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -326,14 +326,14 @@ void compute_result_value_set (zhash_t *results, double value)
     char buff[20];
     sprintf(buff, "%f", value);
     zhash_insert (results, "value_d", buff);
-    log_debug ("conv value from %f to '%s' \n", value, buff);
+    log_debug ("conv value from %f to '%s' ", value, buff);
 }
 
 int compute_result_value_get (zhash_t *results, double *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value_d");
     int r = convert_str_to_double (value_str, value);
-    log_debug ("conv value from '%s' to %f \n", value_str, *value);
+    log_debug ("conv value from '%s' to %f ", value_str, *value);
     return r;
 }
 
@@ -343,14 +343,14 @@ void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
     char buff[21];
     sprintf(buff, "%ld", value);
     zhash_insert (results, "value", buff);
-    log_debug ("conv value from %ld to '%s' \n", value, buff);
+    log_debug ("conv value from %ld to '%s' ", value, buff);
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value");
     int r = sscanf(value_str ,"%ld", value);
-    log_debug ("conv value from '%s' to %ld \n", value_str, *value);
+    log_debug ("conv value from '%s' to %ld ", value_str, *value);
     return (r == 0 ? 1:0);
 }
 
@@ -360,14 +360,14 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
     char buff[21];
     sprintf(buff, "%d", scale);
     zhash_insert (results, "scale", buff);
-    log_debug ("conv scale from %hd to '%s' \n", scale, buff);
+    log_debug ("conv scale from %hd to '%s' ", scale, buff);
 }
 
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
     int r = sscanf(value_str ,"%hd", scale);
-    log_debug ("conv scale from '%s' to %hd \n", value_str, *scale);
+    log_debug ("conv scale from '%s' to %hd ", value_str, *scale);
     return (r == 0 ? 1:0);
 }
 
@@ -377,39 +377,39 @@ void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
     char buff[21];
     sprintf(buff, "%d", num_missed);
     zhash_insert (results, "num_missed", buff);
-    log_debug ("conv num_missed from %d to '%s' \n", num_missed, buff);
+    log_debug ("conv num_missed from %d to '%s' ", num_missed, buff);
 }
 
 int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
 {
     char* value_str = (char *) zhash_lookup (results, "num_missed");
     int r = sscanf(value_str ,"%u", num_missed);
-    log_debug ("conv num_missed from '%s' to %u \n", value_str, *num_missed);
+    log_debug ("conv num_missed from '%s' to %u ", value_str, *num_missed);
     return (r == 0 ? 1:0);
 }
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
-    log_info ("start \n");
+    log_info ("start ");
     // check if specified device has a rack type
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
         {
-            log_info ("end, %d rack not found \n", rack_element_id);
+            log_info ("end, %d rack not found ", rack_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                     "specified rack was not found", NULL);
         }
         if (  type_id != asset_type::RACK ) 
         {
-            log_info ("end, %d isn't rack \n", rack_element_id);
+            log_info ("end, %d isn't rack ", rack_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                     "specified element is not a rack", NULL);
         }
     }
     catch (const bios::InternalDBError &e)
     {
-        log_warning ("abnormal end with '%s' \n", e.what());
+        log_warning ("abnormal end with '%s' ", e.what());
         return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                     e.what(), NULL);
     }
@@ -509,7 +509,7 @@ compute_total_rack_power_v1(
         const std::set<device_info_t> &devs,
         uint32_t max_age)
 {
-    log_info("start \n");
+    log_info("start ");
 
     assert(max_age != 0);
 
@@ -559,7 +559,7 @@ compute_total_rack_power_v1(
 
         tntdb::Result result = st.set("seconds", max_age).
                                   select();
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         for ( auto &row: result )
         {
             m_dvc_id_t dev_id = 0;
@@ -578,7 +578,7 @@ compute_total_rack_power_v1(
         }
     }
     catch (const std::exception &e) {
-        log_warning ("abnormal end with '%s'\n", e.what());
+        log_warning ("abnormal end with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
 

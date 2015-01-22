@@ -17,7 +17,7 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== RACK POWER #1 ==================\n");
+    log_info ("=============== RACK POWER #1 ==================");
     
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower
@@ -66,7 +66,7 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
     log_open();
  //   log_set_level(LOG_DEBUG);
 
-    log_info ("=============== RACK POWER #2 ==================\n");
+    log_info ("=============== RACK POWER #2 ==================");
     
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower
@@ -125,7 +125,7 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
     log_open();
   //  log_set_level(LOG_DEBUG);
 
-    log_info ("=============== RACK POWER #3 ==================\n");
+    log_info ("=============== RACK POWER #3 ==================");
     
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower
@@ -187,7 +187,7 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
     log_open();
   //  log_set_level(LOG_DEBUG);
 
-    log_info ("=============== RACK POWER #4 ==================\n");
+    log_info ("=============== RACK POWER #4 ==================");
     
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower

@@ -16,7 +16,7 @@ TEST_CASE("Power topology to #1","[db][topology][power][to][power_topology.sql][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #1 ==================\n");
+    log_info ("=============== POWER TO #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);
@@ -42,7 +42,7 @@ TEST_CASE("Power topology to #2","[db][topology][power][power_topology.sql][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #2 ==================\n");
+    log_info ("=============== POWER TO #2 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 4998);
@@ -68,7 +68,7 @@ TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #3 ==================\n");
+    log_info ("=============== POWER TO #3 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5045);
@@ -128,7 +128,7 @@ TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #4 ==================\n");
+    log_info ("=============== POWER TO #4 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5046);
@@ -184,7 +184,7 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #5 ==================\n");
+    log_info ("=============== POWER TO #5 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5049);
@@ -274,7 +274,7 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #6 ==================\n");
+    log_info ("=============== POWER TO #6 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5054);
@@ -371,7 +371,7 @@ TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #7 ==================\n");
+    log_info ("=============== POWER TO #7 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5061);
@@ -458,7 +458,7 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #8 ==================\n");
+    log_info ("=============== POWER TO #8 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5062);
@@ -548,7 +548,7 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #9 ==================\n");
+    log_info ("=============== POWER TO #9 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5065);
@@ -647,7 +647,7 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #10 ==================\n");
+    log_info ("=============== POWER TO #10 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5074);
@@ -735,7 +735,7 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER TO #11 ==================\n");
+    log_info ("=============== POWER TO #11 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5076);
