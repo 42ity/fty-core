@@ -97,7 +97,7 @@ int nethistory_cmd_id (char cmd) {
 
 bool
 process_message(const std::string& url, zmsg_t *msg) {
-    log_info ("%s", "start\n");
+    log_info ("%s", "start");
 
     zmsg_t *msg2;
 
@@ -129,7 +129,7 @@ process_message(const std::string& url, zmsg_t *msg) {
     if (nmap_msg) {
         //TODO: check the log level!
         // powerdev_msg_print(powerdev_msg);
-        log_info ("Processing nmap message\n");
+        log_info ("Processing nmap message");
         nmap_msg_process(url.c_str(), nmap_msg);
         return true; // fine until next PR
     }
@@ -143,8 +143,8 @@ process_message(const std::string& url, zmsg_t *msg) {
         return common_msg_process(url, *common_msg);
     }
 
-    log_error("unsupported message type, skipped!\n");
-    log_info ("end\n");
+    log_error("unsupported message type, skipped!");
+    log_info ("end");
     return false;
 }
 
@@ -171,7 +171,7 @@ nmap_msg_process (const char *url, nmap_msg_t *msg)
                 // data checks           
                 const char *ip = nmap_msg_addr (msg);
                 if (ip == NULL) {
-                    log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received\n");
+                    log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received");
                     break;
                 }
 
@@ -185,24 +185,24 @@ nmap_msg_process (const char *url, nmap_msg_t *msg)
                 }
                 catch (const std::exception& e)
                 {
-                    log_error ("exception caught: %s\n", e.what ());
+                    log_error ("exception caught: %s", e.what ());
                 }
                 catch (...)
                 {
-                    log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.\n", url);
+                    log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.", url);
                 }
                 break;
             }
 
             case NMAP_MSG_DEV_SCAN:
             {
-                log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.\n");
+                log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.");
                 break;
             }
 
             default:
             {
-                log_warning ("Unexpected message type received; message id = '%d'\n", msg_id);        
+                log_warning ("Unexpected message type received; message id = '%d'", msg_id);        
                 break;
             }
         }
@@ -404,7 +404,7 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
 
     if ( msgid  == COMMON_MSG_FAIL )
         // the client was not found
-        log_error("client with name='%s' was not found, message was ignored\n", clientname);
+        log_error("client with name='%s' was not found, message was ignored", clientname);
     else if ( msgid == COMMON_MSG_RETURN_CLIENT )
     {
         uint32_t client_id = common_msg_rowid (retClient); // the client was found
@@ -419,7 +419,7 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
             
         if ( msgid == COMMON_MSG_FAIL )
             // the device was not found
-            log_error("device with name='%s' was not found, message was ignored\n", devicename);
+            log_error("device with name='%s' was not found, message was ignored", devicename);
         else if ( msgid == COMMON_MSG_RETURN_DEVICE )
         {   // the device was found
             uint32_t device_id = common_msg_rowid (retDevice);      
@@ -468,11 +468,11 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
 
     if ( msgid  == COMMON_MSG_FAIL )
         // the client info was not found
-        log_error("client info for UI/properties not found, message was ignored\n");
+        log_error("client info for UI/properties not found, message was ignored");
     else if ( msgid == COMMON_MSG_DB_OK )
         result = true;
     else
-        log_error("Invalid reply for update_client_info, client_id: %d, message was ignored\n", client_id);
+        log_error("Invalid reply for update_client_info, client_id: %d, message was ignored", client_id);
 
     common_msg_destroy (&reply);
 
@@ -513,7 +513,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
 
             if ( msgid  == COMMON_MSG_FAIL )
                 // the client was not found
-                log_error("client with name='%s' was not found, message was ignored\n", clientname);
+                log_error("client with name='%s' was not found, message was ignored", clientname);
             else if ( msgid == COMMON_MSG_RETURN_CLIENT )
             {
                 client_id = common_msg_rowid (retClient); // the client was found

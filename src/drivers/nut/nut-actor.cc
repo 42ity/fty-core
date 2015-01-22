@@ -151,7 +151,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
         }
         zmsg_destroy(&reply);
     } else {
-        log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
+        log_error("NUT invalid measurement id name found, %s doesn't contain subtype", name.c_str());
     }
     return ID;
 }
@@ -169,9 +169,9 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
         ID = nut_get_measurement_id(name);
         if( ID.type != 0 && ID.subtype != 0 ) {
             IDs[name] = ID;
-            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(), ID.type, ID.subtype, ID.scale );
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i", name.c_str(), ID.type, ID.subtype, ID.scale );
         } else {
-            log_error("Can't get measurement type and subtype for %s\n", name.c_str());
+            log_error("Can't get measurement type and subtype for %s", name.c_str());
             return NULL;
         }
     }
@@ -189,7 +189,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
             return zmsg;
         } else { return NULL; }
     } else {
-        log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
+        log_error("NUT device %s type is unknown", dev.name().c_str()); 
         return NULL;
     }
 }
@@ -205,7 +205,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
  *        propagated, even if there is nochange.
  */
 void nut_actor(zsock_t *pipe, void *args) {
-    log_info ("%s", "nut_actor start\n");
+    log_info ("%s", "nut_actor start");
 
     bool advertise;
     std::map<std::string, measurement_id_t> measurement_ids;
@@ -238,7 +238,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                     for(auto &measurement : it->second.physics( ! advertise ) ) {
                         zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true);
                         if(msg) {
-                            log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
+                            log_debug("sending new measurement for ups %s, type %s, value %i", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
                             zmsg_send(&msg, dbsock);
                         }
                         zmsg_destroy(&msg);
@@ -249,7 +249,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                         uint16_t    status_i = shared::upsstatus_to_int( status_s );
                         zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false);
                         if(msg) {
-                            log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
+                            log_debug("sending new status for ups %s, value %i (%s)", it->second.name().c_str(), status_i, status_s.c_str() );
                             zmsg_send(&msg, dbsock);
                         }
                         zmsg_destroy(&msg);
@@ -257,7 +257,7 @@ void nut_actor(zsock_t *pipe, void *args) {
                     // send also POWERDEV_MSG_POWERDEV_STATUS
                     zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
                     if(msg) {
-                        log_debug ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
+                        log_debug ("ups %s snapshot: %s", it->second.name().c_str(), it->second.toString().c_str() );
                         zmsg_send(&msg, dbsock);
                     }
                     zmsg_destroy(&msg);
@@ -268,7 +268,7 @@ void nut_actor(zsock_t *pipe, void *args) {
     }
     zpoller_destroy(&poller);
     zsock_destroy(&dbsock);
-    log_info ("%s", "nut_actor end\n");
+    log_info ("%s", "nut_actor end");
 }
 
 #pragma GCC diagnostic pop
