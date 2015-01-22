@@ -198,7 +198,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
         }
         zmsg_destroy(&reply);
     } else {
-        log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
+        log_error("NUT invalid measurement id name found, %s doesn't contain subtype", name.c_str());
     }
     return ID;
 }
@@ -216,9 +216,9 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
         ID = nut_get_measurement_id(name, client);
         if( ID.type != 0 && ID.subtype != 0 ) {
             IDs[name] = ID;
-            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(), ID.type, ID.subtype, ID.scale );
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i", name.c_str(), ID.type, ID.subtype, ID.scale );
         } else {
-            log_error("Can't get measurement type and subtype for %s\n", name.c_str());
+            log_error("Can't get measurement type and subtype for %s", name.c_str());
             return NULL;
         }
     }
@@ -236,7 +236,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
             return zmsg;
         } else { return NULL; }
     } else {
-        log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
+        log_error("NUT device %s type is unknown", dev.name().c_str()); 
         return NULL;
     }
 }
@@ -250,7 +250,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
 int main(int argc, char *argv[] ) {
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("%s", "driver-nut started\n");
+    log_info ("%s", "driver-nut started");
 
     NUTDeviceList listOfUPS;
     bool advertise;
@@ -282,7 +282,7 @@ int main(int argc, char *argv[] ) {
                 for(auto &measurement : it->second.physics( ! advertise ) ) {
                     zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true, client);
                     if(msg) {
-                        log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
+                        log_debug("sending new measurement for ups %s, type %s, value %i", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
                         mlm_client_send(client,deviceID.c_str(),&msg);
                     }
                     zmsg_destroy(&msg);
@@ -293,7 +293,7 @@ int main(int argc, char *argv[] ) {
                     uint16_t    status_i = shared::upsstatus_to_int( status_s );
                     zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false, client);
                     if(msg) {
-                        log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
+                        log_debug("sending new status for ups %s, value %i (%s)", it->second.name().c_str(), status_i, status_s.c_str() );
                         mlm_client_send(client,deviceID.c_str(),&msg);
                     }
                     zmsg_destroy(&msg);
@@ -314,7 +314,7 @@ int main(int argc, char *argv[] ) {
         if( ! zsys_interrupted ) zclock_sleep(NUT_POLLING_INTERVAL);
     }
     mlm_client_destroy(&client);
-    log_info ("driver-nut ended\n");
+    log_info ("driver-nut ended");
     return 0;
 }
 

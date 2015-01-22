@@ -57,6 +57,7 @@ DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
 DB_TOPO="power_topology.sql"
 DB_TOPO1="location_topology.sql"
+DB_RACK_POWER="rack_power.sql"
 
 RESULT=0
 
@@ -97,12 +98,25 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         RESULT=1
     fi
 done
-
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-dbtopology failed"
     echo "----------------------------------------"
     RESULT=1
 fi
+
+echo "-------------------- test-total-power --------------------"
+echo "-------------------- fill db for rack power --------------------"
+make -C "$BUILDSUBDIR" test-totalpower 
+mysql -u root < "$DB_LOADDIR/$DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER"
+"$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-totalpower failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
+
 cd -
 exit $RESULT
