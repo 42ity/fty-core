@@ -1,8 +1,0 @@
-[Unit]
-Description=NUT driver for BIOS project
-After=malamute.service
-Requires=malamute.service
-
-[Service]
-Type=simple
-ExecStart=@libdir@/bios/driver-nut
