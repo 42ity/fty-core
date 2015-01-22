@@ -617,7 +617,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("notfound %s \n","end");
+        log_info("asset element %d notfound %s \n", asset_element_id,"end");
         throw bios::NotFound();
     }
     catch (const std::exception &e) {

@@ -782,8 +782,6 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_racks\n");
     }
-
-
     // Select devices
     // only for rooms, datacenters, rows, racks, unlockated
     // TODO filter
@@ -809,7 +807,6 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         log_info ("end select_devices\n");
     }
-
     // Select groups
     // Groups can be selected
     //      - only for datacenter (if selecting all childs  or only groups).
@@ -1126,16 +1123,16 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     return result;
 }
 
-std::pair <std::string, std::string>
-    select_element_name_device_tname  ( const char* url, 
-                                        uint32_t asset_element_id)
+std::tuple <std::string, std::string, uint32_t>
+    select_add_device_info  ( const char* url, 
+                              uint32_t asset_element_id)
 {
     // select information about specidied asset element
     tntdb::Connection conn = tntdb::connectCached(url);
 
     tntdb::Statement st = conn.prepareCached(
         " SELECT"
-        "   v.name, v1.name as type_name"
+        "   v.name, v1.name as type_name, v1.id_asset_device_type"
         " FROM"
         "   v_bios_asset_element v"
         " LEFT JOIN  v_bios_asset_device v1"
@@ -1155,7 +1152,12 @@ std::pair <std::string, std::string>
     std::string device_type_name = "";
     row[1].get(device_type_name);
     log_debug ("selected device type name = %s\n", device_type_name.c_str());
-    return std::make_pair (element_name, device_type_name);
+    
+    // device type id, would be 0 if it is not a device
+    uint32_t device_type_id = 0;
+    row[2].get(device_type_id);
+    log_debug ("selected device type id = %d\n", device_type_id);
+    return std::make_tuple (element_name, device_type_name, device_type_id);
 }
 
 zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const &devices)
@@ -1224,13 +1226,15 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
     std::string device_name = "";
     std::string device_type_name = "";
+    uint32_t device_type_id = 0;
 
     // select information about the start device
     try{
-        std::pair <std::string, std::string> names = 
-            select_element_name_device_tname (url, element_id);
-        device_name = names.first;
-        device_type_name = names.second;
+        std::tuple <std::string, std::string, uint32_t> additional_info = 
+            select_add_device_info (url, element_id);
+        device_name = std::get<0>(additional_info);
+        device_type_name = std::get<1>(additional_info);
+        device_type_id = std::get<2>(additional_info);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1263,7 +1267,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     std::set< device_info_t > resultdevices;
     //      start device should be included also into the result set
     resultdevices.insert (
-        std::make_tuple(element_id, device_name, device_type_name));
+        std::make_tuple(element_id, device_name, device_type_name, device_type_id));
     
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -1271,7 +1275,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
-            "  v.dest_type_name"
+            "  v.dest_type_name, v.dest_type_id"
             " FROM"
             "  v_bios_asset_link_topology v"
             " WHERE"
@@ -1310,7 +1314,12 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             std::string device_type_name = "";
             row[4].get(device_type_name);
             assert ( !device_type_name.empty() );
-
+            
+            // id_asset_element_dest, requiured
+            uint32_t device_type_dest_id = 0;
+            row[5].get(device_type_dest_id);
+            assert ( device_type_dest_id );
+   
             log_debug ("for\n");
             log_debug ("asset_element_id_src = %d\n", element_id);
             log_debug ("asset_element_id_dest = %d\n", id_asset_element_dest);
@@ -1318,11 +1327,12 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             log_debug ("dest_in = %d\n", dest_in);
             log_debug ("device_name = %s\n", device_name.c_str());
             log_debug ("device_type_name = %s\n", device_type_name.c_str());
+            log_debug ("dest_type_id = %d\n", device_type_dest_id);
 
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 
             resultdevices.insert (std::make_tuple(
-                    id_asset_element_dest, device_name, device_type_name));
+                    id_asset_element_dest, device_name, device_type_name, device_type_dest_id));
         } // end for
     }
     catch (const std::exception &e) {
@@ -1362,15 +1372,18 @@ std::pair < std::set < device_info_t >, std::set < powerlink_info_t > >
 select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
                           bool is_recursive)
 {
+    log_info ("start\n");
     std::string device_name = "";
     std::string device_type_name = "";
+    uint32_t device_type_id = 0;
     
     // select information about the start device
     try{
-        std::pair <std::string, std::string> names = 
-            select_element_name_device_tname (url, element_id);
-        device_name = names.first;
-        device_type_name = names.second;
+        std::tuple <std::string, std::string, uint32_t> additional_info = 
+            select_add_device_info (url, element_id);
+        device_name = std::get<0>(additional_info);
+        device_type_name = std::get<1>(additional_info);
+        device_type_id = std::get<2>(additional_info);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1391,7 +1404,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
     // result set of found devices 
     std::set< device_info_t > resultdevices;
                                                       
-    auto adevice = std::make_tuple(element_id, device_name, device_type_name);
+    auto adevice = std::make_tuple(element_id, device_name, device_type_name, device_type_id);
     // start device should be included also into the result set
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
@@ -1413,7 +1426,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "  v.id_asset_element_src, v.src_out, v.dest_in, v.src_name,"
-                "  v.src_type_name"
+                "  v.src_type_name, v.src_type_id "
                 " FROM"
                 "  v_bios_asset_link_topology v"
                 " WHERE"
@@ -1454,7 +1467,12 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 std::string device_type_name_src = "";
                 row[4].get(device_type_name_src);
                 assert ( !device_type_name_src.empty() );
-    
+                
+                // device_type_src_id, required
+                uint32_t device_type_src_id = 0;
+                row[5].get(device_type_src_id);
+                assert ( device_type_src_id );
+                
                 log_debug ("for\n");
                 log_debug ("asset_element_id_dest = %d\n", cur_element_id);
                 log_debug ("asset_element_id_src = %d\n", 
@@ -1471,7 +1489,11 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 if ( is_recursive )
                     newdevices.insert (std::make_tuple(
                             id_asset_element_src, device_name_src, 
-                            device_type_name_src));
+                            device_type_name_src, device_type_src_id));
+                else
+                    resultdevices.insert (std::make_tuple(
+                            id_asset_element_src, device_name_src, 
+                            device_type_name_src, device_type_src_id));
             } // end for
         }
         catch (const std::exception &e) {
@@ -1640,7 +1662,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         // (for parents) here
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v1.name, v2.name AS type_name, v.id_asset_element"
+            "   v1.name, v2.name AS type_name, v.id_asset_element, v2.id_asset_device_type"
             " FROM"
             "   v_bios_asset_group_relation v,"
             "   t_bios_asset_element v1,"
@@ -1671,14 +1693,19 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             uint32_t id_asset_element = 0;
             row[2].get(id_asset_element);
             assert ( id_asset_element );
+            
+            uint32_t device_type_id = 0;
+            row[2].get(device_type_id);
+            assert ( device_type_id );
 
             log_debug ("for\n");
             log_debug ("device_name = %s\n", device_name.c_str());
             log_debug ("device_type_name = %s\n", device_name.c_str());
             log_debug ("asset_element_id = %d\n", id_asset_element);
+            log_debug ("device_type_id = %d\n", device_type_id);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name));
+                    id_asset_element, device_name, device_type_name, device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
@@ -1709,7 +1736,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Connection conn = tntdb::connectCached(url);
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id_asset_element, v.name , v.type_name" 
+            "   v.id_asset_element, v.name , v.type_name, v.id_asset_device_type" 
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
@@ -1737,13 +1764,19 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             row[2].get(device_type_name);
             assert ( !device_type_name.empty() );
 
+            // device_type_id, required 
+            uint32_t device_type_id = 0;
+            row[3].get(device_type_id);
+            assert ( device_type_id );
+            
             log_debug ("for\n");
             log_debug ("device_name = %s\n", device_name.c_str());
-            log_debug ("device_type_name = %s\n", device_name.c_str());
+            log_debug ("device_type_name = %s\n", device_type_name.c_str());
+            log_debug ("device_type_id = %d\n", device_type_id);
             log_debug ("asset_element_id = %d\n", id_asset_element);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name));
+                    id_asset_element, device_name, device_type_name, device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
