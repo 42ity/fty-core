@@ -14,7 +14,7 @@
 # globs generally) which we may be interested in:
 
 ### Manage the SASL daemon (needed for CI tests):
-Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd
+Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd,/bin/systemctl --quiet is-active saslauthd
 
 # Overall, what is currently allowed with different privileges?
 Cmnd_Alias BIOS_TEST_PROGS	= SASLD
