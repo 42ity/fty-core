@@ -356,4 +356,29 @@ compute_total_rack_power_v1(
         const std::set<device_info_t>& epdus,
         const std::set<device_info_t>& devs,
         uint32_t max_age);
+
+
+/**
+ * \brief Find ids of racks in location topology frame.
+ *
+ * \param frame          - frame to process.
+ * \param parent_type_id - type id of the parant in topology.
+ *
+ * \result set of rack ids contained in frame.
+ */
+std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
+                                                m_dvc_tp_id_t parent_type_id);
+
+
+/**
+ * \brief calculate a total power of datacenter.
+ *
+ * Algorithm: summ up total rack powers of all racks contained in DC.
+ *
+ * \param url - a connection to database.
+ * \param dc_element_id - an asset element id of datacenter.
+ *
+ * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN
+ */
+zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_
