@@ -170,8 +170,11 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
+
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
@@ -187,11 +190,12 @@ libpriv_proto_la_SOURCES = \
 			src/include/asset_msg.h \
 			src/include/common_msg.c \
 			src/include/common_msg.h \
-			src/include/defs.h \
 			src/include/netdisc_msg.c \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
 			src/include/nmap_msg.h \
+			src/include/compute_msg.c \
+			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
@@ -356,6 +360,7 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
 
+
 test_dbtopology_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
@@ -372,6 +377,31 @@ test_dbtopology_CPPFLAGS = \
 			-I$(top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+#### total power tests
+bin_PROGRAMS += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc 
+
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
@@ -611,6 +641,7 @@ web-test-deps: tntnet.xml bios_web.la
 
 # Execute the test web-server for $BIOS REST API
 web-test: web-test-deps
+	@echo "=== Running target $@ as: "; id || true; echo ""
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------

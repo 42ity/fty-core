@@ -427,7 +427,9 @@ CREATE VIEW v_bios_asset_link_topology AS
             v3.id_asset_element AS id_asset_element_dest,
             v5.name AS dest_name,
             v6.name AS src_type_name,
-            v7.name AS dest_type_name
+            v7.name AS dest_type_name,
+            v6.id_asset_device_type AS src_type_id,
+            v7.id_asset_device_type AS dest_type_id
     FROM t_bios_asset_link v1
         LEFT JOIN t_bios_asset_device v2
         ON (v1.id_asset_device_src  = v2.id_asset_device)
@@ -476,6 +478,7 @@ CREATE VIEW v_bios_asset_element_super_parent AS
 SELECT v1.id_asset_element, 
        v1.name , 
        v5.name AS type_name,
+       v5.id_asset_device_type,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
