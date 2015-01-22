@@ -1,7 +1,7 @@
 [Unit]
 Description=NUT driver for BIOS project
-After=malamute.service bios-db.service
-Requires=malamute.service bios-db.service
+After=malamute.service
+Requires=malamute.service
 
 [Service]
 Type=simple
