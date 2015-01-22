@@ -19,19 +19,30 @@
 #
 # Description: starts or stops the simple daemon installed in $HOME
 
-start(){
-   set -x
-   cd ~/bin
-   /bin/rm -rf ~/simple.log
-   nohup ./simple >~/simple.log 2>&1 &
-   sleep 5
-   pidof simple && pidof netmon
+DAEMONS="db-ng driver-nut driver-nmap netmon"
+
+start_daemon(){
+    if [ -x ~/bin/$1 ] ; then
+	/bin/rm -rf ~/$1.log
+	nohup ~/bin/$1 >~/$1.log 2>&1 &
+	sleep 5
+	pidof $1
+    else
+	echo "ERROR: $1 is missing"
+	exit 1
+    if
 }
 
-stop(){
-   killall simple 2>/dev/null || true
-   sleep 1
-   killall netmon 2>/dev/null || true
+stop() {
+    for d in $DAEMONS ; do
+       killall $d 2>/dev/null || true
+    done
+}
+
+start() {
+    for d in $DAEMONS ; do
+	start_daemon $d
+    done
 }
 
 usage(){
