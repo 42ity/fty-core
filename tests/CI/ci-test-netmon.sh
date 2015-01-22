@@ -1,10 +1,29 @@
 #!/bin/bash
 
-# REQUIRES
-#   built project
-#   ran as root
-
-# USAGE $0 [-d]
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#   
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Karol Hrdina <karolhrdina@eaton.com>
+#
+# Description: tests netmon module
+#
+# Requirements:
+#   project is built
+#   script is ran as root
+#
+# Usage $0 [-d]
 #   -d  print extra debug output
 
 # TODO (nice to have, if there is nothing to do):
@@ -46,7 +65,7 @@ touch "$LOCKFILE"
 
 ### Section: actual steps being performed
 function cleanup {
-    rm -f "$LOCKFILE" "$dsh_file"
+    rm -f "$LOCKFILE" #"$dsh_file"
     killall malamute
     killall dshell
     killall -9 netmon
@@ -54,7 +73,12 @@ function cleanup {
 
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
-export PATH="$PATH:$topsrc_dir:$topsrc_dir/tools"
+# Note:
+# When obs builds the image, binaries (like netmon for e.g.) are naturally put
+# into /usr/bin. These are different from what we actually build from latest git snapshot.
+# Therefore if we want to invoke these binaries, their location has to be in the front
+# of PATH environment variable.
+export PATH="$topsrc_dir:$topsrc_dir/tools:$PATH"
 if [ -n "$DEBUG" ]; then
     echo "DEBUG: PATH='$PATH'"
 fi
@@ -62,8 +86,20 @@ fi
 killall malamute
 
 malamute "$topsrc_dir/tools/malamute.cfg" &
-dshell.sh networks ".*" >"$dsh_file" &
+if [[ $? -ne 0 ]]; then
+    [ -n "$DEBUG" ] && echo "malamute didn't start properly"
+    exit 1
+fi
+dshell.sh networks ".*" > "$dsh_file" &
+if [[ $? -ne 0 ]]; then
+    [ -n "$DEBUG" ] && echo "dshell didn't start properly"
+    exit 1
+fi
 netmon &
+if [[ $? -ne 0 ]]; then
+    [ -n "$DEBUG" ] && echo "netmon didn't start properly"
+    exit 1
+fi
 sleep 2
 
 # These actions have to be reflected in dsh_file for this test to succeed.
@@ -94,32 +130,37 @@ file=$(<$dsh_file) # `cat file` for non-bash shell
 # 101.25.138.2 dev lo
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='101.25.138.2'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 re=".*sender=NETMON subject=del content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='101.25.138.2'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 
 # 103.15.3.0/24 dev lo
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='103.15.3.0'.*?prefixlen=24"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='103.15.3.0'.*?prefixlen=24"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 
 # 20.13.5.4/32 dev lo
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='20.13.5.4'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='20.13.5.4'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
+    [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
     exit 1
 fi
 
 exit 0
-
