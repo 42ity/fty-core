@@ -75,7 +75,7 @@ usage() {
 
 
 my_systemctl() {
-    /usr/bin/systemctl --system --no-pager --full 
+    /usr/bin/systemctl --system --no-pager --full "${@}"
 }
 
 is_external_unit() {
@@ -135,7 +135,7 @@ install_unit_sysd() {
     [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" > /run/system/systemd/${unit}.service
-    my_systemctl deamon-reload
+    my_systemctl daemon-reload
 }
 
 get_unit_dependencies() {
@@ -263,9 +263,7 @@ can_use_sysd() {
         return 1
     fi
     
-    [ $(readlink -f /proc/1/exe) != "/usr/lib/systemd/systemd" ] && return 1
-
-    return 0
+    readlink -f /proc/1/exe | grep -q "/lib/systemd/systemd$"
 }
 
 main() {
