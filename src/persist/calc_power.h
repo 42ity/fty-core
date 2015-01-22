@@ -333,17 +333,22 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
 
 
 
-//! \brief compute total rack power V1
-//
-// FIXME: leave three arguments - one per device type, maybe in the 
-// future we'll use it, or change
-//
-// \param upses   - list of ups'es
-// \param epdus   - list of epdu's
-// \param devs    - list of devices
-// \param max_age - maximum age we'd like to take into account in secs
-//
-// \return rc_power_t - total power, quality of metric and list of id's, which were requested, but missed
+/**
+ * \brief compute total rack power V1
+ * FIXME: leave three arguments - one per device type, maybe in the future 
+ * we'll use it, or change
+ * TODO: ask for id_key/id_subkey, 
+ * see measurement_id_t nut_get_measurement_id(const std::string &name) 
+ * TODO: quality computation - to be defined, leave with 255
+ *
+ * \param upses - list of ups'es
+ * \param epdus - list of epdu's
+ * \param devs  - list of devices
+ * \param max_age - maximum age we'd like to take into account in secs
+ *
+ * \return rc_power_t - total power, quality of metric and list of id's, 
+ *                         which were requested, but missed
+ */
 rack_power_t
 compute_total_rack_power_v1(
         const char* url,

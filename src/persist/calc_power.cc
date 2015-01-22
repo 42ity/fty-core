@@ -329,7 +329,6 @@ void compute_result_value_set (zhash_t *results, double value)
     log_debug ("conv value from %f to '%s' \n", value, buff);
 }
 
-// 0 ok, else false
 int compute_result_value_get (zhash_t *results, double *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value_d");
@@ -364,7 +363,6 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
     log_debug ("conv scale from %hd to '%s' \n", scale, buff);
 }
 
-// 0 ok, 1 false
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
@@ -382,7 +380,6 @@ void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
     log_debug ("conv num_missed from %d to '%s' \n", num_missed, buff);
 }
 
-// 0 ok, 1 false
 int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
 {
     char* value_str = (char *) zhash_lookup (results, "num_missed");
@@ -443,9 +440,11 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     return retmsg;
 }
 
-//! \brief rescale number to the new scale - upscalling loses information
-//
-// assert's to prevent integer overflow
+/**
+ *  \brief rescale number to the new scale - upscalling loses information
+ *
+ *  assert's to prevent integer overflow
+ */
 static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, 
                 m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale)
 {
@@ -467,7 +466,9 @@ static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value,
     return value;
 }
 
-//! \brief add a value with a respect to the scale - downscale all the time
+/**
+ *  \brief add a value with a respect to the scale - downscale all the time
+ */
 static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, 
                                                 m_msrmnt_scale_t scale)
 {
@@ -493,22 +494,13 @@ static std::string s_generate_in_clause(
     return o.str();
 }
 
-//! \brief compute total rack power V1
-//
-// FIXME: leave three arguments - one per device type, maybe in the future 
-// we'll use it, or change
-// TODO: ask for id_key/id_subkey, 
-// see measurement_id_t nut_get_measurement_id(const std::string &name) 
-// TODO: quality computation - to be defined, leave with 255
-//
-// \param upses - list of ups'es
-// \param epdus - list of epdu's
-// \param devs  - list of devices
-// \param max_age - maximum age we'd like to take into account in secs
-//
-// \return rc_power_t - total power, quality of metric and list of id's, 
-//                          which were requested, but missed
-
+/**
+ * FIXME: leave three arguments - one per device type, maybe in the future 
+ * we'll use it, or change
+ * TODO: ask for id_key/id_subkey, 
+ * see measurement_id_t nut_get_measurement_id(const std::string &name) 
+ * TODO: quality computation - to be defined, leave with 255
+ */
 rack_power_t
 compute_total_rack_power_v1(
         const char *url,
