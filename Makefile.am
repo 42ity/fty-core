@@ -170,8 +170,11 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
+
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
@@ -187,11 +190,12 @@ libpriv_proto_la_SOURCES = \
 			src/include/asset_msg.h \
 			src/include/common_msg.c \
 			src/include/common_msg.h \
-			src/include/defs.h \
 			src/include/netdisc_msg.c \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
 			src/include/nmap_msg.h \
+			src/include/compute_msg.c \
+			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
@@ -356,6 +360,7 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
 
+
 test_dbtopology_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
@@ -372,6 +377,31 @@ test_dbtopology_CPPFLAGS = \
 			-I$(top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+#### total power tests
+bin_PROGRAMS += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc 
+
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
@@ -460,7 +490,7 @@ netmon_LDADD = \
 
 netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
-bin_PROGRAMS += 	simple server-agent db-ng
+bin_PROGRAMS += 	server-agent db-ng
 
 server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
 
@@ -485,41 +515,14 @@ db_ng_LDADD = \
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-simple_SOURCES = \
-			src/simple/main.cc \
-			src/include/defs.h \
-			$(top_srcdir)/tools/dbinit.h \
-			src/persist/persistence.h \
-			src/shared/upsstatus.cc \
-			src/drivers/nut/nut-actor.cc \
-			src/drivers/nut/nut-driver.cc
-
-simple_LDFLAGS = \
-			${LIBCZMQ_LIBS} \
-			${LIBNUTCLIENT_LIBS} \
-			${CXXTOOLS_LIBS} \
-			-lcidr -ltntdb
-
-simple_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tools/ \
-			-I$(top_builddir)/tools/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple/ \
-			-I$(top_srcdir)/src/drivers/nut
-
-simple_LDADD = \
-			libpriv-defs.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-subprocess.la
+# TODO: remove simple at the end
+EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
+			$(top_srcdir)/tools/dbinit.h
 
 dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
 			src/simple/asset_types.h \
 			src/include/powerdev_msg.h \
-			src/drivers/nut/nut-actor.h \
 			src/drivers/nut/nut-driver.h
 
 
@@ -552,6 +555,22 @@ __top_srcdir__tools_dshell_LDADD =	libpriv-proto.la
 
 __top_srcdir__tools_dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
+bin_PROGRAMS +=		driver-nut
+
+driver_nut_SOURCES = \
+			src/drivers/nut/nut-driver.cc \
+			src/drivers/nut/nut-actor.cc \
+			src/shared/upsstatus.cc
+
+driver_nut_LDADD = \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la
+
+driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
+
+driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
 
 # Generated header needed for any programs that use the database
 BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
@@ -607,12 +626,17 @@ dist_noinst_HEADERS += \
 			src/persist/assetmsg.h \
 			tools/dbpath.h
 
+### This file contains the TNTNET settings relevant for our test runs
+### Note: in non-daemon mode, stderr is logged to stderr
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
+### This file contains the TNTNET settings distributed as an example for users
+### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
@@ -622,7 +646,12 @@ EXTRA_DIST +=		$(exampleconf_DATA)
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
-web-test: tntnet.xml bios_web.la
+# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+web-test-deps: tntnet.xml bios_web.la
+
+# Execute the test web-server for $BIOS REST API
+web-test: web-test-deps
+	@echo "=== Running target $@ as: "; id || true; echo ""
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
