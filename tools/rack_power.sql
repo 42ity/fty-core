@@ -35,7 +35,7 @@ INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VA
 /* DEVICES*/
 
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8001, "epdu1_1", @ae_device, 8000); 
-INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9001, 8001, @device_epdu);
+ INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9001, 8001, @device_epdu);
 INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10001, "epdu1_1_", @dvc_epdu);
 INSERT INTO t_bios_monitor_asset_relation  (id_ma_relation, id_discovered_device, id_asset_element) VALUES (NULL, 10001, 8001);
 
@@ -210,3 +210,178 @@ INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_d
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (NULL, 9025, 10, 9024, 12, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (NULL, 9026, 9, 9024, NULL, @id_link);
 INSERT INTO t_bios_asset_link (id_link, id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (NULL, 9031, NULL, 9029, NULL, @id_link);
+
+/* Rack power #101  */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8101, "RACK101", @ae_rack, NULL);
+
+/* DEVICES*/
+/* epdu101_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8102, "epdu101_1", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9101, 8102, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10101, "epdu101_1_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10101, 8102);
+
+/* epdu101_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8103, "epdu101_2", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9102, 8103, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10102, "epdu101_2_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10102, 8103);
+
+/* srv101_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8104, "srv101_1", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9103, 8104, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10103, "srv101_1_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10103, 8104);
+
+/* srv101_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8105, "srv101_2", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9104, 8105, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10104, "srv101_2_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10104, 8105);
+
+/* srv101_3 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8106, "srv101_3", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9105, 8106, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10105, "srv101_3_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10105, 8106);
+
+/* srv101_4 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8107, "srv101_4", @ae_device, 8101); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9106, 8107, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10106, "srv101_4_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10106, 8107);
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9101, NULL, 9103, 14, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9101, NULL, 9104, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9101, NULL, 9105, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9102, NULL, 9105, 15, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9101, 16, 9106, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9102, NULL, 9106, 13, @id_link);
+
+/* Rack power #102  */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8108, "RACK102", @ae_rack, NULL); /* unlocated ? */
+
+/* DEVICES*/
+/* ups102_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8109, "ups102_1", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9107, 8109, @device_ups);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10107, "ups102_1_", @dvc_ups);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10107, 8109);
+
+/* epdu102_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8110, "epdu102_1", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9108, 8110, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10108, "epdu102_1_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10108, 8110);
+
+/* epdu102_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8111, "epdu102_2", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9109, 8111, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10109, "epdu102_2_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10109, 8111);
+
+/* srv102_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8112, "srv102_1", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9110, 8112, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10110, "srv102_1_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10110, 8112);
+
+/* srv102_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8113, "srv102_2", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9111, 8113, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10111, "srv102_2_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10111, 8113);
+
+/* srv102_3 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8114, "srv102_3", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9112, 8114, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10112, "srv102_3_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10112, 8114);
+
+/* srv102_4 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8115, "srv102_4", @ae_device, 8108); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9113, 8115, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10113, "srv102_4_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10113, 8115);
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9107, NULL, 9108, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9107, NULL, 9109, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9108, 17, 9110, 18, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9108, NULL, 9111, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9108, NULL, 9112, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9108, NULL, 9113, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9109, NULL, 9112, 19, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9109, 20, 9113, NULL, @id_link);
+
+/* Rack power #103 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8116, "RACK103", @ae_rack, NULL); /* unlocated ? */
+
+/* DEVICES*/
+/* main103_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8117, "main103_1", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9114, 8117, @device_main);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10114, "main103_1_", @dvc_main);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10114, 8117);
+
+/* ups103_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8118, "ups103_1", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9115, 8118, @device_ups);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10115, "ups103_1_", @dvc_ups);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10115, 8118);
+
+/* ups103_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8119, "ups103_2", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9116, 8119, @device_ups);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10116, "ups103_1_", @dvc_ups);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10116, 8119);
+
+/* epdu103_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8120, "epdu103_1", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9117, 8120, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10117, "epdu103_1_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10117, 8120);
+
+/* epdu103_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8121, "epdu103_2", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9118, 8121, @device_epdu);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10118, "epdu103_2_", @dvc_epdu);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10118, 8121);
+
+/* srv103_1 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8122, "srv103_1", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9119, 8122, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10119, "srv103_1_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10119, 8122);
+
+/* srv103_2 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8123, "srv103_2", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9120, 8123, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10120, "srv103_2_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10120, 8123);
+
+/* srv103_3 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8124, "srv103_3", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9121, 8124, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10121, "srv103_3_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10121, 8124);
+
+/* srv103_4 */
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8125, "srv103_4", @ae_device, 8116); 
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9122, 8125, @device_server);
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10122, "srv103_4_", @dvc_server);
+INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10122, 8125);
+
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9114, NULL, 9115, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9114, 21, 9116, 25, @id_link);
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9115, 27, 9117, 26, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9116, NULL, 9118, NULL, @id_link);
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9117, NULL, 9119, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9117, NULL, 9120, 22, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9117, NULL, 9121, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9117, NULL, 9122, NULL, @id_link);
+
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9118, NULL, 9121, NULL, @id_link);
+INSERT INTO t_bios_asset_link (id_asset_device_src, src_out, id_asset_device_dest, dest_in, id_asset_link_type) VALUES (9118, 23, 9122, 24, @id_link);
