@@ -23,14 +23,14 @@ DAEMONS="db-ng driver-nut driver-nmap netmon"
 
 start_daemon(){
     if [ -x ~/bin/$1 ] ; then
-	/bin/rm -rf ~/$1.log
-	nohup ~/bin/$1 >~/$1.log 2>&1 &
-	sleep 5
-	pidof $1
+        /bin/rm -rf ~/$1.log
+        nohup ~/bin/$1 >~/$1.log 2>&1 &
+        sleep 5
+        pidof $1
     else
-	echo "ERROR: $1 is missing"
-	exit 1
-    if
+        echo "ERROR: $1 is missing"
+        exit 1
+    fi
 }
 
 stop() {
@@ -41,7 +41,7 @@ stop() {
 
 start() {
     for d in $DAEMONS ; do
-	start_daemon $d
+        start_daemon $d
     done
 }
 
