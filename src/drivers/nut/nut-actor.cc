@@ -1,17 +1,14 @@
+#include <malamute.h>
 #include <string>
 #include <ctime>
 #include "nut-driver.h"
 #include "powerdev_msg.h"
-#include "measure_types.h"
 #include "common_msg.h"
 #include "defs.h"
 #include "log.h"
 #include "upsstatus.h"
 
-namespace drivers
-{
-namespace nut
-{
+using namespace drivers::nut;
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
 #define NUT_MESSAGE_REPEAT_AFTER 300
@@ -90,10 +87,48 @@ long int nut_scale(long int value, int scale ) {
     return value * pow(10, -scale);
 }
 
+
+void my_mlm_client_flush(mlm_client_t *client) {
+    zsock_t *pipe = mlm_client_msgpipe(client);
+    zpoller_t *poller = zpoller_new(pipe, NULL);
+    zsock_t *which = NULL;
+    while(true) {
+        if(zsys_interrupted) {
+            zpoller_destroy(&poller);
+            return;
+        }
+        which = (zsock_t *)zpoller_wait(poller, 1);
+        if(which) {
+            log_debug("FLUSH: dropping message\n");
+            zmsg_t *reply = mlm_client_recv(client);
+            zmsg_destroy(&reply);
+        } else {
+            zpoller_destroy(&poller);            
+            return;
+        }
+    }
+}
+
+zmsg_t *my_mlm_client_recv(mlm_client_t *client, int timeout) {
+    if(zsys_interrupted) return NULL;
+
+    zsock_t *pipe = mlm_client_msgpipe(client);
+    zpoller_t *poller = zpoller_new(pipe, NULL);
+
+    zsock_t *which = (zsock_t *)zpoller_wait(poller, timeout);
+
+    zpoller_destroy(&poller);
+    if(which) {
+        zmsg_t *reply = mlm_client_recv(client);
+        return reply;
+    }
+    return NULL;
+}
+
 /**
  * \brief function for discovering measurement IDs
  */
-measurement_id_t nut_get_measurement_id(const std::string &name) {
+measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *client) {
     common_msg_t *cmsg;
     zmsg_t *request, *reply;
     measurement_id_t ID;
@@ -112,6 +147,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
     memset(&ID, 0, sizeof(ID));
     std::string typeName = "" , subtypeName = "";
     std::size_t i = name.find(".");
+    zsock_t *pipe = mlm_client_msgpipe(client);
     if( i ) {
         typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
@@ -123,17 +159,27 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
                         ((unit == units.end()) ?
                             std::string("") :
                             unit->second).c_str());
-        reply = process_measures_meta(&request);
+        my_mlm_client_flush(client);
+        mlm_client_sendto(client,"persistence","persistence",NULL,1000,&request);
+        reply = my_mlm_client_recv(client,1000);
+        if(reply) {
+            zmsg_print(reply);
+        } else {
+            printf("zmsg is null\n");
+        }
         zmsg_destroy(&request);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
-            assert(common_msg_mt_unit(cmsg) ==
-                   ((unit == units.end()) ? "" : unit->second));
-            ID.type = common_msg_mt_id(cmsg);
+            if( common_msg_mt_unit(cmsg) == ( (unit == units.end()) ? "" : unit->second ) ) {
+                ID.type = common_msg_mt_id(cmsg);
+            } else {
+                log_error("invalid unit received for %s - \"%s\"\n", name.c_str(),common_msg_mt_unit(cmsg));
+            }
             common_msg_destroy(&cmsg);
         }
         zmsg_destroy(&reply);
-
+        // don't want subtype if type is invalid
+        if( ID.type == 0 ) return ID;
         // Get subtype info
         auto scale = scales.find(name);
         request = common_msg_encode_get_measure_subtype_s(
@@ -141,7 +187,8 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
                         subtypeName.c_str(),
                         (uint8_t)( ( scale == scales.end() ) ?
                                    -1 : scale->second ) );
-        reply = process_measures_meta(&request);
+        mlm_client_sendto(client,"persistence","persistence",NULL,1000,&request);
+        reply = my_mlm_client_recv(client,1000);
         zmsg_destroy(&request);
         if( reply ) {
             cmsg = common_msg_decode(&reply);
@@ -151,7 +198,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
         }
         zmsg_destroy(&reply);
     } else {
-        log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
+        log_error("NUT invalid measurement id name found, %s doesn't contain subtype", name.c_str());
     }
     return ID;
 }
@@ -159,19 +206,19 @@ measurement_id_t nut_get_measurement_id(const std::string &name) {
 /**       
  * \brief creating powerdev message from NUTDevice 
  */
-zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value, bool scale) {
+zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &name,  int value, bool scale, mlm_client_t *client) {
     static std::map<std::string, measurement_id_t> IDs;
     zmsg_t *zmsg;
     measurement_id_t ID;
    
     if( IDs.count(name) == 0 ) {
         // we dont know measurement IDs
-        ID = nut_get_measurement_id(name);
+        ID = nut_get_measurement_id(name, client);
         if( ID.type != 0 && ID.subtype != 0 ) {
             IDs[name] = ID;
-            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(), ID.type, ID.subtype, ID.scale );
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i", name.c_str(), ID.type, ID.subtype, ID.scale );
         } else {
-            log_error("Can't get measurement type and subtype for %s\n", name.c_str());
+            log_error("Can't get measurement type and subtype for %s", name.c_str());
             return NULL;
         }
     }
@@ -189,14 +236,10 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
             return zmsg;
         } else { return NULL; }
     } else {
-        log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
+        log_error("NUT device %s type is unknown", dev.name().c_str()); 
         return NULL;
     }
 }
-
-// we know that *args param in nut_actor() is unused parameter
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-parameter"
 
 /**
  * \brief main nut-driver loop. Checks NUT every 5 second for changes.
@@ -204,75 +247,75 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
  *        NUT_MESSAGE_REPEAT_AFTER interval [seconds], all values are
  *        propagated, even if there is nochange.
  */
-void nut_actor(zsock_t *pipe, void *args) {
-    log_info ("%s", "nut_actor start\n");
+int main(int argc, char *argv[] ) {
+    log_open();
+    log_set_level(LOG_DEBUG);
+    log_info ("%s", "driver-nut started");
 
+    NUTDeviceList listOfUPS;
     bool advertise;
     std::map<std::string, measurement_id_t> measurement_ids;
     std::time_t timestamp = std::time(NULL);
+    const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
 
-    zsock_t * dbsock = zsock_new_dealer(DB_SOCK);
-    assert(dbsock);
-    zpoller_t *poller = zpoller_new(pipe, NULL);
-    assert(poller);
-    zsock_signal(pipe, 0);
-    NUTDeviceList listOfUPS;
-
-    while(!zpoller_terminated(poller)) {
-        zsock_t *which = (zsock_t *)zpoller_wait(poller, NUT_POLLING_INTERVAL);
-        if (which == pipe) {
-            break;
-        } else if( which == NULL ) {
-            if( timestamp + NUT_MESSAGE_REPEAT_AFTER < time(NULL) ) {
-                // timestamp + NUT_MESSAGE_REPEAT_AFTER is in past
-                advertise = true;
-                timestamp = std::time(NULL);
-            } else {
-                advertise = false;
-            }
-            listOfUPS.update();
-            for(auto it = listOfUPS.begin(); it != listOfUPS.end() ; ++it) {
-                if(advertise || it->second.changed() ) {
-                    // something has changed or we should advertise status
-                    // go trough measurements
-                    for(auto &measurement : it->second.physics( ! advertise ) ) {
-                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true);
-                        if(msg) {
-                            log_debug("sending new measurement for ups %s, type %s, value %i\n", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
-                            zmsg_send(&msg, dbsock);
-                        }
-                        zmsg_destroy(&msg);
-                    }
-                    // send also status as bitmap
-                    if( it->second.hasProperty("status") && ( advertise || it->second.changed("status") ) ) {
-                        std::string status_s = it->second.property("status");
-                        uint16_t    status_i = shared::upsstatus_to_int( status_s );
-                        zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false);
-                        if(msg) {
-                            log_debug("sending new status for ups %s, value %i (%s)\n", it->second.name().c_str(), status_i, status_s.c_str() );
-                            zmsg_send(&msg, dbsock);
-                        }
-                        zmsg_destroy(&msg);
-                    }
-                    // send also POWERDEV_MSG_POWERDEV_STATUS
-                    zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
+    mlm_client_t *client = mlm_client_new(addr, 1000, "NUT");
+    if (!client) {
+        log_error ("driver-nut: server not reachable at ipc://@/malamute\n");
+        return 1;
+    }
+    mlm_client_set_producer(client,"measurements");
+    while(!zsys_interrupted) {
+        if( timestamp + NUT_MESSAGE_REPEAT_AFTER < time(NULL) ) {
+            // timestamp + NUT_MESSAGE_REPEAT_AFTER is in past
+            advertise = true;
+            timestamp = std::time(NULL);
+        } else {
+            advertise = false;
+        }
+        listOfUPS.update();
+        for(auto it = listOfUPS.begin(); it != listOfUPS.end() ; ++it) {
+            if(zsys_interrupted) break;
+            std::string deviceID = "power." + it->second.name();
+            if(advertise || it->second.changed() ) {
+                // something has changed or we should advertise status
+                // go trough measurements
+                for(auto &measurement : it->second.physics( ! advertise ) ) {
+                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, measurement.first, measurement.second, true, client);
                     if(msg) {
-                        log_debug ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
-                        zmsg_send(&msg, dbsock);
+                        log_debug("sending new measurement for ups %s, type %s, value %i", it->second.name().c_str(), measurement.first.c_str(),measurement.second ); 
+                        mlm_client_send(client,deviceID.c_str(),&msg);
                     }
                     zmsg_destroy(&msg);
-                    it->second.setChanged(false);
                 }
+                // send also status as bitmap
+                if( it->second.hasProperty("status") && ( advertise || it->second.changed("status") ) ) {
+                    std::string status_s = it->second.property("status");
+                    uint16_t    status_i = shared::upsstatus_to_int( status_s );
+                    zmsg_t *msg = nut_device_to_measurement_msg(it->second, "status.ups", status_i, false, client);
+                    if(msg) {
+                        log_debug("sending new status for ups %s, value %i (%s)", it->second.name().c_str(), status_i, status_s.c_str() );
+                        mlm_client_send(client,deviceID.c_str(),&msg);
+                    }
+                    zmsg_destroy(&msg);
+                }
+                // send also POWERDEV_MSG_POWERDEV_STATUS
+                zmsg_t *msg = nut_device_to_powerdev_msg(it->second);
+                if(msg) {
+                    log_debug ("ups %s snapshot: %s\n", it->second.name().c_str(), it->second.toString().c_str() );
+                    //mlm_client_sendto(client,"persistence","persistence",NULL,0,&msg);
+                    mlm_client_send(client,deviceID.c_str(),&msg);
+                    //zmsg_t *reply = mlm_client_recv(client);
+                    //zmsg_destroy(&reply);
+               }
+                zmsg_destroy(&msg);
+                it->second.setChanged(false);
             }
         }
+        if( ! zsys_interrupted ) zclock_sleep(NUT_POLLING_INTERVAL);
     }
-    zpoller_destroy(&poller);
-    zsock_destroy(&dbsock);
-    log_info ("%s", "nut_actor end\n");
+    mlm_client_destroy(&client);
+    log_info ("driver-nut ended");
+    return 0;
 }
 
-#pragma GCC diagnostic pop
 
-
-} // namespace drivers::nut
-} // namespace drivers

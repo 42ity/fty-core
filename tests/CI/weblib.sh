@@ -70,13 +70,68 @@ api_post() {
     curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+### Flag for _api_get_token_certainPlus()
+LOGIN_RESET="no"
 _api_get_token() {
-    if [ -z "$_TOKEN_" ]; then
+    _RES_=0
+    if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
 	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
-	_TOKEN_RAW_="`api_get "$AUTH_URL"`"
-	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`"
+	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
+	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
+	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
+	echo "=== DEBUG: weblib.sh: got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
+    return $_RES_
+}
+
+_api_get_token_certainPlus() {
+    _PLUS="$1"
+    if [ "$_PLUS" != with -a "$_PLUS" != without ]; then
+	echo "=== ERROR: _api_get_token_certainPlus() unknown certainty: '$_PLUS'" >&2
+	return 1
+    fi
+
+    _TO="$_TOKEN_"
+    C=0
+    while : ; do
+	_T="`LOGIN_RESET=yes _api_get_token`"
+	_RES_=$?
+	if [ $_RES_ != 0 ]; then
+	    echo "=== ERROR: _api_get_token_certainPlus(): _api_get_token() returned error: $_RES_'" >&2
+	    return $_RES_
+	fi
+	if [ -z "$_T" ]; then
+	    echo "=== ERROR: _api_get_token_certainPlus(): got empty token value'" >&2
+	    return 2
+	fi
+	case "$_T" in
+	    *\+*)	[ "$_PLUS" = with ] && break ;;
+	    *)		[ "$_PLUS" = without ] && break ;;
+	esac
+
+	echo "=== WARN: Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
+	if [ x"$_TO" = x"$_T" ]; then
+	    C="`expr $C + 1`"
+	else C=0; fi
+	if [ "$C" -gt 5 ]; then
+	    echo "=== ERROR: Got the same token too many times in a row, aborting loop" >&2
+	    echo "$_T"
+	    return 3
+	fi
+	sleep 1
+	_TO="$_T"
+    done
+    _TOKEN_="$_T"
+    echo "$_T"
+}
+
+_api_get_token_withplus() {
+    _api_get_token_certainPlus with
+}
+
+_api_get_token_withoutplus() {
+    _api_get_token_certainPlus without
 }
 
 api_auth_post() {
@@ -85,6 +140,30 @@ api_auth_post() {
     #	$2	POST data
     TOKEN="`_api_get_token`"
     curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+}
+
+api_auth_post_content() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
+}
+
+api_auth_post_wToken() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
+}
+
+api_auth_post_content_wToken() {
+    # Params:
+    #	$1	Relative URL for API call
+    #	$2	POST data
+    TOKEN="`_api_get_token`"
+    curl -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_delete() {
@@ -105,9 +184,27 @@ api_auth_get() {
     curl -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
 }
 
+api_auth_get_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    curl -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
+}
+
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
     curl -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+}
+
+api_auth_get_content_wToken() {
+    TOKEN="`_api_get_token`"
+    URLSEP='?'
+    case "$1" in
+        *"?"*) URLSEP='&' ;;
+    esac
+    curl "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
 }
 
 api_auth_get_json() {

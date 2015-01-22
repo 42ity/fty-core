@@ -1210,6 +1210,9 @@ int
 netdisc_msg_test (bool verbose)
 {
     printf (" * netdisc_msg: ");
+    if (verbose) {;}	// silence an "unused" warning;
+    // TODO: properly fix this in template zproto : zproto_codec_c_v1.gsl
+    // so as to not lose the fix upon regeneration of code
 
     //  @selftest
     //  Simple create/destroy test

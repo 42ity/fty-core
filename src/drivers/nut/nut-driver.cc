@@ -11,6 +11,10 @@ namespace drivers
 namespace nut
 {
 
+/*
+ * See the meaning of variables at NUT project
+ * http://www.networkupstools.org/docs/user-manual.chunked/apcs01.html
+ */
 static const std::vector<std::string> physicsNUT {
     "ups.temperature",
     "ups.load",

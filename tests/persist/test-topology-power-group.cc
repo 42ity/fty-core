@@ -16,7 +16,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER GROUP #1 ==================\n");
+    log_info ("=============== POWER GROUP #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5088);

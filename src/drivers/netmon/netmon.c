@@ -194,20 +194,20 @@ const char *qd_mac(const char* ethname) {
     
     r = asprintf(&path, "/sys/class/net/%s/address", ethname);
     if (!r) {
-        log_error("can't allocate path string: %m\n");
+        log_error("can't allocate path string: %m");
         return "";
     }
 
     fd = open(path, O_RDONLY);
     if (!fd) {
-        log_error("can't open /sys/class/net/%s/address: %m\n", ethname);
+        log_error("can't open /sys/class/net/%s/address: %m", ethname);
         free(path);
         return "";
     }
 
     r = read(fd, mac, MAX_ADDR_LEN);
     if (r < 1) {
-        log_error("read on %s failed: %m\n", path);
+        log_error("read on %s failed: %m", path);
         free(path);
         close(fd);
         return "";
@@ -247,7 +247,7 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
 	
     len -= NLMSG_LENGTH(sizeof(*ifa));
 	if (len < 0) {
-		log_error("wrong nlmsg len %d\n", len);
+		log_error("wrong nlmsg len %d", len);
 		return -1;
 	}
 
@@ -259,7 +259,7 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
             ipfamily = NETDISC_IPVER_IPV6; //inet6
             break;
         default:
-            log_warning("unsupported family: %d\n", ifa->ifa_family);
+            log_warning("unsupported family: %d", ifa->ifa_family);
             return 0;
     }
     
@@ -486,7 +486,7 @@ static int accept_msg(const struct sockaddr_nl *who,
         case NLMSG_DONE:
             break;
         default:
-            log_error("n->nlmsg_type = <default>\n");
+            log_error("n->nlmsg_type = <default>");
             break;
     }
     return 0;
