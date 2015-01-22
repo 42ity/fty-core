@@ -44,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_types.h"
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
-    log_debug("Processing asset message in persistence layer\n");
+    log_debug("Processing asset message in persistence layer");
     zmsg_t *result = NULL;
 
     asset_msg_t *amsg = asset_msg_decode(msg);
@@ -87,7 +87,6 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
             break;
         }
     }
-
     asset_msg_destroy(&amsg);
     return result;
 };
@@ -95,7 +94,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
 zlist_t* select_asset_element_groups(const char* url, 
        a_elmnt_id_t element_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( element_id );
 
     zlist_t* groups = zlist_new();
@@ -135,17 +134,17 @@ zlist_t* select_asset_element_groups(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&groups);
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return NULL;
     }
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return groups;
 }
 
 zlist_t* select_asset_device_link(const char* url, 
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     
     assert ( device_id );
     assert ( link_type_id );
@@ -204,17 +203,17 @@ zlist_t* select_asset_device_link(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&links);
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return NULL;
     }
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return links;
 }
 
 zhash_t* select_asset_element_attributes(const char* url, 
                                          a_elmnt_id_t element_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( element_id );
     zhash_t* extAttributes = zhash_new();
     zhash_autofree(extAttributes);
@@ -258,17 +257,17 @@ zhash_t* select_asset_element_attributes(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zhash_destroy (&extAttributes);
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return NULL;
     }
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return extAttributes;
 }
 
 zmsg_t* select_asset_device(const char* url, asset_msg_t** element, 
                             a_elmnt_id_t element_id)
 {
-    log_info ("%s \n", "start");
+    log_info ("%s ", "start");
     assert ( asset_msg_id (*element) == ASSET_MSG_ELEMENT );
     std::string mac = "";
     std::string ip = "";
@@ -320,7 +319,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
 
         if ( groups == NULL )    // internal error in database
         {
-            log_warning("abnormal %s \n","end");
+            log_warning("abnormal %s ","end");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
@@ -328,7 +327,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
-            log_warning("abnormal %s \n","end");
+            log_warning("abnormal %s ","end");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
@@ -342,7 +341,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         zlist_destroy (&powers);
         zlist_destroy (&groups);
 
-        log_warning("apropriate row in asset_device was not found %s\n",
+        log_warning("apropriate row in asset_device was not found %s",
                                                                 "end");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
@@ -352,7 +351,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         asset_msg_destroy (element);
         zlist_destroy (&powers);
         zlist_destroy (&groups);
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
@@ -370,14 +369,14 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
     zlist_destroy (&powers);
     zlist_destroy (&groups);
 
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return msgdevice;
 }
 
 zmsg_t* select_asset_element(const char* url, a_elmnt_id_t element_id, 
                               a_elmnt_tp_id_t element_type_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( element_id );
     assert ( element_type_id );
     a_elmnt_id_t parent_id = 0;
@@ -416,13 +415,13 @@ zmsg_t* select_asset_element(const char* url, a_elmnt_id_t element_id,
     } 
     catch (const tntdb::NotFound &e) {
         // element with specified type was not found
-        log_info("notfound %s \n","end");
+        log_info("notfound %s ","end");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                     e.what(), NULL);
     }
     catch (const std::exception &e) {
         // internal error in database 
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     e.what(), NULL);
     }
@@ -438,13 +437,13 @@ zmsg_t* select_asset_element(const char* url, a_elmnt_id_t element_id,
     assert ( msgelement );
 
     zhash_destroy (&extAttributes);
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return msgelement;
 }
 
 zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( msg );
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENT );
 
@@ -457,13 +456,13 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
     if ( is_common_msg(msgelement) )  
     {
         // element was not found  or error occurs
-        log_info("errors occured in subroutine %s \n","end");
+        log_info("errors occured in subroutine %s ","end");
         return msgelement;
     }
     // element was found
     if ( element_type_id == asset_type::DEVICE )
     {
-        log_debug ("%s \n", "start looking for device");
+        log_debug ("%s ", "start looking for device");
         // destroys msgelement
         asset_msg_t* returnelement = asset_msg_decode (&msgelement);
         msgelement = select_asset_device(url, &returnelement, element_id);
@@ -476,11 +475,11 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
             // this should never happen
             
             // TODO should we inform user through the error_id about it??
-            log_error ("%s \n", "inconsistent db state, end");
+            log_error ("%s ", "inconsistent db state, end");
             return msgelement;
         }
 
-        log_debug ("%s \n", "end looking for device");
+        log_debug ("%s ", "end looking for device");
         // device was found
     }
           
@@ -489,13 +488,13 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
                     (element_id, msgelement);
     assert ( resultmsg );
     zmsg_destroy (&msgelement);
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return resultmsg;
 }
 
 zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( msg );
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENTS );
 
@@ -522,7 +521,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
 
         if ( result.size() == 0 )  // elements were not found
         {
-            log_info("notfound %s \n","end");
+            log_info("notfound %s ","end");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                        "elements of speified type were not found", NULL);
         }
@@ -552,7 +551,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     {
         // internal error in database
         zhash_destroy (&elements);
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     e.what(), NULL);
     }
@@ -562,14 +561,14 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     assert(resultmsg);
 
     zhash_destroy (&elements);
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return resultmsg;
 }
 
 m_dvc_id_t convert_asset_to_monitor(const char* url, 
                 a_elmnt_id_t asset_element_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( asset_element_id );
     m_dvc_id_t       device_discovered_id = 0;
     a_elmnt_tp_id_t  element_type_id      = 0;
@@ -597,32 +596,32 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("notfound %s \n","end");
+        log_info("asset element %d notfound %s ", asset_element_id,"end");
         throw bios::NotFound();
     }
     catch (const std::exception &e) {
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         throw bios::InternalDBError(e.what());
     }
     if ( element_type_id != asset_type::DEVICE )
     {
-        log_info("specified element is not a device %s \n","end");
+        log_info("specified element is not a device %s ","end");
         throw bios::ElementIsNotDevice();
     }
     else if ( device_discovered_id == 0 )
     {
-        log_warning("monitor counterpart for the %d was not found %s \n", 
+        log_warning("monitor counterpart for the %d was not found %s ", 
                                                 asset_element_id, "end");
         throw bios::MonitorCounterpartNotFound ();
     }
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return device_discovered_id;
 };
 
 a_elmnt_id_t convert_monitor_to_asset(const char* url, 
                     m_dvc_id_t discovered_device_id)
 {
-    log_info("%s \n","start");
+    log_info("%s ","start");
     assert ( discovered_device_id );
     a_elmnt_id_t asset_element_id = 0;
     try{
@@ -643,13 +642,13 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("notfound %s \n","end");
+        log_info("notfound %s ","end");
         throw bios::NotFound();
     }
     catch (const std::exception &e) {
-        log_warning("abnormal %s \n","end");
+        log_warning("abnormal %s ","end");
         throw bios::InternalDBError(e.what());
     }
-    log_info("normal %s \n","end");
+    log_info("normal %s ","end");
     return asset_element_id;
 };
