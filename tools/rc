@@ -179,7 +179,6 @@ start_daemon() {
 
     is_daemon_running "${name}" && return 0
 
-    #WARN: maybe bashish?
     type "${name}" &>/dev/null || \
         [ -x ${name} ] || \
         die "Can't find executable ${name}"
@@ -202,12 +201,17 @@ stop_daemon() {
     shift 1
     pidfile="${BUILDSUBDIR}/${name}.pid"
 
-    is_daemon_running "${name}" || return 0
-    pid=$(< ${pidfile})
+    if ! is_daemon_running "${name}"; then
+        rm -f "${pidfile}"
+        return 0
+    fi
+
+    pid=$(cat ${pidfile})
     kill -TERM ${pid}
     sleep 1
-    kill -0 ${pid} &>/dev/null && sleep 5
-    kill -0 ${pid} &>/dev/null && kill -KILL ${pid}
+    kill -0 ${pid} 2>/dev/null && sleep 5
+    kill -0 ${pid} 2>/dev/null && kill -KILL ${pid}
+    rm -f "${pidfile}"
 }
 
 run_malamute_user() {
