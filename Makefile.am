@@ -545,6 +545,17 @@ driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
+bin_PROGRAMS += dshell
+
+dshell_SOURCES =	tools/dshell.cc
+
+dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+
+dshell_LDADD =	libpriv-proto.la
+
+dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
+
 bin_PROGRAMS +=		driver-nut
 
 driver_nut_SOURCES = \
