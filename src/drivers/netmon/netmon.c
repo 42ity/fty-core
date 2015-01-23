@@ -504,9 +504,12 @@ int main(int argc, char **argv) {
 
     unsigned groups = ~RTMGRP_TC;
 
-    const char *addr = "ipc://@/malamute"; // TODO (KHR): discuss && move this hardcoded value to a shared/defs.h or similar
-    mlm_client_t *broadcast = mlm_client_new (addr, 1000, "NETMON");    
-    assert (broadcast); // TODO (KHR): timeout retry? / fail gracefully
+    mlm_client_t *broadcast = mlm_client_new (MLM_ENDPOINT, 1000, "NETMON");
+    // Note: it might make sense to timeout retry a few times
+    if (!broadcast) {
+        fprintf (stderr, "malamute server not reachable at %s\n", MLM_ENDPOINT);
+        exit (3);
+    }
     mlm_client_set_producer (broadcast, "networks");
 
     rtnl_close(&rth);

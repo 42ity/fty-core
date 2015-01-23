@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: netdisc_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -86,7 +86,10 @@ extern "C" {
 #endif
 
 //  Opaque class structure
+#ifndef NETDISC_MSG_T_DEFINED
 typedef struct _netdisc_msg_t netdisc_msg_t;
+#define NETDISC_MSG_T_DEFINED
+#endif
 
 //  @interface
 //  Create a new netdisc_msg
@@ -96,6 +99,12 @@ netdisc_msg_t *
 //  Destroy the netdisc_msg
 void
     netdisc_msg_destroy (netdisc_msg_t **self_p);
+
+//  Parse a zmsg_t and decides whether it is netdisc_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+    is_netdisc_msg (zmsg_t *msg_p);
 
 //  Parse a netdisc_msg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 

@@ -8,3 +8,4 @@ const char* CLI_SOCK = "ipc://@/poord/cli";
 
 const char* DRIVER_NMAP_SOCK = "ipc://@/bios/driver/nmap";
 const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
+const char* MLM_ENDPOINT = "ipc://@/malamute";

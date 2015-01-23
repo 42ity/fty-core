@@ -17,6 +17,8 @@ extern const char* CLI_SOCK;
 extern const char* DRIVER_NMAP_SOCK;
 extern const char* DRIVER_NMAP_REPLY;
 
+extern const char* MLM_ENDPOINT;
+
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
 #define DUMMY_DEVICE_ID 1
