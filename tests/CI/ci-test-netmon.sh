@@ -26,12 +26,17 @@
 # Usage $0 [-d]
 #   -d  print extra debug output
 
-# TODO
-#   check privilige || exit
 # TODO (nice to have, if there is nothing to do):
-# try to grep second iface and do a couple add/del on it as well (lo is special)
-# later install brctl and add own iface
-# vlan 
+# - grep second iface and do a couple add/del on it as well (lo is special)
+# - install brctl and add own iface
+# - vlan 
+# - perform real parallel-proof locking; now it's kindergarden stuff :)
+
+# Check for root
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run with root permissions." >&2
+    exit 1
+fi
 
 ### Section: setting necessary variables
 DEBUG=
@@ -60,7 +65,7 @@ fi
 
 LOCKFILE=/tmp/ci-test-netmon.lock
 if [ -f $LOCKFILE ]; then
-    echo -e "Script already running!\nWhy don't you wait for the other one to finish to find out the real output of this test. Eh?"
+    echo -e "Script already running. Stopping."
     exit 1 
 fi
 
