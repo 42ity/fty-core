@@ -34,6 +34,8 @@ netmon
 simple
 !src/simple
 bios_web.la
+dshell
+!tools/shell
 
 *.o
 *.lo
