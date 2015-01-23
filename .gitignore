@@ -35,7 +35,7 @@ simple
 !src/simple
 bios_web.la
 dshell
-!tools/shell
+!tools/dshell
 
 *.o
 *.lo
