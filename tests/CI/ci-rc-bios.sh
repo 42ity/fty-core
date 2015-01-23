@@ -29,7 +29,7 @@ restart_malamute(){
 server
     timeout = 10000     #   Client connection timeout, msec
     background = 0      #   Run as background process
-    workdir = .         #   Working directory for daemon
+    workdir = /tmp      #   Working directory for daemon
     verbose = 0         #   Do verbose logging of activity?
 
 #   Apply to the Malamute service
