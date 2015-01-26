@@ -451,14 +451,14 @@ values
 );
 
 /* realpower.outlet.1 */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+SELECT @realpower_outlet_1 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.1";
+SELECT @realpower_outlet_2 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.2";
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     3,
-    6,
+    @realpower_outlet_1,
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
@@ -471,7 +471,7 @@ insert into t_bios_measurements
 values
 (
     3,
-    7,
+    @realpower_outlet_2,
     500,
     "2014-11-12 09:59:59",
     @client_nut,
