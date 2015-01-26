@@ -27,8 +27,7 @@ zmsg_t* process_message(zmsg_t** msg);
 bool
 process_message(const std::string& url, zmsg_t *msg);
 
-bool
-netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg);
+zmsg_t* netdisc_msg_process(zmsg_t** msg);
 
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);

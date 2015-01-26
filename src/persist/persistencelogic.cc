@@ -106,15 +106,6 @@ process_message(const std::string& url, zmsg_t *msg) {
     msg2 = zmsg_dup(msg);
     zmsg_pop(msg2);
     assert(msg2);
-    netdisc_msg_t *netdisc_msg = netdisc_msg_decode(&msg2);
-    if (netdisc_msg) {
-        //TODO: check the log level!
-        netdisc_msg_print(netdisc_msg);
-        return netdisc_msg_process(url, *netdisc_msg);
-    }
-    msg2 = zmsg_dup(msg);
-    zmsg_pop(msg2);
-    assert(msg2);
     powerdev_msg_t *powerdev_msg = powerdev_msg_decode(&msg2);
     if (powerdev_msg) {
         //TODO: check the log level!
@@ -207,24 +198,28 @@ nmap_msg_process (const char *url, nmap_msg_t *msg)
         }
 }
 
-bool
-netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
-{
-
-    bool result = false;
+zmsg_t* netdisc_msg_process(zmsg_t** msg) {
 
     // cast away the const - zproto generated methods dont' have const
-    netdisc_msg_t& msg_nc = const_cast<netdisc_msg_t&>(msg);
+    netdisc_msg_t* msg_nc = netdisc_msg_decode(msg);
+    if(msg_nc == NULL) {
+        log_warning ("Malformed netdisc message received!");
+        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	                                    "Malformed netdisc message message received!", NULL);
+    }
 
-    int msg_id          = netdisc_msg_id (&msg_nc);
-    const char *name    = netdisc_msg_name (&msg_nc); 
-    const int ipver     = static_cast<int>(netdisc_msg_ipver (&msg_nc));
-    const char *ipaddr  = netdisc_msg_ipaddr (&msg_nc);
-    int prefixlen       = static_cast<int>(netdisc_msg_prefixlen (&msg_nc));
-    std::string mac (netdisc_msg_mac (&msg_nc));
-    char command        = nethistory_id_cmd (netdisc_msg_id (&msg_nc));
-    assert(command);    // fail on unsupported type
-    assert(ipver==0 || ipver==1);
+    int msg_id          = netdisc_msg_id (msg_nc);
+    const char *name    = netdisc_msg_name (msg_nc); 
+    const int ipver     = static_cast<int>(netdisc_msg_ipver (msg_nc));
+    const char *ipaddr  = netdisc_msg_ipaddr (msg_nc);
+    int prefixlen       = static_cast<int>(netdisc_msg_prefixlen (msg_nc));
+    std::string mac (netdisc_msg_mac (msg_nc));
+    char command        = nethistory_id_cmd (netdisc_msg_id (msg_nc));
+    if((command == 0) || (ipver!=0 && ipver!=1)) {
+        log_warning ("Malformed insides of netdisc message received!");
+        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	        	              "Malformed insides of netdisc message message received!", NULL);
+    }
     shared::CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
@@ -236,82 +231,48 @@ netdisc_msg_process(const std::string& url, const netdisc_msg_t& msg)
     nethistory.setMac(mac);
 
     int id_unique = nethistory.checkUnique();
+    if(id_unique == -1) {
+    	log_warning("Nethistory ID is not unique");
+        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	        	              "Nethistory ID is not unique!", NULL);
+    }
 
     switch (msg_id) {
-
-        case NETDISC_MSG_AUTO_ADD:
-        {
-            if (id_unique == -1)
-            {
-                rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);
-            }
-            result = true;
+        case NETDISC_MSG_AUTO_ADD: {
+            rows_affected = nethistory.dbsave();
             break;
         }
-        case NETDISC_MSG_AUTO_DEL:
-        {
-            if (id_unique != -1)
-            {
-                rows_affected = nethistory.deleteById (id_unique);
-                assert (rows_affected == 1);
-            }
-            result = true;
-            break;
-
-        }
-        case NETDISC_MSG_MAN_ADD:
-        {
-            if (id_unique == -1) {
-                rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);
-            }
-            result = true;
+        case NETDISC_MSG_AUTO_DEL: {
+            rows_affected = nethistory.deleteById (id_unique);
             break;
         }
-        case NETDISC_MSG_MAN_DEL:
-        {
-            if (id_unique != -1) {
-                rows_affected = nethistory.deleteById(id_unique);
-                assert (rows_affected == 1);
-            }
-            result = true;
+        case NETDISC_MSG_MAN_ADD: {
+            rows_affected = nethistory.dbsave();
             break;
         }
-        case NETDISC_MSG_EXCL_ADD:
-        {
-            if (id_unique == -1) { 
-                rows_affected = nethistory.dbsave();
-                assert (rows_affected == 1);
-            }
-            result = true;
+        case NETDISC_MSG_MAN_DEL: {
+            rows_affected = nethistory.deleteById(id_unique);
             break;
-
         }
-        case NETDISC_MSG_EXCL_DEL:
-        {
-            if (id_unique != -1) { 
-                rows_affected = nethistory.deleteById(id_unique);
-                assert (rows_affected == 1);
-            }
-            result = true;
+        case NETDISC_MSG_EXCL_ADD: {
+            rows_affected = nethistory.dbsave();
             break;
-
         }
-        default:
-        {
-        // Example: Let's suppose we are listening on a ROUTER socket from a range of producers.
-        //          Someone sends us a message from older protocol that has been dropped.
-        //          Are we going to return 'false', that usually means db fatal error, and
-        //          make the caller crash/quit? OR does it make more sense to say, OK, message
-        //          has been processed and we'll log a warning about unexpected message type
-            result = true;
+        case NETDISC_MSG_EXCL_DEL: {
+            rows_affected = nethistory.deleteById(id_unique);
+            break;
+        }
+        default: {
             log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
+            return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+	        	                  "Unexpected message type received!", NULL);
             break;
         }
-
     }
-    return result;
+    if(rows_affected != 1) {
+        log_warning ("Unexpected number of rows '%d' affected", rows_affected);
+    }
+    return common_msg_encode_db_ok(-1);
 };
 
 // * \brief processes the powerdev_msg message
@@ -686,6 +647,8 @@ zmsg_t* process_message(zmsg_t** msg) {
         return common_msg_process(msg);
     } else if(is_asset_msg(*msg)) {
         return asset_msg_process(msg);
+    } else if(is_netdisc_msg(*msg)) {
+        return netdisc_msg_process(msg);
     } else {
     	log_warning("Got wrong message!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
