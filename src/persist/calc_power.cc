@@ -530,6 +530,7 @@ compute_total_rack_power_v1(
         std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
         for (a_elmnt_id_t asset_id : all_asset_ids) {
             m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
+            // TODO handle exceptions
             idmap[dev_id] = asset_id;
         }
 

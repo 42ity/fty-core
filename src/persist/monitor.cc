@@ -1302,14 +1302,15 @@ void generate_measurements (const char         *url,
                             m_dvc_id_t         device_id, 
                             m_msrmnt_tp_id_t   type_id, 
                             m_msrmnt_sbtp_id_t subtype_id,
-                            uint32_t max_seconds)
+                            uint32_t           max_seconds, 
+                            m_msrmnt_value_t   last_value)
 {
     auto ret UNUSED_PARAM = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
-
-    for ( int i = 1; i <= GEN_MEASUREMENTS_MAX ; i++ )
-        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id+i, max_seconds - i);
+    
+    for ( int i = 1; i < GEN_MEASUREMENTS_MAX ; i++ )
+        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id + i, max_seconds - i);
+    ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, last_value, max_seconds - GEN_MEASUREMENTS_MAX);
 }
-
 
 common_msg_t* insert_measurement(const char         *url, 
                                  m_clnt_id_t        client_id, 

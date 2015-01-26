@@ -38,7 +38,8 @@ void generate_measurements (const char         *url,
                             m_dvc_id_t         device_id, 
                             m_msrmnt_tp_id_t   type_id, 
                             m_msrmnt_sbtp_id_t subtype_id,
-                            uint32_t max_seconds);
+                            uint32_t           max_seconds, 
+                            m_msrmnt_value_t   last_value);
 
 // ===============================================================
 // Helper common functions
