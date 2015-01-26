@@ -456,7 +456,7 @@ INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_eleme
 
 /* epdu105_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8137, "epdu105_1", @ae_device, 8134); 
-INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9137, 8137, @device_pdu);
+INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9137, 8137, @device_epdu);
 INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10137, "epdu105_1_", @dvc_pdu);
 INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10137, 8137);
 
