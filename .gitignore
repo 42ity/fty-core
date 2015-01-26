@@ -72,6 +72,7 @@ test-dbtopology
 test-totalpower
 test-web
 db-ng
+driver-nut
 server-agent
 
 tests/junit/
