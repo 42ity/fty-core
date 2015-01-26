@@ -674,15 +674,10 @@ web-test: web-test-deps
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
-<<<<<<< HEAD
-			$(top_srcdir)/tools/dbpath.h.in \
-			$(top_builddir)/tools/dbpath.h \
-			$(top_srcdir)/tools/bios-*.service.in \
-=======
 			$(top_srcdir)/tools/dbpath.h \
 			$(top_srcdir)/tools/dbpath.cpp.in \
 			$(top_builddir)/tools/dbpath.cpp \
->>>>>>> FETCH_HEAD
+			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
