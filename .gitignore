@@ -74,6 +74,7 @@ test-dbtopology
 test-totalpower
 test-web
 db-ng
+driver-nut
 server-agent
 !src/drivers/server-agent
 
