@@ -49,7 +49,9 @@ int main (int argc, char *argv []) {
                 continue;
         // Other option is stream aka publish subscribe
         } else {
-            persist::process_message(&msg);
+            zmsg_t *rep = persist::process_message(&msg);
+            if(rep != NULL)
+                zmsg_destroy(&rep);
         }
         zmsg_destroy(&msg);
     }
