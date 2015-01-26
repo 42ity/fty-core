@@ -1062,7 +1062,8 @@ common_msg_t* delete_device (const char* url, m_dvc_id_t device_id)
     }
 }
 
-common_msg_t* update_device (const char* url, common_msg_t** new_device)
+common_msg_t* update_device (UNUSED_PARAM const char* url,
+                             UNUSED_PARAM common_msg_t** new_device)
 {
     return generate_db_fail (DB_ERROR_NOTIMPLEMENTED, NULL, NULL);  
     // TODO NOT IMPLEMENTED
@@ -1303,8 +1304,8 @@ void generate_measurements (const char         *url,
                             m_msrmnt_sbtp_id_t subtype_id,
                             uint32_t max_seconds)
 {
-    auto ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
-    
+    auto ret UNUSED_PARAM = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
+
     for ( int i = 1; i <= GEN_MEASUREMENTS_MAX ; i++ )
         ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id+i, max_seconds - i);
 }
