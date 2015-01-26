@@ -53,6 +53,7 @@ enum db_err_nos {
     DB_ERROR_NOTIMPLEMENTED,
     DB_ERROR_DBCORRUPTED,
     DB_ERROR_NOTHINGINSERTED,
+    DB_ERROR_CANTCONNECT,
 };
 
 //! Constants for bad input type of error

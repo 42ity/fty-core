@@ -173,7 +173,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/calc_power.cc \
 			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
-			src/persist/measure_types.h
+			src/persist/measure_types.h \
+			tools/dbpath.cpp
 
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
@@ -513,7 +514,8 @@ db_ng_LDADD = \
                         libpriv-proto.la
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
+			-I$(top_srcdir)/src/include \
+			-I$(top_srcdir)/tools
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
@@ -660,8 +662,9 @@ web-test: web-test-deps
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
-			$(top_srcdir)/tools/dbpath.h.in \
-			$(top_builddir)/tools/dbpath.h \
+			$(top_srcdir)/tools/dbpath.h \
+			$(top_srcdir)/tools/dbpath.cpp.in \
+			$(top_builddir)/tools/dbpath.cpp \
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
@@ -676,7 +679,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
-DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.h
+DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.cpp
 
 BUILT_SOURCES +=	$(top_srcdir)/tools/dbinit.h
 
