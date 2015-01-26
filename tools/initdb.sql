@@ -508,22 +508,25 @@ INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (7, "status", "");
 
 
 /* t_bios_measurement_subtypes */
-/* voltage.* */
+/* voltage */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "output", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "output.L1-N", -1); 
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 1, "output.L2-N", -1); 
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 1, "output.L3-N", -1);
-/* current.* */
+/* current */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "output", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "output.L1", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 2, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 2, "output.L3", -1);
-/* realpower.* */
+/* realpower */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "default", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3, "output.L1", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "outlet", -1);
+    /* devices can have more PSU and for example via IMPI return values separetly for every PSU*/
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "PSU.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (9, 3, "PSU.2", -1);
+
 /* temperature */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
 /* load */
