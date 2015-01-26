@@ -57,14 +57,6 @@ AS_CASE(["x$srcdir"],
 ])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
 
-# toolchain
-AC_PROG_CC
-AM_PROG_CC_C_O
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LN_S
-PKG_PROG_PKG_CONFIG
-
 # Get the Git repository metadata, if available
 HAVE_PACKAGE_GIT=0
 PACKAGE_GIT_ORIGIN=""
@@ -205,7 +197,7 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP_ESCAPED],
 	[Packaging metadata: Current timestamp at the build host (as of configuration) (escaped)])
 
 ### Revise the packaging strings in config.h
-m4_define([__AC_UNDEFINE],[_AC_DEFINE_UNQUOTED([#ifdef $1
+m4_define([__AC_UNDEFINE],[_AC_DEFINE([#ifdef $1
  #undef $1
 #endif])])
 
@@ -250,6 +242,14 @@ fi
 AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    ["$PACKAGE_VENDOR"],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
+
+# toolchain - after all those definitions and redefinitions that can be broken
+AC_PROG_CC
+AM_PROG_CC_C_O
+AC_PROG_CXX
+AC_PROG_INSTALL
+AC_PROG_LN_S
+PKG_PROG_PKG_CONFIG
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
