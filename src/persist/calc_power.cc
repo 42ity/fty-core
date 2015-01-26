@@ -525,6 +525,10 @@ compute_total_rack_power_v1(
         all_asset_ids.insert(device_info_id(d));
     rack_power_t ret{0, 0, 255, all_asset_ids};
 
+    if (all_asset_ids.empty()) {
+        return ret;
+    }
+
     try{
         // FIXME: asking for mapping each time sounds slow
         std::map<m_dvc_id_t, a_elmnt_id_t> idmap;

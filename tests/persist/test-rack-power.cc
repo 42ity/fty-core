@@ -547,11 +547,12 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][iii][.]")
     zmsg_destroy (&res);
     log_close();
 }
+*/
 
 TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql][.]")
 {
     log_open();
-  //  log_set_level(LOG_DEBUG);
+    //log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #9 ==================");
     
@@ -569,7 +570,7 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql][.]")
 
     // set of all devices in rack
     std::set < m_dvc_id_t > ids;
-    ids.insert(convert_asset_to_monitor(url.c_str(), 8136));
+//    ids.insert(convert_asset_to_monitor(url.c_str(), 8136));
 // no impi -> no measurements about devices
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8138));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8139));
@@ -608,4 +609,3 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql][.]")
     zmsg_destroy (&res);
     log_close();
 }
-*/
