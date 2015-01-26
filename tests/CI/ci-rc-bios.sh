@@ -19,19 +19,50 @@
 #
 # Description: starts or stops the simple daemon installed in $HOME
 
-start(){
-   set -x
-   cd ~/bin
-   /bin/rm -rf ~/simple.log
-   nohup ./simple >~/simple.log 2>&1 &
-   sleep 5
-   pidof simple && pidof netmon
+DAEMONS="db-ng driver-nut driver-nmap netmon"
+
+restart_malamute(){
+    systemctl stop malamute || true
+    cat >/etc/malamute/malamute.cfg <<[eof]
+
+#   Apply to the whole broker
+server
+    timeout = 10000     #   Client connection timeout, msec
+    background = 0      #   Run as background process
+    workdir = /tmp      #   Working directory for daemon
+    verbose = 0         #   Do verbose logging of activity?
+
+#   Apply to the Malamute service
+mlm_server
+    echo = binding Malamute service to 'ipc://@/malamute'
+    bind
+        endpoint = ipc://@/malamute
+[eof]
+    systemctl start malamute
 }
 
-stop(){
-   killall simple 2>/dev/null || true
-   sleep 1
-   killall netmon 2>/dev/null || true
+start_daemon(){
+    if [ -x ~/bin/$1 ] ; then
+        /bin/rm -rf ~/$1.log
+        nohup ~/bin/$1 >~/$1.log 2>&1 &
+        sleep 5
+        pidof $1
+    else
+        echo "ERROR: $1 is missing"
+        exit 1
+    fi
+}
+
+stop() {
+    for d in $DAEMONS ; do
+       killall $d 2>/dev/null || true
+    done
+}
+
+start() {
+    for d in $DAEMONS ; do
+        start_daemon $d
+    done
 }
 
 usage(){
@@ -67,6 +98,7 @@ done
 case "$OPERATION" in
     start)
         stop
+	restart_malamute
         start
         ;;
     stop)

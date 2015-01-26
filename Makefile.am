@@ -178,8 +178,12 @@ libpriv_db_la_SOURCES = \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
-			src/persist/measure_types.h
+			src/persist/measure_types.h \
+			tools/dbpath.cpp
+
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
@@ -195,11 +199,12 @@ libpriv_proto_la_SOURCES = \
 			src/include/asset_msg.h \
 			src/include/common_msg.c \
 			src/include/common_msg.h \
-			src/include/defs.h \
 			src/include/netdisc_msg.c \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
 			src/include/nmap_msg.h \
+			src/include/compute_msg.c \
+			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
@@ -364,6 +369,7 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
 
+
 test_dbtopology_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
@@ -380,6 +386,31 @@ test_dbtopology_CPPFLAGS = \
 			-I$(top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+#### total power tests
+bin_PROGRAMS += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc 
+
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
@@ -492,7 +523,8 @@ db_ng_LDADD = \
                         libpriv-proto.la
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
+			-I$(top_srcdir)/src/include \
+			-I$(top_srcdir)/tools
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
@@ -524,8 +556,21 @@ driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
+#FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
+client_PROGRAMS += dshell
+
+dshell_SOURCES =	tools/dshell.cc
+
+dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+
+dshell_LDADD =	libpriv-proto.la
+
+dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
+
 client_PROGRAMS +=		driver-nut
 
+client_PROGRAMS +=		driver-nut
 driver_nut_SOURCES = \
 			src/drivers/nut/nut-driver.cc \
 			src/drivers/nut/nut-actor.cc \
@@ -621,6 +666,7 @@ web-test-deps: tntnet.xml bios_web.la
 
 # Execute the test web-server for $BIOS REST API
 web-test: web-test-deps
+	@echo "=== Running target $@ as: "; id || true; echo ""
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------
@@ -628,9 +674,15 @@ web-test: web-test-deps
 #----------------------------------------------------------------------
 
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
+<<<<<<< HEAD
 			$(top_srcdir)/tools/dbpath.h.in \
 			$(top_builddir)/tools/dbpath.h \
 			$(top_srcdir)/tools/bios-*.service.in \
+=======
+			$(top_srcdir)/tools/dbpath.h \
+			$(top_srcdir)/tools/dbpath.cpp.in \
+			$(top_builddir)/tools/dbpath.cpp \
+>>>>>>> FETCH_HEAD
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
@@ -645,7 +697,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
-DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.h
+DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.cpp
 
 BUILT_SOURCES +=	$(top_srcdir)/tools/dbinit.h
 
