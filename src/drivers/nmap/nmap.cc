@@ -71,7 +71,7 @@ static void s_dump_nmap_xml(const std::string& _path, const std::string& input) 
         of.flush();
         of.close();
     } catch (const std::exception& exp) {
-        log_debug("error on storing debug file '%s'\n", path.c_str());
+        log_debug("error on storing debug file '%s'", path.c_str());
         log_debug(exp.what());
     }
 }
@@ -123,7 +123,7 @@ static int timer_handler(zloop_t *loop,
 
         if (proc->getReturnCode() != 0) {
             // scan has failed
-            log_error ("scan failed! return code: %d; cmd line: '%s'\n",
+            log_error ("scan failed! return code: %d; cmd line: '%s'",
                        proc->getReturnCode(), proc->argvString().c_str());
         }
         else {
@@ -161,7 +161,7 @@ static int fd_handler (UNUSED_PARAM zloop_t *loop,
 static int command_handler (UNUSED_PARAM zloop_t *loop,
 		zsock_t *reader,
 		UNUSED_PARAM void *_arg) {
-    log_info ("start\n");
+    log_info ("start");
 
     nmap_msg_t *msg = nmap_msg_recv (reader);
     assert (msg);
@@ -179,14 +179,14 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
             enum NmapMethod method;
             if (streq (command, SCAN_CMDTYPE_DEFAULT_LIST)) {                
                 method = NmapMethod::DefaultListScan;
-                log_debug ("default list scan\n");
+                log_debug ("default list scan");
             }
             else if (streq (command, SCAN_CMDTYPE_DEFAULT_DEVICE)) {
                 method = NmapMethod::DefaultDeviceScan;
-                log_debug ("default device scan\n");
+                log_debug ("default device scan");
             }
             else {
-                log_error ("message of type 'scan_command' can not have field 'type' empty;\n");        
+                log_error ("message of type 'scan_command' can not have field 'type' empty;");        
                 nmap_msg_destroy (&msg);
                 return 0;
             }
@@ -197,8 +197,8 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
                 char *next_item = NULL;
                 next_item = (char *) zlist_pop (zlargs);
                 assert (next_item);
-                log_info ("%lu\n", strlen(next_item));
-                log_info ("%s\n", next_item);
+                log_info ("%lu", strlen(next_item));
+                log_info ("%s", next_item);
                 args.push_back(next_item);                      
                 free (next_item);
             }
@@ -206,12 +206,12 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
             // check for IPV6 address 
             shared::CIDRAddress check_ipv6 (args[args.size() - 1]);
             if (check_ipv6.protocol() == 6) {
-                log_warning ("IPV6 functionality is not implemented yet. Skipping.\n");
+                log_warning ("IPV6 functionality is not implemented yet. Skipping.");
                 break;
             }
             else if (check_ipv6.protocol() == 0) {
                 // maybe assert in front of this if-construct would have sufficed
-                log_error ("An invalid ip address has been supplied: '%s'\n", args[args.size() - 1].c_str());
+                log_error ("An invalid ip address has been supplied: '%s'", args[args.size() - 1].c_str());
                 break;
             }
  
@@ -220,7 +220,7 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
 
             // Add the prepared command+arguments to the queue
             _que.add(args);                                     
-            log_debug ("added to queue.\n");
+            log_debug ("added to queue.");
             break;
         }
         case NMAP_MSG_LIST_SCAN:
@@ -233,26 +233,26 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
         case NMAP_MSG_OSCLASS:
         case NMAP_MSG_SCAN_ERROR:
         {
-            log_warning ("UNEXPECTED message type received; Nmap scanner expects 'scan_command' not results of various scans.\n");
+            log_warning ("UNEXPECTED message type received; Nmap scanner expects 'scan_command' not results of various scans.");
             return 0;
             break;
         }
         default:
         {
-            log_warning ("UNKNOWN message type received; message id = '%d'\n", nmap_msg_id (msg));
+            log_warning ("UNKNOWN message type received; message id = '%d'", nmap_msg_id (msg));
             return 0;
             break;
         }
     }
 
     nmap_msg_destroy (&msg);
-    log_info ("end\n");
+    log_info ("end");
     return 0;
 }
 
 void nmap_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
 
-    log_info ("start\n");
+    log_info ("start");
 
     zsock_t *cmdfd = zsock_new_router (DRIVER_NMAP_SOCK);
     assert (cmdfd);
@@ -278,13 +278,13 @@ void nmap_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
     assert (poller == NULL);
     assert (cmdfd == NULL);
 
-    log_info ("end\n");
+    log_info ("end");
 }
 
 void nmap_stdout (UNUSED_PARAM zsock_t *pipe,
 		  UNUSED_PARAM void *args) {
 /*
-    log_info ("%s", "nmap_stdout() start\n");
+    log_info ("%s", "nmap_stdout() start");
 
     while (1) {
     nmap_msg_t *msg = nmap_msg_recv (router);
@@ -296,7 +296,7 @@ void nmap_stdout (UNUSED_PARAM zsock_t *pipe,
     assert (&msg);
     }
     zsock_destroy (&router);
-    log_info ("%s", "nmap_stdout() end\n");
+    log_info ("%s", "nmap_stdout() end");
 */
 }
 
@@ -304,7 +304,7 @@ int main (int argc, char **argv) {
 
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("nmap daemon start\n");
+    log_info ("nmap daemon start");
 
     bool test_mode = false;
 
@@ -320,19 +320,19 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
         "defaultlistscan", "defaultdevicescan");
         if (target == NULL ||
             strlen (target) == 0) {
-            log_critical ("Environment variable %s not set.\n", "NMAP_SCANNER_TARGET");
-            log_critical ("You have to set this variable when in --test-mode\n");
+            log_critical ("Environment variable %s not set.", "NMAP_SCANNER_TARGET");
+            log_critical ("You have to set this variable when in --test-mode");
             return EXIT_FAILURE;
         }
         if (which == NULL ||
             strlen(which) == 0) {
-            log_critical ("Environment variable %s not set.\n", "NMAP_SCANNER_TYPE");
-            log_critical ("You have to set this variable when in --test-mode\n");
+            log_critical ("Environment variable %s not set.", "NMAP_SCANNER_TYPE");
+            log_critical ("You have to set this variable when in --test-mode");
             return EXIT_FAILURE;
         }
         if (strcmp(which, "defaultlistscan") != 0 &&
             strcmp(which, "defaultdevicescan") != 0) {
-            log_critical ("Environment variable '%s' must be either '%s' OR '%s'\n",
+            log_critical ("Environment variable '%s' must be either '%s' OR '%s'",
                           "NMAP_SCANNER_TYPE", "defaultlistscan", "defaultdevicescan");
             return EXIT_FAILURE;
         }
@@ -352,8 +352,8 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
     zpoller_t *poller = NULL;
 
     if (test_mode == true) {
-        log_debug ("environment variable NMAP_SCANNER_TARGET = '%s'\n", target);
-        log_debug ("environment variable NMAP_SCANNER_TYPE = '%s'\n", which);
+        log_debug ("environment variable NMAP_SCANNER_TARGET = '%s'", target);
+        log_debug ("environment variable NMAP_SCANNER_TYPE = '%s'", which);
          
         zsock_t *router = zsock_new_router (DRIVER_NMAP_REPLY);
         assert (router);
@@ -376,7 +376,7 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             // don't care about which socket, only one is being polled            
             zpoller_wait (poller, -1);
             if (zpoller_terminated (poller)) {
-                log_info ("SIGINT received. Quitting.\n");
+                log_info ("SIGINT received. Quitting.");
                 break;
             }
             // get the result and print it
@@ -398,9 +398,9 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             zsock_t *which = (zsock_t *) zpoller_wait (poller, -1);
 	    // FIXME: JIM: Use the variable somehow to avout unused warning
 	    if (which==NULL)
-    		log_info ("zpoller_wait() timed out or was aborted\n");
+    		log_info ("zpoller_wait() timed out or was aborted");
             if (zpoller_terminated (poller)) {            
-                log_info ("SIGINT received. Quitting.\n");
+                log_info ("SIGINT received. Quitting.");
             }
         }
     }
@@ -410,7 +410,7 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
     zsock_destroy (&incoming);
     zsock_destroy (&outgoing);
 
-    log_info ("nmap daemon stop\n");
+    log_info ("nmap daemon stop");
     log_close ();
     return EXIT_SUCCESS;
 }

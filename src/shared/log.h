@@ -27,17 +27,17 @@ Example:
 
        log_open();
 
-       log_debug("debug level is invisible\n");
+       log_debug("debug level is invisible");
         
        log_set_level(LOG_DEBUG);
         
-       log_debug("%s", "debug level is visible\n");
+       log_debug("%s", "debug level is visible");
 
-       log_critical("%s", "critical level\n");
-       log_error("%s", "error level\n");
-       log_warning("%s", "warning level\n");
-       log_info("%s", "info level\n");
-       log_debug("%s", "debug level\n");
+       log_critical("%s", "critical level");
+       log_error("%s", "error level");
+       log_warning("%s", "warning level");
+       log_info("%s", "info level");
+       log_debug("%s", "debug level");
 
        log_close();
     }

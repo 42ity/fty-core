@@ -29,7 +29,7 @@ static shared::SubProcess nmap_proc{nmap_args, false, false};
 
 //  netmon 
 void filip_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
-    log_info ("start\n");
+    log_info ("start");
 
     zsock_t * incoming = zsock_new_router (FILIP_SOCK);
     assert (incoming);
@@ -54,11 +54,11 @@ void filip_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
             break;
         }
         else if (which == incoming) {
-            log_debug ("socket INCOMING received a message\n");    
+            log_debug ("socket INCOMING received a message");    
             netdisc_msg_t *msg = netdisc_msg_recv (incoming);  
             assert (msg);
             if (netdisc_msg_ipaddr (msg) == NULL) {
-                    log_warning ("Field 'ipaddr' is empty!\n");
+                    log_warning ("Field 'ipaddr' is empty!");
                     netdisc_msg_destroy (&msg);
                     continue;
             }
@@ -85,7 +85,7 @@ void filip_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
             netdisc_msg_destroy (&msg);
         }
         else if (which == nmap_reply) {
-            log_debug ("socket NMAP_REPLY received a message\n");    
+            log_debug ("socket NMAP_REPLY received a message");    
             nmap_msg_t *msg = nmap_msg_recv (nmap_reply);
             assert (msg);
             nmap_msg_send (&msg, dbsock);
@@ -99,11 +99,11 @@ void filip_actor (zsock_t *pipe, UNUSED_PARAM void *args) {
     zsock_destroy (&nmap);
     zsock_destroy (&nmap_reply);
 
-    log_info ("end\n");
+    log_info ("end");
 }
 
 void persistence_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
-    log_info ("start\n");
+    log_info ("start");
 
     zsock_t * insock = zsock_new_router(DB_SOCK);
     assert(insock);
@@ -118,17 +118,17 @@ void persistence_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
         if (which == pipe) {
             break;
         }
-        log_debug ("message received\n");
+        log_debug ("message received");
         zmsg_t *msg = zmsg_recv(insock);
 
         try {
             bool b = persist::process_message (url, msg);
 	    if (!b)
-    		log_debug ("message processing returned false\n");
+    		log_debug ("message processing returned false");
         } catch (tntdb::Error &e) {
             fprintf (stderr, "%s", e.what());
             fprintf (stderr, "To resolve this problem, please see README file\n");
-            log_critical ("%s: %s\n", "tntdb::Error caught", e.what());
+            log_critical ("%s: %s", "tntdb::Error caught", e.what());
             break;
         }
         zmsg_destroy(&msg);
@@ -136,12 +136,12 @@ void persistence_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
     
     zpoller_destroy(&poller);
     zsock_destroy(&insock);
-    log_info ("end\n");
+    log_info ("end");
 }
  
 void netmon_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
 
-    log_info ("start\n");
+    log_info ("start");
 
     const int names_len = 6;
     const char *names[6] = { "eth0", "eth1", "enps02", "wlan0", "veth1", "virbr0" };
@@ -205,7 +205,7 @@ void netmon_actor(zsock_t *pipe, UNUSED_PARAM void *args) {
     }
 
     zsock_destroy(&dbsock);
-    log_info ("end\n");
+    log_info ("end");
 
 }
 
@@ -223,17 +223,17 @@ int main(int argc, char **argv) {
     log_open();
     log_set_level(LOG_DEBUG);
 
-    log_info ("==========================================\n");
-    log_info ("==========        SIMPLE        ==========\n");
+    log_info ("==========================================");
+    log_info ("==========        SIMPLE        ==========");
 
     srandom ((unsigned) time (NULL));
     bool test_mode = false;
 
     if (argc > 1 && strcmp(argv[1], "--test-mode") == 0) {
         test_mode = true;
-        log_info ("= %s =", "TEST MODE: Running netmon_actor() instead of netmon.\n");
+        log_info ("= %s =", "TEST MODE: Running netmon_actor() instead of netmon.");
     }
-    log_info ("==========================================\n");
+    log_info ("==========================================");
 
     atexit(term_children);
 
@@ -257,11 +257,11 @@ int main(int argc, char **argv) {
 
         nmap_proc.poll();
         if (!nmap_proc.isRunning()) {
-            log_error ("driver-nmap did not start, exitcode: '%d'\n", nmap_proc.getReturnCode());
+            log_error ("driver-nmap did not start, exitcode: '%d'", nmap_proc.getReturnCode());
             return nmap_proc.getReturnCode();
         }
         else {
-            log_info ("driver-nmap is running\n");
+            log_info ("driver-nmap is running");
         }
            
         // netmon
@@ -270,11 +270,11 @@ int main(int argc, char **argv) {
 
         netmon_proc.poll();
         if (!netmon_proc.isRunning()) {
-            log_error ("netmon did not start; exitcode: '%d'\n", netmon_proc.getReturnCode());
+            log_error ("netmon did not start; exitcode: '%d'", netmon_proc.getReturnCode());
             return netmon_proc.getReturnCode();
         }
         else {
-            log_info ("netmon is running\n");
+            log_info ("netmon is running");
         }
      }
 
@@ -288,12 +288,12 @@ int main(int argc, char **argv) {
         zsock_t *which = (zsock_t *)zpoller_wait (poller, -1);
 	// FIXME: JIM: Use the variable somehow to avout unused warning
 	if (which==NULL)
-	    log_info ("zpoller_wait() timed out or was aborted\n");
+	    log_info ("zpoller_wait() timed out or was aborted");
     }
 
     if (test_mode) {    
         zactor_destroy(&netmon);        
-        log_info ("%s", "destroying netmon_actor\n"); 
+        log_info ("%s", "destroying netmon_actor"); 
     }
     else {
         // normally kill() would be enough, but netmon can't cope
@@ -304,7 +304,7 @@ int main(int argc, char **argv) {
     zactor_destroy(&nut);
     zactor_destroy(&db);
     zactor_destroy(&filip);
-    log_info ("END\n"); 
+    log_info ("END"); 
     log_close ();
     return EXIT_SUCCESS;
 }

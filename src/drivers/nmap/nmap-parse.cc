@@ -203,7 +203,7 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
     assert (socket);
     assert (zsock_is (socket));
 
-    log_info ("start\n");
+    log_info ("start");
         
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
@@ -292,7 +292,7 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                             assert (rv != -1);
                             log_debug ("'%s' sent\n,", addr_v.c_str());
                         } else {
-                            log_debug ("'%s' doesn't have <hostnames>\n", addr_v.c_str());
+                            log_debug ("'%s' doesn't have <hostnames>", addr_v.c_str());
                         }
 
 
@@ -345,7 +345,7 @@ void parse_list_scan(std::istream& inp, zsock_t *socket) {
                 break;
         }
     }
-    log_info ("end\n");    
+    log_info ("end");    
     log_close ();    
 }
 
@@ -361,7 +361,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("start\n");    
+    log_info ("start");    
 
     XmlReader r{inp, 0};
     std::list<std::string> ls_res;
@@ -1034,7 +1034,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
     }
 
     assert (devscan == NULL);
-    log_info ("end\n");    
+    log_info ("end");    
     log_close ();    
 }
 

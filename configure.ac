@@ -326,7 +326,7 @@ AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
 
 #test-db-run-path
-AC_CONFIG_FILES([tools/dbpath.h])
+AC_CONFIG_FILES([tools/dbpath.cpp])
 dnl sqlite
 dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
 dnl mariadb/mysql

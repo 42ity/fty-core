@@ -2,7 +2,7 @@
     name = "netdisc_msg"
     signature = "0"
     title = "network discovery protocol"
-    script = "zproto_codec_c"
+    script = "zproto_codec_c_v1"
     package_dir = "."
     include = "czmq.h"
     >

@@ -3,7 +3,7 @@
     name = "powerdev_msg"
     signature = "2"
     title = "power device message"
-    script = "zproto_codec_c"
+    script = "zproto_codec_c_v1"
     package_dir = "."
     include = "czmq.h"
     >
@@ -49,7 +49,7 @@
     <field name = "serial"               type = "string">Serial number</field>
     <field name = "type"                 type = "string">Device type (UPS/ePDU/...)</field>
     <field name = "status"               type = "string">UPS status</field>
-    <field name = "otherProperties"      type = "dictionary">Other device properties</field>
+    <field name = "otherProperties"      type = "hash">Other device properties</field>
 
 <!-- otherProperties 
     Those properties are _not_ supported by all devices, so they are stored in
