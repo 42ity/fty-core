@@ -38,7 +38,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DEVICE_TYPE_PDU 4
 #define DEVICE_TYPE_UPS 1
 #define DEVICE_TYPE_SERVER 5
-
 // ===========================================================================
 // Helper types and functions
 // ===========================================================================
@@ -69,6 +68,12 @@ typedef struct _rack_power_t {
     uint8_t                    quality; //! quality of total power (0 - no results found, 100 all results found)
     std::set < a_elmnt_id_t >  missed;  //! devices not found in DB
 } rack_power_t;
+rack_power_t
+compute_total_rack_power_v1_1(
+        const char *url,
+        const std::set <device_info_t> &rack_devices,
+        uint32_t max_age);
+
 
 /**
  * \brief Checks the type of device.

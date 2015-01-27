@@ -635,7 +635,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
                                                 asset_element_id, "end");
         throw bios::MonitorCounterpartNotFound ();
     }
-    log_info("normal %s ","end");
+    log_info("end: asset element %d converted to %d ", asset_element_id, device_discovered_id);
     return device_discovered_id;
 };
 
