@@ -524,6 +524,8 @@ INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3,
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "outlet", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
 /* temperature */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
 /* load */
