@@ -5,6 +5,35 @@
 #include "asset_msg.h"
 #include "assetmsg.h"
 #include "data.h"
+#include "calc_power.h"
+#include "dbpath.h"
+
+float total_rack_power(a_elmnt_id_t rack_element_id) {
+    std::cout << rack_element_id << "\n";
+    
+    zmsg_t *msg = calc_total_rack_power(url.c_str(),rack_element_id);
+    if( ! msg ) return 0.0;
+    if( ! is_compute_msg(msg) ) {
+        zmsg_destroy(&msg);
+        return 0.0;
+    }
+    compute_msg_t* res_compute = compute_msg_decode (&msg);
+    zmsg_destroy(&msg);
+    zhash_t* results = compute_msg_get_results (res_compute);
+
+    m_msrmnt_value_t value;
+    m_msrmnt_scale_t scale;
+    a_elmnt_id_t num_missed;
+    int rv0 = compute_result_value_get(results, &value);
+    int rv1 = compute_result_scale_get(results, &scale);
+    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    compute_msg_destroy(&res_compute);
+    zhash_destroy(&results);
+    if ( rv0 || rv1 || rv2 ) return 0.0;
+    if( num_missed != 0 ) return 0.0;
+    return value * pow(10,scale);
+}
+
 </%pre>
 <%args>
 std::string arg1;
@@ -75,7 +104,11 @@ for( size_t R = 0; R <racks.size() ; ++R ) {
             "id":   "<$ racks[R] $>",
             "name": "<$ rackNames[R] $>",
 %       for(size_t P = 0; P < requestedParams.size(); P++ ) {
-            "<$ requestedParams[P] $>": <$ (800.0 + (std::rand() % 2000)/10.0 )$><? P < requestedParams.size() -1 ? "," ?>
+%           if( requestedParams[P] == "total_power" ) {
+            "total_power": <$ total_rack_power( atoi( racks[R].c_str() ) )  $><? ( P < requestedParams.size() - 1 ) ? "," ?>
+%           } else {
+    "<$ requestedParams[P] $>": <$ (800.0 + (std::rand() % 2000)/10.0 )$><? ( P < requestedParams.size() - 1 ) ? "," ?>
+%           }
 %       };
         }<? R < racks.size() -1 ? "," ?>
 %   };
