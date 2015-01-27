@@ -1,8 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 
 # dshell binary wrapper 
 
 # TODO
 # - usage
 
-dshell ipc://@/malamute 1000 mshell "$1" "$2"
+dsh=`dirname $0`/dshell
+# exported by CI tests
+[ -x "${BUILDSUBDIR}/dshell" ] && \
+    dsh="${BUILDSUBDIR}/dshell"
+
+exec ${dsh} ipc://@/malamute 1000 mshell "$1" "$2"
