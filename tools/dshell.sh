@@ -5,7 +5,7 @@
 # TODO
 # - usage
 
-dsh=`dirname $0`/dsh
+dsh=`dirname $0`/dshell
 # exported by CI tests
 [ -x "${BUILDSUBDIR}/dshell" ] && \
     dsh="${BUILDSUBDIR}/dshell"
