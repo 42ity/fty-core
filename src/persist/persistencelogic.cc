@@ -272,7 +272,7 @@ zmsg_t* netdisc_msg_process(zmsg_t** msg) {
     if(rows_affected != 1) {
         log_warning ("Unexpected number of rows '%d' affected", rows_affected);
     }
-    return common_msg_encode_db_ok(-1);
+    return common_msg_encode_db_ok(nethistory.getId());
 };
 
 // * \brief processes the powerdev_msg message
