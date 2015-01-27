@@ -692,3 +692,16 @@ values
 
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
 UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2"}' WHERE id_client=@client_ui_properties;
+
+
+/* UPSs definition for testing */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS1-LAB',2);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS2-LAB',2);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS2-LAB')
+);
