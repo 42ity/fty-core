@@ -62,10 +62,9 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg,
 
 common_msg_t* generate_ok(uint64_t rowid)
 {
-    log_info ("%s ", "start");
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     common_msg_set_rowid (resultmsg, rowid);
-    log_info ("normal %s ", "end");
+    log_info ("db_ok generated for %ld", rowid);
     return resultmsg;
 }
 
