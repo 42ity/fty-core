@@ -198,6 +198,7 @@ libpriv_proto_la_SOURCES = \
 			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
+libpriv_proto_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
