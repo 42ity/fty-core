@@ -38,11 +38,6 @@ if [ -f $LOCKFILE ]; then
     exit 1 
 fi
 
-# Check for root
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run with root permissions." >&2
-    exit 1
-fi
 if [ "x$CHECKOUTDIR" = "x" ]; then
     SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
     SCRIPTDIR="`dirname $0`"
@@ -107,14 +102,14 @@ fi
 sleep 2
 
 # These actions have to be reflected in dsh_file for this test to succeed.
-ip addr add 101.25.138.2 dev lo
-ip addr add 103.15.3.0/24 dev lo
-ip addr add 20.13.5.4/32 dev lo
+sudo ip addr add 101.25.138.2 dev lo
+sudo ip addr add 103.15.3.0/24 dev lo
+sudo ip addr add 20.13.5.4/32 dev lo
 
 # Reverting back
-ip addr del 101.25.138.2 dev lo
-ip addr del 103.15.3.0/24 dev lo
-ip addr del 20.13.5.4/32 dev lo
+sudo ip addr del 101.25.138.2 dev lo
+sudo ip addr del 103.15.3.0/24 dev lo
+sudo ip addr del 20.13.5.4/32 dev lo
 
 file=$(<$dsh_file) # `cat file` for non-bash shell
 
