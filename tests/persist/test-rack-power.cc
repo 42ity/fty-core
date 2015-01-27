@@ -41,10 +41,10 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
     ids.insert (yy);
 
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
-    zmsg_t* res = calc_total_rack_power (url.c_str(), 8000);
+    zmsg_t* res = REQUIRE_NOTHROW( calc_total_rack_power (url.c_str(), 8000) );
     
     REQUIRE ( is_compute_msg (res) );
 
@@ -54,9 +54,9 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     a_elmnt_id_t num_missed;
-    int rv  = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    int rv  = REQUIRE_NOTHROW( compute_result_value_get(results, &value) );
+    int rv1 = REQUIRE_NOTHROW( compute_result_scale_get(results, &scale) );
+    int rv2 = REQUIRE_NOTHROW( compute_result_num_missed_get(results, &num_missed) );
 
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
@@ -73,7 +73,7 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-   log_set_level(LOG_DEBUG);
+//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #2 ==================");
     
@@ -83,8 +83,8 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 
     // expected devices to summ up
     std::set <m_dvc_id_t > expected_ids;
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8007));
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8008));
+    REQUIRE_NOTHROW( expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8007)) );
+    REQUIRE_NOTHROW( expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8008)) );
     
     m_msrmnt_value_t expected_value = 0;
     for ( auto &device_id: expected_ids)
@@ -100,10 +100,10 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
-    zmsg_t* res = calc_total_rack_power (url.c_str(), 8006);
+    zmsg_t* res = REQUIRE_NOTHROW( calc_total_rack_power (url.c_str(), 8006) );
     
     REQUIRE ( is_compute_msg (res) );
 
@@ -113,9 +113,9 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     a_elmnt_id_t num_missed;
-    int rv  = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    int rv  = REQUIRE_NOTHROW( compute_result_value_get(results, &value) );
+    int rv1 = REQUIRE_NOTHROW( compute_result_scale_get(results, &scale) );
+    int rv2 = REQUIRE_NOTHROW( compute_result_num_missed_get(results, &num_missed) );
 
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
@@ -142,9 +142,9 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 
     // expected devices to summ up
     std::set <m_dvc_id_t > expected_ids;
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8015));
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8020));
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8022));
+    REQUIRE_NOTHROW( expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8015)) );
+    REQUIRE_NOTHROW( expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8020)) );
+    REQUIRE_NOTHROW( expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8022)) );
     
     m_msrmnt_value_t expected_value = 0;
     for ( auto &device_id: expected_ids)
@@ -155,17 +155,20 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8016));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8014));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8017));
-    ids.insert(convert_asset_to_monitor(url.c_str(), 8021));
+    m_dvc_id_t yy = 0;
+    REQUIRE_NOTHROW ( yy = convert_asset_to_monitor(url.c_str(), 8021));
+    ids.insert(yy);
+
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8019));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8018));
     ids.insert(expected_ids.begin(), expected_ids.end());
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
-    zmsg_t* res = calc_total_rack_power (url.c_str(), 8013);
+    zmsg_t* res = REQUIRE_NOTHROW ( calc_total_rack_power (url.c_str(), 8013) );
     
     REQUIRE ( is_compute_msg (res) );
 
@@ -175,9 +178,9 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     a_elmnt_id_t num_missed;
-    int rv  = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    int rv  = REQUIRE_NOTHROW( compute_result_value_get(results, &value) );
+    int rv1 = REQUIRE_NOTHROW( compute_result_scale_get(results, &scale) );
+    int rv2 = REQUIRE_NOTHROW( compute_result_num_missed_get(results, &num_missed) );
 
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
@@ -204,9 +207,13 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 
     // expected devices to summ up
     std::set <m_dvc_id_t > expected_ids;
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8025));
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8026));
-    expected_ids.insert(convert_asset_to_monitor(url.c_str(), 8029));
+    m_dvc_id_t yy = 0;
+    REQUIRE_NOTHROW ( yy = convert_asset_to_monitor(url.c_str(), 8025) );
+    expected_ids.insert(yy);
+    REQUIRE_NOTHROW ( yy = convert_asset_to_monitor(url.c_str(), 8026) );
+    expected_ids.insert(yy);
+    REQUIRE_NOTHROW ( yy = convert_asset_to_monitor(url.c_str(), 8029) );
+    expected_ids.insert(yy);
     
     m_msrmnt_value_t expected_value = 0;
     for ( auto &device_id: expected_ids)
@@ -219,14 +226,13 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8028));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8030));
     // ids.insert(convert_asset_to_monitor(url.c_str(), 8031)); this element has no measurement
-    ids.insert(expected_ids.begin(), expected_ids.end());
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
-    zmsg_t* res = calc_total_rack_power (url.c_str(), 8023);
+    zmsg_t* res = REQUIRE_NOTHROW( calc_total_rack_power (url.c_str(), 8023) );
     
     REQUIRE ( is_compute_msg (res) );
 
@@ -236,9 +242,9 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     a_elmnt_id_t num_missed;
-    int rv  = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    int rv  = REQUIRE_NOTHROW( compute_result_value_get(results, &value) );
+    int rv1 = REQUIRE_NOTHROW( compute_result_scale_get(results, &scale) );
+    int rv2 = REQUIRE_NOTHROW( compute_result_num_missed_get(results, &num_missed) );
 
     REQUIRE ( !rv );
     REQUIRE ( !rv1 );
