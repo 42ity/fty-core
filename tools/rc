@@ -83,7 +83,7 @@ is_external_unit() {
     unit=${1}
 
     case "${unit}" in
-        malamute|mysql)
+        malamute|mysql|saslauthd)
             return 0
             ;;
     esac
@@ -134,7 +134,7 @@ install_unit_sysd() {
 
     [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
-    subst_unit "${unit}" > /run/system/systemd/${unit}.service
+    subst_unit "${unit}" > /run/systemd/system/${unit}.service
     my_systemctl daemon-reload
 }
 
@@ -272,7 +272,7 @@ main() {
 
     if [ "${1}" = "--kill" ]; then
         if can_use_sysd; then
-            for unit in $(my_systemctl list-units | grep ^bios-) malamute; do
+            for unit in $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') malamute; do
                 my_systemctl stop "${unit}"
                 rm -f /run/systemd/system/${unit}.service
             done
