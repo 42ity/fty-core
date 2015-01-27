@@ -531,9 +531,9 @@ static rack_power_t
                                 uint32_t max_age)
 {
     log_info("start");
-
     assert ( max_age != 0 );
 
+    // set of all asset_id-es to be computed
     std::set < a_elmnt_id_t > all_asset_ids{};
     
     //FIXME: this is stupid - aren't there union operations on sets in std C++?
@@ -545,32 +545,54 @@ static rack_power_t
         all_asset_ids.insert(device_info_id(d));
 
     rack_power_t ret{0, 0, 255, all_asset_ids};
-    if (all_asset_ids.empty()) {
+    if ( all_asset_ids.empty() )
+    {
+        log_debug ("end: no devices to compute was recieved");
+        return ret;
+    }
+    
+    // FIXME: asking for mapping each time sounds slow
+    // convert id from asset part to monitor part
+    std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
+    for ( a_elmnt_id_t asset_id : all_asset_ids ) 
+    {
+        try
+        {
+            m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
+            idmap[dev_id] = asset_id;
+        }
+        catch (const bios::NotFound &e) {
+            log_info("asset element %d notfound, ignore it", asset_id);
+        }
+        catch (const bios::ElementIsNotDevice &e) {
+            log_info("asset element %d is not a device, ignore it", asset_id);
+        }
+        catch (bios::MonitorCounterpartNotFound &e ) {
+            log_warning("monitor counterpart for the %d was not found, ignore it", 
+                    asset_id);
+        }
+        // ATTENTION: if internal, leave it to upper level
+    }
+    if ( idmap.empty() ) // no id was correctly converted
+    {
+        log_debug ("end: all devices were converted to monitor part with error");
         return ret;
     }
 
-    try{
-        // FIXME: asking for mapping each time sounds slow
-        std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
-        for (a_elmnt_id_t asset_id : all_asset_ids) {
-            m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
-            // TODO handle exceptions
-            idmap[dev_id] = asset_id;
-        }
-
-        // NOTE: cannot cache as SQL query is not stable
+    // NOTE: cannot cache as SQL query is not stable
         
-        // XXX: SQL placeholders can't deal with list of values, 
-        // as we're using plain int, there is no issue in generating 
-        // SQL by hand
+    // XXX: SQL placeholders can't deal with list of values, 
+    // as we're using plain int, there is no issue in generating 
+    // SQL by hand
         
-        //TODO: read realpower.default from database, 
-        // SELECT v.id as id_subkey, v.id_type as id_key 
-        // FROM v_bios_measurement_subtypes v 
-        // WHERE name='default' AND typename='realpower';
-
+    //TODO: read realpower.default from database, 
+    // SELECT v.id as id_subkey, v.id_type as id_key 
+    // FROM v_bios_measurement_subtypes v 
+    // WHERE name='default' AND typename='realpower';
+    try
+    {
         tntdb::Connection conn = tntdb::connect(url);
-        // v..._last contain only last measures
+        // v_..._last contain only last measures
         // TODO check its correctness
         tntdb::Statement st = conn.prepare(
             " SELECT"
@@ -607,7 +629,7 @@ static rack_power_t
         }
     }
     catch (const std::exception &e) {
-        log_warning ("abnormal end with '%s'", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
     return ret;
