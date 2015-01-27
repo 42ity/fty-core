@@ -391,6 +391,7 @@ int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
     log_info ("start ");
+
     // check if specified device has a rack type
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
@@ -433,6 +434,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     compute_result_value_set (result, ret_results.power);
     compute_result_scale_set (result, ret_results.scale);
     // TODO process missed ids
+    // TODO quality
     compute_result_num_missed_set (result, ret_results.missed.size());
 
     // fill the return message
@@ -584,3 +586,162 @@ compute_total_rack_power_v1(
 
     return ret;
 }
+
+std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
+                                                m_dvc_tp_id_t parent_type_id)
+{
+    std::set < a_elmnt_id_t > result;
+    
+    byte *buffer = zframe_data (frame);
+    assert ( buffer );
+    
+    zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
+    assert ( zmsg );
+     
+    zmsg_t* pop = NULL;
+    zframe_t* fr;
+    while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
+    { 
+        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+        assert ( item );
+         
+        // process rooms
+        if ( parent_type_id == asset_type::DATACENTER )
+        {
+            fr = asset_msg_rooms (item);
+            auto result1 = find_racks (fr, asset_msg_type(item));
+            result.insert (result1.begin(), result1.end());
+        }
+        
+        // process rows
+        if ( ( parent_type_id == asset_type::DATACENTER ) ||
+             ( parent_type_id == asset_type::ROOM ) )
+        {
+            fr = asset_msg_rows (item);
+            auto result1 = find_racks (fr, asset_msg_type(item));
+            result.insert (result1.begin(), result1.end());
+        }
+        
+        // process racks
+        if ( ( parent_type_id == asset_type::DATACENTER ) ||
+             ( parent_type_id == asset_type::ROOM ) ||
+             ( parent_type_id == asset_type::ROW ) )
+        {
+            fr = asset_msg_racks (item);
+            auto result1 = find_racks (fr, asset_msg_type(item)); 
+            result.insert (result1.begin(), result1.end());
+        }
+        
+        if ( parent_type_id == asset_type::RACK )
+            result.insert (asset_msg_element_id (item));
+        
+        asset_msg_destroy (&item);
+        assert ( pop == NULL );
+    }
+    zmsg_destroy (&zmsg);
+    return result;
+}
+
+
+// DC POWER
+zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
+{
+    log_info ("start \n");
+    // check if specified device has a dc type
+    try{
+        a_elmnt_id_t type_id = select_element_type (url, dc_element_id);
+        if ( type_id == 0 )
+        {
+            log_info ("end, %d dc not found \n", dc_element_id);
+            return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
+                                    "specified dc was not found", NULL);
+        }
+        if ( type_id != asset_type::DATACENTER ) 
+        {
+            log_info ("end, %d isn't DC \n", dc_element_id);
+            return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
+                                    "specified element is not a dc", NULL);
+        }
+    }
+    catch (const bios::InternalDBError &e)
+    {
+        log_warning ("abnormal end with '%s' \n", e.what());
+        return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
+                                    e.what(), NULL);
+    }
+
+    // continue, select all racks in a dc
+    // unfortunatly there is no structure where to store topology, so 
+    // it is directly stored in message
+    // here we need to select und unpack it
+    
+    // fill the getmsg
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    asset_msg_set_element_id (getmsg, dc_element_id);
+    asset_msg_set_recursive (getmsg, true);
+    asset_msg_set_filter_type (getmsg, asset_type::RACK);
+
+    // get topology
+    zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
+    asset_msg_t* item = asset_msg_decode (&dc_topology);
+
+    // find all ids of rack in topology
+    // process rooms
+    zframe_t* fr = asset_msg_rooms (item);
+    std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
+        
+    // process rows
+    fr = asset_msg_rows (item);
+    auto tmp = find_racks (fr, asset_msg_type(item));
+    rack_ids.insert(tmp.begin(), tmp.end());
+        
+    // process racks
+    fr = asset_msg_racks (item);
+    auto tmp1 = find_racks (fr, asset_msg_type(item)); 
+    rack_ids.insert(tmp1.begin(), tmp1.end());
+
+    // number of found racks
+    int n = rack_ids.size();
+
+    // set of results for every rack
+    rack_power_t* ret_results_rack = new rack_power_t [n];
+    int i = 0;
+    for ( auto &rack_id: rack_ids )
+    {
+        // select all devices in a rack
+        auto rack_devices = select_rack_devices(url, rack_id);
+
+        // find all power sources for in-rack devices
+        power_sources_t power_sources = choose_power_sources(url, 
+                                                            rack_devices);
+
+        // calc sum
+        ret_results_rack [i] = compute_total_rack_power_v1 (
+                url, std::get<1> (power_sources), 
+                std::get<0> (power_sources), 
+                std::get<2> (power_sources), 
+                300);
+        i++;
+    }
+
+    // calc the total summ
+    rack_power_t ret_result{ret_results_rack[0].power, 
+                            ret_results_rack[0].scale, 
+                            255, rack_ids};
+    for ( i = 1 ; i < n ; i++ )
+        s_add_scale(ret_result, ret_results_rack[i].power, 
+                                                ret_results_rack[i].scale);
+
+    // transform numbers to string and fill hash
+    zhash_t* result = zhash_new();
+    zhash_autofree (result);
+    compute_result_value_set (result, ret_result.power);
+    compute_result_scale_set (result, ret_result.scale);
+    // TODO process missed ids
+    compute_result_num_missed_set (result, ret_result.missed.size());
+
+    // fill the return message
+    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    return retmsg;
+}
+
