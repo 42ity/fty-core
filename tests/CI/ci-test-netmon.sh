@@ -32,41 +32,43 @@
 # - vlan 
 # - perform real parallel-proof locking; now it's kindergarden stuff :)
 
-# Check for root
-if [[ $EUID -ne 0 ]]; then
-    echo "This script must be run with root permissions." >&2
-    exit 1
-fi
-
-### Section: setting necessary variables
-DEBUG=
-if [ -n "$1" ] && [ "$1" = "-d" ]; then
-    DEBUG=1
-fi
-
-DIRNAME=$(dirname $0)
-topsrc_dir=$(realpath -e "$DIRNAME")
-# For those of us with weird operating systems :)
-if [ -z "$topsrc_dir" ]; then
-    topsrc_dir=$(cd "$DIRNAME" && pwd -P)
-    if [ -z "$topsrc_dir" ]; then
-        exit 1
-    fi
-fi
-topsrc_dir=${topsrc_dir%/tests/CI}
-if [ -n "$DEBUG" ]; then
-    echo "DEBUG: topsrc_dir='$topsrc_dir'" >&2
-fi
-
-dsh_file=$(mktemp -p "$topsrc_dir/tests/CI/")
-if [ -n "$DEBUG" ]; then
-    echo "DEBUG: dsh_file='$dsh_file'" >&2
-fi
-
 LOCKFILE=/tmp/ci-test-netmon.lock
 if [ -f $LOCKFILE ]; then
     echo -e "Script already running. Stopping."
     exit 1 
+fi
+
+if [ "x$CHECKOUTDIR" = "x" ]; then
+    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
+    SCRIPTDIR="`dirname $0`"
+    case "$SCRIPTDIR" in
+        */tests/CI|tests/CI)
+           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
+fi
+[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
+echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+
+export BUILDSUBDIR="$CHECKOUTDIR"
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
+if [ ! -x "$BUILDSUBDIR/config.status" ]; then
+    echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "CI-ERROR: Search path checked: $CHECKOUTDIR, $PWD"
+    exit 1
+fi
+
+echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+
+### Section: setting necessary variables
+DEBUG=
+if [ x"$1" = "x-d" ]; then
+    DEBUG=1
+fi
+
+dsh_file=$(mktemp -p "$CHECKOUTDIR/tests/CI/")
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: dsh_file='$dsh_file'" >&2
 fi
 
 ### Section: actual steps being performed
@@ -80,29 +82,19 @@ function cleanup {
 touch "$LOCKFILE"
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
-# Note:
-# When obs builds the image, binaries (like netmon for e.g.) are naturally put
-# into /usr/bin. These are different from what we actually build from latest git snapshot.
-# Therefore if we want to invoke these binaries, their location has to be in the front
-# of PATH environment variable.
-export PATH="$topsrc_dir:$topsrc_dir/tools:$PATH"
-if [ -n "$DEBUG" ]; then
-    echo "DEBUG: PATH='$PATH'" >&2
-fi
-
 killall malamute
 
-malamute "$topsrc_dir/tools/malamute.cfg" &
+malamute "$CHECKOUTDIR/tools/malamute.cfg" &
 if [[ $? -ne 0 ]]; then
     echo "malamute didn't start properly" >&2
     exit 1
 fi
-dshell.sh networks ".*" > "$dsh_file" &
+$CHECKOUTDIR/tools/dshell.sh networks ".*" > "$dsh_file" &
 if [[ $? -ne 0 ]]; then
     echo "dshell didn't start properly" >&2
     exit 1
 fi
-netmon &
+$BUILDSUBDIR/netmon &
 if [[ $? -ne 0 ]]; then
     echo "netmon didn't start properly" >&2
     exit 1
@@ -110,14 +102,14 @@ fi
 sleep 2
 
 # These actions have to be reflected in dsh_file for this test to succeed.
-ip addr add 101.25.138.2 dev lo
-ip addr add 103.15.3.0/24 dev lo
-ip addr add 20.13.5.4/32 dev lo
+sudo ip addr add 101.25.138.2 dev lo
+sudo ip addr add 103.15.3.0/24 dev lo
+sudo ip addr add 20.13.5.4/32 dev lo
 
 # Reverting back
-ip addr del 101.25.138.2 dev lo
-ip addr del 103.15.3.0/24 dev lo
-ip addr del 20.13.5.4/32 dev lo
+sudo ip addr del 101.25.138.2 dev lo
+sudo ip addr del 103.15.3.0/24 dev lo
+sudo ip addr del 20.13.5.4/32 dev lo
 
 file=$(<$dsh_file) # `cat file` for non-bash shell
 
