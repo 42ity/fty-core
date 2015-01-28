@@ -25,8 +25,8 @@ check_SCRIPTS =
 noinst_SCRIPTS =
 # http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 # http://www.gnu.org/software/automake/manual/html_node/Sources.html
-# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
-# (or even ‘make install’) before other targets are processed. However, such
+# A source file listed in BUILT_SOURCES is made on `make all` or `make check`
+# (or even `make install`) before other targets are processed. However, such
 # a source file is not compiled unless explicitly requested by mentioning it
 # in some other _SOURCES variable. 
 BUILT_SOURCES =
@@ -132,8 +132,6 @@ noinst_LTLIBRARIES += 		libpriv-log.la
 
 libpriv_log_la_SOURCES = 	src/shared/log.h \
 				src/shared/log.c
-
-libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
 
 noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
@@ -479,7 +477,6 @@ netmon_SOURCES = \
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/drivers/netmon \
-			-D_GNU_SOURCE \
 			-I$(top_srcdir)/src/simple
 
 netmon_LDADD = \
