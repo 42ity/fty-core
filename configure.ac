@@ -244,12 +244,55 @@ AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
 
 # toolchain - after all those definitions and redefinitions that can be broken
+# verify that needed tools exist and work
+unset _TMP_GCC
+unset _TMP_GXX
+
 AC_PROG_CC
+AS_IF([test -n "$CC"], [], AC_MSG_ERROR([cannot find C compiler ($CC)]))
+AC_PATH_PROGS([_TMP_GCC], [`basename $CC` gcc], [])
+AS_IF([test -n "$_TMP_GCC" -a -x "$_TMP_GCC"], [], AC_MSG_ERROR([cannot find C compiler]))
+unset _TMP_GCC
+
 AM_PROG_CC_C_O
 AC_PROG_CXX
+AS_IF([test -n "$CXX"], [], AC_MSG_ERROR([cannot find C++ compiler ($CXX)]))
+AC_PATH_PROGS([_TMP_GXX], [`basename $CXX` g++], [])
+AS_IF([test -n "$_TMP_GXX" -a -x "$_TMP_GXX"], [], AC_MSG_ERROR([cannot find C++ compiler]))
+unset _TMP_GXX
+
 AC_PROG_INSTALL
 AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
+
+# Early checks for library functions that may be picky - optionally
+# enable macros that may be further needed for compilation of the project
+unset _CC_ORIG
+AS_CASE(["x$CC"],
+	[xgcc*], [_CC_ORIG="$CC"
+		CC="$CC -Werror -Wall -Wextra -std=c11"]
+	)
+AS_IF([test -n "$_CC_ORIG"], [AC_MSG_NOTICE([NOTE: Temporarily made the compiler more picky: $CC])])
+AC_CHECK_HEADERS([string.h], [], AC_MSG_ERROR([cannot find required header string.h]))
+AC_MSG_CHECKING([strdup() with default env])
+AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+	[AC_MSG_RESULT([yes])
+	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
+	[AC_MSG_RESULT([no])
+	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
+	 CFLAGS="$CFLAGS -D_GNU_SOURCE"
+	 CXXFLAGS="$CXXFLAGS -D_GNU_SOURCE"
+	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
+	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])
+		 AC_MSG_ERROR([cannot find strdup(), not even with -D_GNU_SOURCE])])]
+	)
+AS_IF([test -n "$_CC_ORIG"], [
+	CC="$_CC_ORIG"
+	unset _CC_ORIG
+	AC_MSG_NOTICE([NOTE: Restored default compiler settings: $CC])])
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
@@ -282,7 +325,7 @@ dnl FIXME: Replace `main' with a function in `-lzmq':
 dnl AC_CHECK_LIB([zmq], [main])
 
 
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -294,7 +337,7 @@ AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([gettimeofday memset socket strdup])
+AC_CHECK_FUNCS([gettimeofday memset socket])
 
 dnl--- end of the section suggested by autoscan
 
