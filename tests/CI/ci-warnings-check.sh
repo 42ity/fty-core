@@ -87,13 +87,13 @@ HIGH=$(echo $WARNINGS | cut -d " " -f 2 )
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
     echo "error: $HIGH unknown warnings"
-    echo "warning: $LOW "
+    echo "warning: $LOW acceptable warnings"
     echo "============================================"
     exit 1
 else
     echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
-        echo "warning: $LOW acceptable warnings warnings"
+        echo "warning: $LOW acceptable warnings"
     else
         echo "OK"
     fi
