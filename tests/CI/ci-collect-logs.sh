@@ -78,7 +78,11 @@ fi
 cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 
 log_list() {
-    ssh -p $PORT root@$VM "find project -type f -name '*.log' -o -name cppcheck.xml"
+    ssh -p $PORT root@$VM "find project -type f -name '*.log'"
+}
+
+cppcheck_list() {
+    ssh -p $PORT root@$VM "find project -type f -name cppcheck.xml"
 }
 
 echo -e "\n\n\n\n======================== collecting log files ========================"
@@ -90,6 +94,14 @@ else
         echo "-------------------- $file begin --------------------"
         ssh -p $PORT root@$VM "cat \"$file\" ; /bin/rm -f \"$file\""
         echo "-------------------- $file end --------------------"
+    done
+fi
+
+LOGS=$(cppcheck_list | wc -l)
+if [ $LOGS == 1 ] ; then
+    cppcheck_list | while read file ; do
+        scp -P $PORT root@$VM:$file ./
+        ssh -p $PORT root@$VM "/bin/rm -f \"$file\""
     done
 fi
 
