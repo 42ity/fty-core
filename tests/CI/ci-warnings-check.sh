@@ -62,7 +62,7 @@ sort_warnings() {
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
     LOW=0
     HIGH=0
-    egrep ":[0-9]+:[0-9]+: warning: " < $CHECKOUTDIR/make.log | ( while read line ; do
+    grep -E ":[0-9]+:[0-9]+: warning: " < $CHECKOUTDIR/make.log | ( while read line ; do
         FOUND=0
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
@@ -87,13 +87,13 @@ HIGH=$(echo $WARNINGS | cut -d " " -f 2 )
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
     echo "error: $HIGH unknown warnings"
-    echo "warning: $LOW acceptable warnings"
+    echo "warning: $LOW "
     echo "============================================"
     exit 1
 else
     echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
-        echo "warning: $LOW well known warnings"
+        echo "warning: $LOW acceptable warnings warnings"
     else
         echo "OK"
     fi
