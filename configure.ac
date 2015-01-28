@@ -265,12 +265,32 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
 
+# set flags CFLAGS
+my_CFLAGS="\
+-std=c11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all \
+"
+
+# set flags CXXFLAGS
+my_CXXFLAGS="\
+-std=c++11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all \
+"
+
 # Early checks for library functions that may be picky - optionally
 # enable macros that may be further needed for compilation of the project
 unset _CC_ORIG
 AS_CASE(["x$CC"],
 	[xgcc*], [_CC_ORIG="$CC"
-		CC="$CC -Werror -Wall -Wextra -std=c11"]
+		CC="$CC -Werror $my_CFLAGS"]
 	)
 AS_IF([test -n "$_CC_ORIG"], [AC_MSG_NOTICE([NOTE: Temporarily made the compiler more picky: $CC])])
 AC_CHECK_HEADERS([string.h], [], AC_MSG_ERROR([cannot find required header string.h]))
@@ -280,8 +300,8 @@ AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
 	[AC_MSG_RESULT([no])
 	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
-	 CFLAGS="$CFLAGS -D_GNU_SOURCE"
-	 CXXFLAGS="$CXXFLAGS -D_GNU_SOURCE"
+	 my_CFLAGS="$my_CFLAGS -D_GNU_SOURCE"
+	 my_CXXFLAGS="$my_CXXFLAGS -D_GNU_SOURCE"
 	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
 	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
@@ -415,28 +435,7 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
 # sourced from an m4/*.m4 include file during configure script compilation
 BS_CHECK_SASLAUTHD_MUX
 
-# set flags CFLAGS
-my_CFLAGS="\
--std=c11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all\
-"
-
 AC_SUBST([my_CFLAGS])
-
-# set flags CXXFLAGS
-my_CXXFLAGS="\
--std=c++11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all\
-"
-
 AC_SUBST([my_CXXFLAGS])
 
 AC_MSG_NOTICE([
