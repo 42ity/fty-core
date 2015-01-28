@@ -202,7 +202,11 @@ test_web_topo_l() {
 set +e
 if [ $# = 0 ]; then
     # default test routine
-    test_web_default -topology
+    test_web_default -topology -admin_network
+    RESULT=$?
+    test_web_process || exit
+    # admin_network needs a clean state of database, otherwise it does not work
+    test_web_default admin_network
     RESULT=$?
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
