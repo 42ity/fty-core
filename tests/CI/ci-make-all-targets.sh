@@ -37,7 +37,7 @@ echo "======================== configure =========================="
 echo "======================== make ==============================="
 make -j $CPUS
 if [ -x "$CPPCHECK" ] ; then
-    $CPPCHECK -j $CPUS --enable=all --inconclusive --xml --xml-version=2 src 2> cppcheck.xml
+    $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 src 2> cppcheck.xml
 fi
 echo "======================== make check ========================="
 make -j $CPUS check
