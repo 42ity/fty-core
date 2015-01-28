@@ -37,7 +37,10 @@ echo "======================== configure =========================="
 echo "======================== make ==============================="
 make -j $CPUS
 if [ -x "$CPPCHECK" ] ; then
-    $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 src 2> cppcheck.xml
+    $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
+        --suppress=*:src/include/*_msg.c \
+        src 2>cppcheck.xml
+        sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
 fi
 echo "======================== make check ========================="
 make -j $CPUS check
