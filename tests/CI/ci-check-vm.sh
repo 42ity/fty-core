@@ -115,7 +115,7 @@ remote_make() {
 remote_log_cleanup() {
     echo "-- deleting old log files"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -exec /bin/rm {} \; "
+    ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm {} \; "
 }
 
 
