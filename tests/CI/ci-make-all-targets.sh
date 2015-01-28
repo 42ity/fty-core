@@ -19,6 +19,8 @@
 #
 # Description: installs dependencies and compiles the project
 
+CPPCHECK=/usr/bin/cppcheck
+
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
 set -e
@@ -34,6 +36,9 @@ echo "======================== configure =========================="
 ./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
 echo "======================== make ==============================="
 make -j $CPUS
+if [ -x "$CPPCHECK" ] ; then
+    $CPPCHECK -j 4 --enable=all --inconclusive --xml --xml-version=2 src 2> cppcheck.xml
+fi
 echo "======================== make check ========================="
 make -j $CPUS check
 echo "======================== make dist =========================="
