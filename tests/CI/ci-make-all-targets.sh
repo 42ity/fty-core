@@ -19,7 +19,7 @@
 #
 # Description: installs dependencies and compiles the project
 
-CPPCHECK=/usr/bin/cppcheck
+CPPCHECK=$(which cppcheck)
 
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
