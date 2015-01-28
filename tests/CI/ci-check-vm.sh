@@ -110,6 +110,7 @@ remote_make() {
     echo "-- compiling"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
     ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && autoreconf -vfi && ./configure --prefix=\$HOME --with-saslauthd-mux=/var/run/saslauthd/mux && make -j 4 && make install"
+    ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -exec /bin/rm {} \; "
 }
 
 #
