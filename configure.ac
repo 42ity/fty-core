@@ -244,7 +244,8 @@ AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
 
 # toolchain - after all those definitions and redefinitions that can be broken
-# verify that needed tools exist and work
+# verify that needed tools exist and work: at least for AC_PROG_CXX we had a
+# surprise that it did not fail a ./configure run if no C++ compiler was found
 unset _TMP_GCC
 unset _TMP_GXX
 
