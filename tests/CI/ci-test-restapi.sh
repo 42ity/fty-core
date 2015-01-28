@@ -201,13 +201,15 @@ test_web_topo_l() {
 # do the test
 set +e
 if [ $# = 0 ]; then
-    # default test routine
-    test_web_default -topology -admin_network
+    # admin_network needs a clean state of database, otherwise it does not work
+    test_web_default admin_networks admin_network
     RESULT=$?
     test_web_process || exit
-    # admin_network needs a clean state of database, otherwise it does not work
-    test_web_default admin_network
+    # default test routine
+    if [ "$RESULT" -eq 0 ]; then
+    test_web_default -topology -admin_network -admin_networks
     RESULT=$?
+    fi
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
 	test_web_topo_p topology_power
