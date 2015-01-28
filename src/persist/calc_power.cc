@@ -931,12 +931,9 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     auto tmp1 = find_racks (fr, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
 
-    // number of found racks
-    int n = rack_ids.size();
-
     // set of results for every rack
-    rack_power_t* ret_results_rack = new rack_power_t [n];
-    int i = 0;
+    std::vector<rack_power_t> ret_results_rack{rack_ids.size()};
+    size_t i = 0;
     for ( auto &rack_id: rack_ids )
     {
         // select all devices in a rack
@@ -959,7 +956,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     rack_power_t ret_result{ret_results_rack[0].power, 
                             ret_results_rack[0].scale, 
                             255, rack_ids};
-    for ( i = 1 ; i < n ; i++ )
+    for ( i = 1 ; i < rack_ids.size() ; i++ )
         s_add_scale(ret_result, ret_results_rack[i].power, 
                                                 ret_results_rack[i].scale);
 
