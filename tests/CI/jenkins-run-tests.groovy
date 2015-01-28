@@ -79,6 +79,7 @@ for(
 // Running other tests, it make sense to continue if some of them fails
 for(
     jobName in [
+        "test_compilation_warnings",
         "start_bios",
         "test_db_tests",
         "test_netmon",

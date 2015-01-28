@@ -81,7 +81,7 @@ log_list() {
     ssh -p $PORT root@$VM "find project -type f -name '*.log'"
 }
 
-echo "======================== collecting log files ========================"
+echo -e "\n\n\n\n======================== collecting log files ========================"
 LOGS=$(log_list | wc -l)
 if [ $LOGS = 0 ] ; then
     echo "no log files"
