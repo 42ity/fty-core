@@ -31,25 +31,50 @@ print_result $?
 
 # and let's del 'em all
 test_it "admin_network_delete11"
-api_auth_delete /admin/network/5 | grep -q 'HTTP/1.1 200 OK'
-print_result $?
+api_auth_delete /admin/network/5 &> curl.stdout
+if ! grep -q 'HTTP/1.1 200 OK' curl.stdout; then
+    cat curl.stdout
+    print_result 1
+else
+    print_result 0
+fi
 
 # and let's del 'em all
 test_it "admin_network_delete12"
-api_auth_delete /admin/network/6 | grep -q 'HTTP/1.1 200 OK'
-print_result $?
+api_auth_delete /admin/network/6 &> curl.stdout
+if ! grep -q 'HTTP/1.1 200 OK' curl.stdout; then
+    cat curl.stdout
+    print_result 1
+else
+    print_result 0
+fi
 
 # delete non-existent network
 test_it "admin_network_delete3"
-api_auth_delete /admin/network/12 | grep -q 'HTTP/1.1 400 Bad Request'
-print_result $?
+api_auth_delete /admin/network/12 &> curl.stdout
+if ! grep -q 'HTTP/1.1 400 Bad Request' curl.stdout; then
+    cat curl.stdout
+    print_result 1
+else
+    print_result 0
+fi
 
 # non numeric id in url - catched by tntnet.xml mapping
 test_it "admin_network_delete4"
-api_auth_delete /admin/network/abcd | grep -q 'HTTP/1.1 404 Not Found'
-print_result $?
+api_auth_delete /admin/network/abcd &> curl.stdout
+if ! grep -q 'HTTP/1.1 404 Not Found' curl.stdout; then
+    cat curl.stdout
+    print_result 1
+else
+    print_result 0
+fi
 
 # delete automatic network
 test_it "admin_network_delete5"
-api_auth_delete /admin/network/7 | grep -q 'HTTP/1.1 400 Bad Request'
-print_result $?
+api_auth_delete /admin/network/7 &> curl.stdout
+if ! grep -q 'HTTP/1.1 400 Bad Request' curl.stdout; then
+    cat curl.stdout
+    print_result 1
+else
+    print_result 0
+fi
