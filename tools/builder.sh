@@ -63,11 +63,11 @@ case "$MAKE" in
 esac
 
 math_bash() {
-	eval echo "$(($@))"
+	eval echo '$'"(($@))"
 }
 
 math_bc() {
-	echo "$@ | bc"
+	echo "$@" | bc
 }
 
 math_expr() {
@@ -76,13 +76,14 @@ math_expr() {
 
 math_func=""
 math_detect() {
-    for I in math_bash math_bc math_expr ; do
+    for I in math_bash math_expr math_bc ; do
 	[ -z "$math_func" ] && N="`eval $I 5 + 1 2>/dev/null`" && \
 	[ "$N" = 6 ] && math_func="$I"
     done
     [ -n "$math_func" ]
 }
 math_detect
+#echo "=== math_func='$math_func'"
 
 do_math() {
     [ -n "$math_func" ] && $math_func "$@"
@@ -90,7 +91,7 @@ do_math() {
 
 incr() {
     # Parameter: name of variable to increment
-    eval $1="`$math_func $1 + 1`" || eval $1=""
+    eval $1="`eval $math_func '$'$1 + 1`" || eval $1=""
 }
 
 VERB_COUNT=0
