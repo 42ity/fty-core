@@ -18,6 +18,7 @@ float total_rack_power(a_elmnt_id_t rack_element_id) {
     }
     compute_msg_t* res_compute = compute_msg_decode (&msg);
     zmsg_destroy(&msg);
+    compute_msg_print (res_compute);
     zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
@@ -29,7 +30,6 @@ float total_rack_power(a_elmnt_id_t rack_element_id) {
     compute_msg_destroy(&res_compute);
     zhash_destroy(&results);
     if ( rv0 || rv1 || rv2 ) return 0.0;
-    if( num_missed != 0 ) return 0.0;
     return value * pow(10,scale);
 }
 
