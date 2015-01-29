@@ -293,6 +293,7 @@ void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::str
             case DB_ERROR_NOTIMPLEMENTED:
                 error = "not_implemented";
                 *code = HTTP_NOT_IMPLEMENTED;
+                break;
             default:
                 error = "internal_error";
                 *code = HTTP_INTERNAL_SERVER_ERROR;
