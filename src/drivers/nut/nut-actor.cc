@@ -147,7 +147,6 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
     memset(&ID, 0, sizeof(ID));
     std::string typeName = "" , subtypeName = "";
     std::size_t i = name.find(".");
-    zsock_t *pipe = mlm_client_msgpipe(client);
     if( i ) {
         typeName = name.substr(0, i);
         subtypeName = name.substr(i+1);
