@@ -38,9 +38,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define DEVICE_TYPE_PDU 4
 #define DEVICE_TYPE_UPS 1
 #define DEVICE_TYPE_SERVER 5
+
+
 // ===========================================================================
-// Helper types and functions
+// Helper types
 // ===========================================================================
+
 
 /**
  * \brief Type represents a structure of unique power sources for IT devices
@@ -51,11 +54,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * Third  -- a set of all IT devices (to get info directly).
  */
 typedef 
-        std::tuple < std::set < device_info_t >, 
-                     std::set < device_info_t >, 
-                     std::set < device_info_t >  
+        std::tuple < std::set< device_info_t >, 
+                     std::set< device_info_t >, 
+                     std::set< device_info_t >  
                     >
         power_sources_t;
+
 
 /**
  * \brief A structure that represents information about total rack power
@@ -63,16 +67,73 @@ typedef
  * result_total_power = power * 10 ^scale.
  */
 typedef struct _rack_power_t {
-    m_msrmnt_value_t           power;   //! total power with scale (see below)
-    m_msrmnt_scale_t           scale;   //! scale of result
-    uint8_t                    quality; //! quality of total power (0 - no results found, 100 all results found)
-    std::set < a_elmnt_id_t >  missed;  //! devices not found in DB
+    m_msrmnt_value_t           power;   //!< total power with scale (see below)
+    m_msrmnt_scale_t           scale;   //!< scale of result
+    uint8_t                    quality; //!< quality of total power (0 - no results found, 100 all results found)
+    std::set < a_elmnt_id_t >  missed;  //!< devices where measurements not found in DB
 } rack_power_t;
+
+
+// ===========================================================================
+// Main functions
+// ===========================================================================
+
+
+/**
+ * \brief Calculate a total power of datacenter.
+ *
+ * Algorithm: summ up total rack powers of all racks contained in DC.
+ *
+ * \param url           - a connection to database.
+ * \param dc_element_id - an asset element id of datacenter.
+ *
+ * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN
+ */
+zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id);
+
+
+/**
+ * \brief Calculates a total rack power for a specified rack.
+ *
+ * Algorihm: divices had a priority. If there is no measurements found about 
+ * device take in account a nearest power source.
+ *
+ * \param url             - connection to database.
+ * \param rack_element_id - an id of the rack.
+ *
+ * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN.
+ */
+zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
+
+
+// ===========================================================================
+// Computation functions
+// ===========================================================================
+
+
+/**
+ * \brief compute total rack power V1
+ * TODO: ask for id_key/id_subkey, 
+ * see measurement_id_t nut_get_measurement_id(const std::string &name) 
+ * TODO: quality computation - to be defined, leave with 255
+ * 
+ * \param url          - connection to database.
+ * \param rack_devices - list of devices contained in a rack
+ * \param max_age      - maximum age we'd like to take into account in secs
+ *
+ * \return rc_power_t - total power, quality of metric and list of id's, 
+ *                         which were requested, but missed
+ */
 rack_power_t
-compute_total_rack_power_v1_1(
+compute_total_rack_power_v1(
         const char *url,
         const std::set <device_info_t> &rack_devices,
         uint32_t max_age);
+
+
+// ===========================================================================
+// Device type check functions
+// ===========================================================================
 
 
 /**
@@ -117,6 +178,11 @@ bool is_ups (const device_info_t &device);
  *         false if it is not an IT device.
  */
 bool is_it_device (const device_info_t &device);
+
+
+// ===========================================================================
+// Helper functions: deal with topology
+// ===========================================================================
 
 
 //TODO move device_info_t to map
@@ -179,6 +245,23 @@ a_elmnt_tp_id_t select_element_type (const char* url,
  */
 power_sources_t choose_power_sources (const char* url, 
                                    std::set <device_info_t> rack_devices);
+
+
+/**
+ * \brief Find ids of racks in location topology frame.
+ *
+ * \param frame          - frame to process.
+ * \param parent_type_id - type id of the parant in topology.
+ *
+ * \result set of rack ids contained in frame.
+ */
+std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
+                                                m_dvc_tp_id_t parent_type_id);
+
+
+// ===========================================================================
+// Functions for work with compute msg
+// ===========================================================================
 
 
 /**
@@ -325,65 +408,4 @@ void compute_result_num_missed_set (zhash_t *results,
 int compute_result_num_missed_get (zhash_t *results, 
                                                     a_elmnt_id_t *num_missed);
 
-
-/**
- * \brief calculates a total rack power for a specified rack
- *
- * \param url             - connection to database
- * \param rack_element_id - an id of the rack
- *
- * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN
- */
-zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
-
-
-
-/**
- * \brief compute total rack power V1
- * FIXME: leave three arguments - one per device type, maybe in the future 
- * we'll use it, or change
- * TODO: ask for id_key/id_subkey, 
- * see measurement_id_t nut_get_measurement_id(const std::string &name) 
- * TODO: quality computation - to be defined, leave with 255
- *
- * \param upses - list of ups'es
- * \param epdus - list of epdu's
- * \param devs  - list of devices
- * \param max_age - maximum age we'd like to take into account in secs
- *
- * \return rc_power_t - total power, quality of metric and list of id's, 
- *                         which were requested, but missed
- */
-rack_power_t
-compute_total_rack_power_v1(
-        const char* url,
-        const std::set<device_info_t>& upses,
-        const std::set<device_info_t>& epdus,
-        const std::set<device_info_t>& devs,
-        uint32_t max_age);
-
-
-/**
- * \brief Find ids of racks in location topology frame.
- *
- * \param frame          - frame to process.
- * \param parent_type_id - type id of the parant in topology.
- *
- * \result set of rack ids contained in frame.
- */
-std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
-                                                m_dvc_tp_id_t parent_type_id);
-
-
-/**
- * \brief calculate a total power of datacenter.
- *
- * Algorithm: summ up total rack powers of all racks contained in DC.
- *
- * \param url - a connection to database.
- * \param dc_element_id - an asset element id of datacenter.
- *
- * \return encoded COMMON_MSF_FAIL or COMPUTE_MSG_RETURN
- */
-zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id);
 #endif //SRC_PERSIST_CALC_POWER_H_

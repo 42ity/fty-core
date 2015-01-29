@@ -200,8 +200,6 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
     log_close();
 }
  
-//FIXME: test#4 does not work atm, need to check why
-/*
 TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
@@ -228,7 +226,7 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
         expected_value += device_id + GEN_MEASUREMENTS_MAX;
 
     // set of all devices in rack
-    std::set < m_dvc_id_t > ids;
+   // std::set < m_dvc_id_t > ids;
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8027));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8024));
 //    ids.insert(convert_asset_to_monitor(url.c_str(), 8028));
@@ -236,7 +234,7 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
     // ids.insert(convert_asset_to_monitor(url.c_str(), 8031)); this element has no measurement
 
     // fill DB with measurements
-    for ( auto &device_id: ids )
+    for ( auto &device_id: expected_ids )
        REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
@@ -267,7 +265,6 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
     zmsg_destroy (&res);
     log_close();
 }
-*/
     
 TEST_CASE("Rack power #5","[db][power][rack][calc][rack_power.sql]")
 {
@@ -487,7 +484,7 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
+//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #8 ==================");
     
