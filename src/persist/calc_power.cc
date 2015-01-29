@@ -114,8 +114,8 @@ power_sources_t
             }
         }
 
-        log_debug (" start to process ");
-        log_debug ( "src_id is %d ", std::get<0>(src_device));
+        log_debug ("start to process ");
+        log_debug ("src_id is %d ", std::get<0>(src_device));
         log_debug (" src_type_id is %d ", std::get<3>(src_device));
         log_debug (" src_type_name is %s ", std::get<2>(src_device).c_str());
         log_debug (" src_name is %s ", std::get<1>(src_device).c_str());
@@ -579,6 +579,7 @@ static rack_power_t
         log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
+    log_debug ("end: normal");
     return ret;
 }
 
@@ -631,9 +632,9 @@ compute_total_rack_power_v1(
         // it is in rack
         
         log_debug ("power sources for device %d", std::get<0>(src_device));
-        log_debug ("num of epdus is %ld", std::get<0>(power_sources).size());
-        log_debug ("num of upses is %ld", std::get<1>(power_sources).size());
-        log_debug ("num of devices is %ld", std::get<2>(power_sources).size());
+        log_debug ("num of epdus is %ld", std::get<0>(new_power_srcs).size());
+        log_debug ("num of upses is %ld", std::get<1>(new_power_srcs).size());
+        log_debug ("num of devices is %ld", std::get<2>(new_power_srcs).size());
         
         for ( auto &bdevice: std::get<0>(new_power_srcs) )
             if ( rack_devices.count(bdevice) == 1 )
@@ -668,6 +669,7 @@ compute_total_rack_power_v1(
                           std::get<2>(power_sources), max_age);
     s_add_scale (ret, ret2.power, ret2.scale);
     // TODO manage quality + missed
+    log_debug ("end: power = %ld, scale = %d", ret.power, ret.scale);
     return ret;
 }
 
