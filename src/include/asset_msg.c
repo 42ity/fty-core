@@ -52,9 +52,9 @@ struct _asset_msg_t {
     byte type;                          //  Type of the element, defined in asset_type
     zhash_t *ext;                       //  Hash map of extended attributes
     size_t ext_bytes;                   //  Size of dictionary content
-    char *device_type;                  //  Type of the device, freeform string not the thing from asset_type
+    char *device_type;                  //  Type of the device from t_bios_asset_device_type
     zlist_t *groups;                    //  List of IDs of groups device belongs to
-    zlist_t *powers;                    //  List of link messages in form src_socket:src_id:dst_socket:dst_id
+    zlist_t *powers;                    //  List of strings in form src_socket:src_id:dst_socket:dst_id
     char *ip;                           //  IP of the device
     char *hostname;                     //  Hostname
     char *fqdn;                         //  Fully qualified domain name
@@ -1206,8 +1206,6 @@ asset_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
-
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1235,7 +1233,6 @@ asset_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1311,7 +1308,7 @@ asset_msg_encode_element (
     zhash_t *ext)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_ELEMENT);
-    asset_msg_set_name (self, "%s", name);
+    asset_msg_set_name (self, name);
     asset_msg_set_location (self, location);
     asset_msg_set_location_type (self, location_type);
     asset_msg_set_type (self, type);
@@ -1336,15 +1333,15 @@ asset_msg_encode_device (
     zmsg_t *msg)
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_DEVICE);
-    asset_msg_set_device_type (self, "%s", device_type);
+    asset_msg_set_device_type (self, device_type);
     zlist_t *groups_copy = zlist_dup (groups);
     asset_msg_set_groups (self, &groups_copy);
     zlist_t *powers_copy = zlist_dup (powers);
     asset_msg_set_powers (self, &powers_copy);
-    asset_msg_set_ip (self, "%s", ip);
-    asset_msg_set_hostname (self, "%s", hostname);
-    asset_msg_set_fqdn (self, "%s", fqdn);
-    asset_msg_set_mac (self, "%s", mac);
+    asset_msg_set_ip (self, ip);
+    asset_msg_set_hostname (self, hostname);
+    asset_msg_set_fqdn (self, fqdn);
+    asset_msg_set_mac (self, mac);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_encode (&self);
@@ -1524,8 +1521,8 @@ asset_msg_encode_return_location_to (
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_TO);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
-    asset_msg_set_name (self, "%s", name);
-    asset_msg_set_type_name (self, "%s", type_name);
+    asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zmsg_t *msg_copy = zmsg_dup (msg);
     asset_msg_set_msg (self, &msg_copy);
     return asset_msg_encode (&self);
@@ -1551,8 +1548,8 @@ asset_msg_encode_return_location_from (
     asset_msg_t *self = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
     asset_msg_set_element_id (self, element_id);
     asset_msg_set_type (self, type);
-    asset_msg_set_name (self, "%s", name);
-    asset_msg_set_type_name (self, "%s", type_name);
+    asset_msg_set_name (self, name);
+    asset_msg_set_type_name (self, type_name);
     zframe_t *dcs_copy = zframe_dup (dcs);
     asset_msg_set_dcs (self, &dcs_copy);
     zframe_t *rooms_copy = zframe_dup (rooms);
@@ -1593,8 +1590,8 @@ asset_msg_encode_powerchain_device (
 {
     asset_msg_t *self = asset_msg_new (ASSET_MSG_POWERCHAIN_DEVICE);
     asset_msg_set_element_id (self, element_id);
-    asset_msg_set_type_name (self, "%s", type_name);
-    asset_msg_set_name (self, "%s", name);
+    asset_msg_set_type_name (self, type_name);
+    asset_msg_set_name (self, name);
     return asset_msg_encode (&self);
 }
 
@@ -3416,9 +3413,6 @@ int
 asset_msg_test (bool verbose)
 {
     printf (" * asset_msg: ");
-    if (verbose) {;}	// silence an "unused" warning;
-    // TODO: properly fix this in template zproto : zproto_codec_c_v1.gsl
-    // so as to not lose the fix upon regeneration of code
 
     //  @selftest
     //  Simple create/destroy test
