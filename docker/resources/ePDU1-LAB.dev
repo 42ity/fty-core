@@ -198,17 +198,17 @@ ups.model: Eaton ePDU MA 1P IN:C20 16A OUT:20xC13, 4xC19M
 ups.serial: U049C21011
 ups.status: 
 ups.type: pdu
-TIMER 30
+TIMER 300
 outlet.power: 490.00
 outlet.realpower: 500.00
 outlet.voltage: 230.92
-TIMER 30
+TIMER 300
 outlet.power: 495.00
 outlet.realpower: 505.50
 outlet.voltage: 235.92
-TIMER 30
+TIMER 300
 outlet.power: 500.00
 outlet.realpower: 515.75
 outlet.voltage: 233.92
-TIMER 30
+TIMER 300
 

@@ -15,18 +15,24 @@ RUN apt-get install -y sudo
 RUN apt-get install -y vim-tiny
 RUN apt-get clean
 
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libcidr0_1.2.3-1_amd64.deb /tmp/libcidr0_1.2.3-1_amd64.deb
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/cidrcalc_1.2.3-1_amd64.deb /tmp/cidrcalc_1.2.3-1_amd64.deb
-#in case of network timeout between mbt and roz, force the way for getting libcidr0 and cidrcalc packages like this :
-#ADD ./libcidr0_1.2.3-1_amd64.deb /tmp/libcidr0_1.2.3-1_amd64.deb
-#ADD ./cidrcalc_1.2.3-1_amd64.deb /tmp/cidrcalc_1.2.3-1_amd64.deb
-#RUN dpkg -i /tmp/libcidr0_1.2.3-1_amd64.deb
-#RUN dpkg -i /tmp/cidrcalc_1.2.3-1_amd64.deb
+RUN apt-get install -y --force-yes libcidr0
+RUN apt-get install -y --force-yes cidrcalc
 
-RUN apt-get install -y libzmq3
-RUN apt-get install -y --force-yes libczmq1
-RUN apt-get install -y --force-yes libmlm1
-RUN apt-get install -y --force-yes libnutclient0
+#RUN apt-get install -y --force-yes libzmq4
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
+RUN dpkg -i /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
+
+#RUN apt-get install -y --force-yes libczmq1
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb  /tmp/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb 
+RUN dpkg -i /tmp/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb 
+
+#RUN apt-get install -y --force-yes libmlm1
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb   /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb  
+RUN dpkg -i /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb 
+
+#RUN apt-get install -y --force-yes libnutclient0
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-2_amd64.deb   /tmp/libnutclient0_2.7.2-2_amd64.deb  
+RUN dpkg -i /tmp/libnutclient0_2.7.2-2_amd64.deb
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
