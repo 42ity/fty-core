@@ -8,7 +8,7 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 TEST_CASE("Power topology group","[db][topology][power][group]")
 {

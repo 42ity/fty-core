@@ -8,7 +8,7 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include <queue>          // std::queue
 
 #define id_device 6
