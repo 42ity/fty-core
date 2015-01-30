@@ -23,6 +23,7 @@ do_test() {
         echo "    >>>>> \\DEBUG: ${test_name} <<<<"
         return 1
     fi
+    rm -f "${err}" "${out}"
     return 0
 }
 
