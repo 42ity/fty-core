@@ -549,7 +549,8 @@ static rack_power_t
             " WHERE"
             "   v.id_discovered_device IN (" 
                     + s_generate_in_clause(idmap) + ")"  // XXX
-                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
+//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
+            "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
             "   AND v.timestamp BETWEEN"
             "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
             "       AND UTC_TIMESTAMP()"
