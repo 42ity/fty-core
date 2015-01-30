@@ -158,12 +158,13 @@ libpriv_db_la_SOURCES = \
 			src/persist/ip.h \
 			src/persist/nethistory.cc \
 			src/persist/nethistory.h \
-			src/persist/assetmsg.cc \
+			src/persist/assetcrud.cc \
+			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
+			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
 			src/persist/assettopology.h \
-			src/persist/assetmsg.h \
 			src/persist/persistencelogic.cc \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
@@ -620,7 +621,7 @@ dist_noinst_HEADERS += \
 			src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
-			src/persist/assetmsg.h \
+			src/persist/assetcrud.h \
 			tools/dbpath.h
 
 ### This file contains the TNTNET settings relevant for our test runs
