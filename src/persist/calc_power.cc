@@ -677,6 +677,7 @@ compute_total_rack_power_v1(
 std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
                                                 m_dvc_tp_id_t parent_type_id)
 {
+    log_debug ("start");
     std::set < a_elmnt_id_t > result;
     
     byte *buffer = zframe_data (frame);
@@ -690,6 +691,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+        asset_msg_print(item);
         assert ( item );
          
         // process rooms
@@ -719,13 +721,13 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
             result.insert (result1.begin(), result1.end());
         }
         
-        if ( parent_type_id == asset_type::RACK )
-            result.insert (asset_msg_element_id (item));
+        result.insert (asset_msg_element_id (item));
         
         asset_msg_destroy (&item);
         assert ( pop == NULL );
     }
     zmsg_destroy (&zmsg);
+    log_debug ("end");
     return result;
 }
 
@@ -763,29 +765,40 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     // here we need to select und unpack it
     
     // fill the getmsg
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (getmsg, dc_element_id);
     asset_msg_set_recursive (getmsg, true);
     asset_msg_set_filter_type (getmsg, asset_type::RACK);
+    log_debug("get_msg filled");
 
     // get topology
     zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
     asset_msg_t* item = asset_msg_decode (&dc_topology);
+    log_debug("get_msg decoded");
 
     // find all ids of rack in topology
     // process rooms
+    log_debug("start look racks in rooms");
     zframe_t* fr = asset_msg_rooms (item);
     std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
+    log_debug("end look racks in rooms");
+    log_debug("number of racks found: %ld", rack_ids.size());
         
     // process rows
+    log_debug("start look racks in rows");
     fr = asset_msg_rows (item);
     auto tmp = find_racks (fr, asset_msg_type(item));
     rack_ids.insert(tmp.begin(), tmp.end());
+    log_debug("end look racks in rows");
+    log_debug("total number of racks found: %ld", rack_ids.size());
         
     // process racks
+    log_debug("strat look racks");
     fr = asset_msg_racks (item);
     auto tmp1 = find_racks (fr, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
+    log_debug("end look racks");
+    log_debug("total number of racks found: %ld", rack_ids.size());
 
     // set of results for every rack
     std::vector<rack_power_t> ret_results_rack{rack_ids.size()};
@@ -793,22 +806,23 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     for ( auto &rack_id: rack_ids )
     {
         // select all devices in a rack
+        log_debug("start process the rack: %d", rack_id);
         auto rack_devices = select_rack_devices(url, rack_id);
 
         // calc sum
-        ret_results_rack [i] = compute_total_rack_power_v1 (
+        auto aresult = compute_total_rack_power_v1 (
                 url, rack_devices, 
                 300);
-        i++;
+        ret_results_rack.insert(ret_results_rack.begin(), aresult);
+        log_debug("end process the rack: %d with value = %ld and scale = %d", rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
     }
+    log_debug("here 11");
 
     // calc the total summ
-    rack_power_t ret_result{ret_results_rack[0].power, 
-                            ret_results_rack[0].scale, 
-                            255, rack_ids};
-    for ( i = 1 ; i < rack_ids.size() ; i++ )
-        s_add_scale(ret_result, ret_results_rack[i].power, 
-                                                ret_results_rack[i].scale);
+    rack_power_t ret_result{0, 0, 255, rack_ids};
+    for ( auto &one_rack : ret_results_rack )
+        s_add_scale(ret_result, one_rack.power, one_rack.scale);
+    log_debug("total: value = %ld, scale = %d", ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
@@ -820,5 +834,6 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
 
     // fill the return message
     zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    log_debug("end: normal");
     return retmsg;
 }

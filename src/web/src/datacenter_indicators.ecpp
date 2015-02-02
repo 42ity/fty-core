@@ -5,6 +5,34 @@
 #include "asset_msg.h"
 #include "assetmsg.h"
 #include "data.h"
+#include "calc_power.h"
+#include "dbpath.h"
+
+float total_datacenter_power(a_elmnt_id_t rack_element_id) {
+    
+    zmsg_t *msg = calc_total_dc_power(url.c_str(),rack_element_id);
+    if( ! msg ) { throw "no message"; }
+    if( ! is_compute_msg(msg) ) {
+        zmsg_destroy(&msg);
+        throw "invalid message type";
+    }
+    compute_msg_t* res_compute = compute_msg_decode (&msg);
+    zmsg_destroy(&msg);
+    compute_msg_print (res_compute);
+    zhash_t* results = compute_msg_get_results (res_compute);
+
+    m_msrmnt_value_t value;
+    m_msrmnt_scale_t scale;
+    a_elmnt_id_t num_missed;
+    int rv0 = compute_result_value_get(results, &value);
+    int rv1 = compute_result_scale_get(results, &scale);
+    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    compute_msg_destroy(&res_compute);
+    zhash_destroy(&results);
+    if ( rv0 || rv1 || rv2 ) return 0.0;
+    return value * pow(10,scale);
+}
+
 
 float random_value(std::string value) {
     if ( value.find("trend") != std::string::npos ) {
@@ -128,18 +156,31 @@ for(std::string &param: requestedParams) {
 <%cpp>
       return HTTP_BAD_REQUEST;
     }
- }
-</%cpp>
-{
-    "datacenter_indicators": [
-%   for( size_t D = 0 ; D < DCs.size(); D++ ) {
-        {
-            "id":   "<$ DCs[D] $>",
-            "name": "<$ DCNames[D] $>",
-%       for(size_t P = 0; P < requestedParams.size(); P++ ) {
-            "<$ requestedParams[P] $>": <$ random_value( requestedParams[P] ) $><? P < requestedParams.size() -1 ? "," ?>
-%       };
-        }<? D < DCs.size() -1 ? "," ?>
-%   };
-    ]
 }
+std::stringstream json;
+try {
+    json << "{\n\t\"datacenter_indicators\": [\n";
+    for( size_t D = 0 ; D < DCs.size(); D++ ) {
+        json << "\t\t{\n"
+             << "\t\t\t\"id\": \"" << DCs[D] << "\",\n"
+             << "\t\t\t\"name\": \"" << DCNames[D] << "\",\n";
+        for(size_t P = 0; P < requestedParams.size(); P++ ) {
+            if( requestedParams[P] == "power" ) {
+                json << "\t\t\t\"power\": " << total_datacenter_power( atoi(DCs[D].c_str()) );
+            } else {
+                json << "\t\t\t\"" << requestedParams[P] << "\": " << random_value( requestedParams[P] );
+            }
+            json << ( ( P < requestedParams.size() - 1 ) ? ",\n" : "\n" ) ;
+        }
+        json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
+    }
+    json << "\t]\n}\n";
+} catch ( const std::exception& e ) {
+</%cpp>
+<h1>internal server error</h1>
+<$ e.what() $>
+<%cpp>      
+      return HTTP_INTERNAL_SERVER_ERROR;   
+}
+</%cpp>
+<$$ json.str() $>
