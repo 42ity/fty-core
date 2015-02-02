@@ -32,18 +32,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_NAME_LENGTH 25
 #define MAX_DESCRIPTION_LENGTH 255
 
-
-// ===============================================================
-// Helper functions 
-// ===============================================================
-
-void* void_dup(const void* a);
-
-// ===============================================================
-// Function for processing assettopology messages
-// ===============================================================
-
-zmsg_t *asset_msg_process(const char *url, asset_msg_t *msg);
+//! Function for processing of asset messages
+zmsg_t* asset_msg_process(zmsg_t **msg);
 
 // ===============================================================
 // Functions for processing a special message type

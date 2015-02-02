@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file assetmsg.cc
+/*! \file assetcrud.cc
     \brief Basic functions for assets
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
@@ -36,8 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 
 #include "log.h"
-#include "assetmsg.h"
 #include "dbpath.h"
+#include "assetcrud.h"
 #include "monitor.h"
 #include "persist_error.h"
 #include "asset_types.h"
