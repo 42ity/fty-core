@@ -25,8 +25,8 @@ check_SCRIPTS =
 noinst_SCRIPTS =
 # http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 # http://www.gnu.org/software/automake/manual/html_node/Sources.html
-# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
-# (or even ‘make install’) before other targets are processed. However, such
+# A source file listed in BUILT_SOURCES is made on `make all` or `make check`
+# (or even `make install`) before other targets are processed. However, such
 # a source file is not compiled unless explicitly requested by mentioning it
 # in some other _SOURCES variable. 
 BUILT_SOURCES =
@@ -133,8 +133,6 @@ noinst_LTLIBRARIES += 		libpriv-log.la
 libpriv_log_la_SOURCES = 	src/shared/log.h \
 				src/shared/log.c
 
-libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
-
 noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
 
@@ -160,18 +158,22 @@ libpriv_db_la_SOURCES = \
 			src/persist/ip.h \
 			src/persist/nethistory.cc \
 			src/persist/nethistory.h \
-			src/persist/assetmsg.cc \
+			src/persist/assetcrud.cc \
+			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
+			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
 			src/persist/assettopology.h \
-			src/persist/assetmsg.h \
 			src/persist/persistencelogic.cc \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
 			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h
+
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include \
@@ -187,11 +189,12 @@ libpriv_proto_la_SOURCES = \
 			src/include/asset_msg.h \
 			src/include/common_msg.c \
 			src/include/common_msg.h \
-			src/include/defs.h \
 			src/include/netdisc_msg.c \
 			src/include/netdisc_msg.h \
 			src/include/nmap_msg.c \
 			src/include/nmap_msg.h \
+			src/include/compute_msg.c \
+			src/include/compute_msg.h \
 			src/include/powerdev_msg.c \
 			src/include/powerdev_msg.h
 
@@ -356,6 +359,7 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
 
+
 test_dbtopology_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
@@ -372,6 +376,31 @@ test_dbtopology_CPPFLAGS = \
 			-I$(top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+#### total power tests
+bin_PROGRAMS += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc 
+
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/tests/include/ \
+			-I$(top_srcdir)/src/persist \
+			-I$(top_srcdir)/src/simple \
+			-I$(top_srcdir)/tools \
+			-I$(top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
@@ -449,7 +478,6 @@ netmon_SOURCES = \
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/drivers/netmon \
-			-D_GNU_SOURCE \
 			-I$(top_srcdir)/src/simple
 
 netmon_LDADD = \
@@ -583,15 +611,20 @@ dist_noinst_HEADERS += \
 			src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
-			src/persist/assetmsg.h \
+			src/persist/assetcrud.h \
 			tools/dbpath.h
 
+### This file contains the TNTNET settings relevant for our test runs
+### Note: in non-daemon mode, stderr is logged to stderr
 tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
+### This file contains the TNTNET settings distributed as an example for users
+### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
@@ -601,7 +634,12 @@ EXTRA_DIST +=		$(exampleconf_DATA)
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
-web-test: tntnet.xml bios_web.la
+# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+web-test-deps: tntnet.xml bios_web.la
+
+# Execute the test web-server for $BIOS REST API
+web-test: web-test-deps
+	@echo "=== Running target $@ as: "; id || true; echo ""
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 
 #----------------------------------------------------------------------

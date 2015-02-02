@@ -95,8 +95,10 @@ fi
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
+CMPJSON_SH="`pwd`/cmpjson.sh"
+CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
-[ -z "$CMP" ] && CMP="`pwd`/cmpjson.sh"
+[ -z "$CMP" ] && CMP="$CMPJSON_SH"
 [ -s "$CMP" ] || exit 5
 cd web/commands
 POSITIVE=""
@@ -110,6 +112,11 @@ while [ "$1" ]; do
     shift
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
+
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+set -o pipefail 2>/dev/null || true
+
 for i in $POSITIVE; do
     for NAME in *$i*; do
     SKIP=""

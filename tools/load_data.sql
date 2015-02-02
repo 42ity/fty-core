@@ -12,6 +12,7 @@ select @asset_device_main := id_asset_device_type from t_bios_asset_device_type 
 select @device_unclassified := id_device_type from t_bios_device_type where name = 'not_classified';
 select @device_ups := id_device_type from t_bios_device_type where name = 'ups';
 select @device_epdu := id_device_type from t_bios_device_type where name = 'epdu';
+select @device_pdu := id_device_type from t_bios_device_type where name = 'pdu';
 select @device_server := id_device_type from t_bios_device_type where name = 'server';
 
 /* t_bios_asset_element_type */
@@ -39,6 +40,14 @@ select @client_nut := id_client from t_bios_client where name = 'NUT';
 
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
+SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "select_device";
+SELECT @monitor_asset_measure := id_discovered_device FROM t_bios_discovered_device WHERE name = "monitor_asset_measure";
+
+/* Total rack Power tests */
+INSERT INTO t_bios_discovered_device (name, id_device_type) values ("test_rc_pwr_epdu1", @device_epdu);
+insert into t_bios_discovered_device (name, id_device_type) values ("test_rc_pwr_epdu2", @device_epdu);
+SELECT @test_rc_pwr_epdu1 := id_discovered_device FROM t_bios_discovered_device WHERE name = "test_rc_pwr_epdu1";
+SELECT @test_rc_pwr_epdu2 := id_discovered_device FROM t_bios_discovered_device WHERE name = "test_rc_pwr_epdu2";
 
 /* NOTE: subquery is current mysql Error 1093 workaround */
 insert into t_bios_asset_element (name, id_type, id_parent) values ("DC1",     @asset_element_datacenter, NULL);
@@ -293,7 +302,8 @@ values
     (select id_asset_element from t_bios_asset_element where name = 'ROOM4')
 );
 
-insert into t_bios_discovered_device (id_device_type , name) values (@device_unclassified, "measures");
+INSERT INTO t_bios_discovered_device (id_device_type, name) values (@device_unclassified, "measures");
+SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "measures";
 
 /* voltage.output */
 insert into t_bios_measurements
@@ -305,7 +315,7 @@ values
     32,
     "2014-11-12 09:45:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* voltage.output */
@@ -318,7 +328,7 @@ values
     3,
     "2014-11-12 09:46:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* current.output */
@@ -331,7 +341,7 @@ values
     31,
     "2014-11-12 09:47:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* current.output.L1 */
@@ -344,7 +354,7 @@ values
     12,
     "2014-11-12 09:48:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* voltage.output.L1-N */
@@ -357,7 +367,7 @@ values
     1,
     "2014-11-12 09:49:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* realpower.output */
@@ -370,7 +380,7 @@ values
     1,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* status.ups */
@@ -383,7 +393,7 @@ values
     2,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* temperature.default */
@@ -396,7 +406,7 @@ values
     56,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* load.ups */
@@ -409,7 +419,7 @@ values
     17,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* charge.battery */
@@ -422,7 +432,7 @@ values
     931,
     "2014-11-12 09:59:59",
     @client_nut,
-    1
+    @select_device
 );
 
 /* epdu */
@@ -437,22 +447,22 @@ values
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
 
 /* realpower.outlet.1 */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+SELECT @realpower_outlet_1 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.1";
+SELECT @realpower_outlet_2 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.2";
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     3,
-    6,
+    @realpower_outlet_1,
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
 
 /* realpower.outlet.2 */
@@ -461,12 +471,39 @@ insert into t_bios_measurements
 values
 (
     3,
-    7,
+    @realpower_outlet_2,
     500,
     "2014-11-12 09:59:59",
     @client_nut,
-    2
+    @monitor_asset_measure
 );
+
+/* ### test total rack power ### */
+/* realpower.outlet */
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    5,
+    2405,
+    UTC_TIMESTAMP(),
+    @client_nut,
+    @test_rc_pwr_epdu1
+);
+
+insert into t_bios_measurements
+    (id_type, id_subtype, value, timestamp, id_client, id_device)
+values
+(
+    3,
+    5,
+    2405,
+    DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE),
+    @client_nut,
+    @test_rc_pwr_epdu2
+);
+
 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
@@ -655,3 +692,43 @@ values
 
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
 UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2"}' WHERE id_client=@client_ui_properties;
+
+
+/* A manual propagate an asset part to monitor part*/
+/* UPSs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS1-LAB', @device_ups);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS2-LAB', @device_ups);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS2-LAB')
+);
+
+/* ePDUs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ePDU1-LAB', @device_epdu);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ePDU2-LAB', @device_epdu);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ePDU1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ePDU1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ePDU2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ePDU2-LAB')
+);
+
+/* SRVs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV1-LAB', @device_server);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV2-LAB', @device_server);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
+);
+
+

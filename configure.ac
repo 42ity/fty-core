@@ -1,6 +1,7 @@
 # autoconf/automake basis
 AC_PREREQ([2.5])
 AC_INIT([core], [0.1])
+PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
@@ -14,6 +15,15 @@ LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
 AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
+
+AC_ARG_WITH([package-vendor],
+	[AS_HELP_STRING([--with-package-vendor=ARG],
+		[name of the entity which distributes this build
+		 of the package (default is '$PACKAGE_VENDOR')])],
+	[PACKAGE_VENDOR="${withval}"
+	 AC_MSG_NOTICE([Using requested PACKAGE_VENDOR='$PACKAGE_VENDOR'])]
+	# This may be left empty by explicit request
+)
 
 # the default value may be revised, so we have two layers of conditionals here
 _ENABLE_DOCKER_SUPPORT=1
@@ -46,14 +56,6 @@ AS_CASE(["x$srcdir"],
 		  [_srcdir_abs="`cd "$_srcdir_abs" && pwd || echo "$_srcdir_abs"`"])
 ])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
-
-# toolchain
-AC_PROG_CC
-AM_PROG_CC_C_O
-AC_PROG_CXX
-AC_PROG_INSTALL
-AC_PROG_LN_S
-PKG_PROG_PKG_CONFIG
 
 # Get the Git repository metadata, if available
 HAVE_PACKAGE_GIT=0
@@ -195,7 +197,7 @@ AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP_ESCAPED],
 	[Packaging metadata: Current timestamp at the build host (as of configuration) (escaped)])
 
 ### Revise the packaging strings in config.h
-m4_define([__AC_UNDEFINE],[_AC_DEFINE_UNQUOTED([#ifdef $1
+m4_define([__AC_UNDEFINE],[_AC_DEFINE([#ifdef $1
  #undef $1
 #endif])])
 
@@ -237,7 +239,81 @@ if test x"$_FIX_PACKAGE_BUGREPORT" = xy; then
 	    ["$PACKAGE_BUGREPORT"],
 	    [Packaging metadata: distro contact])
 fi
+AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
+	    ["$PACKAGE_VENDOR"],
+	    [Packaging metadata: name of the entity which distributes this build of the package])
 
+# toolchain - after all those definitions and redefinitions that can be broken
+# verify that needed tools exist and work: at least for AC_PROG_CXX we had a
+# surprise that it did not fail a ./configure run if no C++ compiler was found
+unset _TMP_GCC
+unset _TMP_GXX
+
+AC_PROG_CC
+AS_IF([test -n "$CC"], [], AC_MSG_ERROR([cannot find C compiler ($CC)]))
+AC_PATH_PROGS([_TMP_GCC], [`basename $CC` gcc], [])
+AS_IF([test -n "$_TMP_GCC" -a -x "$_TMP_GCC"], [], AC_MSG_ERROR([cannot find C compiler]))
+unset _TMP_GCC
+
+AM_PROG_CC_C_O
+AC_PROG_CXX
+AS_IF([test -n "$CXX"], [], AC_MSG_ERROR([cannot find C++ compiler ($CXX)]))
+AC_PATH_PROGS([_TMP_GXX], [`basename $CXX` g++], [])
+AS_IF([test -n "$_TMP_GXX" -a -x "$_TMP_GXX"], [], AC_MSG_ERROR([cannot find C++ compiler]))
+unset _TMP_GXX
+
+AC_PROG_INSTALL
+AC_PROG_LN_S
+PKG_PROG_PKG_CONFIG
+
+# set flags CFLAGS
+my_CFLAGS="\
+-std=c11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all \
+"
+
+# set flags CXXFLAGS
+my_CXXFLAGS="\
+-std=c++11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all \
+"
+
+# Early checks for library functions that may be picky - optionally
+# enable macros that may be further needed for compilation of the project
+unset _CC_ORIG
+AS_CASE(["x$CC"],
+	[xgcc*], [_CC_ORIG="$CC"
+		CC="$CC -Werror $my_CFLAGS"]
+	)
+AS_IF([test -n "$_CC_ORIG"], [AC_MSG_NOTICE([NOTE: Temporarily made the compiler more picky: $CC])])
+AC_CHECK_HEADERS([string.h], [], AC_MSG_ERROR([cannot find required header string.h]))
+AC_MSG_CHECKING([strdup() with default env])
+AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+	[AC_MSG_RESULT([yes])
+	 AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])],
+	[AC_MSG_RESULT([no])
+	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
+	 my_CFLAGS="$my_CFLAGS -D_GNU_SOURCE"
+	 my_CXXFLAGS="$my_CXXFLAGS -D_GNU_SOURCE"
+	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
+	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
+		[AC_DEFINE([HAVE_STRDUP], [1], [Define to 1 if you have the `strdup' function.])
+		 AC_MSG_RESULT([yes])],
+		[AC_MSG_RESULT([no])
+		 AC_MSG_ERROR([cannot find strdup(), not even with -D_GNU_SOURCE])])]
+	)
+AS_IF([test -n "$_CC_ORIG"], [
+	CC="$_CC_ORIG"
+	unset _CC_ORIG
+	AC_MSG_NOTICE([NOTE: Restored default compiler settings: $CC])])
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
@@ -270,7 +346,7 @@ dnl FIXME: Replace `main' with a function in `-lzmq':
 dnl AC_CHECK_LIB([zmq], [main])
 
 
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h string.h sys/socket.h sys/time.h unistd.h])
+AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h netinet/in.h stdint.h stdlib.h sys/socket.h sys/time.h unistd.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -282,7 +358,7 @@ AC_TYPE_UINT8_T
 
 # Checks for library functions.
 AC_FUNC_MALLOC
-AC_CHECK_FUNCS([gettimeofday memset socket strdup])
+AC_CHECK_FUNCS([gettimeofday memset socket])
 
 dnl--- end of the section suggested by autoscan
 
@@ -360,28 +436,7 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
 # sourced from an m4/*.m4 include file during configure script compilation
 BS_CHECK_SASLAUTHD_MUX
 
-# set flags CFLAGS
-my_CFLAGS="\
--std=c11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all\
-"
-
 AC_SUBST([my_CFLAGS])
-
-# set flags CXXFLAGS
-my_CXXFLAGS="\
--std=c++11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all\
-"
-
 AC_SUBST([my_CXXFLAGS])
 
 AC_MSG_NOTICE([

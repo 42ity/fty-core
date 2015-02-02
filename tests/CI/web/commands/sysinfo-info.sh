@@ -96,9 +96,24 @@ RES=$?
 [ $RES = 0 -a -z "$SYSINFO_VERSION" ]
 print_result $?
 
-
 ###############################################################
 # Check getting server system info (authorized only?)
+test_it "sysinfo_get_auth=2_raw"
+SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
+RES=$?
+echo "=== SYSINFOARAW ($RES):" >&2
+echo "$SYSINFOARAW" >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW" | grep 'HTTP/1\.. 401' && \
+    echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
+fi >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW" | grep 'HTTP/1\.. 4' && \
+    echo "Got HTTP-4xx error" && RES=123
+fi >&2
+print_result $RES
+
+
 test_it "sysinfo_get_auth=2"
 SYSINFOA="`api_auth_get_content '/admin/sysinfo'`"
 RES=$?
@@ -209,3 +224,113 @@ RES=$?
     x"$SYSINFO_VERSION" != x'""' ]
 print_result $?
 
+###############################################################
+# Compare different request methods
+test_it "sysinfo_get_wToken_auth=2_raw"
+SYSINFOARAW_WT_G="`api_auth_get_wToken '/admin/sysinfo'`"
+RES=$?
+echo "=== SYSINFOARAW_WT_G ($RES):" >&2
+echo "$SYSINFOARAW_WT_G" >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW_WT_G" | grep 'HTTP/1\.. 401' && \
+    echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
+fi >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW_WT_G" | grep 'HTTP/1\.. 4' && \
+    echo "Got HTTP-4xx error" && RES=123
+fi >&2
+print_result $RES
+
+test_it "sysinfo_get_wToken_auth=2"
+SYSINFOA_WT_G="`api_auth_get_content_wToken '/admin/sysinfo'`"
+RES=$?
+echo "=== SYSINFOA_WT_G ($RES):" >&2
+echo "$SYSINFOA_WT_G" >&2
+[ $RES = 0 -a -n "$SYSINFOA_WT_G" ]
+print_result $?
+
+test_it "sysinfo_get_wToken_auth=2_is_json_is_valid"
+SYSINFO_PARSED="`echo "$SYSINFOA_WT_G" | ${JSONSH} -l --no-newline`"
+RES=$?
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_get_wToken_auth=2_accessgranted"
+JPATH='"operating-system","uname","version"'
+SYSINFO_PARSED="`echo "$SYSINFOA_WT_G" | ${JSONSH} -x "$JPATH" | grep -v unauthorized`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+
+
+test_it "sysinfo_post_wToken_auth=2_raw"
+SYSINFOARAW_WT_P="`api_auth_post_wToken '/admin/sysinfo'`"
+RES=$?
+echo "=== SYSINFOARAW_WT_P ($RES):" >&2
+echo "$SYSINFOARAW_WT_P" >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW_WT_P" | grep 'HTTP/1\.. 401' && \
+    echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
+fi >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW_WT_P" | grep 'HTTP/1\.. 4' && \
+    echo "Got HTTP-4xx error" && RES=123
+fi >&2
+print_result $RES
+
+test_it "sysinfo_post_wToken_auth=2"
+SYSINFOA_WT_P="`api_auth_post_content_wToken '/admin/sysinfo'`"
+RES=$?
+echo "=== SYSINFOA_WT_P ($RES):" >&2
+echo "$SYSINFOA_WT_P" >&2
+[ $RES = 0 -a -n "$SYSINFOA_WT_P" ]
+print_result $?
+
+test_it "sysinfo_post_wToken_auth=2_is_json_is_valid"
+SYSINFO_PARSED="`echo "$SYSINFOA_WT_P" | ${JSONSH} -l --no-newline`"
+RES=$?
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+test_it "sysinfo_post_wToken_auth=2_accessgranted"
+JPATH='"operating-system","uname","version"'
+SYSINFO_PARSED="`echo "$SYSINFOA_WT_P" | ${JSONSH} -x "$JPATH" | grep -v unauthorized`"
+RES=$?
+echo "=== SYSINFO_PARSED ($RES):" >&2
+echo "$SYSINFO_PARSED" >&2
+[ $RES = 0 -a -n "$SYSINFO_PARSED" ]
+print_result $?
+
+
+
+if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
+    # Note: variable output like CPU and MEM info should be ignored in comparison
+    test_it "sysinfo_get_wToken_auth=2_sameAsHeaderAuth_cmpjson"
+    OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_G" "$SYSINFOA"`"
+    RES=$?
+    if [ -n "$OUT" ]; then
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
+    fi
+    print_result $RES
+
+    test_it "sysinfo_post_wToken_auth=2_sameAsHeaderAuth_cmpjson"
+    OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_P" "$SYSINFOA"`"
+    RES=$?
+    if [ -n "$OUT" ]; then
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
+    fi
+    print_result $RES
+#else
+#    test_it "sysinfo_get_wToken_auth=2_sameAsHeaderAuth_naive"
+#    [ x"$SYSINFOA_WT_G" = x"$SYSINFOA" ]
+#    print_result $?
+#
+#    test_it "sysinfo_post_wToken_auth=2_sameAsHeaderAuth_naive"
+#    [ x"$SYSINFOA_WT_P" = x"$SYSINFOA" ]
+#    print_result $?
+fi
