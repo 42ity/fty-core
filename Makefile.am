@@ -530,7 +530,7 @@ EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
 
 dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
-			src/simple/asset_types.h \
+			src/shared/asset_types.h \
 			src/include/powerdev_msg.h \
 			src/drivers/nut/nut-driver.h
 
