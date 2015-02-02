@@ -20,17 +20,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef SRC_PERSIST_ASSETMSG_H_
-#define SRC_PERSIST_ASSETMSG_H_
+#ifndef SRC_PERSIST_ASSETCRUD_H_
+#define SRC_PERSIST_ASSETCRUD_H_
 
 #include "asset_msg.h"
 #include "dbtypes.h"
 #include "defs.h"
-
-// For now it the maximum length of all fields 
-// called "name"
-#define MAX_NAME_LENGTH 25
-#define MAX_DESCRIPTION_LENGTH 255
 
 /**
  * \brief Processes message of type asset_msg_t
@@ -188,41 +183,4 @@ zlist_t* select_asset_device_link(const char* url,
 zlist_t* select_asset_element_groups(const char* url, 
        a_elmnt_id_t element_id);
 
-/**
- * \brief This function looks for a device_discovered from a monitor part 
- * connected with the specified asset_element in the asset part.
- *
- * Throws exceptions: bios::MonitorCounterpartNotFound - in case apropriate 
- *                              monitor element was not found.
- *                    bios::InternalDBError - in case of any database errors.
- *                    bios::ElementIsNotDevice - if specified element was 
- *                              not a device.
- *                    bios::NotFound - if specified asset element was not found.
- *
- * \param url              - the connection to database.
- * \param asset_element_id - the id of the asset_element.
- *
- * \return device_discovered_id - of the device connected with the 
- *                                asset_element.
- */
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
-                a_elmnt_id_t asset_element_id);
-
-/**
- * \brief This function looks for an asset_element form asset part connected 
- * with the specified device_discovered from monitor part.
- *
- * Throws exceptions: bios::NotFound - in case apropriate asset element 
- *                                     was not found.
- *                    bios::InternalDBError - in case of any database errors.
- *
- * \param url                  - the connection to database.
- * \param device_discovered_id - the id of the device_discovered.
- *
- * \return asset_element_id - id of the asset_element connected with the 
- *                                device_discovered.
- */
-a_elmnt_id_t convert_monitor_to_asset(const char* url, 
-                    m_dvc_id_t discovered_device_id);
-
-#endif // SRC_PERSIST_ASSETMSG_H_
+#endif // SRC_PERSIST_ASSETCRUD_H_
