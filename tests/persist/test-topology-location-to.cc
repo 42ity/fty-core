@@ -8,7 +8,7 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include <queue>          // std::queue
 
 #define id_device 6
@@ -23,7 +23,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #1 ==================\n");
+    log_info ("=============== LOCATION TO #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7014);
@@ -96,7 +96,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #2 ==================\n");
+    log_info ("=============== LOCATION TO #2 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7022);
@@ -172,7 +172,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #3 ==================\n");
+    log_info ("=============== LOCATION TO #3 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7005);
@@ -245,7 +245,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #4 ==================\n");
+    log_info ("=============== LOCATION TO #4 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7023);
@@ -316,7 +316,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #5 ==================\n");
+    log_info ("=============== LOCATION TO #5 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7002);
@@ -387,7 +387,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #6 ==================\n");
+    log_info ("=============== LOCATION TO #6 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7025);
@@ -457,7 +457,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #7 ==================\n");
+    log_info ("=============== LOCATION TO #7 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7000);
@@ -525,7 +525,7 @@ TEST_CASE("Location topology to #8","[db][topology][location][location_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== LOCATION TO #8 ==================\n");
+    log_info ("=============== LOCATION TO #8 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);

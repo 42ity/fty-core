@@ -35,41 +35,41 @@
 
 /*  These are the asset_msg messages:
 
-    ELEMENT - Structure describing asset element
+    ELEMENT - Structure describing an asset element.
         name                string      Name of the element
         location            number 4    ID of the parent element
         location_type       number 1    Type of the parent element, defined in asset_type
         type                number 1    Type of the element, defined in asset_type
         ext                 hash        Hash map of extended attributes
 
-    DEVICE - Structure describing asset device
-        device_type         string      Type of the device, freeform string not the thing from asset_type
+    DEVICE - Structure describing an asset device.
+        device_type         string      Type of the device from t_bios_asset_device_type
         groups              strings     List of IDs of groups device belongs to
-        powers              strings     List of link messages in form src_socket:src_id:dst_socket:dst_id
+        powers              strings     List of strings in form src_socket:src_id:dst_socket:dst_id
         ip                  string      IP of the device
         hostname            string      Hostname
         fqdn                string      Fully qualified domain name
         mac                 string      MAC address of the device
         msg                 msg         Element that we are extending to the device
 
-    GET_ELEMENT - Ask for specific element
+    GET_ELEMENT - Ask for a specific element.
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element defined in asset_type (includes devices)
 
-    RETURN_ELEMENT - Returns element we were asked for
+    RETURN_ELEMENT - Returns sn element we were asked for.
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be delivered
 
-    UPDATE_ELEMENT - Updates element or device
+    UPDATE_ELEMENT - Updates an element.
         element_id          number 4    Unique ID of the asset element
         msg                 msg         Element (or device) to be updated
 
-    INSERT_ELEMENT - Insert element or device
-        msg                 msg         Element (or device) to be inserted
+    INSERT_ELEMENT - Inserts an element.
+        msg                 msg         Element (or device) message to be inserted
 
-    DELETE_ELEMENT - Deletes element or device
+    DELETE_ELEMENT - Deletes an element.
         element_id          number 4    Unique ID of the element to be deleted
-        type                number 1    Type of the device, defined in asset_type
+        type                number 1    Type of the element, defined in asset_type
 
     OK - Message from database that everything was processed successfully.
         element_id          number 4    Unique ID of the element that was proccessed
@@ -77,13 +77,13 @@
     FAIL - Message from database that something went wrong.
         error_id            number 1    Type of the error, enum defined in persistence header file
 
-    GET_ELEMENTS - Ask for all elements of specific type
-        type                number 1    Type of the element, defined in in asset_type
+    GET_ELEMENTS - Ask for all elements of specific type.
+        type                number 1    Type of the element, defined in asset_type
 
-    RETURN_ELEMENTS - Returns elements we were asked for
+    RETURN_ELEMENTS - Returns elements we were asked for.
         element_ids         hash        Unique IDs of the asset element (as a key) mapped to the elements name (as a value)
 
-    GET_LOCATION_FROM - Ask for location topology starting from the element specified.
+    GET_LOCATION_FROM - Ask for location topology starting from the specified element.
         element_id          number 4    Unique ID of the start asset element
         recursive           number 1    If the search should be recursive (=1) or not (=0)
         filter_type         number 1    Type of the looked elements, if 7 take all
@@ -91,14 +91,14 @@
     GET_LOCATION_TO - Ask for a location topology for the specified element.
         element_id          number 4    Unique ID of the asset element
 
-    RETURN_LOCATION_TO - Reply for a location topology for the specified element
+    RETURN_LOCATION_TO - Reply for a location topology for the specified element.
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
         name                string      Name of the asset element
         type_name           string      Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string
         msg                 msg          parent of the element, this msg
 
-    RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element
+    RETURN_LOCATION_FROM - Reply for the ask for a location topology for the specified element.
         element_id          number 4    Unique ID of the asset element
         type                number 1    Type of the element
         name                string      Name of the asset element
@@ -110,17 +110,17 @@
         devices             frame       List of devices, matryoshka of this msg
         grps                frame       List of groups, matryoshka of this msg
 
-    GET_POWER_FROM - Request for a list of devices directly powered to the specified device
+    GET_POWER_FROM - Request for a list of devices directly powered from the specified device.
         element_id          number 4    Unique asset element ID of the device
 
-    POWERCHAIN_DEVICE - 
+    POWERCHAIN_DEVICE - Structure briefly describing the device contained in powerchain.
         element_id          number 4    Unique asset element ID of the device
         type_name           string      Type of the device
         name                string      Asset element name of the device
 
-    RETURN_POWER - Reply for the request for a list of devices directly powered to the specified device
+    RETURN_POWER - Reply for any power topology request.
         devices             frame       List of devices(id, name, typename), matroyska of he powerchain_device
-        powers              strings     List of link messages in form "src_socket:src_id:dst_socket:dst_id"
+        powers              strings     List of strings in form "src_socket:src_id:dst_socket:dst_id"
 
     GET_POWER_TO - Request for a full power chain which powers the requested target device.
         element_id          number 4    Unique asset element ID of the device
@@ -128,7 +128,7 @@
     GET_POWER_GROUP - Request for a full power chain from the group.
         element_id          number 4    Unique asset element ID of the group
 
-    GET_POWER_DATACENTER - Request for a full power chains in the target datacentrum.
+    GET_POWER_DATACENTER - Request for a full power chains in the target datacenter.
         element_id          number 4    Unique asset element ID of the datacenter
 */
 

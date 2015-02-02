@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: netdisc_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -223,6 +223,46 @@ netdisc_msg_destroy (netdisc_msg_t **self_p)
     }
 }
 
+//  Parse a zmsg_t and decides whether it is netdisc_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+is_netdisc_msg (zmsg_t *msg)
+{
+    if (msg == NULL)
+        return false;
+
+    zframe_t *frame = zmsg_first (msg);
+
+    //  Get and check protocol signature
+    netdisc_msg_t *self = netdisc_msg_new (0);
+    self->needle = zframe_data (frame);
+    self->ceiling = self->needle + zframe_size (frame);
+    uint16_t signature;
+    GET_NUMBER2 (signature);
+    if (signature != (0xAAA0 | 0))
+        goto fail;             //  Invalid signature
+
+    //  Get message id and parse per message type
+    GET_NUMBER1 (self->id);
+
+    switch (self->id) {
+        case NETDISC_MSG_AUTO_ADD:
+        case NETDISC_MSG_AUTO_DEL:
+        case NETDISC_MSG_MAN_ADD:
+        case NETDISC_MSG_MAN_DEL:
+        case NETDISC_MSG_EXCL_ADD:
+        case NETDISC_MSG_EXCL_DEL:
+            netdisc_msg_destroy (&self);
+            return true;
+        default:
+            goto fail;
+    }
+    fail:
+    malformed:
+        netdisc_msg_destroy (&self);
+        return false;
+}
 
 //  --------------------------------------------------------------------------
 //  Parse a netdisc_msg from zmsg_t. Returns a new object, or NULL if
@@ -527,7 +567,7 @@ netdisc_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -555,7 +595,6 @@ netdisc_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -631,11 +670,11 @@ netdisc_msg_encode_auto_add (
     const char *mac)
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_ADD);
-    netdisc_msg_set_name (self, name);
+    netdisc_msg_set_name (self, "%s", name);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
-    netdisc_msg_set_mac (self, mac);
+    netdisc_msg_set_mac (self, "%s", mac);
     return netdisc_msg_encode (&self);
 }
 
@@ -652,11 +691,11 @@ netdisc_msg_encode_auto_del (
     const char *mac)
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_AUTO_DEL);
-    netdisc_msg_set_name (self, name);
+    netdisc_msg_set_name (self, "%s", name);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
-    netdisc_msg_set_mac (self, mac);
+    netdisc_msg_set_mac (self, "%s", mac);
     return netdisc_msg_encode (&self);
 }
 
@@ -672,7 +711,7 @@ netdisc_msg_encode_man_add (
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_ADD);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
     return netdisc_msg_encode (&self);
 }
@@ -689,7 +728,7 @@ netdisc_msg_encode_man_del (
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_MAN_DEL);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
     return netdisc_msg_encode (&self);
 }
@@ -706,7 +745,7 @@ netdisc_msg_encode_excl_add (
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_ADD);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
     return netdisc_msg_encode (&self);
 }
@@ -723,7 +762,7 @@ netdisc_msg_encode_excl_del (
 {
     netdisc_msg_t *self = netdisc_msg_new (NETDISC_MSG_EXCL_DEL);
     netdisc_msg_set_ipver (self, ipver);
-    netdisc_msg_set_ipaddr (self, ipaddr);
+    netdisc_msg_set_ipaddr (self, "%s", ipaddr);
     netdisc_msg_set_prefixlen (self, prefixlen);
     return netdisc_msg_encode (&self);
 }
@@ -1169,6 +1208,9 @@ int
 netdisc_msg_test (bool verbose)
 {
     printf (" * netdisc_msg: ");
+    if (verbose) {;}	// silence an "unused" warning;
+    // TODO: properly fix this in template zproto : zproto_codec_c_v1.gsl
+    // so as to not lose the fix upon regeneration of code
 
     //  @selftest
     //  Simple create/destroy test

@@ -5,7 +5,7 @@
 #include "asset_msg.h"
 #include "common_msg.h"
 #include "data.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;
@@ -162,9 +162,13 @@ asset_manager asset_mgr;
                 if(tokens.size() != 4) continue;
 </%cpp>
         {
+%               if (!tokens[0].empty() && tokens[0] != "999") {
             "src_socket":"<$ tokens[0] $>",
-            "src_uri":"/api/v1/asset/device/<$ tokens[1] $>",
-            "dst_socket":"<$ tokens[2] $>"
+%               }
+            "src_uri":"/api/v1/asset/device/<$ tokens[1] $>"
+%               if (!tokens[2].empty() && tokens[2] != "999") {
+            ,"dst_socket":"<$ tokens[2] $>"
+%               }
         }<? it != last ? "," ?>
 %           }
         ]

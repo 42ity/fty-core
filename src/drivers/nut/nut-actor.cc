@@ -198,7 +198,7 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
         }
         zmsg_destroy(&reply);
     } else {
-        log_error("NUT invalid measurement id name found, %s doesn't contain subtype\n", name.c_str());
+        log_error("NUT invalid measurement id name found, %s doesn't contain subtype", name.c_str());
     }
     return ID;
 }
@@ -216,9 +216,9 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
         ID = nut_get_measurement_id(name, client);
         if( ID.type != 0 && ID.subtype != 0 ) {
             IDs[name] = ID;
-            log_debug("Measurement type and subtype for %s is %i/%i scale %i\n", name.c_str(), ID.type, ID.subtype, ID.scale );
+            log_debug("Measurement type and subtype for %s is %i/%i scale %i", name.c_str(), ID.type, ID.subtype, ID.scale );
         } else {
-            log_error("Can't get measurement type and subtype for %s\n", name.c_str());
+            log_error("Can't get measurement type and subtype for %s", name.c_str());
             return NULL;
         }
     }
@@ -236,7 +236,7 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
             return zmsg;
         } else { return NULL; }
     } else {
-        log_error("NUT device %s type is unknown\n", dev.name().c_str()); 
+        log_error("NUT device %s type is unknown", dev.name().c_str()); 
         return NULL;
     }
 }

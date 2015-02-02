@@ -20,14 +20,14 @@ private:
     void regen_keys();
 public:
     //! Singleton get_instance method
-    static tokens* get_instance();
+    static tokens* get_instance(bool recreate = false);
     /**
      * \brief Generates new token
      *
      * @param valid How long should be token valid
      * @return Token
      */
-    std::string gen_token(int& valid);
+    std::string gen_token(int& valid, bool do_round = true);
     /**
      * \brief Verifies whether supplied token is valid
      */

@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 
 #include "log.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "common_msg.h"
 #include "asset_types.h"
 
@@ -220,9 +220,9 @@ zmsg_t* select_group_elements(
     assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
-    log_info ("start\n");
-    log_debug ("element_id = %d\n", element_id);
-    log_debug ("filter_type = %d\n", filtertype);
+    log_info ("start");
+    log_debug ("element_id = %d", element_id);
+    log_debug ("filter_type = %d", filtertype);
  
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -247,7 +247,7 @@ zmsg_t* select_group_elements(
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
         
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         int i = 0;
         int rv = 0;
 
@@ -275,12 +275,12 @@ zmsg_t* select_group_elements(
             std::string dtype_name = "";
             row[3].get(dtype_name);
             
-            log_debug ("for\n");
-            log_debug ("i = %d\n", i);
-            log_debug ("id = %d\n", id);
-            log_debug ("name = %s\n", name.c_str());
-            log_debug ("id_type = %d\n", id_type);
-            log_debug ("dtype_name = %s\n", dtype_name.c_str());
+            log_debug ("for");
+            log_debug ("i = %d", i);
+            log_debug ("id = %d", id);
+            log_debug ("name = %s", name.c_str());
+            log_debug ("id_type = %d", id_type);
+            log_debug ("dtype_name = %s", dtype_name.c_str());
 
             // we are interested in this element if we are interested in 
             // all elements ( filtertype == 7) or if this element has 
@@ -298,7 +298,7 @@ zmsg_t* select_group_elements(
                 assert ( el );
         
                 // we are interested in this element
-                log_debug ("created msg el for i = %d\n", i);
+                log_debug ("created msg el for i = %d", i);
 
                 // put elements into the bins by its asset_element_type_id
                 if ( id_type == asset_type::DATACENTER )
@@ -340,11 +340,11 @@ zmsg_t* select_group_elements(
                       (element_id, element_type_id, group_name, dtype_name, 
                        dcs, rooms, rows, racks, devices, NULL);
         assert ( el );
-        log_info ("end\n");
+        log_info ("end");
         return el;
     }
     catch (const std::exception &e) {
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
@@ -360,11 +360,11 @@ zframe_t* select_childs(
     assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
-    log_info ("start select_childs\n");
-    log_debug ("depth = %d\n", current_depth);
-    log_debug ("element_id = %d\n", element_id);
-    log_debug ("element_type_id = %d\n", element_type_id);
-    log_debug ("child_type_id = %d\n", child_type_id);
+    log_info ("start select_childs");
+    log_debug ("depth = %d", current_depth);
+    log_debug ("element_id = %d", element_id);
+    log_debug ("element_type_id = %d", element_type_id);
+    log_debug ("child_type_id = %d", child_type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -440,7 +440,7 @@ zframe_t* select_childs(
             result = st.set("childtypeid", child_type_id).
                         select();
         }
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         int rv = 0;
         zmsg_t* ret = zmsg_new();
         int i = 0;
@@ -462,12 +462,12 @@ zframe_t* select_childs(
             std::string dtype_name = "";
             row[3].get(dtype_name);
             
-            log_debug ("for\n");
-            log_debug ("i = %d\n", i);
-            log_debug ("id = %d\n", id);
-            log_debug ("name = %s\n", name.c_str());
-            log_debug ("id_type = %d\n", id_type);
-            log_debug ("dtype_name = %s\n", dtype_name.c_str());
+            log_debug ("for");
+            log_debug ("i = %d", i);
+            log_debug ("id = %d", id);
+            log_debug ("name = %s", name.c_str());
+            log_debug ("id_type = %d", id_type);
+            log_debug ("dtype_name = %s", dtype_name.c_str());
 
             zframe_t* dcs     = NULL;
             zframe_t* rooms   = NULL;
@@ -492,11 +492,11 @@ zframe_t* select_childs(
                 if (    ( child_type_id == asset_type::DATACENTER ) && 
                         ( 3 <= filtertype ) )
                 {
-                    log_info ("start select_rooms\n");
+                    log_info ("start select_rooms");
                     rooms = select_childs (url, id, child_type_id, 
                                 asset_type::ROOM, is_recursive, 
                                 current_depth + 1, filtertype);
-                    log_info ("end select_rooms\n");
+                    log_info ("end select_rooms");
                 }
 
                 // Select rows only for datacenters and rooms
@@ -505,11 +505,11 @@ zframe_t* select_childs(
                         ( child_type_id == asset_type::ROOM ) )     && 
                      ( 4 <= filtertype ) )
                 {
-                    log_info ("start select_rows\n");
+                    log_info ("start select_rows");
                     rows  = select_childs (url, id, child_type_id,
                                 asset_type::ROW, is_recursive, 
                                 current_depth + 1, filtertype);
-                    log_info ("end select_rows\n");
+                    log_info ("end select_rows");
                 }
                 
                 // Select racks only for datacenters, rooms, rows
@@ -519,11 +519,11 @@ zframe_t* select_childs(
                         ( child_type_id == asset_type::ROW ) )     && 
                      ( 5 <= filtertype ) )
                 {
-                    log_info ("start select_racks\n");
+                    log_info ("start select_racks");
                     racks   = select_childs (url, id, child_type_id, 
                                 asset_type::RACK, is_recursive, 
                                 current_depth + 1, filtertype);
-                    log_info ("end select_racks\n");
+                    log_info ("end select_racks");
                 }
                 
                 // Select devices only for datacenters, rooms, rows, racks
@@ -534,11 +534,11 @@ zframe_t* select_childs(
                         ( child_type_id == asset_type::RACK ) )     &&
                      ( 6 <= filtertype ) )
                 {
-                    log_info ("start select_devices\n");
+                    log_info ("start select_devices");
                     devices = select_childs (url, id, child_type_id,
                                 asset_type::DEVICE, is_recursive, 
                                 current_depth + 1, filtertype);
-                    log_info ("end select_devices\n");
+                    log_info ("end select_devices");
                 }
                 
                 // TODO filter
@@ -548,10 +548,10 @@ zframe_t* select_childs(
                             ( filtertype == 7 ) 
                         ) )
                 {
-                    log_info ("start select elements of the grp\n");
+                    log_info ("start select elements of the grp");
                     grp = select_group_elements (url, id, asset_type::GROUP, 
                                 name.c_str(), dtype_name.c_str(), filtertype);
-                    log_info ("end select elements of the grp\n");
+                    log_info ("end select elements of the grp");
                 }
             }
             // all sub elements selected
@@ -580,7 +580,7 @@ zframe_t* select_childs(
                                  dtype_name.c_str(), dcs, rooms, 
                                  rows, racks, devices, NULL);
                 assert ( el );
-                log_debug ("created msg el for i = %d\n",i);
+                log_debug ("created msg el for i = %d",i);
                 rv = zmsg_addmsg ( ret, &el);
                 assert ( rv != -1 );
                 assert ( el == NULL );
@@ -594,11 +594,11 @@ zframe_t* select_childs(
         zframe_t* res = NULL;
         rv = matryoshka2frame (&ret, &res);
         assert ( rv == 0 );
-        log_info ("end\n");
+        log_info ("end");
         return res;
     }
     catch (const std::exception &e) {
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return NULL;
     }
 }
@@ -608,7 +608,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( url );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_FROM );
-    log_info ("start\n");
+    log_info ("start");
 
     uint32_t element_id   = asset_msg_element_id  (getmsg);
     uint8_t  filter_type  = asset_msg_filter_type (getmsg);
@@ -660,13 +660,13 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         }
         catch (const tntdb::NotFound &e) {
             // element with specified id was not found
-            log_warning ("abort select element with err = '%s'\n", e.what());
+            log_warning ("abort select element with err = '%s'", e.what());
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
         }
         catch (const std::exception &e) {
             // internal error in database
-            log_warning ("abort select element with err = '%s'\n", e.what());
+            log_warning ("abort select element with err = '%s'", e.what());
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
         }
@@ -683,13 +683,13 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                     " WHERE v.id_asset_element = :elementid AND "
                     "       v.keytag = 'type'"
                 );
-                log_debug("element_id = %d\n", element_id);
+                log_debug("element_id = %d", element_id);
                 
                 tntdb::Row row = st.set("elementid", element_id).
 
                                     selectRow();
     
-                log_debug("element_id = %d\n", element_id);
+                log_debug("element_id = %d", element_id);
                 row[0].get(dtype_name);
                 assert ( !dtype_name.empty() ) ; 
             }
@@ -703,7 +703,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             }
             catch (const std::exception &e) {
                 // internal error in database
-                log_warning ("abort select element with err = '%s'\n", e.what());
+                log_warning ("abort select element with err = '%s'", e.what());
                 return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
             }
@@ -726,17 +726,17 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
          ( 3 <= filter_type ) )
         
     {
-        log_info ("start select_rooms\n");
+        log_info ("start select_rooms");
         rooms = select_childs (url, element_id, type_id, asset_type::ROOM,
                         is_recursive, 1, filter_type);
         if ( rooms == NULL )
         {
             zframe_destroy (&dcs);
-            log_warning ("end abnormal\n");
+            log_warning ("end abnormal");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     "rooms error", NULL);
         }
-        log_info ("end select_rooms\n");
+        log_info ("end select_rooms");
     }
     // Select rows
     // only for rooms, datacenters, unlockated
@@ -746,18 +746,18 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
            ( element_id == 0 ) ) &&
          ( 4 <= filter_type ) )
     {
-        log_info ("start select_rows\n");
+        log_info ("start select_rows");
         rows = select_childs (url, element_id, type_id, asset_type::ROW,
                         is_recursive, 1, filter_type);
         if ( rows == NULL )
         {
             zframe_destroy (&dcs);
             zframe_destroy (&rooms);
-            log_warning("end abnormal\n");
+            log_warning("end abnormal");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     "rows error", NULL);
         }
-        log_info ("end select_rows\n");
+        log_info ("end select_rows");
     }
     // Select racks
     // only for rooms, datacenters, rows, unlockated
@@ -768,7 +768,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
            ( element_id == 0 ) ) &&
          ( 5 <= filter_type ) )
     {
-        log_info ("start select_racks\n");
+        log_info ("start select_racks");
         racks = select_childs (url, element_id, type_id, asset_type::RACK,
                         is_recursive, 1, filter_type);
         if ( racks == NULL )
@@ -776,11 +776,11 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             zframe_destroy (&dcs);
             zframe_destroy (&rooms);
             zframe_destroy (&rows);
-            log_warning ("end abnormal\n");
+            log_warning ("end abnormal");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     "racks error", NULL);
         }
-        log_info ("end select_racks\n");
+        log_info ("end select_racks");
     }
     // Select devices
     // only for rooms, datacenters, rows, racks, unlockated
@@ -788,11 +788,11 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
     if ( ( ( type_id == asset_type::DATACENTER)  ||
            ( type_id == asset_type::ROOM )       ||
            ( type_id == asset_type::ROW )        ||
-           ( type_id == asset_type::DEVICE )     || 
+           ( type_id == asset_type::RACK )     ||
            ( element_id == 0 )  ) &&
          ( 6 <= filter_type ) )
     {
-        log_info ("start select_devices\n");
+        log_info ("start select_devices");
         devices = select_childs (url, element_id, type_id, asset_type::DEVICE,
                         is_recursive, 1, filter_type);
         if ( devices == NULL )
@@ -801,11 +801,11 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             zframe_destroy (&rooms);
             zframe_destroy (&rows);
             zframe_destroy (&racks);
-            log_warning ("end abnormal\n");
+            log_warning ("end abnormal");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     "devices error", NULL);
         }
-        log_info ("end select_devices\n");
+        log_info ("end select_devices");
     }
     // Select groups
     // Groups can be selected
@@ -817,7 +817,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
               ( filter_type == 7 ) ) ) ||
           ( element_id == 0 ) )
     {
-        log_info ("start select_grps\n");
+        log_info ("start select_grps");
         grps = select_childs (url, element_id, type_id, asset_type::GROUP,
                         is_recursive, 1, filter_type);
         if ( grps == NULL )
@@ -827,15 +827,15 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
             zframe_destroy (&rows);
             zframe_destroy (&racks);
             zframe_destroy (&devices);
-            log_warning ("end abnormal\n");
+            log_warning ("end abnormal");
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     "groups error", NULL);
         }
-        log_info ("end select_grps\n");
+        log_info ("end select_grps");
     }
     
     zmsg_t* el = NULL; 
-    log_info ("creating return element\n");
+    log_info ("creating return element");
     if ( type_id == asset_type::GROUP )
     {
         el = select_group_elements (url, element_id, type_id, name.c_str(), 
@@ -848,7 +848,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                      dtype_name.c_str(), dcs, rooms, rows, 
                      racks, devices, grps);
     }
-    log_info ("end normal\n");
+    log_info ("end normal");
     return el;
 }
 
@@ -892,7 +892,7 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id,
                     asset_msg_name(item), 
                     asset_msg_type_name(item), 
                     parent_id, type, name, dtype_name) ); 
-        log_debug ("parent_id = %d\n", parent_id );
+        log_debug ("parent_id = %d", parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
         result1 = print_frame_to_edges (fr, asset_msg_element_id (item), 
@@ -957,7 +957,7 @@ void print_frame (zframe_t* frame, uint32_t parent_id)
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
         assert ( item );
         asset_msg_print (item);
-        log_debug("parent_id = %d\n", parent_id );
+        log_debug("parent_id = %d", parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
         print_frame (fr, asset_msg_element_id (item));
@@ -983,9 +983,9 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
     assert ( element_id );      // is required
     assert ( element_type_id ); // is required
 
-    log_info ("start\n");
-    log_debug ("element_id = %d\n", element_id);
-    log_debug ("element_type_id = %d\n", element_type_id);
+    log_info ("start");
+    log_debug ("element_id = %d", element_id);
+    log_debug ("element_type_id = %d", element_type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -1038,7 +1038,7 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         row[2].get(name);
         row[3].get(dtype_name);
 
-        log_debug("rows selected %d, parent_id = %d, parent_type_id = %d\n",
+        log_debug("rows selected %d, parent_id = %d, parent_type_id = %d",
                             1,  parent_id, parent_type_id);
         
         if ( parent_id != 0 )
@@ -1057,7 +1057,7 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         }
         else
         {
-            log_info ("but this element has no parent\n");
+            log_info ("but this element has no parent");
             return asset_msg_encode_return_location_to (element_id, 
                     element_type_id, name.c_str(), dtype_name.c_str(), 
                     zmsg_new());
@@ -1065,13 +1065,13 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
     }
     catch (const tntdb::NotFound &e) {
         // element with specified type was not found
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
@@ -1082,9 +1082,9 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( url );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
-    log_info ("start\n");
+    log_info ("start");
     uint32_t element_id = asset_msg_element_id (getmsg);
-    log_debug("element_id=%d\n", element_id);
+    log_debug("element_id=%d", element_id);
     uint16_t type_id = 0;    
  
     // select additional information about starting device
@@ -1105,34 +1105,34 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     }
     catch (const tntdb::NotFound &e) {
         // element with specified id was not found
-        log_warning ("abort select element with err = '%s'\n", e.what());
+        log_warning ("abort select element with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                     e.what(), NULL);
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort select element with err = '%s'\n", e.what());
+        log_warning ("abort select element with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     e.what(), NULL);
     }
     
-    log_debug("type_id=%d\n", type_id);
+    log_debug("type_id=%d", type_id);
     zmsg_t* result = select_parents (url, element_id, type_id);
 
-    log_info ("end\n");
+    log_info ("end");
     return result;
 }
 
-std::pair <std::string, std::string>
-    select_element_name_device_tname  ( const char* url, 
-                                        uint32_t asset_element_id)
+std::tuple <std::string, std::string, uint32_t>
+    select_add_device_info  ( const char* url, 
+                              uint32_t asset_element_id)
 {
     // select information about specidied asset element
     tntdb::Connection conn = tntdb::connectCached(url);
 
     tntdb::Statement st = conn.prepareCached(
         " SELECT"
-        "   v.name, v1.name as type_name"
+        "   v.name, v1.name as type_name, v1.id_asset_device_type"
         " FROM"
         "   v_bios_asset_element v"
         " LEFT JOIN  v_bios_asset_device v1"
@@ -1146,13 +1146,18 @@ std::pair <std::string, std::string>
     std::string element_name = "";
     row[0].get(element_name);
     assert ( !element_name.empty() ); // database is corrupted
-    log_debug ("selected device name = %s\n", element_name.c_str());
+    log_debug ("selected device name = %s", element_name.c_str());
      
     // device type name, would be NULL if it is not a device
     std::string device_type_name = "";
     row[1].get(device_type_name);
-    log_debug ("selected device type name = %s\n", device_type_name.c_str());
-    return std::make_pair (element_name, device_type_name);
+    log_debug ("selected device type name = %s", device_type_name.c_str());
+    
+    // device type id, would be 0 if it is not a device
+    uint32_t device_type_id = 0;
+    row[2].get(device_type_id);
+    log_debug ("selected device type id = %d", device_type_id);
+    return std::make_tuple (element_name, device_type_name, device_type_id);
 }
 
 zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const &devices)
@@ -1160,10 +1165,8 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const 
     // tuple: ( id,  device_name, device_type_name )
     // encode: id, device_type_name, device_name
     zmsg_t* ret = zmsg_new();
-    for ( auto it = devices.begin(); it != devices.end(); ++it )
+    for ( auto &adevice : devices )
     {
-        auto adevice = *it;
-
         zmsg_t* el = asset_msg_encode_powerchain_device
                     (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
                     (std::get<1>(adevice)).c_str() );
@@ -1215,31 +1218,33 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_FROM );
-    log_info ("start\n");
+    log_info ("start");
     uint32_t element_id = asset_msg_element_id  (getmsg);
     uint8_t  linktype   = INPUT_POWER_CHAIN;
-    log_debug ("element_id = %d\n", element_id);
-    log_debug ("linktype_id = %d\n", linktype);
+    log_debug ("element_id = %d", element_id);
+    log_debug ("linktype_id = %d", linktype);
 
     std::string device_name = "";
     std::string device_type_name = "";
+    uint32_t device_type_id = 0;
 
     // select information about the start device
     try{
-        std::pair <std::string, std::string> names = 
-            select_element_name_device_tname (url, element_id);
-        device_name = names.first;
-        device_type_name = names.second;
+        std::tuple <std::string, std::string, uint32_t> additional_info = 
+            select_add_device_info (url, element_id);
+        device_name = std::get<0>(additional_info);
+        device_type_name = std::get<1>(additional_info);
+        device_type_id = std::get<2>(additional_info);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
@@ -1247,7 +1252,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     // check, if selected element is device
     if ( device_type_name.empty() )
     {   // then it is not a device
-        log_warning ("abort with err = '%s %d %s'\n", 
+        log_warning ("abort with err = '%s %d %s'", 
                         "specified element id =", element_id, 
                         " is not a device");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
@@ -1262,7 +1267,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     std::set< device_info_t > resultdevices;
     //      start device should be included also into the result set
     resultdevices.insert (
-        std::make_tuple(element_id, device_name, device_type_name));
+        std::make_tuple(element_id, device_name, device_type_name, device_type_id));
     
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -1270,7 +1275,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "  v.id_asset_element_dest, v.src_out, v.dest_in, v.dest_name,"
-            "  v.dest_type_name"
+            "  v.dest_type_name, v.dest_type_id"
             " FROM"
             "  v_bios_asset_link_topology v"
             " WHERE"
@@ -1282,7 +1287,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                   set("idlinktype", linktype).
                                   select();
         
-        log_debug ("links selected: %d\n", result.size());
+        log_debug ("links selected: %d", result.size());
         
         // Go through the selected links
         for ( auto row: result )
@@ -1309,31 +1314,37 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             std::string device_type_name = "";
             row[4].get(device_type_name);
             assert ( !device_type_name.empty() );
-
-            log_debug ("for\n");
-            log_debug ("asset_element_id_src = %d\n", element_id);
-            log_debug ("asset_element_id_dest = %d\n", id_asset_element_dest);
-            log_debug ("src_out = %d\n", src_out);
-            log_debug ("dest_in = %d\n", dest_in);
-            log_debug ("device_name = %s\n", device_name.c_str());
-            log_debug ("device_type_name = %s\n", device_type_name.c_str());
+            
+            // id_asset_element_dest, requiured
+            uint32_t device_type_dest_id = 0;
+            row[5].get(device_type_dest_id);
+            assert ( device_type_dest_id );
+   
+            log_debug ("for");
+            log_debug ("asset_element_id_src = %d", element_id);
+            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
+            log_debug ("src_out = %d", src_out);
+            log_debug ("dest_in = %d", dest_in);
+            log_debug ("device_name = %s", device_name.c_str());
+            log_debug ("device_type_name = %s", device_type_name.c_str());
+            log_debug ("dest_type_id = %d", device_type_dest_id);
 
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 
             resultdevices.insert (std::make_tuple(
-                    id_asset_element_dest, device_name, device_type_name));
+                    id_asset_element_dest, device_name, device_type_name, device_type_dest_id));
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
 
 
     zmsg_t* result = generate_return_power (resultdevices, resultpowers);
-    log_info ("end normal\n");
+    log_info ("end normal");
     return result;
 }
 
@@ -1361,15 +1372,18 @@ std::pair < std::set < device_info_t >, std::set < powerlink_info_t > >
 select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
                           bool is_recursive)
 {
+    log_info ("start");
     std::string device_name = "";
     std::string device_type_name = "";
+    uint32_t device_type_id = 0;
     
     // select information about the start device
     try{
-        std::pair <std::string, std::string> names = 
-            select_element_name_device_tname (url, element_id);
-        device_name = names.first;
-        device_type_name = names.second;
+        std::tuple <std::string, std::string, uint32_t> additional_info = 
+            select_add_device_info (url, element_id);
+        device_name = std::get<0>(additional_info);
+        device_type_name = std::get<1>(additional_info);
+        device_type_id = std::get<2>(additional_info);
     }
     catch (const tntdb::NotFound &e) {
         // device with specified id was not found
@@ -1390,7 +1404,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
     // result set of found devices 
     std::set< device_info_t > resultdevices;
                                                       
-    auto adevice = std::make_tuple(element_id, device_name, device_type_name);
+    auto adevice = std::make_tuple(element_id, device_name, device_type_name, device_type_id);
     // start device should be included also into the result set
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
@@ -1412,7 +1426,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
             tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "  v.id_asset_element_src, v.src_out, v.dest_in, v.src_name,"
-                "  v.src_type_name"
+                "  v.src_type_name, v.src_type_id "
                 " FROM"
                 "  v_bios_asset_link_topology v"
                 " WHERE"
@@ -1425,7 +1439,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                                       set("idlinktype", linktype).
                                       select();
             
-            log_debug ("for element_id= %d was %d powerlinks selected\n", 
+            log_debug ("for element_id= %d was %d powerlinks selected", 
                                             cur_element_id, result.size());
             
             // Go through the selected links
@@ -1453,15 +1467,20 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 std::string device_type_name_src = "";
                 row[4].get(device_type_name_src);
                 assert ( !device_type_name_src.empty() );
-    
-                log_debug ("for\n");
-                log_debug ("asset_element_id_dest = %d\n", cur_element_id);
-                log_debug ("asset_element_id_src = %d\n", 
+                
+                // device_type_src_id, required
+                uint32_t device_type_src_id = 0;
+                row[5].get(device_type_src_id);
+                assert ( device_type_src_id );
+                
+                log_debug ("for");
+                log_debug ("asset_element_id_dest = %d", cur_element_id);
+                log_debug ("asset_element_id_src = %d", 
                                                     id_asset_element_src);
-                log_debug ("src_out = %d\n", src_out);
-                log_debug ("dest_in = %d\n", dest_in);
-                log_debug ("device_name_src = %s\n", device_name_src.c_str());
-                log_debug ("device_type_name_src = %s\n", 
+                log_debug ("src_out = %d", src_out);
+                log_debug ("dest_in = %d", dest_in);
+                log_debug ("device_name_src = %s", device_name_src.c_str());
+                log_debug ("device_type_name_src = %s", 
                                                 device_type_name_src.c_str());
     
                 resultpowers.insert  (std::make_tuple(
@@ -1470,7 +1489,11 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 if ( is_recursive )
                     newdevices.insert (std::make_tuple(
                             id_asset_element_src, device_name_src, 
-                            device_type_name_src));
+                            device_type_name_src, device_type_src_id));
+                else
+                    resultdevices.insert (std::make_tuple(
+                            id_asset_element_src, device_name_src, 
+                            device_type_name_src, device_type_src_id));
             } // end for
         }
         catch (const std::exception &e) {
@@ -1495,7 +1518,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
             }
         }
     }   // end of processing one of the new devices
-    log_info ("end normal\n");
+    log_info ("end normal");
     return std::make_pair (resultdevices, resultpowers);
 }
 
@@ -1503,7 +1526,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
-    log_info ("start\n");
+    log_info ("start");
     uint32_t element_id = asset_msg_element_id (getmsg);
     uint8_t  linktype   = INPUT_POWER_CHAIN;
     
@@ -1515,33 +1538,33 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     }
     catch (const bios::NotFound &e) {
         // device with specified id was not found
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                                         e.what(), NULL);
     }
     catch (const bios::InternalDBError &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
     catch (const bios::ElementIsNotDevice &e) {
         // specified element is not a device
-        log_warning ("abort with err = '%s %d %s'\n", 
+        log_warning ("abort with err = '%s %d %s'", 
                 "specified element id =", element_id, " is not a device");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
     }
     catch (const std::exception &e) {
         // unexpected error
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_UNKNOWN, 
                                                         e.what(), NULL);
     }
 
     zmsg_t* result = generate_return_power (topology.first, topology.second);
     
-    log_info ("end normal\n");
+    log_info ("end normal");
     return result;
 } 
 
@@ -1549,11 +1572,11 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
 {
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_GROUP );
-    log_info ("start\n");
+    log_info ("start");
     uint32_t element_id = asset_msg_element_id (getmsg);
     uint8_t  linktype   = INPUT_POWER_CHAIN;
 
-    log_info ("start select powers\n"); 
+    log_info ("start select powers"); 
     //  all powerlinks are included into "resultpowers"
     std::set< powerlink_info_t > resultpowers;
     try{
@@ -1588,7 +1611,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         tntdb::Result result = st.set("groupid", element_id).
                                   set("linktypeid", linktype).
                                   select();
-        log_debug("rows selected %d\n", result.size()); 
+        log_debug("rows selected %d", result.size()); 
 
         // Go through the selected links
         for ( auto &row: result )
@@ -1611,11 +1634,11 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             row[3].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
             
-            log_debug ("for\n");
-            log_debug ("asset_element_id_src = %d\n", id_asset_element_src);
-            log_debug ("asset_element_id_dest = %d\n", id_asset_element_dest);
-            log_debug ("src_out = %d\n", src_out);
-            log_debug ("dest_in = %d\n", dest_in);
+            log_debug ("for");
+            log_debug ("asset_element_id_src = %d", id_asset_element_src);
+            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
+            log_debug ("src_out = %d", src_out);
+            log_debug ("dest_in = %d", dest_in);
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
@@ -1623,13 +1646,13 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    log_info ("end select powers\n");
+    log_info ("end select powers");
     
-    log_info ("start select devices\n"); 
+    log_info ("start select devices"); 
     // result set of found devices 
     std::set< device_info_t > resultdevices;
     try{
@@ -1639,7 +1662,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         // (for parents) here
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v1.name, v2.name AS type_name, v.id_asset_element"
+            "   v1.name, v2.name AS type_name, v.id_asset_element, v2.id_asset_device_type"
             " FROM"
             "   v_bios_asset_group_relation v,"
             "   t_bios_asset_element v1,"
@@ -1652,7 +1675,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         // can return more than one row
         tntdb::Result result = st.set("groupid", element_id).
                                   select();
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         
         for ( auto &row: result )
         {
@@ -1670,25 +1693,30 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             uint32_t id_asset_element = 0;
             row[2].get(id_asset_element);
             assert ( id_asset_element );
+            
+            uint32_t device_type_id = 0;
+            row[2].get(device_type_id);
+            assert ( device_type_id );
 
-            log_debug ("for\n");
-            log_debug ("device_name = %s\n", device_name.c_str());
-            log_debug ("device_type_name = %s\n", device_name.c_str());
-            log_debug ("asset_element_id = %d\n", id_asset_element);
+            log_debug ("for");
+            log_debug ("device_name = %s", device_name.c_str());
+            log_debug ("device_type_name = %s", device_name.c_str());
+            log_debug ("asset_element_id = %d", id_asset_element);
+            log_debug ("device_type_id = %d", device_type_id);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name));
+                    id_asset_element, device_name, device_type_name, device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    log_info("end select devices\n");
+    log_info("end select devices");
     zmsg_t* result = generate_return_power (resultdevices, resultpowers);
-    log_info ("end normal\n");
+    log_info ("end normal");
     return result;
 }
 
@@ -1697,18 +1725,18 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
 {
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_DATACENTER );
-    log_info ("start\n");
+    log_info ("start");
     uint32_t element_id = asset_msg_element_id  (getmsg);
     uint8_t  linktype   = INPUT_POWER_CHAIN;
 
-    log_info ("start select devices\n"); 
+    log_info ("start select devices"); 
     // result set of found devices 
     std::set< device_info_t > resultdevices;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id_asset_element, v.name , v.type_name" 
+            "   v.id_asset_element, v.name , v.type_name, v.id_asset_device_type" 
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
@@ -1717,7 +1745,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         // can return more than one row
         tntdb::Result result = st.set("dcid", element_id).
                                   select();
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         
         for ( auto &row: result )
         {
@@ -1736,24 +1764,30 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             row[2].get(device_type_name);
             assert ( !device_type_name.empty() );
 
-            log_debug ("for\n");
-            log_debug ("device_name = %s\n", device_name.c_str());
-            log_debug ("device_type_name = %s\n", device_name.c_str());
-            log_debug ("asset_element_id = %d\n", id_asset_element);
+            // device_type_id, required 
+            uint32_t device_type_id = 0;
+            row[3].get(device_type_id);
+            assert ( device_type_id );
+            
+            log_debug ("for");
+            log_debug ("device_name = %s", device_name.c_str());
+            log_debug ("device_type_name = %s", device_type_name.c_str());
+            log_debug ("device_type_id = %d", device_type_id);
+            log_debug ("asset_element_id = %d", id_asset_element);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name));
+                    id_asset_element, device_name, device_type_name, device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    log_info("end select devices\n");
+    log_info("end select devices");
 
-    log_info ("start select powers\n"); 
+    log_info ("start select powers"); 
     //      all powerlinks are included into "resultpowers"
     std::set< powerlink_info_t > resultpowers;
     try{
@@ -1781,7 +1815,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Result result = st.set("dcid", element_id).
                                   set("linktypeid", linktype).
                                   select();
-        log_debug("rows selected %d\n", result.size());
+        log_debug("rows selected %d", result.size());
         
         // Go through the selected links
         for ( auto &row: result )
@@ -1804,11 +1838,11 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             row[3].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
             
-            log_debug ("for\n");
-            log_debug ("asset_element_id_src = %d\n", id_asset_element_src);
-            log_debug ("asset_element_id_dest = %d\n", id_asset_element_dest);
-            log_debug ("src_out = %d\n", src_out);
-            log_debug ("dest_in = %d\n", dest_in);
+            log_debug ("for");
+            log_debug ("asset_element_id_src = %d", id_asset_element_src);
+            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
+            log_debug ("src_out = %d", src_out);
+            log_debug ("dest_in = %d", dest_in);
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
@@ -1816,12 +1850,12 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
     }
     catch (const std::exception &e) {
         // internal error in database
-        log_warning ("abort with err = '%s'\n", e.what());
+        log_warning ("abort with err = '%s'", e.what());
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                         e.what(), NULL);
     }
-    log_info ("end select powers\n");
+    log_info ("end select powers");
     zmsg_t* result = generate_return_power (resultdevices, resultpowers);
-    log_info ("end normal\n");
+    log_info ("end normal");
     return result;
 }

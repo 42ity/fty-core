@@ -31,6 +31,14 @@
     <mapping>
       <target>auth-verify@bios_web</target>
     </mapping>
+
+    <!-- SysInfo mapping -->
+    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
+    <mapping>
+      <target>sysinfo@bios_web</target>
+      <url>^/api/v1/admin/sysinfo$</url>
+    </mapping>
+
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
       <target>auth-require@bios_web</target>
@@ -62,13 +70,6 @@
     <mapping>
       <target>time@bios_web</target>
       <url>^/api/v1/admin/time.*$</url>
-    </mapping>
-
-    <!-- SysInfo mapping -->
-    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
-    <mapping>
-      <target>sysinfo@bios_web</target>
-      <url>^/api/v1/admin/sysinfo$</url>
     </mapping>
 
     <!-- Asset management -->

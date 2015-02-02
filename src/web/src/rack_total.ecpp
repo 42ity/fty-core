@@ -3,8 +3,36 @@
 #include <cxxtools/split.h>
 
 #include "asset_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "data.h"
+#include "calc_power.h"
+#include "dbpath.h"
+
+float total_rack_power(a_elmnt_id_t rack_element_id) {
+    
+    zmsg_t *msg = calc_total_rack_power(url.c_str(),rack_element_id);
+    if( ! msg ) { throw "no message"; }
+    if( ! is_compute_msg(msg) ) {
+        zmsg_destroy(&msg);
+        throw "invalid message type";
+    }
+    compute_msg_t* res_compute = compute_msg_decode (&msg);
+    zmsg_destroy(&msg);
+    compute_msg_print (res_compute);
+    zhash_t* results = compute_msg_get_results (res_compute);
+
+    m_msrmnt_value_t value;
+    m_msrmnt_scale_t scale;
+    a_elmnt_id_t num_missed;
+    int rv0 = compute_result_value_get(results, &value);
+    int rv1 = compute_result_scale_get(results, &scale);
+    int rv2 = compute_result_num_missed_get(results, &num_missed);
+    compute_msg_destroy(&res_compute);
+    zhash_destroy(&results);
+    if ( rv0 || rv1 || rv2 ) return 0.0;
+    return value * pow(10,scale);
+}
+
 </%pre>
 <%args>
 std::string arg1;
@@ -64,20 +92,33 @@ for( size_t R = 0; R <racks.size() ; ++R ) {
 </%cpp>
 { "error":"bad_input", "msg":"invalid_parameter" }
 <%cpp>
-            return HTTP_BAD_REQUEST;
-        }
-    }
+           return HTTP_BAD_REQUEST;
+       }
+   }
+   std::stringstream json;
+try {
+   json << "{\n  \"rack_total\": [\n";
+   for( size_t R = 0 ; R < racks.size(); R++ ) {
+       json   << "    {\n"
+              << "      \"id\":   \"" << racks[R] << "\",\n"
+              << "      \"name\": \"" << rackNames[R] << "\",\n";
+       for(size_t P = 0; P < requestedParams.size(); P++ ) {
+           if( requestedParams[P] == "total_power" ) {
+               json << "      \"total_power\": "<< total_rack_power( atoi( racks[R].c_str() ) );
+           } else {
+               json << "      \"" << requestedParams[P] << "\": " << (800.0 + (std::rand() % 2000)/10.0 );
+           }
+           json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
+       };
+       json << "    }" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";
+   }
+   json << "  ]\n}\n";
+} catch ( const std::exception& e ) {
 </%cpp>
-{
-    "rack_total": [
-%   for( size_t R = 0 ; R < racks.size(); R++ ) {
-        {
-            "id":   "<$ racks[R] $>",
-            "name": "<$ rackNames[R] $>",
-%       for(size_t P = 0; P < requestedParams.size(); P++ ) {
-            "<$ requestedParams[P] $>": <$ (800.0 + (std::rand() % 2000)/10.0 )$><? P < requestedParams.size() -1 ? "," ?>
-%       };
-        }<? R < racks.size() -1 ? "," ?>
-%   };
-    ]
+<h1>internal server error</h1>
+<$ e.what() $>
+<%cpp>      
+      return HTTP_INTERNAL_SERVER_ERROR;   
 }
+</%cpp>
+<$$ json.str() $>

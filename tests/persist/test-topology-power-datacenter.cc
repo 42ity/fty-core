@@ -8,7 +8,7 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 
 TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][power_topology.sql][pd1]")
@@ -16,7 +16,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER DATACENTER #1 ==================\n");
+    log_info ("=============== POWER DATACENTER #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5078);
@@ -114,7 +114,7 @@ TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][powe
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER DATACENTER #2 ==================\n");
+    log_info ("=============== POWER DATACENTER #2 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);

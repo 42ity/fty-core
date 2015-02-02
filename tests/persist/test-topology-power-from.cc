@@ -8,14 +8,14 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 TEST_CASE("Power topology from #1","[db][topology][power][from][power_topology.sql][n1]")
 {
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #1 ==================\n");
+    log_info ("=============== POWER FROM #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);
@@ -40,7 +40,7 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #2 ==================\n");
+    log_info ("=============== POWER FROM #2 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5020);
@@ -101,7 +101,7 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #3 ==================\n");
+    log_info ("=============== POWER FROM #3 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5021);
@@ -158,7 +158,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #4 ==================\n");
+    log_info ("=============== POWER FROM #4 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5024);
@@ -232,7 +232,7 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #5 ==================\n");
+    log_info ("=============== POWER FROM #5 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5028);
@@ -324,7 +324,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     log_open();
  //   log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #6 ==================\n");
+    log_info ("=============== POWER FROM #6 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5034);
@@ -416,7 +416,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #7 ==================\n");
+    log_info ("=============== POWER FROM #7 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5038);
@@ -490,7 +490,7 @@ TEST_CASE("Power topology from #8","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #8 ==================\n");
+    log_info ("=============== POWER FROM #8 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 4998);
@@ -517,7 +517,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #9 ==================\n");
+    log_info ("=============== POWER FROM #9 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5040);
@@ -589,7 +589,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #10 ==================\n");
+    log_info ("=============== POWER FROM #10 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5041);
@@ -677,7 +677,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     log_open();
 //    log_set_level(LOG_DEBUG);
 
-    log_info ("=============== POWER FROM #11 ==================\n");
+    log_info ("=============== POWER FROM #11 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5043);

@@ -15,10 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE	/* to get asprintf() and vasprintf() from stdio.h */
-#endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -131,32 +127,33 @@ static int do_logv(
         case LOG_CRIT:
             prefix = "CRITICAL"; break;
         default:
-            fprintf(log_file, "[ERROR]: %s:%d (%s) invalid log level %d\n", __FILE__, __LINE__, __func__, level);
+            fprintf(log_file, "[ERROR]: %s:%d (%s) invalid log level %d", __FILE__, __LINE__, __func__, level);
             return -1;
     };
 
     r = asprintf(&header, "[%s]: %s:%d (%s)", prefix, file, line, func);
     if (r == -1) {
-        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for header string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for header string: %m", __FILE__, __LINE__, __func__);
         return r;
     }
 
     r = asprintf(&fmt, "%s %s", header, format);
     free(header);   // we don't need it in any case
     if (r == -1) {
-        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for format string: %m", __FILE__, __LINE__, __func__);
         return r;
     }
     
     r = vasprintf(&buffer, fmt, args);
     free(fmt);   // we don't need it in any case
     if (r == -1) {
-        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for message string: %m\n", __FILE__, __LINE__, __func__);
+        fprintf(log_file, "[ERROR]: %s:%d (%s) can't allocate enough memory for message string: %m", __FILE__, __LINE__, __func__);
         return r;
     }
 
     if (level <= log_stderr_level) {
         fputs(buffer, log_file);
+        fputc('\n', log_file);
     }
     if (level <= log_syslog_level) {
         syslog(level, buffer);
