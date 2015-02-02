@@ -42,9 +42,12 @@ mlm_server
 }
 
 start_daemon(){
-    if [ -x ~/bin/$1 ] ; then
+    [ \! -x ~/bin/$1 ]     || prefix="~/bin"
+    [ \! -x ~/lib/$1 ]     || prefix="~/lib"
+    [ \! -x ~/libexec/$1 ] || prefix="~/libexec"
+    if [ -x ${prefix}/$1 ] ; then
         /bin/rm -rf ~/$1.log
-        nohup ~/bin/$1 >~/$1.log 2>&1 &
+        nohup ${prefix}/$1 >~/$1.log 2>&1 &
         sleep 5
         pidof $1
     else

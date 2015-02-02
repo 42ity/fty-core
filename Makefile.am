@@ -40,7 +40,7 @@ CLEANFILES =
 DISTCLEANFILES =
 DISTCLEANDIRS =
 # autoconf does not allow pkglib_PROGRAMS for some reason
-clientdir = ${pkglibdir}
+clientdir = ${pkglibexecdir}
 client_PROGRAMS =
 
 TESTS =
@@ -474,7 +474,7 @@ EXTRA_DIST += $(top_srcdir)/tests/drivers/nmap/mbt-lab.xml
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 
-#----------------------------------------------------------------------
+#------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
 
@@ -555,7 +555,7 @@ driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
 #FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
-client_PROGRAMS += dshell
+bin_PROGRAMS += dshell
 
 dshell_SOURCES =	tools/dshell.cc
 
