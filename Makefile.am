@@ -181,6 +181,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/calc_power.h \
 			src/persist/measure_types.cc \
 			src/persist/measure_types.h \
+			src/persist/dbhelpers.cc \
+			src/persist/dbhelpers.h \
 			tools/dbpath.cpp
 
 
