@@ -99,7 +99,7 @@ CREATE TABLE t_bios_client(
 CREATE TABLE t_bios_client_info(
     id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED,
+    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
     timestamp               datetime            NOT NULL,
     ext                     BLOB                NOT NULL,
 
@@ -427,7 +427,9 @@ CREATE VIEW v_bios_asset_link_topology AS
             v3.id_asset_element AS id_asset_element_dest,
             v5.name AS dest_name,
             v6.name AS src_type_name,
-            v7.name AS dest_type_name
+            v7.name AS dest_type_name,
+            v6.id_asset_device_type AS src_type_id,
+            v7.id_asset_device_type AS dest_type_id
     FROM t_bios_asset_link v1
         LEFT JOIN t_bios_asset_device v2
         ON (v1.id_asset_device_src  = v2.id_asset_device)
@@ -476,6 +478,7 @@ CREATE VIEW v_bios_asset_element_super_parent AS
 SELECT v1.id_asset_element, 
        v1.name , 
        v5.name AS type_name,
+       v5.id_asset_device_type,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
@@ -505,22 +508,28 @@ INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (7, "status", "");
 
 
 /* t_bios_measurement_subtypes */
-/* voltage.* */
+/* voltage */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "output", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "output.L1-N", -1); 
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 1, "output.L2-N", -1); 
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 1, "output.L3-N", -1);
-/* current.* */
+/* current */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "output", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "output.L1", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 2, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 2, "output.L3", -1);
-/* realpower.* */
+/* realpower */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "default", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3, "output.L1", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "outlet", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+    /* devices can have more PSU and for example via IMPI return values separetly for every PSU*/
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (8, 3, "PSU.1", -1);
+INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (9, 3, "PSU.2", -1);
+
 /* temperature */
 INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
 /* load */
@@ -537,6 +546,12 @@ INSERT INTO t_bios_device_type (name) VALUES ("ups");
 INSERT INTO t_bios_device_type (name) VALUES ("epdu");
 INSERT INTO t_bios_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_device_type (name) VALUES ("server");
+
+/* insert dummy device to be used as a refferences for t_bios_client_info, which is not linked to any device */
+SELECT @device_unclassified := id_device_type FROM t_bios_device_type WHERE name = 'not_classified';
+INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES
+    (1, "DUMMY_DEVICE", @device_unclassified);
+SELECT @dummy_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "DUMMY_DEVICE";
 
 /* t_bios_client */
 INSERT INTO t_bios_client (name) VALUES ("nmap");
@@ -566,4 +581,4 @@ INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* ui/properties are somewhat special */
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-INSERT INTO t_bios_client_info (id_client, timestamp, ext) VALUES (@client_ui_properties, NOW(), "{}");
+INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, NOW(), "{}");

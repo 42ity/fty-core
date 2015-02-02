@@ -34,6 +34,10 @@ cp resources/* $temp_dir
 cp ../tools/initdb.sql $temp_dir 
 cp ../tools/load_data.sql $temp_dir
 
+#in case of network timeout between mbt and roz, force the way for getting libcidr0 and cidrcalc packages like this
+#cp ../../temp/cidrcalc_1.2.3-1_amd64.deb $temp_dir
+#cp ../../temp/libcidr0_1.2.3-1_amd64.deb $temp_dir
+
 echo "building docker eaton/bios .."
 sudo docker build -t eaton/bios $temp_dir
 

@@ -19,6 +19,9 @@
 #
 # Description: installs basics components we need
 
+SCRIPTDIR=$(dirname $0)
+CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+
 update_system() {
     # if debian
     curl http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
@@ -26,7 +29,8 @@ update_system() {
     apt-get clean all
     apt-get update
     apt-get -f -y --force-yes --fix-missing install
-    apt-get -f -y --force-yes install devscripts sudo doxygen curl git
+    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb
+    mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 }
 
 update_system

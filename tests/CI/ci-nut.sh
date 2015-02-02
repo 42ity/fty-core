@@ -60,8 +60,8 @@ fi
 
 USR=user1
 PSW=user1
-UPS1="UPS1"
-UPS2="UPS2"
+UPS1="UPS1-LAB"
+UPS2="UPS2-LAB"
 
 
 set_value_in_ups() {
@@ -101,7 +101,7 @@ instcmds=ALL" > $CFGDIR/upsd.users
 #
 
 battery.charge: 90
-device.type: pdu
+device.type: ups
 output.current: 0.00
 output.voltage: 230.0
 ups.realpower: 25
