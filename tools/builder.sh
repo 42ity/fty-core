@@ -62,11 +62,41 @@ case "$MAKE" in
 	;;
 esac
 
+math_bash() {
+	eval echo '$'"(($@))"
+}
+
+math_bc() {
+	echo "$@" | bc
+}
+
+math_expr() {
+	expr "$@"
+}
+
+math_func=""
+math_detect() {
+    for I in math_bash math_expr math_bc ; do
+	[ -z "$math_func" ] && N="`eval $I 5 + 1 2>/dev/null`" && \
+	[ "$N" = 6 ] && math_func="$I"
+    done
+    [ -n "$math_func" ]
+}
+math_detect
+#echo "=== math_func='$math_func'"
+
+do_math() {
+    [ -n "$math_func" ] && $math_func "$@"
+}
+
+incr() {
+    # Parameter: name of variable to increment
+    eval $1="`eval $math_func '$'$1 + 1`" || eval $1=""
+}
+
 VERB_COUNT=0
 verb_run() {
-	VERB_COUNT="$(($VERB_COUNT+1))" 2>/dev/null || \
-	VERB_COUNT="`echo $VERB_COUNT+1|bc`" 2>/dev/null || \
-	VERB_COUNT=""
+	incr VERB_COUNT || VERB_COUNT=""
 
     (
 	### Despite the round parentheses, $$ contains the parent bash PID
@@ -109,7 +139,7 @@ fi
 # gather and calculate this information
 [ x"$NCPUS" = x ] && { NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || NCPUS="`/usr/bin/getconf NPROCESSORS_ONLN`" || NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || NCPUS=1; }
 [ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
-[ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
+[ x"$NPARMAKES" = x ] && { NPARMAKES="`do_math "$NCPUS" '*' 2`" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 
 #[ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""

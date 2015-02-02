@@ -5,5 +5,5 @@ Requires=malamute.service mysql.service
 
 [Service]
 Type=simple
-ExecStart=@libdir@/bios/db-ng
+ExecStart=@libexecdir@/bios/db-ng
 
