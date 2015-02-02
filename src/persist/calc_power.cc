@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "asset_types.h"
 #include "persist_error.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "monitor.h"
 
 bool is_epdu (const device_info_t &device)

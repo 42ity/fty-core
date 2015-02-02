@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbpath.h"
 #include "defs.h"
 #include "persist_error.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 bool is_ok_name_length (const char* name)
 {
