@@ -43,7 +43,7 @@ Ask for a specific element.
 </message>
 
 <message name = "return_element" id = "4">
-Returns sn element we were asked for.
+Returns an element we were asked for.
     <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
     <field name = "msg" type = "msg">Element (or device) to be delivered</field>
 </message>
