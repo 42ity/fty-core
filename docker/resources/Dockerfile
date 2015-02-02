@@ -16,7 +16,7 @@ RUN apt-get install -y vim-tiny
 RUN apt-get clean
 
 RUN apt-get install -y --force-yes libcidr0
-RUN apt-get install -y --force-yes cidrcalc
+#RUN apt-get install -y --force-yes cidrcalc
 
 #RUN apt-get install -y --force-yes libzmq4
 ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
