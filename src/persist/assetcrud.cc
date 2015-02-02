@@ -36,6 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 
 #include "log.h"
+#include "defs.h"
 #include "dbpath.h"
 #include "assetcrud.h"
 #include "monitor.h"
@@ -43,7 +44,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_types.h"
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
-    log_debug("Processing asset message in persistence layer\n");
+    log_debug("Processing asset message in persistence layer");
     zmsg_t *result = NULL;
 
     asset_msg_t *amsg = asset_msg_decode(msg);

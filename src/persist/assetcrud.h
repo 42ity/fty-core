@@ -32,8 +32,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_NAME_LENGTH 25
 #define MAX_DESCRIPTION_LENGTH 255
 
-//! Function for processing of asset messages
-zmsg_t* asset_msg_process(zmsg_t **msg);
+/**
+ * \brief Processes message of type asset_msg_t
+ *
+ * Broken down processing of generic database zmsg_t, this time asset message
+ * case.
+ */
+zmsg_t *asset_msg_process(zmsg_t **msg);
 
 // ===============================================================
 // Functions for processing a special message type
