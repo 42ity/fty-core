@@ -591,7 +591,8 @@ BUILT_SOURCES_bios_web_la = \
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cpp                   \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/tokens.cpp src/shared/data.cpp
+                      src/web/src/tokens.cpp src/shared/data.cpp         \
+                      src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
