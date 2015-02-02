@@ -73,5 +73,14 @@ uint16_t upsstatus_to_int(const std::string &status);
  */
 std::string upsstatus_to_string(uint16_t status);
 
+/**
+ * \brief converts status from std::string bitmap to text representation
+ * \parameter std::string bitmap representing UPS status (for example "12")
+ * \return std::string text representation (for example "OL CHRG")
+ *
+ * Functions simply converts status to integer first. 
+ */ 
+std::string upsstatus_to_string(std::string status);
+
 } // namespace shared
 #endif // SRC_SHARED_UPSSTATUS_H_
