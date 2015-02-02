@@ -5,12 +5,15 @@
 #include "common_msg.h"
 #include "dbpath.h"
 #include "monitor.h"
+#include "upsstatus.h"
 
 #include <tnt/http.h>
 
 #include <algorithm>
 #include <map>
 #include <limits.h>
+
+typedef std::string (*MapValuesTransformation)(std::string);
 
 byte asset_manager::type_to_byte(std::string type) {
     std::transform(type.begin(), type.end(), type.begin(), ::tolower);
@@ -185,23 +188,13 @@ std::string measures_manager::scale(std::string val, std::string i, std::string 
 }
 
 std::string measures_manager::map_values(std::string name, std::string value) {
-    static std::map<std::string, std::map<std::string, std::string>> map = {
-        { "status.ups", {
-                { "0", "OFF" },
-                { "1", "OL"  },
-                { "2", "OL CHRG"  },
-                { "3", "RB OL OFF"  },
-                { "4", "OFF DISCHRG"  },
-                { "5", "ALAM OL RB OFF"  },
-            }
-        }
+    static std::map<std::string, MapValuesTransformation > map = {
+        { "status.ups", &shared::upsstatus_to_string }
     };
     
     auto it = map.find(name);
     if(it != map.end()) {
-        auto it2 = it->second.find(value);
-        if(it2 != it->second.end())
-            return "\"" + it2->second + "\"";
+        return "\"" + it->second(value) + "\"";
     }
     return value;
 }
