@@ -678,7 +678,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_builddir)/tools/dbpath.cpp \
 			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
-			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
 			$(top_srcdir)/src/drivers/netmon/*.h \
 			$(top_srcdir)/src/drivers/netmon/*/*.h \
