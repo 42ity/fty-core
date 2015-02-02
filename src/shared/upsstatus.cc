@@ -83,4 +83,9 @@ std::string upsstatus_to_string(uint16_t status) {
     return result;
 }
 
+std::string upsstatus_to_string(std::string status) {
+    return upsstatus_to_string( atoi( status.c_str() ) );
+}
+
+
 } // namespace shared

@@ -155,6 +155,7 @@ fi
 # Bind mount modules
 mkdir -p "../rootfs/$VM/lib/modules"
 mount -o bind "/lib/modules" "../rootfs/$VM/lib/modules"
+mount -o remount,ro "../rootfs/$VM/lib/modules"
 
 # copy root's ~/.ssh
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"

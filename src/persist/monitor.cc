@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbpath.h"
 #include "defs.h"
 #include "persist_error.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 bool is_ok_name_length (const char* name)
 {
@@ -62,10 +62,9 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg,
 
 common_msg_t* generate_ok(uint64_t rowid)
 {
-    log_info ("%s ", "start");
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     common_msg_set_rowid (resultmsg, rowid);
-    log_info ("normal %s ", "end");
+    log_info ("db_ok generated for %ld", rowid);
     return resultmsg;
 }
 
@@ -1302,14 +1301,15 @@ void generate_measurements (const char         *url,
                             m_dvc_id_t         device_id, 
                             m_msrmnt_tp_id_t   type_id, 
                             m_msrmnt_sbtp_id_t subtype_id,
-                            uint32_t max_seconds)
+                            uint32_t           max_seconds, 
+                            m_msrmnt_value_t   last_value)
 {
     auto ret UNUSED_PARAM = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
-
-    for ( int i = 1; i <= GEN_MEASUREMENTS_MAX ; i++ )
-        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id+i, max_seconds - i);
+    
+    for ( int i = 1; i < GEN_MEASUREMENTS_MAX ; i++ )
+        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id + i, max_seconds - i);
+    ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, last_value, max_seconds - GEN_MEASUREMENTS_MAX);
 }
-
 
 common_msg_t* insert_measurement(const char         *url, 
                                  m_clnt_id_t        client_id, 
@@ -1513,7 +1513,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         zlist_destroy (&last_measurements);
         log_info ("notfound %s ", "end");
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                "for the specified device the is no any measurements" , NULL);
+                "there is no measurement for the specified device" , NULL);
     }
     else
     {

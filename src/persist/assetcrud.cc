@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file assetmsg.cc
+/*! \file assetcrud.cc
     \brief Basic functions for assets
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
@@ -37,8 +37,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 #include "defs.h"
-#include "assetmsg.h"
 #include "dbpath.h"
+#include "assetcrud.h"
 #include "monitor.h"
 #include "persist_error.h"
 #include "asset_types.h"
@@ -87,6 +87,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
             break;
         }
     }
+
     asset_msg_destroy(&amsg);
     return result;
 };
@@ -568,7 +569,6 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
 m_dvc_id_t convert_asset_to_monitor(const char* url, 
                 a_elmnt_id_t asset_element_id)
 {
-    log_info("%s ","start");
     assert ( asset_element_id );
     m_dvc_id_t       device_discovered_id = 0;
     a_elmnt_tp_id_t  element_type_id      = 0;
@@ -614,7 +614,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
                                                 asset_element_id, "end");
         throw bios::MonitorCounterpartNotFound ();
     }
-    log_info("normal %s ","end");
+    log_info("end: asset element %d converted to %d ", asset_element_id, device_discovered_id);
     return device_discovered_id;
 };
 

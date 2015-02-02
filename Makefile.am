@@ -26,8 +26,8 @@ noinst_SCRIPTS =
 dist_noinst_DATA =
 # http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
 # http://www.gnu.org/software/automake/manual/html_node/Sources.html
-# A source file listed in BUILT_SOURCES is made on ‘make all’ or ‘make check’
-# (or even ‘make install’) before other targets are processed. However, such
+# A source file listed in BUILT_SOURCES is made on `make all` or `make check`
+# (or even `make install`) before other targets are processed. However, such
 # a source file is not compiled unless explicitly requested by mentioning it
 # in some other _SOURCES variable. 
 BUILT_SOURCES =
@@ -40,7 +40,7 @@ CLEANFILES =
 DISTCLEANFILES =
 DISTCLEANDIRS =
 # autoconf does not allow pkglib_PROGRAMS for some reason
-clientdir = ${pkglibdir}
+clientdir = ${pkglibexecdir}
 client_PROGRAMS =
 
 TESTS =
@@ -141,8 +141,6 @@ noinst_LTLIBRARIES += 		libpriv-log.la
 libpriv_log_la_SOURCES = 	src/shared/log.h \
 				src/shared/log.c
 
-libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
-
 noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
 
@@ -168,12 +166,13 @@ libpriv_db_la_SOURCES = \
 			src/persist/ip.h \
 			src/persist/nethistory.cc \
 			src/persist/nethistory.h \
-			src/persist/assetmsg.cc \
+			src/persist/assetcrud.cc \
+			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
+			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
 			src/persist/assettopology.h \
-			src/persist/assetmsg.h \
 			src/persist/persistencelogic.cc \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
@@ -475,7 +474,7 @@ EXTRA_DIST += $(top_srcdir)/tests/drivers/nmap/mbt-lab.xml
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 
-#----------------------------------------------------------------------
+#------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
 
@@ -488,7 +487,6 @@ netmon_SOURCES = \
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/drivers/netmon \
-			-D_GNU_SOURCE \
 			-I$(top_srcdir)/src/simple
 
 netmon_LDADD = \
@@ -557,7 +555,7 @@ driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/simple
 
 #FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
-client_PROGRAMS += dshell
+bin_PROGRAMS += dshell
 
 dshell_SOURCES =	tools/dshell.cc
 
@@ -607,7 +605,8 @@ BUILT_SOURCES_bios_web_la = \
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cpp                   \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/tokens.cpp src/shared/data.cpp
+                      src/web/src/tokens.cpp src/shared/data.cpp         \
+                      src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -637,7 +636,7 @@ dist_noinst_HEADERS += \
 			src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
-			src/persist/assetmsg.h \
+			src/persist/assetcrud.h \
 			tools/dbpath.h
 
 ### This file contains the TNTNET settings relevant for our test runs

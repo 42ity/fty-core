@@ -10,6 +10,8 @@
 #include <cxxtools/directory.h>
 #include <cxxtools/regex.h>
 #include "persistencelogic.h"
+#include "dbpath.h"
+#include "assetcrud.h"
 
 zmsg_t *asset_manager::get_item(std::string type, std::string id) {
     log_debug("Trying to get element %s of type %s", id.c_str(), type.c_str());

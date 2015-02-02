@@ -4,7 +4,7 @@
 #include <czmq.h>
 
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 #include "monitor.h"
 #include "dbpath.h"

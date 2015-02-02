@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "asset_types.h"
 #include "persist_error.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "monitor.h"
 
 bool is_epdu (const device_info_t &device)
@@ -91,13 +91,13 @@ power_sources_t
    
     // TODO add max_recursive_level
 
-    // a result sets of devices to ask for a power measurement
+    // result sets of devices to ask for a power measurement
     std::set < device_info_t > pow_src_epdu;
     std::set < device_info_t > pow_src_ups;
     std::set < device_info_t > pow_src_it_device;
    
     // process links
-    // one power link correcpond to one PSU
+    // one power link correcpond to one PSU (power supply unit)
     for ( auto &link : powerlinks )
     {
         // get src device id
@@ -114,8 +114,8 @@ power_sources_t
             }
         }
 
-        log_debug (" start to process ");
-        log_debug ( "src_id is %d ", std::get<0>(src_device));
+        log_debug ("start to process ");
+        log_debug ("src_id is %d ", std::get<0>(src_device));
         log_debug (" src_type_id is %d ", std::get<3>(src_device));
         log_debug (" src_type_name is %s ", std::get<2>(src_device).c_str());
         log_debug (" src_name is %s ", std::get<1>(src_device).c_str());
@@ -126,7 +126,6 @@ power_sources_t
             pow_src_ups.insert(src_device);
         else if ( is_pdu (src_device) )  
         {
-            // ??? da se spocitat power z PDU???
             // select_power_topology_to  PDU
             try{
                 // select only one step back => false
@@ -183,7 +182,6 @@ std::set <device_info_t> select_rack_devices(const char* url,
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
                
-        // TODO get rid of duplicate device processing
         tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "   v.id, v.name, v1.name as type_name,"
@@ -269,34 +267,17 @@ a_elmnt_tp_id_t select_element_type (const char* url,
     }
 }
 
-power_sources_t choose_power_sources (const char* url, 
-                                        std::set <device_info_t> rack_devices)
+// TODO quality
+power_sources_t select_pow_src_for_device (const char* url, 
+                                                device_info_t adevice)
 {
     power_sources_t power_sources;
-
-    for ( auto &adevice: rack_devices )
-        if ( is_it_device (adevice) )
-        {
-            auto pow_top_to = select_power_topology_to 
-                        (url, std::get<0>(adevice), INPUT_POWER_CHAIN, false);
-            auto new_power_srcs = extract_power_sources
-                        (url, pow_top_to, adevice);
-            
-            // in V1 if power_source should be taken in account iff 
-            // it is in rack
-            for ( auto &bdevice: std::get<0>(new_power_srcs) )
-                if ( rack_devices.count(bdevice) == 1 )
-                    std::get<0>(power_sources).insert (bdevice); 
-            
-            for ( auto &bdevice: std::get<1>(new_power_srcs) )
-                if ( rack_devices.count(bdevice) == 1 )
-                    std::get<1>(power_sources).insert (bdevice);
-            
-            for ( auto &bdevice: std::get<2>(new_power_srcs) )
-                if ( rack_devices.count(bdevice) == 1 )
-                    std::get<2>(power_sources).insert (bdevice);
-        }
-    return power_sources;
+    auto pow_top_to = select_power_topology_to 
+               (url, std::get<0>(adevice), INPUT_POWER_CHAIN, false);
+    auto new_power_srcs = extract_power_sources
+               (url, pow_top_to, adevice);
+   
+    return new_power_srcs;
 }
 
 int convert_str_to_double (const char* value_str, double *value)
@@ -397,20 +378,20 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
         {
-            log_info ("end, %d rack not found ", rack_element_id);
+            log_info ("end: %d rack not found ", rack_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                     "specified rack was not found", NULL);
         }
         if (  type_id != asset_type::RACK ) 
         {
-            log_info ("end, %d isn't rack ", rack_element_id);
+            log_info ("end: %d isn't rack ", rack_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                     "specified element is not a rack", NULL);
         }
     }
     catch (const bios::InternalDBError &e)
     {
-        log_warning ("abnormal end with '%s' ", e.what());
+        log_warning ("end: abnormal with '%s' ", e.what());
         return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                     e.what(), NULL);
     }
@@ -418,15 +399,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     // continue, select all devices in a rack
     auto rack_devices = select_rack_devices(url, rack_element_id);
 
-    // find all power sources for in-rack devices
-    power_sources_t power_sources = choose_power_sources(url, rack_devices);
-
-    // calc sum
-    auto ret_results = compute_total_rack_power_v1 (
-            url, std::get<1> (power_sources), 
-            std::get<0> (power_sources), 
-            std::get<2> (power_sources), 
-            300);
+    auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
@@ -496,55 +469,78 @@ static std::string s_generate_in_clause(
     return o.str();
 }
 
-/**
- * FIXME: leave three arguments - one per device type, maybe in the future 
- * we'll use it, or change
- * TODO: ask for id_key/id_subkey, 
- * see measurement_id_t nut_get_measurement_id(const std::string &name) 
- * TODO: quality computation - to be defined, leave with 255
- */
-rack_power_t
-compute_total_rack_power_v1(
-        const char *url,
-        const std::set<device_info_t> &upses,
-        const std::set<device_info_t> &epdus,
-        const std::set<device_info_t> &devs,
+static rack_power_t
+    doA(const char *url,
+        const std::set <device_info_t> &upses,
+        const std::set <device_info_t> &epdus,
+        const std::set <device_info_t> &dvc,
         uint32_t max_age)
 {
-    log_info("start ");
+    log_info("start");
+    assert ( max_age != 0 );
 
-    assert(max_age != 0);
-
-    std::set<a_elmnt_id_t> all_asset_ids{};
+    // set of all asset_id-es to be computed
+    std::set < a_elmnt_id_t > all_asset_ids{};
+    
     //FIXME: this is stupid - aren't there union operations on sets in std C++?
     for (const device_info_t& d : upses)  
         all_asset_ids.insert(device_info_id(d));
     for (const device_info_t& d : epdus)  
         all_asset_ids.insert(device_info_id(d));
-    for (const device_info_t& d : devs)   
+    for (const device_info_t& d : dvc)   
         all_asset_ids.insert(device_info_id(d));
-    rack_power_t ret{0, 0, 255, all_asset_ids};
 
-    try{
-        // FIXME: asking for mapping each time sounds slow
-        std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
-        for (a_elmnt_id_t asset_id : all_asset_ids) {
+    rack_power_t ret{0, 0, 255, all_asset_ids};
+    if ( all_asset_ids.empty() )
+    {
+        log_debug ("end: no devices to compute was recieved");
+        return ret;
+    }
+    
+    // FIXME: asking for mapping each time sounds slow
+    // convert id from asset part to monitor part
+    std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
+    for ( a_elmnt_id_t asset_id : all_asset_ids ) 
+    {
+        try
+        {
             m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
             idmap[dev_id] = asset_id;
         }
+        catch (const bios::NotFound &e) {
+            log_info("asset element %d notfound, ignore it", asset_id);
+        }
+        catch (const bios::ElementIsNotDevice &e) {
+            log_info("asset element %d is not a device, ignore it", asset_id);
+        }
+        catch (bios::MonitorCounterpartNotFound &e ) {
+            log_warning("monitor counterpart for the %d was not found,"
+                                            " ignore it", asset_id);
+        }
+        // ATTENTION: if internal, leave it to upper level
+    }
+    if ( idmap.empty() ) // no id was correctly converted
+    {
+        log_debug ("end: all devices were converted to monitor part"
+                                                            "with errors");
+        return ret;
+    }
 
-        // NOTE: cannot cache as SQL query is not stable
+    // NOTE: cannot cache as SQL query is not stable
         
-        // XXX: SQL placeholders can't deal with list of values, 
-        // as we're using plain int, there is no issue in generating 
-        // SQL by hand
+    // XXX: SQL placeholders can't deal with list of values, 
+    // as we're using plain int, there is no issue in generating 
+    // SQL by hand
         
-        //TODO: read realpower.default from database, 
-        // SELECT v.id as id_subkey, v.id_type as id_key 
-        // FROM v_bios_measurement_subtypes v 
-        // WHERE name='default' AND typename='realpower';
-
+    //TODO: read realpower.default from database, 
+    // SELECT v.id as id_subkey, v.id_type as id_key 
+    // FROM v_bios_measurement_subtypes v 
+    // WHERE name='default' AND typename='realpower';
+    try
+    {
         tntdb::Connection conn = tntdb::connect(url);
+        // v_..._last contain only last measures
+        // TODO check its correctness
         tntdb::Statement st = conn.prepare(
             " SELECT"
             "    v.id_discovered_device, v.value, v.scale"
@@ -580,16 +576,107 @@ compute_total_rack_power_v1(
         }
     }
     catch (const std::exception &e) {
-        log_warning ("abnormal end with '%s'", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
+    log_debug ("end: normal");
+    return ret;
+}
 
+/**
+ * FIXME: leave three arguments - one per device type, maybe in the future 
+ * we'll use it, or change
+ * TODO: ask for id_key/id_subkey, 
+ * see measurement_id_t nut_get_measurement_id(const std::string &name) 
+ * TODO: quality computation - to be defined, leave with 255
+ */
+rack_power_t
+compute_total_rack_power_v1(
+        const char *url,
+        const std::set <device_info_t> &rack_devices,
+        uint32_t max_age)
+{
+    log_info ("start");
+    std::set <device_info_t> dvc = {};
+    for ( auto &adevice : rack_devices )
+        if (is_it_device(adevice))
+            dvc.insert(adevice);
+
+    log_debug ("number of IT devices is %ld", dvc.size());
+    auto ret = doA (url, {}, {}, dvc, max_age);
+    power_sources_t power_sources;
+    log_debug ("number of IT devices informations is missing for is %ld", 
+                                                        ret.missed.size());
+    // for every missed value try to find its power path
+    for ( auto &bdevice: ret.missed )
+    {
+        device_info_t src_device;
+        // find more info about device from device set
+        for ( auto &adevice : dvc )
+        {
+            if ( std::get<0>(adevice) == bdevice )
+            {
+                src_device = adevice;
+                break;
+            }
+        }
+        log_debug ("missed device processed:");
+        log_debug ("device_id = %d", std::get<0>(src_device));
+        log_debug ("device_name = %s", std::get<1>(src_device).c_str());
+        log_debug ("device type name = %s", std::get<2>(src_device).c_str());
+        log_debug ("device type_id = %d",std::get<3>(src_device));
+
+        auto new_power_srcs = select_pow_src_for_device (url, src_device);
+
+        // in V1 if power_source should be taken in account iff 
+        // it is in rack
+        
+        log_debug ("power sources for device %d", std::get<0>(src_device));
+        log_debug ("num of epdus is %ld", std::get<0>(new_power_srcs).size());
+        log_debug ("num of upses is %ld", std::get<1>(new_power_srcs).size());
+        log_debug ("num of devices is %ld", std::get<2>(new_power_srcs).size());
+        
+        for ( auto &bdevice: std::get<0>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<0>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+
+        for ( auto &bdevice: std::get<1>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<1>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+
+        for ( auto &bdevice: std::get<2>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<2>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+    }
+    log_debug ("total power sources");
+    log_debug ("num of epdus is %ld", std::get<0>(power_sources).size());
+    log_debug ("num of upses is %ld", std::get<1>(power_sources).size());
+    log_debug ("num of devices is %ld", std::get<2>(power_sources).size());
+    auto ret2 = doA (url, std::get<1>(power_sources), 
+                          std::get<0>(power_sources),
+                          std::get<2>(power_sources), max_age);
+    s_add_scale (ret, ret2.power, ret2.scale);
+    // TODO manage quality + missed
+    log_debug ("end: power = %ld, scale = %d", ret.power, ret.scale);
     return ret;
 }
 
 std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
                                                 m_dvc_tp_id_t parent_type_id)
 {
+    log_debug ("start");
     std::set < a_elmnt_id_t > result;
     
     byte *buffer = zframe_data (frame);
@@ -603,6 +690,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+        asset_msg_print(item);
         assert ( item );
          
         // process rooms
@@ -632,13 +720,13 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
             result.insert (result1.begin(), result1.end());
         }
         
-        if ( parent_type_id == asset_type::RACK )
-            result.insert (asset_msg_element_id (item));
+        result.insert (asset_msg_element_id (item));
         
         asset_msg_destroy (&item);
         assert ( pop == NULL );
     }
     zmsg_destroy (&zmsg);
+    log_debug ("end");
     return result;
 }
 
@@ -652,20 +740,20 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
         a_elmnt_id_t type_id = select_element_type (url, dc_element_id);
         if ( type_id == 0 )
         {
-            log_info ("end, %d dc not found \n", dc_element_id);
+            log_info ("end: %d DC was not found", dc_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                                    "specified dc was not found", NULL);
+                                    "specified DC was not found", NULL);
         }
         if ( type_id != asset_type::DATACENTER ) 
         {
-            log_info ("end, %d isn't DC \n", dc_element_id);
+            log_info ("end: %d isn't DC", dc_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
-                                    "specified element is not a dc", NULL);
+                                    "specified element is not a DC", NULL);
         }
     }
     catch (const bios::InternalDBError &e)
     {
-        log_warning ("abnormal end with '%s' \n", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                     e.what(), NULL);
     }
@@ -676,61 +764,64 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     // here we need to select und unpack it
     
     // fill the getmsg
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_RETURN_LOCATION_FROM);
+    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (getmsg, dc_element_id);
     asset_msg_set_recursive (getmsg, true);
     asset_msg_set_filter_type (getmsg, asset_type::RACK);
+    log_debug("get_msg filled");
 
     // get topology
     zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
     asset_msg_t* item = asset_msg_decode (&dc_topology);
+    log_debug("get_msg decoded");
 
     // find all ids of rack in topology
     // process rooms
+    log_debug("start look racks in rooms");
     zframe_t* fr = asset_msg_rooms (item);
     std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
+    log_debug("end look racks in rooms");
+    log_debug("number of racks found: %ld", rack_ids.size());
         
     // process rows
+    log_debug("start look racks in rows");
     fr = asset_msg_rows (item);
     auto tmp = find_racks (fr, asset_msg_type(item));
     rack_ids.insert(tmp.begin(), tmp.end());
+    log_debug("end look racks in rows");
+    log_debug("total number of racks found: %ld", rack_ids.size());
         
     // process racks
+    log_debug("strat look racks");
     fr = asset_msg_racks (item);
     auto tmp1 = find_racks (fr, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
-
-    // number of found racks
-    int n = rack_ids.size();
+    log_debug("end look racks");
+    log_debug("total number of racks found: %ld", rack_ids.size());
 
     // set of results for every rack
-    rack_power_t* ret_results_rack = new rack_power_t [n];
-    int i = 0;
+    std::vector<rack_power_t> ret_results_rack{rack_ids.size()};
+    size_t i = 0;
     for ( auto &rack_id: rack_ids )
     {
         // select all devices in a rack
+        log_debug("start process the rack: %d", rack_id);
         auto rack_devices = select_rack_devices(url, rack_id);
 
-        // find all power sources for in-rack devices
-        power_sources_t power_sources = choose_power_sources(url, 
-                                                            rack_devices);
-
         // calc sum
-        ret_results_rack [i] = compute_total_rack_power_v1 (
-                url, std::get<1> (power_sources), 
-                std::get<0> (power_sources), 
-                std::get<2> (power_sources), 
+        auto aresult = compute_total_rack_power_v1 (
+                url, rack_devices, 
                 300);
-        i++;
+        ret_results_rack.insert(ret_results_rack.begin(), aresult);
+        log_debug("end process the rack: %d with value = %ld and scale = %d", rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
     }
+    log_debug("here 11");
 
     // calc the total summ
-    rack_power_t ret_result{ret_results_rack[0].power, 
-                            ret_results_rack[0].scale, 
-                            255, rack_ids};
-    for ( i = 1 ; i < n ; i++ )
-        s_add_scale(ret_result, ret_results_rack[i].power, 
-                                                ret_results_rack[i].scale);
+    rack_power_t ret_result{0, 0, 255, rack_ids};
+    for ( auto &one_rack : ret_results_rack )
+        s_add_scale(ret_result, one_rack.power, one_rack.scale);
+    log_debug("total: value = %ld, scale = %d", ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
@@ -742,6 +833,6 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
 
     // fill the return message
     zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    log_debug("end: normal");
     return retmsg;
 }
-
