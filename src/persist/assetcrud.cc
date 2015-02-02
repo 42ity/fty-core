@@ -51,7 +51,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
     if(amsg == NULL) {
         log_warning ("Malformed asset message received!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-	                                    "Malformed asset message message received!", NULL);src/persist/assertcrud.cc
+	                                    "Malformed asset message message received!", NULL);
     }
 
     int msg_id = asset_msg_id (amsg);
@@ -79,7 +79,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
         case ASSET_MSG_OK:
         case ASSET_MSG_FAIL:
         case ASSET_MSG_RETURN_ELEMENTS:
-        default: {src/persist/assertcrud.cc
+        default: {
             log_warning ("Wrong asset message (id %d) received!", msg_id);
             result = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
 	                                        "Wrong asset message message received!", NULL);
@@ -112,7 +112,7 @@ zlist_t* select_asset_element_groups(const char* url,
             " FROM"
             " v_bios_asset_group_relation v"
             " WHERE v.id_asset_element = :idelement"
-        );src/persist/assertcrud.cc
+        );
         
         // TODO set 
         tntdb::Result result = st_gr.setUnsigned32("idelement", element_id).
@@ -142,7 +142,7 @@ zlist_t* select_asset_element_groups(const char* url,
     return groups;
 }
 
-zlist_t* select_asset_device_link(const char* ursrc/persist/assertcrud.ccl, 
+zlist_t* select_asset_device_link(const char* url, 
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id)
 {
     log_info("%s ","start");
