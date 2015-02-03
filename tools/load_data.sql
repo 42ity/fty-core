@@ -451,14 +451,14 @@ values
 );
 
 /* realpower.outlet.1 */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
+SELECT @realpower_outlet_1 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.1";
+SELECT @realpower_outlet_2 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.2";
 insert into t_bios_measurements
     (id_type, id_subtype, value, timestamp, id_client, id_device)
 values
 (
     3,
-    6,
+    @realpower_outlet_1,
     2405,
     "2014-11-12 09:59:59",
     @client_nut,
@@ -471,7 +471,7 @@ insert into t_bios_measurements
 values
 (
     3,
-    7,
+    @realpower_outlet_2,
     500,
     "2014-11-12 09:59:59",
     @client_nut,
@@ -694,9 +694,10 @@ SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_pr
 UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2"}' WHERE id_client=@client_ui_properties;
 
 
-/* UPSs definition for testing */
-INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS1-LAB',2);
-INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS2-LAB',2);
+/* A manual propagate an asset part to monitor part*/
+/* UPSs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS1-LAB', @device_ups);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('UPS2-LAB', @device_ups);
 INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS1-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS1-LAB')
@@ -705,3 +706,28 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'UPS2-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS2-LAB')
 );
+
+/* ePDUs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ePDU1-LAB', @device_epdu);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ePDU2-LAB', @device_epdu);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ePDU1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ePDU1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ePDU2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ePDU2-LAB')
+);
+
+/* SRVs */
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV1-LAB', @device_server);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV2-LAB', @device_server);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV1-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-LAB')
+);
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV2-LAB'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
+);
+
