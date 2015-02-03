@@ -115,17 +115,6 @@ process_message(const std::string& url, zmsg_t *msg) {
     msg2 = zmsg_dup(msg);
     zmsg_pop(msg2);
     assert(msg2);
-    nmap_msg_t *nmap_msg = nmap_msg_decode(&msg2);
-    if (nmap_msg) {
-        //TODO: check the log level!
-        // powerdev_msg_print(powerdev_msg);
-        log_info ("Processing nmap message");
-        nmap_msg_process(url.c_str(), nmap_msg);
-        return true; // fine until next PR
-    }
-    msg2 = zmsg_dup(msg);
-    zmsg_pop(msg2);
-    assert(msg2);
     common_msg_t *common_msg = common_msg_decode(&msg2);
     if (common_msg) {
         //TODO: check the log level!
@@ -145,57 +134,71 @@ process_message(const std::string& url, zmsg_t *msg) {
 \todo better exception handling granularity
 */
 
-void
-nmap_msg_process (const char *url, nmap_msg_t *msg)
-{
+zmsg_t* nmap_msg_process(zmsg_t **msg) {
+    nmap_msg_t *nmsg = nmap_msg_decode(msg);
+    zmsg_t *ret = NULL;
 
-    assert (url);
-    assert (msg);
+    if(nmsg == NULL) {
+        log_warning ("Malformed nmap message received!");
+        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+                                        "Malformed nmap message message received!", NULL);
+    }
 
-        int msg_id = nmap_msg_id (msg);
-        assert (msg_id != 0);
-
-        switch (msg_id) {
-            case NMAP_MSG_LIST_SCAN:
-            {
-                // data checks
-                const char *ip = nmap_msg_addr (msg);
-                if (ip == NULL) {
-                    log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received");
-                    break;
-                }
-
-                // establish connection && execute
-                try
-                {
-                    tntdb::Connection connection = tntdb::connectCached (url);
-                    tntdb::Statement st = connection.prepare(
-                        "INSERT INTO t_bios_discovered_ip (timestamp, ip) VALUES (UTC_TIMESTAMP(), :v1)");
-                    st.setString("v1", ip).execute();
-                }
-                catch (const std::exception& e)
-                {
-                    log_error ("exception caught: %s", e.what ());
-                }
-                catch (...)
-                {
-                    log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.", url);
-                }
+    int msg_id = nmap_msg_id(nmsg);
+    switch (msg_id) {
+        case NMAP_MSG_LIST_SCAN:
+        {
+            // data checks
+            const char *ip = nmap_msg_addr (nmsg);
+            if (ip == NULL) {
+                log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received");
+                ret =  common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+                        "empty 'addr' field of NMAP_MSG_LIST_SCAN received", NULL);
                 break;
             }
 
-            case NMAP_MSG_DEV_SCAN:
+            // establish connection && execute
+            try
             {
-                log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.");
-                break;
+                tntdb::Connection connection = tntdb::connectCached (url);
+                tntdb::Statement st = connection.prepare(
+                    "INSERT INTO t_bios_discovered_ip (timestamp, ip) VALUES (UTC_TIMESTAMP(), :v1)");
+                st.setString("v1", ip).execute();
             }
-
-            default:
+            catch (const std::exception& e)
             {
-                log_warning ("Unexpected message type received; message id = '%d'", msg_id);
-                break;
+                log_error ("exception caught: %s", e.what ());
+                ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_INTERNAL,
+                        e.what(), NULL);
             }
+            catch (...)
+            {
+                log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.", url.c_str());
+                ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_INTERNAL,
+                        "NMAP: Unknown exception", NULL);
+            }
+            break;
         }
+
+        case NMAP_MSG_DEV_SCAN:
+        {
+            log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.");
+            ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_NOTIMPLEMENTED,
+                        "NMAP_MSG_DEV_SCAN not implemented", NULL);
+            break;
+        }
+
+        default: {
+            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
+            ret = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
+                                  "Unexpected message type received!", NULL);
+            break;
+        }
+    }
+    nmap_msg_destroy(&nmsg);
+    if(ret != NULL)
+        return ret;
+    return common_msg_encode_db_ok(-1);
 }
 
 zmsg_t* netdisc_msg_process(zmsg_t** msg) {
@@ -649,6 +652,8 @@ zmsg_t* process_message(zmsg_t** msg) {
         return asset_msg_process(msg);
     } else if(is_netdisc_msg(*msg)) {
         return netdisc_msg_process(msg);
+    } else if(is_nmap_msg(*msg)) {
+        return nmap_msg_process(msg);
     } else {
         log_warning("Got wrong message!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
