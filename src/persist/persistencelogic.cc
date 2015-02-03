@@ -30,7 +30,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include <tntdb/error.h>
 
 #include "defs.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"

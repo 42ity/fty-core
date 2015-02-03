@@ -15,10 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _GNU_SOURCE
-# define _GNU_SOURCE	/* to get asprintf() and vasprintf() from stdio.h */
-#endif
-
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

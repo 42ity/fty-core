@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 
 #include "log.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "common_msg.h"
 #include "asset_types.h"
 

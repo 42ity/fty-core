@@ -9,10 +9,10 @@
 #include <tntdb/result.h>
 
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "dbhelpers.h"
 #include "persist_error.h"
 #include "monitor.h"
-
+#include "defs.h"
 #include "dbpath.h"
 /* tests for real monitoring assumed, that DB has the following state
  * In case, the initial data should be changed, the following tests should be changed too
