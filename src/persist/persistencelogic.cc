@@ -198,7 +198,7 @@ zmsg_t* nmap_msg_process(zmsg_t **msg) {
     nmap_msg_destroy(&nmsg);
     if(ret != NULL)
         return ret;
-    return common_msg_encode_db_ok(-1);
+    return common_msg_encode_db_ok(0);
 }
 
 zmsg_t* netdisc_msg_process(zmsg_t** msg) {
