@@ -158,12 +158,13 @@ libpriv_db_la_SOURCES = \
 			src/persist/ip.h \
 			src/persist/nethistory.cc \
 			src/persist/nethistory.h \
-			src/persist/assetmsg.cc \
+			src/persist/assetcrud.cc \
+			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
+			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
 			src/persist/assettopology.h \
-			src/persist/assetmsg.h \
 			src/persist/persistencelogic.cc \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
@@ -590,7 +591,8 @@ BUILT_SOURCES_bios_web_la = \
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cpp                   \
                       src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/tokens.cpp src/shared/data.cpp
+                      src/web/src/tokens.cpp src/shared/data.cpp         \
+                      src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -620,7 +622,7 @@ dist_noinst_HEADERS += \
 			src/shared/data.h \
 			src/web/include/sasl.h \
 			src/web/include/tokens.h \
-			src/persist/assetmsg.h \
+			src/persist/assetcrud.h \
 			tools/dbpath.h
 
 ### This file contains the TNTNET settings relevant for our test runs

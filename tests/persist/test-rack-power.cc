@@ -8,7 +8,7 @@
 #include "log.h"
 
 #include "assettopology.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "monitor.h"
 #include "dbtypes.h"
 #include "calc_power.h"

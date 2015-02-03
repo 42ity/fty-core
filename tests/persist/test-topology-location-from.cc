@@ -8,7 +8,7 @@
 
 #include "assettopology.h"
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 TEST_CASE("Location topology from #1","[db][topology][location][location_topology.sql][from][lf1]")
 {

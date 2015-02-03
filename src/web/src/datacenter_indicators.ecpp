@@ -3,7 +3,7 @@
 #include <cxxtools/split.h>
 
 #include "asset_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "data.h"
 #include "calc_power.h"
 #include "dbpath.h"

@@ -32,7 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbpath.h"
 #include "defs.h"
 #include "persist_error.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 
 bool is_ok_name_length (const char* name)
 {
@@ -1513,7 +1513,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         zlist_destroy (&last_measurements);
         log_info ("notfound %s ", "end");
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                "for the specified device the is no any measurements" , NULL);
+                "there is no measurement for the specified device" , NULL);
     }
     else
     {

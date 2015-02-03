@@ -9,7 +9,7 @@
 #include <tntdb/result.h>
 
 #include "common_msg.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 #include "persist_error.h"
 #include "monitor.h"
 
