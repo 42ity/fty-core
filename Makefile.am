@@ -532,7 +532,7 @@ EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
 
 dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
-			src/simple/asset_types.h \
+			src/shared/asset_types.h \
 			src/include/powerdev_msg.h \
 			src/drivers/nut/nut-driver.h
 
@@ -680,7 +680,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_builddir)/tools/dbpath.cpp \
 			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
-			$(top_srcdir)/src/simple/*.h \
 			$(top_srcdir)/src/include/*.h \
 			$(top_srcdir)/src/drivers/netmon/*.h \
 			$(top_srcdir)/src/drivers/netmon/*/*.h \
