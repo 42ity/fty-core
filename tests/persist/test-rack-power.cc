@@ -484,7 +484,7 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
+    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #8 ==================");
     
@@ -533,7 +533,7 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
         {
             m_msrmnt_value_t val_psu1 = 10;
             m_msrmnt_value_t val_psu2 = val_total - val_psu1;
-            REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU2, 300, val_psu1) );
+            REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU1, 300, val_psu1) );
             REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU2, 300, val_psu2) );
         }
         expected_value += val_total;
@@ -641,7 +641,7 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
     log_close();
 }
 
-TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql][trp]")
+TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
     //log_set_level(LOG_DEBUG);
