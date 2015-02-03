@@ -32,9 +32,8 @@ zmsg_t* netdisc_msg_process(zmsg_t** msg);
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);
 
-// TODO doxy; proxy and destroy the message
-void
-nmap_msg_process (const char *url, nmap_msg_t *msg);
+zmsg_t* nmap_msg_process(zmsg_t **msg);
+
 bool
 common_msg_process(const std::string& url, const common_msg_t& msg);
 
