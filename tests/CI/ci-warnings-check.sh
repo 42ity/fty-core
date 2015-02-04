@@ -55,8 +55,14 @@ echo "====================== configure ============================"
 ./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux >/dev/null 2>&1
 echo "========================= make =============================="
 make 2>&1 | tee make.log
-
-
+echo "======================= cppcheck ============================"
+CPPCHECK=$(which cppcheck || true)
+if [ -x "$CPPCHECK" ] ; then
+    $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
+              --suppress=*:src/include/*_msg.c \
+              src 2>cppcheck.xml
+    sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+fi
 
 sort_warnings() {
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
