@@ -28,11 +28,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 
 #include "log.h"
-#include "dbpath.h"
 #include "persist_error.h"
 #include "asset_types.h"
 #include "dbhelpers.h"
-
 
 m_dvc_id_t convert_asset_to_monitor(const char* url, 
                 a_elmnt_id_t asset_element_id)
@@ -53,8 +51,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
             " WHERE v.id_asset_element = :id"
         );
         
-        // TODO set 
-        tntdb::Row row = st.setUnsigned32("id", asset_element_id).
+        tntdb::Row row = st.set("id", asset_element_id).
                             selectRow();
 
         row[0].get(device_discovered_id);
@@ -84,7 +81,7 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
     }
     log_info("end: asset element %d converted to %d ", asset_element_id, device_discovered_id);
     return device_discovered_id;
-};
+}
 
 a_elmnt_id_t convert_monitor_to_asset(const char* url, 
                     m_dvc_id_t discovered_device_id)
@@ -102,8 +99,7 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
             " WHERE id_discovered_device = :id"
         );
 
-        // TODO set 
-        tntdb::Value val = st.setUnsigned32("id", discovered_device_id).
+        tntdb::Value val = st.set("id", discovered_device_id).
                               selectValue();
 
         val.get(asset_element_id);
@@ -119,4 +115,95 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
     }
     log_info("normal %s ","end");
     return asset_element_id;
-};
+}
+
+bool is_ok_element_type (a_elmnt_tp_id_t element_type_id)
+{
+    switch(element_type_id) {
+        case asset_type::DATACENTER:
+        case asset_type::ROOM:
+        case asset_type::ROW:
+        case asset_type::RACK:
+        case asset_type::GROUP:
+        case asset_type::DEVICE:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool is_ok_keytag (const char *keytag)
+{
+    auto length = strlen(keytag);
+    if ( ( length > 0 ) && ( length <= MAX_KEYTAG_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_value (const char *value)
+{
+    auto length = strlen(value);
+    if ( ( length > 0 ) && ( length <= MAX_VALUE_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_asset_device_type (a_dvc_tp_id_t asset_device_type_id)
+{
+    // TODO: manage device types
+    if ( asset_device_type_id > 0 )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_hostname (const char *hostname)
+{
+    // TODO: Do we need to add more complex restrictions?
+    auto length = strlen(hostname);
+    if ( ( length > 0 ) && ( length <= MAX_HOSTNAME_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_fullhostname (const char *fullhostname)
+{
+    // TODO: Do we need to add more complex restrictions?
+    auto length = strlen(fullhostname);
+    if ( ( length > 0 ) && ( length <= MAX_FULLHOSTNAME_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_ip (const char *ip)
+{
+    // TODO: Do we need to add more complex restrictions?
+    auto length = strlen(ip);
+    if ( ( length > 0 ) && ( length <= MAX_IP_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_mac (const char *mac)
+{
+    // TODO: Do we need to add more complex restrictions?
+    auto length = strlen(mac);
+    if ( ( length > 0 ) && ( length <= MAX_MAC_LENGTH ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_link_type (a_lnk_tp_id_t link_type_id)
+{
+    // TODO: manage link types
+    if ( link_type_id > 0 )
+        return true;
+    else
+        return false;
+}
