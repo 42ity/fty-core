@@ -81,7 +81,7 @@ power_sources_t
     auto devices    = power_topology.first;
     auto powerlinks = power_topology.second;
     
-    log_debug ("number of devices is %ld ", devices.size());
+    log_debug ("number of devices in first level down is %ld ", devices.size());
     log_debug ("number of powerlinks is %ld ", powerlinks.size());
 
     // start_device can be
@@ -196,7 +196,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         // Could return more than one row
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
-
+        log_debug("selected %d different devices", result.size());
 
         for ( auto &row: result )
         {
@@ -574,6 +574,9 @@ static rack_power_t
             row[2].get(scale);
 
             s_add_scale(ret, value, scale);
+            log_debug (" device %d", dev_id);
+            log_debug ("    value %ld", value);
+            log_debug ("    scale %d", scale);
         }
     }
     catch (const std::exception &e) {
