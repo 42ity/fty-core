@@ -554,6 +554,8 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "0",       @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
 
 /* UPS2-LAB */
@@ -566,6 +568,8 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "2",       @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
 
 /* ePDU1-LAB */
