@@ -56,7 +56,7 @@ echo "====================== configure ============================"
 echo "========================= make =============================="
 make 2>&1 | tee make.log
 echo "======================= cppcheck ============================"
-CPPCHECK=$(which cppcheck)
+CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
               --suppress=*:src/include/*_msg.c \
