@@ -491,7 +491,7 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower
     m_msrmnt_sbtp_id_t  subtype_id = 1; // default
-    m_msrmnt_sbtp_id_t  subtype_id_PSU1 = 5; // PSU1
+    m_msrmnt_sbtp_id_t  subtype_id_PSU1 = 8; // PSU1
     m_msrmnt_sbtp_id_t  subtype_id_PSU2 = 9; // PSU2
 
     // sets of expected returned IT-device ids
