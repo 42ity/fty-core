@@ -484,14 +484,14 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
+    //log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #8 ==================");
     
     m_clnt_id_t         client_id  = 2; // mymodule
     m_msrmnt_tp_id_t    type_id    = 3; // realpower
     m_msrmnt_sbtp_id_t  subtype_id = 1; // default
-    m_msrmnt_sbtp_id_t  subtype_id_PSU1 = 5; // PSU1
+    m_msrmnt_sbtp_id_t  subtype_id_PSU1 = 8; // PSU1
     m_msrmnt_sbtp_id_t  subtype_id_PSU2 = 9; // PSU2
 
     // sets of expected returned IT-device ids
@@ -533,7 +533,7 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
         {
             m_msrmnt_value_t val_psu1 = 10;
             m_msrmnt_value_t val_psu2 = val_total - val_psu1;
-            REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU2, 300, val_psu1) );
+            REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU1, 300, val_psu1) );
             REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, yy, type_id, subtype_id_PSU2, 300, val_psu2) );
         }
         expected_value += val_total;
