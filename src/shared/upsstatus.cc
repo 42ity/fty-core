@@ -22,6 +22,8 @@ status_lkp_t status_info[] = {
     { "OFF", STATUS_OFF },
     { "CHRG", STATUS_CHRG },
     { "DISCHRG", STATUS_DISCHRG },
+    { "HB", STATUS_HB },
+    { "FSD", STATUS_FSD },    
     { "NULL", 0 },
 };
 /* previous definition is taken as it is from network ups tool project (dummy-ups.h)*/

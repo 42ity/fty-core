@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: powerdev_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -230,6 +230,41 @@ powerdev_msg_destroy (powerdev_msg_t **self_p)
     }
 }
 
+//  Parse a zmsg_t and decides whether it is powerdev_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+is_powerdev_msg (zmsg_t *msg)
+{
+    if (msg == NULL)
+        return false;
+
+    zframe_t *frame = zmsg_first (msg);
+
+    //  Get and check protocol signature
+    powerdev_msg_t *self = powerdev_msg_new (0);
+    self->needle = zframe_data (frame);
+    self->ceiling = self->needle + zframe_size (frame);
+    uint16_t signature;
+    GET_NUMBER2 (signature);
+    if (signature != (0xAAA0 | 2))
+        goto fail;             //  Invalid signature
+
+    //  Get message id and parse per message type
+    GET_NUMBER1 (self->id);
+
+    switch (self->id) {
+        case POWERDEV_MSG_POWERDEV_STATUS:
+            powerdev_msg_destroy (&self);
+            return true;
+        default:
+            goto fail;
+    }
+    fail:
+    malformed:
+        powerdev_msg_destroy (&self);
+        return false;
+}
 
 //  --------------------------------------------------------------------------
 //  Parse a powerdev_msg from zmsg_t. Returns a new object, or NULL if
@@ -440,6 +475,7 @@ powerdev_msg_recv (void *input)
     if (!msg)
         return NULL;            //  Interrupted
     zmsg_print (msg);
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -545,12 +581,12 @@ powerdev_msg_encode_powerdev_status (
     zhash_t *otherproperties)
 {
     powerdev_msg_t *self = powerdev_msg_new (POWERDEV_MSG_POWERDEV_STATUS);
-    powerdev_msg_set_deviceid (self, deviceid);
-    powerdev_msg_set_model (self, model);
-    powerdev_msg_set_manufacturer (self, manufacturer);
-    powerdev_msg_set_serial (self, serial);
-    powerdev_msg_set_type (self, type);
-    powerdev_msg_set_status (self, status);
+    powerdev_msg_set_deviceid (self, "%s", deviceid);
+    powerdev_msg_set_model (self, "%s", model);
+    powerdev_msg_set_manufacturer (self, "%s", manufacturer);
+    powerdev_msg_set_serial (self, "%s", serial);
+    powerdev_msg_set_type (self, "%s", type);
+    powerdev_msg_set_status (self, "%s", status);
     zhash_t *otherproperties_copy = zhash_dup (otherproperties);
     powerdev_msg_set_otherproperties (self, &otherproperties_copy);
     return powerdev_msg_encode (&self);

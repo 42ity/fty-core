@@ -8,7 +8,7 @@
 #include "log.h"
 
 #include "assettopology.h"
-#include "assetcrud.h"
+#include "dbhelpers.h"
 #include "monitor.h"
 #include "dbtypes.h"
 #include "calc_power.h"
@@ -484,7 +484,7 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
-    //log_set_level(LOG_DEBUG);
+    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #8 ==================");
     
@@ -641,7 +641,7 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
     log_close();
 }
 
-TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql][trp]")
+TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
     //log_set_level(LOG_DEBUG);

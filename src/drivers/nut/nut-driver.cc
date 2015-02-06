@@ -11,6 +11,10 @@ namespace drivers
 namespace nut
 {
 
+/*
+ * See the meaning of variables at NUT project
+ * http://www.networkupstools.org/docs/user-manual.chunked/apcs01.html
+ */
 static const std::vector<std::string> physicsNUT {
     "ups.temperature",
     "ups.load",
@@ -215,6 +219,8 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
         }
     }
     // inventory now looks like "value1, value2, value3"
+    // NUT bug type pdu => epdu
+    if( varName == "type" && inventory == "pdu" ) { inventory = "epdu"; }
     if( _inventory.count( varName ) == 0 ) {
         // this is new value
         struct NUTInventoryValue ivalue;

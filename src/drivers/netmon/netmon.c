@@ -48,6 +48,7 @@ TODO: Resolve ctrl-c unresponsiveness
 #include <linux/netdevice.h>
 
 #include <czmq.h>
+#include <malamute.h>
 
 #include "log.h"
 #include "defs.h"
@@ -88,10 +89,6 @@ static int filter_family = 0;
 static int filter_scope = 253;
 static int filter_scopemask = -1;
 static int preferred_family = 0;
-
-// wheter to use zmq or print to stdout
-// FIXME: JIM: 20150109: Variable commented away as unused
-//static bool use_zmq = false;
 
 // include/utils.h
 struct dn_naddr
@@ -223,7 +220,7 @@ const char *qd_mac(const char* ethname) {
 
 static int
 print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
-		struct nlmsghdr *n,
+                struct nlmsghdr *n,
                 void *requester) {
     struct ifaddrmsg *ifa = NLMSG_DATA(n);
     //struct ifinfomsg *ifi = NLMSG_DATA(n);
@@ -297,9 +294,7 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
 			  abuf, sizeof(abuf));
     }
     */
-    
-    // two sends; one for DB_SOCK, one for FILIP_SOCK (because DEALER)
-    netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
+
     netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
     return 0;
 }
@@ -394,7 +389,6 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *
 			return -1;
 
 		if ((int)ifa->ifa_index != ifindex) {
-		    //(filter.family && filter.family != ifa->ifa_family))
 			continue;
         }
 
@@ -501,7 +495,7 @@ static int accept_msg(const struct sockaddr_nl *who,
 int main(int argc, char **argv) {
 
     if (isatty(STDERR_FILENO)) {
-        fprintf(stderr, "%s", "WARNING: netmon does communicate through zeromq bus, so it does not print\n");
+        fprintf(stderr, "%s", "WARNING: netmon does communicate through malamute server, so it does not print\n");
         fprintf(stderr, "%s", "         anything to stdout. Please start simple, which will autospawn netmon\n");
         fprintf(stderr, "%s", "         internally.\n");
         fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
@@ -510,12 +504,13 @@ int main(int argc, char **argv) {
 
     unsigned groups = ~RTMGRP_TC;
 
-    zsock_t * dbsock = zsock_new (ZMQ_DEALER);
-    assert (dbsock);
-    int rv = zsock_connect (dbsock, DB_SOCK);
-    assert (rv != -1);
-    rv = zsock_connect (dbsock, FILIP_SOCK);
-    assert (rv != -1);
+    mlm_client_t *broadcast = mlm_client_new (MLM_ENDPOINT, 1000, "NETMON");
+    // Note: it might make sense to timeout retry a few times
+    if (!broadcast) {
+        fprintf (stderr, "malamute server not reachable at %s\n", MLM_ENDPOINT);
+        exit (3);
+    }
+    mlm_client_set_producer (broadcast, "networks");
 
     rtnl_close(&rth);
     argc--;	argv++;
@@ -526,12 +521,12 @@ int main(int argc, char **argv) {
     if (rtnl_open(&rth, groups) < 0)
 		exit(1);
 
-    ipaddr_list(dbsock);
-	if (rtnl_listen(&rth, accept_msg, dbsock) < 0)
+    ipaddr_list (broadcast);
+	if (rtnl_listen(&rth, accept_msg, broadcast) < 0)
 		exit(2);
 
-    zsock_destroy(&dbsock);
-    assert (dbsock == NULL);
+    mlm_client_destroy (&broadcast);
+    assert (broadcast == NULL);
 
     return 0;
 }
