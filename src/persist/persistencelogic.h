@@ -13,6 +13,16 @@
 
 namespace persist {
 
+
+/**
+ * \brief Processes message of type asset_msg_t
+ *
+ * Broken down processing of generic database zmsg_t, this time asset message
+ * case.
+ */
+zmsg_t *asset_msg_process(zmsg_t **msg);
+
+
 /**
  * \brief Basic message processing function
  *
