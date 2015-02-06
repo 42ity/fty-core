@@ -1156,6 +1156,10 @@ distclean-local: distclean-local-dirs distclean-local-deps
 	    echo "INFO: Removing the configure script as part of distclean"; \
 	    /bin/rm -f $(abs_top_builddir)/configure; \
 	fi >&2 || true
+	@if [ x"$(abs_top_builddir)/.git_details" != x"$(abs_top_srcdir)/.git_details" ]; \
+	    /bin/rm -f $(abs_top_builddir)/.git_details; \
+	fi || true
+
 
 #----------------------------------------------------------------------
 #                        astyle formating
@@ -1202,14 +1206,17 @@ CLEANFILES +=		src/include/git_details_override.c
 
 $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
-	@rm -f "$@.tmp"
+	@/bin/rm -f "$@.tmp"
 	@( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
 	 { [ -s "$@.tmp" ] && { diff "$@.tmp" "$@" >/dev/null 2>/dev/null && \
 	    echo "INFO: No changes in contents of '$@'" || \
-	    mv -f "$@.tmp" "$@"; } } || true
-	@rm -f "$@.tmp"
-	@[ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@" || \
-	  true
+	    mv -f "$@.tmp" "$@"; } } || { \
+	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@" || \
+	    { [ -s "$(abs_top_srcdir)/.git_details" -a \
+	        x"$(abs_top_builddir)/.git_details" != x"$@" ] && \
+              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; } }
+	@/bin/rm -f "$@.tmp"
+	@[ -s "$@" ]
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
 
@@ -1218,4 +1225,5 @@ $(abs_top_builddir)/src/include/git_details_override.c: .git_details
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
 	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@" || \
-	rm -f "$@"
+	/bin/rm -f "$@"
+
