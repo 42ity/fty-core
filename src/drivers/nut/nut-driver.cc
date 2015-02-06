@@ -280,6 +280,8 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
         }
     }
     // inventory now looks like "value1, value2, value3"
+    // NUT bug type pdu => epdu
+    if( varName == "type" && inventory == "pdu" ) { inventory = "epdu"; }
     if( _inventory.count( varName ) == 0 ) {
         // this is new value
         struct NUTInventoryValue ivalue;
