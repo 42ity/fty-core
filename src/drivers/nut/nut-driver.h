@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_DRIVERS_NUT_NUT_DRIVER_H_
 #define SRC_DRIVERS_NUT_NUT_DRIVER_H_
 
+#define NUT_USE_DEFAULT_THRESHOLD -1
+
 #include <map>
 #include <vector>
 #include <nutclient.h>
@@ -106,6 +108,22 @@ class NUTDevice {
     void setChanged(const std::string& name,const bool status);
 
     /**
+     * \brief Method returns the threshold for significant change.
+     *
+     * Method gets advertising threshold for particular
+     * property accoring parameter.
+     */
+    int getThreshold(const std::string& varName);
+
+    /**
+     * \brief Method sets the default threshold.
+     *
+     * Method sets default advertising threshold for this
+     * device accoring parameter.
+     */
+    void setDefaultThreshold(int threshold);
+
+    /**
      * \brief Produces a std::string with device status in JSON format.
      * \return std::string
      * \see changed()
@@ -174,10 +192,10 @@ class NUTDevice {
     /**
      * \brief Updates physical or measurement value (like current or load) from float.
      *
-     * Updates the value if new value is significantly differen (>5%). Flag _change is
+     * Updates the value if new value is significantly differen (> threshold%). Flag _change is
      * set if new value is saved.
      */
-    void updatePhysics(const std::string& varName, const float newValue);
+    void updatePhysics(const std::string& varName, const float newValue, int threshold = NUT_USE_DEFAULT_THRESHOLD);
 
     /**
      * \brief Updates physical or measurement value from vector.
@@ -185,7 +203,7 @@ class NUTDevice {
      * Updates the value with first value from vector (NUT returns vectors of
      * values).
      */
-    void updatePhysics(const std::string& varName, std::vector<std::string>& values);
+    void updatePhysics(const std::string& varName, std::vector<std::string>& values, int threshold = NUT_USE_DEFAULT_THRESHOLD);
 
     /**
      * \brief Updates inventory value.
@@ -199,7 +217,7 @@ class NUTDevice {
     /**
      * \brief Updates all values from NUT.
      */
-    void update(std::map<std::string,std::vector<std::string>> vars );
+    void update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate = false );
 
     /**
      * \brief map of physical values.
@@ -211,6 +229,8 @@ class NUTDevice {
     std::map<std::string, NUTInventoryValue> _inventory;
     //! \brief device name
     std::string _name;
+    //! \brief default threshold for physical value significant change
+    int _threshold = 5;
     //! \brief Transformation of our integer (x100) back
     std::string itof(const long int) const;
 };
@@ -229,7 +249,7 @@ class NUTDeviceList {
      * devices. Newly discovered davices are added to list, removed devices
      * are also removed from list.
      */
-    void update();
+    void update( bool forceUpdate = false );
 
     /**
      * \brief Returns true if there is at least one device claiming change.
@@ -254,7 +274,7 @@ class NUTDeviceList {
     nutclient::TcpClient nutClient;
 
     //! \brief list of NUT devices
-    std::map<std::string, NUTDevice> _devices;  
+    std::map<std::string, NUTDevice> _devices;
 
     //! \brief connect to NUT daemon
     bool connect();
@@ -266,7 +286,7 @@ class NUTDeviceList {
     void updateDeviceList();
 
     //! \brief update status of NUT devices
-    void updateDeviceStatus();
+    void updateDeviceStatus( bool forceUpdate = false );
 };
 
 } // namespace drivers::nut

@@ -1,4 +1,5 @@
 #include "nut-driver.h"
+// #include "log.h"
 
 #include <nutclient.h>
 #include <iostream>
@@ -15,10 +16,35 @@ namespace nut
  * See the meaning of variables at NUT project
  * http://www.networkupstools.org/docs/user-manual.chunked/apcs01.html
  */
+
+/* TODO: mapping should be in configuration */
 static const std::vector<std::string> physicsNUT {
     "ups.temperature",
     "ups.load",
     "ups.realpower",
+
+    "input.frequency",
+    "input.load",
+    "input.L1.load",
+    "input.L2.load",
+    "input.L3.load",
+    "input.voltage",
+    "input.L1.voltage",
+    "input.L2.voltage",
+    "input.L3.voltage",
+    "input.current",
+    "input.L1.current",
+    "input.L2.current",
+    "input.L3.current",
+    "input.realpower",
+    "input.L1.realpower",
+    "input.L2.realpower",
+    "input.L3.realpower",
+    "input.power",
+    "input.L1.power",
+    "input.L2.power",
+    "input.L3.power",
+
     "output.voltage",
     "output.current",
     "output.L1-N.voltage",
@@ -41,6 +67,29 @@ static const std::vector<std::string> physicsBIOS {
     "temperature.default",
     "load.default",
     "realpower.default",
+
+    "frequency.input",
+    "load.input",
+    "load.input.L1",
+    "load.input.L2",
+    "load.input.L3",
+    "voltage.input",
+    "voltage.input.L1-N",
+    "voltage.input.L2-N",
+    "voltage.input.L3-N",
+    "current.input",
+    "current.input.L1",
+    "current.input.L2",
+    "current.input.L3",
+    "realpower.default",
+    "realpower.input.L1",
+    "realpower.input.L2",
+    "realpower.input.L3",
+    "power.default",
+    "power.input.L1",
+    "power.input.L2",
+    "power.input.L3",
+
     "voltage.output",
     "current.output",
     "voltage.output.L1-N",
@@ -171,9 +220,20 @@ void NUTDevice::setChanged(const std::string& name,const bool status){
     setChanged(name.c_str(),status);
 }
 
+int NUTDevice::getThreshold(const std::string& varName) {
+    // TODO: read different threshold for differen variables from config
+    // for now it is 5
+    if(varName.empty()) {} // silence the warning
+    return _threshold;
+}
 
-void NUTDevice::updatePhysics(const std::string& varName, const float newValue) {
+void NUTDevice::setDefaultThreshold(int threshold) {
+    _threshold = threshold;
+}
+
+void NUTDevice::updatePhysics(const std::string& varName, const float newValue, int threshold) {
     long int newValueInt = round(newValue * 100);
+    if( threshold == NUT_USE_DEFAULT_THRESHOLD ) threshold = this->getThreshold(varName);
     if( _physics.count( varName ) == 0 ) {
         // this is new value
         struct NUTPhysicalValue pvalue;
@@ -184,7 +244,8 @@ void NUTDevice::updatePhysics(const std::string& varName, const float newValue) 
         long int oldValue = _physics[ varName ].value;
         if( oldValue == newValueInt ) return ;
         try {
-            if( (oldValue == 0.0 ) || ( abs( (oldValue - newValueInt ) * 100 / oldValue ) > 5 ) ) {
+            // log_debug("old %li, new %li, change %li >= threshold %i ?\n",oldValue,newValueInt, abs( (oldValue - newValueInt ) * 100 / oldValue ), threshold );
+            if( (oldValue == 0.0 ) || ( abs( (oldValue - newValueInt ) * 100 / oldValue ) >= threshold ) ) {
                 // significant change
                 _physics[ varName ].value = newValueInt;
                 _physics[ varName ].changed = true;
@@ -199,13 +260,13 @@ void NUTDevice::updatePhysics(const std::string& varName, const float newValue) 
     }
 }
 
-void NUTDevice::updatePhysics(const std::string& varName, std::vector<std::string>& values) {
+void NUTDevice::updatePhysics(const std::string& varName, std::vector<std::string>& values, int threshold ) {
     if( values.size() == 1 ) {
         // don't know how to handle multiple values
         // multiple values would be probably nonsence
         try {
             float value = std::stof(values[0]);
-            updatePhysics(varName,value);
+            updatePhysics(varName,value,threshold);
         } catch (...) {}
     }
 }
@@ -233,12 +294,14 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
     }
 }
 
-void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
+void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate ) {
+    // log_debug("force update: %i\n",forceUpdate);
+    assert( physicsNUT.size() == physicsBIOS.size() );
     for(size_t i = 0; i < physicsNUT.size(); ++i) {
         if( vars.count(physicsNUT[i]) ) {
             // variable found in received data
             std::vector<std::string> values = vars[physicsNUT[i]];
-            updatePhysics( physicsBIOS[i], values );
+            updatePhysics( physicsBIOS[i], values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD) );
         } else {
             // iterating numbered items in physics
             // like outlet.1.voltage, outlet.2.voltage, ...
@@ -258,7 +321,7 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars ) {
                     if( vars.count(nutname) == 0 ) break; // variable out of scope
                     // variable found
                     std::vector<std::string> values = vars[nutname];
-                    updatePhysics(biosname,values);
+                    updatePhysics(biosname, values, (forceUpdate ? 0 : NUT_USE_DEFAULT_THRESHOLD) );
                     ++i;
                 }
             }
@@ -411,11 +474,11 @@ void NUTDeviceList::updateDeviceList() {
     } catch (...) {}
 }
 
-void NUTDeviceList::updateDeviceStatus() {
+void NUTDeviceList::updateDeviceStatus( bool forceUpdate ) {
     try {
         for(auto &device : _devices ) {
             nutclient::Device nutDevice = nutClient.getDevice(device.first);
-            device.second.update( nutDevice.getVariableValues());
+            device.second.update( nutDevice.getVariableValues(), forceUpdate );
         }
     } catch (...) {}
 }
@@ -433,10 +496,10 @@ void NUTDeviceList::disconnect() {
     } catch (...) {}
 }
 
-void NUTDeviceList::update() {
+void NUTDeviceList::update( bool forceUpdate ) {
     if( connect() ) {
         updateDeviceList();
-        updateDeviceStatus();
+        updateDeviceStatus(forceUpdate);
         disconnect();
     }
 }
