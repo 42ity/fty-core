@@ -25,6 +25,8 @@ static int output2(const shared::Argv& args, std::string& o, std::string& e) {
     return ret;
 }
 
+#include "git_details_override.h"
+
 </%pre>
 <%request scope="global">
 int8_t access_auth_level;
