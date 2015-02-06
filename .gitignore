@@ -16,6 +16,7 @@ conftest.*
 configure
 !configure.ac
 .deps
+.git_details
 .libs/
 nbproject
 libtool
