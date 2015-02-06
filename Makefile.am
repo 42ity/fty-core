@@ -458,7 +458,7 @@ test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/drivers/nmap/ \
 			-DTDIR=$(abs_top_srcdir)/tests/drivers/nmap/
-EXTRA_DIST += $(abs_top_srcdir)/tests/drivers/nmap/mbt-lab.xml
+EXTRA_DIST +=		tests/drivers/nmap/mbt-lab.xml
 
 ###
 
@@ -516,7 +516,7 @@ db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 simple_SOURCES = \
 			src/simple/main.cc \
 			src/include/defs.h \
-			$(abs_top_srcdir)/tools/dbinit.h \
+			tools/dbinit.h \
 			src/persist/persistence.h \
 			src/shared/upsstatus.cc \
 			src/drivers/nut/nut-actor.cc \
@@ -571,7 +571,7 @@ driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/simple
 
 # Generated header needed for any programs that use the database
-BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.h
+BUILT_SOURCES +=	tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
 
@@ -625,15 +625,17 @@ dist_noinst_HEADERS += \
 			src/persist/assetcrud.h \
 			tools/dbpath.h
 
+EXTRA_DIST +=		src/web/tntnet.xml
+
 ### This file contains the TNTNET settings relevant for our test runs
 ### Note: in non-daemon mode, stderr is logged to stderr
-tntnet.xml: $(abs_top_srcdir)/src/web/tntnet.xml
+tntnet.xml: src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
 ### This file contains the TNTNET settings distributed as an example for users
 ### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
-tntnet.xml.example: $(abs_top_srcdir)/src/web/tntnet.xml
+tntnet.xml.example: src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
 	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
@@ -657,26 +659,29 @@ web-test: web-test-deps
 #                        Extra files and sources
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(abs_top_srcdir)/tools/gen-json-validator \
-			$(abs_top_srcdir)/tools/dbpath.h.in \
-			$(abs_top_builddir)/tools/dbpath.h \
-			$(abs_top_srcdir)/src/*_msg.xml \
-			$(abs_top_srcdir)/src/simple/*.h \
-			$(abs_top_srcdir)/src/include/*.h \
-			$(abs_top_srcdir)/src/drivers/netmon/*.h \
-			$(abs_top_srcdir)/src/drivers/netmon/*/*.h \
-			$(abs_top_srcdir)/src/drivers/netmon/*/*/*.h \
-			$(abs_top_srcdir)/src/drivers/*/*.h \
-			$(abs_top_srcdir)/src/cli/*.h \
-			$(abs_top_srcdir)/src/shared/*.h \
-			$(abs_top_srcdir)/src/web/include/*.h
+EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
+			$(top_srcdir)/src/*_msg.xml \
+			$(top_srcdir)/src/simple/*.h \
+			$(top_srcdir)/src/include/*.h \
+			$(top_srcdir)/src/drivers/netmon/*.h \
+			$(top_srcdir)/src/drivers/netmon/*/*.h \
+			$(top_srcdir)/src/drivers/netmon/*/*/*.h \
+			$(top_srcdir)/src/drivers/*/*.h \
+			$(top_srcdir)/src/cli/*.h \
+			$(top_srcdir)/src/shared/*.h \
+			$(top_srcdir)/src/web/include/*.h
 
 # add CI tests to dist
-EXTRA_DIST +=		$(abs_top_srcdir)/tests/CI
+EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
-DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.h
+# This is complicated... who knows why...
+EXTRA_DIST += \
+			$(top_srcdir)/tools/dbpath.h.in \
+			$(top_srcdir)/tools/dbinit.h
 
-BUILT_SOURCES +=	$(abs_top_srcdir)/tools/dbinit.h
+DISTCLEANFILES +=	tools/dbpath.h
+
+#BUILT_SOURCES +=	$(abs_top_srcdir)/tools/dbinit.h
 
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
@@ -1044,15 +1049,17 @@ clean-html:
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
-EXTRA_DIST +=		$(abs_top_srcdir)/${myDOXDIR}/html
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
+BUILT_SOURCES +=	$(top_srcdir)/${myDOXDIR}/html
 endif
-EXTRA_DIST +=		$(abs_top_srcdir)/${myDOXDIR}/Doxyfile.in
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
-CLEANFILES +=		$(abs_top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
-			$(abs_top_srcdir)/${myDOXDIR}/${mydoxylog} \
+CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
+			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
 			${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/${mydoxylog}
 
+$(top_srcdir)/${myDOXDIR}/html: $(abs_top_srcdir)/${myDOXDIR}/html
 doxygen-docs: $(abs_top_srcdir)/${myDOXDIR}/html
 
 # alias for manual typing errors
@@ -1067,26 +1074,20 @@ develdocdoxygendir =	$(develdocdir)/doxygen
 develdocdoxygen: doxygen-docs
 
 if HAVE_DOXYGEN
-develdocdoxygen_DATA =	$(abs_top_srcdir)/${myDOXDIR}/html/*
+develdocdoxygen_DATA =	${myDOXDIR}/html/*
 
 # Such-named target is required by the _DATA above, so have a rule to build it
-$(abs_top_srcdir)/${myDOXDIR}/html/*: doxygen-docs
+${myDOXDIR}/html/*: doxygen-docs
 
-$(abs_top_srcdir)/${myDOXDIR}/html:
-	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
-		test -d ${myDOXDIR}/html || \
-		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
-	else \
-		if [ -f $(abs_top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
-			test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
-			$(DOXYGEN) $(abs_top_srcdir)/${myDOXDIR}/Doxyfile; \
-		else \
-			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(abs_top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
-			/bin/false; \
-		fi; \
-	fi
+$(abs_top_srcdir)/${myDOXDIR}/html: $(abs_top_builddir)/${myDOXDIR}/Doxyfile
+	test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
+	{ cd $(abs_top_srcdir)/ && \
+	  echo "INFO: Generating Doxygen docs in '`pwd`' according to '$<'" >&2 && \
+	  $(DOXYGEN) "$<"; }
 else
 develdocdoxygen_DATA =
+
+${myDOXDIR}/html/*: $(abs_top_srcdir)/${myDOXDIR}/html
 
 $(abs_top_srcdir)/${myDOXDIR}/html:
 	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
@@ -1096,7 +1097,7 @@ endif
 #                 manpage generation (delegated to sub-make)
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(abs_top_srcdir)/${myMANDIR}/*.txt
+EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
 CLEANFILES +=		$(abs_top_builddir)/${myMANDIR}/*.?
 
 man-docs:
@@ -1115,7 +1116,7 @@ clean-man:
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: all-docs
+all-local: $(abs_top_builddir)/.git_details all-docs
 
 
 #----------------------------------------------------------------------
@@ -1153,8 +1154,8 @@ distclean-local: distclean-local-dirs distclean-local-deps
 #                        astyle formating
 #----------------------------------------------------------------------
 if HAVE_ASTYLE
-EXTRA_DIST +=		$(abs_top_srcdir)/tools/astyle.conf \
-			$(abs_top_srcdir)/tools/astyle-bios
+EXTRA_DIST +=		$(top_srcdir)/tools/astyle.conf \
+			$(top_srcdir)/tools/astyle-bios
 checkstyle:
 	$(abs_top_srcdir)/tools/astyle-bios \
 	    -c $(abs_top_srcdir)/tools/astyle.conf $(abs_top_srcdir)/src
@@ -1176,17 +1177,26 @@ test-restapi: all
 #                        SCM details
 #----------------------------------------------------------------------
 
-EXTRA_DIST += .git_details
+EXTRA_DIST +=		.git_details \
+			tools/git_details.sh \
+			tools/JSON.sh
 
-# This file can be generated by OBS script which does the checkout of sources
-# to be packaged, or by the top-level make in a "make dist" running in a Git
-# workspace. Namely, this might not be regeneratable in each case, i.e. when
-# just a tarball with no SCM data is used for the build - the tarball should
-# then contain a current copy of this file.
+# The .git_details can be generated by OBS script which does the checkout of
+# sources to be packaged, or by the top-level make in a "make dist" running
+# in a Git workspace. Namely, this might not be regeneratable in each case,
+# i.e. when just a tarball with no SCM data is used for the build - then the
+# tarball should contain a current (latest generated) copy of this file.
+
+.PHONY_GIT:
 
 .git_details: $(abs_top_builddir)/.git_details
 
-$(abs_top_builddir)/.git_details:
+$(abs_top_builddir)/.git_details: .PHONY_GIT
 	rm -f "$@.tmp"
 	( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
-		[ -s "$@.tmp" ] && mv -f "$@.tmp" "$@" || true
+	{ [ -s "$@.tmp" ] && { diff "$@.tmp" "$@" >/dev/null 2>/dev/null && \
+	    echo "INFO: No changes in contents of '$@'" || \
+	    mv -f "$@.tmp" "$@"; } } || true
+	rm -f "$@.tmp"
+	[ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@" || \
+	  true

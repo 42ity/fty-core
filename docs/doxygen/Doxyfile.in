@@ -1,13 +1,15 @@
 # Doxyfile 1.8.5
 
-# top_srcdir	= '@top_srcdir@'
-# top_builddir	= '@top_builddir@'
-# srcdir	= '@srcdir@'
-# subdir	= '@subdir@'
-# reldir	= '@reldir@'
-# mysrcDIR	= '@mysrcDIR@'
-# myDOXDIR	= '@myDOXDIR@'
-# mydoxylog	= '@mydoxylog@'
+# top_srcdir		= '@top_srcdir@'
+# top_builddir		= '@top_builddir@'
+# abs_top_srcdir	= '@abs_top_srcdir@'
+# abs_top_builddir	= '@abs_top_builddir@'
+# srcdir		= '@srcdir@'
+# subdir		= '@subdir@'
+# reldir		= '@reldir@'
+# mysrcDIR		= '@mysrcDIR@'
+# myDOXDIR		= '@myDOXDIR@'
+# mydoxylog		= '@mydoxylog@'
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
@@ -752,7 +754,8 @@ WARN_LOGFILE		= @myDOXDIR@/@mydoxylog@
 # In case of a subdirectory-based build, path to the original source is wild.
 # And it should be relative to the working-dir of the current (make) process.
 # The following works for both subdir and dist relocated, and normal, builds:
-INPUT			= ./@myDOXDIR@/@top_srcdir@/@mysrcDIR@
+#INPUT			= ./@myDOXDIR@/@top_srcdir@/@mysrcDIR@
+INPUT			= ./@mysrcDIR@
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
