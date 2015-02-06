@@ -1156,7 +1156,7 @@ distclean-local: distclean-local-dirs distclean-local-deps
 	    echo "INFO: Removing the configure script as part of distclean"; \
 	    /bin/rm -f $(abs_top_builddir)/configure; \
 	fi >&2 || true
-	@if [ x"$(abs_top_builddir)/.git_details" != x"$(abs_top_srcdir)/.git_details" ]; \
+	@if [ x"$(abs_top_builddir)/.git_details" != x"$(abs_top_srcdir)/.git_details" ]; then \
 	    /bin/rm -f $(abs_top_builddir)/.git_details; \
 	fi || true
 
