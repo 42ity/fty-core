@@ -17,6 +17,7 @@ configure
 !configure.ac
 .deps
 .git_details
+src/include/git_details_override.c
 .libs/
 nbproject
 libtool
