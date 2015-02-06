@@ -84,9 +84,9 @@ DISTCLEANDIRS += \
 		tests/CI/web/log
 
 AM_CPPFLAGS = \
-		-include $(top_builddir)/config.h \
-		-I$(top_srcdir)/src/shared \
-		-I$(top_srcdir)/src/include \
+		-include $(abs_top_builddir)/config.h \
+		-I$(abs_top_srcdir)/src/shared \
+		-I$(abs_top_srcdir)/src/include \
 		-DDEBUG \
 		-DDEVEL
 
@@ -176,12 +176,12 @@ libpriv_db_la_SOURCES = \
 
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/shared \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/src/include \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
@@ -212,7 +212,7 @@ check_SCRIPTS +=	tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
 EXTRA_DIST +=		tools/run-test.sh
-LOG_COMPILER =		$(top_srcdir)/tools/run-test.sh
+LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 
 
 #Test case examples:
@@ -238,7 +238,7 @@ libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
 					tests/test-run.cc
 
 libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+					-I$(abs_top_srcdir)/tests/include/
 
 #----------------------------------------------------------------------
 #                        TNTnet
@@ -274,7 +274,7 @@ test_utils_LDADD = 	libpriv-utils.la \
 			libpriv-test-run.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/tests/include/
 
 check_PROGRAMS += 	test-log
 
@@ -286,7 +286,7 @@ test_log_LDADD = 	libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-test-run.la
 test_log_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
@@ -294,7 +294,7 @@ test_subprocess_SOURCES = 		src/shared/subprocess.h \
 test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+					-I$(abs_top_srcdir)/tests/include/
 test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr
 
 check_PROGRAMS += 	test-cidr
@@ -302,7 +302,7 @@ test_cidr_SOURCES = 	src/shared/cidr.cc \
 			tests/shared/test-cidr.cc
 test_cidr_LDADD = 	libpriv-test-run.la
 test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/tests/include/
 test_cidr_LDFLAGS =	-lcidr
 
 
@@ -317,10 +317,10 @@ test_db_LDADD = \
 
 test_db_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
@@ -340,11 +340,11 @@ test_db2_LDADD = \
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
@@ -369,11 +369,11 @@ test_dbtopology_LDADD = \
 
 test_dbtopology_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
@@ -394,11 +394,11 @@ test_totalpower_LDADD = \
 
 test_totalpower_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 test_totalpower_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
@@ -417,11 +417,11 @@ test_database_LDADD = 	libpriv-db.la \
 			libpriv-log.la
 
 test_database_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/include \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/include \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
@@ -435,10 +435,10 @@ test_web_LDADD = 	libpriv-test-run.la \
 			libpriv-log.la
 
 test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/web/include \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/src/include
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/web/include \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/src/include
 
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
@@ -455,10 +455,10 @@ test_nmap_parse_LDADD = \
 			libpriv-test-run.la
 test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
 test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tests/include/ \
-			-I$(top_srcdir)/src/drivers/nmap/ \
-			-DTDIR=$(top_srcdir)/tests/drivers/nmap/
-EXTRA_DIST += $(top_srcdir)/tests/drivers/nmap/mbt-lab.xml
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/drivers/nmap/ \
+			-DTDIR=$(abs_top_srcdir)/tests/drivers/nmap/
+EXTRA_DIST += $(abs_top_srcdir)/tests/drivers/nmap/mbt-lab.xml
 
 ###
 
@@ -477,8 +477,8 @@ netmon_SOURCES = \
 			src/drivers/netmon/msg_send.h
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/drivers/netmon \
-			-I$(top_srcdir)/src/simple
+			-I$(abs_top_srcdir)/src/drivers/netmon \
+			-I$(abs_top_srcdir)/src/simple
 
 netmon_LDADD = \
 			libpriv-defs.la \
@@ -497,7 +497,7 @@ server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
 server_agent_LDADD =	libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
+			-I$(abs_top_srcdir)/src/include
 
 db_ng_SOURCES =		src/persist/db-ng.cpp
 
@@ -511,12 +511,12 @@ db_ng_LDADD = \
                         libpriv-proto.la
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/include
+			-I$(abs_top_srcdir)/src/include
 
 simple_SOURCES = \
 			src/simple/main.cc \
 			src/include/defs.h \
-			$(top_srcdir)/tools/dbinit.h \
+			$(abs_top_srcdir)/tools/dbinit.h \
 			src/persist/persistence.h \
 			src/shared/upsstatus.cc \
 			src/drivers/nut/nut-actor.cc \
@@ -529,11 +529,11 @@ simple_LDFLAGS = \
 			-lcidr -ltntdb
 
 simple_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/tools/ \
-			-I$(top_builddir)/tools/ \
-			-I$(top_srcdir)/src/persist \
-			-I$(top_srcdir)/src/simple/ \
-			-I$(top_srcdir)/src/drivers/nut
+			-I$(abs_top_srcdir)/tools/ \
+			-I$(abs_top_builddir)/tools/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple/ \
+			-I$(abs_top_srcdir)/src/drivers/nut
 
 simple_LDADD = \
 			libpriv-defs.la \
@@ -568,10 +568,10 @@ driver_nmap_LDADD = \
 driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 
 driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(top_srcdir)/src/simple
+			-I$(abs_top_srcdir)/src/simple
 
 # Generated header needed for any programs that use the database
-BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
+BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.h
 
 pkglib_LTLIBRARIES += bios_web.la
 
@@ -604,12 +604,12 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
-			-I$(top_srcdir)/src/simple \
-			-I$(top_srcdir)/src/shared \
-			-I$(top_srcdir)/src/web/include \
-			-I$(top_srcdir)/tools \
-			-I$(top_builddir)/tools \
-			-I$(top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/web/include \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/persist
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
@@ -627,13 +627,13 @@ dist_noinst_HEADERS += \
 
 ### This file contains the TNTNET settings relevant for our test runs
 ### Note: in non-daemon mode, stderr is logged to stderr
-tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
+tntnet.xml: $(abs_top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
 	rm -f $@
 
 ### This file contains the TNTNET settings distributed as an example for users
 ### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
-tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
+tntnet.xml.example: $(abs_top_srcdir)/src/web/tntnet.xml
 	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
 	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
@@ -657,26 +657,26 @@ web-test: web-test-deps
 #                        Extra files and sources
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
-			$(top_srcdir)/tools/dbpath.h.in \
-			$(top_builddir)/tools/dbpath.h \
-			$(top_srcdir)/src/*_msg.xml \
-			$(top_srcdir)/src/simple/*.h \
-			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/drivers/netmon/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*/*.h \
-			$(top_srcdir)/src/drivers/*/*.h \
-			$(top_srcdir)/src/cli/*.h \
-			$(top_srcdir)/src/shared/*.h \
-			$(top_srcdir)/src/web/include/*.h
+EXTRA_DIST +=		$(abs_top_srcdir)/tools/gen-json-validator \
+			$(abs_top_srcdir)/tools/dbpath.h.in \
+			$(abs_top_builddir)/tools/dbpath.h \
+			$(abs_top_srcdir)/src/*_msg.xml \
+			$(abs_top_srcdir)/src/simple/*.h \
+			$(abs_top_srcdir)/src/include/*.h \
+			$(abs_top_srcdir)/src/drivers/netmon/*.h \
+			$(abs_top_srcdir)/src/drivers/netmon/*/*.h \
+			$(abs_top_srcdir)/src/drivers/netmon/*/*/*.h \
+			$(abs_top_srcdir)/src/drivers/*/*.h \
+			$(abs_top_srcdir)/src/cli/*.h \
+			$(abs_top_srcdir)/src/shared/*.h \
+			$(abs_top_srcdir)/src/web/include/*.h
 
 # add CI tests to dist
-EXTRA_DIST +=		$(top_srcdir)/tests/CI
+EXTRA_DIST +=		$(abs_top_srcdir)/tests/CI
 
-DISTCLEANFILES +=	$(top_builddir)/tools/dbpath.h
+DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.h
 
-BUILT_SOURCES +=	$(top_srcdir)/tools/dbinit.h
+BUILT_SOURCES +=	$(abs_top_srcdir)/tools/dbinit.h
 
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
@@ -1044,51 +1044,51 @@ clean-html:
 #----------------------------------------------------------------------
 
 if HAVE_DOXYGEN
-EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
+EXTRA_DIST +=		$(abs_top_srcdir)/${myDOXDIR}/html
 endif
-EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
+EXTRA_DIST +=		$(abs_top_srcdir)/${myDOXDIR}/Doxyfile.in
 
-CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
-			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
+CLEANFILES +=		$(abs_top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
+			$(abs_top_srcdir)/${myDOXDIR}/${mydoxylog} \
 			${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/${mydoxylog}
 
-doxygen-docs: ${myDOXDIR}/html
+doxygen-docs: $(abs_top_srcdir)/${myDOXDIR}/html
 
 # alias for manual typing errors
 docs-doxygen: doxygen-docs
 
 clean-doxygen:
-	( test -w $(top_srcdir)/${myDOXDIR}/html && \
-	  /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
+	( test -w $(abs_top_srcdir)/${myDOXDIR}/html && \
+	  /bin/rm -rf $(abs_top_srcdir)/${myDOXDIR}/html ) || /bin/true
 
 # Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
 develdocdoxygendir =	$(develdocdir)/doxygen
 develdocdoxygen: doxygen-docs
 
 if HAVE_DOXYGEN
-develdocdoxygen_DATA =	${myDOXDIR}/html/*
+develdocdoxygen_DATA =	$(abs_top_srcdir)/${myDOXDIR}/html/*
 
 # Such-named target is required by the _DATA above, so have a rule to build it
-${myDOXDIR}/html/*: doxygen-docs
+$(abs_top_srcdir)/${myDOXDIR}/html/*: doxygen-docs
 
-${myDOXDIR}/html:
+$(abs_top_srcdir)/${myDOXDIR}/html:
 	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
 		test -d ${myDOXDIR}/html || \
 		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
 	else \
-		if [ -f $(top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
-			test -d $(top_srcdir)/${myDOXDIR}/html || \
-			$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile; \
+		if [ -f $(abs_top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
+			test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
+			$(DOXYGEN) $(abs_top_srcdir)/${myDOXDIR}/Doxyfile; \
 		else \
-			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
+			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(abs_top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
 			/bin/false; \
 		fi; \
 	fi
 else
 develdocdoxygen_DATA =
 
-${myDOXDIR}/html:
+$(abs_top_srcdir)/${myDOXDIR}/html:
 	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
 endif
 
@@ -1096,20 +1096,20 @@ endif
 #                 manpage generation (delegated to sub-make)
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
-CLEANFILES +=		$(top_builddir)/${myMANDIR}/*.?
+EXTRA_DIST +=		$(abs_top_srcdir)/${myMANDIR}/*.txt
+CLEANFILES +=		$(abs_top_builddir)/${myMANDIR}/*.?
 
 man-docs:
-	( cd $(top_builddir)/$(myMANDIR) && $(MAKE) all )
+	( cd $(abs_top_builddir)/$(myMANDIR) && $(MAKE) all )
 
 # alias for manual typing errors
 docs-man: man-docs
 
 clean-man:
-	( cd $(top_builddir)/$(myMANDIR) && \
+	( cd $(abs_top_builddir)/$(myMANDIR) && \
 	  { $(MAKE) clean || /bin/true; } && \
 	  /bin/rm -f *.[123456789] *.xml *.html )
-	/bin/rm -f $(top_builddir)/$(myMANDIR)/*.?
+	/bin/rm -f $(abs_top_builddir)/$(myMANDIR)/*.?
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
@@ -1123,7 +1123,7 @@ all-local: all-docs
 #----------------------------------------------------------------------
 
 clean-junit:
-	/bin/rm -rf $(top_builddir)/tests/junit
+	/bin/rm -rf $(abs_top_builddir)/tests/junit
 
 clean-local: clean-docs clean-junit
 
@@ -1153,14 +1153,14 @@ distclean-local: distclean-local-dirs distclean-local-deps
 #                        astyle formating
 #----------------------------------------------------------------------
 if HAVE_ASTYLE
-EXTRA_DIST +=		$(top_srcdir)/tools/astyle.conf \
-			$(top_srcdir)/tools/astyle-bios
+EXTRA_DIST +=		$(abs_top_srcdir)/tools/astyle.conf \
+			$(abs_top_srcdir)/tools/astyle-bios
 checkstyle:
-	$(top_srcdir)/tools/astyle-bios \
-	    -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(abs_top_srcdir)/tools/astyle-bios \
+	    -c $(abs_top_srcdir)/tools/astyle.conf $(abs_top_srcdir)/src
 style:
-	$(top_srcdir)/tools/astyle-bios \
-	    $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(abs_top_srcdir)/tools/astyle-bios \
+	    $(abs_top_srcdir)/tools/astyle.conf $(abs_top_srcdir)/src
 endif
 
 #----------------------------------------------------------------------
@@ -1169,5 +1169,5 @@ endif
 
 ci-test-restapi: test-restapi
 test-restapi: all
-	$(top_srcdir)/tests/CI/ci-test-restapi.sh
+	$(abs_top_srcdir)/tests/CI/ci-test-restapi.sh
 
