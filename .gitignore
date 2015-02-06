@@ -34,6 +34,8 @@ netmon
 simple
 !src/simple
 bios_web.la
+dshell
+!tools/dshell
 
 *.o
 *.lo
@@ -74,6 +76,7 @@ test-web
 db-ng
 driver-nut
 server-agent
+!src/drivers/server-agent
 
 tests/junit/
 tests/CI/web/log/
