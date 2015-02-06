@@ -221,8 +221,8 @@ void NUTDevice::setChanged(const std::string& name,const bool status){
 }
 
 int NUTDevice::getThreshold(const std::string& varName) {
-    // TODO: read different threshold for differen variables from config
-    // for now it is 5
+    // TODO: read different threshold for different variables from config
+    // for now it is 5%
     if(varName.empty()) {} // silence the warning
     return _threshold;
 }
