@@ -1211,12 +1211,13 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	 { [ -s "$@.tmp" ] && { diff "$@.tmp" "$@" >/dev/null 2>/dev/null && \
 	    echo "INFO: No changes in contents of '$@'" || \
 	    mv -f "$@.tmp" "$@"; } } || { \
-	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@" || \
-	    { [ -s "$(abs_top_srcdir)/.git_details" -a \
-	        x"$(abs_top_builddir)/.git_details" != x"$@" ] && \
-              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; } }
+	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
+	  true
+	@[ -s "$@" ] || \
+	    { [ -s  "$(abs_top_srcdir)/.git_details" -a \
+	           x"$(abs_top_srcdir)/.git_details" != x"$@" ] && \
+              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; }
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ]
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
 
