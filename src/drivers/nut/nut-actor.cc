@@ -139,7 +139,8 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
         { "current",     "A" },
         { "load",        "%" },
         { "charge",      "%" },
-        { "frequency",   "Hz" },
+        { "frequency",   "Hz"},
+        { "power",       "W" },
     };
     static std::map<std::string, int8_t> scales = {
         { "status.ups", 0 },
