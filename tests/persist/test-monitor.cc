@@ -19,7 +19,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
 
     byte        errno1 = common_msg_errorno (fail);
     const char* errmsg = common_msg_errmsg  (fail);
-    zhash_t *   erraux = common_msg_erraux  (fail);
+    zhash_t *   erraux = common_msg_aux  (fail);
     REQUIRE ( errnonew == errno1 );
     REQUIRE ( erraux   == NULL );
     REQUIRE ( streq(errmsg, "")  );
@@ -35,7 +35,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
 
     errno1 = common_msg_errorno (fail);
     errmsg = common_msg_errmsg  (fail);
-    erraux = common_msg_erraux  (fail);
+    erraux = common_msg_aux  (fail);
     REQUIRE ( errnonew == errno1 );
     REQUIRE ( erraux   == NULL );
     REQUIRE ( streq(errmsg, "")  );
@@ -58,7 +58,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
     
     errno1 = common_msg_errorno (fail);
     errmsg = common_msg_errmsg  (fail);
-    erraux = common_msg_erraux  (fail);
+    erraux = common_msg_aux  (fail);
     REQUIRE ( errnonew == errno1 );
     REQUIRE ( streq( errmsg, errmsgnew) );
     // TODO how to compare zhash_t ??
