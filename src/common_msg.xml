@@ -50,12 +50,13 @@
     <field name = "errtype"     type = "number" size = "1"> An error type, defined in enum somewhere</field>
     <field name = "errorno"     type = "number" size = "4"> An error id</field>
     <field name = "errmsg"      type = "longstr"> A user visible error string</field>
-    <field name = "erraux"      type = "hash"> An optional additional information about occured error</field>
+    <field name = "aux"      type = "hash"> An optional additional information about occured error</field>
 </message>
 
 <message name = "db_ok"         id = "202">
     An ok message indicates that during the work with db no error had occured
     <field name = "rowid"       type = "number" size = "4"> Id of the row processed</field>
+    <field name = "aux"         type = "hash">An optional additional information</field>
 </message>
 
 <message name = "client"        id = "203">

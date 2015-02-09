@@ -137,7 +137,7 @@ ups.time: 17:44:23
 ups.timer.shutdown: -1
 ups.timer.start: -1
 ups.type: online
-TIMER 30
+TIMER 300
 ups.load: 20
 ups.power: 2200
 battery.charge: 20
@@ -145,7 +145,7 @@ ups.temperature: 46
 output.voltage: 200
 current.output: 5
 ups.realpower: 2200
-TIMER 30
+TIMER 300
 ups.load: 30
 ups.power: 3300
 battery.charge: 30
@@ -153,7 +153,7 @@ ups.temperature: 47
 output.voltage: 222
 ups.realpower: 3300
 current.output: 10
-TIMER 30
+TIMER 300
 ups.load: 40
 ups.power: 4400
 battery.charge: 40
@@ -161,5 +161,5 @@ ups.temperature: 48
 output.voltage: 230
 ups.realpower: 4400
 current.output: 15
-TIMER 30
+TIMER 300
 

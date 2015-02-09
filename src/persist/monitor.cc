@@ -53,7 +53,7 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg,
     common_msg_set_errmsg  (resultmsg, "%s", (errmsg ? errmsg:"") );
     if ( erraux != NULL )
     {
-        common_msg_set_erraux  (resultmsg, erraux);
+        common_msg_set_aux  (resultmsg, erraux);
         zhash_destroy (erraux);
     }
     log_info ("normal %s ", "end");

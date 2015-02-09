@@ -259,7 +259,7 @@ CREATE TABLE t_bios_asset_link (
 
 CREATE TABLE t_bios_asset_ext_attributes(
   id_asset_ext_attribute    INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  keytag                    VARCHAR(25)  NOT NULL,
+  keytag                    VARCHAR(40)  NOT NULL,
   value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
   
