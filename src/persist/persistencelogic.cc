@@ -248,7 +248,7 @@ zmsg_t* nmap_msg_process(zmsg_t **msg) {
     nmap_msg_destroy(&nmsg);
     if(ret != NULL)
         return ret;
-    return common_msg_encode_db_ok(0);
+    return common_msg_encode_db_ok(0, NULL);
 }
 
 zmsg_t* netdisc_msg_process(zmsg_t** msg) {
@@ -325,7 +325,7 @@ zmsg_t* netdisc_msg_process(zmsg_t** msg) {
     if(rows_affected != 1) {
         log_warning ("Unexpected number of rows '%d' affected", rows_affected);
     }
-    return common_msg_encode_db_ok(nethistory.getId());
+    return common_msg_encode_db_ok(nethistory.getId(), NULL);
 };
 
 // * \brief processes the powerdev_msg message
