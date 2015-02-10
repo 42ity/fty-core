@@ -1219,12 +1219,18 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	 else \
 	   [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; \
 	 fi || true
-	@[ -s "$@" ] || \
-	    { [ -s  "$(abs_top_srcdir)/.git_details" -a \
-	           x"$(abs_top_srcdir)/.git_details" != x"$@" ] && \
-              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; }
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; touch "$@"; }
+	@if [ -s "$@" ]; then true; else \
+	    if [ -s  "$(abs_top_srcdir)/.git_details" -a \
+	           x"$(abs_top_srcdir)/.git_details" != x"$@" ]; then \
+	      echo "INFO: Reusing existing '$(abs_top_srcdir)/.git_details'" && \
+	        ls -la "$(abs_top_srcdir)/.git_details"; \
+              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; \
+	    else \
+	      echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	      touch "$@"; \
+	    fi; \
+	 fi
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
 
