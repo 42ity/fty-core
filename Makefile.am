@@ -1240,9 +1240,10 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	  echo '#include <src/include/git_details_override.h>'; \
 	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
-	@{ [ -s "$@.tmp" ] && { diff "$@" "$@.tmp" >/dev/null 2>/dev/null && \
+	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
-	    mv -f "$@.tmp" "$@"; } } || { \
+	    { echo "INFO: Replacing '$@' with newly generated data"; \
+	      mv -f "$@.tmp" "$@"; } } } || { \
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
@@ -1259,9 +1260,10 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,extern char * \1;,' && \
 	  echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
-	@{ [ -s "$@.tmp" ] && { diff "$@" "$@.tmp" >/dev/null 2>/dev/null && \
+	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
-	    mv -f "$@.tmp" "$@"; } } || { \
+	    { echo "INFO: Replacing '$@' with newly generated data"; \
+	      mv -f "$@.tmp" "$@"; } } } || { \
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
