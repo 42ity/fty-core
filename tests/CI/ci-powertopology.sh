@@ -74,9 +74,7 @@ SAMPLES=(
 # config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
-if [ -d $CFGDIR ] ; then
-    CFGDIR="/etc/ups"    
-else
+if [ ! -d $CFGDIR ] ; then
     echo "NUT config dir not found"
     kill $WEBTESTPID
     exit 1
