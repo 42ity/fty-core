@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This is the main configuration file for tntnet.
+
+  You can find documentation about the parameters in the man page tntnet.xml(7)
+  -->
+<tntnet>
+  <mappings>
+    <!-- Serve static files -->
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>./$1</pathinfo>
+      <url>^/((assets|[b-z]).*)</url>
+    </mapping>
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>./index.html</pathinfo>
+      <url>^/$</url>
+    </mapping>
+
+    <!-- Make sure everybody speaks json from now on -->
+    <mapping>
+      <target>json@bios_web</target>
+    </mapping>
+    <!-- We are getting authorized -->
+    <mapping>
+      <target>auth@bios_web</target>
+      <url>^/api/v1/oauth2/token$</url>
+    </mapping>
+    <!-- Set (int)access_auth_level variable if the request is authenticated -->
+    <mapping>
+      <target>auth-verify@bios_web</target>
+    </mapping>
+
+    <!-- SysInfo mapping -->
+    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
+    <mapping>
+      <target>sysinfo@bios_web</target>
+      <url>^/api/v1/admin/sysinfo$</url>
+    </mapping>
+
+    <!-- And from now on all modifying requests have to be authenticated -->
+    <mapping>
+      <target>auth-require@bios_web</target>
+      <method>(POST|PUT|DELETE)</method>
+    </mapping>
+
+    <!-- API itself -->
+
+    <!-- topology/location -->
+    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
+    <mapping>
+      <target>topology_inputcheck@bios_web</target>
+      <url>^/api/v1/topology/.*$</url>
+    </mapping>
+    -->
+    <mapping>
+      <target>location@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
+    <!-- topology/power -->
+    <mapping>
+      <target>power@bios_web</target>
+      <url>^/api/v1/topology/power.*$</url>
+    </mapping>
+
+
+    <!-- Time settings -->
+    <mapping>
+      <target>time@bios_web</target>
+      <url>^/api/v1/admin/time.*$</url>
+    </mapping>
+
+    <!-- Asset management -->
+    <mapping>
+      <target>item@bios_web</target>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)/(.*)$</url>
+      <args>
+        <id>$2</id>
+        <type>$1</type>
+      </args>
+    </mapping>
+    <mapping>
+      <target>list@bios_web</target>
+      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s$</url>
+      <args>
+        <type>$1</type>
+      </args>
+    </mapping>
+
+    <!-- Current meassurements -->
+    <mapping>
+      <target>current@bios_web</target>
+      <url>^/api/v1/metric/current.*$</url>
+    </mapping>
+
+    <!-- rack consumption -->
+    <mapping>
+      <target>rack_total@bios_web</target>
+      <url>^/api/v1/metric/computed/rack_total.*$</url>
+    </mapping>
+
+    <!-- datacenter indicators -->
+    <mapping>
+      <target>datacenter_indicators@bios_web</target>
+      <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+    </mapping>
+
+    <!-- Network list -->
+    <mapping>
+      <target>networks@bios_web</target>
+      <url>^/api/v1/admin/networks.*$</url>
+    </mapping>
+
+    <!-- Network POST -->
+    <mapping>
+      <target>network@bios_web</target>
+      <method>POST</method>
+      <url>^/api/v1/admin/network.*$</url>
+    </mapping>
+
+    <!-- Network DELETE -->
+    <mapping>
+      <target>network@bios_web</target>
+      <method>DELETE</method>
+      <url>^/api/v1/admin/network/([0-9]+)$</url>
+      <args>
+        <id>$1</id>
+      </args>
+    </mapping>
+
+    <!-- UI/properties -->
+    <mapping>
+      <target>ui_properties@bios_web</target>
+      <method>(GET|PUT)</method>
+      <url>^/api/v1/ui/properties.*$</url>
+    </mapping>
+ </mappings>
+
+  <!-- listen to a port (empty string means any local interface) -->
+  <listeners>
+    <listener>
+      <port>8000</port>
+    </listener>
+  <!-- a certificate enables ssl -->
+  <!--
+    <listener>
+      <port>8443</port>
+      <certificate>tntnet.pem</certificate>
+    </listener>
+    -->
+  </listeners>
+
+  <logging>
+    <rootlogger>INFO</rootlogger>
+
+    <loggers>
+      <logger>
+        <category>tntnet</category>
+        <level>INFO</level>
+      </logger>
+      <logger>
+        <category>component.bios_web-web</category>
+        <level>INFO</level>
+      </logger>
+    </loggers>
+
+    <!--
+    <file>tntnet.log</file>
+    <maxfilesize>10M</maxfilesize>
+    <maxbackupindex>2</maxbackupindex>
+    -->
+
+  </logging>
+
+  <!-- <maxRequestSize>65536</maxRequestSize> -->
+  <!-- <maxRequestTime>600</maxRequestTime> -->
+  <!-- <user>tntnet</user> -->
+  <!-- <group>tntnet</group> -->
+  <dir>/home/eaton/core/src/web</dir>
+  <compPath><entry>/home/eaton/core/.libs</entry></compPath>
+  <!-- <documentRoot>/var/www</documentRoot> -->
+  <!-- <chrootdir>/var/safedir</chrootdir> -->
+  <!-- <pidfile>/var/run/tntnet.pid</pidfile> -->
+  <!-- <daemon>0</daemon> -->
+  <!-- <minThreads>5</minThreads> -->
+  <!-- <maxThreads>100</maxThreads> -->
+  <!-- <threadStartDelay>10</threadStartDelay> -->
+  <!-- <queueSize>1000</queueSize> -->
+  <!--
+  <compPath>
+    <entry>path1</entry>
+    <entry>path2</entry>
+  </compPath>
+   -->
+  <!-- <bufferSize>16384</bufferSize> -->
+  <!-- <socketReadTimeout>10</socketReadTimeout> -->
+  <!-- <socketWriteTimeout>10000</socketWriteTimeout> -->
+  <!-- <keepAliveTimeout>15000</keepAliveTimeout> -->
+  <!-- <keepAliveMax>1000</keepAliveMax> -->
+  <!-- <sessionTimeout>300</sessionTimeout> -->
+  <!-- <listenBacklog>64</listenBacklog> -->
+  <!-- <listenRetry>5</listenRetry> -->
+  <!-- <enableCompression>no</enableCompression> -->
+  <!-- <mimeDb>/etc/mime.types</mimeDb> -->
+  <!-- <minCompressSize>1024</minCompressSize> -->
+  <!-- <maxUrlMapCache>8192</maxUrlMapCache> -->
+  <!-- <defaultContentType>text/html; charset=UTF-8</defaultContentType> -->
+  <!-- <accessLog>/var/log/tntnet/access.log</accessLog> -->
+  <!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->
+  <!-- <maxBackgroundTasks>5</maxBackgroundTasks> -->
+
+</tntnet>
