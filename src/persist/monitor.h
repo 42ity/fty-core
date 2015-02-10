@@ -82,7 +82,7 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg,
  *
  * \return a COMMON_MSG_DB_OK message.
  */
-common_msg_t* generate_ok(uint64_t rowid);
+common_msg_t* generate_ok(uint64_t rowid, zhash_t **aux);
 
 
 // ===============================================================
