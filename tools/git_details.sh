@@ -21,6 +21,18 @@
 #
 #   Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
 
+if [ x"$GIT_DETAILS_BLANK" = xyes ]; then
+    for V in PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TSTAMP \
+	 PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L PACKAGE_GIT_STATUS \
+	 PACKAGE_BUILD_HOST_UNAME PACKAGE_BUILD_HOST_NAME \
+	 PACKAGE_BUILD_HOST_OS PACKAGE_BUILD_TSTAMP \
+	 PACKAGE_GIT_TAGGED \
+    ; do
+	echo "$V=\"\";"
+	echo "$V_ESCAPED=\"\";"
+    done
+fi
+
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
 
 if git --help >/dev/null 2>&1 ; then
@@ -35,6 +47,11 @@ if git --help >/dev/null 2>&1 ; then
     PACKAGE_GIT_HASH_L="$(git rev-parse --verify HEAD)"
     PACKAGE_GIT_STATUS="$(git status -s)"
 
+    ### Ported from bios-infra::obs-service_git_nas.sh
+    PACKAGE_GIT_TAGGED="$(git describe --tags 2>/dev/null)"
+    PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/[tv]/}"  # kill the v or t from version
+    PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/-/\~}"
+
     PACKAGE_BUILD_HOST_UNAME="`uname -a`"
     PACKAGE_BUILD_HOST_NAME="`uname -n`"
     PACKAGE_BUILD_HOST_OS="`uname -s -r -v`"
@@ -47,6 +64,7 @@ if git --help >/dev/null 2>&1 ; then
 	 PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L PACKAGE_GIT_STATUS \
 	 PACKAGE_BUILD_HOST_UNAME PACKAGE_BUILD_HOST_NAME \
 	 PACKAGE_BUILD_HOST_OS PACKAGE_BUILD_TSTAMP \
+	 PACKAGE_GIT_TAGGED \
     ; do
         eval echo $V=\\\"'$'$V\\\""\\;"
 	VE="${V}_ESCAPED"
