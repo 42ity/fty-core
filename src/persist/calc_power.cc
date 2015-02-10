@@ -81,7 +81,7 @@ power_sources_t
     auto devices    = power_topology.first;
     auto powerlinks = power_topology.second;
     
-    log_debug ("number of devices is %ld ", devices.size());
+    log_debug ("number of devices in first level down is %ld ", devices.size());
     log_debug ("number of powerlinks is %ld ", powerlinks.size());
 
     // start_device can be
@@ -196,7 +196,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         // Could return more than one row
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
-        log_debug("rows selected %d", result.size());
+        log_debug("selected %d different devices", result.size());
 
         for ( auto &row: result )
         {
@@ -276,7 +276,7 @@ power_sources_t select_pow_src_for_device (const char* url,
                (url, std::get<0>(adevice), INPUT_POWER_CHAIN, false);
     auto new_power_srcs = extract_power_sources
                (url, pow_top_to, adevice);
-   
+    log_debug ("end: normal");
     return new_power_srcs;
 }
 
@@ -476,7 +476,7 @@ static rack_power_t
         const std::set <device_info_t> &dvc,
         uint32_t max_age)
 {
-    log_info("start");
+    log_info("start real calculation");
     assert ( max_age != 0 );
 
     // set of all asset_id-es to be computed
@@ -574,6 +574,9 @@ static rack_power_t
             row[2].get(scale);
 
             s_add_scale(ret, value, scale);
+            log_debug (" device %d", dev_id);
+            log_debug ("    value %ld", value);
+            log_debug ("    scale %d", scale);
         }
     }
     catch (const std::exception &e) {
