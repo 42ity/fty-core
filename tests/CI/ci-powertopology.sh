@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright (C) 2014 Eaton
 #
 # This program is free software: you can redistribute it and/or modify
@@ -41,8 +43,10 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
 cd $CHECKOUTDIR
-autoreconf -vfi
-./configure
+if [ ! -f Makefile ] ; then
+    autoreconf -vfi
+    ./configure
+fi
 make V=0 web-test-deps
 make web-test &
 WEBTESTPID=$!
@@ -235,16 +239,6 @@ echo "Pass: ${SUCCESSES}/Fails: ${ERRORS}"
 #    exit 0
 #fi
 }
-
-# config dir for the nut dummy driver parameters allocated in config files
-CFGDIR="/etc/ups"
-
-if [ -d $CFGDIR ] ; then
-    CFGDIR="/etc/ups"
-else
-    echo "NUT config dir not found"
-    exit 1
-fi
 
 USR=user1
 PSW=user1
