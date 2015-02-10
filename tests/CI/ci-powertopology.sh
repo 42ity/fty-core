@@ -40,7 +40,11 @@ echo "CHECKOUTDIR = "$CHECKOUTDIR
 fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
-make -C $CHECKOUTDIR web-test &
+cd $CHECKOUTDIR
+autoreconf -vfi
+./configure
+make V=0 web-test-deps
+make web-test &
 WEBTESTPID=$!
 
 #SCRIPTDIR=$CHECKOUTDIR"/tools/CI"
@@ -69,10 +73,12 @@ SAMPLES=(
 )
 # config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/ups"
+[ -d $CFGDIR ] || CFGDIR="/etc/nut"
 if [ -d $CFGDIR ] ; then
     CFGDIR="/etc/ups"    
 else
     echo "NUT config dir not found"
+    kill $WEBTESTPID
     exit 1
 fi
 set_value_in_ups() {
