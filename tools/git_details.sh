@@ -29,8 +29,9 @@ if [ x"$GIT_DETAILS_BLANK" = xyes ]; then
 	 PACKAGE_GIT_TAGGED \
     ; do
 	echo "$V=\"\";"
-	echo "$V_ESCAPED=\"\";"
+	echo "${V}_ESCAPED=\"\";"
     done
+    exit 0
 fi
 
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
