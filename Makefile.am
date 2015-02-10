@@ -1086,7 +1086,7 @@ $(abs_top_srcdir)/${myDOXDIR}/html: $(abs_top_builddir)/${myDOXDIR}/Doxyfile
 	{ cd $(abs_top_srcdir)/ && \
 	  echo "INFO: Generating Doxygen docs in '`pwd`' according to '$<'" >&2 && \
 	  $(DOXYGEN) "$<"; }
-	@touch "$@" || true
+	@touch -r "$<" "$@" || true
 else
 develdocdoxygen_DATA =
 
@@ -1228,8 +1228,9 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	      ls -la "$(abs_top_srcdir)/.git_details" && \
               cp -f "$(abs_top_srcdir)/.git_details" "$@" ; \
 	    else \
+	      if [ -f "$@" ]; then echo "WARNING: '$@' is empty already"; else \
 	      echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
-	      touch "$@"; \
+	      touch "$@"; fi; \
 	    fi; \
 	 fi
 
@@ -1249,7 +1250,7 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	  true
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch "$@"
+	@touch -r "$<" "$@" || true
 
 src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
 
@@ -1270,5 +1271,5 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	  true
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch "$@"
+	@touch -r "$<" "$@" || true
 
