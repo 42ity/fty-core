@@ -1259,6 +1259,15 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#ifndef BIOS_GIT_DETAILS_OVERRIDE' && \
 	  echo '#define BIOS_GIT_DETAILS_OVERRIDE' && \
+	  { egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
+	      echo '#define HAVE_PACKAGE_GIT 1' || \
+	      echo '// #undef HAVE_PACKAGE_GIT'; } && \
+	  { egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
+	      echo '#define HAVE_PACKAGE_BUILD_HOST 1' || \
+	      echo '// #undef HAVE_PACKAGE_BUILD_HOST'; } && \
+	  { egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
+	      echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || \
+	      echo '// #undef HAVE_PACKAGE_BUILD_TSTAMP'; } && \
 	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,#undef \1,' && \
 	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,extern char * \1;,' && \
 	  echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
