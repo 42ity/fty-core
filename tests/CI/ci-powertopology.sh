@@ -48,7 +48,7 @@ if [ ! -f Makefile ] ; then
     ./configure
 fi
 make V=0 web-test-deps
-make web-test &
+make web-test >/tmp/tmp &
 WEBTESTPID=$!
 
 #SCRIPTDIR=$CHECKOUTDIR"/tools/CI"
@@ -62,7 +62,8 @@ mysql -u root < "$DB2"
 #
 # only one parameter - ups.realpower is used for the total rack power value counting
 #
-PARAM="ups.realpower"
+PARAM1="ups.realpower"
+PARAM2="outlet.realpower"
 #
 # random samples
 # in lines values must be differ at least of 5% otherways - 
@@ -71,10 +72,10 @@ PARAM="ups.realpower"
 #
 
 # samples used
-SAMPLES=(
-   20
-   30
-)
+#SAMPLES=(
+#   20
+#   30
+#)
 # config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
@@ -125,7 +126,7 @@ output.current: 0.00
 output.voltage: 230.0
 ups.realpower: 0
 ups.temperature: 25
-outlet.realpower: 20
+outlet.realpower: 0
 ups.load: 10
 ups.mfr: MGE UPS SYSTEMS
 ups.model: Pulsar Evolution 500
@@ -148,7 +149,7 @@ output.current: 0.00
 output.voltage: 230.0
 ups.realpower: 0
 ups.temperature: 25
-outlet.realpower: 20
+outlet.realpower: 0
 ups.load: 10
 ups.mfr: MGE UPS SYSTEMS
 ups.model: Pulsar Evolution 500
@@ -177,7 +178,7 @@ testcase() {
     UPS2=$2
     SAMPLES=$3
     RACK=$4
-
+    PARAM=
 echo "starting the test"
  
 SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
@@ -194,8 +195,15 @@ for UPS in $UPS1 $UPS2 ; do
         if [ "$TYPE" = 1 ]; then
                NEWVALUE=0
         fi
-        set_value_in_ups $UPS $PARAM $NEWVALUE
-        #sleep 2 # give time to nut dummy driver for change
+        TYPE2=`echo $UPS|grep ^epdu|wc -l`
+	if [ "$TYPE2 = 1" ]; then
+            set_value_in_ups $UPS $PARAM1 0
+            set_value_in_ups $UPS $PARAM2 $NEWVALUE
+	else
+            set_value_in_ups $UPS $PARAM1 $NEWVALUE
+            set_value_in_ups $UPS $PARAM2 0
+	fi
+        sleep 2 # give time to nut dummy driver for change
         sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
         case "$UPS" in
@@ -214,7 +222,7 @@ for UPS in $UPS1 $UPS2 ; do
         esac
         TP=`expr ${LASTPOW[0]} + ${LASTPOW[1]}`
 #        POWER=(`curl -s 'http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=8101&arg2=total_power'|grep total_power`)
-        CUR="curl -s 'http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power'|grep total_power"
+#        CUR="curl -s 'http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power'|grep total_power"
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
         if [ "$TP" = "$POWER" ]; then
