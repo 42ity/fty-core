@@ -10,6 +10,9 @@
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR = $PWD
 echo "Will try to run test in $CHECKOUTDIR"
 
+[ "x$INSTALLDIR" = "x" ] && INSTALLDIR = $CHECKOUTDIR/Installation
+echo "Installation directory : $INSTALLDIR"
+
 CFGDIR=""
 for cfgd in "/etc/ups" "/etc/nut"; do
     if [ -d "$cfgd" ] ; then
@@ -102,8 +105,8 @@ start_simple(){
     # Kill existing process
     killall -9 simple netmon driver-nmap
     # start simple
-    if [ -f $CHECKOUTDIR/Installation/usr/local/bin/simple ] ; then
-        $CHECKOUTDIR/Installation/usr/local/bin/simple &
+    if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
+        $INSTALLDIR/usr/local/bin/simple &
     else
         echo "Can't find simple"
         exit 1
