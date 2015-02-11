@@ -253,8 +253,6 @@ if [ "$PKG_CORE_NUM_RES" = 0 ]; then
     print_result $?
 fi
 
-exit 0
-
 ###############################################################
 # Compare different request methods
 test_it "sysinfo_get_wToken_auth=2_raw"
