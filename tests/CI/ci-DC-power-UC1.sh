@@ -3,14 +3,14 @@
 #
 # requirements:
 #   Must run as root (nut configuration)
-#   simple must be running
-#   db must be filled
+#   CHECKOUTDIR should be set as core directory
+#   INSTALLDIR should be set as the installation directory (make DESTDIR install)
 #
 
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR = $PWD
+[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=$PWD
 echo "Will try to run test in $CHECKOUTDIR"
 
-[ "x$INSTALLDIR" = "x" ] && INSTALLDIR = $CHECKOUTDIR/Installation
+[ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
 echo "Installation directory : $INSTALLDIR"
 
 CFGDIR=""
