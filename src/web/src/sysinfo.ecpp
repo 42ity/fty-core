@@ -72,6 +72,8 @@ int8_t access_auth_level;
     if (ret!=0) {
         cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -c"
                 << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+	if (cmderr=="" && cmdout=="none")
+		ret=0;
     }
 </%cpp>
     "container": "<$ ret == 0 ? cmdout : UNKNOWN $>",
@@ -81,6 +83,8 @@ int8_t access_auth_level;
     if (ret!=0) {
         cmderr_total << "=== Ran:\n" << "/usr/bin/systemd-detect-virt -v"
                 << "\n=== Got stderr ("<<ret<<"):\n" << cmderr << "\n";
+	if (cmderr=="" && cmdout=="none")
+		ret=0;
     }
 </%cpp>
     "hypervisor": "<$ ret == 0 ? cmdout : UNKNOWN $>",
@@ -132,19 +136,18 @@ int8_t access_auth_level;
           "build-host-name": "<$ PACKAGE_BUILD_HOST_NAME_ESCAPED $>",
           "build-host-os": "<$ PACKAGE_BUILD_HOST_OS_ESCAPED $>",
           "build-host-uname": "<$ PACKAGE_BUILD_HOST_UNAME_ESCAPED $>",
-          "build-timestamp":
 <%cpp>
 # endif // HAVE_PACKAGE_BUILD_HOST
-# if defined(HAVE_PACKAGE_BUILD_TSTAMP) && defined(PACKAGE_BUILD_TSTAMP)
-</%cpp>
-              "<$ PACKAGE_BUILD_TSTAMP_ESCAPED $>"
-<%cpp>
-# else // not HAVE_PACKAGE_BUILD_TSTAMP
-</%cpp>
-              "<$ UNKNOWN $>"
-<%cpp>
+
+	std::string BTS = "";
+# if defined(HAVE_PACKAGE_BUILD_TSTAMP)
+	BTS = PACKAGE_BUILD_TSTAMP_ESCAPED;
 # endif // HAVE_PACKAGE_BUILD_TSTAMP
+	if (BTS=="") {
+		BTS = UNKNOWN;
+	}
 </%cpp>
+          "build-timestamp": "<$ BTS $>"
         }
 <%cpp>
 #endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
