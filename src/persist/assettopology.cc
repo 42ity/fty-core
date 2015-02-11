@@ -1189,9 +1189,9 @@ zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const 
     {
         auto apowerlink = *it;
 
-        sprintf(buff, "%d:%d:%d:%d", std::get<1>(apowerlink), 
+        sprintf(buff, "%s:%d:%s:%d", std::get<1>(apowerlink).c_str(), 
                                      std::get<0>(apowerlink),
-                                     std::get<3>(apowerlink),
+                                     std::get<3>(apowerlink).c_str(),
                                      std::get<2>(apowerlink)
                 );
         zlist_push(powers, buff);
@@ -1298,11 +1298,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_dest );
    
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[1].get(src_out);
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // device_name, required
@@ -1323,8 +1323,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             log_debug ("for");
             log_debug ("asset_element_id_src = %d", element_id);
             log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
             log_debug ("device_name = %s", device_name.c_str());
             log_debug ("device_type_name = %s", device_type_name.c_str());
             log_debug ("dest_type_id = %d", device_type_dest_id);
@@ -1451,11 +1451,11 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 assert ( id_asset_element_src );
        
                 // src_out 
-                uint16_t src_out = 999;
+                std::string src_out = SRCOUT_DESTIN_IS_NULL;
                 row[1].get(src_out);
                 
                 // dest_in
-                uint16_t dest_in = 999;
+                std::string dest_in = SRCOUT_DESTIN_IS_NULL;
                 row[2].get(dest_in);
                 
                 // device_name_src, required
@@ -1477,8 +1477,8 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 log_debug ("asset_element_id_dest = %d", cur_element_id);
                 log_debug ("asset_element_id_src = %d", 
                                                     id_asset_element_src);
-                log_debug ("src_out = %d", src_out);
-                log_debug ("dest_in = %d", dest_in);
+                log_debug ("src_out = %s", src_out.c_str());
+                log_debug ("dest_in = %s", dest_in.c_str());
                 log_debug ("device_name_src = %s", device_name_src.c_str());
                 log_debug ("device_type_name_src = %s", 
                                                 device_type_name_src.c_str());
@@ -1617,7 +1617,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         for ( auto &row: result )
         {
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -1626,7 +1626,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_src );
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
@@ -1637,8 +1637,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             log_debug ("for");
             log_debug ("asset_element_id_src = %d", id_asset_element_src);
             log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
@@ -1821,7 +1821,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         for ( auto &row: result )
         {
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[0].get(src_out);
             
             // id_asset_element_src, required
@@ -1830,7 +1830,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( id_asset_element_src );
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
@@ -1841,8 +1841,8 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             log_debug ("for");
             log_debug ("asset_element_id_src = %d", id_asset_element_src);
             log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 

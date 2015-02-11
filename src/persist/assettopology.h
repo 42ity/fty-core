@@ -71,7 +71,7 @@ inline std::string device_info_type_name(const device_info_t& d) {
  * Forth  -- dest_in
  *              input port on the destination device.
  */
-typedef std::tuple< uint32_t, uint16_t, uint32_t, uint16_t > powerlink_info_t;
+typedef std::tuple< uint32_t, std::string, uint32_t, std::string > powerlink_info_t;
 
 // ===============================================================
 // Functions for processing a special message type
