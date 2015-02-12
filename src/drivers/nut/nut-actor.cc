@@ -139,6 +139,8 @@ measurement_id_t nut_get_measurement_id(const std::string &name,mlm_client_t *cl
         { "current",     "A" },
         { "load",        "%" },
         { "charge",      "%" },
+        { "frequency",   "Hz"},
+        { "power",       "W" },
     };
     static std::map<std::string, int8_t> scales = {
         { "status.ups", 0 },
@@ -271,7 +273,7 @@ int main(int argc, char *argv[] ) {
         } else {
             advertise = false;
         }
-        listOfUPS.update();
+        listOfUPS.update( advertise );
         for(auto it = listOfUPS.begin(); it != listOfUPS.end() ; ++it) {
             if(zsys_interrupted) break;
             std::string deviceID = "power." + it->second.name();
