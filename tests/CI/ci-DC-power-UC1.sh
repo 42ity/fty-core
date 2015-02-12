@@ -3,11 +3,16 @@
 #
 # requirements:
 #   Must run as root (nut configuration)
-#   CHECKOUTDIR should be set as core directory
 #   INSTALLDIR should be set as the installation directory (make DESTDIR install)
 #
 
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=$PWD
+SQL_INIT="initdb.sql"
+SQL_LOAD="ci-DC-power-UC1.sql"
+XML_TNTNET="tntnet.xml"
+
+SCRIPTDIR=$(dirname $0)
+CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+
 echo "Will try to run test in $CHECKOUTDIR"
 
 [ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
@@ -86,16 +91,16 @@ create_ups_device $UPS3 1200
 
 # drop and fill the database
 fill_database(){
-    if [ -f $CHECKOUTDIR/tools/initdb.sql ] ; then
-        mysql < $CHECKOUTDIR/tools/initdb.sql
+    if [ -f $CHECKOUTDIR/tools/$SQL_INIT ] ; then
+        mysql < $CHECKOUTDIR/tools/$SQL_INIT
     else
-        echo "initdb.sql not found"
+        echo "$SQL_INIT not found"
         exit 1
     fi
-    if [ -f $CHECKOUTDIR/tests/CI/datacenter_power.sql ] ; then
-        mysql < $CHECKOUTDIR/tests/CI/datacenter_power.sql
+    if [ -f $CHECKOUTDIR/tests/CI/$SQL_LOAD ] ; then
+        mysql < $CHECKOUTDIR/tests/CI/$SQL_LOAD
     else
-        echo "datacenter_power.sql not found"
+        echo "$SQL_LOAD not found"
         exit 1
     fi
 }
@@ -119,11 +124,16 @@ start_simple(){
 start_tntnet(){
     # Kill existing process
     killall -9 tntnet
-    # start tntnet
-    if [ -f $CHECKOUTDIR/tests/CI/datacenter_power.xml ] ; then
-        tntnet -c $CHECKOUTDIR/tests/CI/datacenter_power.xml &
+    # Mod xml file and start tntnet
+    if [ -f $CHECKOUTDIR/src/web/$XML_TNTNET ] ; then
+        cp $CHECKOUTDIR/src/web/$XML_TNTNET $SCRIPTDIR/$XML_TNTNET
+        sed -i '$ d' $SCRIPTDIR/$XML_TNTNET
+        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> $SCRIPTDIR/$XML_TNTNET
+        echo "<compPath><entry>$CHECKOUTDIR/.libs</entry></compPath>" >> $SCRIPTDIR/$XML_TNTNET
+        echo "</tntnet>" >> $SCRIPTDIR/$XML_TNTNET
+        tntnet -c $SCRIPTDIR/$XML_TNTNET &
     else
-        echo "Can't find tntnet.xml.example"
+        echo "$XML_TNTNET not found"
         stop_processes
         exit 1
     fi
@@ -157,12 +167,15 @@ echo "Rack3 total power :       $RACK_TOTAL_POWER3"
 echo "Sum of rack total power : $RACKS_TOTAL_POWER"
 echo "Datacenter power :        $DATACENTER_POWER"
 
-if [ $DATACENTER_POWER -eq $RACKS_TOTAL_POWER ] ; then
+stop_processes
+
+if [ $DATACENTER_POWER == "" ] ; then
+    echo "TEST FAILED - No Data"
+    exit 1
+elif [ $DATACENTER_POWER -eq $RACKS_TOTAL_POWER ] ; then
     echo "TEST PASSED"
-    stop_processes
     exit 0
 else
     echo "TEST FAILED"
-    stop_processes
     exit 1
 fi
