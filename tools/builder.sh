@@ -172,6 +172,12 @@ case "$NOPARMAKE" in
     *)	NOPARMAKE=no  ;;
 esac
 
+case "$NOSEQMAKE" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	NOSEQMAKE=yes ;;
+    *)	NOSEQMAKE=no  ;;
+esac
+
 case "$WARNLESS_UNUSED" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	WARNLESS_UNUSED=yes ;;
@@ -246,13 +252,16 @@ do_make_dc() {
 
 
 do_build() {
+	MRES=255
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
 		*\ V=*|*\ --trace*)
-		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@" || true ;;
+		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@"
+		    MRES=$? ;;
 		*)
-		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@" || true ;;
+		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@"
+		    MRES=$? ;;
 		esac
 	else
 	    echo "=== PARMAKE disabled by user request"
@@ -261,8 +270,15 @@ do_build() {
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
-	echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
-	do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
+	if [ x"$NOSEQMAKE" != xyes ]; then 
+	    echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
+	    do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
+	    MRES=$?
+	else
+	    echo "=== SEQMAKE disabled by user request"
+	fi
+
+	return $MRES
 }
 
 buildSamedir() {
@@ -317,10 +333,10 @@ usage() {
 	echo "		- without parameters does just a classic autogen.sh job"
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
-	echo "    [--disable-parallel-make] [--show-builder-flags] \ "
+	echo "    [--disable-parallel-make|--disable-sequential-make] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
-	echo "    [--configure-flags '...'] \ "
+	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
 	echo "    [--install-dir 'dirname'] [--build-subdir 'dirname'] \ "
 	echo "    { build-samedir | build-subdir | install-samedir | install-subdir \ "
 	echo "      | make-samedir | make-subdir } [maketargets...]"
@@ -401,7 +417,8 @@ showBuilderFlags() {
 "	 Additional MAKE command options for reliable sequential build phase: 	$MAKE_OPTS_SEQ"
 
 	echo \
-"	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only)
+"	NOSEQMAKE toggle:	$NOSEQMAKE	(* 'yes' == parallel only, if enabled)
+	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only, if enabled)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)
@@ -461,6 +478,14 @@ while [ $# -gt 0 ]; do
 		;;
 	    --parmake|--enable-parallel-make)
 		NOPARMAKE=no
+		shift
+		;;
+	    --noseqmake|--disable-sequential-make)
+		NOSEQMAKE=yes
+		shift
+		;;
+	    --seqmake|--enable-sequential-make)
+		NOSEQMAKE=no
 		shift
 		;;
 	    --show-builder-flags)
