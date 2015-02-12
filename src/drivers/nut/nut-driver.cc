@@ -69,7 +69,7 @@ static const std::vector<std::string> physicsBIOS {
     "realpower.default",
 
     "frequency.input",
-    "load.input",
+    "load.input.L1",
     "load.input.L1",
     "load.input.L2",
     "load.input.L3",
@@ -102,7 +102,7 @@ static const std::vector<std::string> physicsBIOS {
     "realpower.output.L3",
     "current.output.L3",
     "charge.battery",
-    "realpower.outlet",
+    "realpower.default",
     "current.outlet.#",
     "voltage.outlet.#",
     "realpower.outlet.#"
