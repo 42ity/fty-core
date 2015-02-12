@@ -162,11 +162,11 @@ asset_manager asset_mgr;
                 if(tokens.size() != 4) continue;
 </%cpp>
         {
-%               if (!tokens[0].empty() && tokens[0] != "999") {
+%               if (!tokens[0].empty() && tokens[0] != SRCOUT_DESTIN_IS_NULL) {
             "src_socket":"<$ tokens[0] $>",
 %               }
             "src_uri":"/api/v1/asset/device/<$ tokens[1] $>"
-%               if (!tokens[2].empty() && tokens[2] != "999") {
+%               if (!tokens[2].empty() && tokens[2] != SRCOUT_DESTIN_IS_NULL) {
             ,"dst_socket":"<$ tokens[2] $>"
 %               }
         }<? it != last ? "," ?>

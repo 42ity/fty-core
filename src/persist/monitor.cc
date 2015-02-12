@@ -60,10 +60,15 @@ common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg,
     return resultmsg;
 }
 
-common_msg_t* generate_ok(uint64_t rowid)
+common_msg_t* generate_ok(uint64_t rowid, zhash_t **aux)
 {
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_DB_OK);
     common_msg_set_rowid (resultmsg, rowid);
+    if ( aux != NULL )
+    {
+        common_msg_set_aux  (resultmsg, aux);
+        zhash_destroy (aux);
+    }
     log_info ("db_ok generated for %ld", rowid);
     return resultmsg;
 }
@@ -210,7 +215,7 @@ common_msg_t* insert_client(const char* url, const char* client_name)
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {
@@ -244,7 +249,7 @@ common_msg_t* delete_client(const char* url, m_clnt_id_t client_id)
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (client_id);
+        return generate_ok (client_id, NULL);
     }
     else
     {
@@ -297,7 +302,7 @@ common_msg_t* update_client(const char* url, m_clnt_id_t client_id,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (client_id);
+        return generate_ok (client_id, NULL);
     }
     else
     {
@@ -388,7 +393,7 @@ common_msg_t* insert_client_info (const char* url, m_dvc_id_t device_id,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {
@@ -434,7 +439,7 @@ common_msg_t* delete_client_info (const char* url,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (client_info_id);
+        return generate_ok (client_info_id, NULL);
     }
     else
     {
@@ -478,7 +483,7 @@ common_msg_t* update_client_info
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (client_info_id);
+        return generate_ok (client_info_id, NULL);
     }
     else
     {
@@ -522,7 +527,7 @@ common_msg_t* update_ui_properties
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (UI_PROPERTIES_CLIENT_ID);
+        return generate_ok (UI_PROPERTIES_CLIENT_ID, NULL);
     }
     else
     {
@@ -836,7 +841,7 @@ common_msg_t* insert_device_type(const char* url,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {
@@ -872,7 +877,7 @@ common_msg_t* delete_device_type(const char* url,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (device_type_id);
+        return generate_ok (device_type_id, NULL);
     }
     else
     {
@@ -924,7 +929,7 @@ common_msg_t* update_device_type(const char* url,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (device_type_id);
+        return generate_ok (device_type_id, NULL);
     }
     else
     {   
@@ -1015,7 +1020,7 @@ common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {
@@ -1051,7 +1056,7 @@ common_msg_t* delete_device (const char* url, m_dvc_id_t device_id)
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (device_id);
+        return generate_ok (device_id, NULL);
     }
     else
     {
@@ -1284,7 +1289,7 @@ common_msg_t* test_insert_measurement(const char         *url,
     }
     if ( n == 1 )
     {
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {
@@ -1362,7 +1367,7 @@ common_msg_t* insert_measurement(const char         *url,
     if ( n == 1 )
     {
         log_info ("normal %s ", "end");
-        return generate_ok (newid);
+        return generate_ok (newid, NULL);
     }
     else
     {

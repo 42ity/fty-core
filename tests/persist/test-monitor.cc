@@ -69,7 +69,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
 TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok][db]")
 {
     uint32_t rowid = 11111111;
-    common_msg_t* okmsg = generate_ok (rowid);
+    common_msg_t* okmsg = generate_ok (rowid, NULL);
     REQUIRE ( okmsg );
     
     REQUIRE ( common_msg_id (okmsg) == COMMON_MSG_DB_OK );

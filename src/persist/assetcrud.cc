@@ -138,17 +138,17 @@ zlist_t* select_asset_device_link(const char* url,
             assert ( element_id != 0 );  // database is corrupted
 
             // src_out
-            a_lnk_src_out_t src_out;
-            bool srcIsNotNull  = row[1].get(src_out);
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
+            row[1].get(src_out);
 
             // dest_in
-            a_lnk_dest_in_t dest_in;
-            bool destIsNotNull = row[2].get(dest_in);
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
+            row[2].get(dest_in);
 
-            sprintf(buff, "%d:%d:%d:%d", 
-                srcIsNotNull ? src_out : SRCOUT_DESTIN_IS_NULL, 
+            sprintf(buff, "%s:%d:%s:%d", 
+                src_out.c_str(), 
                 element_id, 
-                destIsNotNull ? dest_in : SRCOUT_DESTIN_IS_NULL, 
+                dest_in.c_str(), 
                 device_id);
             zlist_push(links, buff);
         }
