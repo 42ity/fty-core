@@ -13,6 +13,8 @@ XML_TNTNET="tntnet.xml"
 SCRIPTDIR=$(dirname $0)
 CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 
+. "$SCRIPTDIR/weblib.sh"
+
 echo "Will try to run test in $CHECKOUTDIR"
 
 [ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
@@ -26,7 +28,7 @@ for cfgd in "/etc/ups" "/etc/nut"; do
     fi
 done
 if [ "$CFGDIR" = "" ] ; then
-    echo "NUT config dir not found"
+    echo "NUT config dir not found" >&2
     exit 1
 fi
 
@@ -94,13 +96,13 @@ fill_database(){
     if [ -f $CHECKOUTDIR/tools/$SQL_INIT ] ; then
         mysql < $CHECKOUTDIR/tools/$SQL_INIT
     else
-        echo "$SQL_INIT not found"
+        echo "$SQL_INIT not found" >&2
         exit 1
     fi
     if [ -f $CHECKOUTDIR/tests/CI/$SQL_LOAD ] ; then
         mysql < $CHECKOUTDIR/tests/CI/$SQL_LOAD
     else
-        echo "$SQL_LOAD not found"
+        echo "$SQL_LOAD not found" >&2
         exit 1
     fi
 }
@@ -113,7 +115,7 @@ start_simple(){
     if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
         $INSTALLDIR/usr/local/bin/simple &
     else
-        echo "Can't find simple"
+        echo "Can't find simple" >&2
         exit 1
     fi
     # wait a bit
@@ -133,7 +135,7 @@ start_tntnet(){
         echo "</tntnet>" >> $SCRIPTDIR/$XML_TNTNET
         tntnet -c $SCRIPTDIR/$XML_TNTNET &
     else
-        echo "$XML_TNTNET not found"
+        echo "$XML_TNTNET not found" >&2
         stop_processes
         exit 1
     fi
@@ -152,11 +154,17 @@ start_tntnet
 echo "starting the test"
 
 # Get first rack total power
-RACK_TOTAL_POWER1=$(curl "http://localhost:8000/api/v1/metric/computed/rack_total?arg1=477002&arg2=total_power" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
-RACK_TOTAL_POWER2=$(curl "http://localhost:8000/api/v1/metric/computed/rack_total?arg1=477003&arg2=total_power" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
-RACK_TOTAL_POWER3=$(curl "http://localhost:8000/api/v1/metric/computed/rack_total?arg1=477004&arg2=total_power" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+RACK_TOTAL_POWER1_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477002&arg2=total_power'`
+RACK_TOTAL_POWER1=$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
 
-DATACENTER_POWER=$(curl "http://localhost:8000/api/v1/metric/computed/datacenter_indicators?arg1=477000&arg2=power" | grep power | sed "s/: /%/" | cut -d'%' -f2)
+RACK_TOTAL_POWER2_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477003&arg2=total_power'`
+RACK_TOTAL_POWER2=$(echo "$RACK_TOTAL_POWER2_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+
+RACK_TOTAL_POWER3_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477004&arg2=total_power'`
+RACK_TOTAL_POWER3=$(echo "$RACK_TOTAL_POWER3_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+
+DATACENTER_POWER_CONTENT=`api_get_content '/metric/computed/datacenter_indicators?arg1=477000&arg2=power'`
+DATACENTER_POWER=$(echo "$DATACENTER_POWER_CONTENT" | grep power | sed "s/: /%/" | cut -d'%' -f2)
 
 RACKS_TOTAL_POWER=$(($RACK_TOTAL_POWER1+$RACK_TOTAL_POWER2+$RACK_TOTAL_POWER3))
 
@@ -170,12 +178,12 @@ echo "Datacenter power :        $DATACENTER_POWER"
 stop_processes
 
 if [ $DATACENTER_POWER == "" ] ; then
-    echo "TEST FAILED - No Data"
+    echo "TEST FAILED - No Data" >&2
     exit 1
 elif [ $DATACENTER_POWER -eq $RACKS_TOTAL_POWER ] ; then
     echo "TEST PASSED"
     exit 0
 else
-    echo "TEST FAILED"
+    echo "TEST FAILED" >&2
     exit 1
 fi
