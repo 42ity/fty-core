@@ -66,14 +66,10 @@ typedef uint8_t  a_lnk_tp_id_t;
 
 // ----- table:  t_bios_asset_link ---------------
 // ----- column: src_out -------------------------
-// TODO tntdb can't manage uint8_t, so for now there is
-// uint16_t
 typedef char  a_lnk_src_out_t[4];
 
 // ----- table:  t_bios_asset_link ---------------
 // ----- column: dest_in -------------------------
-// TODO tntdb can't manage uint8_t, so for now there is
-// uint16_t
 typedef char  a_lnk_dest_in_t[4];
 
 // ----- table:  t_bios_monitor_asset_relation ---

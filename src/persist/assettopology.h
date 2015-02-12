@@ -135,7 +135,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ * If A or C is SRCOUT_DESTIN_IS_NULL then A or C was not srecified in database (was NULL). 
  * 
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_FROM 
@@ -161,7 +161,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ * If A or C is SRCOUT_DESTIN_IS_NULL then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_TO
@@ -190,7 +190,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg);
  *
  * A single powerchain link is encoded as "A:B:C:D" string 
  * ("src_socket:src_id:dst_socket:dst_id").
- * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ * If A or C is SRCOUT_DESTIN_IS_NULL then A or C was not srecified in database (was NULL). 
  *
  * \param url - the connection to database.
  * \param msg - the message of the type ASSET_MSG_GET_POWER_GROUP 
@@ -449,7 +449,7 @@ zmsg_t* convert_powerchain_devices2matryoshka (
  *
  * Every element in the list is a string
  * "A:B:C:D"="src_socket:src_id:dst_socket:dst_id".
- * If A or C is 999 then A or C was not srecified in database (was NULL). 
+ * If A or C is SRCOUT_DESTIN_IS_NULL then A or C was not srecified in database (was NULL). 
  *
  * \param powerlinks - set of powerlink_info_t elements.
  *
