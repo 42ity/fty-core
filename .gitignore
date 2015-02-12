@@ -16,6 +16,9 @@ conftest.*
 configure
 !configure.ac
 .deps
+.git_details
+src/include/git_details_override.c
+src/include/git_details_override.h
 .libs/
 nbproject
 libtool

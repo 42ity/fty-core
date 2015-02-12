@@ -61,8 +61,13 @@ as its set of command-line parameters, should it be invoked in this run
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
+ * '--noseqmake' or '--disable-sequential-make' -- this sets 'NOSEQMAKE=yes'
+(see below) for this invokation of the script i.e. to override the current
+environment variable
  * '--parmake' or '--enable-parallel-make' -- this sets 'NOPARMAKE=no'
 to enable parallel makes (enabled by default unless envvars forbid)
+ * '--seqmake' or '--enable-sequential-make' -- this sets 'NOSEQMAKE=no'
+to enable sequential makes (enabled by default unless envvars forbid)
  * '--show-builder-flags' -- before executing an action, display the
 setup of `builder.sh` for this run
  * '--show-repository-metadata' -- before executing an action, display
@@ -353,6 +358,13 @@ to a sequential `make` right after a successful `configure`.
 A sequential-only build also allows easier tracing of the build logs,
 as each task is done one by one in order and is easily linked with a
 reported error, if any.
+
+
+=== 'NOSEQMAKE' toggle
+For general feature-parity, as well as to speed up certain kinds of
+`Makefile`-debugging builds, the sequential build phase can be disabled
+with `export NOSEQMAKE=yes` so that only the parallel build is attempted
+(if not disabled as well).
 
 
 === 'NCPUS' count (semi-private)
