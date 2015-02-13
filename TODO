@@ -49,7 +49,6 @@ Upcoming CLEANUP-UP cycle :
 -> "hoststate" constants (currently string literals & integers) - expose in
    a namespace; probably as static consts
 -> hoststate_byte(), byte_hoststate - namespace; rename
--> DRIVER_NMAP_REPLY - move to a ##DEFINITIONS## file
 -> state2str; str2state - namespace; ?rename; rework uint8_t; constants 
 -> str2method doesn't have a conterpart - namespace; constants
 -> matryoshka2frame - unit test; namespace, suggestion: shared::zmq
@@ -65,7 +64,6 @@ Upcoming CLEANUP-UP cycle :
 -> take a moment to think about what and how to expose 
 
 ==== src/drivers/nmap/nmap.cc  ====
--> DRIVER_NMAP_SOCK, DRIVER_NMAP_REPLY - ##DEFINITIONS## file
 -> namespace
 
 ==== src/drivers/nut/nut-driver.h  ====
@@ -90,7 +88,6 @@ I propose not to drop this directory yet; it's been removed from build
 ==== src/netmon  ==== 
 -> remove jsonf.*
 -> namespace; suggestion: drivers::netmon
--> 
 
 ==== src/utils/<everything persistence related>  ====
 -> move to src/persistence
