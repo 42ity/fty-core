@@ -149,6 +149,10 @@ if anything is needed to be done here.
 -> SASL MUX path - test the sasl service startup/config files for the mux
    path or directory that contains it (at least the few predefined variants)
    as a further fallback option
+-> Now that .git_details file has been added, remove from configure.ac the
+   duplicate functionality (and take care of PACKAGE_VERSION which has a
+   Git commit number - perhaps read it from the .git_details if direct Git
+   is not available?)
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
