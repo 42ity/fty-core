@@ -177,7 +177,7 @@ echo "Datacenter power :        $DATACENTER_POWER"
 
 stop_processes
 
-if [ $DATACENTER_POWER == "" ] ; then
+if [ "$DATACENTER_POWER" == "" ] ; then
     echo "TEST FAILED - No Data" >&2
     exit 1
 elif [ $DATACENTER_POWER -eq $RACKS_TOTAL_POWER ] ; then
