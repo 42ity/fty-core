@@ -23,10 +23,8 @@
 #
 # requirements:
 #   Must run as root (nut configuration)
-#   simple must be running
-#   nut must be running
-#   web-test must be running
-#   db must be filled
+#   bios must be running
+#   nut must be installed
 #
 
 
@@ -38,7 +36,6 @@ if [ "x$CHECKOUTDIR" = "x" ]; then
            CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
            CHECKOUTDIR="" ;;
     esac
-echo "CHECKOUTDIR = "$CHECKOUTDIR
 fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
@@ -48,10 +45,9 @@ if [ ! -f Makefile ] ; then
     ./configure
 fi
 make V=0 web-test-deps
-make web-test >/tmp/tmp &
+make web-test >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
 
-#SCRIPTDIR=$CHECKOUTDIR"/tools/CI"
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
 mysql -u root < "$DB1"
@@ -187,7 +183,6 @@ SUCCESSES=0
 LASTPOW=(0 0)
 for UPS in $UPS1 $UPS2 ; do
     for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
-        sleep 2
         # set values
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
         TYPE=`echo $UPS|grep ^pdu|wc -l`
@@ -203,8 +198,7 @@ for UPS in $UPS1 $UPS2 ; do
             set_value_in_ups $UPS $PARAM1 $NEWVALUE
             set_value_in_ups $UPS $PARAM2 0
 	fi
-        sleep 2 # give time to nut dummy driver for change
-        sleep 8  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+        sleep 10  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
         case "$UPS" in
             "$UPS1")
@@ -220,12 +214,15 @@ for UPS in $UPS1 $UPS2 ; do
                 LASTPOW[1]=$NEWVALUE
                 ;;
         esac
-        TP=`expr ${LASTPOW[0]} + ${LASTPOW[1]}`
-#        POWER=(`curl -s 'http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=8101&arg2=total_power'|grep total_power`)
-#        CUR="curl -s 'http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power'|grep total_power"
+        TP=`awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }'`
+        STR1="`printf "%f" $TP`"  # this returns "2000000.000000"
+        STR2="`printf "%f" $NUM2`"  # also returns "2000000.000000"
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
-        if [ "$TP" = "$POWER" ]; then
+        STR1="`printf "%f" $TP`"  # this returns "2000000.000000"
+        STR2="`printf "%f" $POWER`"  # also returns "2000000.000000"
+        DEL="`printf %.0f $(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print 10*(X - Y) - 0.5; }')`"
+        if [[ "$DEL" = "0" || "$DEL"="-0" ]]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
         else
@@ -234,8 +231,6 @@ for UPS in $UPS1 $UPS2 ; do
         fi
     done
 done
-#SUM_PASS=$(expr $SUM_PASS + SUCCESSES)
-#SUM_ERR=$(expr $SUM_ERR= + ERRORS)
 }
 
 results() {
@@ -243,9 +238,6 @@ SUCCESSES=$1
 ERRORS=$2
 
 echo "Pass: ${SUCCESSES}/Fails: ${ERRORS}"
-#if [ $ERRORS = 0 ] ; then
-#    exit 0
-#fi
 }
 
 USR=user1
@@ -260,9 +252,9 @@ TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Time is "$TIME
 
 SAMPLES=(
-   20
-   30
-   40
+   20.56
+   30.85
+   40.41
 )
 UPS1="epdu101_1_"
 UPS2="epdu101_2_"
@@ -277,9 +269,9 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 2"
 echo "+++++++++++++++++++++++++++++++++++"
 SAMPLES=(
-  100
-  106
-  113
+  1004567.34
+  1064.34
+  1130000
 )
 
 UPS1="epdu102_1_"
@@ -287,7 +279,7 @@ UPS2="epdu102_2_"
 RACK="8108"
 create_nut_config "epdu"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
-echo "Test2 rezults:"
+echo "Test2 results:"
 results $SUCCESSES $ERRORS
 SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
 SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
@@ -295,9 +287,9 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 3"
 echo "+++++++++++++++++++++++++++++++++++"
 SAMPLES=(
-  100
-  80
-  120
+  100.999
+  80.001
+  120.499
 )
 
 UPS1="ups103_1_"
@@ -315,9 +307,9 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 6"
 echo "+++++++++++++++++++++++++++++++++++"
 SAMPLES=(
-  100
-  80
-  120
+  100.501
+  80.499
+  120.99999999999999
 )
 
 UPS1="epdu105_1_"
@@ -354,10 +346,7 @@ SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
 echo ""
 echo "*** Summary ***"
 echo "Passed: $SUM_PASS / Failed: $SUM_ERR"
-#echo "*******************************************"
-#echo "SUMMARY RESULT:"
-#results $SUM_PASS $SUM_ERR
-#echo "*******************************************"
+
 kill $WEBTESTPID
 
 if [ $SUM_ERR = 0 ] ; then
