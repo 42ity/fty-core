@@ -35,7 +35,7 @@ src/cli/cli-network.cc :
 
 BIOS-354 :
 ----------
--> In database is already stored an UTC_TIMESPAMP.
+-> In database is already stored an UTC_TIMESTAMP.
 -> In monitorpersistence.cc a date is extracted as UNIX_TIME (with the 
    database function). Problem would appear with dates after 2038.
    Solution: 1. wait until in database would be implemented a 64-bit version
