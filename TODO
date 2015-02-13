@@ -138,14 +138,12 @@ if anything is needed to be done here.
 -> Generate a docs/devel/index.html with the list of generated HTML and
    unprocessed text files and a link into "doxygen/" and deliver it;
    add a footer with the build information (git, host, timestamps...)
+   This may be based on the recently added .git_details file contents.
 -> research and refactor generation of doxygen/ docs, preferably to have
    them really generated (5+ Mbytes worth) in the build directory but
    with relative URL-links to src/* rather than build-host absolute paths
 
 ==== configure and .in processed files ====
--> generate and deliver a file with the repository info, including output
-   of `git status -s` for possible discrepancies from the committed repo
--> generate and deliver another file with the build host info, timestamps, etc
 -> (?) refactor some scripts to become generated with substitution of default
    passwords, user/group names, etc. instead of current hardcoding.
 -> SASL MUX path - test the sasl service startup/config files for the mux
