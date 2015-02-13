@@ -1285,6 +1285,7 @@ common_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
+
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1397,8 +1398,8 @@ common_msg_encode_get_measure_type_s (
     const char *mt_unit)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_TYPE_S);
-    common_msg_set_mt_name (self, mt_name);
-    common_msg_set_mt_unit (self, mt_unit);
+    common_msg_set_mt_name (self, "%s", mt_name);
+    common_msg_set_mt_unit (self, "%s", mt_unit);
     return common_msg_encode (&self);
 }
 
@@ -1429,7 +1430,7 @@ common_msg_encode_get_measure_subtype_s (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_GET_MEASURE_SUBTYPE_S);
     common_msg_set_mt_id (self, mt_id);
-    common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_name (self, "%s", mts_name);
     common_msg_set_mts_scale (self, mts_scale);
     return common_msg_encode (&self);
 }
@@ -1446,8 +1447,8 @@ common_msg_encode_return_measure_type (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_MEASURE_TYPE);
     common_msg_set_mt_id (self, mt_id);
-    common_msg_set_mt_name (self, mt_name);
-    common_msg_set_mt_unit (self, mt_unit);
+    common_msg_set_mt_name (self, "%s", mt_name);
+    common_msg_set_mt_unit (self, "%s", mt_unit);
     return common_msg_encode (&self);
 }
 
@@ -1466,7 +1467,7 @@ common_msg_encode_return_measure_subtype (
     common_msg_set_mts_id (self, mts_id);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_scale (self, mts_scale);
-    common_msg_set_mts_name (self, mts_name);
+    common_msg_set_mts_name (self, "%s", mts_name);
     return common_msg_encode (&self);
 }
 
@@ -1484,7 +1485,7 @@ common_msg_encode_fail (
     common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
     common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
-    common_msg_set_errmsg (self, errmsg);
+    common_msg_set_errmsg (self, "%s", errmsg);
     zhash_t *aux_copy = zhash_dup (aux);
     common_msg_set_aux (self, &aux_copy);
     return common_msg_encode (&self);
@@ -1515,7 +1516,7 @@ common_msg_encode_client (
     const char *name)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_CLIENT);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1592,9 +1593,9 @@ common_msg_encode_new_measurement (
     uint64_t value)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_NEW_MEASUREMENT);
-    common_msg_set_client_name (self, client_name);
-    common_msg_set_device_name (self, device_name);
-    common_msg_set_device_type (self, device_type);
+    common_msg_set_client_name (self, "%s", client_name);
+    common_msg_set_device_name (self, "%s", device_name);
+    common_msg_set_device_type (self, "%s", device_type);
     common_msg_set_mt_id (self, mt_id);
     common_msg_set_mts_id (self, mts_id);
     common_msg_set_value (self, value);
@@ -1675,7 +1676,7 @@ common_msg_encode_device (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE);
     common_msg_set_devicetype_id (self, devicetype_id);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1731,7 +1732,7 @@ common_msg_encode_device_type (
     const char *name)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DEVICE_TYPE);
-    common_msg_set_name (self, name);
+    common_msg_set_name (self, "%s", name);
     return common_msg_encode (&self);
 }
 
@@ -1855,7 +1856,7 @@ common_msg_encode_return_last_measurements (
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
     common_msg_set_device_id (self, device_id);
-    common_msg_set_device_name (self, device_name);
+    common_msg_set_device_name (self, "%s", device_name);
     zlist_t *measurements_copy = zlist_dup (measurements);
     common_msg_set_measurements (self, &measurements_copy);
     return common_msg_encode (&self);
@@ -3647,9 +3648,9 @@ int
 common_msg_test (bool verbose)
 {
     printf (" * common_msg: ");
-    if (verbose) {;}	// silence an "unused" warning;
-    // TODO: properly fix this in template zproto : zproto_codec_c_v1.gsl
-    // so as to not lose the fix upon regeneration of code
+
+    //  Silence an "unused" warning by "using" the verbose variable
+    if (verbose) {;}
 
     //  @selftest
     //  Simple create/destroy test
