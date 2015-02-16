@@ -16,6 +16,9 @@ conftest.*
 configure
 !configure.ac
 .deps
+.git_details
+src/include/git_details_override.c
+src/include/git_details_override.h
 .libs/
 nbproject
 libtool
@@ -89,7 +92,8 @@ core-*.*.tar.?z
 core-*.deb
 
 src/utils/messages/json_schemas.h
-tools/dbpath.h
+!tools/dbpath.cpp.in
+tools/dbpath.cpp
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs

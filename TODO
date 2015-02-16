@@ -35,7 +35,7 @@ src/cli/cli-network.cc :
 
 BIOS-354 :
 ----------
--> In database is already stored an UTC_TIMESPAMP.
+-> In database is already stored an UTC_TIMESTAMP.
 -> In monitorpersistence.cc a date is extracted as UNIX_TIME (with the 
    database function). Problem would appear with dates after 2038.
    Solution: 1. wait until in database would be implemented a 64-bit version
@@ -46,9 +46,9 @@ Upcoming CLEANUP-UP cycle :
 
 ==== src/drivers/nmap/nmap-parse.cc ====
 -> move the file into a namespace, suggestion: drivers::nmap
--> "hoststate" constants (currently string literals & integers) - expose in a namespace; probably as static consts
+-> "hoststate" constants (currently string literals & integers) - expose in
+   a namespace; probably as static consts
 -> hoststate_byte(), byte_hoststate - namespace; rename
--> DRIVER_NMAP_REPLY - move to a ##DEFINITIONS## file
 -> state2str; str2state - namespace; ?rename; rework uint8_t; constants 
 -> str2method doesn't have a conterpart - namespace; constants
 -> matryoshka2frame - unit test; namespace, suggestion: shared::zmq
@@ -64,7 +64,6 @@ Upcoming CLEANUP-UP cycle :
 -> take a moment to think about what and how to expose 
 
 ==== src/drivers/nmap/nmap.cc  ====
--> DRIVER_NMAP_SOCK, DRIVER_NMAP_REPLY - ##DEFINITIONS## file
 -> namespace
 
 ==== src/drivers/nut/nut-driver.h  ====
@@ -89,12 +88,12 @@ I propose not to drop this directory yet; it's been removed from build
 ==== src/netmon  ==== 
 -> remove jsonf.*
 -> namespace; suggestion: drivers::netmon
--> 
 
 ==== src/utils/<everything persistence related>  ====
 -> move to src/persistence
 -> namespace; suggestion: db
--> QUESTION: Do we want to rename some of the files with the move? (i.e. assetmsgpersistence.cc -> assetmsg.cc or similar)
+-> QUESTION: Do we want to rename some of the files with the move?
+  (i.e. assetmsgpersistence.cc -> assetmsg.cc or similar)
 
 ==== src/utils/{cidr.*, log.*} ====
 -> implied namespace change
@@ -109,7 +108,7 @@ I propose to drop content of this directory; not the directory itself
 
 ==== src/web ====
 Because I haven't seen the contents of (or worked with) this directory before,
-I wouldn't like to suggest any clean-up tasks here. Perhaps MHR could weight in
+I wouldn't like to suggest any clean-up tasks here. Perhaps MHR could weigh in
 if anything is needed to be done here.
 
 ==== tools/ ====
@@ -123,7 +122,8 @@ if anything is needed to be done here.
 -> do not drop the cli
 
 ==== src/simple ====
--> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
+-> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with
+   another file
 
 ==== src/include/defs.h ====
 -> should become a file with only declarations; move all definitions to some
@@ -138,19 +138,21 @@ if anything is needed to be done here.
 -> Generate a docs/devel/index.html with the list of generated HTML and
    unprocessed text files and a link into "doxygen/" and deliver it;
    add a footer with the build information (git, host, timestamps...)
+   This may be based on the recently added .git_details file contents.
 -> research and refactor generation of doxygen/ docs, preferably to have
    them really generated (5+ Mbytes worth) in the build directory but
    with relative URL-links to src/* rather than build-host absolute paths
 
 ==== configure and .in processed files ====
--> generate and deliver a file with the repository info, including output
-   of `git status -s` for possible discrepancies from the committed repo
--> generate and deliver another file with the build host info, timestamps, etc
 -> (?) refactor some scripts to become generated with substitution of default
    passwords, user/group names, etc. instead of current hardcoding.
 -> SASL MUX path - test the sasl service startup/config files for the mux
    path or directory that contains it (at least the few predefined variants)
    as a further fallback option
+-> Now that .git_details file has been added, remove from configure.ac the
+   duplicate functionality (and take care of PACKAGE_VERSION which has a
+   Git commit number - perhaps read it from the .git_details if direct Git
+   is not available?)
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
