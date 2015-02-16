@@ -78,11 +78,11 @@ fi
 cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 
 log_list() {
-    ssh -p $PORT root@$VM "find project -type f -name '*.log'"
+    ssh -p $PORT root@$VM "find . -type f -name '*.log'"
 }
 
 cppcheck_list() {
-    ssh -p $PORT root@$VM "find project -type f -name cppcheck.xml"
+    ssh -p $PORT root@$VM "find . -type f -name cppcheck.xml"
 }
 
 echo -e "\n\n\n\n======================== collecting log files ========================"
