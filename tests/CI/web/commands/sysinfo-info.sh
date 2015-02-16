@@ -342,7 +342,7 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
     OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_G" "$SYSINFOA"`"
     RES=$?
     if [ -n "$OUT" ]; then
-        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-|process-pid'`"
         [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
     fi
     print_result $RES
@@ -351,7 +351,7 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
     OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_P" "$SYSINFOA"`"
     RES=$?
     if [ -n "$OUT" ]; then
-        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-|process-pid'`"
         [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
     fi
     print_result $RES
