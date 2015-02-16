@@ -15,10 +15,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
+# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # Description: This is library of functions usefull for REST API testing,
 #              which can be sourced to interactive shell
+#              You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
@@ -35,6 +37,16 @@ print_result() {
         echo " * FAILED"
         _ret=1
         FAILED="$FAILED $NAME"
+
+	# This optional envvar can be set by the caller
+	if [ "$TESTWEB_QUICKFAIL" = yes ]; then
+	    echo ""
+	    echo "$PASS previous tests have succeeded"
+	    echo "Testing aborted due to" \
+		"TESTWEB_QUICKFAIL=$TESTWEB_QUICKFAIL" \
+		"after first failure with test $NAME"
+	    exit $_ret
+	fi >&2
     fi
     TOTAL="`expr $TOTAL + 1`"
     echo
