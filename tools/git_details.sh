@@ -51,6 +51,13 @@ if [ -x "$GIT" ] && $GIT --help >/dev/null 2>&1 ; then
 	exit 0
     fi
     PACKAGE_GIT_BRANCH="$($GIT rev-parse --abbrev-ref HEAD)"
+
+    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$BRANCH" -a -n "$BUILDMACHINE" ]
+    then
+	echo "INFO: This workspace is a 'detached HEAD', but envvars set by Jenkins are detected; will rely on them" >&2
+	PACKAGE_GIT_BRANCH="$BRANCH"
+    fi
+
     PACKAGE_GIT_TSTAMP="$($GIT log -n 1 --format='%ct')"
     PACKAGE_GIT_HASH_S="$($GIT log -n 1 --format='%h')"
     PACKAGE_GIT_HASH_L="$($GIT rev-parse --verify HEAD)"
