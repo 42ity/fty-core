@@ -140,6 +140,55 @@ reportGitInfo() {
 	# committed repository state
 	PACKAGE_GIT_STATUS="$($GIT status -s)"
 
+	_B=''
+	_B_RES=-1
+	if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
+	    echo "INFO: This workspace is a 'detached HEAD'," \
+		"trying to detect the real source branch name..." >&2
+
+	    if [ -n "$BRANCH" -a -n "$BUILDMACHINE" ]; then
+		echo "INFO: envvars set by Jenkins are detected;" \
+		    "will rely on them (using '$BRANCH')" >&2
+		_B="$BRANCH"
+		[ -n "$BRANCH" -a x"$BRANCH" != xHEAD ]
+		_B_RES=?
+	    fi
+
+	    [ $_B_RES != 0 -o -z "$_B" ] && \
+	    if [ -d ".git" -a -f ".git/FETCH_HEAD" -a\
+	         -n "$PACKAGE_GIT_HASH_L" ]; then
+	        echo "INFO: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD..." >&2
+	        _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,')`"
+	        _B_RES=$?
+	    fi
+
+	    [ $_B_RES != 0 -o -z "$_B" ] && \
+	    if [ -n "$PACKAGE_GIT_HASH_S" ]; then
+	        echo "INFO: Looking for PACKAGE_GIT_BRANCH in 'git branch' info..." >&2
+	        _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
+	        _B_RES=$?
+	    fi
+
+	    [ $_B_RES != 0 -o -z "$_B" ] && \
+	    if [ -s ".git_details" -a -r ".git_details" ]; then
+	        echo "INFO: Looking for PACKAGE_GIT_BRANCH in older .git_details..." >&2
+	        _B="`source .git_details && echo "$PACKAGE_GIT_BRANCH"`"
+	        _B_RES=$?
+	    fi
+
+	    [ $_B_RES = 0 -a -n "$_B" ] && \
+	        echo "INFO: This workspace is a 'detached HEAD', but its" \
+	            "commit-id matches the head of known branch '$_B'" && \
+	        PACKAGE_GIT_BRANCH="$_B"
+
+	    unset _B
+	fi
+
+	if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
+	    echo "WARNING: This workspace is a 'detached HEAD', and" \
+	        "we could not reliably detect any predecessor branch" >&2
+	fi
+
 	### Ported from bios-infra::obs-service_git_nas.sh
 	PACKAGE_GIT_TAGGED="$($GIT describe --tags 2>/dev/null)"
 	PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/[tv]/}"  # kill the v or t from version
