@@ -146,7 +146,7 @@ int nethistory_cmd_id (char cmd) {
 
 bool
 process_message(const std::string& url, zmsg_t *msg) {
-    log_info ("%s", "start");
+    log_info ("start");
 
     zmsg_t *msg2;
 
@@ -239,7 +239,7 @@ zmsg_t* nmap_msg_process(zmsg_t **msg) {
         }
 
         default: {
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
+            log_warning ("Unexpected message type received; message id = '%d'", msg_id);
             ret = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
                                   "Unexpected message type received!", NULL);
             break;
@@ -316,14 +316,14 @@ zmsg_t* netdisc_msg_process(zmsg_t** msg) {
             break;
         }
         default: {
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
+            log_warning ("Unexpected message type received; message id = '%d'", msg_id);
             return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
                                   "Unexpected message type received!", NULL);
             break;
         }
     }
     if(rows_affected != 1) {
-        log_warning ("Unexpected number of rows '%d' affected", rows_affected);
+        log_warning ("Unexpected number of rows '%u' affected", rows_affected);
     }
     return common_msg_encode_db_ok(nethistory.getId(), NULL);
 };
@@ -375,7 +375,7 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
 //we return? it was not "ignored" but did not end up in database either...
             result = true;
         if (!r)
-            log_warning ("Did not succeed inserting new measurement; message id = '%d'", static_cast<int>(msg_id));
+            log_warning ("Did not succeed inserting new measurement; message id = '%d'", msg_id);
             break;
         }
         default:
@@ -386,7 +386,7 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
         //          make the caller crash/quit? OR does it make more sense to say, OK, message
         //          has been processed and we'll log a warning about unexpected message type
             result = true;
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));
+            log_warning ("Unexpected message type received; message id = '%d'", msg_id);
             break;
         }
 
@@ -400,9 +400,9 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
     const char* devicename  = common_msg_device_name (msg);
     const char* devicetype  = common_msg_device_type (msg);
     const char* clientname  = common_msg_client_name (msg);
-    uint16_t mt_id          = common_msg_mt_id (msg);  // size = 2
-    uint16_t mts_id         = common_msg_mts_id (msg); // size = 2
-    uint64_t value          = common_msg_value (msg); // size = 8
+    m_msrmnt_tp_id_t   mt_id  = common_msg_mt_id (msg);
+    m_msrmnt_sbtp_id_t mts_id = common_msg_mts_id (msg);
+    m_msrmnt_value_t   value  = common_msg_value (msg);
 
     bool result = false;
 
@@ -413,14 +413,14 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
     // and during the registration, the list of actual clients could be updated
     common_msg_t* retClient = select_client(url, clientname);
 
-    uint32_t msgid = common_msg_id (retClient);
+    int msgid = common_msg_id (retClient);
 
     if ( msgid  == COMMON_MSG_FAIL )
         // the client was not found
         log_error("client with name='%s' was not found, message was ignored", clientname);
     else if ( msgid == COMMON_MSG_RETURN_CLIENT )
     {
-        uint32_t client_id = common_msg_rowid (retClient); // the client was found
+        m_clnt_id_t client_id = common_msg_rowid (retClient); // the client was found
 
         // look for a device
         // device is indicated by devicename and devicetype
@@ -435,7 +435,7 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
             log_error("device with name='%s' was not found, message was ignored", devicename);
         else if ( msgid == COMMON_MSG_RETURN_DEVICE )
         {   // the device was found
-            uint32_t device_id = common_msg_rowid (retDevice);
+            m_dvc_id_t device_id = common_msg_rowid (retDevice);
 
             common_msg_t* imeasurement = insert_measurement(url, client_id, device_id, mt_id,
                                 mts_id, value);
@@ -466,10 +466,10 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
 
 bool insert_new_client_info(const char* url, common_msg_t* msg)
 {
-    uint32_t client_id = common_msg_client_id (msg);
-    uint32_t device_id UNUSED_PARAM = common_msg_device_id (msg);
+    m_clnt_id_t client_id = common_msg_client_id (msg);
+    m_dvc_id_t device_id UNUSED_PARAM = common_msg_device_id (msg);
     zchunk_t* info = common_msg_info (msg);
-    uint32_t date UNUSED_PARAM = common_msg_date (msg);
+    time_t date UNUSED_PARAM = common_msg_date (msg);
 
     bool result = false;
 
@@ -477,7 +477,7 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
     assert (client_id == UI_PROPERTIES_CLIENT_ID);
 
     common_msg_t *reply = update_client_info(url, client_id, &info);
-    uint32_t msgid = common_msg_id (reply);
+    int msgid = common_msg_id (reply);
 
     if ( msgid  == COMMON_MSG_FAIL )
         // the client info was not found
@@ -521,8 +521,8 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
             // look for a client
             common_msg_t* retClient = select_client(url.c_str(), clientname);
 
-            uint32_t client_id = 0;
-            uint32_t msgid = common_msg_id (retClient);
+            m_clnt_id_t client_id = 0;
+            int msgid = common_msg_id (retClient);
 
             if ( msgid  == COMMON_MSG_FAIL )
                 // the client was not found
@@ -535,7 +535,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                 // device is indicated by devicename and devicetype
                 common_msg_t* retDevice = select_device(url.c_str(), devicetype, devicename);
 
-                uint32_t device_id = 0;
+                m_dvc_id_t device_id = 0;
                 msgid = common_msg_id (retDevice);
 
                 if ( msgid == COMMON_MSG_FAIL )
@@ -543,12 +543,12 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                     // the device was not found, then insert new device
                     common_msg_t* newDevice = insert_device(url.c_str(), devicetype, devicename);
 
-                    uint32_t newmsgid = common_msg_id (newDevice);
+                    int newmsgid = common_msg_id (newDevice);
 
                     if ( newmsgid  == COMMON_MSG_FAIL )
                         // the device was not inserted
                         log_info("device with name='%s' and type='%s' was not inserted,"
-                            "message was ignored\n", devicename, devicetype);
+                            "message was ignored", devicename, devicetype);
                     else if ( newmsgid == COMMON_MSG_DB_OK )
                         device_id = common_msg_rowid ( newDevice ); // the device was inserted
                     else
@@ -712,4 +712,3 @@ zmsg_t* process_message(zmsg_t** msg) {
 }
 
 } // namespace persist
-
