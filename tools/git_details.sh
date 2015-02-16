@@ -54,7 +54,7 @@ if [ -x "$GIT" ] && $GIT --help >/dev/null 2>&1 ; then
 
     if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$BRANCH" -a -n "$BUILDMACHINE" ]
     then
-	echo "INFO: This workspace is a 'detached HEAD', but envvars set by Jenkins are detected; will rely on them" >&2
+	echo "INFO: This workspace is a 'detached HEAD', but envvars set by Jenkins are detected; will rely on them (using '$BRANCH')" >&2
 	PACKAGE_GIT_BRANCH="$BRANCH"
     fi
 
@@ -62,6 +62,29 @@ if [ -x "$GIT" ] && $GIT --help >/dev/null 2>&1 ; then
     PACKAGE_GIT_HASH_S="$($GIT log -n 1 --format='%h')"
     PACKAGE_GIT_HASH_L="$($GIT rev-parse --verify HEAD)"
     PACKAGE_GIT_STATUS="$($GIT status -s)"
+
+    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$PACKAGE_GIT_HASH_L" ]; then
+	if [ -d ".git" ]; then
+	    _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,')`"
+	    [ $? = 0 -a -n "$_B" ] && \
+		echo "INFO: This workspace is a 'detached HEAD', but its" \
+		    "commit-id matches the head of known branch '$_B'" && \
+		PACKAGE_GIT_BRANCH="$_B"
+	fi
+    fi
+
+    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$PACKAGE_GIT_HASH_S" ]; then
+	_B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
+	[ $? = 0 -a -n "$_B" ] && \
+	    echo "INFO: This workspace is a 'detached HEAD', but its" \
+		"commit-id matches the head of known branch '$_B'" && \
+	    PACKAGE_GIT_BRANCH="$_B"
+    fi
+
+    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
+	echo "WARNING: This workspace is a 'detached HEAD', and" \
+	    "we could not reliably detect any predecessor branch" >&2
+    fi
 
     ### Ported from bios-infra::obs-service_git_nas.sh
     PACKAGE_GIT_TAGGED="$($GIT describe --tags 2>/dev/null)"
