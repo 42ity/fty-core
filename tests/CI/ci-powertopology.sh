@@ -29,8 +29,8 @@
 
 
 if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
+    SCRIPTDIR="$(cd "$(dirname $0)" && pwd)" || \
+    SCRIPTDIR="$(dirname $0)"
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
            CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
@@ -52,26 +52,12 @@ DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
 mysql -u root < "$DB1"
 mysql -u root < "$DB2"
-
-
-
 #
-# only one parameter - ups.realpower is used for the total rack power value counting
+# only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #
 PARAM1="ups.realpower"
 PARAM2="outlet.realpower"
 #
-# random samples
-# in lines values must be differ at least of 5% otherways - 
-# in the other case nut won't pass the value through and the change is not propagated.
-# earlier than in the next 5 minutes sample
-#
-
-# samples used
-#SAMPLES=(
-#   20
-#   30
-#)
 # config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
@@ -90,11 +76,34 @@ set_value_in_ups() {
     upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1
 }
 
+create_device_definition_file() {
+    FILE=$1
+    TYPE=ups
+    if (basename "$FILE" | grep --silent "epdu" ) ; then
+        TYPE=epdu
+    fi
+    if [ "$TYPE" = "epdu" ] ; then
+	echo "# epdu power sequence file
+device.type: epdu
+outlet.realpower: 0
+#outlet.1.voltage: 220
+#outlet.2.voltage: 220
+#outlet.3.voltage: 220
+" > $FILE
+    else
+    echo "# ups power sequence file
+device.type: ups
+ups.realpower: 0
+outlet.realpower: 0
+#battery.charge: 90
+" > $FILE
+    fi
+}
+
 create_nut_config() {
-TYPE=$1
-echo "creating nut config"
-echo "MODE=standalone" > $CFGDIR/nut.conf 
-echo "[$UPS1]
+    echo "creating nut config"
+    echo "MODE=standalone" > $CFGDIR/nut.conf 
+    echo "[$UPS1]
 driver=dummy-ups
 port=$UPS1.dev
 desc=\"dummy-pdu in dummy mode\" 
@@ -109,52 +118,8 @@ password=$PSW
 actions=SET
 instcmds=ALL" > $CFGDIR/upsd.users
 
-
-    echo "# dummy-ups1 example power sequence file
-#
-# Base is the same as .dev files, generated using:
-#  $ upsc ups@host > evolution500.seq
-#
-
-battery.charge: 90
-device.type: $TYPE
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: 0
-ups.temperature: 25
-outlet.realpower: 0
-ups.load: 10
-ups.mfr: MGE UPS SYSTEMS
-ups.model: Pulsar Evolution 500
-ups.serial: AV2G3300L
-ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$UPS1.dev
-
-    echo "# dummy-ups2 example power sequence file
-#
-# Base is the same as .dev files, generated using:
-#  $ upsc ups@host > evolution500.seq
-#
-
-battery.charge: 90
-device.type: $TYPE
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: 0
-ups.temperature: 25
-outlet.realpower: 0
-ups.load: 10
-ups.mfr: MGE UPS SYSTEMS
-ups.model: Pulsar Evolution 500
-ups.serial: AV2G3300L
-ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$UPS2.dev
+    create_device_definition_file "$CFGDIR/$UPS1.dev"
+    create_device_definition_file "$CFGDIR/$UPS2.dev"
 
     chown nut:root $CFGDIR/*.dev
     echo "restart NUT server"
@@ -185,12 +150,12 @@ for UPS in $UPS1 $UPS2 ; do
     for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
         # set values
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
-        TYPE=`echo $UPS|grep ^pdu|wc -l`
+        TYPE=$(echo $UPS|grep ^pdu|wc -l)
 	#echo "TYPE = " $TYPE
         if [ "$TYPE" = 1 ]; then
                NEWVALUE=0
         fi
-        TYPE2=`echo $UPS|grep ^epdu|wc -l`
+        TYPE2=$(echo $UPS|grep ^epdu|wc -l)
 	if [ "$TYPE2 = 1" ]; then
             set_value_in_ups $UPS $PARAM1 0
             set_value_in_ups $UPS $PARAM2 $NEWVALUE
@@ -198,7 +163,7 @@ for UPS in $UPS1 $UPS2 ; do
             set_value_in_ups $UPS $PARAM1 $NEWVALUE
             set_value_in_ups $UPS $PARAM2 0
 	fi
-        sleep 10  # 8s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
+        sleep 10  # 10 s is max time for propagating into DB (poll ever 5s in nut actor + some time to process)
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
         case "$UPS" in
             "$UPS1")
@@ -214,15 +179,13 @@ for UPS in $UPS1 $UPS2 ; do
                 LASTPOW[1]=$NEWVALUE
                 ;;
         esac
-        TP=`awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }'`
-        STR1="`printf "%f" $TP`"  # this returns "2000000.000000"
-        STR2="`printf "%f" $NUM2`"  # also returns "2000000.000000"
+        TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
-        STR1="`printf "%f" $TP`"  # this returns "2000000.000000"
-        STR2="`printf "%f" $POWER`"  # also returns "2000000.000000"
-        DEL="`printf %.0f $(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print 10*(X - Y) - 0.5; }')`"
-        if [[ "$DEL" = "0" || "$DEL"="-0" ]]; then
+        STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
+        STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
+        DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')  
+        if [ $DEL = 0 ]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
         else
@@ -234,10 +197,9 @@ done
 }
 
 results() {
-SUCCESSES=$1
-ERRORS=$2
-
-echo "Pass: ${SUCCESSES}/Fails: ${ERRORS}"
+    SUCCESSES=$1
+    ERRORS=$2
+    echo "Pass: ${SUCCESSES}/Fails: ${ERRORS}"
 }
 
 USR=user1
@@ -259,12 +221,12 @@ SAMPLES=(
 UPS1="epdu101_1_"
 UPS2="epdu101_2_"
 RACK="8101"
-create_nut_config "epdu"
+create_nut_config "epdu" "epdu"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
 echo "Test1 results:"
 results $SUCCESSES $ERRORS
-SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
-SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
+SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
+SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 2"
 echo "+++++++++++++++++++++++++++++++++++"
@@ -281,8 +243,8 @@ create_nut_config "epdu"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
 echo "Test2 results:"
 results $SUCCESSES $ERRORS
-SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
-SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
+SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
+SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 3"
 echo "+++++++++++++++++++++++++++++++++++"
@@ -300,8 +262,8 @@ create_nut_config "ups"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
 echo "Test3 results:"
 results $SUCCESSES $ERRORS
-SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
-SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
+SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
+SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
 
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 6"
@@ -320,8 +282,8 @@ create_nut_config "epdu"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
 echo "Test6 results:"
 results $SUCCESSES $ERRORS
-SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
-SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
+SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
+SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
 
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 8"
@@ -340,8 +302,8 @@ create_nut_config "ups"
 testcase $UPS1 $UPS2 $SAMPLES $RACK
 echo "Test6 results:"
 results $SUCCESSES $ERRORS
-SUM_PASS=`expr ${SUM_PASS} + ${SUCCESSES}`
-SUM_ERR=`expr ${SUM_ERR} + ${ERRORS}`
+SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
+SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
 
 echo ""
 echo "*** Summary ***"
