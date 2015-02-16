@@ -1,5 +1,6 @@
 ###############################################################
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+
 # Check getting server system info as unprivileged user
 # As of now, this should work, just in a limited manner
 test_it "sysinfo_get_auth=0_raw"
@@ -216,7 +217,7 @@ RES=$?
 print_result $?
 
 test_it "sysinfo_auth=2_sane_package_indexNumber"
-PKG_CORE_NUM="`echo "$SYSINFO_VERSION" | grep '\"package-name\"]	\"core\"' | sed 's/^.*packages\",\([0123456789]*\),\"package-name\".*$/\1/'`"
+PKG_CORE_NUM="`echo "$SYSINFO_VERSION" | egrep '\"package-name\"]	\"bios|core\"' | sed 's/^.*packages\",\([0123456789]*\),\"package-name\".*$/\1/'`"
 PKG_CORE_NUM_RES=$?
 { echo "=== PKG_CORE_NUM ($PKG_CORE_NUM_RES): '$PKG_CORE_NUM'"; } >&2
 [ $PKG_CORE_NUM_RES = 0 -a -n "$PKG_CORE_NUM" -a "$PKG_CORE_NUM" -ge 0 ] || \
