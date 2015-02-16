@@ -17,6 +17,7 @@ configure
 !configure.ac
 .deps
 .git_details
+.git_details.tmp
 src/include/git_details_override.c
 src/include/git_details_override.h
 .libs/
@@ -60,6 +61,7 @@ docs/doxygen/Doxyfile
 docs/doxygen/doxylog.txt
 docs/doxygen/html/
 docs/doxygen/doxygen_sqlite3.db
+docs/doxygen/*.tmp
 
 .test.log
 .test.trs
