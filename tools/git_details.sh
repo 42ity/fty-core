@@ -52,33 +52,44 @@ if [ -x "$GIT" ] && $GIT --help >/dev/null 2>&1 ; then
     fi
     PACKAGE_GIT_BRANCH="$($GIT rev-parse --abbrev-ref HEAD)"
 
+    PACKAGE_GIT_TSTAMP="$($GIT log -n 1 --format='%ct')"
+    PACKAGE_GIT_HASH_S="$($GIT log -n 1 --format='%h')"
+    PACKAGE_GIT_HASH_L="$($GIT rev-parse --verify HEAD)"
+    PACKAGE_GIT_STATUS="$($GIT status -s)"
+
     if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$BRANCH" -a -n "$BUILDMACHINE" ]
     then
 	echo "INFO: This workspace is a 'detached HEAD', but envvars set by Jenkins are detected; will rely on them (using '$BRANCH')" >&2
 	PACKAGE_GIT_BRANCH="$BRANCH"
     fi
 
-    PACKAGE_GIT_TSTAMP="$($GIT log -n 1 --format='%ct')"
-    PACKAGE_GIT_HASH_S="$($GIT log -n 1 --format='%h')"
-    PACKAGE_GIT_HASH_L="$($GIT rev-parse --verify HEAD)"
-    PACKAGE_GIT_STATUS="$($GIT status -s)"
-
-    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$PACKAGE_GIT_HASH_L" ]; then
-	if [ -d ".git" ]; then
+    _B=''
+    _B_RES=-1
+    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
+	if [ -d ".git" -a -n "$PACKAGE_GIT_HASH_L" ]; then
 	    _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,')`"
-	    [ $? = 0 -a -n "$_B" ] && \
-		echo "INFO: This workspace is a 'detached HEAD', but its" \
-		    "commit-id matches the head of known branch '$_B'" && \
-		PACKAGE_GIT_BRANCH="$_B"
+	    _B_RES=$?
 	fi
-    fi
 
-    if [ "$PACKAGE_GIT_BRANCH" = "HEAD" -a -n "$PACKAGE_GIT_HASH_S" ]; then
-	_B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
-	[ $? = 0 -a -n "$_B" ] && \
+	[ $_B_RES != 0 -o -z "$_B" ] && \
+	if [ -n "$PACKAGE_GIT_HASH_S" ]; then
+	    _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
+	    _B_RES=$?
+	fi
+
+	[ $_B_RES != 0 -o -z "$_B" ] && \
+	if [ -s ".git_details" -a -r ".git_details" ]; then
+	    echo "INFO: Got older .git_details to consult..." >&2
+	    _B="`source .git_details && echo "$PACKAGE_GIT_BRANCH"`"
+	    _B_RES=$?
+	fi
+
+	[ $_B_RES = 0 -a -n "$_B" ] && \
 	    echo "INFO: This workspace is a 'detached HEAD', but its" \
 		"commit-id matches the head of known branch '$_B'" && \
 	    PACKAGE_GIT_BRANCH="$_B"
+
+	unset _B
     fi
 
     if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
