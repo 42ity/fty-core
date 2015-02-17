@@ -70,7 +70,9 @@ reportBuildTimestamp() {
     # May be passed by caller like the obs-service_git_nas.sh script
     # to use some unified value across a mass build, if needed
     if [ -z "$PACKAGE_BUILD_TSTAMP" ] ; then
-	PACKAGE_BUILD_TSTAMP="`TZ=UTC date -u '+%s'`"
+	PACKAGE_BUILD_TSTAMP="`TZ=UTC date -u '+%s'`" || \
+        PACKAGE_BUILD_TSTAMP="`TZ=UTC date '+%s'`" || \
+        return 1
     fi
 
     reportVar PACKAGE_BUILD_TSTAMP
