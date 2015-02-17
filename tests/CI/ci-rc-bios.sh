@@ -42,6 +42,11 @@ mlm_server
 }
 
 start_daemon(){
+    if which ${1} &> /dev/null; then
+        prefix=`which ${1} | sed "s#/${1}\$##"`
+    fi
+    [ \! -x ${PWD}/${1} ]       || prefix="${PWD}"
+    [ \! -x ~/bin/$1 ]          || prefix="`cd ~/bin; pwd`"
     [ \! -x ~/bin/$1 ]          || prefix="`cd ~/bin; pwd`"
     [ \! -x ~/lib/$1 ]          || prefix="`cd ~/lib; pwd`"
     [ \! -x ~/libexec/$1 ]      || prefix="`cd ~/libexec; pwd`"

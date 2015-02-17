@@ -80,14 +80,14 @@ zlist_t* select_asset_element_groups(const char* url,
             row[0].get(group_id);
             assert ( group_id != 0 );  // database is corrupted
             
-            sprintf(buff, "%d", group_id);
+            sprintf(buff, "%" PRIu32, group_id);
             zlist_push (groups, buff);
         }
     }
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&groups);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -145,7 +145,7 @@ zlist_t* select_asset_device_link(const char* url,
             std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
 
-            sprintf(buff, "%s:%d:%s:%d", 
+            sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, 
                 src_out.c_str(), 
                 element_id, 
                 dest_in.c_str(), 
@@ -156,7 +156,7 @@ zlist_t* select_asset_device_link(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&links);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -210,7 +210,7 @@ zhash_t* select_asset_element_attributes(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zhash_destroy (&extAttributes);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -272,7 +272,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
 
         if ( groups == NULL )    // internal error in database
         {
-            log_warning("abnormal %s ","end");
+            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
@@ -280,7 +280,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
-            log_warning("abnormal %s ","end");
+            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
@@ -496,7 +496,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
             assert( id != 0);    // database is corrupted
     
             // TODO type convertions
-            sprintf(buff, "%d", id);
+            sprintf(buff, "%" PRIu32, id);
             zhash_insert(elements, buff, (void*)name.c_str());
         }
     }

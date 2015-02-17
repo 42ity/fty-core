@@ -25,7 +25,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SRC_PERSIST_ASSETTOPOLOGY_H_
 #include <set>
 #include <tuple>
+#include <inttypes.h>
 #include "asset_msg.h"
+#include "dbtypes.h"
+
 
 // ===============================================================
 // Helper types
@@ -71,7 +74,7 @@ inline std::string device_info_type_name(const device_info_t& d) {
  * Forth  -- dest_in
  *              input port on the destination device.
  */
-typedef std::tuple< uint32_t, std::string, uint32_t, std::string > powerlink_info_t;
+typedef std::tuple< a_elmnt_id_t, std::string, a_elmnt_id_t, std::string > powerlink_info_t;
 
 // ===============================================================
 // Functions for processing a special message type
@@ -269,7 +272,7 @@ void print_frame_devices (zframe_t* frame);
  * \param parent_id  - id (asset_elememt_id) of the parent.
  * 
  */
-void print_frame (zframe_t* frame, uint32_t parent_id);
+void print_frame (zframe_t* frame, a_elmnt_id_t parent_id);
 
 
 /**
@@ -287,8 +290,7 @@ void print_frame (zframe_t* frame, uint32_t parent_id);
  * 
  * \return std::set of edges.
  */
-edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, 
-                uint8_t type, std::string name, std::string dtype_name);
+edge_lf print_frame_to_edges (zframe_t* frame, a_elmnt_id_t parent_id, a_elmnt_tp_id_t type, std::string name, std::string dtype_name);
 
 
 /* \brief Helper function for testing.
@@ -333,11 +335,10 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
  *                           COMMON_MSG_FAIL message.
 */
 zmsg_t* select_group_elements(
-            const char* url             , uint32_t    element_id, 
-            uint8_t     element_type_id , const char* group_name, 
-            const char* dtype_name      , uint8_t     filtertype
+            const char*     url             , a_elmnt_id_t    element_id, 
+            a_elmnt_tp_id_t element_type_id , const char* group_name, 
+            const char*     dtype_name      , a_elmnt_tp_id_t     filtertype
         );
-
 
 /**
  * \brief Select childs of specified type for the specified element 
@@ -358,10 +359,10 @@ zmsg_t* select_group_elements(
  *                    to the filter filter_type. (it is a Matryoshka).
  */
 zframe_t* select_childs(
-    const char* url             , uint32_t element_id, 
-    uint8_t     element_type_id , uint8_t child_type_id, 
-    bool        is_recursive    , uint32_t current_depth, 
-    uint8_t     filtertype);
+    const char*     url             , a_elmnt_id_t element_id,
+    a_elmnt_tp_id_t element_type_id , a_elmnt_tp_id_t child_type_id,
+    bool            is_recursive    , uint32_t current_depth,
+    a_elmnt_tp_id_t     filtertype);
 
 
 /*
@@ -379,8 +380,8 @@ zframe_t* select_childs(
  * \return zmsg_t - an encoded COMMON_MSG_FAIL or 
  *                      ASSET_MSG_RETURN_TOPOLOGY_TO message.
  */
-zmsg_t* select_parents (const char* url, uint32_t element_id, 
-                        uint8_t element_type_id);
+zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id, 
+                        a_elmnt_tp_id_t element_type_id);
 
 /**
  * \brief Selects a name of the specified asset element, in case of device 
@@ -400,9 +401,9 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
  *              Second - device type name.
  *              Third  - device type id.
  */
-std::tuple <std::string, std::string, uint32_t>
+std::tuple <std::string, std::string, a_elmnt_tp_id_t>
     select_add_device_info  ( const char* url, 
-                              uint32_t asset_element_id);
+                              a_elmnt_id_t asset_element_id);
 
 
 /**
@@ -426,8 +427,8 @@ std::tuple <std::string, std::string, uint32_t>
  *              Second - set of powerlinks.
  */
 std::pair < std::set < device_info_t >, std::set < powerlink_info_t > > 
-    select_power_topology_to (const char* url, uint32_t element_id, 
-                              uint8_t linktype, bool is_recursive);
+    select_power_topology_to (const char* url, a_elmnt_id_t element_id, 
+                              a_lnk_tp_id_t linktype, bool is_recursive);
 
 // ===============================================================
 // Helper functions 
