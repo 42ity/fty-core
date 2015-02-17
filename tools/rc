@@ -130,7 +130,8 @@ subst_unit() {
 
     sed -e "s|@libdir[@]/bios|${BUILDSUBDIR}|" \
 	-e "s|@libexecdir[@]/bios|${BUILDSUBDIR}|" \
-	-- "${CHECKOUTDIR}/tools/${unit}.service.in" 
+	-- "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+    sed 's|//|/|g'
 }
 
 # install unit file
@@ -169,11 +170,11 @@ get_unit_exec() {
 is_daemon_running() {
     local name pid pidfile
     name=${1}
-    pidfile="${BUILDSUBDIR}/${name}.pid"
+    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
     
     [ ! -r "${pidfile}" ] && return 1
-    pid=$(< "${pidfile}")
-    if [ ! -d /proc/${pid} ]; then
+    pid=$(head -1 "${pidfile}")
+    if [ -z "$pid" -o ! -d "/proc/${pid}" ]; then
         warn "stale pid file ${pidfile} found, removing"
         rm -f ${pidfile}
         return 1
@@ -189,7 +190,7 @@ start_daemon() {
 
     is_daemon_running "${name}" && return 0
 
-    type "${name}" &>/dev/null || \
+    type "${name}" >/dev/null || \
         [ -x ${name} ] || \
         die "Can't find executable ${name}"
 
@@ -197,11 +198,12 @@ start_daemon() {
     ${name} "${args}" &
     pid=$!
     warn "START-DAEMON: ${name}[${pid}] started"
-    echo "${pid}" > "${BUILDSUBDIR}/${name}.pid"
+    echo "${pid}" > "${BUILDSUBDIR}/`basename ${name}`.pid"
 
     # nasty hack to check if pid is still alive - we assume no daemonization
     # will be done by a program! this was script reports success or a fail
-    sleep 2
+    sleep 3
+    warn "START-DAEMON: Testing if PID $pid is still alive..."
     kill -0 ${pid}
 }
 
@@ -209,7 +211,7 @@ stop_daemon() {
     local name pid pidfile
     name="${1}"
     shift 1
-    pidfile="${BUILDSUBDIR}/${name}.pid"
+    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
 
     if ! is_daemon_running "${name}"; then
         rm -f "${pidfile}"
@@ -292,7 +294,7 @@ main() {
                 rm -f /run/systemd/system/${unit}.service
             done
         else
-            for name in $(ls -1 *.pid | sed -e 's/.pid$//'); do
+            for name in $(ls -1 *.pid | sed -e 's/\.pid$//'); do
                 stop_daemon "${name}"
             done
         fi
