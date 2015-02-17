@@ -191,8 +191,9 @@ reportGitInfo() {
 
 	### Ported from bios-infra::obs-service_git_nas.sh
 	PACKAGE_GIT_TAGGED="$($GIT describe --tags 2>/dev/null)"
-	PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/[tv]/}"  # kill the v or t from version
-	PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/-/\~}"
+	# kill the v or t from version or tag
+	PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED/-[tv]/-}"
+	PACKAGE_GIT_TAGGED="${PACKAGE_GIT_TAGGED//-/~}"
     fi
 
     if [ "$GIT_ERRORED" = no -o x"$GIT_DETAILS_BLANK" = xyes ]; then
