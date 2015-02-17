@@ -209,6 +209,20 @@ reportGitInfo() {
     fi
 }
 
-reportBuildHost
-reportBuildTimestamp
-reportGitInfo
+case "$1" in
+    build-host)
+	reportBuildHost ;;
+    build-timestamp)
+	reportBuildTimestamp ;;
+    build-source)
+	reportGitInfo ;;
+    *)
+	reportBuildHost
+	reportBuildTimestamp
+
+	# NOTE: This must be the last action - it returns the possible error
+	# exit-codes in Git metadata detection, if the caller cares about that
+	reportGitInfo
+	exit
+	;;
+esac
