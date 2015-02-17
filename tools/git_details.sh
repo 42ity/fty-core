@@ -42,6 +42,10 @@ else
     GIT="git"
 fi
 
+[ -z "$DATE" -o ! -x "$DATE" ] && DATE="$(which date 2>/dev/null | head -1)"
+[ -z "$DATE" -o ! -x "$DATE" ] && DATE="$(which gdate 2>/dev/null | head -1)"
+[ -n "$DATE" -a -x "$DATE" ] || DATE=date
+
 reportVar() {
     # Argument is the name of the variable to report in "original"
     # and "escaped" form
@@ -70,8 +74,8 @@ reportBuildTimestamp() {
     # May be passed by caller like the obs-service_git_nas.sh script
     # to use some unified value across a mass build, if needed
     if [ -z "$PACKAGE_BUILD_TSTAMP" ] ; then
-	PACKAGE_BUILD_TSTAMP="`TZ=UTC date -u '+%s'`" || \
-        PACKAGE_BUILD_TSTAMP="`TZ=UTC date '+%s'`" || \
+	PACKAGE_BUILD_TSTAMP="`TZ=UTC $DATE -u '+%s'`" || \
+        PACKAGE_BUILD_TSTAMP="`TZ=UTC $DATE '+%s'`" || \
         return 1
     fi
 
