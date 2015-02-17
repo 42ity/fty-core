@@ -16,6 +16,10 @@ conftest.*
 configure
 !configure.ac
 .deps
+.git_details
+.git_details.tmp
+src/include/git_details_override.c
+src/include/git_details_override.h
 .libs/
 nbproject
 libtool
@@ -57,6 +61,7 @@ docs/doxygen/Doxyfile
 docs/doxygen/doxylog.txt
 docs/doxygen/html/
 docs/doxygen/doxygen_sqlite3.db
+docs/doxygen/*.tmp
 
 .test.log
 .test.trs
@@ -83,16 +88,28 @@ tests/CI/web/log/
 
 build/
 build-*/
-core-*.*/
 
+core-*.*/
 core-*.*.tar.?z
 core-*.deb
 
+bios-*.*/
+bios-*.*.tar.?z
+bios-*.deb
+
 src/utils/messages/json_schemas.h
-tools/dbpath.h
+!tools/dbpath.cpp.in
+tools/dbpath.cpp
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
+
+!tools/bios-driver-netmon.service.in
+!tools/bios-driver-nut.service.in
+!tools/bios-db.service.in
+bios-driver-netmon.service
+bios-driver-nut.service
+bios-db.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
