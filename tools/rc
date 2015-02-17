@@ -195,7 +195,7 @@ start_daemon() {
         die "Can't find executable ${name}"
 
     warn "START-DAEMON: ${name} ${args}"
-    ${name} "${args}" &
+    ${name} ${args} &
     pid=$!
     warn "START-DAEMON: ${name}[${pid}] started"
     echo "${pid}" > "${BUILDSUBDIR}/`basename ${name}`.pid"
