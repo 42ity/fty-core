@@ -29,7 +29,7 @@
 
 
 if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd \"$(dirname $0)\" && pwd)" || \
+    SCRIPTDIR="$(cd "$(dirname $0)" && pwd)" || \
     SCRIPTDIR="$(dirname $0)"
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
