@@ -15,15 +15,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author(s): Michal Vyskocil <michalvyskocil@eaton.com>,
+# Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # Description:
-#   tool for starting processes with proper dependencies and in user friendly way
+#   tool for starting processes with proper dependencies and in a
+#       user/developer friendly way
 #   It has two main modes of operations:
-#       1.) priviledged user under systemd - unit files are installed to /run and
-#           executed
-#       2.) non-priviledged user or non systemd - dependencies and arguments are
-#           extracted and script run them on its own
+#       1.) priviledged user under systemd - unit files are installed to /run
+#           and executed
+#       2.) non-priviledged user or non systemd - dependencies and arguments
+#           are extracted and script run them on its own
 #
 #   TODO: it will be convenient if stdout/stderr of manually started processes
 #         will be duplicated to 
@@ -45,13 +47,14 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
-BUILDSUBDIR=$CHECKOUTDIR
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
     echo "Search path: $CHECKOUTDIR, $PWD"
     exit 1
 fi
+echo "INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to locate project binaries..."
 
 die() {
     echo "FATAL: ${@}" >&2
@@ -123,8 +126,13 @@ subst_unit() {
     local unit
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
-    sed -e "s|@libdir[@]/bios|${BUILDSUBDIR}|" -- "${CHECKOUTDIR}/tools/${unit}.service.in" 
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+
+    sed -e "s|@libdir[@]/bios|${BUILDSUBDIR}|" \
+        -e "s|@libexecdir[@]/bios|${BUILDSUBDIR}|" \
+        -- "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+    sed 's|//|/|g'
 }
 
 # install unit file
@@ -132,7 +140,8 @@ install_unit_sysd() {
     local unit
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" > /run/systemd/system/${unit}.service
     my_systemctl daemon-reload
@@ -142,16 +151,19 @@ get_unit_dependencies() {
     local unit
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
-    grep '^Requires=' "${CHECKOUTDIR}/tools/${unit}.service.in" | cut -d '=' -f 2 | sed -e 's/.service\>//g' -e 's/[ \t]\+/\n/'
+    grep '^Requires=' "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+        cut -d '=' -f 2 | sed -e 's/.service\>//g' -e 's/[ \t]\+/\n/'
 }
 
 get_unit_exec() {
     local unit
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" | grep -e '^ExecStart=' | cut -d '=' -f 2
 }
@@ -159,15 +171,17 @@ get_unit_exec() {
 is_daemon_running() {
     local name pid pidfile
     name=${1}
-    pidfile="${BUILDSUBDIR}/${name}.pid"
+    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
     
     [ ! -r "${pidfile}" ] && return 1
-    pid=$(< "${pidfile}")
-    if [ ! -d /proc/${pid} ]; then
+    pid=$(head -1 "${pidfile}")
+    if [ -z "$pid" -o ! -d "/proc/${pid}" ]; then
         warn "stale pid file ${pidfile} found, removing"
         rm -f ${pidfile}
         return 1
     fi
+
+    echo "Service '`basename ${name}`' is already running: PID ${pid}" >&2
     return 0
 }
 
@@ -179,19 +193,20 @@ start_daemon() {
 
     is_daemon_running "${name}" && return 0
 
-    type "${name}" &>/dev/null || \
+    type "${name}" >/dev/null || \
         [ -x ${name} ] || \
         die "Can't find executable ${name}"
 
     warn "START-DAEMON: ${name} ${args}"
-    ${name} "${args}" &
+    ${name} ${args} &
     pid=$!
     warn "START-DAEMON: ${name}[${pid}] started"
-    echo "${pid}" > "${BUILDSUBDIR}/${name}.pid"
+    echo "${pid}" > "${BUILDSUBDIR}/`basename ${name}`.pid"
 
     # nasty hack to check if pid is still alive - we assume no daemonization
     # will be done by a program! this was script reports success or a fail
-    sleep 2
+    sleep 3
+    warn "START-DAEMON: Testing if PID $pid is still alive..."
     kill -0 ${pid}
 }
 
@@ -199,7 +214,7 @@ stop_daemon() {
     local name pid pidfile
     name="${1}"
     shift 1
-    pidfile="${BUILDSUBDIR}/${name}.pid"
+    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
 
     if ! is_daemon_running "${name}"; then
         rm -f "${pidfile}"
@@ -224,7 +239,8 @@ run_unit_user() {
     local unit args
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     if [ "${unit}" = "malamute" ]; then
         run_malamute_user || die "cant run malamute"
@@ -232,12 +248,13 @@ run_unit_user() {
     fi
 
     if [ "${unit}" = "mysql" ]; then
-        pgrep mysql || die "starting of mysql is not yet implemented! run it manually"
+        pgrep mysql >/dev/null || \
+            die "starting of mysql is not yet implemented! run it manually"
         return 0
     fi
 
     is_daemon_running "${unit}" && return 0
-    
+
     for dep_unit in $(get_unit_dependencies "${unit}"); do
         run_unit_user "${dep_unit}"
     done
@@ -250,7 +267,8 @@ run_unit_sysd() {
     local unit
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    [ -n "${unit}" ] || \
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     if ! is_external_unit "${unit}"; then
         install_unit_sysd ${unit} || die "Can't install unit file for ${unit}"
@@ -272,12 +290,17 @@ main() {
 
     if [ "${1}" = "--kill" ]; then
         if can_use_sysd; then
-            for unit in $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') malamute; do
+            for unit in \
+                $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') \
+                malamute \
+            ; do
                 my_systemctl stop "${unit}"
                 rm -f /run/systemd/system/${unit}.service
             done
         else
-            for name in $(ls -1 *.pid | sed -e 's/.pid$//'); do
+            for name in \
+                $(ls -1 ${BUILDSUBDIR}/*.pid 2>/dev/null | sed -e 's/\.pid$//') \
+            ; do
                 stop_daemon "${name}"
             done
         fi
