@@ -112,15 +112,26 @@ AS_IF([test -d "$_srcdir_abs/.git"],
 # obsolete quickly during development. Rather, the build products that
 # need (test, display) this information should use or convert the file.
 # The Makefile takes care to keep it current as long as possible.
+# Also, for display in te end of execution, try to "source" the values.
 AS_IF([test -s "$_curdir_abs/.git_details"],
-	[PACKAGE_GIT_HASH_S="`source "$_curdir_abs/.git_details" && echo "$PACKAGE_GIT_HASH_S_ESCAPED"`" || PACKAGE_GIT_HASH_S=""
-	 PACKAGE_GIT_TSTAMP="`source "$_curdir_abs/.git_details" && echo "$PACKAGE_GIT_TSTAMP_ESCAPED"`" || PACKAGE_GIT_TSTAMP=""
-	 AS_IF([test -n "$PACKAGE_GIT_HASH_S" -a x"$PACKAGE_GIT_HASH_S" != x'""' -a -n "$PACKAGE_GIT_TSTAMP" -a x"$PACKAGE_GIT_TSTAMP" != x'""'],
+	[source "$_curdir_abs/.git_details" && for V in \
+		PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TAGGED \
+		PACKAGE_GIT_TSTAMP PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L \
+		PACKAGE_GIT_STATUS PACKAGE_BUILD_TSTAMP \
+		PACKAGE_BUILD_HOST_UNAME PACKAGE_BUILD_HOST_NAME \
+		PACKAGE_BUILD_HOST_OS ; do
+			eval $V='$'${V}_ESCAPED || eval $V=""
+		done
+	 AS_IF([test -z "$PACKAGE_GIT_HASH_S"], [source "$_curdir_abs/.git_details"])
+	 AS_IF([test -n "$PACKAGE_GIT_HASH_S" -a x"$PACKAGE_GIT_HASH_S" != x'""' \
+	          -a -n "$PACKAGE_GIT_TSTAMP" -a x"$PACKAGE_GIT_TSTAMP" != x'""'],
 		[AC_MSG_NOTICE([Setting PACKAGE_STRING and PACKAGE_VERSION to include Git hash '$PACKAGE_GIT_HASH_S' and commit timestamp '$PACKAGE_GIT_TSTAMP'...])
 		 PACKAGE_STRING="$PACKAGE_STRING.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 PACKAGE_VERSION="$PACKAGE_VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 _FIX_PACKAGE_STRING=y
 		 _FIX_PACKAGE_VERSION=y
+		 _FIX_VERSION=y
 	 ])
 ])
 
@@ -131,41 +142,48 @@ m4_define([__AC_UNDEFINE],[_AC_DEFINE([#ifdef $1
 
 # General substitutions for all these packaging variables
 AS_IF([test x"$_FIX_PACKAGE_NAME" = xy],
-	[AC_MSG_NOTICE([Overriding PACKAGE_NAME])
+	[AC_MSG_NOTICE([Overriding PACKAGE_NAME='$PACKAGE_NAME'])
 	 __AC_UNDEFINE([PACKAGE_NAME])
 	 AC_DEFINE_UNQUOTED([PACKAGE_NAME],
 	    ["$PACKAGE_NAME"],
 	    [Packaging metadata: distro source code name])
 ])
 AS_IF([test x"$_FIX_PACKAGE_VERSION" = xy],
-	[AC_MSG_NOTICE([Overriding PACKAGE_VERSION])
+	[AC_MSG_NOTICE([Overriding PACKAGE_VERSION='$PACKAGE_VERSION'])
 	 __AC_UNDEFINE([PACKAGE_VERSION])
 	 AC_DEFINE_UNQUOTED([PACKAGE_VERSION],
 	    ["$PACKAGE_VERSION"],
 	    [Packaging metadata: distro source code/packaged release version])
 ])
+AS_IF([test x"$_FIX_VERSION" = xy],
+	[AC_MSG_NOTICE([Overriding VERSION='$VERSION'])
+	 __AC_UNDEFINE([VERSION])
+	 AC_DEFINE_UNQUOTED([VERSION],
+	    ["$VERSION"],
+	    [Version number of package])
+])
 AS_IF([test x"$_FIX_PACKAGE_STRING" = xy],
-	[AC_MSG_NOTICE([Overriding PACKAGE_STRING])
+	[AC_MSG_NOTICE([Overriding PACKAGE_STRING='$PACKAGE_STRING'])
 	 __AC_UNDEFINE([PACKAGE_STRING])
 	 AC_DEFINE_UNQUOTED([PACKAGE_STRING],
 	    ["$PACKAGE_STRING"],
 	    [Packaging metadata: distro source code name+version])
 ])
 AS_IF([test x"$_FIX_PACKAGE_URL" = xy],
-	[AC_MSG_NOTICE([Overriding PACKAGE_URL])
+	[AC_MSG_NOTICE([Overriding PACKAGE_URL='$PACKAGE_URL'])
 	 __AC_UNDEFINE([PACKAGE_URL])
 	 AC_DEFINE_UNQUOTED([PACKAGE_URL],
 	    ["$PACKAGE_URL"],
-	    [Packaging metadata: distro contact])
+	    [Packaging metadata: distro contact (website)])
 ])
 AS_IF([test x"$_FIX_PACKAGE_BUGREPORT" = xy],
-	[AC_MSG_NOTICE([Overriding PACKAGE_BUGREPORT])
+	[AC_MSG_NOTICE([Overriding PACKAGE_BUGREPORT='$PACKAGE_BUGREPORT'])
 	 __AC_UNDEFINE([PACKAGE_BUGREPORT])
 	 AC_DEFINE_UNQUOTED([PACKAGE_BUGREPORT],
 	    ["$PACKAGE_BUGREPORT"],
-	    [Packaging metadata: distro contact])
+	    [Packaging metadata: distro contact (email/tracker)])
 ])
-AC_MSG_NOTICE([Overriding PACKAGE_VENDOR])
+AC_MSG_NOTICE([Overriding PACKAGE_VENDOR='$PACKAGE_VENDOR'])
 AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    ["$PACKAGE_VENDOR"],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
@@ -369,10 +387,11 @@ AC_SUBST([my_CXXFLAGS])
 AC_MSG_NOTICE([
 Summary:
 
-        $PACKAGE_NAME $VERSION
+        Version:                 ${PACKAGE_NAME} ${VERSION}
 
         Git origin URL:          ${PACKAGE_GIT_ORIGIN}
         Git branch:              ${PACKAGE_GIT_BRANCH}
+        Git tag:                 ${PACKAGE_GIT_TAGGED}
         Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
