@@ -268,7 +268,7 @@ zmsg_t* select_group_elements(
             row[1].get(name);
             assert ( !name.empty() ); // otherwise db is corrupted
 
-            a_elmnt_tp_id_t id_type = 0;   // tntdb could not work properly with uint8_t
+            a_elmnt_tp_id_t id_type = 0;
             row[2].get(id_type);
             assert ( id_type );
             
@@ -1152,7 +1152,7 @@ std::tuple <std::string, std::string, a_elmnt_tp_id_t>
     log_debug ("selected device type name = %s", device_type_name.c_str());
     
     // device type id, would be 0 if it is not a device
-    a_elmnt_tp_id_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
     row[2].get(device_type_id);
     log_debug ("selected device type id = %" PRIu16, device_type_id);
     return std::make_tuple (element_name, device_type_name, device_type_id);
@@ -1224,11 +1224,11 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
 
     std::string device_name = "";
     std::string device_type_name = "";
-    uint32_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
 
     // select information about the start device
     try{
-        std::tuple <std::string, std::string, a_elmnt_tp_id_t> additional_info = 
+        std::tuple <std::string, std::string, a_dvc_tp_id_t> additional_info = 
             select_add_device_info (url, element_id);
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
@@ -1373,11 +1373,11 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
     log_info ("start");
     std::string device_name = "";
     std::string device_type_name = "";
-    a_elmnt_tp_id_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
     
     // select information about the start device
     try{
-        std::tuple <std::string, std::string, a_elmnt_tp_id_t> additional_info = 
+        std::tuple <std::string, std::string, a_dvc_tp_id_t> additional_info = 
             select_add_device_info (url, element_id);
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
@@ -1692,7 +1692,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             row[2].get(id_asset_element);
             assert ( id_asset_element );
             
-            a_elmnt_tp_id_t device_type_id = 0;
+            a_dvc_tp_id_t device_type_id = 0;
             row[2].get(device_type_id);
             assert ( device_type_id );
 
@@ -1763,7 +1763,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( !device_type_name.empty() );
 
             // device_type_id, required 
-            a_elmnt_id_t device_type_id = 0;
+            a_dvc_tp_id_t device_type_id = 0;
             row[3].get(device_type_id);
             assert ( device_type_id );
             
