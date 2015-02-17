@@ -10,13 +10,14 @@
 
 int main (int argc, char *argv []) {
     // Basic settings
-    if (argc > 2) {
-        printf ("syntax: db-ng [ ipc://...|tcp://... [ mysql:db=bios;user=bios;password=test ] ]\n");
+    if (argc > 3) {
+        printf ("syntax: db-ng [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
         return 0;
     }
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
-    if(argc == 2)
+    if (argc > 2) {
         url = argv[2];
+    }
 
     // Create a client
     mlm_client_t *client = mlm_client_new(addr, 1000, "persistence");
