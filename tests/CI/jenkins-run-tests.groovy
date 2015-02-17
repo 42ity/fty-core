@@ -85,6 +85,7 @@ for(
         "test_restapi",
         "test_general_database",
         "test_NUT",
+        "test_rackpower",
         "stop_bios"
     ]
 ){
