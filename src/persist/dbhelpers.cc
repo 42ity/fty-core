@@ -61,32 +61,32 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("asset element %d notfound %s ", asset_element_id,"end");
+        log_info("end: asset element %" PRIu32 " notfound", asset_element_id);
         throw bios::NotFound();
     }
     catch (const std::exception &e) {
-        log_warning("abnormal %s ","end");
+        log_warning("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
     if ( element_type_id != asset_type::DEVICE )
     {
-        log_info("specified element is not a device %s ","end");
+        log_info("end: specified element is not a device");
         throw bios::ElementIsNotDevice();
     }
     else if ( device_discovered_id == 0 )
     {
-        log_warning("monitor counterpart for the %d was not found %s ", 
-                                                asset_element_id, "end");
+        log_warning("end: monitor counterpart for the %" PRIu32 " was not found", 
+                                                asset_element_id);
         throw bios::MonitorCounterpartNotFound ();
     }
-    log_info("end: asset element %d converted to %d ", asset_element_id, device_discovered_id);
+    log_info("end: asset element %" PRIu32 " converted to %" PRIu32, asset_element_id, device_discovered_id);
     return device_discovered_id;
 }
 
 a_elmnt_id_t convert_monitor_to_asset(const char* url, 
                     m_dvc_id_t discovered_device_id)
 {
-    log_info("%s ","start");
+    log_info("start");
     assert ( discovered_device_id );
     a_elmnt_id_t asset_element_id = 0;
     try{
@@ -106,14 +106,14 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("notfound %s ","end");
+        log_info("end: notfound");
         throw bios::NotFound();
     }
     catch (const std::exception &e) {
-        log_warning("abnormal %s ","end");
+        log_warning("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
-    log_info("normal %s ","end");
+    log_info("end: normal");
     return asset_element_id;
 }
 

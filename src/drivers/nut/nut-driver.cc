@@ -81,7 +81,7 @@ static const std::vector<std::string> physicsBIOS {
     "current.input.L1",
     "current.input.L2",
     "current.input.L3",
-    "realpower.input.L1",
+    "realpower.default",
     "realpower.input.L1",
     "realpower.input.L2",
     "realpower.input.L3",
