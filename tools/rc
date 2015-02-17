@@ -181,7 +181,7 @@ is_daemon_running() {
         return 1
     fi
 
-    echo "Service '`basename ${name}`' is already running" >&2
+    echo "Service '`basename ${name}`' is already running: PID ${pid}" >&2
     return 0
 }
 
@@ -298,7 +298,9 @@ main() {
                 rm -f /run/systemd/system/${unit}.service
             done
         else
-            for name in $(ls -1 ${BUILDSUBDIR}/*.pid | sed -e 's/\.pid$//'); do
+            for name in \
+                $(ls -1 ${BUILDSUBDIR}/*.pid 2>/dev/null | sed -e 's/\.pid$//') \
+            ; do
                 stop_daemon "${name}"
             done
         fi
