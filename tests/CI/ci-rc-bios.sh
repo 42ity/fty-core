@@ -43,7 +43,8 @@ mlm_server
 
 start_daemon(){
     if which ${1} &> /dev/null; then
-        prefix=`which ${1} | sed "s#/${1}\$##"`
+        prefix=`which $1`
+        prefix=`dirname $prefix`
     fi
     [ \! -x ${PWD}/${1} ]       || prefix="${PWD}"
     [ \! -x ~/bin/$1 ]          || prefix="`cd ~/bin; pwd`"
