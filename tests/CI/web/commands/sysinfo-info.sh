@@ -1,5 +1,6 @@
 ###############################################################
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+
 # Check getting server system info as unprivileged user
 # As of now, this should work, just in a limited manner
 test_it "sysinfo_get_auth=0_raw"
@@ -215,6 +216,14 @@ RES=$?
     x"$SYSINFO_VERSION" != x'""' ]
 print_result $?
 
+test_it "sysinfo_auth=2_sane_package_indexNumber"
+PKG_CORE_NUM="`echo "$SYSINFO_VERSION" | egrep '\"package-name\"]	\"bios|core\"' | sed 's/^.*packages\",\([0123456789]*\),\"package-name\".*$/\1/'`"
+PKG_CORE_NUM_RES=$?
+{ echo "=== PKG_CORE_NUM ($PKG_CORE_NUM_RES): '$PKG_CORE_NUM'"; } >&2
+[ $PKG_CORE_NUM_RES = 0 -a -n "$PKG_CORE_NUM" -a "$PKG_CORE_NUM" -ge 0 ] || \
+    PKG_CORE_NUM_RES=$?
+print_result $PKG_CORE_NUM_RES
+
 test_it "sysinfo_auth=2_build_version_source"
 JPATH='"\$BIOS","packages",[0-9]*,"(source-repo|build-info)"$'
 SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH"`"
@@ -223,6 +232,27 @@ RES=$?
 [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
     x"$SYSINFO_VERSION" != x'""' ]
 print_result $?
+
+if [ "$PKG_CORE_NUM_RES" = 0 ]; then
+    # These tests allow to verify that non-empty source and build info has
+    # been properly embedded into the built product.
+    test_it "sysinfo_auth=2_sane_build_source_branch"
+    JPATH='"\$BIOS","packages",'"$PKG_CORE_NUM"',"source-repo","branch"$'
+    SYSINFO_BRANCH="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | sed 's,^.*	\(.*\)$,\1,' | sed 's,^"\(.*\)"$,\1,'`"
+    RES=$?
+    { echo "=== SYSINFO_BRANCH ($RES): '$SYSINFO_BRANCH'"; } >&2
+    [ $RES = 0 -a -n "$SYSINFO_BRANCH" -a x"$SYSINFO_BRANCH" != x'""' ]
+    print_result $?
+
+    test_it "sysinfo_auth=2_sane_build_host_os"
+    JPATH='"\$BIOS","packages",'"$PKG_CORE_NUM"',"build-info","build-host-os"$'
+    SYSINFO_BUILD_HOST_OS="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" | sed 's,^.*	\(.*\)$,\1,' | sed 's,^"\(.*\)"$,\1,'`"
+    RES=$?
+    { echo "=== SYSINFO_BUILD_HOST_OS ($RES): '$SYSINFO_BUILD_HOST_OS'"; } >&2
+    [ $RES = 0 -a -n "$SYSINFO_BUILD_HOST_OS" \
+	-a x"$SYSINFO_BUILD_HOST_OS" != x'""' ]
+    print_result $?
+fi
 
 ###############################################################
 # Compare different request methods
@@ -312,7 +342,7 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
     OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_G" "$SYSINFOA"`"
     RES=$?
     if [ -n "$OUT" ]; then
-        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-|process-pid'`"
         [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
     fi
     print_result $RES
@@ -321,7 +351,7 @@ if [ -n "$CMPJSON_SH" -a -x "$CMPJSON_SH" ]; then
     OUT="`"$CMPJSON_SH" -s "$SYSINFOA_WT_P" "$SYSINFOA"`"
     RES=$?
     if [ -n "$OUT" ]; then
-        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-'`"
+        OUT="`echo "$OUT" | egrep -v '^(\-\-\-| |@|\+\+\+|\<|\>)' | egrep -v 'process-percent-|process-mem-|process-time-|process-pid'`"
         [ -z "$OUT" ] && RES=0 || echo "$OUT" >&2
     fi
     print_result $RES
