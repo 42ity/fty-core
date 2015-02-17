@@ -126,11 +126,11 @@ subst_unit() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     sed -e "s|@libdir[@]/bios|${BUILDSUBDIR}|" \
-	-e "s|@libexecdir[@]/bios|${BUILDSUBDIR}|" \
-	-- "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+        -e "s|@libexecdir[@]/bios|${BUILDSUBDIR}|" \
+        -- "${CHECKOUTDIR}/tools/${unit}.service.in" | \
     sed 's|//|/|g'
 }
 
@@ -140,7 +140,7 @@ install_unit_sysd() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" > /run/systemd/system/${unit}.service
     my_systemctl daemon-reload
@@ -151,10 +151,10 @@ get_unit_dependencies() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     grep '^Requires=' "${CHECKOUTDIR}/tools/${unit}.service.in" | \
-	cut -d '=' -f 2 | sed -e 's/.service\>//g' -e 's/[ \t]\+/\n/'
+        cut -d '=' -f 2 | sed -e 's/.service\>//g' -e 's/[ \t]\+/\n/'
 }
 
 get_unit_exec() {
@@ -162,7 +162,7 @@ get_unit_exec() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" | grep -e '^ExecStart=' | cut -d '=' -f 2
 }
@@ -237,7 +237,7 @@ run_unit_user() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     if [ "${unit}" = "malamute" ]; then
         run_malamute_user || die "cant run malamute"
@@ -246,7 +246,7 @@ run_unit_user() {
 
     if [ "${unit}" = "mysql" ]; then
         pgrep mysql || \
-	    die "starting of mysql is not yet implemented! run it manually"
+            die "starting of mysql is not yet implemented! run it manually"
         return 0
     fi
 
@@ -265,7 +265,7 @@ run_unit_sysd() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-	die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
     if ! is_external_unit "${unit}"; then
         install_unit_sysd ${unit} || die "Can't install unit file for ${unit}"
@@ -288,8 +288,9 @@ main() {
     if [ "${1}" = "--kill" ]; then
         if can_use_sysd; then
             for unit in \
-	    $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') malamute \
-	    ; do
+                $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') \
+                malamute \
+            ; do
                 my_systemctl stop "${unit}"
                 rm -f /run/systemd/system/${unit}.service
             done
