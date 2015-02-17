@@ -182,7 +182,9 @@ for UPS in $UPS1 $UPS2 ; do
         TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
-        DEL=$( awk -vX=${TP} -vY=${POWER} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
+        STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
+        STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
+        DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
         if [ $DEL = 0 ]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
