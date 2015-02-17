@@ -152,7 +152,7 @@ power_sources_t
             }
             catch (const bios::ElementIsNotDevice &e) {
                 log_error ("Database is corrupted, in power chain there is a"
-                            "non device with asset id %" PRIu32 "ignore it",  
+                            "non device with asset id %" PRIu32 " ignore it",  
                             std::get<0>(src_device));
                 // TODO
                 // for now ignore this element
