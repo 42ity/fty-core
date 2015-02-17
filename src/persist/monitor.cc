@@ -1437,7 +1437,7 @@ zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id,
             row[4].get(name);
             assert ( !name.empty() );   // database is corrupted
             
-            sprintf(buff, "%" PRIu16 ":%" PRIu16 ":%" PRIu64 ":%" PRIu8, type_id, subtype_id, 
+            sprintf(buff, "%" PRIu16 ":%" PRIu16 ":%" PRIi64 ":%" PRIi16, type_id, subtype_id, 
                           value, scale);
             zlist_push (measurements, buff);
         }
