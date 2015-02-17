@@ -96,7 +96,8 @@ AM_CPPFLAGS = \
 		-I$(top_srcdir)/src/shared \
 		-I$(top_srcdir)/src/include \
 		-DDEBUG \
-		-DDEVEL
+		-DDEVEL \
+		-D__STDC_FORMAT_MACROS
 
 AM_CFLAGS = \
 		${my_CFLAGS} \
