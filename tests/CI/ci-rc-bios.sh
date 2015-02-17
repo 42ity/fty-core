@@ -32,6 +32,9 @@ stop(){
    killall simple 2>/dev/null || true
    sleep 1
    killall netmon 2>/dev/null || true
+   sleep 1
+   ( pidof simple &>/dev/null && killall -9 simple ) || true
+   ( pidof netmon &>/dev/null && killall -9 netmon ) || true
 }
 
 usage(){
