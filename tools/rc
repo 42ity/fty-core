@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # Description:
 #   tool for starting processes with proper dependencies and in a
