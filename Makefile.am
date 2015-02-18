@@ -1209,7 +1209,7 @@ CLEANFILES +=		src/include/git_details_override.c \
 $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@/bin/rm -f "$@.tmp"
-	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
+	@if ( cd $(abs_top_srcdir) && GIT_DETAILS_BLANK=yes ./tools/git_details.sh ) > "$@.tmp" && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
@@ -1259,18 +1259,24 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#ifndef BIOS_GIT_DETAILS_OVERRIDE' && \
 	  echo '#define BIOS_GIT_DETAILS_OVERRIDE' && \
-	  { egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_GIT 1' || \
-	      echo '// #undef HAVE_PACKAGE_GIT'; } && \
-	  { egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_BUILD_HOST 1' || \
-	      echo '// #undef HAVE_PACKAGE_BUILD_HOST'; } && \
-	  { egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || \
-	      echo '// #undef HAVE_PACKAGE_BUILD_TSTAMP'; } && \
-	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,#undef \1,' && \
-	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,extern char * \1;,' && \
-	  echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
+	  [ -s "$<" ] && { \
+	    { echo '#ifdef HAVE_PACKAGE_GIT'; \
+	      echo '#undef HAVE_PACKAGE_GIT'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_GIT 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_HOST 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
+	    grep '=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
