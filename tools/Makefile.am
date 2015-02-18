@@ -8,7 +8,9 @@ mysqldir	= $(datadir)/@PACKAGE@-@VERSION@/sql/mysql
 mysql_DATA	= initdb.sql
 
 mysqlexdir	= $(datadir)/@PACKAGE@-@VERSION@/examples/sql/mysql
-mysqlex_DATA	= load_data.sql
+mysqlex_DATA	= \
+		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
+		    power_topology.sql rack_power.sql
 
 EXTRA_DIST += $(helper_SCRIPTS) $(mysql_DATA) $(mysqlex_DATA)
 
