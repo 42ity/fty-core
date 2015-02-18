@@ -658,12 +658,12 @@ tntnet.xml: src/web/tntnet.xml
 ### This file contains the TNTNET settings distributed as an example for users
 ### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: src/web/tntnet.xml
-	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
 	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
-exampleconfdir =	$(datarootdir)/@PACKAGE@-@VERSION@/examples
+exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
 exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
 dist_noinst_DATA += tntnet.xml $(top_srcdir)/src/web/tntnet.xml
@@ -868,7 +868,7 @@ CLEAN_TEXTS =
 # Define delivery of developer documentation:
 ##################################################
 # Target directory for developer documentation after installation
-develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
+develdocdir = $(datadir)/@PACKAGE@/develop
 
 # Install the non-doxygen docs here (doxygen has its subdir defined below).
 # Text files are "originals" or copies under a different name and are always
