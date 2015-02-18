@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2014-2015 Eaton
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,11 +17,12 @@
 #
 # Author(s): Tomas Halman <TomasHalman@eaton.com>
 #
-# Description: starts or stops the simple daemon installed in $HOME
+# Description: starts or stops the $BIOS daemons installed in $HOME
 
 DAEMONS="db-ng driver-nut driver-nmap netmon"
 
 restart_malamute(){
+    # NOTE: This likely needs execution as root or via sudo
     systemctl stop malamute || true
     cat >/etc/malamute/malamute.cfg <<[eof]
 
@@ -43,23 +44,22 @@ mlm_server
 
 start_daemon(){
     if which ${1} &> /dev/null; then
-        prefix=`which $1`
-        prefix=`dirname $prefix`
+        prefix=`which ${1} | sed "s#/${1}\$##"`
     fi
     [ \! -x ${PWD}/${1} ]       || prefix="${PWD}"
-    [ \! -x ~/bin/$1 ]          || prefix="`cd ~/bin; pwd`"
-    [ \! -x ~/bin/$1 ]          || prefix="`cd ~/bin; pwd`"
-    [ \! -x ~/lib/$1 ]          || prefix="`cd ~/lib; pwd`"
-    [ \! -x ~/libexec/$1 ]      || prefix="`cd ~/libexec; pwd`"
-    [ \! -x ~/lib/bios/$1 ]     || prefix="`cd ~/lib/bios; pwd`"
-    [ \! -x ~/libexec/bios/$1 ] || prefix="`cd ~/libexec/bios; pwd`"
-    if [ -x ${prefix}/$1 ] ; then
-        /bin/rm -rf ~/$1.log
-        nohup ${prefix}/$1 >~/$1.log 2>&1 &
+    [ \! -x ~/bin/${1} ]          || prefix="`cd ~/bin; pwd`"
+    [ \! -x ~/bin/${1} ]          || prefix="`cd ~/bin; pwd`"
+    [ \! -x ~/lib/${1} ]          || prefix="`cd ~/lib; pwd`"
+    [ \! -x ~/libexec/${1} ]      || prefix="`cd ~/libexec; pwd`"
+    [ \! -x ~/lib/bios/${1} ]     || prefix="`cd ~/lib/bios; pwd`"
+    [ \! -x ~/libexec/bios/${1} ] || prefix="`cd ~/libexec/bios; pwd`"
+    if [ -x ${prefix}/${1} ] ; then
+        /bin/rm -rf ~/${1}.log
+        nohup ${prefix}/${1} >~/${1}.log 2>&1 &
         sleep 5
-        pidof $1
+        pidof ${1}
     else
-        echo "ERROR: $1 is missing"
+        echo "ERROR: $1 is missing" >&2
         exit 1
     fi
 }
@@ -68,6 +68,14 @@ stop() {
     for d in $DAEMONS ; do
        killall $d 2>/dev/null || true
     done
+    sleep 1
+    for d in $DAEMONS ; do
+       ( pidof $d &>/dev/null && killall -9 $d 2>/dev/null ) || true
+    done
+    for d in $DAEMONS ; do
+	pidof $d &>/dev/null 2>&1 && return 1
+    done
+    return 0
 }
 
 start() {
@@ -87,7 +95,7 @@ options:
 OPERATION=help
 
 while [ $# -gt 0 ] ; do
-    case "$1" in
+    case "${1}" in
         -h|--help)
             OPERATION=help
             ;;
