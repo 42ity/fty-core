@@ -103,8 +103,7 @@ usage(){
     echo "Usage: $(basename $0) [options...]
 options:
     --stop       stop BIOS processes
-    --start      start BIOS processes
-    --restart    restart BIOS processes
+    --start      start BIOS processes (does restart if BIOS is running)
     --status     check wether all processes are running
     --help|-h    print this help"
 }
