@@ -60,11 +60,11 @@ start_daemon(){
         pidof $1
         RESULT=$?
         if [ "$RESULT" != "0" ] ; then
-            echo "failed to start $1"
+            echo "ERROR: failed to start $1" >&2
             exit 1
         fi
     else
-        echo "ERROR: $1 is missing"
+        echo "ERROR: $1 is missing" >&2
         exit 1
     fi
 }
