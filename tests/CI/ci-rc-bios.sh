@@ -48,13 +48,18 @@ CURID="`id -u`" || CURID=""
 stop_malamute(){
     # NOTE: This likely needs execution via sudo if user is not root
     $RUNAS systemctl stop malamute || true
+    pidof malamute >/dev/null 2>&1 && return 1
+    return 0
 }
 
 start_malamute(){
-    # NOTE: This likely needs execution via sudo if user is not root
+    # NOTE1: This likely needs execution via sudo if user is not root
+    # NOTE2: This restarts malamute if it is running and config changed;
+    # but the service would remain running if config is the same.
     # The two-step routine below is needed for privilege elevation
     # to change the file in /etc/malamute
     rm -f "/tmp/.malamute.$$.cfg" 2>/dev/null || true
+
     cat > /tmp/.malamute.$$.cfg <<[eof]
 # Note: This file was regenerated `date` by $0
 #   Apply to the whole broker
@@ -70,25 +75,44 @@ mlm_server
     bind
         endpoint = ipc://@/malamute
 [eof]
-
-    [ $? = 0 -a -d /etc/malamute ] && \
-        echo -n 'systemd service unit: malamute '
-        $RUNAS cp /tmp/.malamute.$$.cfg /etc/malamute/malamute.cfg && \
-        $RUNAS systemctl start malamute && \
-        pidof malamute
     RESULT=$?
+
+    if [ "$RESULT" = 0 -a -d /etc/malamute ]; then
+        echo -n 'systemd service unit: malamute '
+        RESTART=n
+        if [ -s /etc/malamute/malamute.cfg -a -s /tmp/.malamute.$$.cfg ]; then
+            if diff -bu /etc/malamute/malamute.cfg /tmp/.malamute.$$.cfg | \
+               egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]\#.*regenerated)' \
+            ; then
+                # "diff" found some lines other than timestamp
+                RESTART=y
+            fi
+        else
+            RESTART=y
+        fi >/dev/null
+
+        if [ "$RESTART" = n ]; then
+            # Config is the same
+            echo -n "(config unchanged) "
+            pidof malamute >/dev/null 2>&1 || $RUNAS systemctl start malamute
+            RESULT=$?
+        else
+            stop_malamute
+            $RUNAS cp /tmp/.malamute.$$.cfg /etc/malamute/malamute.cfg && \
+            $RUNAS systemctl start malamute
+            RESULT=$?
+        fi
+        pidof malamute || RESULT=$?
+        # copy, start or pidof could fail by this point;
+        # otherwise we have RESULT==0 from diff-clause or cp-execution
+    fi
+
     if [ "$RESULT" != "0" ] ; then
-        echo "ERROR: failed to start malamute" >&2
-        exit 1
+        echo "ERROR: failed to (re)start malamute" >&2
     fi
 
     rm -f /tmp/.malamute.$$.cfg 2>/dev/null
     return $RESULT
-}
-
-restart_malamute(){
-    stop_malamute
-    start_malamute
 }
 
 start_daemon(){
@@ -132,10 +156,11 @@ stop() {
     for d in $DAEMONS ; do
        ( pidof $d >/dev/null 2>&1 && killall -9 $d 2>/dev/null ) || true
     done
-    stop_malamute
+    sleep 1
     # Test successful kills
-    for d in $DAEMONS malamute ; do
-        pidof $d &>/dev/null 2>&1 && return 1
+    for d in $DAEMONS ; do
+        pidof $d >/dev/null 2>&1 && \
+            echo "ERROR: $d still running (`pidof $d`)" && return 1
     done
     return 0
 }
@@ -151,7 +176,7 @@ status() {
            RESULT=1
        fi
     done
-    exit $RESULT
+    return $RESULT
 }
 
 start() {
@@ -197,13 +222,15 @@ done
 case "$OPERATION" in
     start)
         stop
-        restart_malamute && \
+        start_malamute && \
         start
         exit
         ;;
     stop)
-        stop
-        exit
+        RESULT=0
+        stop || RESULT=$?
+        stop_malamute || RESULT=$?
+        exit $RESULT
         ;;
     status)
         status
