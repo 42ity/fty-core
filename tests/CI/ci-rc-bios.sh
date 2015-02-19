@@ -119,12 +119,12 @@ start_daemon(){
     prefixw=""
     if which ${1} >/dev/null 2>&1; then
         prefixw="`which ${1}`"
-        prefixw="`dirname $prefixw`"
+        prefixw="`dirname "$prefixw"`"
     fi
 
     # Apparently from pre-existing logic, an older "prefix" may remain
-    for prefix in $prefix $prefixw "${PWD}" "$BUILDSUBDIR" "$CHECKOUTDIR" \
-        ~/bin ~/lib ~/libexec ~/lib/bios ~/libexec/bios \
+    for prefix in "$prefix" "${PWD}" "$BUILDSUBDIR" "$CHECKOUTDIR" \
+        ~/bin ~/lib ~/libexec ~/lib/bios ~/libexec/bios $prefixw \
     ; do
         if [ -n "$prefix" ] && [ -d "$prefix" -a -x "$prefix/${1}" ]; then
             break
