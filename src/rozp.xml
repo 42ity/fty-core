@@ -1,0 +1,39 @@
+<class
+    name = "rozp"
+    title = "draft"
+    signature = "0"
+    script = "zproto_codec_c_v1"
+    package_dir = "."   
+    include = "czmq.h"
+    >
+
+    <include filename = "license.xml" />
+    
+    <define name = "VERSION" value = "1.0" />
+
+    <!-- just an idea, suggest alternative 'name' values (if RETURN_REQUEST_KEY seems too long), etc... -->
+    <define name = "REPEAT_KEY"   value = "repeat">Repeat msg.payload in reply.payload_in?</field>
+    <define name = "REPEAT_YES"   value = "y" />
+    <define name = "REPEAT_NO"    value = "n" />
+    <define name = "STATUS"     value = "status" />
+    <define name = "OK"         value = "ok" />
+    <define name = "ERROR"      value = "error" />
+
+    <message name = "msg">
+        Transport layer
+        <field name = "version"     type = "number" size = "1"></field>
+        <field name = "seq"         type = "number" size = "4"></field>
+        <field name = "aux"         type = "hash"></field>
+        <field name = "payload"     type = "chunk"></field>
+    </message>
+
+    <message name = "reply">
+        Transport layer reply
+        <field name = "version"     type = "number" size = "1"></field>
+        <field name = "seq"         type = "number" size = "4"></field>
+        <field name = "aux"         type = "hash"></field>
+        <field name = "payload_in"  type = "chunk"></field>
+        <field name = "payload_out" type = "chunk"></field>
+    </message>
+
+</class>
