@@ -40,11 +40,23 @@ if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Search path: $CHECKOUTDIR, $PWD"
 fi
 
-restart_malamute(){
-    # NOTE: This likely needs execution as root or via sudo
-    systemctl stop malamute || true
-    cat >/etc/malamute/malamute.cfg <<[eof]
+# Simple check for whether sudo is needed to restart saslauthd
+RUNAS=""
+CURID="`id -u`" || CURID=""
+[ "$CURID" = 0 -o "$CURID" = root ] || RUNAS="sudo"
 
+stop_malamute(){
+    # NOTE: This likely needs execution via sudo if user is not root
+    $RUNAS systemctl stop malamute || true
+}
+
+start_malamute(){
+    # NOTE: This likely needs execution via sudo if user is not root
+    # The two-step routine below is needed for privilege elevation
+    # to change the file in /etc/malamute
+    rm -f "/tmp/.malamute.$$.cfg" 2>/dev/null || true
+    cat > /tmp/.malamute.$$.cfg <<[eof]
+# Note: This file was regenerated `date` by $0
 #   Apply to the whole broker
 server
     timeout = 10000     #   Client connection timeout, msec
@@ -58,7 +70,25 @@ mlm_server
     bind
         endpoint = ipc://@/malamute
 [eof]
-    systemctl start malamute
+
+    [ $? = 0 -a -d /etc/malamute ] && \
+        echo -n 'systemd service unit: malamute '
+        $RUNAS cp /tmp/.malamute.$$.cfg /etc/malamute/malamute.cfg && \
+        $RUNAS systemctl start malamute && \
+        pidof malamute
+    RESULT=$?
+    if [ "$RESULT" != "0" ] ; then
+        echo "ERROR: failed to start malamute" >&2
+        exit 1
+    fi
+
+    rm -f /tmp/.malamute.$$.cfg 2>/dev/null
+    return $RESULT
+}
+
+restart_malamute(){
+    stop_malamute
+    start_malamute
 }
 
 start_daemon(){
@@ -102,8 +132,9 @@ stop() {
     for d in $DAEMONS ; do
        ( pidof $d >/dev/null 2>&1 && killall -9 $d 2>/dev/null ) || true
     done
+    stop_malamute
     # Test successful kills
-    for d in $DAEMONS ; do
+    for d in $DAEMONS malamute ; do
         pidof $d &>/dev/null 2>&1 && return 1
     done
     return 0
@@ -111,10 +142,10 @@ stop() {
 
 status() {
     RESULT=0
-    for d in $DAEMONS ; do
+    for d in malamute $DAEMONS ; do
        echo -n "$d "
        if pidof $d >/dev/null 2>&1 ; then
-           echo "running"
+           echo "running (`pidof $d`)"
        else
            echo "stopped"
            RESULT=1
