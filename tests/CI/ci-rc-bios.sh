@@ -168,16 +168,21 @@ case "$OPERATION" in
         stop
         restart_malamute && \
         start
+        exit
         ;;
-
     stop)
         stop
+        exit
         ;;
     status)
         status
+        exit
         ;;
     help)
         usage
         exit 1
         ;;
 esac
+
+# Unknown operation
+exit 1
