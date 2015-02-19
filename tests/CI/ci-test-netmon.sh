@@ -50,15 +50,16 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
-export BUILDSUBDIR="$CHECKOUTDIR"
+[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
+export BUILDSUBDIR
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"
     echo "CI-ERROR: Search path checked: $CHECKOUTDIR, $PWD"
     exit 1
 fi
 
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
 ### Section: setting necessary variables
 DEBUG=
