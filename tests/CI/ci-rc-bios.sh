@@ -48,6 +48,7 @@ CURID="`id -u`" || CURID=""
 stop_malamute(){
     # NOTE: This likely needs execution via sudo if user is not root
     $RUNAS systemctl stop malamute || true
+    sleep 2
     pidof malamute >/dev/null 2>&1 && return 1
     return 0
 }
@@ -102,6 +103,7 @@ mlm_server
             $RUNAS systemctl start malamute
             RESULT=$?
         fi
+        sleep 2
         pidof malamute || RESULT=$?
         # copy, start or pidof could fail by this point;
         # otherwise we have RESULT==0 from diff-clause or cp-execution
