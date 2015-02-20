@@ -658,12 +658,12 @@ tntnet.xml: src/web/tntnet.xml
 ### This file contains the TNTNET settings distributed as an example for users
 ### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
 tntnet.xml.example: src/web/tntnet.xml
-	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@-@VERSION@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
 	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
 	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
 	rm -f $@
 
-exampleconfdir =	$(datarootdir)/@PACKAGE@-@VERSION@/examples
+exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
 exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
 dist_noinst_DATA += tntnet.xml $(top_srcdir)/src/web/tntnet.xml
@@ -868,7 +868,7 @@ CLEAN_TEXTS =
 # Define delivery of developer documentation:
 ##################################################
 # Target directory for developer documentation after installation
-develdocdir = $(datadir)/@PACKAGE@-@VERSION@/develop
+develdocdir = $(datadir)/@PACKAGE@/develop
 
 # Install the non-doxygen docs here (doxygen has its subdir defined below).
 # Text files are "originals" or copies under a different name and are always
@@ -1248,7 +1248,7 @@ CLEANFILES +=		src/include/git_details_override.c \
 $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@/bin/rm -f "$@.tmp"
-	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
+	@if ( cd $(abs_top_srcdir) && GIT_DETAILS_BLANK=yes ./tools/git_details.sh ) > "$@.tmp" && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
@@ -1298,18 +1298,24 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#ifndef BIOS_GIT_DETAILS_OVERRIDE' && \
 	  echo '#define BIOS_GIT_DETAILS_OVERRIDE' && \
-	  { egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_GIT 1' || \
-	      echo '// #undef HAVE_PACKAGE_GIT'; } && \
-	  { egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_BUILD_HOST 1' || \
-	      echo '// #undef HAVE_PACKAGE_BUILD_HOST'; } && \
-	  { egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
-	      echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || \
-	      echo '// #undef HAVE_PACKAGE_BUILD_TSTAMP'; } && \
-	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,#undef \1,' && \
-	  grep '=' "$<" | sed 's,^\(PACK[^=]*\)=.*$$,extern char * \1;,' && \
-	  echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
+	  [ -s "$<" ] && { \
+	    { echo '#ifdef HAVE_PACKAGE_GIT'; \
+	      echo '#undef HAVE_PACKAGE_GIT'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_GIT 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_HOST 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
+	    grep '=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
