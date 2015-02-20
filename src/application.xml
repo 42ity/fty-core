@@ -20,19 +20,12 @@
         <field name = "module"  type = "string"></field>
         <field name = "params"  type = "strings">List of parameters for module</field>
         <field name = "args"    type = "hash"></field>
-        <field name = "aux"     type = "hash"></field>
     </message>
 
     <message name = "db">
         <field name = "op"      type = "number" size = "4"></field>
-        <field name = "operand" type = "strings"></field>
-        <field name = "aux"     type = "hash"></field>
+        <field name = "params"  type = "strings"></field>
+        <field name = "args"    type = "hash"></field>
         <field name = "bin"     type = "chunk">In case we want to store pictures in db, etc...</field>
-    </message>
-
-    <message name = "ok">
-        Reply
-        <field name = "bin" type = "chunk"></field>
-        <field name = "aux" type = "hash"></field>
     </message>
 </class>
