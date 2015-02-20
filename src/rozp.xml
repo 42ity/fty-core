@@ -20,8 +20,8 @@
     <!-- General constants -->
     <define name = "OK"         value = "ok" />
     <define name = "ERROR"      value = "error" />
-    <define name = "YES"   value = "y" />
-    <define name = "NO"    value = "n" />
+    <define name = "YES"   value = "yes" />
+    <define name = "NO"    value = "no" />
 
     <message name = "send">
         Transport layer
