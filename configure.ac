@@ -14,7 +14,7 @@ AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-di
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
+AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by BIOS core])])
 
 AC_ARG_WITH([package-vendor],
 	[AS_HELP_STRING([--with-package-vendor=ARG],
@@ -57,188 +57,133 @@ AS_CASE(["x$srcdir"],
 ])
 AC_MSG_NOTICE(AS_HELP_STRING([Value of _srcdir_abs:], ['$_srcdir_abs']))
 
-# Get the Git repository metadata, if available
-HAVE_PACKAGE_GIT=0
-PACKAGE_GIT_ORIGIN=""
-PACKAGE_GIT_BRANCH=""
-PACKAGE_GIT_TSTAMP=""
-PACKAGE_GIT_HASH_S=""
-PACKAGE_GIT_HASH_L=""
-PACKAGE_GIT_STATUS=""
-AC_PATH_PROGS([GIT], [git])
+# This script is part of the sources, so we expect it to be available
+# We call it to prepare a file with Git workspace metadata, if available;
+# alternately a copy of the file may have been git-archive'd to tarball
+# with sources that so are not a Git workspace (repository clone) anymore.
+# This includes the case of "make dist(check)" where a copy of the file
+# is passed at some stage via Makefile's EXTRA_DIST.
+GDETAILSH="$_srcdir_abs/tools/git_details.sh"
+AS_IF([test -s "$GDETAILSH" -a -x "$GDETAILSH" -a -r "$GDETAILSH"],
+	[AC_MSG_NOTICE([Found git_details.sh: $GDETAILSH])],
+	[AC_MSG_ERROR([cannot find required git_details.sh])])
 
-JSONSH="$_srcdir_abs/tools/JSON.sh"
-
-AS_IF([test -s "$JSONSH" -a -x "$JSONSH" -a -r "$JSONSH"],
-	[AC_MSG_NOTICE([Found JSON.sh: $JSONSH])],
-	[AC_MSG_ERROR([cannot find required JSON.sh])])
-
-AS_IF([test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git"],
-	[AC_MSG_NOTICE([Getting Git workspace attributes...])
-	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url | $JSONSH -Q`"	&& \
-	    HAVE_PACKAGE_GIT=1 && \
-	    PACKAGE_GIT_ORIGIN_ESCAPED="`echo -E "$PACKAGE_GIT_ORIGIN" | $JSONSH -Q`"
-	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD | $JSONSH -Q`"	&& \
-	    HAVE_PACKAGE_GIT=1 && \
-	    PACKAGE_GIT_BRANCH_ESCAPED="`echo -E "$PACKAGE_GIT_BRANCH" | $JSONSH -Q`"
-	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct' | $JSONSH -Q`"		&& \
-	    HAVE_PACKAGE_GIT=1 && \
-	    PACKAGE_GIT_TSTAMP_ESCAPED="`echo -E "$PACKAGE_GIT_TSTAMP" | $JSONSH -Q`"
-	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h' | $JSONSH -Q`"		&& \
-	    HAVE_PACKAGE_GIT=1 && \
-	    PACKAGE_GIT_HASH_S_ESCAPED="`echo -E "$PACKAGE_GIT_HASH_S" | $JSONSH -Q`"
-	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD | $JSONSH -Q`"		&& \
-	    HAVE_PACKAGE_GIT=1 && \
-	    PACKAGE_GIT_HASH_L_ESCAPED="`echo -E "$PACKAGE_GIT_HASH_L" | $JSONSH -Q`"
-	### We need to convert a multi-line value into a single-line token for C macros or Makefiles
-	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s | $JSONSH -Q`"
-	AS_IF([test $? = 0 -a x"$PACKAGE_GIT_STATUS" != x -a x"$PACKAGE_GIT_STATUS" != 'x\n'],
-		[HAVE_PACKAGE_GIT=1
-		 PACKAGE_GIT_STATUS_ESCAPED="`echo -E "$PACKAGE_GIT_STATUS" | $JSONSH -Q`"],
-		[PACKAGE_GIT_STATUS=""])
+# If we have an (older) .git_details file, and a clean out-of-tree build,
+# then prepopulate the build directory with a copy
+AS_IF([test x"$_srcdir_abs" != x"$_curdir_abs" -a \
+	  -s "$_srcdir_abs/.git_details" -a \
+	! -s "$_curdir_abs/.git_details"],
+	[AC_MSG_NOTICE([Pre-populating .git_details in the out-of-tree build area from source workspace...])
+	 cp -pf "$_srcdir_abs/.git_details" "$_curdir_abs/.git_details"
 ])
 
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_GIT],
-	[$HAVE_PACKAGE_GIT],
-	[Packaging metadata: Is Git metadata available?])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN],
-	["$PACKAGE_GIT_ORIGIN"],
-	[Packaging metadata: URL of the Git origin repository (parent of the build workspace)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH],
-	["$PACKAGE_GIT_BRANCH"],
-	[Packaging metadata: Git branch in the build workspace repository])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP],
-	["$PACKAGE_GIT_TSTAMP"],
-	[Packaging metadata: Git timestamp of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S],
-	["$PACKAGE_GIT_HASH_S"],
-	[Packaging metadata: Git short-hash of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L],
-	["$PACKAGE_GIT_HASH_L"],
-	[Packaging metadata: Git long-hash of the commit used for the build])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS],
-	["$PACKAGE_GIT_STATUS"],
-	[Packaging metadata: short list of possible differences against the committed repository])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_ORIGIN_ESCAPED],
-	["$PACKAGE_GIT_ORIGIN_ESCAPED"],
-	[Packaging metadata: URL of the Git origin repository (parent of the build workspace) (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_BRANCH_ESCAPED],
-	["$PACKAGE_GIT_BRANCH_ESCAPED"],
-	[Packaging metadata: Git branch in the build workspace repository (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_TSTAMP_ESCAPED],
-	["$PACKAGE_GIT_TSTAMP_ESCAPED"],
-	[Packaging metadata: Git timestamp of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_S_ESCAPED],
-	["$PACKAGE_GIT_HASH_S_ESCAPED"],
-	[Packaging metadata: Git short-hash of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_HASH_L_ESCAPED],
-	["$PACKAGE_GIT_HASH_L_ESCAPED"],
-	[Packaging metadata: Git long-hash of the commit used for the build (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_GIT_STATUS_ESCAPED],
-	["$PACKAGE_GIT_STATUS_ESCAPED"],
-	[Packaging metadata: short list of possible differences against the committed repository (escaped)])
+AS_IF([test -s "$_curdir_abs/.git_details.tmp"],
+	[rm -f "$_curdir_abs/.git_details.tmp"])
 
-AC_PATH_PROGS([UNAME], [uname])
-HAVE_PACKAGE_BUILD_HOST=0
-PACKAGE_BUILD_HOST_UNAME=""
-PACKAGE_BUILD_HOST_NAME=""
-PACKAGE_BUILD_HOST_OS=""
-AS_IF([test ! -z "$UNAME" -a -x "$UNAME"],
-	[AC_MSG_NOTICE([Getting buildhost attributes...])
-	PACKAGE_BUILD_HOST_UNAME="`$UNAME -a | $JSONSH -Q`"	&& \
-	    HAVE_PACKAGE_BUILD_HOST=1 && \
-	    PACKAGE_BUILD_HOST_UNAME_ESCAPED="`echo -E "$PACKAGE_BUILD_HOST_UNAME" | $JSONSH -Q`"
-	PACKAGE_BUILD_HOST_NAME="`$UNAME -n | $JSONSH -Q`"	&& \
-	    HAVE_PACKAGE_BUILD_HOST=1 && \
-	    PACKAGE_BUILD_HOST_NAME_ESCAPED="`echo -E "$PACKAGE_BUILD_HOST_NAME" | $JSONSH -Q`"
-	PACKAGE_BUILD_HOST_OS="`$UNAME -s -r -v | $JSONSH -Q`"	&& \
-	    HAVE_PACKAGE_BUILD_HOST=1 && \
-	    PACKAGE_BUILD_HOST_OS_ESCAPED="`echo -E "$PACKAGE_BUILD_HOST_OS" | $JSONSH -Q`"
+AS_IF([test -d "$_srcdir_abs/.git"],
+	[AC_MSG_NOTICE([Getting current Git workspace attributes...])
+	 # The script would need a git... can detect one or use the set envvar
+	 # So let's help it if we can
+	 AC_PATH_PROGS([GIT], [git])
+	 AS_IF([test -n "$GIT" -a -x "$GIT"], [export GIT])
+	 AC_PATH_PROGS([DATE], [gdate date])
+	 AS_IF([test -n "$DATE" -a -x "$DATE"], [export DATE])
+	 AS_IF([(cd "$_srcdir_abs" && $GDETAILSH ) > "$_curdir_abs/.git_details.tmp"],
+		[AS_IF([test -s "$_curdir_abs/.git_details.tmp"],
+		 [AS_IF([test -s "$_curdir_abs/.git_details"],
+			[AS_IF([diff -bu "$_curdir_abs/.git_details" \
+			                 "$_curdir_abs/.git_details.tmp" | \
+			        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' \
+			        >/dev/null 2>&1],
+			    [AC_MSG_NOTICE([Got new workspace metadata to replace the old copy])
+			     mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"],
+			    [AC_MSG_NOTICE([Got new workspace metadata but no significant changes against the old copy])]
+			 )],
+			[AC_MSG_NOTICE([Got new workspace metadata and had no old stashed away, using freely])
+			 mv -f "$_curdir_abs/.git_details.tmp" "$_curdir_abs/.git_details"])
+		], [AC_MSG_NOTICE([No GIT metadata was detected (empty output)])
+		    rm -f "$_curdir_abs/.git_details.tmp"])
+	], [AC_MSG_NOTICE([No GIT metadata was detected (script errored out)])
+	    rm -f "$_curdir_abs/.git_details.tmp"])
 ])
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_HOST],
-	[$HAVE_PACKAGE_BUILD_HOST],
-	[Packaging metadata: Are build-host details available?])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME],
-	["$PACKAGE_BUILD_HOST_UNAME"],
-	[Packaging metadata: Full 'uname -a' of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME],
-	["$PACKAGE_BUILD_HOST_NAME"],
-	[Packaging metadata: Hostname of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS],
-	["$PACKAGE_BUILD_HOST_OS"],
-	[Packaging metadata: OS/kernel of the building host])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_UNAME_ESCAPED],
-	["$PACKAGE_BUILD_HOST_UNAME_ESCAPED"],
-	[Packaging metadata: Full 'uname -a' of the building host (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_NAME_ESCAPED],
-	["$PACKAGE_BUILD_HOST_NAME_ESCAPED"],
-	[Packaging metadata: Hostname of the building host (escaped)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_HOST_OS_ESCAPED],
-	["$PACKAGE_BUILD_HOST_OS_ESCAPED"],
-	[Packaging metadata: OS/kernel of the building host (escaped)])
 
-AC_PATH_PROGS([DATE], [gdate date])
-HAVE_PACKAGE_BUILD_TSTAMP=0
-PACKAGE_BUILD_TSTAMP=""
-AS_IF([test ! -z "$DATE" -a -x "$DATE"],
-	[AC_MSG_NOTICE([Recording the configuration timestamp...])
-	PACKAGE_BUILD_TSTAMP="`$DATE -u '+%s' | $JSONSH -Q`" && \
-	    HAVE_PACKAGE_BUILD_TSTAMP=1 && \
-	    PACKAGE_BUILD_TSTAMP_ESCAPED="`echo -E "$PACKAGE_BUILD_TSTAMP" | $JSONSH -Q`"
+# From old copy or a new generation, we may have the file with metadata...
+# We no longer cook (most of) this data into config.h because it does get
+# obsolete quickly during development. Rather, the build products that
+# need (test, display) this information should use or convert the file.
+# The Makefile takes care to keep it current as long as possible.
+# Also, for display in te end of execution, try to "source" the values.
+AS_IF([test -s "$_curdir_abs/.git_details"],
+	[source "$_curdir_abs/.git_details" && for V in \
+		PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TAGGED \
+		PACKAGE_GIT_TSTAMP PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L \
+		PACKAGE_GIT_STATUS PACKAGE_BUILD_TSTAMP \
+		PACKAGE_BUILD_HOST_UNAME PACKAGE_BUILD_HOST_NAME \
+		PACKAGE_BUILD_HOST_OS ; do
+			eval $V='$'${V}_ESCAPED || eval $V=""
+		done
+	 AS_IF([test -z "$PACKAGE_GIT_HASH_S"], [source "$_curdir_abs/.git_details"])
+	 AS_IF([test -n "$PACKAGE_GIT_HASH_S" -a x"$PACKAGE_GIT_HASH_S" != x'""' \
+	          -a -n "$PACKAGE_GIT_TSTAMP" -a x"$PACKAGE_GIT_TSTAMP" != x'""'],
+		[AC_MSG_NOTICE([Setting PACKAGE_STRING and PACKAGE_VERSION to include Git hash '$PACKAGE_GIT_HASH_S' and commit timestamp '$PACKAGE_GIT_TSTAMP'...])
+		 PACKAGE_STRING="$PACKAGE_STRING.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 PACKAGE_VERSION="$PACKAGE_VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 _FIX_PACKAGE_STRING=y
+		 _FIX_PACKAGE_VERSION=y
+		 _FIX_VERSION=y
+	 ])
 ])
-AC_DEFINE_UNQUOTED([HAVE_PACKAGE_BUILD_TSTAMP],
-	[$HAVE_PACKAGE_BUILD_TSTAMP],
-	[Packaging metadata: Is the build-host timestamp available?])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP],
-	["$PACKAGE_BUILD_TSTAMP"],
-	[Packaging metadata: Current timestamp at the build host (as of configuration)])
-AC_DEFINE_UNQUOTED([PACKAGE_BUILD_TSTAMP_ESCAPED],
-	["$PACKAGE_BUILD_TSTAMP_ESCAPED"],
-	[Packaging metadata: Current timestamp at the build host (as of configuration) (escaped)])
 
-### Revise the packaging strings in config.h
+### Allow to revise the packaging strings in config.h
 m4_define([__AC_UNDEFINE],[_AC_DEFINE([#ifdef $1
  #undef $1
 #endif])])
 
-AS_IF([test -n "$PACKAGE_GIT_HASH_S" -a "$HAVE_PACKAGE_GIT" = 1],
-	[AC_MSG_NOTICE([Setting PACKAGE_STRING to include Git hash...])
-	PACKAGE_STRING="$PACKAGE_STRING~$PACKAGE_GIT_HASH_S"
-	PACKAGE_VERSION="$PACKAGE_VERSION~$PACKAGE_GIT_HASH_S"
-	_FIX_PACKAGE_STRING=y
-	_FIX_PACKAGE_VERSION=y
-])
-
-if test x"$_FIX_PACKAGE_NAME" = xy; then
-	__AC_UNDEFINE([PACKAGE_NAME])
-	AC_DEFINE_UNQUOTED([PACKAGE_NAME],
+# General substitutions for all these packaging variables
+AS_IF([test x"$_FIX_PACKAGE_NAME" = xy],
+	[AC_MSG_NOTICE([Overriding PACKAGE_NAME='$PACKAGE_NAME'])
+	 __AC_UNDEFINE([PACKAGE_NAME])
+	 AC_DEFINE_UNQUOTED([PACKAGE_NAME],
 	    ["$PACKAGE_NAME"],
 	    [Packaging metadata: distro source code name])
-fi
-if test x"$_FIX_PACKAGE_VERSION" = xy; then
-	__AC_UNDEFINE([PACKAGE_VERSION])
-	AC_DEFINE_UNQUOTED([PACKAGE_VERSION],
+])
+AS_IF([test x"$_FIX_PACKAGE_VERSION" = xy],
+	[AC_MSG_NOTICE([Overriding PACKAGE_VERSION='$PACKAGE_VERSION'])
+	 __AC_UNDEFINE([PACKAGE_VERSION])
+	 AC_DEFINE_UNQUOTED([PACKAGE_VERSION],
 	    ["$PACKAGE_VERSION"],
-	    [Packaging metadata: distro source code version])
-fi
-if test x"$_FIX_PACKAGE_STRING" = xy; then
-	__AC_UNDEFINE([PACKAGE_STRING])
-	AC_DEFINE_UNQUOTED([PACKAGE_STRING],
+	    [Packaging metadata: distro source code/packaged release version])
+])
+AS_IF([test x"$_FIX_VERSION" = xy],
+	[AC_MSG_NOTICE([Overriding VERSION='$VERSION'])
+	 __AC_UNDEFINE([VERSION])
+	 AC_DEFINE_UNQUOTED([VERSION],
+	    ["$VERSION"],
+	    [Version number of package])
+])
+AS_IF([test x"$_FIX_PACKAGE_STRING" = xy],
+	[AC_MSG_NOTICE([Overriding PACKAGE_STRING='$PACKAGE_STRING'])
+	 __AC_UNDEFINE([PACKAGE_STRING])
+	 AC_DEFINE_UNQUOTED([PACKAGE_STRING],
 	    ["$PACKAGE_STRING"],
 	    [Packaging metadata: distro source code name+version])
-fi
-if test x"$_FIX_PACKAGE_URL" = xy; then
-	__AC_UNDEFINE([PACKAGE_URL])
-	AC_DEFINE_UNQUOTED([PACKAGE_URL],
+])
+AS_IF([test x"$_FIX_PACKAGE_URL" = xy],
+	[AC_MSG_NOTICE([Overriding PACKAGE_URL='$PACKAGE_URL'])
+	 __AC_UNDEFINE([PACKAGE_URL])
+	 AC_DEFINE_UNQUOTED([PACKAGE_URL],
 	    ["$PACKAGE_URL"],
-	    [Packaging metadata: distro contact])
-fi
-if test x"$_FIX_PACKAGE_BUGREPORT" = xy; then
-	__AC_UNDEFINE([PACKAGE_BUGREPORT])
-	AC_DEFINE_UNQUOTED([PACKAGE_BUGREPORT],
+	    [Packaging metadata: distro contact (website)])
+])
+AS_IF([test x"$_FIX_PACKAGE_BUGREPORT" = xy],
+	[AC_MSG_NOTICE([Overriding PACKAGE_BUGREPORT='$PACKAGE_BUGREPORT'])
+	 __AC_UNDEFINE([PACKAGE_BUGREPORT])
+	 AC_DEFINE_UNQUOTED([PACKAGE_BUGREPORT],
 	    ["$PACKAGE_BUGREPORT"],
-	    [Packaging metadata: distro contact])
-fi
+	    [Packaging metadata: distro contact (email/tracker)])
+])
+AC_MSG_NOTICE([Overriding PACKAGE_VENDOR='$PACKAGE_VENDOR'])
 AC_DEFINE_UNQUOTED([PACKAGE_VENDOR],
 	    ["$PACKAGE_VENDOR"],
 	    [Packaging metadata: name of the entity which distributes this build of the package])
@@ -468,10 +413,11 @@ AC_SUBST([my_CXXFLAGS])
 AC_MSG_NOTICE([
 Summary:
 
-        $PACKAGE_NAME $VERSION
+        Version:                 ${PACKAGE_NAME} ${VERSION}
 
         Git origin URL:          ${PACKAGE_GIT_ORIGIN}
         Git branch:              ${PACKAGE_GIT_BRANCH}
+        Git tag:                 ${PACKAGE_GIT_TAGGED}
         Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}

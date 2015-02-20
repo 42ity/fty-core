@@ -40,13 +40,14 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
-BUILDSUBDIR=$CHECKOUTDIR
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR=$PWD
+[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
     echo "Search path: $CHECKOUTDIR, $PWD"
     exit 1
 fi
+echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
 set -u
 set -e

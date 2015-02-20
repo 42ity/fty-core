@@ -99,8 +99,8 @@ fill_database(){
         echo "$SQL_INIT not found" >&2
         exit 1
     fi
-    if [ -f $CHECKOUTDIR/tests/CI/$SQL_LOAD ] ; then
-        mysql < $CHECKOUTDIR/tests/CI/$SQL_LOAD
+    if [ -f $CHECKOUTDIR/tools/$SQL_LOAD ] ; then
+        mysql < $CHECKOUTDIR/tools/$SQL_LOAD
     else
         echo "$SQL_LOAD not found" >&2
         exit 1
