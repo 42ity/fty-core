@@ -1,0 +1,43 @@
+<class
+    name = "ymsg"
+    title = "draft"
+    signature = "0"
+    script = "zproto_codec_c_v1"
+    package_dir = "."   
+    include = "czmq.h"
+    >
+
+    <include filename = "license.xml" />
+    
+    <define name = "VERSION" value = "1.0" />
+
+    <!-- List of reserved words as keys in hash field 'aux' -->
+    <define name = "KEY_REPEAT" value = "repeat">Field 'request' from message 'send' will be repeated in message 'reply'. y/n</field>
+    <define name = "KEY_STATUS" value = "status">Status of message 'reply'. ok/error</field>
+    <define name = "KEY_CONTENT_TYPE" value = "content-type">Not used at the moment</field>
+    <!-- List of reserved prefixes of keys in hash field 'aus' -->
+    <define name = "PREFIX_X" value = "X-">Non-standard user-defined headers</field>
+    <!-- General constants -->
+    <define name = "OK"         value = "ok" />
+    <define name = "ERROR"      value = "error" />
+    <define name = "YES"   value = "yes" />
+    <define name = "NO"    value = "no" />
+
+    <message name = "send">
+        Transport layer
+        <field name = "version"     type = "number" size = "1"></field>
+        <field name = "seq"         type = "number" size = "4"></field>
+        <field name = "aux"         type = "hash"></field>
+        <field name = "request"     type = "chunk"></field>
+    </message>
+
+    <message name = "reply">
+        Transport layer reply
+        <field name = "version"     type = "number" size = "1"></field>
+        <field name = "seq"         type = "number" size = "4"></field>
+        <field name = "aux"         type = "hash"></field>
+        <field name = "request"     type = "chunk"></field>
+        <field name = "response"    type = "chunk"></field>
+    </message>
+
+</class>
