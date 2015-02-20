@@ -17,7 +17,7 @@
     <define name = "OP_DELETE" value = "3" />
 
     <message name = "module">
-        <field name = "module"  type = "string"></field>
+        <field name = "name"    type = "string"></field>
         <field name = "params"  type = "strings">List of parameters for module</field>
         <field name = "args"    type = "hash"></field>
     </message>
