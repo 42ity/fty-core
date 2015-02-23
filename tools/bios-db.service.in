@@ -1,0 +1,9 @@
+[Unit]
+Description=Start database layer for BIOS
+After=malamute.service mysql.service
+Requires=malamute.service mysql.service
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/db-ng
+

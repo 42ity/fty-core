@@ -215,6 +215,7 @@ for UPS in $UPS1 $UPS2 ; do
                 SUCCESSES=$(expr $SUCCESSES + 1)
             else 
                 echo "Looking for $PARAM: $NEWVALUE failed."
+                echo "    $SELECT"
                 ERRORS=$(expr $ERRORS + 1)
             fi
         done

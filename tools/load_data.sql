@@ -746,4 +746,3 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
 );
 
-
