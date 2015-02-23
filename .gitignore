@@ -38,6 +38,8 @@ netmon
 simple
 !src/simple
 bios_web.la
+dshell
+!tools/dshell
 
 *.o
 *.lo
@@ -72,6 +74,8 @@ test-database
 test-db
 test-db2
 test-log
+test-nmap-parse
+test-subprocess
 test-utils
 test-dbtopology
 test-totalpower
@@ -79,22 +83,35 @@ test-web
 db-ng
 driver-nut
 server-agent
+!src/drivers/server-agent
 
 tests/junit/
 tests/CI/web/log/
 
 build/
 build-*/
-core-*.*/
 
+core-*.*/
 core-*.*.tar.?z
 core-*.deb
 
+bios-*.*/
+bios-*.*.tar.?z
+bios-*.deb
+
 src/utils/messages/json_schemas.h
-tools/dbpath.h
+!tools/dbpath.cpp.in
+tools/dbpath.cpp
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
+
+!tools/bios-driver-netmon.service.in
+!tools/bios-driver-nut.service.in
+!tools/bios-db.service.in
+bios-driver-netmon.service
+bios-driver-nut.service
+bios-db.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
