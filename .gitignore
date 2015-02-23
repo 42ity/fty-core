@@ -74,6 +74,8 @@ test-database
 test-db
 test-db2
 test-log
+test-nmap-parse
+test-subprocess
 test-utils
 test-dbtopology
 test-totalpower
