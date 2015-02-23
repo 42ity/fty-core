@@ -35,6 +35,12 @@ float total_datacenter_power(a_elmnt_id_t rack_element_id) {
 
 
 float random_value(std::string value) {
+    // const values for UI validation
+    if( value == "min_power_last_day" ) return 1500.0;
+    if( value == "avg_power_last_day" ) return 2750.0;
+    if( value == "max_power_last_day" ) return 4000.0;
+    if( value == "trend_power_last_day") return -0.3;
+    // random values to have some events in UI
     if ( value.find("trend") != std::string::npos ) {
         return (-5.0 + (std::rand() % 100)/10.0 );
     }
