@@ -89,7 +89,6 @@ asset_manager asset_mgr;
     }
 
     // Prepare the reply
-    char buff[16];
 </%cpp>
 {
       "id": "<$ id $>"
@@ -104,13 +103,12 @@ asset_manager asset_mgr;
     int i = 0;
     void *it;
 
-    sprintf(buff, "%d", asset_msg_location (dta));
     if ( ( asset_msg_location (dta) != 0 ) && 
          ( asset_msg_location_type (dta) != asset_type::UNKNOWN ) ) {
 </%cpp>
     , "location_uri":"<$ "/api/v1/asset/" +
                    asset_mgr.byte_to_type(asset_msg_location_type (dta)) + "/" +
-                   buff $>"
+                   std::to_string ( asset_msg_location (dta)) $>"
 <%cpp>
     }
     // Device is special element with more attributes

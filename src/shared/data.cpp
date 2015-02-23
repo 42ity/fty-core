@@ -54,7 +54,6 @@ std::string asset_manager::byte_to_type(byte type) {
 }
 
 std::string measures_manager::int_to_type(uint16_t i) {
-    char buff[16];
     zmsg_t *req = common_msg_encode_get_measure_type_i(i);
     zmsg_t *rep = process_measures_meta(&req);
     common_msg_t *dta = NULL;
@@ -64,10 +63,9 @@ std::string measures_manager::int_to_type(uint16_t i) {
         common_msg_destroy(&dta);
         return ret;
     } else {
-        sprintf(buff, "%d", i);
         zmsg_destroy(&rep);
         common_msg_destroy(&dta);
-        return buff;
+        return std::to_string(i);
     }
 }
 

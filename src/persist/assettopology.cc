@@ -1179,20 +1179,12 @@ zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const 
 {
     zlist_t* powers = zlist_new();
     zlist_autofree (powers);
-    // TODO 30 move to *.h file as a constant
-    // uint32_t has 10 characters
-    // uint16_t has 5 characters
-    char buff[30];     // 10+5+5+10
     for ( auto it = powerlinks.begin(); it != powerlinks.end(); ++it )
     {
         auto apowerlink = *it;
 
-        sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, std::get<1>(apowerlink).c_str(), 
-                                     std::get<0>(apowerlink),
-                                     std::get<3>(apowerlink).c_str(),
-                                     std::get<2>(apowerlink)
-                );
-        zlist_push(powers, buff);
+        zlist_push(powers, (char *)(std::get<1>(apowerlink) + std::to_string (std::get<0>(apowerlink))
+                            + std::get<3>(apowerlink) + std::to_string (std::get<2>(apowerlink))).c_str());
     }
     return powers;
 }
