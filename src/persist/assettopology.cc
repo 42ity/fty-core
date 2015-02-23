@@ -210,9 +210,9 @@ size_t my_size(zframe_t* frame)
 }
 
 zmsg_t* select_group_elements(
-            const char* url             , uint32_t    element_id, 
-            uint8_t     element_type_id , const char* group_name, 
-            const char* dtype_name      , uint8_t     filtertype
+            const char*     url             , a_elmnt_id_t    element_id, 
+            a_elmnt_tp_id_t element_type_id , const char*     group_name, 
+            const char*     dtype_name      , a_elmnt_tp_id_t filtertype
         )
 {
     assert ( element_id );  // id of the group should be specified
@@ -221,8 +221,8 @@ zmsg_t* select_group_elements(
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start");
-    log_debug ("element_id = %d", element_id);
-    log_debug ("filter_type = %d", filtertype);
+    log_debug ("element_id = %" PRIu32, element_id);
+    log_debug ("filter_type = %" PRIu16, filtertype);
  
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -247,7 +247,7 @@ zmsg_t* select_group_elements(
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
         
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         int i = 0;
         int rv = 0;
 
@@ -260,7 +260,7 @@ zmsg_t* select_group_elements(
         for ( auto &row: result )
         {
             i++;
-            uint32_t id = 0;
+            a_elmnt_id_t id = 0;
             row[0].get(id);
             assert ( id );      // required field, otherwise db is corrupted
     
@@ -268,7 +268,7 @@ zmsg_t* select_group_elements(
             row[1].get(name);
             assert ( !name.empty() ); // otherwise db is corrupted
 
-            uint16_t id_type = 0;   // tntdb could not work properly with uint8_t
+            a_elmnt_tp_id_t id_type = 0;
             row[2].get(id_type);
             assert ( id_type );
             
@@ -277,9 +277,9 @@ zmsg_t* select_group_elements(
             
             log_debug ("for");
             log_debug ("i = %d", i);
-            log_debug ("id = %d", id);
+            log_debug ("id = %" PRIu32, id);
             log_debug ("name = %s", name.c_str());
-            log_debug ("id_type = %d", id_type);
+            log_debug ("id_type = %" PRIu16, id_type);
             log_debug ("dtype_name = %s", dtype_name.c_str());
 
             // we are interested in this element if we are interested in 
@@ -351,20 +351,20 @@ zmsg_t* select_group_elements(
 }
 
 zframe_t* select_childs(
-    const char* url             , uint32_t element_id, 
-    uint8_t     element_type_id , uint8_t child_type_id, 
-    bool        is_recursive    , uint32_t current_depth, 
-    uint8_t     filtertype)
+    const char*     url             , a_elmnt_id_t element_id,
+    a_elmnt_tp_id_t element_type_id , a_elmnt_tp_id_t child_type_id,
+    bool            is_recursive    , uint32_t current_depth,
+    a_elmnt_tp_id_t     filtertype)
 {
     assert ( child_type_id );   // is required
     assert ( ( filtertype >= asset_type::GROUP ) && ( filtertype <= 7 ) ); 
     // it can be only 1,2,3,4,5,6.7. 7 means - take all
 
     log_info ("start select_childs");
-    log_debug ("depth = %d", current_depth);
-    log_debug ("element_id = %d", element_id);
-    log_debug ("element_type_id = %d", element_type_id);
-    log_debug ("child_type_id = %d", child_type_id);
+    log_debug ("depth = %" PRIu32, current_depth);
+    log_debug ("element_id = %" PRIu32, element_id);
+    log_debug ("element_type_id = %" PRIu16, element_type_id);
+    log_debug ("child_type_id = %" PRIu16, child_type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -440,7 +440,7 @@ zframe_t* select_childs(
             result = st.set("childtypeid", child_type_id).
                         select();
         }
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         int rv = 0;
         zmsg_t* ret = zmsg_new();
         int i = 0;
@@ -464,9 +464,9 @@ zframe_t* select_childs(
             
             log_debug ("for");
             log_debug ("i = %d", i);
-            log_debug ("id = %d", id);
+            log_debug ("id = %" PRIu32, id);
             log_debug ("name = %s", name.c_str());
-            log_debug ("id_type = %d", id_type);
+            log_debug ("id_type = %" PRIu16, id_type);
             log_debug ("dtype_name = %s", dtype_name.c_str());
 
             zframe_t* dcs     = NULL;
@@ -683,13 +683,11 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                     " WHERE v.id_asset_element = :elementid AND "
                     "       v.keytag = 'type'"
                 );
-                log_debug("element_id = %d", element_id);
-                
                 tntdb::Row row = st.set("elementid", element_id).
 
                                     selectRow();
     
-                log_debug("element_id = %d", element_id);
+                log_debug("element_id = %" PRIu32, element_id);
                 row[0].get(dtype_name);
                 assert ( !dtype_name.empty() ) ; 
             }
@@ -868,8 +866,8 @@ bool compare_start_element (asset_msg_t* rmsg, uint32_t id, uint8_t id_type,
         return false;
 }
 
-edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id, 
-                uint8_t type, std::string name, std::string dtype_name)
+edge_lf print_frame_to_edges (zframe_t* frame, a_elmnt_id_t parent_id, 
+                a_elmnt_tp_id_t type, std::string name, std::string dtype_name)
 {    
     byte* buffer = zframe_data (frame);
     assert ( buffer );
@@ -892,7 +890,7 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id,
                     asset_msg_name(item), 
                     asset_msg_type_name(item), 
                     parent_id, type, name, dtype_name) ); 
-        log_debug ("parent_id = %d", parent_id );
+        log_debug ("parent_id = %" PRIu32, parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
         result1 = print_frame_to_edges (fr, asset_msg_element_id (item), 
@@ -943,7 +941,7 @@ edge_lf print_frame_to_edges (zframe_t* frame, uint32_t parent_id,
    return result;
 }
 
-void print_frame (zframe_t* frame, uint32_t parent_id)
+void print_frame (zframe_t* frame, a_elmnt_id_t parent_id)
 {    
     byte* buffer = zframe_data (frame);
     assert ( buffer );
@@ -957,7 +955,7 @@ void print_frame (zframe_t* frame, uint32_t parent_id)
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
         assert ( item );
         asset_msg_print (item);
-        log_debug("parent_id = %d", parent_id );
+        log_debug("parent_id = %" PRIu32, parent_id );
         
         zframe_t* fr = asset_msg_dcs (item);
         print_frame (fr, asset_msg_element_id (item));
@@ -977,15 +975,15 @@ void print_frame (zframe_t* frame, uint32_t parent_id)
    zmsg_destroy (&zmsg);
 }
 
-zmsg_t* select_parents (const char* url, uint32_t element_id, 
-                        uint8_t element_type_id)
+zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id, 
+                        a_elmnt_tp_id_t element_type_id)
 {
     assert ( element_id );      // is required
     assert ( element_type_id ); // is required
 
     log_info ("start");
-    log_debug ("element_id = %d", element_id);
-    log_debug ("element_type_id = %d", element_type_id);
+    log_debug ("element_id = %" PRIu32, element_id);
+    log_debug ("element_type_id = %" PRIu16, element_type_id);
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -1038,11 +1036,11 @@ zmsg_t* select_parents (const char* url, uint32_t element_id,
         row[2].get(name);
         row[3].get(dtype_name);
 
-        log_debug("rows selected %d, parent_id = %d, parent_type_id = %d",
+        log_debug("rows selected %u, parent_id = %" PRIu32 ", parent_type_id = %" PRIu16,
                             1,  parent_id, parent_type_id);
         
         if ( parent_id != 0 )
-        {  
+        {
             zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
             if ( is_asset_msg (parent) )
                 return asset_msg_encode_return_location_to (element_id, 
@@ -1083,9 +1081,9 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     assert ( url );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_LOCATION_TO );
     log_info ("start");
-    uint32_t element_id = asset_msg_element_id (getmsg);
-    log_debug("element_id=%d", element_id);
-    uint16_t type_id = 0;    
+    a_elmnt_id_t element_id = asset_msg_element_id (getmsg);
+    log_debug("element_id=%" PRIu32, element_id);
+    a_elmnt_tp_id_t type_id = 0;    
  
     // select additional information about starting device
     try{
@@ -1116,16 +1114,16 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
                                                     e.what(), NULL);
     }
     
-    log_debug("type_id=%d", type_id);
+    log_debug("type_id=%" PRIu16, type_id);
     zmsg_t* result = select_parents (url, element_id, type_id);
 
     log_info ("end");
     return result;
 }
 
-std::tuple <std::string, std::string, uint32_t>
+std::tuple <std::string, std::string, a_elmnt_tp_id_t>
     select_add_device_info  ( const char* url, 
-                              uint32_t asset_element_id)
+                              a_elmnt_id_t asset_element_id)
 {
     // select information about specidied asset element
     tntdb::Connection conn = tntdb::connectCached(url);
@@ -1154,9 +1152,9 @@ std::tuple <std::string, std::string, uint32_t>
     log_debug ("selected device type name = %s", device_type_name.c_str());
     
     // device type id, would be 0 if it is not a device
-    uint32_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
     row[2].get(device_type_id);
-    log_debug ("selected device type id = %d", device_type_id);
+    log_debug ("selected device type id = %" PRIu16, device_type_id);
     return std::make_tuple (element_name, device_type_name, device_type_id);
 }
 
@@ -1189,9 +1187,9 @@ zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const 
     {
         auto apowerlink = *it;
 
-        sprintf(buff, "%d:%d:%d:%d", std::get<1>(apowerlink), 
+        sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, std::get<1>(apowerlink).c_str(), 
                                      std::get<0>(apowerlink),
-                                     std::get<3>(apowerlink),
+                                     std::get<3>(apowerlink).c_str(),
                                      std::get<2>(apowerlink)
                 );
         zlist_push(powers, buff);
@@ -1219,18 +1217,18 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_FROM );
     log_info ("start");
-    uint32_t element_id = asset_msg_element_id  (getmsg);
-    uint8_t  linktype   = INPUT_POWER_CHAIN;
-    log_debug ("element_id = %d", element_id);
-    log_debug ("linktype_id = %d", linktype);
+    a_elmnt_id_t     element_id = asset_msg_element_id  (getmsg);
+    a_elmnt_tp_id_t  linktype   = INPUT_POWER_CHAIN;
+    log_debug ("element_id = %" PRIu32, element_id);
+    log_debug ("linktype_id = %" PRIu16, linktype);
 
     std::string device_name = "";
     std::string device_type_name = "";
-    uint32_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
 
     // select information about the start device
     try{
-        std::tuple <std::string, std::string, uint32_t> additional_info = 
+        std::tuple <std::string, std::string, a_dvc_tp_id_t> additional_info = 
             select_add_device_info (url, element_id);
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
@@ -1252,7 +1250,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     // check, if selected element is device
     if ( device_type_name.empty() )
     {   // then it is not a device
-        log_warning ("abort with err = '%s %d %s'", 
+        log_warning ("abort with err = '%s %" PRIu32 " %s'", 
                         "specified element id =", element_id, 
                         " is not a device");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
@@ -1287,22 +1285,22 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
                                   set("idlinktype", linktype).
                                   select();
         
-        log_debug ("links selected: %d", result.size());
+        log_debug ("links selected: %u", result.size());
         
         // Go through the selected links
         for ( auto row: result )
         {
             // id_asset_element_dest, requiured
-            uint32_t id_asset_element_dest = 0;
+            a_elmnt_id_t id_asset_element_dest = 0;
             row[0].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
    
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[1].get(src_out);
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // device_name, required
@@ -1316,18 +1314,18 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             assert ( !device_type_name.empty() );
             
             // id_asset_element_dest, requiured
-            uint32_t device_type_dest_id = 0;
+            a_elmnt_id_t device_type_dest_id = 0;
             row[5].get(device_type_dest_id);
             assert ( device_type_dest_id );
    
             log_debug ("for");
-            log_debug ("asset_element_id_src = %d", element_id);
-            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("asset_element_id_src = %" PRIu32, element_id);
+            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
             log_debug ("device_name = %s", device_name.c_str());
             log_debug ("device_type_name = %s", device_type_name.c_str());
-            log_debug ("dest_type_id = %d", device_type_dest_id);
+            log_debug ("dest_type_id = %" PRIu32, device_type_dest_id);
 
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 
@@ -1369,17 +1367,17 @@ void print_frame_devices (zframe_t* frame)
 }
 
 std::pair < std::set < device_info_t >, std::set < powerlink_info_t > > 
-select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype, 
-                          bool is_recursive)
+select_power_topology_to (const char* url, a_elmnt_id_t element_id, 
+                          a_lnk_tp_id_t linktype, bool is_recursive)
 {
     log_info ("start");
     std::string device_name = "";
     std::string device_type_name = "";
-    uint32_t device_type_id = 0;
+    a_dvc_tp_id_t device_type_id = 0;
     
     // select information about the start device
     try{
-        std::tuple <std::string, std::string, uint32_t> additional_info = 
+        std::tuple <std::string, std::string, a_dvc_tp_id_t> additional_info = 
             select_add_device_info (url, element_id);
         device_name = std::get<0>(additional_info);
         device_type_name = std::get<1>(additional_info);
@@ -1417,7 +1415,7 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
     while ( ncontinue )
     {
         // 1. current element id we are looking powerlinks from
-        uint32_t cur_element_id = std::get<0>(adevice);
+        a_elmnt_id_t cur_element_id = std::get<0>(adevice);
         
         // 2. select and process process powerlinks
         try{
@@ -1439,23 +1437,23 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                                       set("idlinktype", linktype).
                                       select();
             
-            log_debug ("for element_id= %d was %d powerlinks selected", 
+            log_debug ("for element_id= %" PRIu32 " was %u powerlinks selected", 
                                             cur_element_id, result.size());
             
             // Go through the selected links
             for ( auto &row: result )
             {
                 // id_asset_element_dest, requiured
-                uint32_t id_asset_element_src = 0;
+                a_elmnt_id_t id_asset_element_src = 0;
                 row[0].get(id_asset_element_src);
                 assert ( id_asset_element_src );
        
                 // src_out 
-                uint16_t src_out = 999;
+                std::string src_out = SRCOUT_DESTIN_IS_NULL;
                 row[1].get(src_out);
                 
                 // dest_in
-                uint16_t dest_in = 999;
+                std::string dest_in = SRCOUT_DESTIN_IS_NULL;
                 row[2].get(dest_in);
                 
                 // device_name_src, required
@@ -1469,16 +1467,16 @@ select_power_topology_to (const char* url, uint32_t element_id, uint8_t linktype
                 assert ( !device_type_name_src.empty() );
                 
                 // device_type_src_id, required
-                uint32_t device_type_src_id = 0;
+                a_elmnt_id_t device_type_src_id = 0;
                 row[5].get(device_type_src_id);
                 assert ( device_type_src_id );
                 
                 log_debug ("for");
-                log_debug ("asset_element_id_dest = %d", cur_element_id);
-                log_debug ("asset_element_id_src = %d", 
+                log_debug ("asset_element_id_dest = %" PRIu32, cur_element_id);
+                log_debug ("asset_element_id_src = %" PRIu32, 
                                                     id_asset_element_src);
-                log_debug ("src_out = %d", src_out);
-                log_debug ("dest_in = %d", dest_in);
+                log_debug ("src_out = %s", src_out.c_str());
+                log_debug ("dest_in = %s", dest_in.c_str());
                 log_debug ("device_name_src = %s", device_name_src.c_str());
                 log_debug ("device_type_name_src = %s", 
                                                 device_type_name_src.c_str());
@@ -1527,8 +1525,8 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_TO );
     log_info ("start");
-    uint32_t element_id = asset_msg_element_id (getmsg);
-    uint8_t  linktype   = INPUT_POWER_CHAIN;
+    a_elmnt_id_t element_id = asset_msg_element_id (getmsg);
+    a_lnk_tp_id_t  linktype   = INPUT_POWER_CHAIN;
     
     std::pair <std::set<device_info_t>, std::set <powerlink_info_t>> topology;
 
@@ -1550,7 +1548,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
     }
     catch (const bios::ElementIsNotDevice &e) {
         // specified element is not a device
-        log_warning ("abort with err = '%s %d %s'", 
+        log_warning ("abort with err = '%s %" PRIu32 " %s'", 
                 "specified element id =", element_id, " is not a device");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
@@ -1573,8 +1571,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_GROUP );
     log_info ("start");
-    uint32_t element_id = asset_msg_element_id (getmsg);
-    uint8_t  linktype   = INPUT_POWER_CHAIN;
+    a_elmnt_id_t  element_id = asset_msg_element_id (getmsg);
+    a_lnk_tp_id_t linktype   = INPUT_POWER_CHAIN;
 
     log_info ("start select powers"); 
     //  all powerlinks are included into "resultpowers"
@@ -1611,34 +1609,34 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         tntdb::Result result = st.set("groupid", element_id).
                                   set("linktypeid", linktype).
                                   select();
-        log_debug("rows selected %d", result.size()); 
+        log_debug("rows selected %u", result.size()); 
 
         // Go through the selected links
         for ( auto &row: result )
         {
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[0].get(src_out);
             
             // id_asset_element_src, required
-            uint32_t id_asset_element_src = 0;
+            a_elmnt_id_t id_asset_element_src = 0;
             row[1].get(id_asset_element_src);
             assert ( id_asset_element_src );
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
-            uint32_t id_asset_element_dest = 0;
+            a_elmnt_id_t id_asset_element_dest = 0;
             row[3].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
             
             log_debug ("for");
-            log_debug ("asset_element_id_src = %d", id_asset_element_src);
-            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("asset_element_id_src = %" PRIu32, id_asset_element_src);
+            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
@@ -1675,7 +1673,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         // can return more than one row
         tntdb::Result result = st.set("groupid", element_id).
                                   select();
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         
         for ( auto &row: result )
         {
@@ -1690,19 +1688,19 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( !device_type_name.empty() );
 
             // id_asset_element, required
-            uint32_t id_asset_element = 0;
+            a_elmnt_id_t id_asset_element = 0;
             row[2].get(id_asset_element);
             assert ( id_asset_element );
             
-            uint32_t device_type_id = 0;
+            a_dvc_tp_id_t device_type_id = 0;
             row[2].get(device_type_id);
             assert ( device_type_id );
 
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());
             log_debug ("device_type_name = %s", device_name.c_str());
-            log_debug ("asset_element_id = %d", id_asset_element);
-            log_debug ("device_type_id = %d", device_type_id);
+            log_debug ("asset_element_id = %" PRIu32, id_asset_element);
+            log_debug ("device_type_id = %" PRIu16, device_type_id);
             
             resultdevices.insert (std::make_tuple(
                     id_asset_element, device_name, device_type_name, device_type_id));
@@ -1726,8 +1724,8 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
     assert ( getmsg );
     assert ( asset_msg_id (getmsg) == ASSET_MSG_GET_POWER_DATACENTER );
     log_info ("start");
-    uint32_t element_id = asset_msg_element_id  (getmsg);
-    uint8_t  linktype   = INPUT_POWER_CHAIN;
+    a_elmnt_id_t   element_id = asset_msg_element_id  (getmsg);
+    a_lnk_tp_id_t  linktype   = INPUT_POWER_CHAIN;
 
     log_info ("start select devices"); 
     // result set of found devices 
@@ -1745,12 +1743,12 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         // can return more than one row
         tntdb::Result result = st.set("dcid", element_id).
                                   select();
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         
         for ( auto &row: result )
         {
             // id_asset_element, required
-            uint32_t id_asset_element = 0;
+            a_elmnt_id_t id_asset_element = 0;
             row[0].get(id_asset_element);
             assert ( id_asset_element );
             
@@ -1765,15 +1763,15 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( !device_type_name.empty() );
 
             // device_type_id, required 
-            uint32_t device_type_id = 0;
+            a_dvc_tp_id_t device_type_id = 0;
             row[3].get(device_type_id);
             assert ( device_type_id );
             
             log_debug ("for");
             log_debug ("device_name = %s", device_name.c_str());
             log_debug ("device_type_name = %s", device_type_name.c_str());
-            log_debug ("device_type_id = %d", device_type_id);
-            log_debug ("asset_element_id = %d", id_asset_element);
+            log_debug ("device_type_id = %" PRIu16, device_type_id);
+            log_debug ("asset_element_id = %" PRIu32, id_asset_element);
             
             resultdevices.insert (std::make_tuple(
                     id_asset_element, device_name, device_type_name, device_type_id));
@@ -1815,34 +1813,34 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Result result = st.set("dcid", element_id).
                                   set("linktypeid", linktype).
                                   select();
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         
         // Go through the selected links
         for ( auto &row: result )
         {
             // src_out 
-            uint16_t src_out = 999;
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
             row[0].get(src_out);
             
             // id_asset_element_src, required
-            uint32_t id_asset_element_src = 0;
+            a_elmnt_id_t id_asset_element_src = 0;
             row[1].get(id_asset_element_src);
             assert ( id_asset_element_src );
             
             // dest_in
-            uint16_t dest_in = 999;
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
             
             // id_asset_element_dest, required
-            uint32_t id_asset_element_dest = 0;
+            a_elmnt_id_t id_asset_element_dest = 0;
             row[3].get(id_asset_element_dest);
             assert ( id_asset_element_dest );
             
             log_debug ("for");
-            log_debug ("asset_element_id_src = %d", id_asset_element_src);
-            log_debug ("asset_element_id_dest = %d", id_asset_element_dest);
-            log_debug ("src_out = %d", src_out);
-            log_debug ("dest_in = %d", dest_in);
+            log_debug ("asset_element_id_src = %" PRIu32, id_asset_element_src);
+            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("src_out = %s", src_out.c_str());
+            log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
                 id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 

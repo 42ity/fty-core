@@ -197,7 +197,7 @@ static int command_handler (UNUSED_PARAM zloop_t *loop,
                 char *next_item = NULL;
                 next_item = (char *) zlist_pop (zlargs);
                 assert (next_item);
-                log_info ("%lu", strlen(next_item));
+                log_info ("%zu", strlen(next_item));
                 log_info ("%s", next_item);
                 args.push_back(next_item);                      
                 free (next_item);

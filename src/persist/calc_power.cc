@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 #include <tntdb/value.h>
 #include <tntdb/result.h>
+#include <ctime>
 
 #include "log.h"
 #include "defs.h"
@@ -33,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "asset_types.h"
 #include "persist_error.h"
-#include "assetcrud.h"
+#include "dbhelpers.h"
 #include "monitor.h"
 
 bool is_epdu (const device_info_t &device)
@@ -76,13 +77,13 @@ power_sources_t
                       std::set < powerlink_info_t > > power_topology, 
           device_info_t start_device )
 {
-    log_info ("start ");
+    log_info ("start");
 
     auto devices    = power_topology.first;
     auto powerlinks = power_topology.second;
     
-    log_debug ("number of devices in first level down is %ld ", devices.size());
-    log_debug ("number of powerlinks is %ld ", powerlinks.size());
+    log_debug ("number of devices in first level down is %zu ", devices.size());
+    log_debug ("number of powerlinks is %zu ", powerlinks.size());
 
     // start_device can be
     // - IT device     - if it is the first call
@@ -114,11 +115,11 @@ power_sources_t
             }
         }
 
-        log_debug ("start to process ");
-        log_debug ("src_id is %d ", std::get<0>(src_device));
-        log_debug (" src_type_id is %d ", std::get<3>(src_device));
-        log_debug (" src_type_name is %s ", std::get<2>(src_device).c_str());
-        log_debug (" src_name is %s ", std::get<1>(src_device).c_str());
+        log_debug ("start to process");
+        log_debug ("src_id is %" PRIi32, std::get<0>(src_device));
+        log_debug (" src_type_id is %" PRIi16, std::get<3>(src_device));
+        log_debug (" src_type_name is %s", std::get<2>(src_device).c_str());
+        log_debug (" src_name is %s", std::get<1>(src_device).c_str());
 
         if ( is_epdu (src_device) )
             pow_src_epdu.insert(src_device);
@@ -147,12 +148,12 @@ power_sources_t
             }
             catch (const bios::InternalDBError &e) {
                 // propagate error to higher level
-                log_warning ("abnormal end with '%s' ", e.what());
+                log_warning ("end: abnormal with '%s'", e.what());
                 throw bios::InternalDBError(e.what());
             }
             catch (const bios::ElementIsNotDevice &e) {
                 log_error ("Database is corrupted, in power chain there is a"
-                            "non device with asset id %d \n",  
+                            "non device with asset id %" PRIu32 " ignore it",  
                             std::get<0>(src_device));
                 // TODO
                 // for now ignore this element
@@ -163,12 +164,12 @@ power_sources_t
             // TODO issue some warning, because this is not normal
             // that device directly is not connected to epdu/pdu/ups
             if ( is_it_device (src_device) )
-                log_warning ("device with asset id %d is not connected "
+                log_warning ("device with asset id %" PRIu32 " is not connected "
                         "to epdu, ups, pdu \n", std::get<0>(src_device));
             pow_src_it_device.insert (start_device);
         }
     }
-    log_info ("end ");
+    log_info ("end");
     return std::make_tuple (pow_src_epdu, pow_src_ups, pow_src_it_device);
 }
     
@@ -177,7 +178,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
 {
     // ASSUMPTION
     // specified element_id is already in DB and has type asset_type::RACK
-    log_info ("start ");
+    log_info ("start");
     std::set <device_info_t> result_set;
     try{
         tntdb::Connection conn = tntdb::connectCached(url); 
@@ -196,7 +197,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         // Could return more than one row
         tntdb::Result result = st.set("elementid", element_id).
                                   select();
-        log_debug("selected %d different devices", result.size());
+        log_debug("selected %u different devices", result.size());
 
         for ( auto &row: result )
         {
@@ -227,7 +228,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
         return result_set;
     }
     catch (const std::exception &e) {
-        log_warning ("abnormal end with '%s'", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -235,7 +236,7 @@ std::set <device_info_t> select_rack_devices(const char* url,
 a_elmnt_tp_id_t select_element_type (const char* url, 
                                      a_elmnt_id_t asset_element_id)
 {
-    log_info ("start ");
+    log_info ("start");
     assert (asset_element_id);
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -253,16 +254,16 @@ a_elmnt_tp_id_t select_element_type (const char* url,
         a_elmnt_tp_id_t asset_element_type_id = 0;
         val.get(asset_element_type_id);
         assert ( asset_element_type_id );
-        log_info ("end ");
+        log_info ("end");
         return asset_element_type_id;
     }
     catch (const tntdb::NotFound &e) {
-        log_info ("specified element %d was not found ", asset_element_id);
+        log_info ("end: specified element %" PRIu32 " was not found ", asset_element_id);
         // element with specified id was not found
         return 0;
     }
     catch (const std::exception &e){
-        log_warning ("abnormal end with '%s' ", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
 }
@@ -322,16 +323,16 @@ void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
     char buff[21];
-    sprintf(buff, "%ld", value);
+    sprintf(buff, "%" PRIi64, value);
     zhash_insert (results, "value", buff);
-    log_debug ("conv value from %ld to '%s' ", value, buff);
+    log_debug ("conv value from %" PRIi64 " to '%s' ", value, buff);
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value");
-    int r = sscanf(value_str ,"%ld", value);
-    log_debug ("conv value from '%s' to %ld ", value_str, *value);
+    int r = sscanf(value_str ,"%" SCNi64, value);
+    log_debug ("conv value from '%s' to %" PRIi64, value_str, *value);
     return (r == 0 ? 1:0);
 }
 
@@ -339,16 +340,16 @@ void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
     char buff[21];
-    sprintf(buff, "%d", scale);
+    sprintf(buff, "%" PRIi16, scale);
     zhash_insert (results, "scale", buff);
-    log_debug ("conv scale from %hd to '%s' ", scale, buff);
+    log_debug ("conv scale from %" PRIi16 " to '%s' ", scale, buff);
 }
 
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 {
     char* value_str = (char *) zhash_lookup (results, "scale");
-    int r = sscanf(value_str ,"%hd", scale);
-    log_debug ("conv scale from '%s' to %hd ", value_str, *scale);
+    int r = sscanf(value_str ,"%" SCNi16, scale);
+    log_debug ("conv scale from '%s' to %" PRIi16, value_str, *scale);
     return (r == 0 ? 1:0);
 }
 
@@ -356,42 +357,42 @@ void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
 {
     // 21 = 20+1 , 20 charecters has a uint64_t
     char buff[21];
-    sprintf(buff, "%d", num_missed);
+    sprintf(buff, "%" PRIu32, num_missed);
     zhash_insert (results, "num_missed", buff);
-    log_debug ("conv num_missed from %d to '%s' ", num_missed, buff);
+    log_debug ("conv num_missed from %" PRIu32 " to '%s' ", num_missed, buff);
 }
 
 int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
 {
     char* value_str = (char *) zhash_lookup (results, "num_missed");
-    int r = sscanf(value_str ,"%u", num_missed);
-    log_debug ("conv num_missed from '%s' to %u ", value_str, *num_missed);
+    int r = sscanf(value_str ,"%" SCNu32, num_missed);
+    log_debug ("conv num_missed from '%s' to %" PRIu32, value_str, *num_missed);
     return (r == 0 ? 1:0);
 }
 
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
-    log_info ("start ");
+    log_info ("start");
 
     // check if specified device has a rack type
     try{
         a_elmnt_id_t type_id = select_element_type (url, rack_element_id);
         if ( type_id == 0 )
         {
-            log_info ("end: %d rack not found ", rack_element_id);
+            log_info ("end: %" PRIu32 " rack not found ", rack_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                     "specified rack was not found", NULL);
         }
         if (  type_id != asset_type::RACK ) 
         {
-            log_info ("end: %d isn't rack ", rack_element_id);
+            log_info ("end: %" PRIu32 " isn't rack ", rack_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                     "specified element is not a rack", NULL);
         }
     }
     catch (const bios::InternalDBError &e)
     {
-        log_warning ("end: abnormal with '%s' ", e.what());
+        log_warning ("end: abnormal with '%s'", e.what());
         return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                     e.what(), NULL);
     }
@@ -399,7 +400,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     // continue, select all devices in a rack
     auto rack_devices = select_rack_devices(url, rack_element_id);
 
-    auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300);
+    auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300u);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
@@ -474,10 +475,13 @@ static rack_power_t
         const std::set <device_info_t> &upses,
         const std::set <device_info_t> &epdus,
         const std::set <device_info_t> &dvc,
-        uint32_t max_age)
+        time_t date_start,
+        time_t date_end)
 {
     log_info("start real calculation");
-    assert ( max_age != 0 );
+    if (date_start > date_end) {
+        throw new bios::BadInput("date_start must be smaller than date_end");
+    }
 
     // set of all asset_id-es to be computed
     std::set < a_elmnt_id_t > all_asset_ids{};
@@ -490,7 +494,7 @@ static rack_power_t
     for (const device_info_t& d : dvc)   
         all_asset_ids.insert(device_info_id(d));
 
-    rack_power_t ret{0, 0, 255, all_asset_ids};
+    rack_power_t ret{0, 0, 255, all_asset_ids, date_start, date_end};
     if ( all_asset_ids.empty() )
     {
         log_debug ("end: no devices to compute was recieved");
@@ -508,13 +512,13 @@ static rack_power_t
             idmap[dev_id] = asset_id;
         }
         catch (const bios::NotFound &e) {
-            log_info("asset element %d notfound, ignore it", asset_id);
+            log_info("asset element %" PRIu32 " notfound, ignore it", asset_id);
         }
         catch (const bios::ElementIsNotDevice &e) {
-            log_info("asset element %d is not a device, ignore it", asset_id);
+            log_info("asset element %" PRIu32 " is not a device, ignore it", asset_id);
         }
         catch (bios::MonitorCounterpartNotFound &e ) {
-            log_warning("monitor counterpart for the %d was not found,"
+            log_warning("monitor counterpart for the %" PRIu32 " was not found,"
                                             " ignore it", asset_id);
         }
         // ATTENTION: if internal, leave it to upper level
@@ -551,14 +555,14 @@ static rack_power_t
                     + s_generate_in_clause(idmap) + ")"  // XXX
 //                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
             "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
-            "   AND v.timestamp BETWEEN"
-            "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
-            "       AND UTC_TIMESTAMP()"
+            "   AND (UNIX_TIMESTAMP(v.timestamp) BETWEEN"
+            "       :date_start AND :date_end)"
         );
 
-        tntdb::Result result = st.set("seconds", max_age).
+        tntdb::Result result = st.set("date_start", date_start).
+                                  set("date_end", date_end).
                                   select();
-        log_debug("rows selected %d", result.size());
+        log_debug("rows selected %u", result.size());
         for ( auto &row: result )
         {
             m_dvc_id_t dev_id = 0;
@@ -574,9 +578,9 @@ static rack_power_t
             row[2].get(scale);
 
             s_add_scale(ret, value, scale);
-            log_debug (" device %d", dev_id);
-            log_debug ("    value %ld", value);
-            log_debug ("    scale %d", scale);
+            log_debug (" device %" PRIu32, dev_id);
+            log_debug ("    value %" PRIi64, value);
+            log_debug ("    scale %" PRIi16, scale);
         }
     }
     catch (const std::exception &e) {
@@ -585,6 +589,18 @@ static rack_power_t
     }
     log_debug ("end: normal");
     return ret;
+}
+
+rack_power_t
+compute_total_rack_power_v1(
+        const char *url,
+        const std::set <device_info_t> &rack_devices,
+        uint32_t max_age
+        )
+{
+    std::time_t date_end = std::time(NULL);
+    std::time_t date_start = date_end - max_age;
+    return compute_total_rack_power_v1(url, rack_devices, date_start, date_end);
 }
 
 /**
@@ -598,18 +614,25 @@ rack_power_t
 compute_total_rack_power_v1(
         const char *url,
         const std::set <device_info_t> &rack_devices,
-        uint32_t max_age)
+        time_t date_start,
+        time_t date_end
+        )
 {
     log_info ("start");
+
+    if (date_start > date_end) {
+        throw new bios::BadInput("date_start must be smaller than date_end");
+    }
+
     std::set <device_info_t> dvc = {};
     for ( auto &adevice : rack_devices )
         if (is_it_device(adevice))
             dvc.insert(adevice);
 
-    log_debug ("number of IT devices is %ld", dvc.size());
-    auto ret = doA (url, {}, {}, dvc, max_age);
+    log_debug ("number of IT devices is %zu", dvc.size());
+    auto ret = doA (url, {}, {}, dvc, date_start, date_end);
     power_sources_t power_sources;
-    log_debug ("number of IT devices informations is missing for is %ld", 
+    log_debug ("number of IT devices informations is missing for is %zu", 
                                                         ret.missed.size());
     // for every missed value try to find its power path
     for ( auto &bdevice: ret.missed )
@@ -625,20 +648,20 @@ compute_total_rack_power_v1(
             }
         }
         log_debug ("missed device processed:");
-        log_debug ("device_id = %d", std::get<0>(src_device));
+        log_debug ("device_id = %" PRIu32, std::get<0>(src_device));
         log_debug ("device_name = %s", std::get<1>(src_device).c_str());
         log_debug ("device type name = %s", std::get<2>(src_device).c_str());
-        log_debug ("device type_id = %d",std::get<3>(src_device));
+        log_debug ("device type_id = %" PRIu16,std::get<3>(src_device));
 
         auto new_power_srcs = select_pow_src_for_device (url, src_device);
 
         // in V1 if power_source should be taken in account iff 
         // it is in rack
         
-        log_debug ("power sources for device %d", std::get<0>(src_device));
-        log_debug ("num of epdus is %ld", std::get<0>(new_power_srcs).size());
-        log_debug ("num of upses is %ld", std::get<1>(new_power_srcs).size());
-        log_debug ("num of devices is %ld", std::get<2>(new_power_srcs).size());
+        log_debug ("power sources for device %" PRIu32, std::get<0>(src_device));
+        log_debug ("num of epdus is %zu", std::get<0>(new_power_srcs).size());
+        log_debug ("num of upses is %zu", std::get<1>(new_power_srcs).size());
+        log_debug ("num of devices is %zu", std::get<2>(new_power_srcs).size());
         
         for ( auto &bdevice: std::get<0>(new_power_srcs) )
             if ( rack_devices.count(bdevice) == 1 )
@@ -665,15 +688,18 @@ compute_total_rack_power_v1(
             }
     }
     log_debug ("total power sources");
-    log_debug ("num of epdus is %ld", std::get<0>(power_sources).size());
-    log_debug ("num of upses is %ld", std::get<1>(power_sources).size());
-    log_debug ("num of devices is %ld", std::get<2>(power_sources).size());
+    log_debug ("num of epdus is %zu", std::get<0>(power_sources).size());
+    log_debug ("num of upses is %zu", std::get<1>(power_sources).size());
+    log_debug ("num of devices is %zu", std::get<2>(power_sources).size());
     auto ret2 = doA (url, std::get<1>(power_sources), 
                           std::get<0>(power_sources),
-                          std::get<2>(power_sources), max_age);
+                          std::get<2>(power_sources),
+                          date_start,
+                          date_end
+                          );
     s_add_scale (ret, ret2.power, ret2.scale);
     // TODO manage quality + missed
-    log_debug ("end: power = %ld, scale = %d", ret.power, ret.scale);
+    log_debug ("end: power = %" PRIi64 ", scale = %" PRIi16, ret.power, ret.scale);
     return ret;
 }
 
@@ -744,13 +770,13 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
         a_elmnt_id_t type_id = select_element_type (url, dc_element_id);
         if ( type_id == 0 )
         {
-            log_info ("end: %d DC was not found", dc_element_id);
+            log_info ("end: %" PRIu32 " DC was not found", dc_element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
                                     "specified DC was not found", NULL);
         }
         if ( type_id != asset_type::DATACENTER ) 
         {
-            log_info ("end: %d isn't DC", dc_element_id);
+            log_info ("end: %" PRIu32 " isn't DC", dc_element_id);
             return common_msg_encode_fail(BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                     "specified element is not a DC", NULL);
         }
@@ -785,7 +811,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     zframe_t* fr = asset_msg_rooms (item);
     std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
     log_debug("end look racks in rooms");
-    log_debug("number of racks found: %ld", rack_ids.size());
+    log_debug("number of racks found: %zu", rack_ids.size());
         
     // process rows
     log_debug("start look racks in rows");
@@ -793,7 +819,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     auto tmp = find_racks (fr, asset_msg_type(item));
     rack_ids.insert(tmp.begin(), tmp.end());
     log_debug("end look racks in rows");
-    log_debug("total number of racks found: %ld", rack_ids.size());
+    log_debug("total number of racks found: %zu", rack_ids.size());
         
     // process racks
     log_debug("strat look racks");
@@ -801,7 +827,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     auto tmp1 = find_racks (fr, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
     log_debug("end look racks");
-    log_debug("total number of racks found: %ld", rack_ids.size());
+    log_debug("total number of racks found: %zu", rack_ids.size());
 
     // set of results for every rack
     std::vector<rack_power_t> ret_results_rack{rack_ids.size()};
@@ -809,23 +835,26 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     for ( auto &rack_id: rack_ids )
     {
         // select all devices in a rack
-        log_debug("start process the rack: %d", rack_id);
+        log_debug("start process the rack: %" PRIu32, rack_id);
         auto rack_devices = select_rack_devices(url, rack_id);
 
         // calc sum
         auto aresult = compute_total_rack_power_v1 (
                 url, rack_devices, 
-                300);
+                300u);
         ret_results_rack.insert(ret_results_rack.begin(), aresult);
-        log_debug("end process the rack: %d with value = %ld and scale = %d", rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
+        log_debug("end process the rack: %" PRIu32 " with value = %" PRIi64 " and scale = %" PRIi16, rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
     }
     log_debug("here 11");
 
     // calc the total summ
-    rack_power_t ret_result{0, 0, 255, rack_ids};
-    for ( auto &one_rack : ret_results_rack )
+    rack_power_t ret_result{0, 0, 255, rack_ids, 0, 0};
+    for ( auto &one_rack : ret_results_rack ) {
         s_add_scale(ret_result, one_rack.power, one_rack.scale);
-    log_debug("total: value = %ld, scale = %d", ret_result.power, ret_result.scale);
+        ret_result.date_start = one_rack.date_start;
+        ret_result.date_end = one_rack.date_end;
+    }
+    log_debug("total: value = %" PRIi64 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();

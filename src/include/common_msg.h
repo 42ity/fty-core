@@ -66,10 +66,11 @@
         errtype             number 1     An error type, defined in enum somewhere
         errorno             number 4     An error id
         errmsg              longstr      A user visible error string
-        erraux              hash         An optional additional information about occured error
+        aux                 hash         An optional additional information about occured error
 
     DB_OK - An ok message indicates that during the work with db no error had occured
         rowid               number 4     Id of the row processed
+        aux                 hash        An optional additional information
 
     CLIENT - Structure describing client
         name                string       Name of the client
@@ -296,12 +297,13 @@ zmsg_t *
         byte errtype,
         uint32_t errorno,
         const char *errmsg,
-        zhash_t *erraux);
+        zhash_t *aux);
 
 //  Encode the DB_OK 
 zmsg_t *
     common_msg_encode_db_ok (
-        uint32_t rowid);
+        uint32_t rowid,
+        zhash_t *aux);
 
 //  Encode the CLIENT 
 zmsg_t *
@@ -492,13 +494,14 @@ int
         byte errtype,
         uint32_t errorno,
         const char *errmsg,
-        zhash_t *erraux);
+        zhash_t *aux);
     
 //  Send the DB_OK to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 int
     common_msg_send_db_ok (void *output,
-        uint32_t rowid);
+        uint32_t rowid,
+        zhash_t *aux);
     
 //  Send the CLIENT to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
@@ -736,28 +739,28 @@ const char *
 void
     common_msg_set_errmsg (common_msg_t *self, const char *format, ...);
 
-//  Get/set the erraux field
+//  Get/set the aux field
 zhash_t *
-    common_msg_erraux (common_msg_t *self);
-//  Get the erraux field and transfer ownership to caller
+    common_msg_aux (common_msg_t *self);
+//  Get the aux field and transfer ownership to caller
 zhash_t *
-    common_msg_get_erraux (common_msg_t *self);
-//  Set the erraux field, transferring ownership from caller
+    common_msg_get_aux (common_msg_t *self);
+//  Set the aux field, transferring ownership from caller
 void
-    common_msg_set_erraux (common_msg_t *self, zhash_t **erraux_p);
+    common_msg_set_aux (common_msg_t *self, zhash_t **aux_p);
     
-//  Get/set a value in the erraux dictionary
+//  Get/set a value in the aux dictionary
 const char *
-    common_msg_erraux_string (common_msg_t *self,
+    common_msg_aux_string (common_msg_t *self,
         const char *key, const char *default_value);
 uint64_t
-    common_msg_erraux_number (common_msg_t *self,
+    common_msg_aux_number (common_msg_t *self,
         const char *key, uint64_t default_value);
 void
-    common_msg_erraux_insert (common_msg_t *self,
+    common_msg_aux_insert (common_msg_t *self,
         const char *key, const char *format, ...);
 size_t
-    common_msg_erraux_size (common_msg_t *self);
+    common_msg_aux_size (common_msg_t *self);
 
 //  Get/set the rowid field
 uint32_t

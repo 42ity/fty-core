@@ -36,81 +36,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 
 #include "log.h"
+#include "defs.h"
+#include "dbpath.h"
 #include "assetcrud.h"
 #include "monitor.h"
 #include "persist_error.h"
 #include "asset_types.h"
-
-/**
- * \brief This function is a general function to process 
- * the asset_msg_t message
- */
-zmsg_t* asset_msg_process(const char *url, asset_msg_t *msg)
-{
-    log_open();
-    log_set_level(LOG_DEBUG);
-    log_set_syslog_level(LOG_DEBUG);
-    log_info ("%s ", "start");
-
-    zmsg_t *result = NULL;
-
-    int msg_id = asset_msg_id (msg);
-    
-    switch (msg_id) {
-
-        case ASSET_MSG_GET_ELEMENT:
-        {   //datacenter/room/row/rack/group/device
-            result = get_asset_element(url, msg);
-            break;
-        }
-        case ASSET_MSG_UPDATE_ELEMENT:
-        {           
-            //not implemented yet
-            break;
-        }
-        case ASSET_MSG_INSERT_ELEMENT:
-        {
-            //not implemented yet
-            break;
-        }
-        case ASSET_MSG_DELETE_ELEMENT:
-        {
-            //not implemented yet
-            break;
-        }
-        case ASSET_MSG_GET_ELEMENTS:
-        {   //datacenters/rooms/rows/racks/groups
-            result = get_asset_elements(url, msg);
-            break;
-        }
-       // case ASSET_MSG_RETURN_LAST_MEASUREMENTS:
-        case ASSET_MSG_ELEMENT:
-        case ASSET_MSG_RETURN_ELEMENT:
-        case ASSET_MSG_OK:
-        case ASSET_MSG_FAIL:
-        case ASSET_MSG_RETURN_ELEMENTS:
-            // these messages are not recived by persistence
-            // forget about it
-            break;;
-        default:
-        {
-        // Example: Let's suppose we are listening on a ROUTER socket 
-        //          from a range of producers.
-        //          Someone sends us a message from older protocol 
-        //          that has been dropped. Are we going to return 
-        //          'false', that usually means db fatal error, and
-        //          make the caller crash/quit? OR does it make more 
-        //          sense to say, OK, message has been processed and 
-        //          we'll log a warning about unexpected message type.
-                  
-            log_warning ("Unexpected message type received; message id = '%d'", static_cast<int>(msg_id));        
-            break;       
-        }
-    }
-    log_info("normal %s ","end");
-    log_close ();       
-    return result;
-};
+#include "dbhelpers.h"
 
 zlist_t* select_asset_element_groups(const char* url, 
        a_elmnt_id_t element_id)
@@ -148,14 +80,14 @@ zlist_t* select_asset_element_groups(const char* url,
             row[0].get(group_id);
             assert ( group_id != 0 );  // database is corrupted
             
-            sprintf(buff, "%d", group_id);
+            sprintf(buff, "%" PRIu32, group_id);
             zlist_push (groups, buff);
         }
     }
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&groups);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -206,17 +138,17 @@ zlist_t* select_asset_device_link(const char* url,
             assert ( element_id != 0 );  // database is corrupted
 
             // src_out
-            a_lnk_src_out_t src_out;
-            bool srcIsNotNull  = row[1].get(src_out);
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
+            row[1].get(src_out);
 
             // dest_in
-            a_lnk_dest_in_t dest_in;
-            bool destIsNotNull = row[2].get(dest_in);
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
+            row[2].get(dest_in);
 
-            sprintf(buff, "%d:%d:%d:%d", 
-                srcIsNotNull ? src_out : SRCOUT_DESTIN_IS_NULL, 
+            sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, 
+                src_out.c_str(), 
                 element_id, 
-                destIsNotNull ? dest_in : SRCOUT_DESTIN_IS_NULL, 
+                dest_in.c_str(), 
                 device_id);
             zlist_push(links, buff);
         }
@@ -224,7 +156,7 @@ zlist_t* select_asset_device_link(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zlist_destroy (&links);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -278,7 +210,7 @@ zhash_t* select_asset_element_attributes(const char* url,
     catch (const std::exception &e) {
         // internal error in database
         zhash_destroy (&extAttributes);
-        log_warning("abnormal %s ","end");
+        log_warning("abnormal end\n e.what(): %s ", e.what());
         return NULL;
     }
     log_info("normal %s ","end");
@@ -340,7 +272,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
 
         if ( groups == NULL )    // internal error in database
         {
-            log_warning("abnormal %s ","end");
+            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
@@ -348,7 +280,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
-            log_warning("abnormal %s ","end");
+            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
@@ -564,7 +496,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
             assert( id != 0);    // database is corrupted
     
             // TODO type convertions
-            sprintf(buff, "%d", id);
+            sprintf(buff, "%" PRIu32, id);
             zhash_insert(elements, buff, (void*)name.c_str());
         }
     }
@@ -585,90 +517,3 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     log_info("normal %s ","end");
     return resultmsg;
 }
-
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
-                a_elmnt_id_t asset_element_id)
-{
-    assert ( asset_element_id );
-    m_dvc_id_t       device_discovered_id = 0;
-    a_elmnt_tp_id_t  element_type_id      = 0;
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.id_discovered_device, v1.id_type"
-            " FROM"
-            "   v_bios_monitor_asset_relation v"
-            " LEFT JOIN t_bios_asset_element v1"
-            "   ON (v1.id_asset_element = v.id_asset_element)"
-            " WHERE v.id_asset_element = :id"
-        );
-        
-        // TODO set 
-        tntdb::Row row = st.setUnsigned32("id", asset_element_id).
-                            selectRow();
-
-        row[0].get(device_discovered_id);
-
-        row[1].get(element_type_id);
-        assert (element_type_id);
-    }
-    catch (const tntdb::NotFound &e){
-        // apropriate asset element was not found
-        log_info("asset element %d notfound %s ", asset_element_id,"end");
-        throw bios::NotFound();
-    }
-    catch (const std::exception &e) {
-        log_warning("abnormal %s ","end");
-        throw bios::InternalDBError(e.what());
-    }
-    if ( element_type_id != asset_type::DEVICE )
-    {
-        log_info("specified element is not a device %s ","end");
-        throw bios::ElementIsNotDevice();
-    }
-    else if ( device_discovered_id == 0 )
-    {
-        log_warning("monitor counterpart for the %d was not found %s ", 
-                                                asset_element_id, "end");
-        throw bios::MonitorCounterpartNotFound ();
-    }
-    log_info("end: asset element %d converted to %d ", asset_element_id, device_discovered_id);
-    return device_discovered_id;
-};
-
-a_elmnt_id_t convert_monitor_to_asset(const char* url, 
-                    m_dvc_id_t discovered_device_id)
-{
-    log_info("%s ","start");
-    assert ( discovered_device_id );
-    a_elmnt_id_t asset_element_id = 0;
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            " id_asset_element"
-            " FROM"
-            " v_bios_monitor_asset_relation"
-            " WHERE id_discovered_device = :id"
-        );
-
-        // TODO set 
-        tntdb::Value val = st.setUnsigned32("id", discovered_device_id).
-                              selectValue();
-
-        val.get(asset_element_id);
-    }
-    catch (const tntdb::NotFound &e){
-        // apropriate asset element was not found
-        log_info("notfound %s ","end");
-        throw bios::NotFound();
-    }
-    catch (const std::exception &e) {
-        log_warning("abnormal %s ","end");
-        throw bios::InternalDBError(e.what());
-    }
-    log_info("normal %s ","end");
-    return asset_element_id;
-};

@@ -247,9 +247,9 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
 
     //the expected links
     std::set<std::string> spowers;
-    spowers.insert ("999:5028:3:5031"); 
-    spowers.insert ("999:5028:999:5032"); 
-    spowers.insert ("4:5028:999:5033"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5028:3:5031"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5028:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5032"); 
+    spowers.insert ("4:5028:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5033"); 
 
     zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
@@ -339,9 +339,9 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
 
     //the expected links
     std::set<std::string> spowers;
-    spowers.insert ("999:5034:999:5035"); 
-    spowers.insert ("999:5034:999:5036"); 
-    spowers.insert ("999:5034:999:5037"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5034:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5035"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5034:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5036"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5034:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5037"); 
 
     zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
@@ -439,11 +439,11 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
-    char first1[20]  = "999:5038:999:5039";//src_socket:src_id:dst_socket:dst_id
+    std::string first1  = std::string(SRCOUT_DESTIN_IS_NULL) + ":5038:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5039";//src_socket:src_id:dst_socket:dst_id
     char* first  = (char*) zlist_first  (powers);
     REQUIRE ( first  != NULL );
     REQUIRE ( zlist_next (powers)   == NULL );
-    REQUIRE ( strstr(first, first1) == first );
+    REQUIRE ( first1.compare(std::string(first)) == 0 );
 
     zlist_destroy (&powers);
 
@@ -602,8 +602,8 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("999:5041:999:5042"); 
-    spowers.insert ("5:5041:999:5042"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5041:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5042"); 
+    spowers.insert ("5:5041:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5042"); 
     
     zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
@@ -690,7 +690,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("999:5043:999:5044"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5043:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5044"); 
     
     zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );

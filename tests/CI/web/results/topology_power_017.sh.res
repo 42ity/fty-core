@@ -1,1 +1,1 @@
-{"devices":[{"name":"UPSTO10","id":"5074","type":"ups"},{"name":"SINK34","id":"5075","type":"sink"}],"powerchains":[{"src-id":"5075","src-socket":5,"dst-id":"5074"},{"src-id":"5075","dst-id":"5074"}]}
+{"devices":[{"name":"UPSTO10","id":"5074","type":"ups"},{"name":"SINK34","id":"5075","type":"sink"}],"powerchains":[{"src-id":"5075","src-socket":"5","dst-id":"5074"},{"src-id":"5075","dst-id":"5074"}]}
