@@ -26,7 +26,7 @@
     <message name = "send">
         Transport layer
         <field name = "version"     type = "number" size = "1">Protocol version</field>
-        <field name = "seq"         type = "number" size = "2i">Agent specific, starting value unspecified. Each message sent increments this number by one. Reply message must send this number back encoded in field 'rep'.</field>
+        <field name = "seq"         type = "number" size = "2">Agent specific, starting value unspecified. Each message sent increments this number by one. Reply message must send this number back encoded in field 'rep'.</field>
         <field name = "aux"         type = "hash">Extra (auxiliary) headers. Keys must contain only the following characters 'a-zA-Z_-' and values can be any sequence without '\0' (NULL) character. Users can pass non-standard user-defined headers, but they must be prefixed with 'X-'. This field can be used to carry simple key-value app data as well.</field>
         <field name = "request"     type = "chunk">Application specific payload. Not mandatory.</field>
     </message>
