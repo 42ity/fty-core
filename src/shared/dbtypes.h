@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_DBTYPES_H_
 #define SRC_PERSIST_DBTYPES_H_
 
-#define SRCOUT_DESTIN_IS_NULL 999
+#define SRCOUT_DESTIN_IS_NULL "999"
 #define INPUT_POWER_CHAIN     1
 
 
@@ -66,15 +66,11 @@ typedef uint8_t  a_lnk_tp_id_t;
 
 // ----- table:  t_bios_asset_link ---------------
 // ----- column: src_out -------------------------
-// TODO tntdb can't manage uint8_t, so for now there is
-// uint16_t
-typedef uint16_t  a_lnk_src_out_t;
+typedef char  a_lnk_src_out_t[4];
 
 // ----- table:  t_bios_asset_link ---------------
 // ----- column: dest_in -------------------------
-// TODO tntdb can't manage uint8_t, so for now there is
-// uint16_t
-typedef uint16_t  a_lnk_dest_in_t;
+typedef char  a_lnk_dest_in_t[4];
 
 // ----- table:  t_bios_monitor_asset_relation ---
 // ----- column: id_ma_relation ------------------

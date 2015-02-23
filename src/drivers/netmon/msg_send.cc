@@ -25,6 +25,7 @@ References: BIOS-406
 
 #include <assert.h>
 #include <czmq.h>
+#include <malamute.h>
 
 #include "netdisc_msg.h"
 #include "msg_send.h"
@@ -33,7 +34,7 @@ void
 netmon_msg_send(
     const char *event, const char *ifname, uint8_t ipver,
     const char *ipaddr, uint8_t prefixlen, const char *mac,
-    void *socket) {
+    void *client) {
 
     assert (event);
     assert (ifname);
@@ -41,8 +42,8 @@ netmon_msg_send(
             (ipver == NETDISC_IPVER_IPV6));
     assert (ipaddr);
     assert (mac);
-    assert (socket);
-    assert (zsock_is (socket) == true);
+
+    // TODO: assert client is mlm_client_t*
 
     int msg_type = -1;
     if (strcmp (event, NETMON_EVENT_ADD) == 0) {
@@ -56,11 +57,14 @@ netmon_msg_send(
     netdisc_msg_t *msg = netdisc_msg_new (msg_type);
     netdisc_msg_set_name (msg, "%s", ifname);
     netdisc_msg_set_ipver (msg, ipver);
-    netdisc_msg_set_ipaddr (msg, "%s",ipaddr );
+    netdisc_msg_set_ipaddr (msg, "%s", ipaddr);
     netdisc_msg_set_prefixlen (msg, prefixlen);
     netdisc_msg_set_mac (msg, "%s", mac);
 
-    int rv = netdisc_msg_send (&msg, socket);
-    assert (rv != -1); // value pulled out of **s; need to verify    
+    zmsg_t *zmsg = netdisc_msg_encode (&msg);
+    assert (zmsg);
+
+    int rv = mlm_client_send ((mlm_client_t *) client, event, &zmsg);
+    assert (rv != -1); 
 }
 

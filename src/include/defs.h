@@ -17,20 +17,58 @@ extern const char* CLI_SOCK;
 extern const char* DRIVER_NMAP_SOCK;
 extern const char* DRIVER_NMAP_REPLY;
 
+extern const char* MLM_ENDPOINT;
+
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
 #define DUMMY_DEVICE_ID 1
 
-/*\brief Database error constanst*/
-// TODO change to enum
-#define DB_ERROR_INTERNAL 1
-#define DB_ERROR_BADINPUT 2
-#define DB_ERROR_NOTFOUND 3
-#define DB_ERROR_UNKNOWN 4
-#define DB_ERROR_NOTIMPLEMENTED 5
-#define DB_ERROR_DBCORRUPTED 6
-#define DB_ERROR_NOTHINGINSERTED 7
+/**
+ * \brief Backward compatibility macro
+ *
+ * BIOS_ERROR_DB is long and contains BIOS which is temporal name and should be
+ * replaced with something better, but to get stuff working in the meantime,
+ * let's use compatibility macro.
+ *
+ */
+#define BIOS_ERROR_DB DB_ERR
 
-#define BIOS_ERROR_DB 1
+//! Possible error types
+enum errtypes {
+    //! First error should be UNKNOWN as it maps to zero and zero is weird
+    UNKNOWN_ERR,
+    DB_ERR,
+    BAD_INPUT,
+    INTERNAL_ERR,
+};
+
+//! Constants for database errors
+enum db_err_nos {
+    //! First error should be UNKNOWN as it maps to zero and zero is weird
+    DB_ERROR_UNKNOWN,
+    DB_ERROR_INTERNAL,
+    // Probably should be removed at some point and replaced with bad_input_err
+    DB_ERROR_BADINPUT,
+    DB_ERROR_NOTFOUND,
+    DB_ERROR_NOTIMPLEMENTED,
+    DB_ERROR_DBCORRUPTED,
+    DB_ERROR_NOTHINGINSERTED,
+    DB_ERROR_CANTCONNECT,
+};
+
+//! Constants for bad input type of error
+enum bad_input_err {
+    //! First error should be UNKNOWN as it maps to zero and zero is weird
+    BAD_INPUT_UNKNOWN,
+    BAD_INPUT_WRONG_INPUT,
+    BAD_INPUT_OUT_OF_BOUNDS,
+};
+
+//! Constants for internal errors
+enum internal_err {
+    //! First error should be UNKNOWN as it maps to zero and zero is weird
+    INTERNAL_UNKNOWN,
+    INTERNAL_NOT_IMPLEMENTED
+};
 
 #endif // SRC_INCLUDE_DEFS_H_

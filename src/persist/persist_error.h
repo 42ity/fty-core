@@ -81,6 +81,17 @@ namespace bios
         // Constructor
         InternalDBError(const std::string& msg);
     };
+    
+    /*
+     * \brief Exception thrown when bad input data found
+     * in database.
+     */
+    class BadInput : public BiosError
+    {
+        public:
+        // Constructor
+        BadInput(const std::string& msg);
+    };
 
 }
 #endif // PERSIST_ERROR_H

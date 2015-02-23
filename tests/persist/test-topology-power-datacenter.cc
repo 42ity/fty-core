@@ -34,14 +34,14 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     
     // the expected links
     std::set<std::string> spowers;
-    spowers.insert ("999:5087:999:5081"); 
-    spowers.insert ("999:5087:999:5082"); 
-    spowers.insert ("999:5081:999:5083"); 
-    spowers.insert ("999:5082:999:5084"); 
-    spowers.insert ("999:5083:999:5085"); 
-    spowers.insert ("999:5083:999:5086"); 
-    spowers.insert ("999:5084:999:5085"); 
-    spowers.insert ("999:5084:999:5086"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5087:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5081"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5087:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5082"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5081:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5083"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5082:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5084"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5083:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5085"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5083:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5086"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5085"); 
+    spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5086"); 
     
     zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
     assert ( retTopology );

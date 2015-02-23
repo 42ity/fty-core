@@ -47,6 +47,8 @@ typedef struct {
 #define STATUS_OFF             (1 << 9)        /* ups is off */
 #define STATUS_CHRG            (1 << 10)       /* charging */
 #define STATUS_DISCHRG         (1 << 11)       /* discharging */
+#define STATUS_HB              (1 << 12)       /* High battery */
+#define STATUS_FSD             (1 << 13)       /* Forced Shutdown */
 
 /* previous definition is taken as it is from network ups tool project (dummy-ups.h)*/
 

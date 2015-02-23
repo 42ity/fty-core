@@ -55,8 +55,8 @@ struct _common_msg_t {
     byte errtype;                       //   An error type, defined in enum somewhere
     uint32_t errorno;                   //   An error id
     char *errmsg;                       //   A user visible error string
-    zhash_t *erraux;                    //   An optional additional information about occured error
-    size_t erraux_bytes;                //  Size of dictionary content
+    zhash_t *aux;                       //   An optional additional information about occured error
+    size_t aux_bytes;                   //  Size of dictionary content
     uint32_t rowid;                     //   Id of the row processed
     char *name;                         //   Name of the client
     zmsg_t *msg;                        //   Client to be inserted
@@ -237,7 +237,7 @@ common_msg_destroy (common_msg_t **self_p)
         free (self->mt_unit);
         free (self->mts_name);
         free (self->errmsg);
-        zhash_destroy (&self->erraux);
+        zhash_destroy (&self->aux);
         free (self->name);
         zmsg_destroy (&self->msg);
         free (self->client_name);
@@ -391,13 +391,13 @@ common_msg_decode (zmsg_t **msg_p)
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
-                self->erraux = zhash_new ();
-                zhash_autofree (self->erraux);
+                self->aux = zhash_new ();
+                zhash_autofree (self->aux);
                 while (hash_size--) {
                     char *key, *value;
                     GET_STRING (key);
                     GET_LONGSTR (value);
-                    zhash_insert (self->erraux, key, value);
+                    zhash_insert (self->aux, key, value);
                     free (key);
                     free (value);
                 }
@@ -406,6 +406,20 @@ common_msg_decode (zmsg_t **msg_p)
 
         case COMMON_MSG_DB_OK:
             GET_NUMBER4 (self->rowid);
+            {
+                size_t hash_size;
+                GET_NUMBER4 (hash_size);
+                self->aux = zhash_new ();
+                zhash_autofree (self->aux);
+                while (hash_size--) {
+                    char *key, *value;
+                    GET_STRING (key);
+                    GET_LONGSTR (value);
+                    zhash_insert (self->aux, key, value);
+                    free (key);
+                    free (value);
+                }
+            }
             break;
 
         case COMMON_MSG_CLIENT:
@@ -677,24 +691,37 @@ common_msg_encode (common_msg_t **self_p)
             frame_size += 4;
             if (self->errmsg)
                 frame_size += strlen (self->errmsg);
-            //  erraux is an array of key=value strings
+            //  aux is an array of key=value strings
             frame_size += 4;    //  Size is 4 octets
-            if (self->erraux) {
-                self->erraux_bytes = 0;
+            if (self->aux) {
+                self->aux_bytes = 0;
                 //  Add up size of dictionary contents
-                char *item = (char *) zhash_first (self->erraux);
+                char *item = (char *) zhash_first (self->aux);
                 while (item) {
-                    self->erraux_bytes += 1 + strlen ((const char *) zhash_cursor (self->erraux));
-                    self->erraux_bytes += 4 + strlen (item);
-                    item = (char *) zhash_next (self->erraux);
+                    self->aux_bytes += 1 + strlen ((const char *) zhash_cursor (self->aux));
+                    self->aux_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->aux);
                 }
             }
-            frame_size += self->erraux_bytes;
+            frame_size += self->aux_bytes;
             break;
             
         case COMMON_MSG_DB_OK:
             //  rowid is a 4-byte integer
             frame_size += 4;
+            //  aux is an array of key=value strings
+            frame_size += 4;    //  Size is 4 octets
+            if (self->aux) {
+                self->aux_bytes = 0;
+                //  Add up size of dictionary contents
+                char *item = (char *) zhash_first (self->aux);
+                while (item) {
+                    self->aux_bytes += 1 + strlen ((const char *) zhash_cursor (self->aux));
+                    self->aux_bytes += 4 + strlen (item);
+                    item = (char *) zhash_next (self->aux);
+                }
+            }
+            frame_size += self->aux_bytes;
             break;
             
         case COMMON_MSG_CLIENT:
@@ -932,13 +959,13 @@ common_msg_encode (common_msg_t **self_p)
             }
             else
                 PUT_NUMBER4 (0);    //  Empty string
-            if (self->erraux) {
-                PUT_NUMBER4 (zhash_size (self->erraux));
-                char *item = (char *) zhash_first (self->erraux);
+            if (self->aux) {
+                PUT_NUMBER4 (zhash_size (self->aux));
+                char *item = (char *) zhash_first (self->aux);
                 while (item) {
-                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->erraux));
+                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->aux));
                     PUT_LONGSTR (item);
-                    item = (char *) zhash_next (self->erraux);
+                    item = (char *) zhash_next (self->aux);
                 }
             }
             else
@@ -947,6 +974,17 @@ common_msg_encode (common_msg_t **self_p)
 
         case COMMON_MSG_DB_OK:
             PUT_NUMBER4 (self->rowid);
+            if (self->aux) {
+                PUT_NUMBER4 (zhash_size (self->aux));
+                char *item = (char *) zhash_first (self->aux);
+                while (item) {
+                    PUT_STRING ((const char *) zhash_cursor ((zhash_t *) self->aux));
+                    PUT_LONGSTR (item);
+                    item = (char *) zhash_next (self->aux);
+                }
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty dictionary
             break;
 
         case COMMON_MSG_CLIENT:
@@ -1247,7 +1285,6 @@ common_msg_recv (void *input)
     zmsg_t *msg = zmsg_recv (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
 
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
@@ -1276,7 +1313,6 @@ common_msg_recv_nowait (void *input)
     zmsg_t *msg = zmsg_recv_nowait (input);
     if (!msg)
         return NULL;            //  Interrupted
-    zmsg_print (msg);
     //  If message came from a router socket, first frame is routing_id
     zframe_t *routing_id = NULL;
     if (zsocket_type (zsock_resolve (input)) == ZMQ_ROUTER) {
@@ -1444,14 +1480,14 @@ common_msg_encode_fail (
     byte errtype,
     uint32_t errorno,
     const char *errmsg,
-    zhash_t *erraux)
+    zhash_t *aux)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
     common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
     common_msg_set_errmsg (self, "%s", errmsg);
-    zhash_t *erraux_copy = zhash_dup (erraux);
-    common_msg_set_erraux (self, &erraux_copy);
+    zhash_t *aux_copy = zhash_dup (aux);
+    common_msg_set_aux (self, &aux_copy);
     return common_msg_encode (&self);
 }
 
@@ -1461,10 +1497,13 @@ common_msg_encode_fail (
 
 zmsg_t * 
 common_msg_encode_db_ok (
-    uint32_t rowid)
+    uint32_t rowid,
+    zhash_t *aux)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DB_OK);
     common_msg_set_rowid (self, rowid);
+    zhash_t *aux_copy = zhash_dup (aux);
+    common_msg_set_aux (self, &aux_copy);
     return common_msg_encode (&self);
 }
 
@@ -1935,14 +1974,14 @@ common_msg_send_fail (
     byte errtype,
     uint32_t errorno,
     const char *errmsg,
-    zhash_t *erraux)
+    zhash_t *aux)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_FAIL);
     common_msg_set_errtype (self, errtype);
     common_msg_set_errorno (self, errorno);
     common_msg_set_errmsg (self, errmsg);
-    zhash_t *erraux_copy = zhash_dup (erraux);
-    common_msg_set_erraux (self, &erraux_copy);
+    zhash_t *aux_copy = zhash_dup (aux);
+    common_msg_set_aux (self, &aux_copy);
     return common_msg_send (&self, output);
 }
 
@@ -1953,10 +1992,13 @@ common_msg_send_fail (
 int
 common_msg_send_db_ok (
     void *output,
-    uint32_t rowid)
+    uint32_t rowid,
+    zhash_t *aux)
 {
     common_msg_t *self = common_msg_new (COMMON_MSG_DB_OK);
     common_msg_set_rowid (self, rowid);
+    zhash_t *aux_copy = zhash_dup (aux);
+    common_msg_set_aux (self, &aux_copy);
     return common_msg_send (&self, output);
 }
 
@@ -2390,11 +2432,12 @@ common_msg_dup (common_msg_t *self)
             copy->errtype = self->errtype;
             copy->errorno = self->errorno;
             copy->errmsg = self->errmsg? strdup (self->errmsg): NULL;
-            copy->erraux = self->erraux? zhash_dup (self->erraux): NULL;
+            copy->aux = self->aux? zhash_dup (self->aux): NULL;
             break;
 
         case COMMON_MSG_DB_OK:
             copy->rowid = self->rowid;
+            copy->aux = self->aux? zhash_dup (self->aux): NULL;
             break;
 
         case COMMON_MSG_CLIENT:
@@ -2587,12 +2630,12 @@ common_msg_print (common_msg_t *self)
                 zsys_debug ("    errmsg='%s'", self->errmsg);
             else
                 zsys_debug ("    errmsg=");
-            zsys_debug ("    erraux=");
-            if (self->erraux) {
-                char *item = (char *) zhash_first (self->erraux);
+            zsys_debug ("    aux=");
+            if (self->aux) {
+                char *item = (char *) zhash_first (self->aux);
                 while (item) {
-                    zsys_debug ("        %s=%s", zhash_cursor (self->erraux), item);
-                    item = (char *) zhash_next (self->erraux);
+                    zsys_debug ("        %s=%s", zhash_cursor (self->aux), item);
+                    item = (char *) zhash_next (self->aux);
                 }
             }
             else
@@ -2602,6 +2645,16 @@ common_msg_print (common_msg_t *self)
         case COMMON_MSG_DB_OK:
             zsys_debug ("COMMON_MSG_DB_OK:");
             zsys_debug ("    rowid=%ld", (long) self->rowid);
+            zsys_debug ("    aux=");
+            if (self->aux) {
+                char *item = (char *) zhash_first (self->aux);
+                while (item) {
+                    zsys_debug ("        %s=%s", zhash_cursor (self->aux), item);
+                    item = (char *) zhash_next (self->aux);
+                }
+            }
+            else
+                zsys_debug ("(NULL)");
             break;
             
         case COMMON_MSG_CLIENT:
@@ -3134,47 +3187,47 @@ common_msg_set_errmsg (common_msg_t *self, const char *format, ...)
 
 
 //  --------------------------------------------------------------------------
-//  Get the erraux field without transferring ownership
+//  Get the aux field without transferring ownership
 
 zhash_t *
-common_msg_erraux (common_msg_t *self)
+common_msg_aux (common_msg_t *self)
 {
     assert (self);
-    return self->erraux;
+    return self->aux;
 }
 
-//  Get the erraux field and transfer ownership to caller
+//  Get the aux field and transfer ownership to caller
 
 zhash_t *
-common_msg_get_erraux (common_msg_t *self)
+common_msg_get_aux (common_msg_t *self)
 {
-    zhash_t *erraux = self->erraux;
-    self->erraux = NULL;
-    return erraux;
+    zhash_t *aux = self->aux;
+    self->aux = NULL;
+    return aux;
 }
 
-//  Set the erraux field, transferring ownership from caller
+//  Set the aux field, transferring ownership from caller
 
 void
-common_msg_set_erraux (common_msg_t *self, zhash_t **erraux_p)
+common_msg_set_aux (common_msg_t *self, zhash_t **aux_p)
 {
     assert (self);
-    assert (erraux_p);
-    zhash_destroy (&self->erraux);
-    self->erraux = *erraux_p;
-    *erraux_p = NULL;
+    assert (aux_p);
+    zhash_destroy (&self->aux);
+    self->aux = *aux_p;
+    *aux_p = NULL;
 }
 
 //  --------------------------------------------------------------------------
-//  Get/set a value in the erraux dictionary
+//  Get/set a value in the aux dictionary
 
 const char *
-common_msg_erraux_string (common_msg_t *self, const char *key, const char *default_value)
+common_msg_aux_string (common_msg_t *self, const char *key, const char *default_value)
 {
     assert (self);
     const char *value = NULL;
-    if (self->erraux)
-        value = (const char *) (zhash_lookup (self->erraux, key));
+    if (self->aux)
+        value = (const char *) (zhash_lookup (self->aux, key));
     if (!value)
         value = default_value;
 
@@ -3182,13 +3235,13 @@ common_msg_erraux_string (common_msg_t *self, const char *key, const char *defau
 }
 
 uint64_t
-common_msg_erraux_number (common_msg_t *self, const char *key, uint64_t default_value)
+common_msg_aux_number (common_msg_t *self, const char *key, uint64_t default_value)
 {
     assert (self);
     uint64_t value = default_value;
     char *string = NULL;
-    if (self->erraux)
-        string = (char *) (zhash_lookup (self->erraux, key));
+    if (self->aux)
+        string = (char *) (zhash_lookup (self->aux, key));
     if (string)
         value = atol (string);
 
@@ -3196,7 +3249,7 @@ common_msg_erraux_number (common_msg_t *self, const char *key, uint64_t default_
 }
 
 void
-common_msg_erraux_insert (common_msg_t *self, const char *key, const char *format, ...)
+common_msg_aux_insert (common_msg_t *self, const char *key, const char *format, ...)
 {
     //  Format into newly allocated string
     assert (self);
@@ -3206,18 +3259,18 @@ common_msg_erraux_insert (common_msg_t *self, const char *key, const char *forma
     va_end (argptr);
 
     //  Store string in hash table
-    if (!self->erraux) {
-        self->erraux = zhash_new ();
-        zhash_autofree (self->erraux);
+    if (!self->aux) {
+        self->aux = zhash_new ();
+        zhash_autofree (self->aux);
     }
-    zhash_update (self->erraux, key, string);
+    zhash_update (self->aux, key, string);
     free (string);
 }
 
 size_t
-common_msg_erraux_size (common_msg_t *self)
+common_msg_aux_size (common_msg_t *self)
 {
-    return zhash_size (self->erraux);
+    return zhash_size (self->aux);
 }
 
 
@@ -3595,9 +3648,9 @@ int
 common_msg_test (bool verbose)
 {
     printf (" * common_msg: ");
-    if (verbose) {;}	// silence an "unused" warning;
-    // TODO: properly fix this in template zproto : zproto_codec_c_v1.gsl
-    // so as to not lose the fix upon regeneration of code
+
+    //  Silence an "unused" warning by "using" the verbose variable
+    if (verbose) {;}
 
     //  @selftest
     //  Simple create/destroy test
@@ -3765,8 +3818,8 @@ common_msg_test (bool verbose)
     common_msg_set_errtype (self, 123);
     common_msg_set_errorno (self, 123);
     common_msg_set_errmsg (self, "Life is short but Now lasts for ever");
-    common_msg_erraux_insert (self, "Name", "Brutus");
-    common_msg_erraux_insert (self, "Age", "%d", 43);
+    common_msg_aux_insert (self, "Name", "Brutus");
+    common_msg_aux_insert (self, "Age", "%d", 43);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3779,9 +3832,9 @@ common_msg_test (bool verbose)
         assert (common_msg_errtype (self) == 123);
         assert (common_msg_errorno (self) == 123);
         assert (streq (common_msg_errmsg (self), "Life is short but Now lasts for ever"));
-        assert (common_msg_erraux_size (self) == 2);
-        assert (streq (common_msg_erraux_string (self, "Name", "?"), "Brutus"));
-        assert (common_msg_erraux_number (self, "Age", 0) == 43);
+        assert (common_msg_aux_size (self) == 2);
+        assert (streq (common_msg_aux_string (self, "Name", "?"), "Brutus"));
+        assert (common_msg_aux_number (self, "Age", 0) == 43);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_DB_OK);
@@ -3792,6 +3845,8 @@ common_msg_test (bool verbose)
     common_msg_destroy (&copy);
 
     common_msg_set_rowid (self, 123);
+    common_msg_aux_insert (self, "Name", "Brutus");
+    common_msg_aux_insert (self, "Age", "%d", 43);
     //  Send twice from same object
     common_msg_send_again (self, output);
     common_msg_send (&self, output);
@@ -3802,6 +3857,9 @@ common_msg_test (bool verbose)
         assert (common_msg_routing_id (self));
         
         assert (common_msg_rowid (self) == 123);
+        assert (common_msg_aux_size (self) == 2);
+        assert (streq (common_msg_aux_string (self, "Name", "?"), "Brutus"));
+        assert (common_msg_aux_number (self, "Age", 0) == 43);
         common_msg_destroy (&self);
     }
     self = common_msg_new (COMMON_MSG_CLIENT);

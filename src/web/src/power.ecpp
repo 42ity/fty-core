@@ -394,11 +394,11 @@ std::string filter_group;
                     }
                     json.append("\"src-id\" : \"").append(tokens[1]).append("\",");
                     if (!tokens[0].empty() && tokens[0] != "999") {
-                        json.append("\"src-socket\" : ").append(tokens[0]).append(",");
+                        json.append("\"src-socket\" : \"").append(tokens[0]).append("\",");
                     }
                     json.append("\"dst-id\" : \"").append(tokens[3]).append("\"");
                     if (!tokens[2].empty() && tokens[2] != "999") {
-                        json.append(",\"dst-socket\" : ").append(tokens[2]);
+                        json.append(",\"dst-socket\" : \"").append(tokens[2]).append("\"");
                     }
                     json.append ("}");
                     item = (const char*) zlist_next (powers);

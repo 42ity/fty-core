@@ -12,6 +12,11 @@
 #define THERMAL "/sys/class/thermal"
 
 int main (int argc, char *argv []) {
+    int ret = 0;
+    common_msg_t *dta = NULL;
+    int temp = 0;
+    int type_id = 0;
+
     // Basic settings
     if (argc > 1) {
         printf ("syntax: server-agent [ ipc://...|tcp://... ]\n");
@@ -38,10 +43,15 @@ int main (int argc, char *argv []) {
                   common_msg_encode_client(id));
     mlm_client_sendto(client, "persistence", "persistence", NULL, 0, &req);
     zmsg_t* rep = mlm_client_recv(client);
-    assert(rep != NULL);
-    common_msg_t *dta = common_msg_decode(&rep);
-    assert(dta != NULL);
-    assert(common_msg_id(dta) != COMMON_MSG_DB_OK);
+    if(rep == NULL) {
+        fprintf(stderr, "Receiving reply to inserting client failed!\n");
+        goto exit;
+    }
+    dta = common_msg_decode(&rep);
+    if(dta == NULL) {
+        fprintf(stderr, "Can't decode reply to inserting client!\n");
+        goto exit;
+    }
     common_msg_destroy(&dta);
 
     // Register device
@@ -50,9 +60,15 @@ int main (int argc, char *argv []) {
                   common_msg_encode_device(4, id + sizeof(CLIENT_ID)));
     mlm_client_sendto(client, "persistence", "persistence", NULL, 0, &req);
     rep = mlm_client_recv(client);
-    assert(rep != NULL);
+    if(rep == NULL) {
+        fprintf(stderr, "Receiving message failed!\n");
+        goto exit;
+    }
     dta = common_msg_decode(&rep);
-    assert(dta != NULL);
+    if(dta == NULL) {
+        fprintf(stderr, "Received wrong message!\n");
+        goto exit;
+    }
     common_msg_destroy(&dta);
 
     // Get numeric type id for temperature
@@ -60,12 +76,23 @@ int main (int argc, char *argv []) {
                         "temperature","C");
     mlm_client_sendto(client, "persistence", "persistence", NULL, 0, &req);
     rep = mlm_client_recv(client);
-    assert(rep != NULL);
+    if(rep == NULL) {
+        fprintf(stderr, "Receiving message failed!\n");
+        goto exit;
+    }
     dta = common_msg_decode(&rep);
-    assert(dta != NULL);
-    int type_id = common_msg_mt_id(dta);
+    if(dta == NULL) {
+        fprintf(stderr, "Received wrong message!\n");
+        goto exit;
+    }
+    type_id = common_msg_mt_id(dta);
     // We measure temperature only in Celsius
-    assert(streq(common_msg_mt_unit(dta), "C"));
+    if((common_msg_mt_unit(dta) == NULL) ||
+       strneq(common_msg_mt_unit(dta), "C")) {
+        fprintf(stderr, "Measuring in '%s' is not supported!\n",
+                common_msg_mt_unit(dta));
+        goto exit;
+    }
     common_msg_destroy(&dta);
 
     // Until interrupted
@@ -77,7 +104,6 @@ int main (int argc, char *argv []) {
             FILE* f = fopen((std::string(THERMAL) + "/" + *it + "/temp").c_str(), "r");
             // Try temp file in there
             if(f != NULL) {
-                int temp = 0;
                 // And try readin number from it
                 if(fscanf(f, "%d", &temp) == 1) {
                     auto cit = cache.find(*it);
@@ -124,6 +150,7 @@ int main (int argc, char *argv []) {
         sleep(1);
     }
 
+exit:
     mlm_client_destroy (&client);
-    return 0;
+    return ret;
 }

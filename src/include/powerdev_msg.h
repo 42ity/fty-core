@@ -10,7 +10,7 @@
     for commits are:
 
      * The XML model used for this code generation: powerdev_msg.xml, or
-     * The code generation script that built this file: zproto_codec_c
+     * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
     Copyright (C) 2014 Eaton                                            
@@ -42,7 +42,7 @@
         serial              string      Serial number
         type                string      Device type (UPS/ePDU/...)
         status              string      UPS status
-        otherproperties     dictionary  Other device properties
+        otherproperties     hash        Other device properties
 */
 
 #define POWERDEV_MSG_VERSION                1.0
@@ -56,7 +56,10 @@ extern "C" {
 #endif
 
 //  Opaque class structure
+#ifndef POWERDEV_MSG_T_DEFINED
 typedef struct _powerdev_msg_t powerdev_msg_t;
+#define POWERDEV_MSG_T_DEFINED
+#endif
 
 //  @interface
 //  Create a new powerdev_msg
@@ -66,6 +69,12 @@ powerdev_msg_t *
 //  Destroy the powerdev_msg
 void
     powerdev_msg_destroy (powerdev_msg_t **self_p);
+
+//  Parse a zmsg_t and decides whether it is powerdev_msg. Returns
+//  true if it is, false otherwise. Doesn't destroy or modify the
+//  original message.
+bool
+    is_powerdev_msg (zmsg_t *msg_p);
 
 //  Parse a powerdev_msg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 

@@ -339,10 +339,10 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     r2.clear();
 
     r2 = print_frame_to_edges (asset_msg_grps    (cretTopology),start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
-    log_info ("r1.size before grp = %d ",(int)r1.size());
+    log_info ("r1.size before grp = %zu ", r1.size());
     r1.insert(r2.begin(), r2.end());
     r2.clear();
-    log_info ("r1.size after grp = %d",(int)r1.size());
+    log_info ("r1.size after grp = %zu", r1.size());
 
     log_info ("start print group elements");
     print_frame (asset_msg_grps    (cretTopology),7000 );
