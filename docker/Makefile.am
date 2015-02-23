@@ -3,7 +3,7 @@
 # handled by the master Makefile.
 EXTRA_DIST =
 
-dockerdir	= $(datadir)/@PACKAGE@-@VERSION@/docker
+dockerdir	= $(datadir)/@PACKAGE@/docker
 docker_SCRIPTS	= 	docker_build_bios.sh  \
 			docker_remove.sh \
 			docker_run_bios.sh \

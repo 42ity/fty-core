@@ -229,9 +229,9 @@ CREATE TABLE t_bios_asset_link_type(
 CREATE TABLE t_bios_asset_link (
   id_link               INT UNSIGNED        NOT NULL AUTO_INCREMENT,
   id_asset_device_src   INT UNSIGNED        NOT NULL,
-  src_out               TINYINT,
+  src_out               CHAR(4),
   id_asset_device_dest  INT UNSIGNED        NOT NULL,
-  dest_in               TINYINT,
+  dest_in               CHAR(4),
   id_asset_link_type    TINYINT UNSIGNED    NOT NULL,
   
   PRIMARY KEY (id_link),
