@@ -15,7 +15,7 @@
     <define name = "KEY_REPEAT" value = "repeat">Field 'request' from message 'send' will be repeated in message 'reply'. y/n</define>
     <define name = "KEY_STATUS" value = "status">Status of message 'reply'. ok/error</define>
     <define name = "KEY_CONTENT_TYPE" value = "content-type">Not used at the moment</define>
-    <!-- List of reserved prefixes of keys in hash field 'aus' -->
+    <!-- List of reserved prefixes of keys in hash field 'aux' -->
     <define name = "PREFIX_X" value = "X-">Non-standard user-defined headers</define>
     <!-- General constants -->
     <define name = "OK"         value = "ok" />
@@ -25,18 +25,21 @@
 
     <message name = "send">
         Transport layer
-        <field name = "version"     type = "number" size = "1"></field>
-        <field name = "seq"         type = "number" size = "4"></field>
-        <field name = "aux"         type = "hash"></field>
-        <field name = "request"     type = "chunk"></field>
+        <field name = "version"     type = "number" size = "1">Protocol version</field>
+        <field name = "seq"         type = "number" size = "2i">Agent specific, starting value unspecified. Each message sent increments this number by one. Reply message must send this number back encoded in field 'rep'.</field>
+        <field name = "aux"         type = "hash">Extra (auxiliary) headers. Keys must contain only the following characters 'a-zA-Z_-' and values can be any sequence without '\0' (NULL) character. Users can pass non-standard user-defined headers, but they must be prefixed with 'X-'. This field can be used to carry simple key-value app data as well.</field>
+        <field name = "request"     type = "chunk">Application specific payload. Not mandatory.</field>
     </message>
 
     <message name = "reply">
         Transport layer reply
-        <field name = "version"     type = "number" size = "1"></field>
-        <field name = "seq"         type = "number" size = "4"></field>
+
+        Fields that are common with message 'send' are described there.
+        <field name = "version"     type = "number" size = "1"/>
+        <field name = "seq"         type = "number" size = "2" />
+        <field name = "rep"         type = "number" size = "2">Value must be identical to field 'seq' of message 'send' to which this reply message is being created.</field>
         <field name = "aux"         type = "hash"></field>
-        <field name = "request"     type = "chunk"></field>
+        <field name = "request"     type = "chunk">Application specific payload of message 'send' may be included (repeated) in reply.</field>
         <field name = "response"    type = "chunk"></field>
     </message>
 
