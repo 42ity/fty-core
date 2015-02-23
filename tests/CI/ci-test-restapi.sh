@@ -33,7 +33,7 @@ fi
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
-BUILDSUBDIR="$CHECKOUTDIR"
+[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"

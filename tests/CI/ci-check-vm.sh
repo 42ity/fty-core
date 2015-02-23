@@ -112,6 +112,13 @@ remote_make() {
     ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && autoreconf -vfi && ./configure --prefix=\$HOME --with-saslauthd-mux=/var/run/saslauthd/mux && make -j 4 && make install"
 }
 
+remote_log_cleanup() {
+    echo "-- deleting old log files"
+    BCHECKOUTDIR=$(basename $CHECKOUTDIR)
+    ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm {} \; "
+}
+
+
 #
 # taken from environment
 #
@@ -128,3 +135,4 @@ if ! compare_revisions ; then
     [ "$COMPILE" = "1" ] && remote_make
     echo "----------------------------- sync end ----------------------------------"
 fi
+remote_log_cleanup

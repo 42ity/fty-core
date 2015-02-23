@@ -1,6 +1,6 @@
 # autoconf/automake basis
 AC_PREREQ([2.5])
-AC_INIT([core], [0.1])
+AC_INIT([bios], [0.1])
 PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_SRCDIR([src/simple/main.cc])
@@ -14,7 +14,7 @@ AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-di
 LT_PREREQ([2.2])
 LT_INIT([disable-static])
 
-AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by core])])
+AS_IF([test "x$enable_static" = "xyes"], [AC_MSG_ERROR([--enable-static is not supported by BIOS core])])
 
 AC_ARG_WITH([package-vendor],
 	[AS_HELP_STRING([--with-package-vendor=ARG],
@@ -335,7 +335,7 @@ AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
 
 #test-db-run-path
-AC_CONFIG_FILES([tools/dbpath.h])
+AC_CONFIG_FILES([tools/dbpath.cpp])
 dnl sqlite
 dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
 dnl mariadb/mysql
@@ -380,6 +380,32 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
 
 # sourced from an m4/*.m4 include file during configure script compilation
 BS_CHECK_SASLAUTHD_MUX
+
+# see daemon(7)
+AC_ARG_WITH([systemdsystemunitdir],
+     [AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files])],,
+     [with_systemdsystemunitdir=auto])
+AS_IF([test "x$with_systemdsystemunitdir" = "xyes" -o "x$with_systemdsystemunitdir" = "xauto"], [
+     def_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)
+
+     AS_IF([test "x$def_systemdsystemunitdir" = "x"],
+         [AS_IF([test "x$with_systemdsystemunitdir" = "xyes"],
+                [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])
+          with_systemdsystemunitdir=no],
+         [with_systemdsystemunitdir="$def_systemdsystemunitdir"])])
+AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
+      [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
+
+# set flags CFLAGS
+my_CFLAGS="\
+-std=c11 \
+-Wall \
+-Wextra \
+-Wunused-function \
+-fstack-protector \
+-fstack-protector-all\
+"
 
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
@@ -437,6 +463,7 @@ Summary:
         LIBMLM_CFLAGS:           ${LIBMLM_CFLAGS}
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
+        SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
 
 	absolute SRC DIR:        ${_srcdir_abs}
 	absolute CUR DIR:        ${_curdir_abs}
