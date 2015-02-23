@@ -39,8 +39,8 @@
         <field name = "seq"         type = "number" size = "2" />
         <field name = "rep"         type = "number" size = "2">Value must be identical to field 'seq' of message 'send' to which this reply message is being created.</field>
         <field name = "aux"         type = "hash"></field>
-        <field name = "request"     type = "chunk">Application specific payload of message 'send' may be included (repeated) in reply.</field>
         <field name = "response"    type = "chunk"></field>
+        <field name = "request"     type = "chunk">Application specific payload of message 'send' may be included (repeated) in reply.</field>
     </message>
 
 </class>
