@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 #include <tntdb/value.h>
 #include <tntdb/result.h>
+#include <ctime>
 
 #include "log.h"
 #include "defs.h"
@@ -399,7 +400,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     // continue, select all devices in a rack
     auto rack_devices = select_rack_devices(url, rack_element_id);
 
-    auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300);
+    auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300u);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
@@ -474,10 +475,13 @@ static rack_power_t
         const std::set <device_info_t> &upses,
         const std::set <device_info_t> &epdus,
         const std::set <device_info_t> &dvc,
-        uint32_t max_age)
+        time_t date_start,
+        time_t date_end)
 {
     log_info("start real calculation");
-    assert ( max_age != 0 );
+    if (date_start > date_end) {
+        throw new bios::BadInput("date_start must be smaller than date_end");
+    }
 
     // set of all asset_id-es to be computed
     std::set < a_elmnt_id_t > all_asset_ids{};
@@ -490,7 +494,7 @@ static rack_power_t
     for (const device_info_t& d : dvc)   
         all_asset_ids.insert(device_info_id(d));
 
-    rack_power_t ret{0, 0, 255, all_asset_ids};
+    rack_power_t ret{0, 0, 255, all_asset_ids, date_start, date_end};
     if ( all_asset_ids.empty() )
     {
         log_debug ("end: no devices to compute was recieved");
@@ -551,12 +555,12 @@ static rack_power_t
                     + s_generate_in_clause(idmap) + ")"  // XXX
 //                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
             "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
-            "   AND v.timestamp BETWEEN"
-            "       DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND)"
-            "       AND UTC_TIMESTAMP()"
+            "   AND (UNIX_TIMESTAMP(v.timestamp) BETWEEN"
+            "       :date_start AND :date_end)"
         );
 
-        tntdb::Result result = st.set("seconds", max_age).
+        tntdb::Result result = st.set("date_start", date_start).
+                                  set("date_end", date_end).
                                   select();
         log_debug("rows selected %u", result.size());
         for ( auto &row: result )
@@ -587,6 +591,18 @@ static rack_power_t
     return ret;
 }
 
+rack_power_t
+compute_total_rack_power_v1(
+        const char *url,
+        const std::set <device_info_t> &rack_devices,
+        uint32_t max_age
+        )
+{
+    std::time_t date_end = std::time(NULL);
+    std::time_t date_start = date_end - max_age;
+    return compute_total_rack_power_v1(url, rack_devices, date_start, date_end);
+}
+
 /**
  * FIXME: leave three arguments - one per device type, maybe in the future 
  * we'll use it, or change
@@ -598,16 +614,23 @@ rack_power_t
 compute_total_rack_power_v1(
         const char *url,
         const std::set <device_info_t> &rack_devices,
-        uint32_t max_age)
+        time_t date_start,
+        time_t date_end
+        )
 {
     log_info ("start");
+
+    if (date_start > date_end) {
+        throw new bios::BadInput("date_start must be smaller than date_end");
+    }
+
     std::set <device_info_t> dvc = {};
     for ( auto &adevice : rack_devices )
         if (is_it_device(adevice))
             dvc.insert(adevice);
 
     log_debug ("number of IT devices is %zu", dvc.size());
-    auto ret = doA (url, {}, {}, dvc, max_age);
+    auto ret = doA (url, {}, {}, dvc, date_start, date_end);
     power_sources_t power_sources;
     log_debug ("number of IT devices informations is missing for is %zu", 
                                                         ret.missed.size());
@@ -670,7 +693,10 @@ compute_total_rack_power_v1(
     log_debug ("num of devices is %zu", std::get<2>(power_sources).size());
     auto ret2 = doA (url, std::get<1>(power_sources), 
                           std::get<0>(power_sources),
-                          std::get<2>(power_sources), max_age);
+                          std::get<2>(power_sources),
+                          date_start,
+                          date_end
+                          );
     s_add_scale (ret, ret2.power, ret2.scale);
     // TODO manage quality + missed
     log_debug ("end: power = %" PRIi64 ", scale = %" PRIi16, ret.power, ret.scale);
@@ -815,16 +841,19 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
         // calc sum
         auto aresult = compute_total_rack_power_v1 (
                 url, rack_devices, 
-                300);
+                300u);
         ret_results_rack.insert(ret_results_rack.begin(), aresult);
         log_debug("end process the rack: %" PRIu32 " with value = %" PRIi64 " and scale = %" PRIi16, rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
     }
     log_debug("here 11");
 
     // calc the total summ
-    rack_power_t ret_result{0, 0, 255, rack_ids};
-    for ( auto &one_rack : ret_results_rack )
+    rack_power_t ret_result{0, 0, 255, rack_ids, 0, 0};
+    for ( auto &one_rack : ret_results_rack ) {
         s_add_scale(ret_result, one_rack.power, one_rack.scale);
+        ret_result.date_start = one_rack.date_start;
+        ret_result.date_end = one_rack.date_end;
+    }
     log_debug("total: value = %" PRIi64 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
