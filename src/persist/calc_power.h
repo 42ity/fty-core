@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <set>
 #include <tuple>
+#include <ctime>
 
 #include "common_msg.h"
 #include "compute_msg.h"
@@ -71,6 +72,8 @@ typedef struct _rack_power_t {
     m_msrmnt_scale_t           scale;   //!< scale of result
     uint8_t                    quality; //!< quality of total power (0 - no results found, 100 all results found)
     std::set < a_elmnt_id_t >  missed;  //!< devices where measurements not found in DB
+    time_t                     date_start;
+    time_t                     date_end;
 } rack_power_t;
 
 
@@ -119,17 +122,29 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id);
  * 
  * \param url          - connection to database.
  * \param rack_devices - list of devices contained in a rack
- * \param max_age      - maximum age we'd like to take into account in secs
+ * \param date_start   - first date
+ * \param date_end     - second date
  *
  * \return rc_power_t - total power, quality of metric and list of id's, 
  *                         which were requested, but missed
+ * 
+ * \raises tntdb::TypeError if date_start, date_end are not valid iso times!
  */
 rack_power_t
 compute_total_rack_power_v1(
         const char *url,
         const std::set <device_info_t> &rack_devices,
-        uint32_t max_age);
+        time_t date_start,
+        time_t date_end
+        );
 
+// helper function, to be removed with v1 calculation
+rack_power_t
+compute_total_rack_power_v1(
+        const char *url,
+        const std::set <device_info_t> &rack_devices,
+        uint32_t max_age
+        );
 
 // ===========================================================================
 // Device type check functions

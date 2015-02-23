@@ -48,4 +48,10 @@ namespace bios
     :BiosError("For specified device monitor counterpart was not found")
     {
     }
+    
+    BadInput::BadInput(const std::string& msg)
+    : BiosError(msg)
+    { 
+    }
+
 }
