@@ -421,7 +421,7 @@ Summary:
         Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
-	Git status (uncommitted files):	'${PACKAGE_GIT_STATUS}'
+        Git status (uncommitted files):	'${PACKAGE_GIT_STATUS}'
 
         Build-host 'uname -a':   ${PACKAGE_BUILD_HOST_UNAME}
         Build-host system name:  ${PACKAGE_BUILD_HOST_NAME}
@@ -465,8 +465,8 @@ Summary:
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
 
-	absolute SRC DIR:        ${_srcdir_abs}
-	absolute CUR DIR:        ${_curdir_abs}
+        absolute SRC DIR:        ${_srcdir_abs}
+        absolute CUR DIR:        ${_curdir_abs}
 ])
 
 unset _srcdir_abs
