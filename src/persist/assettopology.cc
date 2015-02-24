@@ -1183,8 +1183,8 @@ zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const 
     {
         auto apowerlink = *it;
 
-        zlist_push(powers, (char *)(std::get<1>(apowerlink) + std::to_string (std::get<0>(apowerlink))
-                            + std::get<3>(apowerlink) + std::to_string (std::get<2>(apowerlink))).c_str());
+        zlist_push(powers, (char *)(std::get<1>(apowerlink) + ":"+ std::to_string (std::get<0>(apowerlink)) + ":" 
+                            + std::get<3>(apowerlink) + ":"+std::to_string (std::get<2>(apowerlink))).c_str());
     }
     return powers;
 }
