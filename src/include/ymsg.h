@@ -49,15 +49,15 @@
         response            chunk       
 */
 
-#define YMSG_VERSION                        1.0
-#define YMSG_KEY_REPEAT                     repeat
-#define YMSG_KEY_STATUS                     status
-#define YMSG_KEY_CONTENT_TYPE               content-type
-#define YMSG_PREFIX_X                       x-
-#define YMSG_OK                             ok
-#define YMSG_ERROR                          error
-#define YMSG_YES                            yes
-#define YMSG_NO                             no
+#define YMSG_VERSION                        "1.0"
+#define YMSG_KEY_REPEAT                     "repeat"
+#define YMSG_KEY_STATUS                     "status"
+#define YMSG_KEY_CONTENT_TYPE               "content-type"
+#define YMSG_PREFIX_X                       "x-"
+#define YMSG_OK                             "ok"
+#define YMSG_ERROR                          "error"
+#define YMSG_YES                            "yes"
+#define YMSG_NO                             "no"
 
 #define YMSG_SEND                           1
 #define YMSG_REPLY                          2
