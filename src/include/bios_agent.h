@@ -37,7 +37,7 @@ extern "C" {
 
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
-    void* seq;              // message sequence number 
+    void* seq;              // message sequence number
 };
 
 typedef struct _bios_agent_t bios_agent_t;
@@ -47,17 +47,16 @@ typedef struct _bios_agent_t bios_agent_t;
 
  Connect to malamute on specified endpoint, with specified timeout in msecs (zero means wait forever). Name of the agent can have form: user/password in which case client logins to the broker via PLAIN authentication.
  \param[in] endpoint    Server endpoint to which to connect
- \param[in] timeout     Number of msecs to wait for successfull connection to specified endpoint. Zero (0) means wait indefinitely.
  \param[in] name        Name of the agent. If it is in form user/password, agent connects to the broker via PLAIN authentication.
  \note Please note that you have to call bios_agent_destroy() when you are done working with bios_agent to free up allocated resources. 
  \return Newly allocated bios agent on successfull connection, NULL otherwise.
 */
 BIOS_EXPORT bios_agent_t*
-    bios_agent_new (const char* endpoint, uint32_t timeout, const char* name);
+    bios_agent_new (const char* endpoint, const char* name);
 
 /*!
  \brief Destroy bios_agent, free up resources and nullify the pointer.
- \param[in,out] self_p  bios agent to be destroyed and nullified
+ \param[in] self_p  bios agent to be destroyed and nullified
 */
 BIOS_EXPORT void
     bios_agent_destroy (bios_agent_t **self_p);
@@ -77,52 +76,18 @@ BIOS_EXPORT int
     bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p);
 
 /*!
- \brief Send confirmed ROZP SEND message using pattern MAILBOX SEND to malamute
-
- Takes ownership of message and destroys it when done sending it.  
- \param[in] self    Bios agent
- \param[in] address Name of target bios agent
- \param[in] subject Message subject
- \param[in] tracker Tracker for confirmed MAILBOX SEND
- \param[in] timeout Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
- \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
- \note Message is destroyed and nullified when sent.
- \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
-*/
-BIOS_EXPORT int
-    bios_agent_sendto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **send_p);
-
-/*!
  \brief Send ROZP SEND message using pattern MAILBOX SEND to malamute
 
  Takes ownership of message and destroys it when done sending it.  
  \param[in] self    Bios agent
  \param[in] address Name of target bios agent
  \param[in] subject Message subject
- \param[in] timeout Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
 BIOS_EXPORT int
-    bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **send_p);
-
-/*!
- \brief Send confirmed ROZP REPLY message using pattern MAILBOX SEND to malamute.
-
- Message sequence number of supplied 'send' message (which must be of type ROZP SEND) is copied to 'rep' field of 'reply_p' message (which must be of type ROZP REPLY). Message sequence number of 'self' bios agent is assigned to field 'seq' of 'reply_p' message. Depending on presence/value of "repeat" key in field 'aux' of message 'send_p' field 'request' is copied to 'reply_p' message. Takes ownership of message 'reply_p' and destroys it when done sending it.  
- \param[in] self     Bios agent
- \param[in] address  Name of target bios agent
- \param[in] subject  Message subject
- \param[in] tracker  Tracker for confirmed MAILBOX SEND
- \param[in] timeout  Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
- \param[in] reply_p  ROZP REPLY message to be sent. Gets destroyed and nullified upon send.
- \param[in] send     ROZP SEND message from  
- \note Message 'reply_p' is destroyed and nullified when sent.
- \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
-*/
-int
-    bios_agent_replyto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send);
+    bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p);
 
 /*!
  \brief Send ROZP REPLY message using patter MAILBOX SEND to malamute.
@@ -131,73 +96,13 @@ int
  \param[in] self     Bios agent
  \param[in] address  Name of target bios agent
  \param[in] subject  Message subject
- \param[in] timeout  Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
  \param[in] reply_p  ROZP REPLY message to be sent. Gets destroyed and nullified upon send.
  \param[in] send     ROZP SEND message from  
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
-int
-    bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send);
-
-/*!
- * Either we find a name OR we throw this out until someone says: i don't want to input message, but just data and finds a better name :)
- *
- \brief Send confirmed ROZP REPLY message using patter MAILBOX SEND to malamute.
-
- Takes ownership of message 'reply_p' and destroys it when done sending it.  
- This is an overload of bios_agent_replyto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send) where the values that would have been taken from 'send' parameter are explicitely exposed.
- \param[in] self     Bios agent
- \param[in] address  Name of target bios agent
- \param[in] subject  Message subject
- \param[in] tracker  Tracker for confirmed MAILBOX SEND
- \param[in] timeout  Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
- \param[in] reply_p  ROZP REPLY message to be sent. Gets destroyed and nullified upon send.
- \param[in] rep      Value to be assigned to field 'rep' of 'reply_p' message 
- \param[in] request  Value to be assigned to field 'request' of 'reply_p' message. Can be NULL.   
- \note Message 'reply_p' is destroyed and nullified when sent.
- \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
-
-int
-    bios_agent_replyto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **reply_p, uint16_t rep, zchunk_t **request);
-*/
-
-/*!
- * Either we find a name OR we throw this out until someone says: i don't want to input message, but just data and finds a better name :)
- *
- \brief Send ROZP REPLY message using patter MAILBOX SEND to malamute.
-
- Takes ownership of message 'reply_p' and destroys it when done sending it.
- This is an overload of bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send) where the values that would have been taken from 'send' parameter are explicitely exposed.
- \param[in] self     Bios agent
- \param[in] address  Name of target bios agent
- \param[in] subject  Message subject
- \param[in] timeout  Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
- \param[in] reply_p  ROZP REPLY message to be sent. Gets destroyed and nullified upon send.
- \param[in] rep      Value to be assigned to field 'rep' of 'reply_p' message 
- \param[in] request  Value to be assigned to field 'request' of 'reply_p' message. Can be NULL.   
- \note Message 'reply_p' is destroyed and nullified when sent.
- \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
-
-int
-    bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **reply_p, uint16_t rep, zchunk_t **request);
-*/
-
-/*!
- \brief Send confirmed ROZP SEND message using patter SERVICE SEND to malamute
-
- Takes ownership of message and destroys it when done sending it.  
- \param[in] self    Bios agent
- \param[in] address Name of target bios agent
- \param[in] subject Message subject
- \param[in] tracker Tracker for confirmed SERVICE SEND
- \param[in] timeout Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
- \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
- \note Message is destroyed and nullified when sent.
- \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
-*/
-int
-    bios_agent_sendfor_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **send_p);
+BIOS_EXPORT int
+    bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **reply_p, ymsg_t *send);
 
 /*!
  \brief Send ROZP SEND message using patter SERVICE SEND to malamute
@@ -206,13 +111,12 @@ int
  \param[in] self    Bios agent
  \param[in] address Name of target bios agent
  \param[in] subject Message subject
- \param[in] timeout Number of msecs to wait for successfull send. Zero (0) means wait indefinitely.
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
-int
-    bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **send_p);
+BIOS_EXPORT int
+    bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p);
 
 /*!
  \brief Receive message from malamute.
@@ -222,32 +126,53 @@ int
  \note Caller is responsible to destroy the received message when done
  \return Received ROZP message on success, NULL on failure
 */
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     bios_agent_recv (bios_agent_t *self);
 
-// TODO: doxygen
-int
-    ymsg_version (ymsg_t *self); // no major minor versions assumes. Simple number is enough
-int
-    ymsg_status (ymsg_t *self); // -1 self == NULL, 0 status error, 1 status ok
-void
-    ymsg_set_status (ymsg_t *self, bool status); // or int, uint8_t if we want to be cranky :)
-int
+/*!
+ \brief Get status value of ROZP REPLY message
+ \return
+     -1 on failure (self, aux == NULL, key STATUS missing, message type not REPLY)
+    status value otherwise (0 - error, 1 - ok)
+*/
+BIOS_EXPORT int
+    ymsg_status (ymsg_t *self);
+
+/*!
+ \brief Set status value of ROZP REPLY message
+ \return -1 on failure (self, aux == NULL, message not ROZP REPLY), 0 on success
+*/    
+BIOS_EXPORT int
+    ymsg_set_status (ymsg_t *self, bool status);
+
+/*!
+ \brief Get repeat value 
+ \return
+    -1 on failure (self, aux == NULL)
+    repeat value otherwise (0 - no repeat, 1 - repeat)
+*/
+BIOS_EXPORT int
     ymsg_repeat (ymsg_t *self);
-int
+
+/*!
+ \brief Set repeat value 
+ \return -1 on failure (self, aux == NULL), 0 on success
+*/
+BIOS_EXPORT int
     ymsg_set_repeat (ymsg_t *self, bool repeat);
-const char *
-    ymsg_content_type (ymsg_t *self); // we just won't recognize between seld == NULL, content type not being there, or some joker filling in "content-type" : NULL... but we probably don't want to. I agree, the first one to need that :P
-int
+
+/*!
+ \brief Get content type
+ /return NULL on failure, content type on success
+*/ 
+BIOS_EXPORT const char *
+    ymsg_content_type (ymsg_t *self);
+/*!
+ \brief Set content type
+ /return -1 on failure, 0 on success
+*/ 
+BIOS_EXPORT int
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
-
-// Later we can go for further functionality....
-// zlist_t *
-//     ymsg_get_x_headers (ymsg_t *self);
-//     ymsg_x_headers (ymsg_t *self);
-
-////////////////////////////////////////////////////////////////////////////////
-//   Getters
 
 /*
  \brief Return last received command.
@@ -307,14 +232,6 @@ const char *
 */
 ymsg_t *
     bios_agent_content (bios_agent_t *self);
-
-/*
- \brief Return last received tracker
- \param[in] self bios agent
- \return last received tracker on success, NULL on failure
-*/
-const char *
-    bios_agent_tracker (bios_agent_t *self);
 
 #ifdef __cplusplus
 }
