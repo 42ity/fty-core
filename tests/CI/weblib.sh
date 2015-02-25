@@ -83,14 +83,14 @@ _PID_TESTER=$$
 trap_break() {
     ### This SIGUSR1 handler is reserved for CURL failures
     echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2
-    echo "CI-WEBLIB-FATAL-BREAK: Got forced interruption signal $1" >&2
+    echo "CI-WEBLIB-FATAL-BREAK: Got forced interruption signal" >&2
     WEBLIB_FORCEABORT=yes
 
 ### Just cause the loop to break at a proper moment in print_result()
 #    exit $1
-    return $1
+    return 1
 }
-trap "trap_break $?" SIGUSR1
+trap "trap_break" SIGUSR1
 
 CURL() {
     curl "$@"
@@ -102,6 +102,7 @@ CURL() {
 
         if [ x"$WEBLIB_CURLFAIL" = xyes ]; then
             kill -SIGUSR1 $_PID_TESTER $$ >/dev/null 2>&1
+            # exit $RES_CURL
         fi
     fi
 
