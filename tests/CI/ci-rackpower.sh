@@ -63,7 +63,7 @@ CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
 if [ ! -d $CFGDIR ] ; then
     echo "NUT config dir not found"
-    kill $WEBTESTPID
+    kill $WEBTESTPID >/dev/null 2>&1
     exit 1
 fi
 set_value_in_ups() {
@@ -309,7 +309,7 @@ echo ""
 echo "*** Summary ***"
 echo "Passed: $SUM_PASS / Failed: $SUM_ERR"
 
-kill $WEBTESTPID
+kill $WEBTESTPID >/dev/null 2>&1
 
 if [ $SUM_ERR = 0 ] ; then
     exit 0
