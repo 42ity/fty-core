@@ -26,6 +26,64 @@ AC_ARG_WITH([package-vendor],
 )
 
 # the default value may be revised, so we have two layers of conditionals here
+_ENABLE_DEBUG_BUILD=1
+AC_ARG_ENABLE(debug-build,
+	[AS_HELP_STRING([--enable-debug-build],
+		[configure Makefile to enable various debugging flags])],
+	[AS_CASE(["x$enableval"],
+		["xyes"],[_ENABLE_DEBUG_BUILD=1],
+		["xno"],[_ENABLE_DEBUG_BUILD=0])])
+# value for both Makefile conditionals as well as the AM_COND_IF macro below
+AM_CONDITIONAL([ENABLE_DEBUG_BUILD],
+	[test "x$_ENABLE_DEBUG_BUILD" != x0])
+AM_COND_IF([ENABLE_DEBUG_BUILD],
+	[AC_MSG_NOTICE([Enabling various debugging flags])
+         my_CFLAGS="$my_CFLAGS -DDEBUG -DDEVEL"
+         my_CPPFLAGS="$my_CPPFLAGS -DDEBUG -DDEVEL"
+         my_CXXFLAGS="$my_CXXFLAGS -DDEBUG -DDEVEL"],
+	[AC_MSG_NOTICE([Not enabling various debugging flags])])
+# a define-flag into config.h just in case some C code would need it later on?
+AC_DEFINE_UNQUOTED([ENABLE_DEBUG_BUILD],   [$_ENABLE_DEBUG_BUILD],
+        [Flag mostly for Makefile: enable various debugging flags (0=no)?])
+
+# the default value may be revised, so we have two layers of conditionals here
+# also, by default ASan is (or is not) enabled if Debug is (or is not)
+# but it can be enabled for "production" builds as well
+_CFLAGS_ASAN="-fsanitize=address -fno-omit-frame-pointer"
+_ENABLE_DEBUG_ASAN=$ENABLE_DEBUG_BUILD
+AC_ARG_ENABLE(address-sanitizer,
+	[AS_HELP_STRING([--enable-address-sanitizer],
+		[configure Makefile to enable Address Sanitizer])],
+	[AS_CASE(["x$enableval"],
+		["xyes"],[_ENABLE_DEBUG_ASAN=1],
+		["xno"],[_ENABLE_DEBUG_ASAN=0])])
+AS_IF([test "x$_ENABLE_DEBUG_ASAN" != x0],
+        [my_save_cflags="$CFLAGS"
+         AC_MSG_CHECKING([whether CC supports Address Sanitizer: CFLAGS='$_CFLAGS_ASAN'])
+         CFLAGS="$_CFLAGS_ASAN -Werror"
+         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+            [AC_MSG_RESULT([yes])],
+            [AC_MSG_RESULT([no])
+             AC_MSG_NOTICE([NOTE: Address Sanitizer was requested but support was not detected, DISABLING])
+             _ENABLE_DEBUG_ASAN=0])
+         CFLAGS="$my_save_cflags"]
+)
+# value for both Makefile conditionals as well as the AM_COND_IF macro below
+# note that in the Makefile we (should?) conditionally link against libasan
+# at least for our built SO lobraries like bios_web.so
+AM_CONDITIONAL([ENABLE_DEBUG_ASAN],
+	[test "x$_ENABLE_DEBUG_ASAN" != x0])
+AM_COND_IF([ENABLE_DEBUG_ASAN],
+	[AC_MSG_NOTICE([Enabling Address Sanitizer])
+         my_CFLAGS="$my_CFLAGS $_CFLAGS_ASAN"
+         my_CPPFLAGS="$my_CPPFLAGS $_CFLAGS_ASAN"
+         my_CXXFLAGS="$my_CXXFLAGS $_CFLAGS_ASAN"],
+	[AC_MSG_NOTICE([Not enabling Address Sanitizer])])
+# a define-flag into config.h just in case some C code would need it later on?
+AC_DEFINE_UNQUOTED([ENABLE_DEBUG_ASAN],   [$_ENABLE_DEBUG_ASAN],
+        [Flag mostly for Makefile: enable Address Sanitizer (0=no)?])
+
+# the default value may be revised, so we have two layers of conditionals here
 _ENABLE_DOCKER_SUPPORT=1
 AC_ARG_ENABLE(docker-support,
 	[AS_HELP_STRING([--enable-docker-support],
@@ -42,7 +100,7 @@ AM_COND_IF([ENABLE_DOCKER_SUPPORT],
 	[AC_MSG_NOTICE([Not enabling Docker support files])])
 # a define-flag into config.h just in case some C code would need it later on?
 AC_DEFINE_UNQUOTED([ENABLE_DOCKER_SUPPORT],   [$_ENABLE_DOCKER_SUPPORT],
-     [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
+        [Flag mostly for Makefile: enable installation of Docker image generation support files (0=no)?])
 
 # display source/build paths of interest to us
 AC_MSG_NOTICE([Determining source code paths:])
@@ -212,7 +270,7 @@ AC_PROG_LN_S
 PKG_PROG_PKG_CONFIG
 
 # set flags CFLAGS
-my_CFLAGS="\
+my_CFLAGS="$my_CFLAGS \
 -std=c11 \
 -Wall \
 -Wextra \
@@ -222,7 +280,7 @@ my_CFLAGS="\
 "
 
 # set flags CXXFLAGS
-my_CXXFLAGS="\
+my_CXXFLAGS="$my_CXXFLAGS \
 -std=c++11 \
 -Wall \
 -Wextra \
@@ -230,6 +288,10 @@ my_CXXFLAGS="\
 -fstack-protector \
 -fstack-protector-all \
 "
+
+# set flags CPPFLAGS
+#my_CPPFLAGS="$my_CPPFLAGS \
+#"
 
 # Early checks for library functions that may be picky - optionally
 # enable macros that may be further needed for compilation of the project
@@ -247,6 +309,7 @@ AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
 	[AC_MSG_RESULT([no])
 	 AC_MSG_CHECKING([strdup() with -D_GNU_SOURCE])
 	 my_CFLAGS="$my_CFLAGS -D_GNU_SOURCE"
+	 my_CPPFLAGS="$my_CPPFLAGS -D_GNU_SOURCE"
 	 my_CXXFLAGS="$my_CXXFLAGS -D_GNU_SOURCE"
 	 AC_DEFINE([_GNU_SOURCE], [1], [Define this if needed to compile POSIX code])
 	 AC_TRY_LINK([#include <string.h>], [char *s; s = strdup("123"); if (s) {;}],
@@ -408,6 +471,7 @@ my_CFLAGS="\
 "
 
 AC_SUBST([my_CFLAGS])
+AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CXXFLAGS])
 
 AC_MSG_NOTICE([
