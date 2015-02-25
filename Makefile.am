@@ -116,6 +116,7 @@ AM_CXXFLAGS = \
 		-fdata-sections
 
 AM_LDFLAGS = \
+		${my_LDFLAGS} \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
 
@@ -634,10 +635,6 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			-module -lm -ltntdb -ltntnet -lcidr
-
-if ENABLE_DEBUG_ASAN
-bios_web_la_LDFLAGS +=  -lasan
-endif
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \

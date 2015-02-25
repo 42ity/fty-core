@@ -46,11 +46,59 @@ AM_COND_IF([ENABLE_DEBUG_BUILD],
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG_BUILD],   [$_ENABLE_DEBUG_BUILD],
         [Flag mostly for Makefile: enable various debugging flags (0=no)?])
 
-# the default value may be revised, so we have two layers of conditionals here
-# also, by default ASan is (or is not) enabled if Debug is (or is not)
-# but it can be enabled for "production" builds as well
+# Google Thread Sanitizer; see
+#   http://code.google.com/p/thread-sanitizer/wiki
+# Note that TSAN incurs 5x-15x slowdown, so it is off by default
+# As of GCC4.8, TSAN is only available for 64-bit Linux
+# As of GCC4.9, either TSAN or ASAN may be used, not both
+_CFLAGS_TSAN="-fsanitize=thread -fPIE -pie"
+_LDFLAGS_TSAN="-pie -ltsan -shared"
+_ENABLE_DEBUG_TSAN=0
+#_ENABLE_DEBUG_TSAN=$ENABLE_DEBUG_BUILD
+AC_ARG_ENABLE(thread-sanitizer,
+	[AS_HELP_STRING([--enable-thread-sanitizer],
+		[configure Makefile to enable Thread Sanitizer])],
+	[AS_CASE(["x$enableval"],
+		["xyes"],[_ENABLE_DEBUG_TSAN=1],
+		["xno"],[_ENABLE_DEBUG_TSAN=0])])
+AS_IF([test "x$_ENABLE_DEBUG_TSAN" != x0],
+        [my_save_cflags="$CFLAGS"
+         my_save_ldflags="$LDFLAGS"
+         AC_MSG_CHECKING([whether CC supports Thread Sanitizer: CFLAGS='$_CFLAGS_TSAN' LDFLAGS='$_LDFLAGS_TSAN'])
+         CFLAGS="$_CFLAGS_TSAN -Werror"
+         LDFLAGS="$_LDFLAGS_TSAN -Werror"
+         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+            [AC_MSG_RESULT([yes])],
+            [AC_MSG_RESULT([no])
+             AC_MSG_NOTICE([NOTE: Thread Sanitizer was requested but support was not detected, DISABLING])
+             _ENABLE_DEBUG_TSAN=0])
+         LDFLAGS="$my_save_ldflags"
+         CFLAGS="$my_save_cflags"]
+)
+# value for both Makefile conditionals as well as the AM_COND_IF macro below
+AM_CONDITIONAL([ENABLE_DEBUG_TSAN],
+	[test "x$_ENABLE_DEBUG_TSAN" != x0])
+AM_COND_IF([ENABLE_DEBUG_TSAN],
+	[AC_MSG_NOTICE([Enabling Thread Sanitizer])
+         my_LDFLAGS="$my_LDFLAGS $_LDFLAGS_TSAN"
+         my_CFLAGS="$my_CFLAGS $_CFLAGS_TSAN"
+         my_CPPFLAGS="$my_CPPFLAGS $_CFLAGS_TSAN"
+         my_CXXFLAGS="$my_CXXFLAGS $_CFLAGS_TSAN"],
+	[AC_MSG_NOTICE([Not enabling Thread Sanitizer])])
+# a define-flag into config.h just in case some C code would need it later on?
+AC_DEFINE_UNQUOTED([ENABLE_DEBUG_TSAN],   [$_ENABLE_DEBUG_TSAN],
+        [Flag mostly for Makefile: enable Thread Sanitizer (0=no)?])
+
+# Google Address Sanitizer; see
+#   http://code.google.com/p/address-sanitizer/wiki
+# As of GCC4.9, either TSAN or ASAN may be used, not both
+# If TSan is off, then by default ASan is (or not) enabled if Debug is (or not)
+# It can be manually enabled for "production" builds as well, just 2x slowdown
 _CFLAGS_ASAN="-fsanitize=address -fno-omit-frame-pointer"
-_ENABLE_DEBUG_ASAN=$ENABLE_DEBUG_BUILD
+_LDFLAGS_ASAN="-lasan -llsan -shared"
+AS_IF([test "x$_ENABLE_DEBUG_TSAN" = x0],
+        [_ENABLE_DEBUG_ASAN=$ENABLE_DEBUG_BUILD],
+        [_ENABLE_DEBUG_ASAN=0])
 AC_ARG_ENABLE(address-sanitizer,
 	[AS_HELP_STRING([--enable-address-sanitizer],
 		[configure Makefile to enable Address Sanitizer])],
@@ -59,22 +107,26 @@ AC_ARG_ENABLE(address-sanitizer,
 		["xno"],[_ENABLE_DEBUG_ASAN=0])])
 AS_IF([test "x$_ENABLE_DEBUG_ASAN" != x0],
         [my_save_cflags="$CFLAGS"
-         AC_MSG_CHECKING([whether CC supports Address Sanitizer: CFLAGS='$_CFLAGS_ASAN'])
+         my_save_ldflags="$LDFLAGS"
+         AC_MSG_CHECKING([whether CC supports Address Sanitizer: CFLAGS='$_CFLAGS_ASAN' LDFLAGS='$_LDFLAGS_ASAN'])
          CFLAGS="$_CFLAGS_ASAN -Werror"
+         LDFLAGS="$_LDFLAGS_ASAN -Werror"
          AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
             [AC_MSG_RESULT([yes])],
             [AC_MSG_RESULT([no])
              AC_MSG_NOTICE([NOTE: Address Sanitizer was requested but support was not detected, DISABLING])
              _ENABLE_DEBUG_ASAN=0])
+         LDFLAGS="$my_save_ldflags"
          CFLAGS="$my_save_cflags"]
 )
 # value for both Makefile conditionals as well as the AM_COND_IF macro below
-# note that in the Makefile we (should?) conditionally link against libasan
-# at least for our built SO lobraries like bios_web.so
+# note that in the Makefile we (should?) conditionally link against libasan;
+# at least this holds for our built SO libraries like bios_web.so
 AM_CONDITIONAL([ENABLE_DEBUG_ASAN],
 	[test "x$_ENABLE_DEBUG_ASAN" != x0])
 AM_COND_IF([ENABLE_DEBUG_ASAN],
 	[AC_MSG_NOTICE([Enabling Address Sanitizer])
+         my_LDFLAGS="$my_LDFLAGS $_LDFLAGS_ASAN"
          my_CFLAGS="$my_CFLAGS $_CFLAGS_ASAN"
          my_CPPFLAGS="$my_CPPFLAGS $_CFLAGS_ASAN"
          my_CXXFLAGS="$my_CXXFLAGS $_CFLAGS_ASAN"],
@@ -82,6 +134,21 @@ AM_COND_IF([ENABLE_DEBUG_ASAN],
 # a define-flag into config.h just in case some C code would need it later on?
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG_ASAN],   [$_ENABLE_DEBUG_ASAN],
         [Flag mostly for Makefile: enable Address Sanitizer (0=no)?])
+
+### At least for some GCC versions, only one of these sanitizers may be used
+AS_IF([test "x$_ENABLE_DEBUG_TSAN" != x0 -a "x$_ENABLE_DEBUG_ASAN" != x0],
+        [AC_MSG_CHECKING([whether -fsanitize=address is incompatible with -fsanitize=thread for this compiler])
+         my_save_cflags="$CFLAGS"
+         my_save_ldflags="$LDFLAGS"
+         CFLAGS="$_CFLAGS_ASAN $_CFLAGS_TSAN -Werror"
+         LDFLAGS="$_LDFLAGS_ASAN $_LDFLAGS_TSAN -Werror"
+         AC_COMPILE_IFELSE([AC_LANG_PROGRAM([])],
+            [AC_MSG_RESULT([no])],
+            [AC_MSG_RESULT([yes])
+             AC_MSG_ERROR([You can only enable either Address Sanitizer or Thread Sanitizer, sorry])])
+         LDFLAGS="$my_save_ldflags"
+         CFLAGS="$my_save_cflags"]
+)
 
 # the default value may be revised, so we have two layers of conditionals here
 _ENABLE_DOCKER_SUPPORT=1
@@ -293,6 +360,10 @@ my_CXXFLAGS="$my_CXXFLAGS \
 #my_CPPFLAGS="$my_CPPFLAGS \
 #"
 
+# set flags LDFLAGS
+#my_LDFLAGS="$my_LDFLAGS \
+#"
+
 # Early checks for library functions that may be picky - optionally
 # enable macros that may be further needed for compilation of the project
 unset _CC_ORIG
@@ -473,6 +544,7 @@ my_CFLAGS="\
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CXXFLAGS])
+AC_SUBST([my_LDFLAGS])
 
 AC_MSG_NOTICE([
 Summary:
