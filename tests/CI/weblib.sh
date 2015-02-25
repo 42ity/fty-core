@@ -27,13 +27,13 @@
 [ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
 
 # Should the test suite break upon first failed test?
-[ -z "$TESTWEB_QUICKFAIL" ] && TESTWEB_QUICKFAIL=no
+[ -z "$WEBLIB_QUICKFAIL" ] && WEBLIB_QUICKFAIL=no
 
 # Should the test suite abort if "curl" errors out?
-[ -z "$TESTWEB_CURLFAIL" ] && TESTWEB_CURLFAIL=yes
+[ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes
 
 _TOKEN_=""
-TESTWEB_FORCEABORT=no
+WEBLIB_FORCEABORT=no
 
 print_result() {
     _ret=0
@@ -46,21 +46,21 @@ print_result() {
         FAILED="$FAILED $NAME"
 
 	# This optional envvar can be set by the caller
-	if [ "$TESTWEB_QUICKFAIL" = yes ]; then
+	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
 	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
-		"TESTWEB_QUICKFAIL=$TESTWEB_QUICKFAIL" \
+		"WEBLIB_QUICKFAIL=$WEBLIB_QUICKFAIL" \
 		"after first failure with test $NAME"
 	    exit $_ret
 	fi >&2
 
 	# This optional envvar can be set by CURL() and trap_*() below
-	if [ "$TESTWEB_FORCEABORT" = yes ]; then
+	if [ "$WEBLIB_FORCEABORT" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
 	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
-		"TESTWEB_FORCEABORT=$TESTWEB_FORCEABORT" \
+		"WEBLIB_FORCEABORT=$WEBLIB_FORCEABORT" \
 		"after forced abortion in test $NAME"
 	    exit $_ret
 	fi >&2
@@ -81,7 +81,7 @@ test_it() {
 _PID_TESTER=$$
 trap_break() {
     echo "CI-FATAL-BREAK: Got forced interruption signal $1"
-    TESTWEB_FORCEABORT=yes
+    WEBLIB_FORCEABORT=yes
 
 ### Just cause the loop to break at a proper moment in print_result()
 #    exit $1
@@ -97,7 +97,7 @@ CURL() {
         echo "CI-ERROR-WEB: 'curl $@' program failed ($RES_CURL)," \
             "perhaps the web server is not available or has crashed?" >&2
 
-        if [ x"$TESTWEB_CURLFAIL" = xyes ]; then
+        if [ x"$WEBLIB_CURLFAIL" = xyes ]; then
             kill -SIGUSR1 $_PID_TESTER $$ >/dev/null 2>&1
         fi
     fi
