@@ -397,16 +397,6 @@ AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
       [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
 
-# set flags CFLAGS
-my_CFLAGS="\
--std=c11 \
--Wall \
--Wextra \
--Wunused-function \
--fstack-protector \
--fstack-protector-all\
-"
-
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CXXFLAGS])
 
