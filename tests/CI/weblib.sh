@@ -49,7 +49,7 @@ print_result() {
 	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
-	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"WEBLIB_QUICKFAIL=$WEBLIB_QUICKFAIL" \
 		"after first failure with test $NAME"
 	    exit $_ret
@@ -59,7 +59,7 @@ print_result() {
 	if [ "$WEBLIB_FORCEABORT" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
-	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
+	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"WEBLIB_FORCEABORT=$WEBLIB_FORCEABORT" \
 		"after forced abortion in test $NAME"
 	    exit $_ret
@@ -78,23 +78,26 @@ test_it() {
     echo "Running test $NAME:"
 }
 
+### This is what we will sig-kill if needed
 _PID_TESTER=$$
 trap_break() {
-    echo "CI-FATAL-BREAK: Got forced interruption signal $1"
+    ### This SIGUSR1 handler is reserved for CURL failures
+    echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2
+    echo "CI-WEBLIB-FATAL-BREAK: Got forced interruption signal $1" >&2
     WEBLIB_FORCEABORT=yes
 
 ### Just cause the loop to break at a proper moment in print_result()
 #    exit $1
     return $1
 }
-
 trap "trap_break $?" SIGUSR1
 
 CURL() {
     curl "$@"
     RES_CURL=$?
     if [ $RES_CURL != 0 ]; then
-        echo "CI-ERROR-WEB: 'curl $@' program failed ($RES_CURL)," \
+        ### Based on caller redirections, this output may never be seen
+        echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
             "perhaps the web server is not available or has crashed?" >&2
 
         if [ x"$WEBLIB_CURLFAIL" = xyes ]; then
@@ -135,7 +138,7 @@ _api_get_token() {
 	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
 	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
-	echo "=== DEBUG: weblib.sh: got ($_RES_) new token '$_TOKEN_'" >&2
+	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
     return $_RES_
@@ -144,7 +147,8 @@ _api_get_token() {
 _api_get_token_certainPlus() {
     _PLUS="$1"
     if [ "$_PLUS" != with -a "$_PLUS" != without ]; then
-	echo "=== ERROR: _api_get_token_certainPlus() unknown certainty: '$_PLUS'" >&2
+	echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+            "unknown certainty was requested: '$_PLUS'" >&2
 	return 1
     fi
 
@@ -154,11 +158,13 @@ _api_get_token_certainPlus() {
 	_T="`LOGIN_RESET=yes _api_get_token`"
 	_RES_=$?
 	if [ $_RES_ != 0 ]; then
-	    echo "=== ERROR: _api_get_token_certainPlus(): _api_get_token() returned error: $_RES_'" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "got error from _api_get_token(): $_RES_'" >&2
 	    return $_RES_
 	fi
 	if [ -z "$_T" ]; then
-	    echo "=== ERROR: _api_get_token_certainPlus(): got empty token value'" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "got empty token value from _api_get_token()'" >&2
 	    return 2
 	fi
 	case "$_T" in
@@ -166,12 +172,16 @@ _api_get_token_certainPlus() {
 	    *)		[ "$_PLUS" = without ] && break ;;
 	esac
 
-	echo "=== WARN: Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
+	echo "CI-WEBLIB-WARN: _api_get_token_certainPlus():" \
+            "Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
+
 	if [ x"$_TO" = x"$_T" ]; then
 	    C="`expr $C + 1`"
 	else C=0; fi
+
 	if [ "$C" -gt 5 ]; then
-	    echo "=== ERROR: Got the same token too many times in a row, aborting loop" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "Got the same token too many times in a row, aborting loop" >&2
 	    echo "$_T"
 	    return 3
 	fi
