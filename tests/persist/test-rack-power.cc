@@ -14,10 +14,10 @@
 #include "calc_power.h"
 
 
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
+    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #1 ==================");
     

@@ -1407,9 +1407,6 @@ zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id,
         auto rsize = result.size();
         log_debug ("was %u rows selected", rsize);
 
-        // TODO move to constant
-        char buff[35];     // 5+5+5+20 
-            
         // Go through the selected measurements
         for ( auto &row: result )
         {
@@ -1437,9 +1434,10 @@ zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id,
             row[4].get(name);
             assert ( !name.empty() );   // database is corrupted
             
-            sprintf(buff, "%" PRIu16 ":%" PRIu16 ":%" PRIi64 ":%" PRIi16, type_id, subtype_id, 
-                          value, scale);
-            zlist_push (measurements, buff);
+            zlist_push (measurements, (char *)(std::to_string (type_id) + ":" +
+                             std::to_string (subtype_id) + ":" + 
+                             std::to_string (value) + ":" +
+                             std::to_string (scale)).c_str());
         }
     }
     catch (const std::exception &e) {
