@@ -14,10 +14,13 @@
 # globs generally) which we may be interested in:
 
 ### Manage the SASL daemon (needed for CI tests):
-Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd,/bin/systemctl --quiet is-active saslauthd
+Cmnd_Alias SASLD	= /etc/init.d/saslauthd,/bin/systemctl start saslauthd,/bin/systemctl restart saslauthd,/bin/systemctl stop saslauthd,/bin/systemctl --quiet is-active saslauthd,/bin/systemctl status saslauthd
+Cmnd_Alias MALAMUTED	= /usr/bin/malamute,/bin/systemctl start malamute,/bin/systemctl restart malamute,/bin/systemctl stop malamute,/bin/systemctl --quiet is-active malamute,/bin/systemctl status malamute
+Cmnd_Alias MYSQLD       = /etc/init.d/mysql,/bin/systemctl start mysql,/bin/systemctl restart mysql,/bin/systemctl stop mysql,/bin/systemctl --quiet is-active mysql,/bin/systemctl status mysql
+Cmnd_Alias TNTNETD      = /etc/init.d/tntnet,/bin/systemctl start tntnet,/bin/systemctl restart tntnet,/bin/systemctl stop tntnet,/bin/systemctl --quiet is-active tntnet,/bin/systemctl status tntnet,/bin/systemctl start tntnet@bios,/bin/systemctl restart tntnet@bios,/bin/systemctl stop tntnet@bios,/bin/systemctl --quiet is-active tntnet@bios,/bin/systemctl status tntnet@bios,/bin/systemctl start tntnet@,/bin/systemctl restart tntnet@,/bin/systemctl stop tntnet@,/bin/systemctl --quiet is-active tntnet@,/bin/systemctl status tntnet@
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_TEST_PROGS	= SASLD
+Cmnd_Alias BIOS_TEST_PROGS	= SASLD,MALAMUTED,MYSQLD,TNTNETD
 
 BIOS_USERS ALL=(BIOS_RUNAS) NOPASSWD:BIOS_TEST_PROGS
 
