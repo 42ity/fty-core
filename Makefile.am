@@ -92,13 +92,12 @@ DISTCHECK_CONFIGURE_FLAGS = \
         --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 
 AM_CPPFLAGS = \
+		${my_CPPFLAGS} \
 		-include $(abs_top_builddir)/config.h \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
-		-DDEBUG \
-		-DDEVEL \
 		-D__STDC_FORMAT_MACROS
 
 AM_CFLAGS = \
@@ -635,6 +634,11 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			-module -lm -ltntdb -ltntnet -lcidr
+
+if ENABLE_DEBUG_ASAN
+bios_web_la_LDFLAGS +=  -lasan
+endif
+
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
