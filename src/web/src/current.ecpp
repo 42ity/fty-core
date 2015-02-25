@@ -76,15 +76,13 @@ std::string dev;
             common_msg_destroy(&dta);
             return code;
         } else {
-            char buff[64];
             std::string json;
             if(!measure.empty())
                 json = ", ";
             else
                 json = "  ";
             json += "{ \"id\":";
-            sprintf(buff, "\"%d\"", common_msg_device_id(dta));
-            json += buff;
+            json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
             json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
             zlist_t *list = common_msg_measurements(dta);
             for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {

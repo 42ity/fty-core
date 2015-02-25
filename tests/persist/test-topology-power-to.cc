@@ -215,6 +215,7 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
 
     char* a = NULL;
     int n = zlist_size(powers);
+    REQUIRE ( n == spowers.size() );
     for ( int i = 1; i <= n; i++ )
     {
         if ( i == 1 )
@@ -222,7 +223,9 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
         else
             a = (char*)zlist_next (powers);
         REQUIRE ( a != NULL );
+        INFO (std::string (a) );
         auto it = spowers.find (std::string(a));
+
         REQUIRE ( it != spowers.end() );
         spowers.erase(it);
     }

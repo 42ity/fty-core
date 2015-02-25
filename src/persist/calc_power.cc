@@ -305,10 +305,9 @@ int convert_str_to_double (const char* value_str, double *value)
 
 void compute_result_value_set (zhash_t *results, double value)
 {
-    char buff[20];
-    sprintf(buff, "%f", value);
-    zhash_insert (results, "value_d", buff);
-    log_debug ("conv value from %f to '%s' ", value, buff);
+    std::string val_s = std::to_string (value);
+    zhash_insert (results, "value_d", (char *)val_s.c_str());
+    log_debug ("conv value from %f to '%s' ", value, val_s.c_str());
 }
 
 int compute_result_value_get (zhash_t *results, double *value)
@@ -321,11 +320,9 @@ int compute_result_value_get (zhash_t *results, double *value)
 
 void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
 {
-    // 21 = 20+1 , 20 charecters has a uint64_t
-    char buff[21];
-    sprintf(buff, "%" PRIi64, value);
-    zhash_insert (results, "value", buff);
-    log_debug ("conv value from %" PRIi64 " to '%s' ", value, buff);
+    std::string val_s = std::to_string (value);
+    zhash_insert (results, "value", (char*)val_s.c_str());
+    log_debug ("conv value from %" PRIi64 " to '%s' ", value, val_s.c_str());
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
@@ -338,11 +335,9 @@ int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 
 void compute_result_scale_set (zhash_t *results, m_msrmnt_scale_t scale)
 {
-    // 21 = 20+1 , 20 charecters has a uint64_t
-    char buff[21];
-    sprintf(buff, "%" PRIi16, scale);
-    zhash_insert (results, "scale", buff);
-    log_debug ("conv scale from %" PRIi16 " to '%s' ", scale, buff);
+    std::string val_s = std::to_string (scale);
+    zhash_insert (results, "scale", (char*)val_s.c_str());
+    log_debug ("conv scale from %" PRIi16 " to '%s' ", scale, val_s.c_str());
 }
 
 int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
@@ -355,11 +350,9 @@ int compute_result_scale_get (zhash_t *results, m_msrmnt_scale_t *scale)
 
 void compute_result_num_missed_set (zhash_t *results, a_elmnt_id_t num_missed)
 {
-    // 21 = 20+1 , 20 charecters has a uint64_t
-    char buff[21];
-    sprintf(buff, "%" PRIu32, num_missed);
-    zhash_insert (results, "num_missed", buff);
-    log_debug ("conv num_missed from %" PRIu32 " to '%s' ", num_missed, buff);
+    std::string val_s = std::to_string (num_missed);
+    zhash_insert (results, "num_missed", (char*)val_s.c_str());
+    log_debug ("conv num_missed from %" PRIu32 " to '%s' ", num_missed, val_s.c_str());
 }
 
 int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
