@@ -13,8 +13,6 @@
 #define YES     "yes"
 #define NO      "no"
 
-
-
 #define TEST_NULLITY(PTR) \
     if (PTR != NULL) { \
         log_open (); \
@@ -223,59 +221,59 @@ ymsg_set_content_type (ymsg_t *self, const char *content_type) {
 }
 
 const char *
-bios_agent_command (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+bios_agent_command (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    return mlm_client_command (bios_agent->client);
+    return mlm_client_command (self->client);
 }
 
 int
-bios_agent_status (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+bios_agent_status (bios_agent_t *self) {
+    if (!self) {
         return -2;
     }
-    return mlm_client_status (bios_agent->client);
+    return mlm_client_status (self->client);
 }
 
 const char *
-bios_agent_reason (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+bios_agent_reason (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    return mlm_client_reason (bios_agent->client);
+    return mlm_client_reason (self->client);
 }
 
 const char *
-bios_agent_address (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+self_address (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    return mlm_client_address (bios_agent->client);
+    return mlm_client_address (self->client);
 }
 
 const char *
-bios_agent_sender (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+self_sender (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    return mlm_client_sender (bios_agent->client);
+    return mlm_client_sender (self->client);
 }
 
 const char *
-bios_agent_subject (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+self_subject (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    return mlm_client_subject (bios_agent->client);
+    return mlm_client_subject (self->client);
 }
 
 ymsg_t *
-bios_agent_content (bios_agent_t *bios_agent) {
-    if (!bios_agent) {
+self_content (bios_agent_t *self) {
+    if (!self) {
         return NULL;
     }
-    zmsg_t *zmsg = mlm_client_content (bios_agent->client);
+    zmsg_t *zmsg = mlm_client_content (self->client);
     if (!zmsg) {
         return NULL;
     }
