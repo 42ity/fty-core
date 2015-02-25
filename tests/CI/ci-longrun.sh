@@ -177,9 +177,9 @@ new_value() {
 	    ;;
 	battery.charge)
 	    # charge 0 - 100
- 	    awk -vVALUE=$VALUE '
+ 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
-                   srand();
+                   srand(SEED);
                    change=(rand() * 20 - 10 )/100
                    newvalue = VALUE + VALUE * change
                    if( newvalue < 0 ) newvalue = 0;
@@ -189,9 +189,9 @@ new_value() {
 	    ;;
 	*.load)
 	    # load 0 - 120
- 	    awk -vVALUE=$VALUE '
+ 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
-                   srand();
+                   srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
                    newvalue = VALUE + VALUE * change
                    if( newvalue < 0 ) newvalue = 0;
@@ -201,9 +201,9 @@ new_value() {
 	    ;;
 	*)
 	    # default only positive number
- 	    awk -vVALUE=$VALUE '
+ 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
-                   srand();
+                   srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
                    newvalue = VALUE + VALUE * change
                    if( newvalue < 0 ) newvalue = 0;
@@ -222,7 +222,7 @@ create_random_samples() {
 	DEVICE=${DEVICES[$I]}
 	ITEM=$(random_thing $DEVICE)
 	NEWVALUE=$(new_value $DEVICE $ITEM)
-	SLEEP=$(expr $RANDOM % 100)
+	SLEEP=$(expr $RANDOM % 50)
 	echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
 	set_value_in_ups $DEVICE $ITEM $NEWVALUE
 	TIME=$(expr $TIME + $SLEEP)
