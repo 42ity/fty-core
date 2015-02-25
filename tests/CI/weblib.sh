@@ -26,7 +26,14 @@
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 [ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
 
+# Should the test suite break upon first failed test?
+[ -z "$TESTWEB_QUICKFAIL" ] && TESTWEB_QUICKFAIL=no
+
+# Should the test suite abort if "curl" errors out?
+[ -z "$TESTWEB_CURLFAIL" ] && TESTWEB_CURLFAIL=yes
+
 _TOKEN_=""
+TESTWEB_FORCEABORT=no
 
 print_result() {
     _ret=0
@@ -42,9 +49,19 @@ print_result() {
 	if [ "$TESTWEB_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
-	    echo "Testing aborted due to" \
+	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
 		"TESTWEB_QUICKFAIL=$TESTWEB_QUICKFAIL" \
 		"after first failure with test $NAME"
+	    exit $_ret
+	fi >&2
+
+	# This optional envvar can be set by CURL() and trap_*() below
+	if [ "$TESTWEB_FORCEABORT" = yes ]; then
+	    echo ""
+	    echo "$PASS previous tests have succeeded"
+	    echo "CI-FATAL-ABORT[$$]: Testing aborted due to" \
+		"TESTWEB_FORCEABORT=$TESTWEB_FORCEABORT" \
+		"after forced abortion in test $NAME"
 	    exit $_ret
 	fi >&2
     fi
@@ -61,16 +78,43 @@ test_it() {
     echo "Running test $NAME:"
 }
 
+_PID_TESTER=$$
+trap_break() {
+    echo "CI-FATAL-BREAK: Got forced interruption signal $1"
+    TESTWEB_FORCEABORT=yes
+
+### Just cause the loop to break at a proper moment in print_result()
+#    exit $1
+    return $1
+}
+
+trap "trap_break $?" SIGUSR1
+
+CURL() {
+    curl "$@"
+    RES_CURL=$?
+    if [ $RES_CURL != 0 ]; then
+        echo "CI-ERROR-WEB: 'curl $@' program failed ($RES_CURL)," \
+            "perhaps the web server is not available or has crashed?" >&2
+
+        if [ x"$TESTWEB_CURLFAIL" = xyes ]; then
+            kill -SIGUSR1 $_PID_TESTER $$ >/dev/null 2>&1
+        fi
+    fi
+
+    return $RES_CURL
+}
+
 api_get() {
-    curl -v --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_get_content() {
-    curl "$BASE_URL$1" 2>/dev/null
+    CURL "$BASE_URL$1" 2>/dev/null
 }
 
 api_get_json() {
-    curl -v --progress-bar "$BASE_URL$1" 2> /dev/null \
+    CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
@@ -79,7 +123,7 @@ api_get_jsonv() {
 }
 
 api_post() {
-    curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 ### Flag for _api_get_token_certainPlus()
@@ -151,7 +195,7 @@ api_auth_post() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content() {
@@ -159,7 +203,7 @@ api_auth_post_content() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
+    CURL -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_post_wToken() {
@@ -167,7 +211,7 @@ api_auth_post_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content_wToken() {
@@ -175,12 +219,12 @@ api_auth_post_content_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
+    CURL -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_delete() {
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_put() {
@@ -188,12 +232,12 @@ api_auth_put() {
     #	$1	Relative URL for API call
     #	$2	PUT data
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get() {
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get_wToken() {
@@ -202,12 +246,12 @@ api_auth_get_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    curl -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
+    CURL -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
 }
 
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
-    curl -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+    CURL -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_get_content_wToken() {
@@ -216,12 +260,12 @@ api_auth_get_content_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    curl "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
+    CURL "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
 }
 
 api_auth_get_json() {
     TOKEN="`_api_get_token`"
-    curl -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
+    CURL -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
