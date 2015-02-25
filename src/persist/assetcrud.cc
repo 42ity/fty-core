@@ -138,7 +138,10 @@ zlist_t* select_asset_device_link(const char* url,
             std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
 
-            zlist_push(links, (char *)(src_out +":"+ std::to_string (element_id) + ":" + dest_in + ":" + std::to_string (device_id) ).c_str());
+            zlist_push(links, (char *)(src_out + ":"
+                                 + std::to_string (element_id) + ":"
+                                 + dest_in + ":"
+                                 + std::to_string (device_id) ).c_str());
         }
     }
     catch (const std::exception &e) {
@@ -260,7 +263,8 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
 
         if ( groups == NULL )    // internal error in database
         {
-            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, url, element_id);
+            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, 
+                                                            url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
@@ -268,7 +272,8 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
-            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, url, element_id);
+            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, 
+                                                            url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
@@ -480,7 +485,8 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
             row[1].get(id);
             assert( id != 0);    // database is corrupted
     
-            zhash_insert(elements, std::to_string (id).c_str(), (void*)name.c_str());
+            zhash_insert(elements, std::to_string (id).c_str(), 
+                                                        (void*)name.c_str());
         }
     }
     catch (const std::exception &e)
