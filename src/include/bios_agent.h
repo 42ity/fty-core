@@ -227,17 +227,17 @@ ymsg_t *
 
 // TODO: doxygen
 int
-    ymsg_get_version (ymsg_t *self);
+    ymsg_version (ymsg_t *self); // no major minor versions assumes. Simple number is enough
 int
-    ymsg_get_status (ymsg_t *self, bool *status);
+    ymsg_status (ymsg_t *self); // -1 self == NULL, 0 status error, 1 status ok
+void
+    ymsg_set_status (ymsg_t *self, bool status); // or int, uint8_t if we want to be cranky :)
 int
-    ymsg_set_status (ymsg_t *self, bool status);
+    ymsg_repeat (ymsg_t *self);
 int
-    ymsg_get_repeat (ymsg_t *self, bool *repeat);
-int
-    ymsg_set_repeat (ymsg_t *self, bool repeat);    
-int
-    ymsg_get_content_type (ymsg_t *self, char *content_type);
+    ymsg_set_repeat (ymsg_t *self, bool repeat);
+const char *
+    ymsg_content_type (ymsg_t *self); // we just won't recognize between seld == NULL, content type not being there, or some joker filling in "content-type" : NULL... but we probably don't want to. I agree, the first one to need that :P
 int
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
