@@ -51,7 +51,6 @@ typedef struct _bios_agent_t bios_agent_t;
  \param[in] name        Name of the agent. If it is in form user/password, agent connects to the broker via PLAIN authentication.
  \note Please note that you have to call bios_agent_destroy() when you are done working with bios_agent to free up allocated resources. 
  \return Newly allocated bios agent on successfull connection, NULL otherwise.
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 BIOS_EXPORT bios_agent_t*
     bios_agent_new (const char* endpoint, uint32_t timeout, const char* name);
@@ -59,7 +58,6 @@ BIOS_EXPORT bios_agent_t*
 /*!
  \brief Destroy bios_agent, free up resources and nullify the pointer.
  \param[in,out] self_p  bios agent to be destroyed and nullified
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 BIOS_EXPORT void
     bios_agent_destroy (bios_agent_t **self_p);
@@ -74,7 +72,6 @@ BIOS_EXPORT void
  \note Message is destroyed and nullified when sent.
  \note Setting bios agent as producer/consumer of STREAM pattern is done by directly manipulating the 'client' member of bios agent using mlm_client_set_producer(), mlm_client_set_consumer().
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 BIOS_EXPORT int
     bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p);
@@ -91,7 +88,6 @@ BIOS_EXPORT int
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 BIOS_EXPORT int
     bios_agent_sendto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **send_p);
@@ -107,7 +103,6 @@ BIOS_EXPORT int
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 BIOS_EXPORT int
     bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **send_p);
@@ -125,7 +120,6 @@ BIOS_EXPORT int
  \param[in] send     ROZP SEND message from  
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 int
     bios_agent_replyto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send);
@@ -142,12 +136,13 @@ int
  \param[in] send     ROZP SEND message from  
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 int
     bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **reply_p, ymsg_t *send);
 
 /*!
+ * Either we find a name OR we throw this out until someone says: i don't want to input message, but just data and finds a better name :)
+ *
  \brief Send confirmed ROZP REPLY message using patter MAILBOX SEND to malamute.
 
  Takes ownership of message 'reply_p' and destroys it when done sending it.  
@@ -162,12 +157,14 @@ int
  \param[in] request  Value to be assigned to field 'request' of 'reply_p' message. Can be NULL.   
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
-*/
+
 int
     bios_agent_replyto_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **reply_p, uint16_t rep, zchunk_t **request);
+*/
 
 /*!
+ * Either we find a name OR we throw this out until someone says: i don't want to input message, but just data and finds a better name :)
+ *
  \brief Send ROZP REPLY message using patter MAILBOX SEND to malamute.
 
  Takes ownership of message 'reply_p' and destroys it when done sending it.
@@ -181,10 +178,10 @@ int
  \param[in] request  Value to be assigned to field 'request' of 'reply_p' message. Can be NULL.   
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
-*/
+
 int
     bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **reply_p, uint16_t rep, zchunk_t **request);
+*/
 
 /*!
  \brief Send confirmed ROZP SEND message using patter SERVICE SEND to malamute
@@ -198,7 +195,6 @@ int
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 int
     bios_agent_sendfor_track (bios_agent_t *self, const char *address, const char *subject, const char *tracker, uint32_t timeout, ymsg_t **send_p);
@@ -214,7 +210,6 @@ int
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 int
     bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject, uint32_t timeout, ymsg_t **send_p);
@@ -226,7 +221,6 @@ int
  \param[in] self    Bios agent
  \note Caller is responsible to destroy the received message when done
  \return Received ROZP message on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 ymsg_t *
     bios_agent_recv (bios_agent_t *self);
@@ -246,8 +240,11 @@ int
     ymsg_get_content_type (ymsg_t *self, char *content_type);
 int
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
-zlist_t *
-    ymsg_get_x_headers (ymsg_t *self);
+
+// Later we can go for further functionality....
+// zlist_t *
+//     ymsg_get_x_headers (ymsg_t *self);
+//     ymsg_x_headers (ymsg_t *self);
 
 ////////////////////////////////////////////////////////////////////////////////
 //   Getters
@@ -259,7 +256,6 @@ zlist_t *
         "STREAM DELIVER"
         "MAILBOX DELIVER"
         "SERVICE DELIVER"
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_command (bios_agent_t *self);
@@ -268,7 +264,6 @@ const char *
  \brief Return last received status
  \param[in] self bios agent
  \return -1 on failure, last received status on success
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 int
     bios_agent_status (bios_agent_t *self);
@@ -277,7 +272,6 @@ int
  \brief Return last received reason
  \param[in] self bios agent
  \return last received reason on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_reason (bios_agent_t *self);
@@ -286,7 +280,6 @@ const char *
  \brief Return last received address
  \param[in] self bios agent
  \return last received address on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_address (bios_agent_t *self);
@@ -295,7 +288,6 @@ const char *
  \brief Return last received sender
  \param[in] self bios agent
  \return last received sender on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_sender (bios_agent_t *self);
@@ -304,7 +296,6 @@ const char *
  \brief Return last received subject
  \param[in] self bios agent
  \return last received sender on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_subject (bios_agent_t *self);
@@ -313,7 +304,6 @@ const char *
  \brief Return last received content
  \param[in] self bios agent
  \return last received content on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 ymsg_t *
     bios_agent_content (bios_agent_t *self);
@@ -322,7 +312,6 @@ ymsg_t *
  \brief Return last received tracker
  \param[in] self bios agent
  \return last received tracker on success, NULL on failure
- \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 const char *
     bios_agent_tracker (bios_agent_t *self);
