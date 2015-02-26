@@ -137,6 +137,18 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
     return rc;
 }
 
+int
+bios_agent_set_producer (bios_agent_t *self, const char *stream)
+{
+    return mlm_client_set_producer (self->client, stream);
+}
+
+int
+bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern)
+{
+    return mlm_client_set_consumer (self->client, strem, pattern);
+}
+
 ymsg_t *
 bios_agent_recv (bios_agent_t *self) {
     if (!self) {
@@ -279,4 +291,3 @@ self_content (bios_agent_t *self) {
     }
     return ymsg_decode (&zmsg);
 }
-
