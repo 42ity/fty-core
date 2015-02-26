@@ -92,13 +92,12 @@ DISTCHECK_CONFIGURE_FLAGS = \
         --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
 
 AM_CPPFLAGS = \
+		${my_CPPFLAGS} \
 		-include $(abs_top_builddir)/config.h \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
-		-DDEBUG \
-		-DDEVEL \
 		-D__STDC_FORMAT_MACROS
 
 AM_CFLAGS = \
@@ -117,6 +116,7 @@ AM_CXXFLAGS = \
 		-fdata-sections
 
 AM_LDFLAGS = \
+		${my_LDFLAGS} \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
 
@@ -635,6 +635,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
 			-module -lm -ltntdb -ltntnet -lcidr
+
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
@@ -666,17 +667,34 @@ tntnet.xml.example: src/web/tntnet.xml
 exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
 exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
-dist_noinst_DATA += tntnet.xml $(top_srcdir)/src/web/tntnet.xml
+dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
 web-test-deps: tntnet.xml bios_web.la
 
-# Execute the test web-server for $BIOS REST API
+### Execute the test web-server for $BIOS REST API
+# LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
+# otherwise "new mlm_stuff; throw(exception)" breaks in ASA as a function
+# without a proper return code-path (un-instrumented delete/free involved).
+# Note that the execution chain below is backslash-concatenated so that we
+# can both set, export and use the LD_PRELOAD value (independent lines are
+# executed as different shell scripts by make). That is why ultimate exec
+# of the tntnet program is done twice in the same manner.
+
 web-test: web-test-deps
-	@echo "=== Running target $@ as: "; id || true; echo ""
+	@echo "=== Running target $@ with credentials of this user: "; \
+	id || true; echo "";
+if ENABLE_DEBUG_ASAN
+	@LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libasan | awk '{print $$3}'`" || true; \
+	LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libtsan | awk '{print $$3}'`" || true; \
+	echo "===== Using LD_PRELOAD='$$LD_PRELOAD' for Address Sanitizer"; \
+	export LD_PRELOAD; \
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+else
+	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+endif
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
@@ -1222,6 +1240,9 @@ test-restapi: all
 #----------------------------------------------------------------------
 #                        SCM details
 #----------------------------------------------------------------------
+
+gitdetaildir =	        $(datarootdir)/@PACKAGE@
+gitdetail_DATA =	.git_details
 
 EXTRA_DIST +=		.git_details \
 			tools/git_details.sh \

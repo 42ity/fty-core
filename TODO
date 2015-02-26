@@ -149,12 +149,28 @@ if anything is needed to be done here.
 -> SASL MUX path - test the sasl service startup/config files for the mux
    path or directory that contains it (at least the few predefined variants)
    as a further fallback option
--> Now that .git_details file has been added, remove from configure.ac the
-   duplicate functionality (and take care of PACKAGE_VERSION which has a
-   Git commit number - perhaps read it from the .git_details if direct Git
-   is not available?)
+-> Thread Sanitizer builds currently do not work; possibly some compiler
+   flags are in conflict. Research and fix.
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
 
+==== CI and RC scripts ====
+-> there is a lot of duplicated logic regarding startup of components and
+   needed system services (malamute, tntnet, mysql) across different scripts
+   for CI and end-user runtime environments. Converge these so only one is
+   actually developed (e.g. `tools/rc`) and others call it.
+-> there is some duplication of CI scaffolding to configure and build a copy
+   of the project, to initialize the database with sample data, and run the
+   REST-based tests for example. Revise and converge the numerous scripts
+   in this area.
+-> move repetitive logic (e.g. detection of CHECKOUTDIR and BUILDSUBDIR)
+   into an include-file that is always expected in some fixed location like
+   `dirname $0` at least relative to CI scripts.
+-> experiment: verify whether our component programs need to start with an
+   `LD_PRELOAD` when built with ASan support, like is currently done for the
+   `bios_web.so` as part of `tntnet` during `make web-test` to support the
+   third-party libraries with dynamic runtime instrumentation. If so, improve
+   the `tools/rc` script to detect (`ldd`?) and meet this need when running
+   our project's programs.
 
