@@ -722,6 +722,42 @@ See also:
  * 'link:README-web-tests-ciAutomation.html[tests/CI/web/README.txt]'
 
 
+Address, Leak and Thread Sanitizers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The $BIOS project supports builds under GCC4.8+ with included Google
+Address Sanitizer and Leak Sanitizer (ASan+LSan) functionality. These
+are enabled by default if the currently produced build is a `DEBUG`
+one (currently this is the default mode; generally it is manageable
+by `./configure --enable-debug-build`. Likewise, one can produce a
+"production" (non-DEBUG) build still instrumented with ASan+LSan
+by explicit `./configure --enable-address-sanitizer`. This is not
+a default mode for non-DEBUG builds because the produced code is a
+little slower and bigger (approx 2x), and it is forced to crash when
+errors are detected.
+
+GCC4.8+ also supports a Thread Sanitizer, which allows to detect race
+conditions. These builds are much bigger and slower (approx 15x), so
+this mode is off by default and can be enabled only explicitly with 
+`./configure --enable-thread-sanitizer`. Depending on the compiler,
+this may be incompatible with Address Sanitizer, so ASan defaults
+to disabled if TSan is requested. If both features are requested
+explicitly, the `configure` script will try to check if they can
+be enabled simultaneously, and should exit if not.
+
+NOTE: Thread Sanitizer support in $BIOS project is currently only
+formally supported by the autoconf scaffolding. The produced files
+do not run well, claiming some internal conflicts, maybe with some
+of the other compiler options. This is a matter for some further
+research work, if need arises.
+
+It is recommended to run ASan-instrumented binaries along with an
+`LD_PRELOAD=/path/to/libasan.so` so that the third-party dynamic
+libraries used by our project would employ the same `new`/`delete`
+and `malloc`/`free` ASan-instrumented routines to reduce false
+positive detections. Otherwise it is possible, for example, that
+an exit from a function due to an exception would trigger the
+`__asan_handle_no_return` error handler and crash the program.
+
 Generic notes on testing the $BIOS project
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The 'Makefile' includes some targets for automated testing, such as:
