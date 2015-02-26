@@ -58,6 +58,7 @@ Example:
 # define CXXTOOLS_LOG_CXXTOOLS_H
 #endif
 
+#include <stdio.h>
 #include <syslog.h>
 #include <stdarg.h>
 
@@ -152,6 +153,15 @@ int do_log(
     Prints message with LOG_CRIT level */
 #define log_critical(...) \
         log_macro(LOG_CRIT, __VA_ARGS__)
+
+#define LOG_START \
+    log_info("start")
+
+#define LOG_END \
+    log_info("end::normal")
+
+#define LOG_END_ABNORMAL(exp) \
+    log_warning("end::abnormal with %s", (exp).what())
 
 #ifdef __cplusplus
 }
