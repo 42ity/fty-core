@@ -26,20 +26,20 @@ bios_agent_new (const char* endpoint, const char* address) {
         return NULL;
     }
 
-    bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));  
+    bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));
     if (self) {
         self->client = mlm_client_new (endpoint, TIMEOUT, address);
         if (!self->client) {
-            free (self); 
+            free (self);
             return NULL;
         }
         self->seq = zmq_atomic_counter_new (); // create new && set value to zero
-        if (!self->seq) {            
+        if (!self->seq) {
             mlm_client_destroy (&self->client);
             TEST_NULLITY (self->client)
             free (self);
             return NULL;
-        }                
+        }
         zmq_atomic_counter_set (self->seq, 0);
     }
     return self;
@@ -71,7 +71,7 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
         return -2;
     }
     // Note: zmq_atomic_counter_inc() returns current value and increments by one
-    ymsg_set_seq (*msg_p, zmq_atomic_counter_inc (self->seq)); 
+    ymsg_set_seq (*msg_p, zmq_atomic_counter_inc (self->seq));
     zmsg_t *zmsg = ymsg_encode (msg_p);
     TEST_NULLITY (*msg_p)
     if (!zmsg) {
@@ -86,14 +86,14 @@ int
 bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
         return -2;
-    }    
-    ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one    
+    }
+    ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
     zmsg_t *zmsg = ymsg_encode (send_p);
     TEST_NULLITY (*send_p)
     if (!zmsg) {
         return -1;
     }
-    int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);      
+    int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);
     TEST_NULLITY (zmsg)
     return rc;
 }
@@ -110,13 +110,13 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
     if (value && streq (value, YES)) { // default is not to repeat
         zchunk_t *chunk = ymsg_get_request (send); // ownership transfer
         ymsg_set_request (*reply_p, &chunk);
-    }        
+    }
     zmsg_t *zmsg = ymsg_encode (reply_p);
     TEST_NULLITY (*reply_p)
     if (!zmsg) {
         return -1;
     }
-    int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);      
+    int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);
     TEST_NULLITY (zmsg)
     return rc;
 }
@@ -125,8 +125,8 @@ int
 bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
         return -2;
-    }    
-    ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one    
+    }
+    ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
     zmsg_t *zmsg = ymsg_encode (send_p);
     TEST_NULLITY (*send_p)
     if (!zmsg) {

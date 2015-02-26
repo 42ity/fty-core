@@ -1,23 +1,23 @@
 /*
 Copyright (C) 2014 - 2015 Eaton
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
  \file   bios_agent.h
- \brief  Thin mlm_client.h wrapper to incorporate ymsg_t transport message 
+ \brief  Thin mlm_client.h wrapper to incorporate ymsg_t transport message
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
@@ -33,7 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-#define BIOS_EXPORT 
+#define BIOS_EXPORT
 
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
@@ -48,7 +48,7 @@ typedef struct _bios_agent_t bios_agent_t;
  Connect to malamute on specified endpoint, with specified timeout in msecs (zero means wait forever). Name of the agent can have form: user/password in which case client logins to the broker via PLAIN authentication.
  \param[in] endpoint    Server endpoint to which to connect
  \param[in] name        Name of the agent. If it is in form user/password, agent connects to the broker via PLAIN authentication.
- \note Please note that you have to call bios_agent_destroy() when you are done working with bios_agent to free up allocated resources. 
+ \note Please note that you have to call bios_agent_destroy() when you are done working with bios_agent to free up allocated resources.
  \return Newly allocated bios agent on successfull connection, NULL otherwise.
 */
 BIOS_EXPORT bios_agent_t*
@@ -67,7 +67,7 @@ BIOS_EXPORT void
  Takes ownership of message and destroys it when done sending it.
  \param[in] self    Bios agent
  \param[in] subject Message subject
- \param[in] msg_p   Message to be sent. Gets destroyed, nullified upon send. 
+ \param[in] msg_p   Message to be sent. Gets destroyed, nullified upon send.
  \note Message is destroyed and nullified when sent.
  \note Setting bios agent as producer/consumer of STREAM pattern is done by directly manipulating the 'client' member of bios agent using mlm_client_set_producer(), mlm_client_set_consumer().
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
@@ -78,11 +78,11 @@ BIOS_EXPORT int
 /*!
  \brief Send ROZP SEND message using pattern MAILBOX SEND to malamute
 
- Takes ownership of message and destroys it when done sending it.  
+ Takes ownership of message and destroys it when done sending it.
  \param[in] self    Bios agent
  \param[in] address Name of target bios agent
  \param[in] subject Message subject
- \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
+ \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
@@ -97,7 +97,7 @@ BIOS_EXPORT int
  \param[in] address  Name of target bios agent
  \param[in] subject  Message subject
  \param[in] reply_p  ROZP REPLY message to be sent. Gets destroyed and nullified upon send.
- \param[in] send     ROZP SEND message from  
+ \param[in] send     ROZP SEND message from
  \note Message 'reply_p' is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
@@ -107,11 +107,11 @@ BIOS_EXPORT int
 /*!
  \brief Send ROZP SEND message using patter SERVICE SEND to malamute
 
- Takes ownership of message and destroys it when done sending it.  
+ Takes ownership of message and destroys it when done sending it.
  \param[in] self    Bios agent
  \param[in] address Name of target bios agent
  \param[in] subject Message subject
- \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.  
+ \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.
  \note Message is destroyed and nullified when sent.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
@@ -141,12 +141,12 @@ BIOS_EXPORT int
 /*!
  \brief Set status value of ROZP REPLY message
  \return -1 on failure (self, aux == NULL, message not ROZP REPLY), 0 on success
-*/    
+*/
 BIOS_EXPORT int
     ymsg_set_status (ymsg_t *self, bool status);
 
 /*!
- \brief Get repeat value 
+ \brief Get repeat value
  \return
     -1 on failure (self, aux == NULL)
     repeat value otherwise (0 - no repeat, 1 - repeat)
@@ -155,7 +155,7 @@ BIOS_EXPORT int
     ymsg_repeat (ymsg_t *self);
 
 /*!
- \brief Set repeat value 
+ \brief Set repeat value
  \return -1 on failure (self, aux == NULL), 0 on success
 */
 BIOS_EXPORT int
@@ -164,13 +164,13 @@ BIOS_EXPORT int
 /*!
  \brief Get content type
  /return NULL on failure, content type on success
-*/ 
+*/
 BIOS_EXPORT const char *
     ymsg_content_type (ymsg_t *self);
 /*!
  \brief Set content type
  /return -1 on failure, 0 on success
-*/ 
+*/
 BIOS_EXPORT int
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
