@@ -13,7 +13,11 @@ XML_TNTNET="tntnet.xml"
 SCRIPTDIR=$(dirname $0)
 CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 
-. "$SCRIPTDIR/weblib.sh"
+. "$SCRIPTDIR/weblib.sh" || exit $?
+# Disable intermediate failures due to CURL (there are currently too few tests
+# here to care), and the weblib infrastructure like test_it()/print_result()
+# is not used here yet anyway
+TESTWEB_CURLFAIL=no
 
 echo "Will try to run test in $CHECKOUTDIR"
 
@@ -154,16 +158,16 @@ start_tntnet
 echo "starting the test"
 
 # Get first rack total power
-RACK_TOTAL_POWER1_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477002&arg2=total_power'`
+RACK_TOTAL_POWER1_CONTENT="`api_get_content '/metric/computed/rack_total?arg1=477002&arg2=total_power'`"
 RACK_TOTAL_POWER1=$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
 
-RACK_TOTAL_POWER2_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477003&arg2=total_power'`
+RACK_TOTAL_POWER2_CONTENT="`api_get_content '/metric/computed/rack_total?arg1=477003&arg2=total_power'`"
 RACK_TOTAL_POWER2=$(echo "$RACK_TOTAL_POWER2_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
 
-RACK_TOTAL_POWER3_CONTENT=`api_get_content '/metric/computed/rack_total?arg1=477004&arg2=total_power'`
+RACK_TOTAL_POWER3_CONTENT="`api_get_content '/metric/computed/rack_total?arg1=477004&arg2=total_power'`"
 RACK_TOTAL_POWER3=$(echo "$RACK_TOTAL_POWER3_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
 
-DATACENTER_POWER_CONTENT=`api_get_content '/metric/computed/datacenter_indicators?arg1=477000&arg2=power'`
+DATACENTER_POWER_CONTENT="`api_get_content '/metric/computed/datacenter_indicators?arg1=477000&arg2=power'`"
 DATACENTER_POWER=$(echo "$DATACENTER_POWER_CONTENT" | grep power | sed "s/: /%/" | cut -d'%' -f2)
 
 RACKS_TOTAL_POWER=$(($RACK_TOTAL_POWER1+$RACK_TOTAL_POWER2+$RACK_TOTAL_POWER3))

@@ -13,7 +13,7 @@
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
-    Copyright (C) 2014 Eaton                                            
+    Copyright (C) 2014 - 2015 Eaton                                     
                                                                         
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,28 +36,23 @@
 /*  These are the ymsg messages:
 
     SEND - Transport layer
-        version             number 1    
-        seq                 number 4    
-        aux                 hash        
-        request             chunk       
+        version             number 1    Protocol version
+        seq                 number 2    Agent specific, starting value unspecified. Each message sent increments this number by one. Reply message must send this number back encoded in field 'rep'.
+        aux                 hash        Extra (auxiliary) headers. Keys must contain only the following characters 'a-zA-Z_-' and values can be any sequence without '\0' (NULL) character. Users can pass non-standard user-defined headers, but they must be prefixed with 'X-'. This field can be used to carry simple key-value app data as well.
+        request             chunk       Application specific payload. Not mandatory.
 
     REPLY - Transport layer reply
+
+Fields that are common with message 'send' are described there.
         version             number 1    
-        seq                 number 4    
+        seq                 number 2    
+        rep                 number 2    Value must be identical to field 'seq' of message 'send' to which this reply message is being created.
         aux                 hash        
-        request             chunk       
         response            chunk       
+        request             chunk       Application specific payload of message 'send' may be included (repeated) in reply.
 */
 
-#define YMSG_VERSION                        1.0
-#define YMSG_KEY_REPEAT                     repeat
-#define YMSG_KEY_STATUS                     status
-#define YMSG_KEY_CONTENT_TYPE               content-type
-#define YMSG_PREFIX_X                       x-
-#define YMSG_OK                             ok
-#define YMSG_ERROR                          error
-#define YMSG_YES                            yes
-#define YMSG_NO                             no
+#define YMSG_VERSION                        1
 
 #define YMSG_SEND                           1
 #define YMSG_REPLY                          2
@@ -122,7 +117,7 @@ int
 zmsg_t *
     ymsg_encode_send (
         byte version,
-        uint32_t seq,
+        uint16_t seq,
         zhash_t *aux,
         zchunk_t *request);
 
@@ -130,10 +125,11 @@ zmsg_t *
 zmsg_t *
     ymsg_encode_reply (
         byte version,
-        uint32_t seq,
+        uint16_t seq,
+        uint16_t rep,
         zhash_t *aux,
-        zchunk_t *request,
-        zchunk_t *response);
+        zchunk_t *response,
+        zchunk_t *request);
 
 
 //  Send the SEND to the output in one step
@@ -141,7 +137,7 @@ zmsg_t *
 int
     ymsg_send_send (void *output,
         byte version,
-        uint32_t seq,
+        uint16_t seq,
         zhash_t *aux,
         zchunk_t *request);
     
@@ -150,10 +146,11 @@ int
 int
     ymsg_send_reply (void *output,
         byte version,
-        uint32_t seq,
+        uint16_t seq,
+        uint16_t rep,
         zhash_t *aux,
-        zchunk_t *request,
-        zchunk_t *response);
+        zchunk_t *response,
+        zchunk_t *request);
     
 //  Duplicate the ymsg message
 ymsg_t *
@@ -184,10 +181,10 @@ void
     ymsg_set_version (ymsg_t *self, byte version);
 
 //  Get/set the seq field
-uint32_t
+uint16_t
     ymsg_seq (ymsg_t *self);
 void
-    ymsg_set_seq (ymsg_t *self, uint32_t seq);
+    ymsg_set_seq (ymsg_t *self, uint16_t seq);
 
 //  Get/set the aux field
 zhash_t *
@@ -221,6 +218,12 @@ zchunk_t *
 //  Set the request field, transferring ownership from caller
 void
     ymsg_set_request (ymsg_t *self, zchunk_t **chunk_p);
+
+//  Get/set the rep field
+uint16_t
+    ymsg_rep (ymsg_t *self);
+void
+    ymsg_set_rep (ymsg_t *self, uint16_t rep);
 
 //  Get a copy of the response field
 zchunk_t *

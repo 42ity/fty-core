@@ -9,19 +9,7 @@
 
     <include filename = "license.xml" />
     
-    <define name = "VERSION" value = "1.0" />
-
-    <!-- List of reserved words as keys in hash field 'aux' -->
-    <define name = "KEY_REPEAT" value = "repeat">Field 'request' from message 'send' will be repeated in message 'reply'. y/n</define>
-    <define name = "KEY_STATUS" value = "status">Status of message 'reply'. ok/error</define>
-    <define name = "KEY_CONTENT_TYPE" value = "content-type">Not used at the moment</define>
-    <!-- List of reserved prefixes of keys in hash field 'aux' -->
-    <define name = "PREFIX_X" value = "X-">Non-standard user-defined headers</define>
-    <!-- General constants -->
-    <define name = "OK"         value = "ok" />
-    <define name = "ERROR"      value = "error" />
-    <define name = "YES"   value = "yes" />
-    <define name = "NO"    value = "no" />
+    <define name = "VERSION" value = "1" />
 
     <message name = "send">
         Transport layer

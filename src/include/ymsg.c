@@ -13,7 +13,7 @@
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
-    Copyright (C) 2014 Eaton                                            
+    Copyright (C) 2014 - 2015 Eaton                                     
                                                                         
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,11 +46,12 @@ struct _ymsg_t {
     int id;                             //  ymsg message ID
     byte *needle;                       //  Read/write pointer for serialization
     byte *ceiling;                      //  Valid upper limit for read pointer
-    byte version;                       //  
-    uint32_t seq;                       //  
-    zhash_t *aux;                       //  
+    byte version;                       //  Protocol version
+    uint16_t seq;                       //  Agent specific, starting value unspecified. Each message sent increments this number by one. Reply message must send this number back encoded in field 'rep'.
+    zhash_t *aux;                       //  Extra (auxiliary) headers. Keys must contain only the following characters 'a-zA-Z_-' and values can be any sequence without '\0' (NULL) character. Users can pass non-standard user-defined headers, but they must be prefixed with 'X-'. This field can be used to carry simple key-value app data as well.
     size_t aux_bytes;                   //  Size of dictionary content
-    zchunk_t *request;                  //  
+    zchunk_t *request;                  //  Application specific payload. Not mandatory.
+    uint16_t rep;                       //  Value must be identical to field 'seq' of message 'send' to which this reply message is being created.
     zchunk_t *response;                 //  
 };
 
@@ -294,7 +295,7 @@ ymsg_decode (zmsg_t **msg_p)
     switch (self->id) {
         case YMSG_SEND:
             GET_NUMBER1 (self->version);
-            GET_NUMBER4 (self->seq);
+            GET_NUMBER2 (self->seq);
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
@@ -321,7 +322,8 @@ ymsg_decode (zmsg_t **msg_p)
 
         case YMSG_REPLY:
             GET_NUMBER1 (self->version);
-            GET_NUMBER4 (self->seq);
+            GET_NUMBER2 (self->seq);
+            GET_NUMBER2 (self->rep);
             {
                 size_t hash_size;
                 GET_NUMBER4 (hash_size);
@@ -341,7 +343,7 @@ ymsg_decode (zmsg_t **msg_p)
                 GET_NUMBER4 (chunk_size);
                 if (self->needle + chunk_size > (self->ceiling))
                     goto malformed;
-                self->request = zchunk_new (self->needle, chunk_size);
+                self->response = zchunk_new (self->needle, chunk_size);
                 self->needle += chunk_size;
             }
             {
@@ -349,7 +351,7 @@ ymsg_decode (zmsg_t **msg_p)
                 GET_NUMBER4 (chunk_size);
                 if (self->needle + chunk_size > (self->ceiling))
                     goto malformed;
-                self->response = zchunk_new (self->needle, chunk_size);
+                self->request = zchunk_new (self->needle, chunk_size);
                 self->needle += chunk_size;
             }
             break;
@@ -391,8 +393,8 @@ ymsg_encode (ymsg_t **self_p)
         case YMSG_SEND:
             //  version is a 1-byte integer
             frame_size += 1;
-            //  seq is a 4-byte integer
-            frame_size += 4;
+            //  seq is a 2-byte integer
+            frame_size += 2;
             //  aux is an array of key=value strings
             frame_size += 4;    //  Size is 4 octets
             if (self->aux) {
@@ -415,8 +417,10 @@ ymsg_encode (ymsg_t **self_p)
         case YMSG_REPLY:
             //  version is a 1-byte integer
             frame_size += 1;
-            //  seq is a 4-byte integer
-            frame_size += 4;
+            //  seq is a 2-byte integer
+            frame_size += 2;
+            //  rep is a 2-byte integer
+            frame_size += 2;
             //  aux is an array of key=value strings
             frame_size += 4;    //  Size is 4 octets
             if (self->aux) {
@@ -430,14 +434,14 @@ ymsg_encode (ymsg_t **self_p)
                 }
             }
             frame_size += self->aux_bytes;
-            //  request is a chunk with 4-byte length
-            frame_size += 4;
-            if (self->request)
-                frame_size += zchunk_size (self->request);
             //  response is a chunk with 4-byte length
             frame_size += 4;
             if (self->response)
                 frame_size += zchunk_size (self->response);
+            //  request is a chunk with 4-byte length
+            frame_size += 4;
+            if (self->request)
+                frame_size += zchunk_size (self->request);
             break;
             
         default:
@@ -454,7 +458,7 @@ ymsg_encode (ymsg_t **self_p)
     switch (self->id) {
         case YMSG_SEND:
             PUT_NUMBER1 (self->version);
-            PUT_NUMBER4 (self->seq);
+            PUT_NUMBER2 (self->seq);
             if (self->aux) {
                 PUT_NUMBER4 (zhash_size (self->aux));
                 char *item = (char *) zhash_first (self->aux);
@@ -479,7 +483,8 @@ ymsg_encode (ymsg_t **self_p)
 
         case YMSG_REPLY:
             PUT_NUMBER1 (self->version);
-            PUT_NUMBER4 (self->seq);
+            PUT_NUMBER2 (self->seq);
+            PUT_NUMBER2 (self->rep);
             if (self->aux) {
                 PUT_NUMBER4 (zhash_size (self->aux));
                 char *item = (char *) zhash_first (self->aux);
@@ -491,21 +496,21 @@ ymsg_encode (ymsg_t **self_p)
             }
             else
                 PUT_NUMBER4 (0);    //  Empty dictionary
-            if (self->request) {
-                PUT_NUMBER4 (zchunk_size (self->request));
-                memcpy (self->needle,
-                        zchunk_data (self->request),
-                        zchunk_size (self->request));
-                self->needle += zchunk_size (self->request);
-            }
-            else
-                PUT_NUMBER4 (0);    //  Empty chunk
             if (self->response) {
                 PUT_NUMBER4 (zchunk_size (self->response));
                 memcpy (self->needle,
                         zchunk_data (self->response),
                         zchunk_size (self->response));
                 self->needle += zchunk_size (self->response);
+            }
+            else
+                PUT_NUMBER4 (0);    //  Empty chunk
+            if (self->request) {
+                PUT_NUMBER4 (zchunk_size (self->request));
+                memcpy (self->needle,
+                        zchunk_data (self->request),
+                        zchunk_size (self->request));
+                self->needle += zchunk_size (self->request);
             }
             else
                 PUT_NUMBER4 (0);    //  Empty chunk
@@ -634,7 +639,7 @@ ymsg_send_again (ymsg_t *self, void *output)
 zmsg_t * 
 ymsg_encode_send (
     byte version,
-    uint32_t seq,
+    uint16_t seq,
     zhash_t *aux,
     zchunk_t *request)
 {
@@ -655,20 +660,22 @@ ymsg_encode_send (
 zmsg_t * 
 ymsg_encode_reply (
     byte version,
-    uint32_t seq,
+    uint16_t seq,
+    uint16_t rep,
     zhash_t *aux,
-    zchunk_t *request,
-    zchunk_t *response)
+    zchunk_t *response,
+    zchunk_t *request)
 {
     ymsg_t *self = ymsg_new (YMSG_REPLY);
     ymsg_set_version (self, version);
     ymsg_set_seq (self, seq);
+    ymsg_set_rep (self, rep);
     zhash_t *aux_copy = zhash_dup (aux);
     ymsg_set_aux (self, &aux_copy);
-    zchunk_t *request_copy = zchunk_dup (request);
-    ymsg_set_request (self, &request_copy);
     zchunk_t *response_copy = zchunk_dup (response);
     ymsg_set_response (self, &response_copy);
+    zchunk_t *request_copy = zchunk_dup (request);
+    ymsg_set_request (self, &request_copy);
     return ymsg_encode (&self);
 }
 
@@ -680,7 +687,7 @@ int
 ymsg_send_send (
     void *output,
     byte version,
-    uint32_t seq,
+    uint16_t seq,
     zhash_t *aux,
     zchunk_t *request)
 {
@@ -702,20 +709,22 @@ int
 ymsg_send_reply (
     void *output,
     byte version,
-    uint32_t seq,
+    uint16_t seq,
+    uint16_t rep,
     zhash_t *aux,
-    zchunk_t *request,
-    zchunk_t *response)
+    zchunk_t *response,
+    zchunk_t *request)
 {
     ymsg_t *self = ymsg_new (YMSG_REPLY);
     ymsg_set_version (self, version);
     ymsg_set_seq (self, seq);
+    ymsg_set_rep (self, rep);
     zhash_t *aux_copy = zhash_dup (aux);
     ymsg_set_aux (self, &aux_copy);
-    zchunk_t *request_copy = zchunk_dup (request);
-    ymsg_set_request (self, &request_copy);
     zchunk_t *response_copy = zchunk_dup (response);
     ymsg_set_response (self, &response_copy);
+    zchunk_t *request_copy = zchunk_dup (request);
+    ymsg_set_request (self, &request_copy);
     return ymsg_send (&self, output);
 }
 
@@ -743,9 +752,10 @@ ymsg_dup (ymsg_t *self)
         case YMSG_REPLY:
             copy->version = self->version;
             copy->seq = self->seq;
+            copy->rep = self->rep;
             copy->aux = self->aux? zhash_dup (self->aux): NULL;
-            copy->request = self->request? zchunk_dup (self->request): NULL;
             copy->response = self->response? zchunk_dup (self->response): NULL;
+            copy->request = self->request? zchunk_dup (self->request): NULL;
             break;
 
     }
@@ -782,6 +792,7 @@ ymsg_print (ymsg_t *self)
             zsys_debug ("YMSG_REPLY:");
             zsys_debug ("    version=%ld", (long) self->version);
             zsys_debug ("    seq=%ld", (long) self->seq);
+            zsys_debug ("    rep=%ld", (long) self->rep);
             zsys_debug ("    aux=");
             if (self->aux) {
                 char *item = (char *) zhash_first (self->aux);
@@ -792,8 +803,8 @@ ymsg_print (ymsg_t *self)
             }
             else
                 zsys_debug ("(NULL)");
-            zsys_debug ("    request=[ ... ]");
             zsys_debug ("    response=[ ... ]");
+            zsys_debug ("    request=[ ... ]");
             break;
             
     }
@@ -874,7 +885,7 @@ ymsg_set_version (ymsg_t *self, byte version)
 //  --------------------------------------------------------------------------
 //  Get/set the seq field
 
-uint32_t
+uint16_t
 ymsg_seq (ymsg_t *self)
 {
     assert (self);
@@ -882,7 +893,7 @@ ymsg_seq (ymsg_t *self)
 }
 
 void
-ymsg_set_seq (ymsg_t *self, uint32_t seq)
+ymsg_set_seq (ymsg_t *self, uint16_t seq)
 {
     assert (self);
     self->seq = seq;
@@ -1011,6 +1022,24 @@ ymsg_set_request (ymsg_t *self, zchunk_t **chunk_p)
 
 
 //  --------------------------------------------------------------------------
+//  Get/set the rep field
+
+uint16_t
+ymsg_rep (ymsg_t *self)
+{
+    assert (self);
+    return self->rep;
+}
+
+void
+ymsg_set_rep (ymsg_t *self, uint16_t rep)
+{
+    assert (self);
+    self->rep = rep;
+}
+
+
+//  --------------------------------------------------------------------------
 //  Get the response field without transferring ownership
 
 zchunk_t *
@@ -1112,12 +1141,13 @@ ymsg_test (bool verbose)
 
     ymsg_set_version (self, 123);
     ymsg_set_seq (self, 123);
+    ymsg_set_rep (self, 123);
     ymsg_aux_insert (self, "Name", "Brutus");
     ymsg_aux_insert (self, "Age", "%d", 43);
-    zchunk_t *reply_request = zchunk_new ("Captcha Diem", 12);
-    ymsg_set_request (self, &reply_request);
     zchunk_t *reply_response = zchunk_new ("Captcha Diem", 12);
     ymsg_set_response (self, &reply_response);
+    zchunk_t *reply_request = zchunk_new ("Captcha Diem", 12);
+    ymsg_set_request (self, &reply_request);
     //  Send twice from same object
     ymsg_send_again (self, output);
     ymsg_send (&self, output);
@@ -1129,11 +1159,12 @@ ymsg_test (bool verbose)
         
         assert (ymsg_version (self) == 123);
         assert (ymsg_seq (self) == 123);
+        assert (ymsg_rep (self) == 123);
         assert (ymsg_aux_size (self) == 2);
         assert (streq (ymsg_aux_string (self, "Name", "?"), "Brutus"));
         assert (ymsg_aux_number (self, "Age", 0) == 43);
-        assert (memcmp (zchunk_data (ymsg_request (self)), "Captcha Diem", 12) == 0);
         assert (memcmp (zchunk_data (ymsg_response (self)), "Captcha Diem", 12) == 0);
+        assert (memcmp (zchunk_data (ymsg_request (self)), "Captcha Diem", 12) == 0);
         ymsg_destroy (&self);
     }
 

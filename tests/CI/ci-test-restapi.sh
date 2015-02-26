@@ -103,8 +103,8 @@ test_web_process() {
     if [ ! -d /proc/$MAKEPID ]; then
 	echo "CI-ERROR: Web-server process seems to have died!" >&2
 	# Ensure it is dead though, since we abort the tests now
-	kill $MAKEPID
-	wait $MAKEPID
+	kill $MAKEPID >/dev/null 2>&1
+	wait $MAKEPID >/dev/null 2>&1
 	return
     fi
     return 0
@@ -242,9 +242,9 @@ fi
 loaddb_default
 
 # cleanup
-kill $MAKEPID 2>/dev/null
+kill $MAKEPID >/dev/null 2>&1
 sleep 2
-killall tntnet 2>/dev/null
+killall tntnet >/dev/null 2>&1
 sleep 2
 
 if [ "$RESULT" = 0 ]; then
