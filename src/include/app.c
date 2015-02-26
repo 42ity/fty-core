@@ -37,7 +37,7 @@
 @end
 */
 
-#include "./app.h"
+#include "app.h"
 
 //  Structure of our class
 
