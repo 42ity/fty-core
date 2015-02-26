@@ -1241,6 +1241,9 @@ test-restapi: all
 #                        SCM details
 #----------------------------------------------------------------------
 
+gitdetaildir =	        $(datarootdir)/@PACKAGE@
+gitdetail_DATA =	.git_details
+
 EXTRA_DIST +=		.git_details \
 			tools/git_details.sh \
 			tools/JSON.sh
