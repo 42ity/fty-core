@@ -214,21 +214,21 @@ new_value() {
 }
 
 create_random_samples() {
-    DEVICES=(epdu101_1_.dev epdu101_2_.dev ups103_1_.dev ups103_2_.dev)
-    TOTALTIME=$1
-    TIME=0
+    local DEVICES=(epdu101_1_.dev epdu101_2_.dev ups103_1_.dev ups103_2_.dev)
+    local TOTALTIME=$1
+    local FREQ=$2
+    local TIME=0
     while [ $TIME -lt $TOTALTIME ] ; do
 	I=$(expr $RANDOM % 4)
 	DEVICE=${DEVICES[$I]}
 	ITEM=$(random_thing $DEVICE)
 	NEWVALUE=$(new_value $DEVICE $ITEM)
-	SLEEP=$(expr $RANDOM % 50)
+	SLEEP=$(expr $RANDOM % $FREQ)
 	echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
 	set_value_in_ups $DEVICE $ITEM $NEWVALUE
 	TIME=$(expr $TIME + $SLEEP)
     done
 }
-
 
 produce_events(){
     MEASUREMENTS=$(do_select "select count(*) from t_bios_measurements")
@@ -246,16 +246,26 @@ produce_events(){
 		echo "$(date +%T) $DEVICE $ITEM = $VALUE"
 		;;
 	esac
-	sleep $SLEEPAFTER
+	sleep $(expr $SLEEPAFTER )
 	if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
 	    # 5 min since last check
+	    # check measurement flow
 	    NEWCNT=$(do_select "select count(*) from t_bios_measurements")
 	    if [ $NEWCNT = $MEASUREMENTS ] ; then
 		# no data flow
-		echo "ERROR: nothing appeared in measurement table since last check"
+		echo "ERROR: nothing appeared in measurement table since last check ($NEWCNT lines in table)"
+	    else
+		echo "OK: new measurements ($NEWCNT lines in table)"
+	    fi
+	    MEASUREMENTS=$NEWCNT
+	    # check servises
+	    if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
+		echo "OK: all services running"
+	    else
+		echo "ERROR: some services are not running"
+		$SCRIPTDIR/ci-rc-bios.sh --status
 	    fi
 	    LASTCHECK=$(date +%s)
-	    MEASUREMENTS=$NEWCNT
 	fi
     done < $SAMPLEFILE
 }
@@ -263,10 +273,13 @@ produce_events(){
 usage() {
     echo "usage: $(basename $0) [options]"
     echo "options:"
-    echo "    -h|--help              print this help"
-    echo "    --create-samples TIME  create random samles instead of"
-    echo "                           running test and print it to STDOUT"
-    echo "    -s|--samples FILE      use this sample file [default ci-longrun.data]"
+    echo "    -h|--help                   print this help"
+    echo "    --create-samples TIME FREQ  create random samles instead of"
+    echo "                                running test and print samples to STDOUT."
+    echo "                                Events are generated as often as (\$RANDOM % FREQ)."
+    echo "                                So many events are generated to take TIME to produce them."
+    echo "                                TIME and FREQ are in seconds."
+    echo "    -s|--samples FILE           use this sample file [default ci-longrun.data]"
 }
 
 ACTION=test
@@ -276,8 +289,9 @@ while [ "$#" -gt 0 ] ; do
     case "$1" in
 	--create-samples)
 	    TIME=$2
+	    FREQ=$3
 	    ACTION=samples
-	    shift 2
+	    shift 3
 	    ;;
 	-s|--samples)
 	    SAMPLEFILE=$2
@@ -290,17 +304,22 @@ while [ "$#" -gt 0 ] ; do
     esac
 done
 
+if [ "$(id -u)" != 0 ] ; then
+    echo "ERROR: must run as root" >&2
+    exit 1
+fi
+
 nut_cfg_dir
 case "$ACTION" in
     samples)
 	create_nut_config >/dev/null 2>&1
-	create_random_samples "$TIME"
+	create_random_samples "$TIME" "$FREQ"
 	;;
     test)
 	$SCRIPTDIR/ci-rc-bios.sh --stop
 	create_nut_config
-	$SCRIPTDIR/ci-fill-db.sh
-	mysql -u root box_utf8 < $CHECKOUTDIR/tools/power_topology.sql
+	$SCRIPTDIR/ci-empty-db.sh
+	mysql -u root box_utf8 < $CHECKOUTDIR/tools/rack_power.sql
 	$SCRIPTDIR/ci-rc-bios.sh --start
 	produce_events
 	$SCRIPTDIR/ci-rc-bios.sh --stop
