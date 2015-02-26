@@ -94,6 +94,8 @@ DISTCHECK_CONFIGURE_FLAGS = \
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
 		-include $(abs_top_builddir)/config.h \
+		-I$(abs_top_builddir)/include \
+		-I$(abs_top_srcdir)/include \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
 		-I$(abs_top_srcdir)/src/shared \
