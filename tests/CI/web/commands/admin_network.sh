@@ -30,7 +30,7 @@ do_test() {
             regexp=${5}
             ;;
         *)
-            echo "ERROR: do_test to many arguments: $#" >&2
+            echo "ERROR: do_test too many arguments: $#" >&2
             return 1
             ;;
     esac

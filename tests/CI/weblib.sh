@@ -26,7 +26,14 @@
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 [ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
 
+# Should the test suite break upon first failed test?
+[ -z "$WEBLIB_QUICKFAIL" ] && WEBLIB_QUICKFAIL=no
+
+# Should the test suite abort if "curl" errors out?
+[ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes
+
 _TOKEN_=""
+WEBLIB_FORCEABORT=no
 
 print_result() {
     _ret=0
@@ -39,12 +46,22 @@ print_result() {
         FAILED="$FAILED $NAME"
 
 	# This optional envvar can be set by the caller
-	if [ "$TESTWEB_QUICKFAIL" = yes ]; then
+	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
 	    echo ""
 	    echo "$PASS previous tests have succeeded"
-	    echo "Testing aborted due to" \
-		"TESTWEB_QUICKFAIL=$TESTWEB_QUICKFAIL" \
+	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+		"WEBLIB_QUICKFAIL=$WEBLIB_QUICKFAIL" \
 		"after first failure with test $NAME"
+	    exit $_ret
+	fi >&2
+
+	# This optional envvar can be set by CURL() and trap_*() below
+	if [ "$WEBLIB_FORCEABORT" = yes ]; then
+	    echo ""
+	    echo "$PASS previous tests have succeeded"
+	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
+		"WEBLIB_FORCEABORT=$WEBLIB_FORCEABORT" \
+		"after forced abortion in test $NAME"
 	    exit $_ret
 	fi >&2
     fi
@@ -61,16 +78,47 @@ test_it() {
     echo "Running test $NAME:"
 }
 
+### This is what we will sig-kill if needed
+_PID_TESTER=$$
+trap_break() {
+    ### This SIGUSR1 handler is reserved for CURL failures
+    echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2
+    echo "CI-WEBLIB-FATAL-BREAK: Got forced interruption signal" >&2
+    WEBLIB_FORCEABORT=yes
+
+### Just cause the loop to break at a proper moment in print_result()
+#    exit $1
+    return 1
+}
+trap "trap_break" SIGUSR1
+
+CURL() {
+    curl "$@"
+    RES_CURL=$?
+    if [ $RES_CURL != 0 ]; then
+        ### Based on caller redirections, this output may never be seen
+        echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
+            "perhaps the web server is not available or has crashed?" >&2
+
+        if [ x"$WEBLIB_CURLFAIL" = xyes ]; then
+            kill -SIGUSR1 $_PID_TESTER $$ >/dev/null 2>&1
+            # exit $RES_CURL
+        fi
+    fi
+
+    return $RES_CURL
+}
+
 api_get() {
-    curl -v --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_get_content() {
-    curl "$BASE_URL$1" 2>/dev/null
+    CURL "$BASE_URL$1" 2>/dev/null
 }
 
 api_get_json() {
-    curl -v --progress-bar "$BASE_URL$1" 2> /dev/null \
+    CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
@@ -79,7 +127,7 @@ api_get_jsonv() {
 }
 
 api_post() {
-    curl -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 ### Flag for _api_get_token_certainPlus()
@@ -91,7 +139,7 @@ _api_get_token() {
 	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
 	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
-	echo "=== DEBUG: weblib.sh: got ($_RES_) new token '$_TOKEN_'" >&2
+	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
     echo "$_TOKEN_"
     return $_RES_
@@ -100,7 +148,8 @@ _api_get_token() {
 _api_get_token_certainPlus() {
     _PLUS="$1"
     if [ "$_PLUS" != with -a "$_PLUS" != without ]; then
-	echo "=== ERROR: _api_get_token_certainPlus() unknown certainty: '$_PLUS'" >&2
+	echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+            "unknown certainty was requested: '$_PLUS'" >&2
 	return 1
     fi
 
@@ -110,11 +159,13 @@ _api_get_token_certainPlus() {
 	_T="`LOGIN_RESET=yes _api_get_token`"
 	_RES_=$?
 	if [ $_RES_ != 0 ]; then
-	    echo "=== ERROR: _api_get_token_certainPlus(): _api_get_token() returned error: $_RES_'" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "got error from _api_get_token(): $_RES_'" >&2
 	    return $_RES_
 	fi
 	if [ -z "$_T" ]; then
-	    echo "=== ERROR: _api_get_token_certainPlus(): got empty token value'" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "got empty token value from _api_get_token()'" >&2
 	    return 2
 	fi
 	case "$_T" in
@@ -122,12 +173,16 @@ _api_get_token_certainPlus() {
 	    *)		[ "$_PLUS" = without ] && break ;;
 	esac
 
-	echo "=== WARN: Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
+	echo "CI-WEBLIB-WARN: _api_get_token_certainPlus():" \
+            "Got unsuitable token '$_T' (wanted $_PLUS a plus)" >&2
+
 	if [ x"$_TO" = x"$_T" ]; then
 	    C="`expr $C + 1`"
 	else C=0; fi
+
 	if [ "$C" -gt 5 ]; then
-	    echo "=== ERROR: Got the same token too many times in a row, aborting loop" >&2
+	    echo "CI-WEBLIB-ERROR: _api_get_token_certainPlus():" \
+                "Got the same token too many times in a row, aborting loop" >&2
 	    echo "$_T"
 	    return 3
 	fi
@@ -151,7 +206,7 @@ api_auth_post() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content() {
@@ -159,7 +214,7 @@ api_auth_post_content() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
+    CURL -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_post_wToken() {
@@ -167,7 +222,7 @@ api_auth_post_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content_wToken() {
@@ -175,12 +230,12 @@ api_auth_post_content_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    curl -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
+    CURL -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_delete() {
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_put() {
@@ -188,12 +243,12 @@ api_auth_put() {
     #	$1	Relative URL for API call
     #	$2	PUT data
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get() {
     TOKEN="`_api_get_token`"
-    curl -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
+    CURL -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get_wToken() {
@@ -202,12 +257,12 @@ api_auth_get_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    curl -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
+    CURL -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
 }
 
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
-    curl -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+    CURL -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_get_content_wToken() {
@@ -216,12 +271,12 @@ api_auth_get_content_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    curl "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
+    CURL "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
 }
 
 api_auth_get_json() {
     TOKEN="`_api_get_token`"
-    curl -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
+    CURL -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
