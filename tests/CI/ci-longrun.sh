@@ -17,14 +17,12 @@
 #
 # Author(s): Tomas Halman <TomasHalman@eaton.com>
 #
-# Description: tests the nut driver and propagation of events
+# Description: tests the bios system stability for longer period
 
 
 #
 # requirements:
 #   Must run as root (nut configuration)
-#   simple must be running
-#   db must be filled
 #
 
 SCRIPTDIR=$(dirname $0)
