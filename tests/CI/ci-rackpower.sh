@@ -29,7 +29,7 @@
 
 
 if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "$(dirname $0)" && pwd)" || \
+    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
     SCRIPTDIR="$(dirname $0)"
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
@@ -63,7 +63,7 @@ CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
 if [ ! -d $CFGDIR ] ; then
     echo "NUT config dir not found"
-    kill $WEBTESTPID
+    kill $WEBTESTPID >/dev/null 2>&1
     exit 1
 fi
 set_value_in_ups() {
@@ -184,7 +184,7 @@ for UPS in $UPS1 $UPS2 ; do
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
-        DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
+        DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
         if [ $DEL = 0 ]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
@@ -309,7 +309,7 @@ echo ""
 echo "*** Summary ***"
 echo "Passed: $SUM_PASS / Failed: $SUM_ERR"
 
-kill $WEBTESTPID
+kill $WEBTESTPID >/dev/null 2>&1
 
 if [ $SUM_ERR = 0 ] ; then
     exit 0
