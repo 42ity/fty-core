@@ -100,6 +100,8 @@ AM_CPPFLAGS = \
 		-I$(abs_top_builddir)/src/include \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
+		-I$(abs_top_builddir)/src/msg \
+		-I$(abs_top_srcdir)/src/msg \
 		-D__STDC_FORMAT_MACROS
 
 AM_CFLAGS = \
@@ -209,18 +211,18 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
-			src/include/asset_msg.c \
-			src/include/asset_msg.h \
-			src/include/common_msg.c \
-			src/include/common_msg.h \
-			src/include/netdisc_msg.c \
-			src/include/netdisc_msg.h \
-			src/include/nmap_msg.c \
-			src/include/nmap_msg.h \
-			src/include/compute_msg.c \
-			src/include/compute_msg.h \
-			src/include/powerdev_msg.c \
-			src/include/powerdev_msg.h
+			src/msg/asset_msg.c \
+			src/msg/asset_msg.h \
+			src/msg/common_msg.c \
+			src/msg/common_msg.h \
+			src/msg/netdisc_msg.c \
+			src/msg/netdisc_msg.h \
+			src/msg/nmap_msg.c \
+			src/msg/nmap_msg.h \
+			src/msg/compute_msg.c \
+			src/msg/compute_msg.h \
+			src/msg/powerdev_msg.c \
+			src/msg/powerdev_msg.h
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
@@ -544,9 +546,9 @@ EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
 			$(top_srcdir)/tools/dbinit.h
 
 dist_noinst_HEADERS += \
-			src/include/asset_msg.h \
+			src/msg/asset_msg.h \
 			src/shared/asset_types.h \
-			src/include/powerdev_msg.h \
+			src/msg/powerdev_msg.h \
 			src/agents/nut/nut-driver.h
 
 
@@ -710,7 +712,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbpath.cc.in \
 			$(top_builddir)/tools/dbpath.cc \
 			$(top_srcdir)/tools/bios-*.service.in \
-			$(top_srcdir)/src/*_msg.xml \
+			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
 			$(top_srcdir)/src/agents/netmon/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*.h \
