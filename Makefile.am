@@ -45,18 +45,31 @@ client_PROGRAMS =
 
 TESTS =
 
+# Initialize some more variables
+pkgconfigdir =			$(libdir)/pkgconfig
+pkgconfig_DATA =
+pkginclude_HEADERS =
+lib_LTLIBRARIES =
+
 # Named by analogy from configure'd myDOXDIR for doxygen
 myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools src/api
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
 # Note that docker/README is processed by this root Makefile, below...
 SUBDIRS +=	docker
 endif
+
+# ----------------------------------------------------------------------
+# List of header files. The purpose of this list is not dependency
+# tracking (which is automatic), but to ensure these files are
+# distributed by "make dist" although not "installed".
+
+dist_noinst_HEADERS = 
 
 # Clean up products of configure script
 DISTCLEANFILES += \
@@ -106,7 +119,7 @@ AM_CPPFLAGS = \
 
 AM_CFLAGS = \
 		${my_CFLAGS} \
-		-fvisibility=hidden \
+		$(CFLAG_VISIBILITY) \
 		-ffunction-sections \
 		-fdata-sections \
 		$(LIBZMQ_CFLAGS) \
@@ -115,7 +128,7 @@ AM_CFLAGS = \
 
 AM_CXXFLAGS = \
 		${my_CXXFLAGS} \
-		-fvisibility=hidden \
+		$(CXXFLAG_VISIBILITY) \
 		-ffunction-sections \
 		-fdata-sections
 
@@ -124,14 +137,19 @@ AM_LDFLAGS = \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
 
-# ----------------------------------------------------------------------
-# List of header files. The purpose of this list is not dependency
-# tracking (which is automatic), but to ensure these files are
-# distributed by "make dist" although not "installed".
+#----------------------------------------------------------------------
+# Ensure dependency building for $BIOS public API
 
-dist_noinst_HEADERS = 
+libbiosapi.la: $(abs_top_builddir)/libbiosapi.la
+
+$(abs_top_builddir)/libbiosapi.la:
+	( cd $(abs_top_builddir)/src/api && $(MAKE) all && $(MAKE) "$@" )
+
 
 #----------------------------------------------------------------------
+# Some of our code is arranged into private libraries used during
+# build, but not published or distributed outside the build-tree.
+
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
 libpriv_defs_la_SOURCES = 	src/include/defs.c \
@@ -712,6 +730,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbpath.cc.in \
 			$(top_builddir)/tools/dbpath.cc \
 			$(top_srcdir)/tools/bios-*.service.in \
+			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
 			$(top_srcdir)/src/agents/netmon/*.h \
