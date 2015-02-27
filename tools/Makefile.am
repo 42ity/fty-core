@@ -12,5 +12,8 @@ mysqlex_DATA	= \
 		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
 		    power_topology.sql rack_power.sql
 
-EXTRA_DIST += $(helper_SCRIPTS) $(mysql_DATA) $(mysqlex_DATA)
+malamuteexdir	= $(datadir)/@PACKAGE@/examples/config/malamute
+malamuteex_DATA	= malamute.cfg
+
+EXTRA_DIST += $(helper_SCRIPTS) $(mysql_DATA) $(mysqlex_DATA) $(malamuteex_DATA)
 
