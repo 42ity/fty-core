@@ -137,7 +137,7 @@ BIOS_EXPORT ymsg_t *
  \param[in] self Bios agent
  \param[in] name of the stream
 
- \return -1 if interrupted, >=0 on success
+ \return -2 on bad input, -1 if interrupted, >=0 on success
  */
 BIOS_EXPORT int
     bios_agent_set_producer (bios_agent_t *self, const char *stream);
@@ -158,7 +158,7 @@ BIOS_EXPORT int
  \param[in] stream   Name of the stream
  \param[in] pattern  regular expression (CZMQ syntax)
  
- \return 0 if subscription was successful, else -1.
+ \return 0 if subscription was successful, -2 on bad input, -1 on fail for any other reason.
 */
 BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
