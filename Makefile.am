@@ -224,8 +224,8 @@ libpriv_proto_la_SOURCES = \
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
-			src/drivers/nmap/nmap-parse.h \
-			src/drivers/nmap/nmap-parse.cc
+			src/agents/nmap/nmap-parse.h \
+			src/agents/nmap/nmap-parse.cc
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -468,7 +468,7 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 ###
 check_PROGRAMS += 	test-nmap-parse
-test_nmap_parse_SOURCES = tests/drivers/nmap/test-nmap-parse.cc
+test_nmap_parse_SOURCES = tests/agents/nmap/test-nmap-parse.cc
 test_nmap_parse_LDADD = \
 			libpriv-nmap-parse.la \
 			libpriv-defs.la \
@@ -478,9 +478,9 @@ test_nmap_parse_LDADD = \
 test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
 test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/drivers/nmap/ \
-			-DTDIR=$(abs_top_srcdir)/tests/drivers/nmap/
-EXTRA_DIST +=		tests/drivers/nmap/mbt-lab.xml
+			-I$(abs_top_srcdir)/src/agents/nmap/ \
+			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
+EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 ###
 
@@ -493,13 +493,13 @@ TESTS += $(check_SCRIPTS)
 
 client_PROGRAMS += 	netmon
 netmon_SOURCES = \
-			src/drivers/netmon/linux \
-			src/drivers/netmon/netmon.c \
-			src/drivers/netmon/msg_send.cc \
-			src/drivers/netmon/msg_send.h
+			src/agents/netmon/linux \
+			src/agents/netmon/netmon.c \
+			src/agents/netmon/msg_send.cc \
+			src/agents/netmon/msg_send.h
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/drivers/netmon \
+			-I$(abs_top_srcdir)/src/agents/netmon \
 			-I$(abs_top_srcdir)/src/simple
 
 netmon_LDADD = \
@@ -512,7 +512,7 @@ netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
 bin_PROGRAMS += 	server-agent
 
-server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
+server_agent_SOURCES =	src/agents/server-agent/server-agent.cpp
 
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
 
@@ -521,7 +521,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	db-ng
-db_ng_SOURCES =		src/persist/db-ng.cpp \
+db_ng_SOURCES =		src/agents/dbstore/db-ng.cpp \
 			tools/dbpath.h
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -535,7 +535,9 @@ db_ng_LDADD = \
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/tools
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
@@ -545,14 +547,14 @@ dist_noinst_HEADERS += \
 			src/include/asset_msg.h \
 			src/shared/asset_types.h \
 			src/include/powerdev_msg.h \
-			src/drivers/nut/nut-driver.h
+			src/agents/nut/nut-driver.h
 
 
 client_PROGRAMS +=	driver-nmap
 
 driver_nmap_SOURCES = \
-			src/drivers/nmap/nmap-driver.h \
-			src/drivers/nmap/nmap.cc
+			src/agents/nmap/nmap-driver.h \
+			src/agents/nmap/nmap.cc
 
 driver_nmap_LDADD = \
 			libpriv-defs.la \
@@ -582,8 +584,8 @@ dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	driver-nut
 
 driver_nut_SOURCES = \
-			src/drivers/nut/nut-driver.cc \
-			src/drivers/nut/nut-actor.cc \
+			src/agents/nut/nut-driver.cc \
+			src/agents/nut/nut-actor.cc \
 			src/shared/upsstatus.cc
 
 driver_nut_LDADD = \
@@ -710,10 +712,10 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/drivers/netmon/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*/*.h \
-			$(top_srcdir)/src/drivers/*/*.h \
+			$(top_srcdir)/src/agents/netmon/*.h \
+			$(top_srcdir)/src/agents/netmon/*/*.h \
+			$(top_srcdir)/src/agents/netmon/*/*/*.h \
+			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
 			$(top_srcdir)/src/web/include/*.h
@@ -855,7 +857,7 @@ MAPPED_TXT_DOCS_PLAINTEXT = \
 MAPPED_TXT_DOCS_ASCIIDOC = \
 	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
-	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
+	src/agents/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
 
 if ENABLE_DOCKER_SUPPORT
 MAPPED_TXT_DOCS_ASCIIDOC += \
