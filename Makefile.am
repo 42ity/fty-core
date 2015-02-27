@@ -453,7 +453,7 @@ test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 bin_PROGRAMS +=		test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
-			src/web/src/location_helpers.cpp
+			src/web/src/location_helpers.cc
 
 test_web_LDADD = 	libpriv-test-run.la \
 			libpriv-log.la
@@ -615,9 +615,9 @@ BUILT_SOURCES_bios_web_la = \
                       src/include/git_details_override.h
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
-                      src/web/src/location_helpers.cpp                   \
-                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/tokens.cpp src/shared/data.cpp         \
+                      src/web/src/location_helpers.cc                    \
+                      src/web/src/mock.cc   src/web/src/sasl.cc          \
+                      src/web/src/tokens.cc src/shared/data.cpp          \
                       src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
