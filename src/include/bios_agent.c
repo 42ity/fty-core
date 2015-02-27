@@ -220,56 +220,8 @@ ymsg_set_content_type (ymsg_t *self, const char *content_type) {
     return 0;
 }
 
-const char *
-bios_agent_command (bios_agent_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return mlm_client_command (self->client);
-}
-
-int
-bios_agent_status (bios_agent_t *self) {
-    if (!self) {
-        return -2;
-    }
-    return mlm_client_status (self->client);
-}
-
-const char *
-bios_agent_reason (bios_agent_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return mlm_client_reason (self->client);
-}
-
-const char *
-self_address (bios_agent_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return mlm_client_address (self->client);
-}
-
-const char *
-self_sender (bios_agent_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return mlm_client_sender (self->client);
-}
-
-const char *
-self_subject (bios_agent_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return mlm_client_subject (self->client);
-}
-
 ymsg_t *
-self_content (bios_agent_t *self) {
+bios_agent_content (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
