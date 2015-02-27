@@ -194,12 +194,12 @@ libpriv_db_la_SOURCES = \
 			src/persist/measure_types.h \
 			src/persist/dbhelpers.cc \
 			src/persist/dbhelpers.h \
-			tools/dbpath.cpp
+			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
 # that use the database (linked into libpriv-db)
-BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.cpp
-DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cpp
+BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.cc
+DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -707,8 +707,8 @@ endif
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/tools/dbpath.cpp.in \
-			$(top_builddir)/tools/dbpath.cpp \
+			$(top_srcdir)/tools/dbpath.cc.in \
+			$(top_builddir)/tools/dbpath.cc \
 			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/src/*_msg.xml \
 			$(top_srcdir)/src/include/*.h \
