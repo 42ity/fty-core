@@ -259,10 +259,12 @@ AS_IF([test -s "$_curdir_abs/.git_details"],
 		[AC_MSG_NOTICE([Setting PACKAGE_STRING and PACKAGE_VERSION to include Git hash '$PACKAGE_GIT_HASH_S' and commit timestamp '$PACKAGE_GIT_TSTAMP'...])
 		 PACKAGE_STRING="$PACKAGE_STRING.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 PACKAGE_VERSION="$PACKAGE_VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
-		 VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 _FIX_PACKAGE_STRING=y
 		 _FIX_PACKAGE_VERSION=y
-		 _FIX_VERSION=y
+		 ### Rather don't fix the VERSION as it influences the
+		 ### tarball name in "make distcheck", install paths, etc.
+		 #VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 #_FIX_VERSION=y
 	 ])
 ])
 
