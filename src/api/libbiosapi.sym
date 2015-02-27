@@ -49,6 +49,8 @@ global:
         bios_agent_sendfor;
         bios_agent_replyto;
         bios_agent_recv;
+        bios_agent_set_producer;
+        bios_agent_set_consumer;
         ymsg_status;
         ymsg_set_status;
         ymsg_repeat;

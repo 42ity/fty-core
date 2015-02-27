@@ -84,8 +84,7 @@ BIOS_EXPORT ymsg_t *
     ymsg_new (int id);
 
 //  Destroy the ymsg
-void
-BIOS_EXPORT
+BIOS_EXPORT void
     ymsg_destroy (ymsg_t **self_p);
 
 //  Parse a zmsg_t and decides whether it is ymsg. Returns
