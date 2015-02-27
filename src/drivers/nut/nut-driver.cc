@@ -22,16 +22,15 @@ static const std::vector<std::string> physicsNUT {
     "ups.temperature",
     "ups.load",
     "ups.realpower",
-
     "input.frequency",
     "input.load", // not found in nut drivers, including input.L?.load ??
     "input.L1.load",
     "input.L2.load",
     "input.L3.load",
     "input.voltage",
-    "input.L1-N.voltage",
-    "input.L2-N.voltage",
-    "input.L3-N.voltage",
+    "input.L1.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
+    "input.L2.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
+    "input.L3.voltage", // as far NUT doesn't support DMTF format, multi-phase is not yet full supported, so NUT publishes voltage in a simple way
     "input.current",
     "input.L1.current",
     "input.L2.current",

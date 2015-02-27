@@ -554,8 +554,11 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "3",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "0",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "9PX-BiosDown", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "9PX-BiosDown.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
 
 /* UPS2-LAB */
@@ -568,36 +571,47 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "2",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "3",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "3",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "9PX-BiosUp", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "9PX-BiosUp.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
 
 /* ePDU1-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU1-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU1 Marlin", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU1 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosLeft", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosLeft.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
 
 /* ePDU2-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU2-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU2 Marlin", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU2 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosRight", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosRight.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
 
 /* SRV1-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV1-LAB",  @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV1 HP",  @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "10",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV1 PRIMERGY RX100 G8",  @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "6",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Fujitsu", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
 
 /* SRV2-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV2-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV2 HP", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "2",        @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "12",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV2 PRIMERGY RX100 G8", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "7",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Fujitsu", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* MAIN-LAB */
@@ -622,6 +636,42 @@ values
     (select id_asset_element from `t_bios_asset_element` where name = 'MAIN-LAB')
 );
 
+/* SRV3-LAB */
+insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV3-LAB",  @asset_element_device, @last_rack);
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV3 DL320e G8",  @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "8",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "HP", @last_asset_element);
+insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
+
+/* SRV4-LAB */
+insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV4-LAB", @asset_element_device, @last_rack);
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV4 DL320e G8", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "9",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "HP", @last_asset_element);
+insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
+
+/* SRV5-LAB */
+insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV5-LAB",  @asset_element_device, @last_rack);
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV5 PowerEdge R320",  @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "11",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Dell", @last_asset_element);
+insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
+
+/* SRV6-LAB */
+insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV6-LAB", @asset_element_device, @last_rack);
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV6 System x 3530 M4", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "13",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "IBM", @last_asset_element);
+insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
+
 /* Asset links */
 
 /* link (MAIN-LAB, UPS1-LAB, 'power chain') */
@@ -642,13 +692,13 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'UPS2-LAB'),
     @asset_link_powerchain
 );
-/* link (UPS1-LAB, ePDU1-LAB, 'power chain') */
+/* link (UPS1-LAB, ePDU2-LAB, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values 
 (
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'UPS1-LAB'),
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     @asset_link_powerchain
 );
 /* link (UPS2-LAB, ePDU2-LAB, 'power chain') */
@@ -657,10 +707,10 @@ insert into t_bios_asset_link
 values 
 (
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'UPS2-LAB'),
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     @asset_link_powerchain
 );
-/* link (ePDU1-LAB, SRV1-LAB, 'power chain', 10, 1) */
+/* link (ePDU1-LAB, SRV1-LAB, 'power chain', B6, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
@@ -668,10 +718,10 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV1-LAB'),
     @asset_link_powerchain,
-    10, 
-    1
+    "B6", 
+    "1"
 );
-/* link (ePDU2-LAB, SRV1-LAB, 'power chain', 10, 2) */
+/* link (ePDU2-LAB, SRV1-LAB, 'power chain', B6, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
@@ -679,10 +729,10 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV1-LAB'),
     @asset_link_powerchain,
-    10,
-    2
+    "B6",
+    "1"
 );
-/* link (ePDU1-LAB, SRV2-LAB, 'power chain', 11, 1) */
+/* link (ePDU1-LAB, SRV2-LAB, 'power chain', B5, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
@@ -690,10 +740,10 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV2-LAB'),
     @asset_link_powerchain,
-    11,
-    1
+    "B5",
+    "1"
 );
-/* link (ePDU2-LAB, SRV2-LAB, 'power chain', 11, 2) */
+/* link (ePDU2-LAB, SRV2-LAB, 'power chain', B5, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
@@ -701,12 +751,104 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV2-LAB'),
     @asset_link_powerchain,
-    11,
-    2
+    "B5",
+    "2"
+);
+
+/* link (ePDU1-LAB, SRV3-LAB, 'power chain', B2, 1) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV3-LAB'),
+    @asset_link_powerchain,
+    "B2",
+    "1"
+);
+/* link (ePDU2-LAB, SRV3-LAB, 'power chain', B2, 2) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV3-LAB'),
+    @asset_link_powerchain,
+    "B2",
+    "2"
+);
+
+/* link (ePDU1-LAB, SRV4-LAB, 'power chain', B1, 1) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV4-LAB'),
+    @asset_link_powerchain,
+    "B1",
+    "1"
+);
+/* link (ePDU2-LAB, SRV4-LAB, 'power chain', B1, 2) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV4-LAB'),
+    @asset_link_powerchain,
+    "B1",
+    "2"
+);
+
+/* link (ePDU1-LAB, SRV5-LAB, 'power chain', A7, 1) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV5-LAB'),
+    @asset_link_powerchain,
+    "A7",
+    "1"
+);
+/* link (ePDU2-LAB, SRV5-LAB, 'power chain', A7, 2) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV5-LAB'),
+    @asset_link_powerchain,
+    "A7",
+    "2"
+);
+
+/* link (ePDU1-LAB, SRV6-LAB, 'power chain', A5, 1) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV6-LAB'),
+    @asset_link_powerchain,
+    "A5",
+    "1"
+);
+/* link (ePDU2-LAB, SRV6-LAB, 'power chain', A5, 2) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV6-LAB'),
+    @asset_link_powerchain,
+    "A5",
+    "2"
 );
 
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2"}' WHERE id_client=@client_ui_properties;
+UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{ "indicators_gauges" : { "power":{ "gauge_min" : 0, "gauge_max" : 50, "threshold_1" : 30, "threshold_2" : 40, "constant_tendency_threshold" : 1 }, "temperature":{ "gauge_min" : 10, "gauge_max" : 60, "threshold_1" : 36, "threshold_2" : 48, "constant_tendency_threshold" : 1 }, "humidity":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "compute":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "network":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "storage":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "space":{ "gauge_min" : 0, "gauge_max" : 420, "threshold_1" : 252, "threshold_2" : 336, "constant_tendency_threshold" : 1 } }, "rack_gauge_power": { "gauge_min": 0, "gauge_max": 5, "threshold_1": 3, "threshold_2": 4 }, "ups_gauge_power": { "gauge_min": 0, "gauge_max": 50, "threshold_1": 30, "threshold_2": 40 } } ' WHERE id_client=@client_ui_properties;
 
 
 /* A manual propagate an asset part to monitor part*/
@@ -741,7 +883,7 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV1-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-LAB')
 );
-INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
+INSERT INTO t_bios_monitor_asset_relpation (id_discovered_device,id_asset_element) VALUES (
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV2-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
 );
