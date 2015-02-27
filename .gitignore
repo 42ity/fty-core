@@ -98,8 +98,8 @@ bios-*.*.tar.?z
 bios-*.deb
 
 src/utils/messages/json_schemas.h
-!tools/dbpath.cpp.in
-tools/dbpath.cpp
+!tools/dbpath.cc.in
+tools/dbpath.cc
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
