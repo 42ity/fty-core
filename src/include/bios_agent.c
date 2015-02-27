@@ -137,6 +137,24 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
     return rc;
 }
 
+int
+bios_agent_set_producer (bios_agent_t *self, const char *stream)
+{
+    if (!self || !stream) {
+        return -2;
+    }
+    return mlm_client_set_producer (self->client, stream);
+}
+
+int
+bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern)
+{
+    if (!self || !stream || !pattern) {
+        return -2;
+    }
+    return mlm_client_set_consumer (self->client, stream, pattern);
+}
+
 ymsg_t *
 bios_agent_recv (bios_agent_t *self) {
     if (!self) {
@@ -245,7 +263,7 @@ bios_agent_reason (bios_agent_t *self) {
 }
 
 const char *
-self_address (bios_agent_t *self) {
+bios_agent_address (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
@@ -253,7 +271,7 @@ self_address (bios_agent_t *self) {
 }
 
 const char *
-self_sender (bios_agent_t *self) {
+bios_agent_sender (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
@@ -261,7 +279,7 @@ self_sender (bios_agent_t *self) {
 }
 
 const char *
-self_subject (bios_agent_t *self) {
+bios_agent_subject (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
@@ -269,7 +287,7 @@ self_subject (bios_agent_t *self) {
 }
 
 ymsg_t *
-self_content (bios_agent_t *self) {
+bios_agent_content (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
@@ -279,4 +297,3 @@ self_content (bios_agent_t *self) {
     }
     return ymsg_decode (&zmsg);
 }
-

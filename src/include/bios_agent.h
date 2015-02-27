@@ -129,6 +129,40 @@ BIOS_EXPORT int
 BIOS_EXPORT ymsg_t *
     bios_agent_recv (bios_agent_t *self);
 
+/*! 
+ \brief Prepare to publish to a specified stream. 
+ 
+ After this, all messages are sent to this stream exclusively.
+ 
+ \param[in] self Bios agent
+ \param[in] name of the stream
+
+ \return -2 on bad input, -1 if interrupted, >=0 on success
+ */
+BIOS_EXPORT int
+    bios_agent_set_producer (bios_agent_t *self, const char *stream);
+
+/*!
+ \brief Prepare to consume messages from a specified stream with 
+ topic that matches the pattern.
+ 
+ The pattern is a regular expression
+ using the CZMQ zrex syntax. The most useful elements are: ^ and $ to match the
+ start and end, . to match any character, \s and \S to match whitespace and
+ non-whitespace, \d and \D to match a digit and non-digit, \a and \A to match
+ alphabetic and non-alphabetic, \w and \W to match alphanumeric and
+ non-alphanumeric, + for one or more repetitions, * for zero or more repetitions,
+ and ( ) to create groups.
+ 
+ \param[in] self     Bios agent
+ \param[in] stream   Name of the stream
+ \param[in] pattern  regular expression (CZMQ syntax)
+ 
+ \return 0 if subscription was successful, -2 on bad input, -1 on fail for any other reason.
+*/
+BIOS_EXPORT int
+    bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
+
 /*!
  \brief Get status value of ROZP REPLY message
  \return
