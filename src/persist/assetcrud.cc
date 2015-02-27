@@ -66,12 +66,8 @@ zlist_t* select_asset_element_groups(const char* url,
             " WHERE v.id_asset_element = :idelement"
         );
         
-        // TODO set 
-        tntdb::Result result = st_gr.setUnsigned32("idelement", element_id).
+        tntdb::Result result = st_gr.set("idelement", element_id).
                                      select(); 
-        // TODO move 10 to some constant
-        char buff[10];
-
         // Go through the selected groups
         for ( auto &row: result )
         {
@@ -80,8 +76,7 @@ zlist_t* select_asset_element_groups(const char* url,
             row[0].get(group_id);
             assert ( group_id != 0 );  // database is corrupted
             
-            sprintf(buff, "%" PRIu32, group_id);
-            zlist_push (groups, buff);
+            zlist_push (groups, (char *)std::to_string(group_id).c_str());
         }
     }
     catch (const std::exception &e) {
@@ -123,11 +118,9 @@ zlist_t* select_asset_device_link(const char* url,
         ); 
         
         // TODO set
-        tntdb::Result result = st_pow.setUnsigned32("iddevice", device_id).
+        tntdb::Result result = st_pow.set("iddevice", device_id).
                                       set("idlinktype", link_type_id).
                                       select();
-        // TODO move 26 to constants
-        char buff[26];     // 10+3+3+10
 
         // Go through the selected links
         for ( auto &row: result )
@@ -145,12 +138,10 @@ zlist_t* select_asset_device_link(const char* url,
             std::string dest_in = SRCOUT_DESTIN_IS_NULL;
             row[2].get(dest_in);
 
-            sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, 
-                src_out.c_str(), 
-                element_id, 
-                dest_in.c_str(), 
-                device_id);
-            zlist_push(links, buff);
+            zlist_push(links, (char *)(src_out + ":"
+                                 + std::to_string (element_id) + ":"
+                                 + dest_in + ":"
+                                 + std::to_string (device_id) ).c_str());
         }
     }
     catch (const std::exception &e) {
@@ -272,7 +263,8 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
 
         if ( groups == NULL )    // internal error in database
         {
-            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, url, element_id);
+            log_warning("groups == NULL for url: %s, element_id: %" PRIu32, 
+                                                            url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
@@ -280,7 +272,8 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
-            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, url, element_id);
+            log_warning("powers == NULL for url: %s, element_id: %" PRIu32, 
+                                                            url, element_id);
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
@@ -479,9 +472,6 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
                        "elements of speified type were not found", NULL);
         }
 
-        // TODO move to constant
-        char buff[16];
-
         // Go through the selected elements
         for ( auto &row: result )
         {
@@ -495,9 +485,8 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
             row[1].get(id);
             assert( id != 0);    // database is corrupted
     
-            // TODO type convertions
-            sprintf(buff, "%" PRIu32, id);
-            zhash_insert(elements, buff, (void*)name.c_str());
+            zhash_insert(elements, std::to_string (id).c_str(), 
+                                                        (void*)name.c_str());
         }
     }
     catch (const std::exception &e)

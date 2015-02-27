@@ -49,7 +49,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_RECURSION_DEPTH 6
 #define INPUT_POWER_CHAIN 1
 
-zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p) {
+zmsg_t *process_assettopology (const char *database_url,
+                        asset_msg_t **message_p) {
     log_open ();
     log_set_level (LOG_DEBUG);
 
@@ -156,8 +157,10 @@ zmsg_t *process_assettopology (const char *database_url, asset_msg_t **message_p
         asset_msg_destroy (message_p);
         assert (*message_p == NULL);
     } else {
-        log_error ("Pointer to null pointer passed as second argument  'asset_msg_t **message_p'.");
-        return_msg = common_msg_encode_fail (0, 0,"Invalid asset message: Pointer to null pointer passed as second argument.", NULL);
+        log_error ("Pointer to null pointer passed as second argument "
+            "'asset_msg_t **message_p'.");
+        return_msg = common_msg_encode_fail (0, 0,"Invalid asset message: "
+            "Pointer to null pointer passed as second argument.", NULL);
         assert (return_msg);
         assert (is_common_msg (return_msg));
     }
@@ -696,14 +699,14 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
                 // but it is a mandatory
                 log_warning ("abort type for the group was not specified"
                                 " err = '%s'\n", e.what());
-                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_DBCORRUPTED, 
-                                                        e.what(), NULL);
+                return common_msg_encode_fail (BIOS_ERROR_DB, 
+                        DB_ERROR_DBCORRUPTED, e.what(), NULL);
             }
             catch (const std::exception &e) {
                 // internal error in database
                 log_warning ("abort select element with err = '%s'", e.what());
-                return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
-                                                        e.what(), NULL);
+                return common_msg_encode_fail (BIOS_ERROR_DB, 
+                        DB_ERROR_INTERNAL, e.what(), NULL);
             }
 
         }
@@ -1036,8 +1039,8 @@ zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id,
         row[2].get(name);
         row[3].get(dtype_name);
 
-        log_debug("rows selected %u, parent_id = %" PRIu32 ", parent_type_id = %" PRIu16,
-                            1,  parent_id, parent_type_id);
+        log_debug("rows selected %u, parent_id = %" PRIu32 ", "
+                "parent_type_id = %" PRIu16, 1,  parent_id, parent_type_id);
         
         if ( parent_id != 0 )
         {
@@ -1158,7 +1161,8 @@ std::tuple <std::string, std::string, a_elmnt_tp_id_t>
     return std::make_tuple (element_name, device_type_name, device_type_id);
 }
 
-zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const &devices)
+zmsg_t* convert_powerchain_devices2matryoshka (
+                    std::set < device_info_t > const &devices)
 {
     // tuple: ( id,  device_name, device_type_name )
     // encode: id, device_type_name, device_name
@@ -1175,24 +1179,19 @@ zmsg_t* convert_powerchain_devices2matryoshka (std::set < device_info_t > const 
     return ret;
 }
 
-zlist_t* convert_powerchain_powerlink2list (std::set < powerlink_info_t > const &powerlinks)
+zlist_t* convert_powerchain_powerlink2list (
+                std::set < powerlink_info_t > const &powerlinks)
 {
     zlist_t* powers = zlist_new();
     zlist_autofree (powers);
-    // TODO 30 move to *.h file as a constant
-    // uint32_t has 10 characters
-    // uint16_t has 5 characters
-    char buff[30];     // 10+5+5+10
     for ( auto it = powerlinks.begin(); it != powerlinks.end(); ++it )
     {
         auto apowerlink = *it;
 
-        sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, std::get<1>(apowerlink).c_str(), 
-                                     std::get<0>(apowerlink),
-                                     std::get<3>(apowerlink).c_str(),
-                                     std::get<2>(apowerlink)
-                );
-        zlist_push(powers, buff);
+        zlist_push(powers, (char *)(std::get<1>(apowerlink) + ":" 
+                        + std::to_string (std::get<0>(apowerlink)) + ":" 
+                        + std::get<3>(apowerlink) + ":" 
+                        + std::to_string (std::get<2>(apowerlink))).c_str());
     }
     return powers;
 }
@@ -1203,10 +1202,11 @@ zmsg_t* generate_return_power (std::set < device_info_t >    const &devices,
     zmsg_t  *devices_msg = convert_powerchain_devices2matryoshka (devices);
     zlist_t *powers_list = convert_powerchain_powerlink2list     (powerlinks);
     
-    zframe_t* devices_frame = NULL;
+    zframe_t *devices_frame = NULL;
     int rv = matryoshka2frame (&devices_msg, &devices_frame);
     assert ( rv == 0 );
-    zmsg_t* result = asset_msg_encode_return_power (devices_frame, powers_list);
+    zmsg_t *result = asset_msg_encode_return_power 
+                                                (devices_frame, powers_list);
     zlist_destroy  (&powers_list);
     zframe_destroy (&devices_frame);
     return result;
@@ -1265,7 +1265,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     std::set< device_info_t > resultdevices;
     //      start device should be included also into the result set
     resultdevices.insert (
-        std::make_tuple(element_id, device_name, device_type_name, device_type_id));
+        std::make_tuple(element_id, device_name, 
+                                        device_type_name, device_type_id));
     
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -1320,7 +1321,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
    
             log_debug ("for");
             log_debug ("asset_element_id_src = %" PRIu32, element_id);
-            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("asset_element_id_dest = %" PRIu32, 
+                                                    id_asset_element_dest);
             log_debug ("src_out = %s", src_out.c_str());
             log_debug ("dest_in = %s", dest_in.c_str());
             log_debug ("device_name = %s", device_name.c_str());
@@ -1330,7 +1332,8 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
             resultpowers.insert  (std::make_tuple(
                     element_id, src_out, id_asset_element_dest, dest_in)); 
             resultdevices.insert (std::make_tuple(
-                    id_asset_element_dest, device_name, device_type_name, device_type_dest_id));
+                    id_asset_element_dest, device_name, 
+                    device_type_name, device_type_dest_id));
         } // end for
     }
     catch (const std::exception &e) {
@@ -1402,7 +1405,8 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
     // result set of found devices 
     std::set< device_info_t > resultdevices;
                                                       
-    auto adevice = std::make_tuple(element_id, device_name, device_type_name, device_type_id);
+    auto adevice = std::make_tuple(element_id, device_name, 
+                                            device_type_name, device_type_id);
     // start device should be included also into the result set
     resultdevices.insert (adevice);
     newdevices.insert (adevice);
@@ -1437,8 +1441,8 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
                                       set("idlinktype", linktype).
                                       select();
             
-            log_debug ("for element_id= %" PRIu32 " was %u powerlinks selected", 
-                                            cur_element_id, result.size());
+            log_debug ("for element_id= %" PRIu32 " was %u "
+                    "powerlinks selected", cur_element_id, result.size());
             
             // Go through the selected links
             for ( auto &row: result )
@@ -1633,13 +1637,15 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             assert ( id_asset_element_dest );
             
             log_debug ("for");
-            log_debug ("asset_element_id_src = %" PRIu32, id_asset_element_src);
-            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("asset_element_id_src = %" PRIu32, 
+                                                    id_asset_element_src);
+            log_debug ("asset_element_id_dest = %" PRIu32, 
+                                                    id_asset_element_dest);
             log_debug ("src_out = %s", src_out.c_str());
             log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
-                id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
+              id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
         } // end for
     }
     catch (const std::exception &e) {
@@ -1660,7 +1666,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
         // (for parents) here
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v1.name, v2.name AS type_name, v.id_asset_element, v2.id_asset_device_type"
+            "   v1.name, v2.name AS type_name,"
+            "   v.id_asset_element, v2.id_asset_device_type"
             " FROM"
             "   v_bios_asset_group_relation v,"
             "   t_bios_asset_element v1,"
@@ -1703,7 +1710,8 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
             log_debug ("device_type_id = %" PRIu16, device_type_id);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name, device_type_id));
+                    id_asset_element, device_name, device_type_name,
+                    device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
@@ -1734,7 +1742,8 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Connection conn = tntdb::connectCached(url);
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id_asset_element, v.name , v.type_name, v.id_asset_device_type" 
+            "   v.id_asset_element, v.name,"
+            "   v.type_name, v.id_asset_device_type" 
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
@@ -1774,7 +1783,8 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             log_debug ("asset_element_id = %" PRIu32, id_asset_element);
             
             resultdevices.insert (std::make_tuple(
-                    id_asset_element, device_name, device_type_name, device_type_id));
+                    id_asset_element, device_name, 
+                    device_type_name, device_type_id));
         } // end for
     }
     catch (const std::exception &e) {
@@ -1837,13 +1847,16 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
             assert ( id_asset_element_dest );
             
             log_debug ("for");
-            log_debug ("asset_element_id_src = %" PRIu32, id_asset_element_src);
-            log_debug ("asset_element_id_dest = %" PRIu32, id_asset_element_dest);
+            log_debug ("asset_element_id_src = %" PRIu32, 
+                                                id_asset_element_src);
+            log_debug ("asset_element_id_dest = %" PRIu32, 
+                                                id_asset_element_dest);
             log_debug ("src_out = %s", src_out.c_str());
             log_debug ("dest_in = %s", dest_in.c_str());
 
             resultpowers.insert  (std::make_tuple(
-                id_asset_element_src, src_out, id_asset_element_dest, dest_in)); 
+                id_asset_element_src, src_out, 
+                id_asset_element_dest, dest_in)); 
         } // end for
     }
     catch (const std::exception &e) {
