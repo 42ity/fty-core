@@ -512,7 +512,7 @@ netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
 bin_PROGRAMS += 	server-agent
 
-server_agent_SOURCES =	src/agents/server-agent/server-agent.cpp
+server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
 
@@ -521,7 +521,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	db-ng
-db_ng_SOURCES =		src/agents/dbstore/db-ng.cpp \
+db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -617,7 +617,7 @@ BUILT_SOURCES_bios_web_la = \
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/mock.cc   src/web/src/sasl.cc          \
-                      src/web/src/tokens.cc src/shared/data.cpp          \
+                      src/web/src/tokens.cc src/shared/data.cc           \
                       src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
