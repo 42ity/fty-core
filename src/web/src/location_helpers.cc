@@ -9,11 +9,12 @@
 #include "asset_msg.h"
 #include "location_helpers.h"
 
-// Note: in the future, if more than one operation requires parsing these strings on input,
-//       we should consider moving this to general helpers.cpp file and rewrite these fun-
-//       ctions for a more general case
-//       e.g. namespace shared:: src/include/utils.h src/shared/utils.c and have asset_types
-//       in src/include. There is no need to wrap a class around simple functions.
+// Note: in the future, if more than one operation requires parsing these
+//       strings on input, we should consider moving this to a general
+//       helpers.cc file and rewrite these functions for a more general case
+//       e.g. namespace shared:: src/include/utils.h src/shared/utils.c and
+//       have asset_types in src/include.
+//       There is no need to wrap a class around simple functions.
 
 // TODO:case "api/v1/asset/5" (missing element type, i.e. room, datacenter...) not covered
 int element_id (const std::string& from, int& element_id) {
