@@ -269,6 +269,13 @@ const char *
 ymsg_t *
     bios_agent_content (bios_agent_t *self);
 
+const char * ymsg_get_string(ymsg_t* msg, const char *key);
+int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
+int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
+void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
+void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
+void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
+
 #ifdef __cplusplus
 }
 #endif
