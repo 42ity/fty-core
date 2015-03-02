@@ -45,18 +45,31 @@ client_PROGRAMS =
 
 TESTS =
 
+# Initialize some more variables
+pkgconfigdir =			$(libdir)/pkgconfig
+pkgconfig_DATA =
+pkginclude_HEADERS =
+lib_LTLIBRARIES =
+
 # Named by analogy from configure'd myDOXDIR for doxygen
 myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools src/api
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
 # Note that docker/README is processed by this root Makefile, below...
 SUBDIRS +=	docker
 endif
+
+# ----------------------------------------------------------------------
+# List of header files. The purpose of this list is not dependency
+# tracking (which is automatic), but to ensure these files are
+# distributed by "make dist" although not "installed".
+
+dist_noinst_HEADERS = 
 
 # Clean up products of configure script
 DISTCLEANFILES += \
@@ -94,15 +107,19 @@ DISTCHECK_CONFIGURE_FLAGS = \
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
 		-include $(abs_top_builddir)/config.h \
+		-I$(abs_top_builddir)/include \
+		-I$(abs_top_srcdir)/include \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
+		-I$(abs_top_builddir)/src/msg \
+		-I$(abs_top_srcdir)/src/msg \
 		-D__STDC_FORMAT_MACROS
 
 AM_CFLAGS = \
 		${my_CFLAGS} \
-		-fvisibility=hidden \
+		$(CFLAG_VISIBILITY) \
 		-ffunction-sections \
 		-fdata-sections \
 		$(LIBZMQ_CFLAGS) \
@@ -111,7 +128,7 @@ AM_CFLAGS = \
 
 AM_CXXFLAGS = \
 		${my_CXXFLAGS} \
-		-fvisibility=hidden \
+		$(CXXFLAG_VISIBILITY) \
 		-ffunction-sections \
 		-fdata-sections
 
@@ -120,14 +137,19 @@ AM_LDFLAGS = \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
 
-# ----------------------------------------------------------------------
-# List of header files. The purpose of this list is not dependency
-# tracking (which is automatic), but to ensure these files are
-# distributed by "make dist" although not "installed".
+#----------------------------------------------------------------------
+# Ensure dependency building for $BIOS public API
 
-dist_noinst_HEADERS = 
+libbiosapi.la: $(abs_top_builddir)/libbiosapi.la
+
+$(abs_top_builddir)/libbiosapi.la:
+	( cd $(abs_top_builddir)/src/api && $(MAKE) all && $(MAKE) "$@" )
+
 
 #----------------------------------------------------------------------
+# Some of our code is arranged into private libraries used during
+# build, but not published or distributed outside the build-tree.
+
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
 libpriv_defs_la_SOURCES = 	src/include/defs.c \
@@ -192,12 +214,12 @@ libpriv_db_la_SOURCES = \
 			src/persist/measure_types.h \
 			src/persist/dbhelpers.cc \
 			src/persist/dbhelpers.h \
-			tools/dbpath.cpp
+			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
 # that use the database (linked into libpriv-db)
-BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.cpp
-DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cpp
+BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.cc
+DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -207,23 +229,23 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
-			src/include/asset_msg.c \
-			src/include/asset_msg.h \
-			src/include/common_msg.c \
-			src/include/common_msg.h \
-			src/include/netdisc_msg.c \
-			src/include/netdisc_msg.h \
-			src/include/nmap_msg.c \
-			src/include/nmap_msg.h \
-			src/include/compute_msg.c \
-			src/include/compute_msg.h \
-			src/include/powerdev_msg.c \
-			src/include/powerdev_msg.h
+			src/msg/asset_msg.c \
+			src/msg/asset_msg.h \
+			src/msg/common_msg.c \
+			src/msg/common_msg.h \
+			src/msg/netdisc_msg.c \
+			src/msg/netdisc_msg.h \
+			src/msg/nmap_msg.c \
+			src/msg/nmap_msg.h \
+			src/msg/compute_msg.c \
+			src/msg/compute_msg.h \
+			src/msg/powerdev_msg.c \
+			src/msg/powerdev_msg.h
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
-			src/drivers/nmap/nmap-parse.h \
-			src/drivers/nmap/nmap-parse.cc
+			src/agents/nmap/nmap-parse.h \
+			src/agents/nmap/nmap-parse.cc
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -451,7 +473,7 @@ test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 bin_PROGRAMS +=		test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
-			src/web/src/location_helpers.cpp
+			src/web/src/location_helpers.cc
 
 test_web_LDADD = 	libpriv-test-run.la \
 			libpriv-log.la
@@ -466,7 +488,7 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 ###
 check_PROGRAMS += 	test-nmap-parse
-test_nmap_parse_SOURCES = tests/drivers/nmap/test-nmap-parse.cc
+test_nmap_parse_SOURCES = tests/agents/nmap/test-nmap-parse.cc
 test_nmap_parse_LDADD = \
 			libpriv-nmap-parse.la \
 			libpriv-defs.la \
@@ -476,9 +498,9 @@ test_nmap_parse_LDADD = \
 test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
 test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/drivers/nmap/ \
-			-DTDIR=$(abs_top_srcdir)/tests/drivers/nmap/
-EXTRA_DIST +=		tests/drivers/nmap/mbt-lab.xml
+			-I$(abs_top_srcdir)/src/agents/nmap/ \
+			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
+EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 ###
 
@@ -491,13 +513,13 @@ TESTS += $(check_SCRIPTS)
 
 client_PROGRAMS += 	netmon
 netmon_SOURCES = \
-			src/drivers/netmon/linux \
-			src/drivers/netmon/netmon.c \
-			src/drivers/netmon/msg_send.cc \
-			src/drivers/netmon/msg_send.h
+			src/agents/netmon/linux \
+			src/agents/netmon/netmon.c \
+			src/agents/netmon/msg_send.cc \
+			src/agents/netmon/msg_send.h
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/drivers/netmon \
+			-I$(abs_top_srcdir)/src/agents/netmon \
 			-I$(abs_top_srcdir)/src/simple
 
 netmon_LDADD = \
@@ -510,7 +532,7 @@ netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
 bin_PROGRAMS += 	server-agent
 
-server_agent_SOURCES =	src/drivers/server-agent/server-agent.cpp
+server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
 
@@ -519,7 +541,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	db-ng
-db_ng_SOURCES =		src/persist/db-ng.cpp \
+db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -533,24 +555,26 @@ db_ng_LDADD = \
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/tools
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
 			$(top_srcdir)/tools/dbinit.h
 
 dist_noinst_HEADERS += \
-			src/include/asset_msg.h \
+			src/msg/asset_msg.h \
 			src/shared/asset_types.h \
-			src/include/powerdev_msg.h \
-			src/drivers/nut/nut-driver.h
+			src/msg/powerdev_msg.h \
+			src/agents/nut/nut-driver.h
 
 
 client_PROGRAMS +=	driver-nmap
 
 driver_nmap_SOURCES = \
-			src/drivers/nmap/nmap-driver.h \
-			src/drivers/nmap/nmap.cc
+			src/agents/nmap/nmap-driver.h \
+			src/agents/nmap/nmap.cc
 
 driver_nmap_LDADD = \
 			libpriv-defs.la \
@@ -580,8 +604,8 @@ dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	driver-nut
 
 driver_nut_SOURCES = \
-			src/drivers/nut/nut-driver.cc \
-			src/drivers/nut/nut-actor.cc \
+			src/agents/nut/nut-driver.cc \
+			src/agents/nut/nut-actor.cc \
 			src/shared/upsstatus.cc
 
 driver_nut_LDADD = \
@@ -611,9 +635,9 @@ BUILT_SOURCES_bios_web_la = \
                       src/include/git_details_override.h
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
-                      src/web/src/location_helpers.cpp                   \
-                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/tokens.cpp src/shared/data.cpp         \
+                      src/web/src/location_helpers.cc                    \
+                      src/web/src/mock.cc   src/web/src/sasl.cc          \
+                      src/web/src/tokens.cc src/shared/data.cc           \
                       src/shared/upsstatus.cc
 
 # Ensure these files are auto-made before others
@@ -703,15 +727,16 @@ endif
 EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/dbpath.h \
-			$(top_srcdir)/tools/dbpath.cpp.in \
-			$(top_builddir)/tools/dbpath.cpp \
+			$(top_srcdir)/tools/dbpath.cc.in \
+			$(top_builddir)/tools/dbpath.cc \
 			$(top_srcdir)/tools/bios-*.service.in \
-			$(top_srcdir)/src/*_msg.xml \
+			$(top_srcdir)/include/*.h \
+			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/drivers/netmon/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*.h \
-			$(top_srcdir)/src/drivers/netmon/*/*/*.h \
-			$(top_srcdir)/src/drivers/*/*.h \
+			$(top_srcdir)/src/agents/netmon/*.h \
+			$(top_srcdir)/src/agents/netmon/*/*.h \
+			$(top_srcdir)/src/agents/netmon/*/*/*.h \
+			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
 			$(top_srcdir)/src/web/include/*.h
@@ -853,7 +878,7 @@ MAPPED_TXT_DOCS_PLAINTEXT = \
 MAPPED_TXT_DOCS_ASCIIDOC = \
 	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
 	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
-	src/drivers/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
+	src/agents/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
 
 if ENABLE_DOCKER_SUPPORT
 MAPPED_TXT_DOCS_ASCIIDOC += \
