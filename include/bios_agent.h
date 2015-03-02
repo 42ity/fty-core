@@ -170,6 +170,29 @@ BIOS_EXPORT int
 BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
 
+
+BIOS_EXPORT int
+    ymsg_rowid (ymsg_t *self);
+BIOS_EXPORT int
+    ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
+BIOS_EXPORT ymsg_t*
+    ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo);
+BIOS_EXPORT ymsg_t*
+    ymsg_generate_fail (int errtype, int errsubtype, const char *errmsg, zhash_t *addinfo);
+
+/*!
+ \brief Get number of rows affected of ROZP REPLY message
+ \return  number of rows affected. If key is not specified, then -1.
+*/
+BIOS_EXPORT int
+    ymsg_affected_rows (ymsg_t *self);
+
+/*!
+ \brief Set number of rows affected in ROZP REPLY message
+*/
+BIOS_EXPORT int
+    ymsg_set_affected_rows (ymsg_t *self, int n);
+
 /*!
  \brief Get status value of ROZP REPLY message
  \return
