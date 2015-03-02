@@ -262,7 +262,7 @@ CREATE TABLE t_bios_asset_ext_attributes(
   keytag                    VARCHAR(40)  NOT NULL,
   value                     VARCHAR(255) NOT NULL,
   id_asset_element          INT UNSIGNED NOT NULL,
-  read_only                 TINYINT      NOT NULL,
+  read_only                 TINYINT      NOT NULL DEFAULT 0,
   
   PRIMARY KEY (id_asset_ext_attribute),
   
