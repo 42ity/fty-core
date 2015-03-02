@@ -229,6 +229,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
+			src/api/ymsg.c \
+			src/api/bios_agent.c \
 			src/msg/asset_msg.c \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
@@ -241,6 +243,7 @@ libpriv_proto_la_SOURCES = \
 			src/msg/compute_msg.h \
 			src/msg/powerdev_msg.c \
 			src/msg/powerdev_msg.h
+libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS}
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
@@ -467,7 +470,7 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools
 
-test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
 ###
 bin_PROGRAMS +=		test-web
@@ -485,6 +488,13 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
+
+check_PROGRAMS +=       test-api
+test_api_SOURCES =      tests/api/api.cpp
+test_api_LDADD =        libpriv-proto.la libpriv-log.la libpriv-test-run.la
+test_api_LDFLAGS =      -lmlm $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
+test_api_CPPFLAGS =     -I$(abs_top_srcdir)/tests/include \
+                        -I$(abs_top_srcdir)/include
 
 ###
 check_PROGRAMS += 	test-nmap-parse
