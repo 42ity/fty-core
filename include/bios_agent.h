@@ -42,11 +42,6 @@ extern "C" {
 # endif
 #endif
 
-struct _bios_agent_t {
-    mlm_client_t *client;   // malamute client instance
-    void* seq;              // message sequence number
-};
-
 typedef struct _bios_agent_t bios_agent_t;
 
 /*!
