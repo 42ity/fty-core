@@ -36,8 +36,12 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 [ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
+    echo "Cannot find $BUILDSUBDIR/config.status, using system binaries..."
+    export PATH="/usr/bin:/usr/lib:/usr/libexec:/usr/lib/bios:/usr/libexec/bios:$PATH"
+else
+    echo "Found $BUILDSUBDIR/config.status, using built binaries..."
     echo "Search path: $CHECKOUTDIR, $PWD"
+    export PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
 fi
 
 # Simple check for whether sudo is needed to restart saslauthd
@@ -118,20 +122,11 @@ mlm_server
 }
 
 start_daemon(){
-    prefixw=""
+    prefix=""
     if which ${1} >/dev/null 2>&1; then
-        prefixw="`which ${1}`"
-        prefixw="`dirname "$prefixw"`"
+        prefix="`which ${1}`"
+        prefix="`dirname "$prefix"`"
     fi
-
-    # Apparently from pre-existing logic, an older "prefix" may remain
-    for prefix in "$prefix" "${PWD}" "$BUILDSUBDIR" "$CHECKOUTDIR" \
-        ~/bin ~/lib ~/libexec ~/lib/bios ~/libexec/bios $prefixw \
-    ; do
-        if [ -n "$prefix" ] && [ -d "$prefix" -a -x "$prefix/${1}" ]; then
-            break
-        fi
-    done
 
     if [ -x "${prefix}/${1}" ] ; then
         /bin/rm -rf ~/${1}.log
