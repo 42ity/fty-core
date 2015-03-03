@@ -174,7 +174,7 @@ bios_agent_recv (bios_agent_t *self) {
     return ymsg;
 }
 
-BIOS_EXPORT int
+BIOS_EXPORT uint64_t
 ymsg_rowid (ymsg_t *self) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return -1;
@@ -234,7 +234,7 @@ ymsg_set_errsubtype (ymsg_t *self, int error_subtype) {
     return error_subtype;
 }
 
-BIOS_EXPORT char*
+BIOS_EXPORT const char*
 ymsg_errmsg (ymsg_t *self) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return NULL;
@@ -264,6 +264,16 @@ ymsg_addinfo (ymsg_t *self) {
     return NULL;
 }
 
+BIOS_EXPORT zhash_t*
+ymsg_get_addinfo (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return NULL;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_ADDINFO, NULL);
+    return NULL;
+}
+
 BIOS_EXPORT int
 ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
@@ -273,8 +283,6 @@ ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo) {
     //ymsg_aux_insert (self, KEY_ERROR_ADDINFO, "%d", addinfo);
     return 0;
 }
-
-
 
 BIOS_EXPORT ymsg_t*
 ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo)

@@ -166,7 +166,8 @@ BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
 
 
-BIOS_EXPORT int
+// TODO ACE: write documentation
+BIOS_EXPORT uint64_t
     ymsg_rowid (ymsg_t *self);
 BIOS_EXPORT int
     ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
@@ -178,12 +179,18 @@ BIOS_EXPORT int
     ymsg_errsubtype (ymsg_t *self);
 BIOS_EXPORT int
     ymsg_set_errsubtype (ymsg_t *self, int error_subtype);
-BIOS_EXPORT char*
+BIOS_EXPORT const char*
     ymsg_errmsg (ymsg_t *self);
 BIOS_EXPORT int
     ymsg_set_errmsg (ymsg_t *self, const char *error_msg);
+
+// without ownership transfer
 BIOS_EXPORT zhash_t*
-    ymsg_addinfo (ymsg_t *self);
+    ymsg_addinfo (ymsg_t *self);   
+
+// transfer ownership
+BIOS_EXPORT zhash_t*
+    ymsg_get_addinfo (ymsg_t *self);
 BIOS_EXPORT int
     ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo);
 BIOS_EXPORT ymsg_t*
