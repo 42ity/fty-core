@@ -16,6 +16,23 @@
 #define YES     "yes"
 #define NO      "no"
 
+// This field should be used, if there is no more suitable space for the information
+// keytag      | value
+// --------------------
+// add_info    | x_a;x_b;x_c;
+// x_a         | "something1"
+// x_b         | "something2"
+// x_c         | "something3"
+#define KEY_ADD_INFO      "add_info"
+// "persistence" always return this field for: insert/update/delete requests
+#define KEY_AFFECTED_ROWS "affected_rows"
+// these fields are valid only if KEY_STATUS = ERROR
+#define KEY_ERROR_TYPE     "error_type"
+#define KEY_ERROR_SUBTYPE  "error_subtype"
+#define KEY_ERROR_MSG      "error_msg"
+// this field is valid only if KEY_STATUS = OK
+#define KEY_ROWID          "rowid"
+
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
     void* seq;              // message sequence number
@@ -158,6 +175,158 @@ bios_agent_recv (bios_agent_t *self) {
     }
     ymsg_t *ymsg = ymsg_decode (&zmsg);
     return ymsg;
+}
+
+BIOS_EXPORT uint64_t
+ymsg_rowid (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ROWID, NULL);
+    return 12345;
+}
+
+BIOS_EXPORT int
+ymsg_set_rowid (ymsg_t *self, uint64_t rowid) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO
+    ymsg_aux_insert (self, KEY_ROWID, "%d", rowid);
+    return rowid;
+}
+
+BIOS_EXPORT int
+ymsg_errtype (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_TYPE, NULL);
+    return 12345;
+}
+
+BIOS_EXPORT int
+ymsg_set_errtype (ymsg_t *self, int error_type) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO
+    //ymsg_aux_insert (self,KEY_ERROR_TYPE , "%d", error_type);
+    return error_type;
+}
+
+BIOS_EXPORT int
+ymsg_errsubtype (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_SUBTYPE, NULL);
+    return 12345;
+}
+
+BIOS_EXPORT int
+ymsg_set_errsubtype (ymsg_t *self, int error_subtype) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO
+    //ymsg_aux_insert (self,KEY_ERROR_SUBTYPE, "%d", error_subtype);
+    return error_subtype;
+}
+
+BIOS_EXPORT const char*
+ymsg_errmsg (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return NULL;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_MSG, NULL);;
+    return NULL;
+}
+
+BIOS_EXPORT int
+ymsg_set_errmsg (ymsg_t *self, const char *error_msg) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO
+    ymsg_aux_insert (self, KEY_ERROR_MSG, "%s", error_msg);
+    return 0;
+}
+
+BIOS_EXPORT zhash_t*
+ymsg_addinfo (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return NULL;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_ADDINFO, NULL);
+    return NULL;
+}
+
+BIOS_EXPORT zhash_t*
+ymsg_get_addinfo (ymsg_t *self) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return NULL;
+    }
+    //TODO wait Karol
+    //rowid = ymsg_aux_string (self, KEY_ERROR_ADDINFO, NULL);
+    return NULL;
+}
+
+BIOS_EXPORT int
+ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo) {
+    if (!self || ymsg_id (self) != YMSG_REPLY) {
+        return -1;
+    }
+    //TODO
+    //ymsg_aux_insert (self, KEY_ERROR_ADDINFO, "%d", addinfo);
+    return 0;
+}
+
+BIOS_EXPORT ymsg_t*
+ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo)
+{
+    ymsg_t *resultmsg = ymsg_new (YMSG_REPLY);
+    ymsg_set_rowid (resultmsg, rowid);
+    if ( addinfo != NULL )
+        ymsg_set_addinfo (resultmsg, addinfo);
+    return resultmsg;
+}
+
+BIOS_EXPORT ymsg_t*
+ymsg_generate_fail (int errtype, int errsubtype, const char *errmsg, zhash_t *addinfo)
+{
+    ymsg_t* resultmsg = ymsg_new (YMSG_REPLY);
+    ymsg_set_errtype    (resultmsg, errtype);
+    ymsg_set_errsubtype (resultmsg, errsubtype);
+    ymsg_set_errmsg     (resultmsg, errmsg );
+    if ( addinfo != NULL )
+        ymsg_set_addinfo  (resultmsg, addinfo);
+    return resultmsg;
+}
+
+BIOS_EXPORT int
+ymsg_affected_rows (ymsg_t *self)
+{
+    if (!self || ymsg_id (self) != YMSG_REPLY)
+        return -1;
+    // TODO wait KAROL
+    //int value = ymsg_aux_number (self, KEY_AFFECTED_ROWS, NULL);
+    return 3;
+}
+
+BIOS_EXPORT int
+ymsg_set_affected_rows (ymsg_t *self, int n)
+{
+    if (!self || ymsg_id (self) != YMSG_REPLY)
+        return -1;
+    // TODO wait KAROL
+    //ymsg_aux_insert (self, KEY_AFFECTED_ROWS, "%d", n);
+    return 1;
 }
 
 BIOS_EXPORT int
