@@ -259,8 +259,8 @@ int main(int argc, char *argv[] ) {
     std::time_t timestamp = std::time(NULL);
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
 
-    mlm_client_t *client = mlm_client_new(addr, 1000, "NUT");
-    if (!client) {
+    mlm_client_t *client = mlm_client_new();
+    if (!client || mlm_client_connect(client, addr, 1000, "NUT")) {
         log_error ("driver-nut: server not reachable at ipc://@/malamute\n");
         return 1;
     }

@@ -504,9 +504,9 @@ int main(int argc, char **argv) {
 
     unsigned groups = ~RTMGRP_TC;
 
-    mlm_client_t *broadcast = mlm_client_new (MLM_ENDPOINT, 1000, "NETMON");
+    mlm_client_t *broadcast = mlm_client_new();
     // Note: it might make sense to timeout retry a few times
-    if (!broadcast) {
+    if(!broadcast || mlm_client_connect(broadcast, MLM_ENDPOINT, 1000, "NETMON")) {
         fprintf (stderr, "malamute server not reachable at %s\n", MLM_ENDPOINT);
         exit (3);
     }
