@@ -97,6 +97,12 @@ global:
         ymsg_get_response;
         ymsg_set_response;
         ymsg_test;
+		ymsg_set_string;
+		ymsg_set_int32;
+		ymsg_set_int64;
+		ymsg_get_string;
+		ymsg_get_int32;
+		ymsg_get_int64;
 
         is_app;
         is_ymsg;
