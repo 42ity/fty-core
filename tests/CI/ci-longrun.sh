@@ -28,19 +28,21 @@
 SCRIPTDIR=$(dirname $0)
 CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 CFGDIR=""
-USER=nut
-PASSWORD=secret
+NUTUSER=nut
+NUTPASSWORD=secret
+DBUSER=root
+DATABASE=box_utf8
 
 nut_cfg_dir() {
     for cfgd in "/etc/ups" "/etc/nut"; do
-	if [ -d "$cfgd" ] ; then
+        if [ -d "$cfgd" ] ; then
             CFGDIR="$cfgd"
             break
-	fi
+        fi
     done
     if [ "$CFGDIR" = "" ] ; then
-	echo "NUT config dir not found"
-	exit 1
+        echo "NUT config dir not found"
+        exit 1
     fi
 }
 
@@ -50,7 +52,7 @@ set_value_in_ups() {
     local VALUE=$3
 
     sed -i -r -e "s/^$PARAM *:.+$/$PARAM: $VALUE/i" $CFGDIR/$UPS.dev
-    upsrw -s $PARAM=$VALUE -u $USER -p $PASSWORD $UPS@localhost >/dev/null 2>&1
+    upsrw -s $PARAM=$VALUE -u $NUTUSER -p $NUTPASSWORD $UPS@localhost >/dev/null 2>&1
 }
 
 get_value_from_ups() {
@@ -60,87 +62,87 @@ get_value_from_ups() {
 }
 
 do_select(){
-    echo "$1;" | mysql -u root box_utf8 | tail -n +2
+    echo "$1;" | mysql -u $DBUSER $DATABASE | tail -n +2
 }
 
 create_epdu_dev_file() {
     local FILE=$1
     echo -e \
-	"device.type: epdu" \
-	"\ndevice.model: A12" \
-	"\ndevice.mfr: BIOS" \
-	"\ndevice.serial: $(echo $FILE | md5sum | cut -d\  -f 1 )" \
-	"\ndevice.description: epdu $(basename $FILE)" \
-	"\ndevice.contact: root@bios" \
-	"\ndevice.location: server room 10" \
-	"\ninput.frequency: 50" \
-	"\ninput.load: 23" \
-	"\ninput.power: 240" \
-	"\noutlet.current: 1.00" \
-	"\noutlet.voltage: 230.0" \
-	"\noutlet.realpower: 20" \
-	"\noutlet.1.current: 1.3" \
-	"\noutlet.1.realpower: 25" \
-	"\noutlet.1.voltage: 230" \
-	"\noutlet.2.current: 1.3" \
-	"\noutlet.2.realpower: 25" \
-	"\noutlet.2.voltage: 230" \
-	"\noutlet.3.current: 1.3" \
-	"\noutlet.3.realpower: 25" \
-	"\noutlet.3.voltage: 230" \
-	"\noutlet.4.current: 1.3" \
-	"\noutlet.4.realpower: 25" \
-	"\noutlet.4.voltage: 230" \
-	> $FILE
+        "device.type: epdu" \
+        "\ndevice.model: A12" \
+        "\ndevice.mfr: BIOS" \
+        "\ndevice.serial: $(echo $FILE | md5sum | cut -d\  -f 1 )" \
+        "\ndevice.description: epdu $(basename $FILE)" \
+        "\ndevice.contact: root@bios" \
+        "\ndevice.location: server room 10" \
+        "\ninput.frequency: 50" \
+        "\ninput.load: 23" \
+        "\ninput.power: 240" \
+        "\noutlet.current: 1.00" \
+        "\noutlet.voltage: 230.0" \
+        "\noutlet.realpower: 20" \
+        "\noutlet.1.current: 1.3" \
+        "\noutlet.1.realpower: 25" \
+        "\noutlet.1.voltage: 230" \
+        "\noutlet.2.current: 1.3" \
+        "\noutlet.2.realpower: 25" \
+        "\noutlet.2.voltage: 230" \
+        "\noutlet.3.current: 1.3" \
+        "\noutlet.3.realpower: 25" \
+        "\noutlet.3.voltage: 230" \
+        "\noutlet.4.current: 1.3" \
+        "\noutlet.4.realpower: 25" \
+        "\noutlet.4.voltage: 230" \
+        > $FILE
 }
 
 create_ups_dev_file() {
     local FILE=$1
     echo -e \
-	"device.type: ups" \
-	"\ndevice.model: B32" \
-	"\ndevice.mfr: BIOS" \
-	"\ndevice.serial: $(echo $FILE | md5sum | cut -d\  -f 1 )" \
-	"\ndevice.description: ups $(basename $FILE)" \
-	"\ndevice.contact: root@bios" \
-	"\ndevice.location: server room 10" \
-	"\nbattery.charge: 90" \
-	"\noutput.current: 1.20" \
-	"\noutput.voltage: 230.0" \
-	"\nups.realpower: 25" \
-	"\nups.temperature: 25" \
-	"\noutlet.realpower: 20" \
-	"\nups.load: 10" \
-	"\nups.status: OL" \
-	> $FILE
+        "device.type: ups" \
+        "\ndevice.model: B32" \
+        "\ndevice.mfr: BIOS" \
+        "\ndevice.serial: $(echo $FILE | md5sum | cut -d\  -f 1 )" \
+        "\ndevice.description: ups $(basename $FILE)" \
+        "\ndevice.contact: root@bios" \
+        "\ndevice.location: server room 10" \
+        "\nbattery.charge: 90" \
+        "\noutput.current: 1.20" \
+        "\noutput.voltage: 230.0" \
+        "\nups.realpower: 25" \
+        "\nups.temperature: 25" \
+        "\noutlet.realpower: 20" \
+        "\nups.load: 10" \
+        "\nups.status: OL" \
+        > $FILE
 }
 
 create_nut_config() {
     echo "\nMODE=standalone" > $CFGDIR/nut.conf 
     echo -e \
-	"\n[epdu101_1_]" \
-	"\ndriver=dummy-ups" \
-	"\nport=epdu101_1_.dev" \
-	"\n" \
-	"\n[epdu101_2_]" \
-	"\ndriver=dummy-ups" \
-	"\nport=epdu101_2_.dev" \
-	"\n" \
-	"\n[ups103_1_]" \
-	"\ndriver=dummy-ups" \
-	"\nport=ups103_1_.dev" \
-	"\n" \
-	"\n[ups103_2_]" \
-	"\ndriver=dummy-ups" \
-	"\nport=ups103_2_.dev" \
-	"\n" \
-	> $CFGDIR/ups.conf
+        "\n[epdu101_1_]" \
+        "\ndriver=dummy-ups" \
+        "\nport=epdu101_1_.dev" \
+        "\n" \
+        "\n[epdu101_2_]" \
+        "\ndriver=dummy-ups" \
+        "\nport=epdu101_2_.dev" \
+        "\n" \
+        "\n[ups103_1_]" \
+        "\ndriver=dummy-ups" \
+        "\nport=ups103_1_.dev" \
+        "\n" \
+        "\n[ups103_2_]" \
+        "\ndriver=dummy-ups" \
+        "\nport=ups103_2_.dev" \
+        "\n" \
+        > $CFGDIR/ups.conf
     echo -e \
-	"\n[$USER]" \
-	"\npassword=$PASSWORD" \
-	"\nactions=SET" \
-	"\ninstcmds=ALL" \
-	> $CFGDIR/upsd.users
+        "\n[$NUTUSER]" \
+        "\npassword=$NUTPASSWORD" \
+        "\nactions=SET" \
+        "\ninstcmds=ALL" \
+        > $CFGDIR/upsd.users
     create_epdu_dev_file $CFGDIR/epdu101_1_.dev
     create_epdu_dev_file $CFGDIR/epdu101_2_.dev
     create_ups_dev_file  $CFGDIR/ups103_1_.dev
@@ -167,15 +169,15 @@ new_value() {
     local ITEM=$2
     local VALUE=$(get_value_from_ups $DEVICE $ITEM)
     case "$ITEM" in
-	ups.status)
-	    statuses=("OL" "OB DISCHRG" "OL CHRG" "BYPASS" "OVER")
-	    cnt=${#statuses[@]}
-	    i=$(expr $RANDOM % $cnt)
-	    echo ${statuses[$i]}
-	    ;;
-	battery.charge)
-	    # charge 0 - 100
- 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
+        ups.status)
+            statuses=("OL" "OB DISCHRG" "OL CHRG" "BYPASS" "OVER")
+            cnt=${#statuses[@]}
+            i=$(expr $RANDOM % $cnt)
+            echo ${statuses[$i]}
+            ;;
+        battery.charge)
+            # charge 0 - 100
+            awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 20 - 10 )/100
@@ -184,10 +186,10 @@ new_value() {
                    if( newvalue > 100 ) newvalue = 100;
                    printf( "%.2f\n", newvalue );
                 }'
-	    ;;
-	*.load)
-	    # load 0 - 120
- 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
+            ;;
+        *.load)
+            # load 0 - 120
+            awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
@@ -196,10 +198,10 @@ new_value() {
                    if( newvalue > 120 ) newvalue = 120;
                    printf( "%.2f\n", newvalue );
                 }'
-	    ;;
-	*)
-	    # default only positive number
- 	    awk -vVALUE=$VALUE -vSEED=$RANDOM '
+            ;;
+        *)
+            # default only positive number
+            awk -vVALUE=$VALUE -vSEED=$RANDOM '
                 BEGIN{
                    srand(SEED);
                    change=(rand() * 15 - 7.5 )/100
@@ -207,7 +209,7 @@ new_value() {
                    if( newvalue < 0 ) newvalue = 0;
                    printf( "%.2f\n", newvalue );
                 }'
-	    ;;
+            ;;
     esac
 }
 
@@ -217,14 +219,14 @@ create_random_samples() {
     local FREQ=$2
     local TIME=0
     while [ $TIME -lt $TOTALTIME ] ; do
-	I=$(expr $RANDOM % 4)
-	DEVICE=${DEVICES[$I]}
-	ITEM=$(random_thing $DEVICE)
-	NEWVALUE=$(new_value $DEVICE $ITEM)
-	SLEEP=$(expr $RANDOM % $FREQ)
-	echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
-	set_value_in_ups $DEVICE $ITEM $NEWVALUE
-	TIME=$(expr $TIME + $SLEEP)
+        I=$(expr $RANDOM % 4)
+        DEVICE=${DEVICES[$I]}
+        ITEM=$(random_thing $DEVICE)
+        NEWVALUE=$(new_value $DEVICE $ITEM)
+        SLEEP=$(expr $RANDOM % $FREQ)
+        echo "nut:$DEVICE:$ITEM:$NEWVALUE:$SLEEP"
+        set_value_in_ups $DEVICE $ITEM $NEWVALUE
+        TIME=$(expr $TIME + $SLEEP)
     done
 }
 
@@ -233,38 +235,38 @@ produce_events(){
     LASTCHECK=$(date +%s)
     while read sample
     do
-	TYPE=$(cut <<< "$sample" -d:  -f1)
-	DEVICE=$(cut <<< "$sample" -d:  -f2)
-	ITEM=$(cut <<< "$sample" -d:  -f3)
-	VALUE=$(cut <<< "$sample" -d:  -f4)
-	SLEEPAFTER=$(cut <<< "$sample" -d:  -f5)
-	case "$TYPE" in
-	    nut)
-		set_value_in_ups $DEVICE $ITEM $VALUE
-		echo "$(date +%T) $DEVICE $ITEM = $VALUE"
-		;;
-	esac
-	sleep $(expr $SLEEPAFTER )
-	if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
-	    # 5 min since last check
-	    # check measurement flow
-	    NEWCNT=$(do_select "select count(*) from t_bios_measurements")
-	    if [ $NEWCNT = $MEASUREMENTS ] ; then
-		# no data flow
-		echo "ERROR: nothing appeared in measurement table since last check ($NEWCNT lines in table)"
-	    else
-		echo "OK: new measurements ($NEWCNT lines in table)"
-	    fi
-	    MEASUREMENTS=$NEWCNT
-	    # check servises
-	    if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
-		echo "OK: all services running"
-	    else
-		echo "ERROR: some services are not running"
-		$SCRIPTDIR/ci-rc-bios.sh --status
-	    fi
-	    LASTCHECK=$(date +%s)
-	fi
+        TYPE=$(cut <<< "$sample" -d:  -f1)
+        DEVICE=$(cut <<< "$sample" -d:  -f2)
+        ITEM=$(cut <<< "$sample" -d:  -f3)
+        VALUE=$(cut <<< "$sample" -d:  -f4)
+        SLEEPAFTER=$(cut <<< "$sample" -d:  -f5)
+        case "$TYPE" in
+            nut)
+                set_value_in_ups $DEVICE $ITEM $VALUE
+                echo "$(date +%T) $DEVICE $ITEM = $VALUE"
+                ;;
+        esac
+        sleep $(expr $SLEEPAFTER )
+        if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
+            # 5 min since last check
+            # check measurement flow
+            NEWCNT=$(do_select "select count(*) from t_bios_measurements")
+            if [ $NEWCNT = $MEASUREMENTS ] ; then
+                # no data flow
+                echo "ERROR: nothing appeared in measurement table since last check ($NEWCNT lines in table)"
+            else
+                echo "OK: new measurements ($NEWCNT lines in table)"
+            fi
+            MEASUREMENTS=$NEWCNT
+            # check servises
+            if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
+                echo "OK: all services running"
+            else
+                echo "ERROR: some services are not running"
+                $SCRIPTDIR/ci-rc-bios.sh --status
+            fi
+            LASTCHECK=$(date +%s)
+        fi
     done < $SAMPLEFILE
 }
 
@@ -285,20 +287,20 @@ SAMPLEFILE=$SCRIPTDIR/ci-longrun.data
 
 while [ "$#" -gt 0 ] ; do 
     case "$1" in
-	--create-samples)
-	    TIME=$2
-	    FREQ=$3
-	    ACTION=samples
-	    shift 3
-	    ;;
-	-s|--samples)
-	    SAMPLEFILE=$2
-	    shift 2
-	    ;;
-	--help|-h)
-	    usage
-	    exit 1
-	    ;;
+        --create-samples)
+            TIME=$2
+            FREQ=$3
+            ACTION=samples
+            shift 3
+            ;;
+        -s|--samples)
+            SAMPLEFILE=$2
+            shift 2
+            ;;
+        --help|-h)
+            usage
+            exit 1
+            ;;
     esac
 done
 
@@ -310,16 +312,16 @@ fi
 nut_cfg_dir
 case "$ACTION" in
     samples)
-	create_nut_config >/dev/null 2>&1
-	create_random_samples "$TIME" "$FREQ"
-	;;
+        create_nut_config >/dev/null 2>&1
+        create_random_samples "$TIME" "$FREQ"
+        ;;
     test)
-	$SCRIPTDIR/ci-rc-bios.sh --stop
-	create_nut_config
-	$SCRIPTDIR/ci-empty-db.sh
-	mysql -u root box_utf8 < $CHECKOUTDIR/tools/rack_power.sql
-	$SCRIPTDIR/ci-rc-bios.sh --start
-	produce_events
-	$SCRIPTDIR/ci-rc-bios.sh --stop
-	;;
+        $SCRIPTDIR/ci-rc-bios.sh --stop
+        create_nut_config
+        $SCRIPTDIR/ci-empty-db.sh
+        mysql -u root box_utf8 < $CHECKOUTDIR/tools/rack_power.sql
+        $SCRIPTDIR/ci-rc-bios.sh --start
+        produce_events
+        $SCRIPTDIR/ci-rc-bios.sh --stop
+        ;;
 esac
