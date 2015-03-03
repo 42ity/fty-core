@@ -343,13 +343,11 @@ BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, const char *value
 BIOS_EXPORT void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
     char buff[16];
     sprintf(buff, "%d", value);
-    printf("%s\n", buff);
     set_hash(msg, key, buff);
 }
 
 BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     char buff[24];
     sprintf(buff, "%ld", value);
-    printf("%s\n", buff);
     set_hash(msg, key, buff);
 }
