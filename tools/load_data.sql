@@ -883,7 +883,7 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV1-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-LAB')
 );
-INSERT INTO t_bios_monitor_asset_relpation (id_discovered_device,id_asset_element) VALUES (
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV2-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
 );
