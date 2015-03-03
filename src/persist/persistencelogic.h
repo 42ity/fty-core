@@ -8,6 +8,7 @@
 #include "powerdev_msg.h"
 #include "common_msg.h"
 #include "nmap_msg.h"
+#include "ymsg.h"
 
 #include <string>
 
@@ -22,6 +23,7 @@ namespace persist {
  */
 zmsg_t *asset_msg_process(zmsg_t **msg);
 
+void process_measurement(const std::string topic, zmsg_t **msg);
 
 /**
  * \brief Basic message processing function

@@ -28,8 +28,10 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include <czmq.h>
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
+#include <time.h>
 
 #include "defs.h"
+#include "bios_agent.h"
 #include "assetcrud.h"
 #include "cidr.h"
 #include "persistence.h"
@@ -45,6 +47,57 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 namespace persist {
 
+void process_measurement(const std::string topic, zmsg_t **msg) {
+    log_debug("Processing measurement");
+    ymsg_t *ymsg = ymsg_decode(msg);
+    if(ymsg == NULL) {
+        log_error("Can't decode the ymsg");
+    return;
+    }
+
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+    } catch (const std::exception &e) {
+        log_error("Can't connect to the database");
+    }
+
+    errno = 0;
+    int32_t value = ymsg_get_int32(ymsg, "value");
+    int32_t scale = ymsg_get_int32(ymsg, "scale");
+    int64_t tme = ymsg_get_int64(ymsg, "time");
+    const char *units = ymsg_get_string(ymsg, "units");
+
+    if(errno != 0)
+        return;
+
+    if(tme < 1)
+        tme = time(NULL);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+            "INSERT INTO t_bios_measurement_topic (topic) "
+            "SELECT :topic FROM dual WHERE NOT EXISTS "
+            "(SELECT id from t_bios_measurement_topic WHERE topic=:topic)");
+    st.set("topic", topic).execute();
+    st = conn.prepareCached(
+            "INSERT INTO t_bios_measurement "
+            "(timestamp, value, scale, units, topic_id) "
+            "SELECT FROM_UNIXTIME(:time), :value, :scale, :units, id FROM "
+            "t_bios_measurement_topic WHERE topic=:topic");
+    st.set("topic", topic)
+      .set("time",  tme)
+      .set("value", value)
+      .set("scale", scale)
+      .set("units", units)
+      .execute();
+    } catch(const std::exception &e) {
+        log_error("Saving new measurement failed with error '%s'", e.what());
+    }
+    log_debug("Measurement processed");
+}
+
 zmsg_t* asset_msg_process(zmsg_t **msg) {
     log_debug("Processing asset message in persistence layer");
     zmsg_t *result = NULL;
@@ -53,7 +106,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
     if(amsg == NULL) {
         log_warning ("Malformed asset message received!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-	                                    "Malformed asset message message received!", NULL);
+                                        "Malformed asset message message received!", NULL);
     }
 
     int msg_id = asset_msg_id (amsg);
@@ -84,7 +137,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
         default: {
             log_warning ("Wrong asset message (id %d) received!", msg_id);
             result = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-	                                        "Wrong asset message message received!", NULL);
+                                            "Wrong asset message message received!", NULL);
 
             break;
         }

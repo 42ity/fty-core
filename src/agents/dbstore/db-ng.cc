@@ -1,6 +1,7 @@
 #include "malamute.h"
 #include "measure_types.h"
 #include "monitor.h"
+#include "bios_agent.h"
 #include "persistencelogic.h"
 #include "dbpath.h"
 #include "log.h"
@@ -20,8 +21,12 @@ int main (int argc, char *argv []) {
     }
 
     // Create a client
-    mlm_client_t *client = mlm_client_new(addr, 1000, "persistence");
-    if (!client) {
+    mlm_client_t *client = mlm_client_new();
+    if(!client) {
+        zsys_error ("db-ng: server not reachable at ipc://@/malamute");
+        return 0;
+    }
+    if(mlm_client_connect(client, addr, 1000, "persistence") != 0) {
         zsys_error ("db-ng: server not reachable at ipc://@/malamute");
         return 0;
     }
@@ -50,9 +55,16 @@ int main (int argc, char *argv []) {
                 continue;
         // Other option is stream aka publish subscribe
         } else {
-            zmsg_t *rep = persist::process_message(&msg);
-            if(rep != NULL)
-                zmsg_destroy(&rep);
+            // New measurements publish
+            if(is_ymsg(msg)) {
+                std::string topic = mlm_client_subject(client);
+                persist::process_measurement(topic, &msg);
+            // Legacy stuff
+            } else {
+                zmsg_t *rep = persist::process_message(&msg);
+                if(rep != NULL)
+                    zmsg_destroy(&rep);
+            }
         }
         zmsg_destroy(&msg);
     }
