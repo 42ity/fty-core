@@ -689,8 +689,11 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    }
-    if ( n == 1 )
+    } 
+    // a statement "insert on duplicate update
+    // return 2 affected rows when update is used
+    if ( ( n == 1 ) ||
+         ( ( n == 2 ) && ( read_only) ) )
     {
         ret.status = 1;
         LOG_END;
@@ -797,16 +800,18 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
 
 
 
-common_msg_t* delete_asset_ext_attribute(tntdb::Connection &conn, 
+db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn, 
                                    const char   *value,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id)
 {
-    log_info ("start");
-    log_debug ("value = %s", value);
-    log_debug ("keytag = %s", keytag);
+    LOG_START;
+    log_debug ("value = '%s'", value);
+    log_debug ("keytag = '%s'", keytag);
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
     
+    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+
     a_elmnt_id_t n = 0;
     try{
         tntdb::Statement st = conn.prepareCached(
@@ -822,33 +827,38 @@ common_msg_t* delete_asset_ext_attribute(tntdb::Connection &conn,
                 set("keytag", keytag).
                 set("element", asset_element_id).
                 execute();
+        ret.affected_rows = n;
         log_debug("was deleted %" PRIu32 " ext attributes", n);
     } 
     catch (const std::exception &e) {
-        log_warning ("end: abnormal with '%s'", e.what());
-        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
     }
-    zhash_t *addinfo = zhash_new();
-    zhash_autofree (addinfo);
-    zhash_insert_count (addinfo, n);
     if ( ( n == 1 ) || ( n == 0 ) )
     {
-        log_info ("end: normal");
-        return generate_ok (0, &addinfo);
+        LOG_END;
+        ret.status = 1;
     }
     else
     {
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_BADINPUT;
+        ret.msg           = "unexpected number of rows was deleted";
         log_error ("end: %" PRIu32 " - unexpected number of rows deleted", n);
-        return generate_db_fail (DB_ERROR_BADINPUT, 
-                        "unexpected number of rows was deleted", &addinfo);
     }
+    return ret;
 }
 
-common_msg_t* delete_asset_ext_attributes(tntdb::Connection &conn, 
+db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn, 
                                     a_elmnt_id_t  asset_element_id)
 {
-    log_info ("start");
-    size_t n = 0;
+    LOG_START;
+    
+    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    
     try{
         tntdb::Statement st = conn.prepareCached(
             " DELETE FROM"
@@ -857,19 +867,18 @@ common_msg_t* delete_asset_ext_attributes(tntdb::Connection &conn,
             "   id_asset_element = :element"
         );
     
-        n  = st.set("element", asset_element_id).
-                execute();
-        log_debug("was deleted %zu ext attributes", n);
+        ret.affected_rows = st.set("element", asset_element_id).
+                               execute();
+        log_debug("was deleted %zu ext attributes", ret.affected_rows);
     } 
     catch (const std::exception &e) {
-        log_warning ("end: abnormal with '%s'", e.what());
-        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
     }
-    zhash_t *addinfo = zhash_new();
-    zhash_autofree (addinfo);
-    zhash_insert_count (addinfo, n);
-    log_info ("end: normal");
-    return generate_ok (0, &addinfo);
+    ret.status = 1;
+    LOG_END;
+    return ret;
 }
-
-

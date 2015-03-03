@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MAX_DESCRIPTION_LENGTH  255
 
-typedef struct _db_reply{
+struct _db_reply{
     bool status; // ok/fail
     int errtype;
     int errsubtype;
@@ -51,7 +51,9 @@ typedef struct _db_reply{
     void *item;
     uint64_t rowid;
     uint64_t affected_rows;
-} db_reply_t;
+};
+
+typedef struct _db_reply db_reply_t;
 
 /**
  * \brief This function looks for a device_discovered in a monitor part 
@@ -201,6 +203,4 @@ bool is_ok_mac (const char *mac);
  */
 bool is_ok_link_type (a_lnk_tp_id_t link_type_id);
 
-
-void zhash_insert_count (zhash_t *addinfo, uint64_t n);
 #endif // SRC_PERSIST_DBHELPERS_H_
