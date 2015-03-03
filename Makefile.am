@@ -218,6 +218,7 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
+libpriv_db_la_LIBADD = -lbiosapi
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
@@ -534,7 +535,7 @@ bin_PROGRAMS += 	server-agent
 
 server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
-server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS}
+server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 server_agent_LDADD =	libpriv-proto.la
 
