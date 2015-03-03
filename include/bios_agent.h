@@ -33,12 +33,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-#define BIOS_EXPORT
-
-struct _bios_agent_t {
-    mlm_client_t *client;   // malamute client instance
-    void* seq;              // message sequence number
-};
+// For certain items, contradict the default of GCC "-fvisibility=hidden"
+#ifndef BIOS_EXPORT
+# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
+#  define BIOS_EXPORT __attribute__((__visibility__("default")))
+# else
+#  define BIOS_EXPORT
+# endif
+#endif
 
 typedef struct _bios_agent_t bios_agent_t;
 
