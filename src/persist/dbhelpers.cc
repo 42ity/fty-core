@@ -207,3 +207,11 @@ bool is_ok_link_type (a_lnk_tp_id_t link_type_id)
     else
         return false;
 }
+
+void zhash_insert_count (zhash_t *addinfo, uint64_t n)
+{
+    char buff[20];
+    sprintf (buff, "%lu", n);
+    zhash_insert (addinfo, "count", buff);
+}
+

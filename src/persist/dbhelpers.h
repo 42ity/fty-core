@@ -41,6 +41,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_FULLHOSTNAME_LENGTH 45
 
 #define MAX_DESCRIPTION_LENGTH  255
+
+typedef struct _db_reply{
+    bool status; // ok/fail
+    int errtype;
+    int errsubtype;
+    const char *msg;
+    zhash_t *addinfo;
+    void *item;
+    uint64_t rowid;
+    uint64_t affected_rows;
+} db_reply_t;
+
 /**
  * \brief This function looks for a device_discovered in a monitor part 
  * which is connected with the specified asset_element in the asset part.
@@ -190,4 +202,5 @@ bool is_ok_mac (const char *mac);
 bool is_ok_link_type (a_lnk_tp_id_t link_type_id);
 
 
+void zhash_insert_count (zhash_t *addinfo, uint64_t n);
 #endif // SRC_PERSIST_DBHELPERS_H_

@@ -267,6 +267,7 @@ CREATE TABLE t_bios_asset_ext_attributes(
   PRIMARY KEY (id_asset_ext_attribute),
   
   INDEX FK_ASSETEXTATTR_ELEMENT_idx (id_asset_element ASC),
+  UNIQUE INDEX `UI_t_bios_asset_ext_attributes` (`keytag`, `id_asset_element` ASC),
   
   CONSTRAINT FK_ASSETEXTATTR_ELEMENT
     FOREIGN KEY (id_asset_element)

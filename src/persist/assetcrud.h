@@ -26,6 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_msg.h"
 #include "dbtypes.h"
 #include "defs.h"
+#include "dbhelpers.h"
+#include <tntdb/connect.h>
+
+
 
 // ===============================================================
 // Functions for processing a special message type
@@ -174,5 +178,16 @@ zlist_t* select_asset_device_link(const char* url,
  */
 zlist_t* select_asset_element_groups(const char* url, 
        a_elmnt_id_t element_id);
+
+db_reply_t insert_into_asset_ext_attribute (tntdb::Connection &conn,
+                                         const char   *value,
+                                         const char   *keytag,
+                                         a_elmnt_id_t  asset_element_id,
+                                         bool          read_only);
+
+db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn, 
+                                     zhash_t      *attributes,
+                                     a_elmnt_id_t  asset_element_id,
+                                     bool          read_only);
 
 #endif // SRC_PERSIST_ASSETCRUD_H_
