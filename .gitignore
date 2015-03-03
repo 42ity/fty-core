@@ -34,7 +34,6 @@ Makefile
 !Makefile.am
 driver-nmap
 netmon
-!src/drivers/netmon
 simple
 !src/simple
 bios_web.la
@@ -83,7 +82,6 @@ test-web
 db-ng
 driver-nut
 server-agent
-!src/drivers/server-agent
 
 tests/junit/
 tests/CI/web/log/
@@ -100,8 +98,8 @@ bios-*.*.tar.?z
 bios-*.deb
 
 src/utils/messages/json_schemas.h
-!tools/dbpath.cpp.in
-tools/dbpath.cpp
+!tools/dbpath.cc.in
+tools/dbpath.cc
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
@@ -132,3 +130,10 @@ src/web/src/ui_properties.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
+
+!src/agents
+!src/agents/dbstore
+!src/agents/netmon
+!src/agents/nmap
+!src/agents/nut
+!src/agents/server-agent

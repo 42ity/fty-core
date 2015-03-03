@@ -6,7 +6,7 @@ PACKAGE_VENDOR="Eaton"
 AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile src/api/Makefile src/api/libbiosapi.pc])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -259,10 +259,12 @@ AS_IF([test -s "$_curdir_abs/.git_details"],
 		[AC_MSG_NOTICE([Setting PACKAGE_STRING and PACKAGE_VERSION to include Git hash '$PACKAGE_GIT_HASH_S' and commit timestamp '$PACKAGE_GIT_TSTAMP'...])
 		 PACKAGE_STRING="$PACKAGE_STRING.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 PACKAGE_VERSION="$PACKAGE_VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
-		 VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
 		 _FIX_PACKAGE_STRING=y
 		 _FIX_PACKAGE_VERSION=y
-		 _FIX_VERSION=y
+		 ### Rather don't fix the VERSION as it influences the
+		 ### tarball name in "make distcheck", install paths, etc.
+		 #VERSION="$VERSION.$PACKAGE_GIT_TSTAMP~$PACKAGE_GIT_HASH_S"
+		 #_FIX_VERSION=y
 	 ])
 ])
 
@@ -475,7 +477,7 @@ AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
 
 #test-db-run-path
-AC_CONFIG_FILES([tools/dbpath.cpp])
+AC_CONFIG_FILES([tools/dbpath.cc])
 dnl sqlite
 dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
 dnl mariadb/mysql
@@ -519,6 +521,7 @@ AS_IF([test -z "$TNTNET" -o -z "$ECPPC"],[
 ])
 
 # sourced from an m4/*.m4 include file during configure script compilation
+gl_VISIBILITY
 BS_CHECK_SASLAUTHD_MUX
 
 # see daemon(7)
@@ -534,13 +537,44 @@ AS_IF([test "x$with_systemdsystemunitdir" = "xyes" -o "x$with_systemdsystemunitd
           with_systemdsystemunitdir=no],
          [with_systemdsystemunitdir="$def_systemdsystemunitdir"])])
 AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
-      [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
+        [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
 
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CXXFLAGS])
 AC_SUBST([my_LDFLAGS])
+
+# Snatched and adapted from libpng:
+# http://www.opensource.apple.com/source/X11libs/X11libs-40/libpng/libpng-1.2.35/configure.ac
+AC_MSG_CHECKING([if libraries can be versioned])
+GLD="`$LD --help < /dev/null 2>/dev/null | grep version-script`"
+AS_IF([test -n "$GLD"],
+        [have_ld_version_script=yes
+         AC_MSG_RESULT(yes)],
+        [have_ld_version_script=no
+         AC_MSG_RESULT(no)
+         AC_MSG_WARN(*** You have not enabled versioned symbols.)
+])
+AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
+AS_IF([test "$have_ld_version_script" = "yes"],
+        [AC_MSG_CHECKING([for symbol prefix])
+         SYMBOL_PREFIX=`echo "PREFIX=__USER_LABEL_PREFIX__" \
+                   | ${CPP-${CC-gcc} -E} - 2>&1 \
+                   | ${EGREP-grep} "^PREFIX=" \
+                   | ${SED-sed} "s:^PREFIX=::"`
+         AC_SUBST(SYMBOL_PREFIX)
+         AC_MSG_RESULT($SYMBOL_PREFIX)
+         CXXFLAG_VISIBILITY=""
+         gl_VISIBILITY
+         AS_CASE(["$CFLAG_VISIBILITY"],
+            [*-fvisibility-inlines-hidden*],[
+                CXXFLAG_VISIBILITY="$CFLAG_VISIBILITY"],
+            [*-fvisibility=hidden*],[
+                CXXFLAG_VISIBILITY="$CFLAG_VISIBILITY -fvisibility-inlines-hidden"])
+        AC_SUBST(CXXFLAG_VISIBILITY)
+])
+
 
 AC_MSG_NOTICE([
 Summary:
