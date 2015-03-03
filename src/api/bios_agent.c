@@ -30,13 +30,6 @@
 // this field is valid only if KEY_STATUS = OK
 #define KEY_ROWID          "rowid"
 
-#define TEST_NULLITY(PTR) \
-    if (PTR != NULL) { \
-        log_open (); \
-        log_critical ("%s was not properly destroyed or nullified. Possible memory leak.", #PTR); \
-        log_close (); \
-    }
-
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
     void* seq;              // message sequence number

@@ -170,6 +170,22 @@ BIOS_EXPORT int
     ymsg_rowid (ymsg_t *self);
 BIOS_EXPORT int
     ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
+BIOS_EXPORT int
+    ymsg_errtype (ymsg_t *self);
+BIOS_EXPORT int
+    ymsg_set_errtype (ymsg_t *self, int error_type);
+BIOS_EXPORT int
+    ymsg_errsubtype (ymsg_t *self);
+BIOS_EXPORT int
+    ymsg_set_errsubtype (ymsg_t *self, int error_subtype);
+BIOS_EXPORT char*
+    ymsg_errmsg (ymsg_t *self);
+BIOS_EXPORT int
+    ymsg_set_errmsg (ymsg_t *self, const char *error_msg);
+BIOS_EXPORT zhash_t*
+    ymsg_addinfo (ymsg_t *self);
+BIOS_EXPORT int
+    ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo);
 BIOS_EXPORT ymsg_t*
     ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo);
 BIOS_EXPORT ymsg_t*
