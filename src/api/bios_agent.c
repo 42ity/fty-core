@@ -1,4 +1,7 @@
 #include <zmq.h>
+#include <czmq.h>
+#include <zhash.h>
+#include <errno.h>
 
 #include "bios_agent.h"
 #include "log.h"
@@ -284,4 +287,67 @@ bios_agent_content (bios_agent_t *self) {
         return NULL;
     }
     return ymsg_decode (&zmsg);
+}
+
+void set_hash(ymsg_t *msg, const void *key, void *value) {
+    zhash_t *hash = ymsg_get_aux(msg);
+    if(hash == NULL) {
+        hash = zhash_new();
+        zhash_autofree(hash);
+    }
+    zhash_update(hash, key, value);
+    ymsg_set_aux(msg, &hash);
+}    
+
+BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key) {
+    char *val = zhash_lookup(ymsg_aux(msg), key);
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return 0;
+    }
+    return val;
+}
+
+BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key) {
+    int32_t ret;
+    char *val = zhash_lookup(ymsg_aux(msg), key);
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return 0;
+    }
+    if(sscanf(val, "%d", &ret) != 1) {
+        errno = EBADMSG;
+        return 0;
+    }
+    return ret;
+}
+
+BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key) {
+    int64_t ret;
+    char *val = zhash_lookup(ymsg_aux(msg), key);
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return 0;
+    }
+    if(sscanf(val, "%ld", &ret) != 1) {
+        errno = EBADMSG;
+        return 0;
+    }
+    return ret;
+}
+
+BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
+    set_hash(msg, key, value);
+}
+
+BIOS_EXPORT void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
+    char buff[16];
+    sprintf(buff, "%d", value);
+    set_hash(msg, key, buff);
+}
+
+BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
+    char buff[24];
+    sprintf(buff, "%ld", value);
+    set_hash(msg, key, buff);
 }

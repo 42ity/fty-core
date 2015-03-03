@@ -68,6 +68,7 @@ test-log.*
 test-*.log
 test-*.trs
 
+test-api
 test-cidr
 test-database
 test-db
@@ -137,3 +138,5 @@ tntnet.xml
 !src/agents/nmap
 !src/agents/nut
 !src/agents/server-agent
+
+src/api/libbiosapi.pc
