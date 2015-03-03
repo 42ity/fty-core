@@ -28,9 +28,9 @@ int main() {
     }
 
     {
-    fprintf(stderr, ">>>>>> writer::recv starting\n");
+    fprintf(stderr, ">>>>>> reader::recv starting\n");
     ymsg_t *ymsg = bios_agent_recv(reader);
-    fprintf(stderr, ">>>>>> writer::reader done\n");
+    fprintf(stderr, ">>>>>> reader::reader done\n");
     const char* mime = ymsg_content_type(ymsg);
     assert(streq(mime, content_type));
     ymsg_destroy(&ymsg);
