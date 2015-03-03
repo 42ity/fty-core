@@ -59,8 +59,8 @@ int main (int argc, char *argv [])
     }
 
     mlm_client_verbose = verbose;
-    mlm_client_t *client = mlm_client_new (endpoint, timeout_num, address);
-    if (!client) {
+    mlm_client_t *client = mlm_client_new ();
+    if (!client || mlm_client_connect(client, endpoint, timeout_num, address)) {
         zsys_error ("dshell: server not reachable at %s\n", endpoint);
         return 0;
     }
