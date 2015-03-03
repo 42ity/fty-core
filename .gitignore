@@ -138,3 +138,5 @@ tntnet.xml
 !src/agents/nmap
 !src/agents/nut
 !src/agents/server-agent
+
+src/api/libbiosapi.pc

@@ -56,7 +56,7 @@ myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools src/api
+SUBDIRS =	$(myMANDIR) docs/examples tools
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
@@ -134,17 +134,9 @@ AM_CXXFLAGS = \
 
 AM_LDFLAGS = \
 		${my_LDFLAGS} \
+		-L$(abs_top_builddir) \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
-
-#----------------------------------------------------------------------
-# Ensure dependency building for $BIOS public API
-
-libbiosapi.la: $(abs_top_builddir)/libbiosapi.la
-
-$(abs_top_builddir)/libbiosapi.la:
-	( cd $(abs_top_builddir)/src/api && $(MAKE) all && $(MAKE) "$@" )
-
 
 #----------------------------------------------------------------------
 # Some of our code is arranged into private libraries used during
@@ -229,8 +221,6 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
-			src/api/ymsg.c \
-			src/api/bios_agent.c \
 			src/msg/asset_msg.c \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
@@ -243,7 +233,7 @@ libpriv_proto_la_SOURCES = \
 			src/msg/compute_msg.h \
 			src/msg/powerdev_msg.c \
 			src/msg/powerdev_msg.h
-libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS}
+libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} -lbiosapi
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
@@ -492,7 +482,7 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 check_PROGRAMS +=       test-api
 test_api_SOURCES =      tests/api/api.cpp
 test_api_LDADD =        libpriv-proto.la libpriv-log.la libpriv-test-run.la
-test_api_LDFLAGS =      -lmlm $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
+test_api_LDFLAGS =      -lmlm $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lbiosapi
 test_api_CPPFLAGS =     -I$(abs_top_srcdir)/tests/include \
                         -I$(abs_top_srcdir)/include
 
@@ -627,7 +617,58 @@ driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
 
 driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
+# Shared API Library
 
+# Current interface number
+LIBBIOSAPI_CURRENT=0
+# Revision (implementation number) within current interface
+LIBBIOSAPI_REVISION=0
+# How many previous interfaces are still supported
+LIBBIOSAPI_AGE=0
+
+lib_LTLIBRARIES +=		libbiosapi.la
+
+libbiosapi_la_HEADERS =		$(top_srcdir)/include/app.h \
+				$(top_srcdir)/include/bios_agent.h \
+				$(top_srcdir)/include/ymsg.h
+
+# where to install the headers on the system
+libbiosapi_ladir =		$(includedir)/@PACKAGE@
+
+libbiosapi_la_SOURCES = \
+				src/api/app.c \
+				src/api/bios_agent.c \
+				src/api/ymsg.c \
+				$(libbiosapi_la_HEADERS)
+
+libbiosapi_la_CPPFLAGS = \
+		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
+
+libbiosapi_la_LDFLAGS = \
+		$(AM_LDFLAGS) \
+		-fPIC -shared \
+		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
+		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE)
+
+if HAVE_LD_VERSION_SCRIPT
+libbiosapi_la_LDFLAGS += \
+		-Wl,--version-script=$(top_srcdir)/src/api/libbiosapi.sym
+else
+libbiosapi_la_LDFLAGS += \
+		-export-symbols $(top_srcdir)/src/api/libbiosapi.sym
+endif
+
+libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym
+EXTRA_DIST +=			src/api/libbiosapi.sym
+
+pkgconfig_DATA +=		src/api/libbiosapi.pc
+EXTRA_DIST +=			src/api/libbiosapi.pc.in  src/api/libbiosapi.pc
+DISTCLEANFILES +=		src/api/libbiosapi.pc
+
+pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS)
+EXTRA_DIST +=			$(libbiosapi_la_HEADERS)
+
+# Web
 pkglib_LTLIBRARIES += bios_web.la
 
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
