@@ -51,6 +51,14 @@ global:
         bios_agent_recv;
         bios_agent_set_producer;
         bios_agent_set_consumer;
+        bios_agent_command;
+        bios_agent_status;
+        bios_agent_reason;
+        bios_agent_address;
+        bios_agent_sender;
+        bios_agent_subject;
+        bios_agent_content;
+
         ymsg_status;
         ymsg_set_status;
         ymsg_repeat;
