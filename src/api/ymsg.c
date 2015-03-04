@@ -37,7 +37,7 @@
 @end
 */
 
-#include "ymsg.h"
+#include "./ymsg.h"
 
 //  Structure of our class
 

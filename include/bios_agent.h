@@ -165,82 +165,32 @@ BIOS_EXPORT int
 BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
 
-
-// TODO ACE: write documentation
-BIOS_EXPORT uint64_t
-    ymsg_rowid (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
-BIOS_EXPORT int
-    ymsg_errtype (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errtype (ymsg_t *self, int error_type);
-BIOS_EXPORT int
-    ymsg_errsubtype (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errsubtype (ymsg_t *self, int error_subtype);
-BIOS_EXPORT const char*
-    ymsg_errmsg (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errmsg (ymsg_t *self, const char *error_msg);
-
-// without ownership transfer
-BIOS_EXPORT zhash_t*
-    ymsg_addinfo (ymsg_t *self);   
-
-// transfer ownership
-BIOS_EXPORT zhash_t*
-    ymsg_get_addinfo (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo);
-BIOS_EXPORT ymsg_t*
-    ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo);
-BIOS_EXPORT ymsg_t*
-    ymsg_generate_fail (int errtype, int errsubtype, const char *errmsg, zhash_t *addinfo);
-
-/*!
- \brief Get number of rows affected of ROZP REPLY message
- \return  number of rows affected. If key is not specified, then -1.
-*/
-BIOS_EXPORT int
-    ymsg_affected_rows (ymsg_t *self);
-
-/*!
- \brief Set number of rows affected in ROZP REPLY message
-*/
-BIOS_EXPORT int
-    ymsg_set_affected_rows (ymsg_t *self, int n);
-
 /*!
  \brief Get status value of ROZP REPLY message
- \return
-     -1 on failure (self, aux == NULL, key STATUS missing, message type not REPLY)
-    status value otherwise (0 - error, 1 - ok)
+        Consensus is that state is ok only when key KEY_STATUS has value OK. Otherwise state is error (even if aux is missing).
+ \return 0 error, 1 ok
 */
 BIOS_EXPORT int
     ymsg_status (ymsg_t *self);
 
 /*!
  \brief Set status value of ROZP REPLY message
- \return -1 on failure (self, aux == NULL, message not ROZP REPLY), 0 on success
 */
-BIOS_EXPORT int
+BIOS_EXPORT void
     ymsg_set_status (ymsg_t *self, bool status);
 
 /*!
  \brief Get repeat value
- \return
-    -1 on failure (self, aux == NULL)
-    repeat value otherwise (0 - no repeat, 1 - repeat)
+        Consensus is that request should be repeated in REPLY only when key KEY_REPEAT is present in field aux with value == YES. Otherwise (even if aux is missing) the default state is not to repeat.
+ \return 0 no repeat, 1 repeat
 */
 BIOS_EXPORT int
     ymsg_repeat (ymsg_t *self);
 
 /*!
  \brief Set repeat value
- \return -1 on failure (self, aux == NULL), 0 on success
 */
-BIOS_EXPORT int
+BIOS_EXPORT void
     ymsg_set_repeat (ymsg_t *self, bool repeat);
 
 /*!
@@ -251,9 +201,8 @@ BIOS_EXPORT const char *
     ymsg_content_type (ymsg_t *self);
 /*!
  \brief Set content type
- /return -1 on failure, 0 on success
 */
-BIOS_EXPORT int
+BIOS_EXPORT void
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
 /*
