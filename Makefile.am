@@ -234,6 +234,7 @@ libpriv_proto_la_SOURCES = \
 			src/msg/powerdev_msg.c \
 			src/msg/powerdev_msg.h
 libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} -lbiosapi
+libpriv_proto_la_DEPENDENCIES =	libbiosapi.la
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
@@ -478,13 +479,16 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
-
-check_PROGRAMS +=       test-api
-test_api_SOURCES =      tests/api/api.cpp
-test_api_LDADD =        libpriv-proto.la libpriv-log.la libpriv-test-run.la
-test_api_LDFLAGS =      -lmlm $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lbiosapi
-test_api_CPPFLAGS =     -I$(abs_top_srcdir)/tests/include \
-                        -I$(abs_top_srcdir)/include
+### The unit-tester for some routines from libbiosapi
+check_PROGRAMS +=		test-libbiosapiut
+test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
+test_libbiosapiut_CPPFLAGS = \
+			-I$(abs_top_srcdir)/tests/include \
+			-I$(abs_top_srcdir)/include
+test_libbiosapiut_LDADD =	libpriv-test-run.la -lbiosapi
+test_libbiosapiut_DEPENDENCIES = \
+				libpriv-test-run.la \
+				libbiosapi.la
 
 ###
 check_PROGRAMS += 	test-nmap-parse
@@ -1252,8 +1256,19 @@ clean-man:
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: $(abs_top_builddir)/.git_details all-docs
+all-local: $(abs_top_builddir)/.git_details all-docs sdk
 
+
+#----------------------------------------------------------------------
+#                        SDK - currently it is the public API library
+#----------------------------------------------------------------------
+
+sdk: libbiosapi.la
+
+sdk-tests: test-libbiosapiut
+
+test-sdk: sdk sdk-tests
+	cd $(abs_top_builddir) && ./test-libbiosapiut
 
 #----------------------------------------------------------------------
 #                        clean, what was not removed automatically
