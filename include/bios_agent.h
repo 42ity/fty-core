@@ -44,10 +44,12 @@ extern "C" {
 
 // marker to tell humans and GCC that the unused parameter is there for some
 // reason (i.e. API compatibility) and compiler should not warn if not used
-#if !defined(UNUSED_PARAM) && defined (__GNUC__)
-# define UNUSED_PARAM __attribute__ ((__unused__))
-#else
-# define UNUSED_PARAM
+#ifndef UNUSED_PARAM
+# ifdef __GNUC__
+#  define UNUSED_PARAM __attribute__ ((__unused__))
+# else
+#  define UNUSED_PARAM
+# endif
 #endif
 
 typedef struct _bios_agent_t bios_agent_t;
@@ -218,15 +220,15 @@ BIOS_EXPORT void
  \param[in] self bios agent
  \return last received content on success, NULL on failure
 */
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     bios_agent_content (bios_agent_t *self);
 
-const char * ymsg_get_string(ymsg_t* msg, const char *key);
-int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
-int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
-void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
-void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
-void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
+BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
+BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
+BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
+BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
+BIOS_EXPORT void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
+BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
 
 #ifdef __cplusplus
 }

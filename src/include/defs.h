@@ -3,10 +3,12 @@
 
 // marker to tell humans and GCC that the unused parameter is there for some
 // reason (i.e. API compatibility) and compiler should not warn if not used
-#if !defined(UNUSED_PARAM) && defined (__GNUC__)
-# define UNUSED_PARAM __attribute__ ((__unused__))
-#else
-# define UNUSED_PARAM
+#ifndef UNUSED_PARAM
+# ifdef __GNUC__
+#  define UNUSED_PARAM __attribute__ ((__unused__))
+# else
+#  define UNUSED_PARAM
+# endif
 #endif
 
 /* Implemented in defs.c, link with that if you use any of these values */

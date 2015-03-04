@@ -15,7 +15,7 @@ struct _bios_agent_t {
     void* seq;              // message sequence number
 };
 
-BIOS_EXPORT bios_agent_t*
+bios_agent_t*
 bios_agent_new (const char* endpoint, const char* address) {
     if (!endpoint || !address) {
         return NULL;
@@ -39,7 +39,7 @@ bios_agent_new (const char* endpoint, const char* address) {
     return self;
 }
 
-BIOS_EXPORT void
+void
 bios_agent_destroy (bios_agent_t **self_p) {
     if (self_p == NULL) {
         return;
@@ -57,7 +57,7 @@ bios_agent_destroy (bios_agent_t **self_p) {
     }
 }
 
-BIOS_EXPORT int
+int
 bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
     if (!self || !subject || !msg_p || !(*msg_p)) {
         return -2;
@@ -74,7 +74,7 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
 
 MLM_EXPORT extern volatile int
     mlm_client_verbose;
-BIOS_EXPORT int
+int
 bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
         return -2;
@@ -88,7 +88,7 @@ bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject,
     return rc;
 }
 
-BIOS_EXPORT int
+int
 bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **reply_p, ymsg_t *send) {
     if (!self || !address || !subject || !reply_p || !(*reply_p) || !send || ymsg_id (*reply_p) != YMSG_REPLY || ymsg_id (send) != YMSG_SEND ) {
         return -2;
@@ -108,7 +108,7 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
     return rc;
 }
 
-BIOS_EXPORT int
+int
 bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
         return -2;
@@ -122,7 +122,7 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
     return rc;
 }
 
-BIOS_EXPORT int
+int
 bios_agent_set_producer (bios_agent_t *self, const char *stream)
 {
     if (!self || !stream) {
@@ -131,7 +131,7 @@ bios_agent_set_producer (bios_agent_t *self, const char *stream)
     return mlm_client_set_producer (self->client, stream);
 }
 
-BIOS_EXPORT int
+int
 bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern)
 {
     if (!self || !stream || !pattern) {
@@ -140,7 +140,7 @@ bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pat
     return mlm_client_set_consumer (self->client, stream, pattern);
 }
 
-BIOS_EXPORT ymsg_t *
+ymsg_t *
 bios_agent_recv (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -154,7 +154,7 @@ bios_agent_recv (bios_agent_t *self) {
 }
 
 
-BIOS_EXPORT int
+int
 ymsg_status (ymsg_t *self) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return 0;
@@ -167,7 +167,7 @@ ymsg_status (ymsg_t *self) {
     return rc;
 }
 
-BIOS_EXPORT void
+void
 ymsg_set_status (ymsg_t *self, bool status) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return;
@@ -175,7 +175,7 @@ ymsg_set_status (ymsg_t *self, bool status) {
     ymsg_aux_insert (self, KEY_STATUS, "%s", status ? OK : ERROR);
 }
 
-BIOS_EXPORT int
+int
 ymsg_repeat (ymsg_t *self) {
     if (!self) {
         return 0;
@@ -188,7 +188,7 @@ ymsg_repeat (ymsg_t *self) {
     return rc;
 }
 
-BIOS_EXPORT void
+void
 ymsg_set_repeat (ymsg_t *self, bool repeat) {
     if (!self) {
         return;
@@ -196,7 +196,7 @@ ymsg_set_repeat (ymsg_t *self, bool repeat) {
     ymsg_aux_insert (self, KEY_REPEAT, "%s", repeat ? YES : NO);
 }
 
-BIOS_EXPORT const char *
+const char *
 ymsg_content_type (ymsg_t *self) {
     if (!self) {
         return NULL;
@@ -204,7 +204,7 @@ ymsg_content_type (ymsg_t *self) {
     return ymsg_aux_string (self, KEY_CONTENT_TYPE, NULL);
 }
 
-BIOS_EXPORT void
+void
 ymsg_set_content_type (ymsg_t *self, const char *content_type) {
     if (!self || !content_type) {
         return;
@@ -212,7 +212,7 @@ ymsg_set_content_type (ymsg_t *self, const char *content_type) {
     ymsg_aux_insert (self, KEY_CONTENT_TYPE, "%s", content_type);
 }
 
-BIOS_EXPORT const char *
+const char *
 bios_agent_command (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -220,7 +220,7 @@ bios_agent_command (bios_agent_t *self) {
     return mlm_client_command (self->client);
 }
 
-BIOS_EXPORT int
+int
 bios_agent_status (bios_agent_t *self) {
     if (!self) {
         return -2;
@@ -228,7 +228,7 @@ bios_agent_status (bios_agent_t *self) {
     return mlm_client_status (self->client);
 }
 
-BIOS_EXPORT const char *
+const char *
 bios_agent_reason (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -236,7 +236,7 @@ bios_agent_reason (bios_agent_t *self) {
     return mlm_client_reason (self->client);
 }
 
-BIOS_EXPORT const char *
+const char *
 bios_agent_address (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -244,7 +244,7 @@ bios_agent_address (bios_agent_t *self) {
     return mlm_client_address (self->client);
 }
 
-BIOS_EXPORT const char *
+const char *
 bios_agent_sender (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -252,7 +252,7 @@ bios_agent_sender (bios_agent_t *self) {
     return mlm_client_sender (self->client);
 }
 
-BIOS_EXPORT const char *
+const char *
 bios_agent_subject (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -260,7 +260,7 @@ bios_agent_subject (bios_agent_t *self) {
     return mlm_client_subject (self->client);
 }
 
-BIOS_EXPORT ymsg_t *
+ymsg_t *
 bios_agent_content (bios_agent_t *self) {
     if (!self) {
         return NULL;
@@ -272,7 +272,8 @@ bios_agent_content (bios_agent_t *self) {
     return ymsg_decode (&zmsg);
 }
 
-void set_hash(ymsg_t *msg, const void *key, void *value) {
+void
+set_hash(ymsg_t *msg, const void *key, void *value) {
     zhash_t *hash = ymsg_get_aux(msg);
     if(hash == NULL) {
         hash = zhash_new();
@@ -282,7 +283,8 @@ void set_hash(ymsg_t *msg, const void *key, void *value) {
     ymsg_set_aux(msg, &hash);
 }    
 
-BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key) {
+const char *
+ymsg_get_string(ymsg_t* msg, const char *key) {
     char *val = zhash_lookup(ymsg_aux(msg), key);
     if(val == NULL) {
         errno = EKEYREJECTED;
@@ -291,7 +293,8 @@ BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key) {
     return val;
 }
 
-BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key) {
+int32_t
+ymsg_get_int32(ymsg_t* msg, const char *key) {
     int32_t ret;
     char *val = zhash_lookup(ymsg_aux(msg), key);
     if(val == NULL) {
@@ -305,7 +308,8 @@ BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key) {
     return ret;
 }
 
-BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key) {
+int64_t
+ymsg_get_int64(ymsg_t* msg, const char *key) {
     int64_t ret;
     char *val = zhash_lookup(ymsg_aux(msg), key);
     if(val == NULL) {
@@ -319,17 +323,20 @@ BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key) {
     return ret;
 }
 
-void ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
+void
+ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
     set_hash(msg, key, value);
 }
 
-void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
+void
+ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
     char buff[16];
     sprintf(buff, "%d", value);
     set_hash(msg, key, buff);
 }
 
-void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
+void
+ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     char buff[24];
     sprintf(buff, "%ld", value);
     set_hash(msg, key, buff);

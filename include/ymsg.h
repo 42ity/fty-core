@@ -63,6 +63,15 @@ Fields that are common with message 'send' are described there.
 extern "C" {
 #endif
 
+// For certain items, contradict the default of GCC "-fvisibility=hidden"
+#ifndef BIOS_EXPORT
+# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
+#  define BIOS_EXPORT __attribute__((__visibility__("default")))
+# else
+#  define BIOS_EXPORT
+# endif
+#endif
+
 //  Opaque class structure
 #ifndef YMSG_T_DEFINED
 typedef struct _ymsg_t ymsg_t;
@@ -71,50 +80,50 @@ typedef struct _ymsg_t ymsg_t;
 
 //  @interface
 //  Create a new ymsg
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     ymsg_new (int id);
 
 //  Destroy the ymsg
-void
+BIOS_EXPORT void
     ymsg_destroy (ymsg_t **self_p);
 
 //  Parse a zmsg_t and decides whether it is ymsg. Returns
 //  true if it is, false otherwise. Doesn't destroy or modify the
 //  original message.
-bool
+BIOS_EXPORT bool
     is_ymsg (zmsg_t *msg_p);
 
 //  Parse a ymsg from zmsg_t. Returns a new object, or NULL if
 //  the message could not be parsed, or was NULL. Destroys msg and 
 //  nullifies the msg reference.
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     ymsg_decode (zmsg_t **msg_p);
 
 //  Encode ymsg into zmsg and destroy it. Returns a newly created
 //  object or NULL if error. Use when not in control of sending the message.
-zmsg_t *
+BIOS_EXPORT zmsg_t *
     ymsg_encode (ymsg_t **self_p);
 
 //  Receive and parse a ymsg from the socket. Returns new object, 
 //  or NULL if error. Will block if there's no message waiting.
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     ymsg_recv (void *input);
 
 //  Receive and parse a ymsg from the socket. Returns new object, 
 //  or NULL either if there was no input waiting, or the recv was interrupted.
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     ymsg_recv_nowait (void *input);
 
 //  Send the ymsg to the output, and destroy it
-int
+BIOS_EXPORT int
     ymsg_send (ymsg_t **self_p, void *output);
 
 //  Send the ymsg to the output, and do not destroy it
-int
+BIOS_EXPORT int
     ymsg_send_again (ymsg_t *self, void *output);
 
 //  Encode the SEND 
-zmsg_t *
+BIOS_EXPORT zmsg_t *
     ymsg_encode_send (
         byte version,
         uint16_t seq,
@@ -122,7 +131,7 @@ zmsg_t *
         zchunk_t *request);
 
 //  Encode the REPLY 
-zmsg_t *
+BIOS_EXPORT zmsg_t *
     ymsg_encode_reply (
         byte version,
         uint16_t seq,
@@ -134,7 +143,7 @@ zmsg_t *
 
 //  Send the SEND to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
+BIOS_EXPORT int
     ymsg_send_send (void *output,
         byte version,
         uint16_t seq,
@@ -143,7 +152,7 @@ int
     
 //  Send the REPLY to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
-int
+BIOS_EXPORT int
     ymsg_send_reply (void *output,
         byte version,
         uint16_t seq,
@@ -153,86 +162,86 @@ int
         zchunk_t *request);
     
 //  Duplicate the ymsg message
-ymsg_t *
+BIOS_EXPORT ymsg_t *
     ymsg_dup (ymsg_t *self);
 
 //  Print contents of message to stdout
-void
+BIOS_EXPORT void
     ymsg_print (ymsg_t *self);
 
 //  Get/set the message routing id
-zframe_t *
+BIOS_EXPORT zframe_t *
     ymsg_routing_id (ymsg_t *self);
-void
+BIOS_EXPORT void
     ymsg_set_routing_id (ymsg_t *self, zframe_t *routing_id);
 
 //  Get the ymsg id and printable command
-int
+BIOS_EXPORT int
     ymsg_id (ymsg_t *self);
-void
+BIOS_EXPORT void
     ymsg_set_id (ymsg_t *self, int id);
-const char *
+BIOS_EXPORT const char *
     ymsg_command (ymsg_t *self);
 
 //  Get/set the version field
-byte
+BIOS_EXPORT byte
     ymsg_version (ymsg_t *self);
-void
+BIOS_EXPORT void
     ymsg_set_version (ymsg_t *self, byte version);
 
 //  Get/set the seq field
-uint16_t
+BIOS_EXPORT uint16_t
     ymsg_seq (ymsg_t *self);
-void
+BIOS_EXPORT void
     ymsg_set_seq (ymsg_t *self, uint16_t seq);
 
 //  Get/set the aux field
-zhash_t *
+BIOS_EXPORT zhash_t *
     ymsg_aux (ymsg_t *self);
 //  Get the aux field and transfer ownership to caller
-zhash_t *
+BIOS_EXPORT zhash_t *
     ymsg_get_aux (ymsg_t *self);
 //  Set the aux field, transferring ownership from caller
-void
+BIOS_EXPORT void
     ymsg_set_aux (ymsg_t *self, zhash_t **aux_p);
     
 //  Get/set a value in the aux dictionary
-const char *
+BIOS_EXPORT const char *
     ymsg_aux_string (ymsg_t *self,
         const char *key, const char *default_value);
-uint64_t
+BIOS_EXPORT uint64_t
     ymsg_aux_number (ymsg_t *self,
         const char *key, uint64_t default_value);
-void
+BIOS_EXPORT void
     ymsg_aux_insert (ymsg_t *self,
         const char *key, const char *format, ...);
-size_t
+BIOS_EXPORT size_t
     ymsg_aux_size (ymsg_t *self);
 
 //  Get a copy of the request field
-zchunk_t *
+BIOS_EXPORT zchunk_t *
     ymsg_request (ymsg_t *self);
 //  Get the request field and transfer ownership to caller
-zchunk_t *
+BIOS_EXPORT zchunk_t *
     ymsg_get_request (ymsg_t *self);
 //  Set the request field, transferring ownership from caller
-void
+BIOS_EXPORT void
     ymsg_set_request (ymsg_t *self, zchunk_t **chunk_p);
 
 //  Get/set the rep field
-uint16_t
+BIOS_EXPORT uint16_t
     ymsg_rep (ymsg_t *self);
-void
+BIOS_EXPORT void
     ymsg_set_rep (ymsg_t *self, uint16_t rep);
 
 //  Get a copy of the response field
-zchunk_t *
+BIOS_EXPORT zchunk_t *
     ymsg_response (ymsg_t *self);
 //  Get the response field and transfer ownership to caller
-zchunk_t *
+BIOS_EXPORT zchunk_t *
     ymsg_get_response (ymsg_t *self);
 //  Set the response field, transferring ownership from caller
-void
+BIOS_EXPORT void
     ymsg_set_response (ymsg_t *self, zchunk_t **chunk_p);
 
 //  Self test of this class

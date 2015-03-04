@@ -30,12 +30,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ymsg.h"
 
-#define BIOS_EXPORT
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/*    
 // For certain items, contradict the default of GCC "-fvisibility=hidden"
 #ifndef BIOS_EXPORT
 # if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
@@ -44,6 +43,7 @@ extern "C" {
 #  define BIOS_EXPORT
 # endif
 #endif
+*/
 
 BIOS_EXPORT ymsg_t *
     bios_netmon_encode (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address);
