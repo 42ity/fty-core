@@ -630,6 +630,7 @@ lib_LTLIBRARIES +=		libbiosapi.la
 
 libbiosapi_la_HEADERS =		$(top_srcdir)/include/app.h \
 				$(top_srcdir)/include/bios_agent.h \
+				$(top_srcdir)/include/agents.h \
 				$(top_srcdir)/include/ymsg.h
 
 # where to install the headers on the system
@@ -638,7 +639,11 @@ libbiosapi_ladir =		$(includedir)/@PACKAGE@
 libbiosapi_la_SOURCES = \
 				src/api/app.c \
 				src/api/bios_agent.c \
+				src/api/agents.c \
 				src/api/ymsg.c \
+				src/shared/utils_ymsg.c \
+				src/shared/utils_ymsg.h \
+				src/include/defs.h \
 				$(libbiosapi_la_HEADERS)
 
 libbiosapi_la_CPPFLAGS = \
