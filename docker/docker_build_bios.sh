@@ -29,10 +29,7 @@ CURDIR=`pwd`
 cd $build_dir
 make install
 cd $CURDIR
-cp resources/* $temp_dir
-
-cp ../tools/initdb.sql $temp_dir 
-cp ../tools/load_data.sql $temp_dir
+cp ./resources/Dockerfile $temp_dir
 
 #in case of network timeout between mbt and roz, force the way for getting libcidr0 and cidrcalc packages like this
 #cp ../../temp/cidrcalc_1.2.3-1_amd64.deb $temp_dir
@@ -43,6 +40,7 @@ sudo docker build -t eaton/bios $temp_dir
 
 echo "cleaning .."
 sudo docker rmi $(sudo docker images -q -f dangling=true)
+sudo python ../tools/docker_clean_vfs.py
 #rm -r $temp_dir
 
 echo "done"
