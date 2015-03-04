@@ -30,20 +30,26 @@ RUN dpkg -i /tmp/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb
 ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb   /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb  
 RUN dpkg -i /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb 
 
+#RUN apt-get install -y --force-yes malamute
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb /tmp/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb 
+RUN dpkg -i /tmp/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb
+   
 #RUN apt-get install -y --force-yes libnutclient0
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-2_amd64.deb   /tmp/libnutclient0_2.7.2-2_amd64.deb  
-RUN dpkg -i /tmp/libnutclient0_2.7.2-2_amd64.deb
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-3_amd64.deb   /tmp/libnutclient0_2.7.2-3_amd64.deb  
+RUN dpkg -i /tmp/libnutclient0_2.7.2-3_amd64.deb
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
-ADD ./usr/local/share/core-0.1/examples/tntnet.xml.example /etc/tntnet/tntnet.xml
-ADD ./usr/local/bin/simple /usr/local/bin/simple
-ADD ./usr/local/bin/netmon /usr/local/bin/netmon
-ADD ./usr/local/bin/driver-nmap /usr/local/bin/driver-nmap
-RUN mkdir -p /usr/local/lib/core
-ADD ./usr/local/lib/core/bios_web.so.0.0.0 /usr/local/lib/core/bios_web.so.0.0.0
-RUN ln -s /usr/local/lib/core/bios_web.so.0.0.0 /usr/local/lib/core/bios_web.so
-RUN mkdir -p /usr/local/share/core-0.1/web
+ADD ./usr/local/share/bios/examples/tntnet.xml.example /etc/tntnet/tntnet.xml
+RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
+ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
+ADD ./usr/local/libexec/bios/db-ng /usr/local/libexec/bios/db-ng
+ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
+ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
+ADD ./usr/local/libexec/bios/driver-nut /usr/local/libexec/bios/driver-nut
+ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
+RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
+RUN mkdir -p /usr/local/share/bios/web
 
 #User PAM
 RUN sed -i 's/START=no/START=yes/' /etc/default/saslauthd
@@ -58,24 +64,24 @@ RUN echo "port            = 3306" >> /etc/mysql/my.cnf
 RUN echo "protocol        = TCP" >> /etc/mysql/my.cnf
 
 #DB init script
-ADD initdb.sql /tmp/initdb.sql
-ADD load_data.sql /tmp/load_data.sql
-ADD patch.sql /tmp/patch.sql
+ADD ./usr/local/share/bios/sql/mysql/initdb.sql /usr/local/share/bios/sql/mysql/initdb.sql
+ADD ./usr/local/share/bios/examples/sql/mysql/load_data.sql /usr/local/share/bios/examples/sql/mysql/load_data.sql
+ADD ./usr/local/share/bios/docker/resources/patch.sql /usr/local/share/bios/docker/resources/patch.sql
 
 #Install NUT dumy drivers and config
-ADD ups.conf /etc/nut/ups.conf
-ADD upsmon.conf /etc/nut/upsmon.conf
-ADD UPS1-LAB.dev /etc/nut/UPS1-LAB.dev
-ADD UPS2-LAB.dev /etc/nut/UPS2-LAB.dev
-ADD ePDU1-LAB.dev /etc/nut/ePDU1-LAB.dev
-ADD ePDU2-LAB.dev /etc/nut/ePDU2-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/ups.conf /etc/nut/ups.conf
+ADD ./usr/local/share/bios/docker/resources/upsmon.conf /etc/nut/upsmon.conf
+ADD ./usr/local/share/bios/docker/resources/UPS1-LAB.dev /etc/nut/UPS1-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/UPS2-LAB.dev /etc/nut/UPS2-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/ePDU1-LAB.dev /etc/nut/ePDU1-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/ePDU2-LAB.dev /etc/nut/ePDU2-LAB.dev
 RUN echo "MODE=standalone" > /etc/nut/nut.conf
 RUN chmod 644 /etc/nut/*
 RUN chown root:nut /etc/nut/*
 
 #prepare entry point
-ADD start_bios.sh /usr/local/bin/start_bios.sh 
+ADD ./usr/local/share/bios/docker/resources/start_bios.sh /usr/local/bin/start_bios.sh 
 #ENTRYPOINT ["/bin/bash", "-e", "/usr/local/bin/start_bios.sh"] 
 
 EXPOSE 8000
- 
+
