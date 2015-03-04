@@ -44,26 +44,43 @@ if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Search path: $CHECKOUTDIR, $PWD"
     exit 1
 fi
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
+echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
 
-LIBDIR=$(dirname $(find "${BUILDSUBDIR}" -name 'libbiosapi.so'))
+cd "${BUILDSUBDIR}" || exit $?
+
+# We don't have too many files so don't care much if the parallel make fails
+# due to resources
+MAKE_FLAGS="V=0 -j `/usr/bin/getconf _NPROCESSORS_ONLN`"
+
+# ensure that what we test is built
+echo "CI-INFO: Ensure that we have a libbiosapi compiled..."
+make $MAKE_FLAGS sdk || make sdk || exit $?
+
+# Note: while we typically use the .so shared library, there can also be
+# an .a static built, depending on configure flags. Both might be referenced
+# by the .la descriptor. Here we care about where the actual libraries are.
+# When rebuilding, note that both the .so and .la files should be removed.
+LIBDIR="$(dirname $(find "${BUILDSUBDIR}" -name 'libbiosapi.so' || find "${BUILDSUBDIR}" -name 'libbiosapi.a') | head -1)"
 if [ ! -d "${LIBDIR}" ]; then
-    echo "Cannot find libbiosapi.so in ${BUILDSUBDIR}"
+    echo "CI-ERROR: Cannot find libbiosapi under ${BUILDSUBDIR}" >&2
     exit 1
 fi
 
-# build it
-make -j `/usr/bin/getconf _NPROCESSORS_ONLN` all -C "${BUILDSUBDIR}" || exit $?
 # run malamute
 if pgrep malamute; then
-    echo "ERROR: malamute is running!!"
+    echo "CI-ERROR: malamute is already running!" >&2
     exit 1
 fi
 malamute /etc/malamute/malamute.cfg &
 echo $! > malamute.pid
 
+rm -f test-libbiosapi
+
+echo "CI-INFO: Try to compile and run a libbiosapi API-client..."
 echo "CC test-libbiosapi.c"
-gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -lczmq -lzmq -lmlm -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
+### Note that we should not explicitly pull the other libraries that are used by API...
+#gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -lczmq -lzmq -lmlm -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
+gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
 gccret=$?
 
 # to get malamute enough time to start on slow HW
@@ -71,17 +88,34 @@ sleep 2
 
 if [ ${gccret} -eq 0 ]; then
     echo "RUN test-libbiosapi"
-    LD_LIBRARY_PATH=${LIBDIR}/test-libbiosapi
+    LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapi
     ret=$?
 else
     ret=${gccret}
 fi
 
+retut=0
+echo "CI-INFO: Try to compile and run a libbiosapi Unit-tester..."
+if make $MAKE_FLAGS test-libbiosapiut || make test-libbiosapiut ; then
+    ./test-libbiosapiut || retut=$?
+fi
+
+
 kill -9 $(cat malamute.pid)
-rm -f t malamute.pid
+rm -f malamute.pid
+# Caller may set this to not delete the program file
+[ x"$KEEP_TEST_LIBBOISAPI" = xyes ] || rm -f test-libbiosapi
 if [ $ret -eq 0 ]; then
     echo "ci-test-libbiosapi: OK"
 else
     echo "ci-test-libbiosapi: FAIL"
 fi
-exit $ret
+
+if [ $retut -eq 0 ]; then
+    echo "ci-test-libbiosapiut: OK"
+else
+    echo "ci-test-libbiosapiut: FAIL"
+fi
+
+[ $ret = 0 -a $retut = 0 ]
+exit $?
