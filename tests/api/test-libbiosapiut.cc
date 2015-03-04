@@ -1,3 +1,9 @@
+/* Description: This program is unit-testing the $BIOS project's libbiosapi
+ * functionality during "make distcheck" (compiled via the Makefiles).
+ *
+ * Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
+ */
+
 #include <catch.hpp>
 
 #include "bios_agent.h"
