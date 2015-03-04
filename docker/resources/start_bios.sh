@@ -24,9 +24,9 @@
 #   NOTE: It expects to be run in the root of the project directory
 #   (probably the checkout directory, unless you use strange set-ups).
 echo  "initializing db .."
-mysql < /tmp/initdb.sql
-mysql < /tmp/load_data.sql
-mysql < /tmp/patch.sql
+mysql < /usr/local/share/bios/sql/mysql/initdb.sql
+mysql < /usr/local/share/bios/examples/sql/mysql/load_data.sql
+mysql < /usr/local/share/bios/docker/resources/patch.sql
 
 echo "Starting SASL auth .."
 service saslauthd start
@@ -37,7 +37,12 @@ service tntnet start
 echo "starting nut .."
 service nut-server start
 
-echo "starting simple .."
-cd /usr/local/bin
-./simple 
+echo "starting Broker .."
+malamute /etc/malamute/malamute.cfg &
+
+echo "starting BIOS .."
+/usr/local/libexec/bios/db-ng &
+/usr/local/libexec/bios/driver-nut 
+
+ 
 
