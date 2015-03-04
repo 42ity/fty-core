@@ -1,4 +1,11 @@
-#include <czmq.h>
+/* Description: This program is compiled by the CI scripts as a way to
+ * validate that the "-lbiosapi" linker flag and headers do still provide
+ * all that we need for an API-client program to work in the $BIOS project,
+ * and that some basic message-passing works as expected.
+ *
+ * Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>
+ */
+
 #include <bios_agent.h>
 #include <stdio.h>
 

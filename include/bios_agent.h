@@ -42,6 +42,14 @@ extern "C" {
 # endif
 #endif
 
+// marker to tell humans and GCC that the unused parameter is there for some
+// reason (i.e. API compatibility) and compiler should not warn if not used
+#if !defined(UNUSED_PARAM) && defined (__GNUC__)
+# define UNUSED_PARAM __attribute__ ((__unused__))
+#else
+# define UNUSED_PARAM
+#endif
+
 typedef struct _bios_agent_t bios_agent_t;
 
 /*!
