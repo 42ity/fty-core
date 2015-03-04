@@ -48,9 +48,13 @@ static const std::string  ins_upd_ass_ext_att_QUERY =
         "   t_bios_asset_ext_attributes"
         "   (keytag, value, id_asset_element, read_only)" 
         " VALUES"
-        "  ( :keytag, :value, :element, :read_only)"
+        "  ( :keytag, :value, :element, :readonly)"
         " ON DUPLICATE KEY"
-        "   UPDATE value = VALUES (value), read_only = 1";
+        "   UPDATE"
+        "       value = VALUES (value),"
+        "       read_only = 1,"
+        "       id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute)";
+// update doesnt return id of updated row -> use workaround
 
 static const std::string  ins_ass_ext_att_QUERY =
         " INSERT INTO"
@@ -179,10 +183,16 @@ zlist_t* select_asset_device_links_to(tntdb::Connection &conn,
     return links;
 }
 
+
+// workaround:
+// need to put (key, value, read_only) INTO HASH
+// so, key to key
+// value = w:value when read_only is 0
+// value = r:value when read_only is 1
 zhash_t* select_asset_element_attributes(tntdb::Connection &conn, 
                                          a_elmnt_id_t element_id)
 {
-    log_info("%s ","start");
+    LOG_START;
     assert ( element_id );
     zhash_t* extAttributes = zhash_new();
     zhash_autofree(extAttributes);
@@ -191,19 +201,18 @@ zhash_t* select_asset_element_attributes(tntdb::Connection &conn,
         // Can return more than one row
         tntdb::Statement st_extattr = conn.prepareCached(
             " SELECT"
-            " v.keytag , v.value"
+            "   v.keytag, v.value, v.read_only"
             " FROM"
-            " v_bios_asset_ext_attributes v"
+            "   v_bios_asset_ext_attributes v"
             " WHERE v.id_asset_element = :idelement"
         );
 
-        // TODO set
         tntdb::Result result = 
                     st_extattr.set("idelement", element_id).
                                select();
 
         // Go through the selected extra attributes
-        for (  auto &row: result )
+        for ( auto &row: result )
         {
             // keytag, required
             std::string keytag = "";
@@ -214,11 +223,13 @@ zhash_t* select_asset_element_attributes(tntdb::Connection &conn,
             std::string value = "";
             row[1].get(value);
             assert ( !value.empty() );   // database is corrupted
+         
+            // value , required
+            int read_only = 0;
+            row[2].get(read_only);
 
-
-            // TODO type convertions
             zhash_insert (extAttributes, keytag.c_str(), 
-                          (void*)value.c_str());
+                          (void*) (( read_only == 1 ? "r" : "w")+value).c_str());
         }
     }
     catch (const std::exception &e) {
@@ -356,8 +367,6 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
     }
 }
 
-// ASSET ELEMENT
-// TODO devide into two parts
 zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id, 
                               a_elmnt_tp_id_t element_type_id)
 {
@@ -551,67 +560,6 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     log_info("normal %s ","end");
     return resultmsg;
 }
-/*
-// exception free
-// NULL in case of unexpected error
-// empty hash if nothing was found or element_id does not exists
-// filled hash if smth was found
-zhash_t* select_asset_element_attributes_read_only(tntdb::Connection &conn,
-                                         m_dvc_id_t dvc_id)
-{
-    log_info("start");
-    
-    zhash_t* extAttributes = zhash_new();
-    zhash_autofree (extAttributes);
-    
-    if ( dvc_id == 0 )
-        return extAttributes;
-
-    try {
-        // Can return more than one row
-        tntdb::Statement st_extattr = conn.prepareCached(
-            " SELECT"
-            "   v.keytag, v.value"
-            " FROM"
-            "   v_bios_asset_ext_attributes v,"
-            "   t_bios_monitor_asset_relation v1"
-            " WHERE"
-            "   v1.id_discovered_device = :device AND"
-            "   v1.id_asset_element = v.id_asset_element AND"
-            "   v.read_only <> 0"
-        );
-
-        tntdb::Result result = 
-                    st_extattr.set("device",dvc_id).
-                               select();
-
-        // Go through the selected extra attributes
-        for ( auto &row: result )
-        {
-            // keytag, required
-            std::string keytag = "";
-            row[0].get(keytag);
-            assert ( !keytag.empty() );  // database is corrupted
-
-            // value , required
-            std::string value = "";
-            row[1].get(value);
-            assert ( !value.empty() );   // database is corrupted
-
-            // TODO type convertions
-            zhash_insert (extAttributes, keytag.c_str(), 
-                          (void*)value.c_str());
-        }
-        log_info("end: normal");
-        return extAttributes;
-    }
-    catch (const std::exception &e) {
-        zhash_destroy (&extAttributes);
-        log_warning ("end: abnormal with '%s'", e.what());
-        return NULL;
-    }
-}
-*/
 
 static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &conn,
                                          const char   *value,
@@ -663,10 +611,10 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
         
         tntdb::Statement st = conn.prepareCached(query);
    
-        n = st.set("keytag"   , keytag).
-               set("value"    , value).
-               set("read_only", read_only).
-               set("element"  , asset_element_id).
+        n = st.set("keytag"  , keytag).
+               set("value"   , value).
+               set("readonly", read_only).
+               set("element" , asset_element_id).
                execute();
         newid = conn.lastInsertId();
         log_debug ("was inserted %" PRIu32 " rows", n);
@@ -691,9 +639,10 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
         return ret;
     } 
     // a statement "insert on duplicate update
-    // return 2 affected rows when update is used
+    // return 2 affected rows when update is used and updated value was different from previos
+    // return 0 affected rows when update is used and updated value is the same as previos
     if ( ( n == 1 ) ||
-         ( ( n == 2 ) && ( read_only) ) )
+         ( ( ( n == 2 ) || ( n == 0 ) )&& ( read_only) ) )
     {
         ret.status = 1;
         LOG_END;
@@ -709,20 +658,27 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
 }
 
 
-db_reply_t insert_into_asset_ext_attribute (tntdb::Connection &conn,
-                                         const char   *value,
-                                         const char   *keytag,
-                                         a_elmnt_id_t  asset_element_id,
-                                         bool          read_only)
+db_reply_t
+    insert_into_asset_ext_attribute (tntdb::Connection &conn,
+                                     const char   *value,
+                                     const char   *keytag,
+                                     a_elmnt_id_t  asset_element_id,
+                                     bool          read_only)
 {
-    if ( read_only )
-        return insert_into_asset_ext_attribute_template 
-            (conn, value, keytag, asset_element_id, read_only, 
-            ins_upd_ass_ext_att_QUERY);
-    else
+    if ( !read_only )
+    {
+        log_debug ("use pure insert");
         return insert_into_asset_ext_attribute_template
-            (conn, value, keytag, asset_element_id, read_only, 
-            ins_ass_ext_att_QUERY);
+            (conn, value, keytag, asset_element_id, read_only,
+             ins_ass_ext_att_QUERY);
+    }
+    else
+    {
+        log_debug ("use insert on duplicate update");
+        return insert_into_asset_ext_attribute_template
+            (conn, value, keytag, asset_element_id, read_only,
+             ins_upd_ass_ext_att_QUERY);
+    }
 }
 
 
@@ -801,12 +757,12 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
 
 
 db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn, 
-                                   const char   *value,
+//                                   const char   *value,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id)
 {
     LOG_START;
-    log_debug ("value = '%s'", value);
+  //  log_debug ("value = '%s'", value);
     log_debug ("keytag = '%s'", keytag);
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
     
@@ -818,13 +774,13 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
             " DELETE FROM"
             "   t_bios_asset_ext_attributes"
             " WHERE"
-            "   value = :value AND"
+//            "   value = :value AND"
             "   keytag = :keytag AND"
             "   id_asset_element = :element"
         );
     
-        n  = st.set("value", value).
-                set("keytag", keytag).
+        n  = st.set("keytag", keytag).
+//                set("value", value).
                 set("element", asset_element_id).
                 execute();
         ret.affected_rows = n;

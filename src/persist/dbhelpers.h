@@ -43,7 +43,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_DESCRIPTION_LENGTH  255
 
 struct _db_reply{
-    bool status; // ok/fail
+    int status; // ok/fail
     int errtype;
     int errsubtype;
     const char *msg;
