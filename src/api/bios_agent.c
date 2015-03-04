@@ -278,7 +278,7 @@ ymsg_get_addinfo (ymsg_t *self) {
 }
 
 BIOS_EXPORT int
-ymsg_set_addinfo (ymsg_t *self, UNUSED_PARAM zhash_t *addinfo) {
+ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return -1;
     }
@@ -320,7 +320,7 @@ ymsg_affected_rows (ymsg_t *self)
 }
 
 BIOS_EXPORT int
-ymsg_set_affected_rows (ymsg_t *self, UNUSED_PARAM int n)
+ymsg_set_affected_rows (ymsg_t *self, int n)
 {
     if (!self || ymsg_id (self) != YMSG_REPLY)
         return -1;
