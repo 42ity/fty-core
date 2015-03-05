@@ -216,6 +216,14 @@ BIOS_EXPORT const char *
 BIOS_EXPORT ymsg_t *
     bios_agent_content (bios_agent_t *self);
 
+BIOS_EXPORT zactor_t *
+    bios_agent_actor (bios_agent_t *self);
+
+BIOS_EXPORT zsock_t *
+    bios_agent_msgpipe (bios_agent_t *self);
+
+
+
 //! Returns true if status value of ROZP message is OK, false otherwise 
 BIOS_EXPORT bool
     ymsg_is_ok (ymsg_t *self);

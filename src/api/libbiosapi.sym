@@ -57,6 +57,8 @@ global:
         bios_agent_sender;
         bios_agent_subject;
         bios_agent_content;
+        bios_agent_actor;
+        bios_agent_msgpipe;
 
         ymsg_is_ok;
         ymsg_set_status;

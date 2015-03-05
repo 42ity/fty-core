@@ -212,6 +212,20 @@ bios_agent_content (bios_agent_t *self) {
     return ymsg_decode (&zmsg);
 }
 
+zactor_t *
+bios_agent_actor (bios_agent_t *self) {
+    if (!self)
+        return NULL;
+    return mlm_client_actor (self->client);
+}
+
+zsock_t *
+bios_agent_msgpipe (bios_agent_t *self) {
+    if (!self)
+        return NULL;
+    return mlm_client_msgpipe (self->client);
+}
+
 bool
 ymsg_is_ok (ymsg_t *self) {
     if (!self) {
