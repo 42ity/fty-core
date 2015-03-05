@@ -173,6 +173,70 @@ BIOS_EXPORT int
 BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
 
+/*
+ \brief Return last received command.
+ \param[in] self bios agent
+ \return NULL on failure, one of the following values on success:
+        "STREAM DELIVER"
+        "MAILBOX DELIVER"
+        "SERVICE DELIVER"
+*/
+BIOS_EXPORT const char *
+    bios_agent_command (bios_agent_t *self);
+
+/*
+ \brief Return last received status
+ \param[in] self bios agent
+ \return -1 on failure, last received status on success
+*/
+BIOS_EXPORT int
+    bios_agent_status (bios_agent_t *self);
+
+/*
+ \brief Return last received reason
+ \param[in] self bios agent
+ \return last received reason on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_reason (bios_agent_t *self);
+
+/*
+ \brief Return last received address
+ \param[in] self bios agent
+ \return last received address on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_address (bios_agent_t *self);
+
+/*
+ \brief Return last received sender
+ \param[in] self bios agent
+ \return last received sender on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_sender (bios_agent_t *self);
+
+/*
+ \brief Return last received subject
+ \param[in] self bios agent
+ \return last received sender on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_subject (bios_agent_t *self);
+
+/*
+ \brief Return last received content
+ \param[in] self bios agent
+ \return last received content on success, NULL on failure
+*/
+BIOS_EXPORT ymsg_t *
+    bios_agent_content (bios_agent_t *self);
+
+/**
+ *
+ *#################### TODO: move the ymsg_ helpers to dedicated header ####################
+ *
+ **/
 
 // TODO ACE: write documentation
 BIOS_EXPORT uint64_t
@@ -264,71 +328,12 @@ BIOS_EXPORT const char *
 BIOS_EXPORT int
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
-/*
- \brief Return last received command.
- \param[in] self bios agent
- \return NULL on failure, one of the following values on success:
-        "STREAM DELIVER"
-        "MAILBOX DELIVER"
-        "SERVICE DELIVER"
-*/
-const char *
-    bios_agent_command (bios_agent_t *self);
-
-/*
- \brief Return last received status
- \param[in] self bios agent
- \return -1 on failure, last received status on success
-*/
-int
-    bios_agent_status (bios_agent_t *self);
-
-/*
- \brief Return last received reason
- \param[in] self bios agent
- \return last received reason on success, NULL on failure
-*/
-const char *
-    bios_agent_reason (bios_agent_t *self);
-
-/*
- \brief Return last received address
- \param[in] self bios agent
- \return last received address on success, NULL on failure
-*/
-const char *
-    bios_agent_address (bios_agent_t *self);
-
-/*
- \brief Return last received sender
- \param[in] self bios agent
- \return last received sender on success, NULL on failure
-*/
-const char *
-    bios_agent_sender (bios_agent_t *self);
-
-/*
- \brief Return last received subject
- \param[in] self bios agent
- \return last received sender on success, NULL on failure
-*/
-const char *
-    bios_agent_subject (bios_agent_t *self);
-
-/*
- \brief Return last received content
- \param[in] self bios agent
- \return last received content on success, NULL on failure
-*/
-ymsg_t *
-    bios_agent_content (bios_agent_t *self);
-
-const char * ymsg_get_string(ymsg_t* msg, const char *key);
-int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
-int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
-void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
-void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
-void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
+BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
+BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
+BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
+BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
+BIOS_EXPORT void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
+BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
 
 #ifdef __cplusplus
 }
