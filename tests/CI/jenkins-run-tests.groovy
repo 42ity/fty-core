@@ -28,7 +28,7 @@ import hudson.utils.*
 
 def doJob(name,params) {
     job = Hudson.instance.getJob(name);
-    if( job.isDisabled() ) retrun null;
+    if( job.isDisabled() ) return null;
     fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
     fut.waitForStart();
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
@@ -99,7 +99,7 @@ for(
     println "=== Starting $jobName ===";
     lastbuild = doJob(jobName, jobParams);
     if( lastbuild == null ) {
-        println "Job $jobName is disabled";
+        println "Job $jobName is disabled, skipped";
     } else {
         result = lastbuild.getResult();
             if ( result == Result.SUCCESS ) {
