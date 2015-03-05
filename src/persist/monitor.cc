@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include "dbpath.h"
 #include "defs.h"
+#include "preproc.h"
 #include "persist_error.h"
 #include "dbhelpers.h"
 

@@ -144,8 +144,8 @@ AM_LDFLAGS = \
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
-libpriv_defs_la_SOURCES = 	src/include/defs.c \
-				src/include/defs.h
+libpriv_defs_la_SOURCES = 	src/include/str_defs.c \
+				src/include/str_defs.h
 
 noinst_LTLIBRARIES += 		libpriv-git-details-override.la
 
@@ -613,7 +613,6 @@ driver_nut_SOURCES = \
 			src/shared/upsstatus.cc
 
 driver_nut_LDADD = \
-			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-proto.la
 

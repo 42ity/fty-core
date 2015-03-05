@@ -21,35 +21,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
-#ifndef SRC_INCLUDE_BIOS_AGENT__
-#define SRC_INCLUDE_BIOS_AGENT__
+#ifndef INCLUDE_BIOS_AGENT_H__
+#define INCLUDE_BIOS_AGENT_H__
 
 #include <czmq.h>
 #include <malamute.h>
+#include <stdbool.h>
 
 #include "ymsg.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
-#endif
-
-// marker to tell humans and GCC that the unused parameter is there for some
-// reason (i.e. API compatibility) and compiler should not warn if not used
-#ifndef UNUSED_PARAM
-# ifdef __GNUC__
-#  define UNUSED_PARAM __attribute__ ((__unused__))
-# else
-#  define UNUSED_PARAM
-# endif
 #endif
 
 typedef struct _bios_agent_t bios_agent_t;
@@ -175,45 +157,56 @@ BIOS_EXPORT int
 BIOS_EXPORT int
     bios_agent_set_consumer (bios_agent_t *self, const char *stream, const char *pattern);
 
-/*!
- \brief Get status value of ROZP REPLY message
-        Consensus is that state is ok only when key KEY_STATUS has value OK. Otherwise state is error (even if aux is missing).
- \return 0 error, 1 ok
-*/
-BIOS_EXPORT int
-    ymsg_status (ymsg_t *self);
-
-/*!
- \brief Set status value of ROZP REPLY message
-*/
-BIOS_EXPORT void
-    ymsg_set_status (ymsg_t *self, bool status);
-
-/*!
- \brief Get repeat value
-        Consensus is that request should be repeated in REPLY only when key KEY_REPEAT is present in field aux with value == YES. Otherwise (even if aux is missing) the default state is not to repeat.
- \return 0 no repeat, 1 repeat
-*/
-BIOS_EXPORT int
-    ymsg_repeat (ymsg_t *self);
-
-/*!
- \brief Set repeat value
-*/
-BIOS_EXPORT void
-    ymsg_set_repeat (ymsg_t *self, bool repeat);
-
-/*!
- \brief Get content type
- /return NULL on failure, content type on success
+/*
+ \brief Return last received command.
+ \param[in] self bios agent
+ \return NULL on failure, one of the following values on success:
+        "STREAM DELIVER"
+        "MAILBOX DELIVER"
+        "SERVICE DELIVER"
 */
 BIOS_EXPORT const char *
-    ymsg_content_type (ymsg_t *self);
-/*!
- \brief Set content type
+    bios_agent_command (bios_agent_t *self);
+
+/*
+ \brief Return last received status
+ \param[in] self bios agent
+ \return -1 on failure, last received status on success
 */
-BIOS_EXPORT void
-    ymsg_set_content_type (ymsg_t *self, const char *content_type);
+BIOS_EXPORT int
+    bios_agent_status (bios_agent_t *self);
+
+/*
+ \brief Return last received reason
+ \param[in] self bios agent
+ \return last received reason on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_reason (bios_agent_t *self);
+
+/*
+ \brief Return last received address
+ \param[in] self bios agent
+ \return last received address on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_address (bios_agent_t *self);
+
+/*
+ \brief Return last received sender
+ \param[in] self bios agent
+ \return last received sender on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_sender (bios_agent_t *self);
+
+/*
+ \brief Return last received subject
+ \param[in] self bios agent
+ \return last received sender on success, NULL on failure
+*/
+BIOS_EXPORT const char *
+    bios_agent_subject (bios_agent_t *self);
 
 /*
  \brief Return last received content
@@ -223,6 +216,30 @@ BIOS_EXPORT void
 BIOS_EXPORT ymsg_t *
     bios_agent_content (bios_agent_t *self);
 
+//! Returns true if status value of ROZP message is OK, false otherwise 
+BIOS_EXPORT bool
+    ymsg_is_ok (ymsg_t *self);
+
+//! Set status value of ROZP message
+BIOS_EXPORT void
+    ymsg_set_status (ymsg_t *self, bool status);
+
+//! Returns true if repeat value of ROZP message is YES, false otherwise 
+BIOS_EXPORT bool
+    ymsg_is_repeat (ymsg_t *self);
+
+//! Set repeat value of ROZP message
+BIOS_EXPORT void
+    ymsg_set_repeat (ymsg_t *self, bool repeat);
+
+//! Get content type value of ROZP message
+BIOS_EXPORT const char *
+    ymsg_content_type (ymsg_t *self);
+//! Set content type value of ROZP message
+BIOS_EXPORT void
+    ymsg_set_content_type (ymsg_t *self, const char *content_type);
+
+// TODO (miska): please change for utils_ymsg.h functions
 BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
 BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
 BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
@@ -234,5 +251,5 @@ BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
 }
 #endif
 
-#endif // SRC_INCLUDE_BIOS_AGENT__
+#endif // INCLUDE_BIOS_AGENT_H__
 

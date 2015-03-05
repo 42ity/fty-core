@@ -1,7 +1,7 @@
-#include "defs.h"
+#include "str_defs.h"
 
-/* Implement variables declared in defs.h */
-/* NOTE: were static const, now extern const in .h, const in .c */
+/* Implement variables declared in str_defs.h */
+/* NOTE: In header file the declaration used to be static const, now it is extern const. In source file: const in .c */
 const char* DB_SOCK = "ipc://@/poord/persistence";
 const char* FILIP_SOCK = "ipc://@/poord/netlogic";
 const char* CLI_SOCK = "ipc://@/poord/cli";

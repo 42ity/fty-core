@@ -1,25 +1,5 @@
-#ifndef SRC_INCLUDE_DEFS_H_
-#define SRC_INCLUDE_DEFS_H_
-
-// marker to tell humans and GCC that the unused parameter is there for some
-// reason (i.e. API compatibility) and compiler should not warn if not used
-#ifndef UNUSED_PARAM
-# ifdef __GNUC__
-#  define UNUSED_PARAM __attribute__ ((__unused__))
-# else
-#  define UNUSED_PARAM
-# endif
-#endif
-
-/* Implemented in defs.c, link with that if you use any of these values */
-extern const char* DB_SOCK;
-extern const char* FILIP_SOCK;
-extern const char* CLI_SOCK;
-
-extern const char* DRIVER_NMAP_SOCK;
-extern const char* DRIVER_NMAP_REPLY;
-
-extern const char* MLM_ENDPOINT;
+#ifndef SRC_INCLUDE_DEFS_H__
+#define SRC_INCLUDE_DEFS_H__
 
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
@@ -123,4 +103,5 @@ enum ipaddr_version {
 #define NETMON_VAL_IPV4     "ip version 4"
 #define NETMON_VAL_IPV6     "ip version 6"
 
-#endif // SRC_INCLUDE_DEFS_H_
+#endif // SRC_INCLUDE_DEFS_H__
+

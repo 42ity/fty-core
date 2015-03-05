@@ -76,7 +76,7 @@ bios_netmon_encode
     }
     ymsg_aux_insert (message, NETMON_KEY_IPVER, "%s", s); 
     ymsg_aux_insert (message, NETMON_KEY_IPADDR, "%s", ip_address == NULL ? "" : ip_address);
-    ymsg_aux_set_unsigned (message, NETMON_KEY_PREFIXLEN, prefix_length);
+    ymsg_aux_set_uint32 (message, NETMON_KEY_PREFIXLEN, prefix_length);
     ymsg_aux_insert (message, NETMON_KEY_MACADDR, "%s", mac_address == NULL ? "" : mac_address);
     return message; 
 }
@@ -124,8 +124,8 @@ bios_netmon_decode
             return -1;
         }
         ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
-        uint64_t ui;
-        int rc = ymsg_aux_unsigned (self, NETMON_KEY_PREFIXLEN, &ui);
+        uint32_t ui;
+        int rc = ymsg_aux_uint32 (self, NETMON_KEY_PREFIXLEN, &ui);
         if (rc != 0 || ui > 255) {
             return -1;
         }

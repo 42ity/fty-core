@@ -13,7 +13,7 @@
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
-    Copyright (C) 2014 Eaton                                            
+    Copyright (C) 2014 - 2015 Eaton                                     
                                                                         
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@
         bin                 chunk       In case we want to store pictures in db, etc...
 */
 
-#define APP_VERSION                         1.0
+#define APP_VERSION                         1
 #define APP_OP_INSERT                       0
 #define APP_OP_GET                          1
 #define APP_OP_UPDATE                       2
@@ -58,17 +58,10 @@
 
 #include <czmq.h>
 
+#include "bios_export.h"
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
 #endif
 
 //  Opaque class structure
@@ -144,7 +137,7 @@ BIOS_EXPORT int
         const char *name,
         zlist_t *params,
         zhash_t *args);
-
+    
 //  Send the DB to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 BIOS_EXPORT int
@@ -153,7 +146,7 @@ BIOS_EXPORT int
         zlist_t *params,
         zhash_t *args,
         zchunk_t *bin);
-
+    
 //  Duplicate the app message
 BIOS_EXPORT app_t *
     app_dup (app_t *self);
@@ -162,11 +155,9 @@ BIOS_EXPORT app_t *
 BIOS_EXPORT void
     app_print (app_t *self);
 
-//  Get the message routing id
+//  Get/set the message routing id
 BIOS_EXPORT zframe_t *
     app_routing_id (app_t *self);
-
-//  Set the message routing id
 BIOS_EXPORT void
     app_set_routing_id (app_t *self, zframe_t *routing_id);
 
@@ -187,11 +178,9 @@ BIOS_EXPORT void
 //  Get/set the params field
 BIOS_EXPORT zlist_t *
     app_params (app_t *self);
-
 //  Get the params field and transfer ownership to caller
 BIOS_EXPORT zlist_t *
     app_get_params (app_t *self);
-
 //  Set the params field, transferring ownership from caller
 BIOS_EXPORT void
     app_set_params (app_t *self, zlist_t **params_p);
@@ -215,7 +204,7 @@ BIOS_EXPORT zhash_t *
 //  Set the args field, transferring ownership from caller
 BIOS_EXPORT void
     app_set_args (app_t *self, zhash_t **args_p);
-
+    
 //  Get/set a value in the args dictionary
 BIOS_EXPORT const char *
     app_args_string (app_t *self,

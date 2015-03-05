@@ -59,17 +59,10 @@ Fields that are common with message 'send' are described there.
 
 #include <czmq.h>
 
+#include "bios_export.h"
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
 #endif
 
 //  Opaque class structure
@@ -245,7 +238,7 @@ BIOS_EXPORT void
     ymsg_set_response (ymsg_t *self, zchunk_t **chunk_p);
 
 //  Self test of this class
-int
+BIOS_EXPORT int
     ymsg_test (bool verbose);
 //  @end
 

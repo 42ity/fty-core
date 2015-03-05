@@ -21,8 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
-#ifndef INCLUDE_AGENTS__
-#define INCLUDE_AGENTS__
+#ifndef INCLUDE_AGENTS_H__
+#define INCLUDE_AGENTS_H__
 
 #include <czmq.h>
 #include <malamute.h>
@@ -33,17 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/*    
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
-#endif
-*/
 
 BIOS_EXPORT ymsg_t *
     bios_netmon_encode (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address);
@@ -57,5 +46,5 @@ BIOS_EXPORT int
 }
 #endif
 
-#endif // INCLUDE_AGENTS__
+#endif // INCLUDE_AGENTS_H__
 

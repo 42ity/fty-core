@@ -1,5 +1,4 @@
-/* utils_ymsg.h: TODO
- 
+/* 
 Copyright (C) 2014 - 2015 Eaton
  
 This program is free software: you can redistribute it and/or modify
@@ -22,10 +21,11 @@ Author(s): Karol Hrdina <karolhrdina@eaton.com>
 Description: TODO
 */
 
-#ifndef SRC_SHARED_UTILS_YMSG__
-#define SRC_SHARED_UTILS_YMSG__
+#ifndef SRC_SHARED_UTILS_YMSG_H__
+#define SRC_SHARED_UTILS_YMSG_H__
 
 #include "ymsg.h"
+#include "app.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -36,36 +36,48 @@ extern "C"
 // These misuse conversion to/from string to transfer numbers around    
 // I have a better set prepared, coming soon ;)
 int
-    ymsg_aux_unsigned (ymsg_t *self, const char *key, uint64_t *value);
+    ymsg_aux_uint32 (ymsg_t *self, const char *key, uint32_t *value);
 int
-    ymsg_aux_signed (ymsg_t *self, const char *key, int64_t *value);
+    ymsg_aux_uint64 (ymsg_t *self, const char *key, uint64_t *value);
+int
+    ymsg_aux_int32 (ymsg_t *self, const char *key, int32_t *value);
+int
+    ymsg_aux_int64 (ymsg_t *self, const char *key, int64_t *value);
 int
     ymsg_aux_double (ymsg_t *self, const char *key, double *value);
 void
-    ymsg_aux_set_unsigned (ymsg_t *self, const char *key, uint64_t value);
+    ymsg_aux_set_uint32 (ymsg_t *self, const char *key, uint32_t value);
 void
-    ymsg_aux_set_signed (ymsg_t *self, const char *key, int64_t value);
+    ymsg_aux_set_uint64 (ymsg_t *self, const char *key, uint64_t value);
+void
+    ymsg_aux_set_int32 (ymsg_t *self, const char *key, int32_t value);
+void
+    ymsg_aux_set_int64 (ymsg_t *self, const char *key, int64_t value);
 void
     ymsg_aux_set_double (ymsg_t *self, const char *key, uint8_t precision, double value);
+int
+    ymsg_aux_set_request (ymsg_t *self, app_t **request);
+int
+    ymsg_aux_set_response (ymsg_t *self, app_t **response);
+
 
 // TODO ACE: write documentation
 int
     ymsg_rowid (ymsg_t *self, uint64_t *value);
 void
     ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
-int
+int32_t
     ymsg_errtype (ymsg_t *self);
 void
-    ymsg_set_errtype (ymsg_t *self, int error_type);
-int
+    ymsg_set_errtype (ymsg_t *self, int32_t error_type);
+int32_t
     ymsg_errsubtype (ymsg_t *self);
 void
-    ymsg_set_errsubtype (ymsg_t *self, int error_subtype);
+    ymsg_set_errsubtype (ymsg_t *self, int32_t error_subtype);
 const char*
     ymsg_errmsg (ymsg_t *self);
 void
     ymsg_set_errmsg (ymsg_t *self, const char *error_msg);
-
 
 // without ownership transfer
 zhash_t*
@@ -84,16 +96,18 @@ ymsg_t*
  \brief Get number of rows affected of ROZP REPLY message
  \return  number of rows affected. If key is not specified, then -1.
 */
-int
+int64_t
     ymsg_affected_rows (ymsg_t *self);
 
 /*!
  \brief Set number of rows affected in ROZP REPLY message
 */
 void
-    ymsg_set_affected_rows (ymsg_t *self, uint64_t n);
+    ymsg_set_affected_rows (ymsg_t *self, int64_t n);
 
 #ifdef __cplusplus
 }
 #endif
-#endif // SRC_SHARED_UTILS_YMSG__    
+
+#endif // SRC_SHARED_UTILS_YMSG_H__    
+

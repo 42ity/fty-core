@@ -4,11 +4,12 @@
 #include <errno.h>
 
 #include "bios_agent.h"
-#include "log.h"
 #include "utils_ymsg.h"
 #include "defs.h"
 
 #define TIMEOUT 1000
+
+MLM_EXPORT extern volatile int mlm_client_verbose; // TODO (mvyskocil): description, usage....
 
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
@@ -72,8 +73,6 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
     return rc;
 }
 
-MLM_EXPORT extern volatile int
-    mlm_client_verbose;
 int
 bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject, ymsg_t **send_p) {
     if (!self || !address || !subject || !send_p || !(*send_p) || ymsg_id (*send_p) != YMSG_SEND) {
@@ -96,7 +95,7 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
     ymsg_set_seq (*reply_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
     ymsg_set_rep (*reply_p, ymsg_seq (send));
 
-    if (ymsg_repeat(send)) { // default is not to repeat
+    if (ymsg_is_repeat (send)) { // default is not to repeat
         zchunk_t *chunk = ymsg_get_request (send);
         ymsg_set_request (*reply_p, &chunk);
     }
@@ -151,65 +150,6 @@ bios_agent_recv (bios_agent_t *self) {
     }
     ymsg_t *ymsg = ymsg_decode (&zmsg);
     return ymsg;
-}
-
-
-int
-ymsg_status (ymsg_t *self) {
-    if (!self || ymsg_id (self) != YMSG_REPLY) {
-        return 0;
-    }
-    const char *value = ymsg_aux_string (self, KEY_STATUS, NULL);
-    int rc = 0;
-    if (streq (value, OK)) {
-        rc = 1;
-    }
-    return rc;
-}
-
-void
-ymsg_set_status (ymsg_t *self, bool status) {
-    if (!self || ymsg_id (self) != YMSG_REPLY) {
-        return;
-    }
-    ymsg_aux_insert (self, KEY_STATUS, "%s", status ? OK : ERROR);
-}
-
-int
-ymsg_repeat (ymsg_t *self) {
-    if (!self) {
-        return 0;
-    }
-    const char *value = ymsg_aux_string (self, KEY_REPEAT, NULL);
-    int rc = 0;
-    if (streq (value, YES)) {
-        rc = 1;
-    }
-    return rc;
-}
-
-void
-ymsg_set_repeat (ymsg_t *self, bool repeat) {
-    if (!self) {
-        return;
-    }
-    ymsg_aux_insert (self, KEY_REPEAT, "%s", repeat ? YES : NO);
-}
-
-const char *
-ymsg_content_type (ymsg_t *self) {
-    if (!self) {
-        return NULL;
-    }
-    return ymsg_aux_string (self, KEY_CONTENT_TYPE, NULL);
-}
-
-void
-ymsg_set_content_type (ymsg_t *self, const char *content_type) {
-    if (!self || !content_type) {
-        return;
-    }
-    ymsg_aux_insert (self, KEY_CONTENT_TYPE, "%s", content_type);
 }
 
 const char *
@@ -270,6 +210,54 @@ bios_agent_content (bios_agent_t *self) {
         return NULL;
     }
     return ymsg_decode (&zmsg);
+}
+
+bool
+ymsg_is_ok (ymsg_t *self) {
+    if (!self) {
+        return false;
+    }
+    return streq (ymsg_aux_string (self, KEY_STATUS, ""), OK);
+}
+
+void
+ymsg_set_status (ymsg_t *self, bool status) {
+    if (!self) {
+        return;
+    }
+    ymsg_aux_insert (self, KEY_STATUS, "%s", status ? OK : ERROR);
+}
+
+bool
+ymsg_is_repeat (ymsg_t *self) {
+    if (!self) {
+        return false;
+    }
+    return streq (ymsg_aux_string (self, KEY_REPEAT, ""), YES);
+}
+
+void
+ymsg_set_repeat (ymsg_t *self, bool repeat) {
+    if (!self) {
+        return;
+    }
+    ymsg_aux_insert (self, KEY_REPEAT, "%s", repeat ? YES : NO);
+}
+
+const char *
+ymsg_content_type (ymsg_t *self) {
+    if (!self) {
+        return NULL;
+    }
+    return ymsg_aux_string (self, KEY_CONTENT_TYPE, NULL);
+}
+
+void
+ymsg_set_content_type (ymsg_t *self, const char *content_type) {
+    if (!self || !content_type) {
+        return;
+    }
+    ymsg_aux_insert (self, KEY_CONTENT_TYPE, "%s", content_type);
 }
 
 void
@@ -341,5 +329,4 @@ ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     sprintf(buff, "%ld", value);
     set_hash(msg, key, buff);
 }
-
 
