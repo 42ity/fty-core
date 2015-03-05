@@ -229,7 +229,7 @@ zhash_t* select_asset_element_attributes(tntdb::Connection &conn,
             row[2].get(read_only);
 
             zhash_insert (extAttributes, keytag.c_str(), 
-                          (void*) (( read_only == 1 ? "r" : "w")+value).c_str());
+                          (void*) (( read_only ? "r:" : "w:")+value).c_str());
         }
     }
     catch (const std::exception &e) {
