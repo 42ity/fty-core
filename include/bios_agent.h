@@ -251,7 +251,7 @@ BIOS_EXPORT void
 BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
 BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
 BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
-BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, const char *value);
+BIOS_EXPORT void ymsg_set_string(ymsg_t* msg, const char *key, char *value);
 BIOS_EXPORT void ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value);
 BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
 
