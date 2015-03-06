@@ -67,12 +67,15 @@ if [ ! -d "${LIBDIR}" ]; then
 fi
 
 # run malamute
+MALAMUTE_STARTED=no
 if pgrep malamute; then
-    echo "CI-ERROR: malamute is already running!" >&2
-    exit 1
+    echo "CI-INFO: malamute is already running!" >&2
+    #[ -s malamute.pid ] || pidof malamute > malamute.pid
+    #exit 1
+else
+    malamute /etc/malamute/malamute.cfg & && MALAMUTE_STARTED=yes
+    echo $! > malamute.pid
 fi
-malamute /etc/malamute/malamute.cfg &
-echo $! > malamute.pid
 
 rm -f test-libbiosapi
 
@@ -100,9 +103,11 @@ if make $MAKE_FLAGS test-libbiosapiut || make test-libbiosapiut ; then
     ./test-libbiosapiut || retut=$?
 fi
 
+if [ x"$MALAMUTE_STARTED" = xyes ]; then
+    kill -9 $(cat malamute.pid)
+    rm -f malamute.pid
+fi
 
-kill -9 $(cat malamute.pid)
-rm -f malamute.pid
 # Caller may set this to not delete the program file
 [ x"$KEEP_TEST_LIBBOISAPI" = xyes ] || rm -f test-libbiosapi
 if [ $ret -eq 0 ]; then
