@@ -114,7 +114,9 @@ fill_database(){
 # start simple as a subprocess
 start_simple(){
     # Kill existing process
-    killall -9 simple netmon driver-nmap
+    for d in simple netmon driver-nmap ; do
+        killall -9 $d lt-$d 
+    done
     # start simple
     if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
         $INSTALLDIR/usr/local/bin/simple &
@@ -147,7 +149,10 @@ start_tntnet(){
 
 # stop all processes launched in the script
 stop_processes(){
-    killall -9 simple netmon driver-nmap tntnet
+    for d in simple netmon driver-nmap ; do
+        killall -9 $d lt-$d 
+    done
+    killall -9 tntnet
 }
 
 create_nut_config
