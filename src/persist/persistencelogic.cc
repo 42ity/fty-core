@@ -77,15 +77,18 @@ void process_measurement(const std::string topic, zmsg_t **msg) {
 
     try {
         tntdb::Statement st = conn.prepareCached(
-            "INSERT INTO t_bios_measurement_topic (topic) "
-            "SELECT :topic FROM dual WHERE NOT EXISTS "
-            "(SELECT id from t_bios_measurement_topic WHERE topic=:topic)");
-    st.set("topic", topic).execute();
+            "INSERT INTO t_bios_measurement_topic (topic, units) "
+            "SELECT :topic, :units FROM dual WHERE NOT EXISTS "
+            "(SELECT id from t_bios_measurement_topic WHERE topic=:topic AND "
+            " units=:units)");
+    st.set("topic", topic).
+      .set("units", units)
+      .execute();
     st = conn.prepareCached(
             "INSERT INTO t_bios_measurement "
             "(timestamp, value, scale, units, topic_id) "
             "SELECT FROM_UNIXTIME(:time), :value, :scale, :units, id FROM "
-            "t_bios_measurement_topic WHERE topic=:topic");
+            "t_bios_measurement_topic WHERE topic=:topic AND units=:units");
     st.set("topic", topic)
       .set("time",  tme)
       .set("value", value)

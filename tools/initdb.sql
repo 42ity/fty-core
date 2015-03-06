@@ -18,8 +18,12 @@ drop table if exists t_bios_device_type;
 
 CREATE TABLE t_bios_measurement_topic(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
-    topic            VARCHAR(255) NOT NULL,
-    PRIMARY KEY(id)
+    device_id        INTEGER           NOT NULL DEFAULT '0',
+    units            VARCHAR(10)       NOT NULL,
+    topic            VARCHAR(255)      NOT NULL,
+    PRIMARY KEY(id),
+
+    INDEX(topic,units)
 );
 
 CREATE TABLE t_bios_measurement (
@@ -27,7 +31,6 @@ CREATE TABLE t_bios_measurement (
     timestamp     DATETIME            NOT NULL,
     value         INTEGER             NOT NULL,
     scale         INTEGER             NOT NULL,
-    units         VARCHAR(10)         NOT NULL,
     topic_id      INTEGER UNSIGNED    NOT NULL,
 
     PRIMARY KEY(id),
