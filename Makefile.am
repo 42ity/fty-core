@@ -835,7 +835,7 @@ if HAVE_SYSTEMD
 
 # copy from autoconf manual, note signle suffix rules can't be used there!!
 edit = sed \
-	-e 's|@libdir[@]|$(libdir)|g'
+	-e 's|@libexecdir[@]|$(libexecdir)|g'
 
 bios-driver-nut.service bios-driver-netmon.service bios-db.service: Makefile
 	rm -f $@
