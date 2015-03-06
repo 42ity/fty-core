@@ -133,7 +133,7 @@ start_daemon(){
         nohup "${prefix}/${1}" >~/${1}.log 2>&1 &
         sleep 5
         echo -n "${prefix}/$1 "
-        pidof ${1}
+        pidof ${1} lt-${1}
         RESULT=$?
         if [ "$RESULT" != "0" ] ; then
             echo "ERROR: failed to start $1" >&2
@@ -147,17 +147,17 @@ start_daemon(){
 
 stop() {
     for d in $DAEMONS ; do
-       ( pidof $d >/dev/null 2>&1 && killall $d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && killall $d 2>/dev/null ) || true
     done
     sleep 1
     for d in $DAEMONS ; do
-       ( pidof $d >/dev/null 2>&1 && killall -9 $d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && killall -9 $d 2>/dev/null ) || true
     done
     sleep 1
     # Test successful kills
     for d in $DAEMONS ; do
-        pidof $d >/dev/null 2>&1 && \
-            echo "ERROR: $d still running (`pidof $d`)" && return 1
+        pidof $d lt-$d >/dev/null 2>&1 && \
+            echo "ERROR: $d still running (`pidof $d lt-$d`)" && return 1
     done
     return 0
 }
@@ -166,8 +166,8 @@ status() {
     RESULT=0
     for d in malamute $DAEMONS ; do
        echo -n "$d "
-       if pidof $d >/dev/null 2>&1 ; then
-           echo "running (`pidof $d`)"
+       if pidof $d lt-$d >/dev/null 2>&1 ; then
+           echo "running (`pidof $d lt-$d `)"
        else
            echo "stopped"
            RESULT=1
