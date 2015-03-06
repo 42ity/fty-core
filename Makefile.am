@@ -560,7 +560,7 @@ netmon_LDADD = \
 
 netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
-bin_PROGRAMS += 	server-agent
+client_PROGRAMS += 	server-agent
 
 server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
@@ -837,18 +837,20 @@ if HAVE_SYSTEMD
 edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service: Makefile
+bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service: Makefile
 	rm -f $@
 	$(edit) '$(srcdir)/tools/$@.in' > $@
 
 bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
+bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
 
 systemdsystemunit_DATA = \
 			$(top_builddir)/bios-driver-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
-			$(top_builddir)/bios-db.service
+			$(top_builddir)/bios-db.service \
+			$(top_builddir)/bios-server-agent.service
 
 CLEANFILES += $(top_builddir)/bios-*.service
 endif
