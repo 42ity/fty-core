@@ -31,7 +31,7 @@ std::string filter_group;
 </%cpp>
         {
             "error" :   "bad_input",
-            "msg"   :   "You have to specify one of the following variables: 'filter=<dc_id|group_id>' or 'to=<device_id>' or 'from=<device_id>'."
+            "msg"   :   "You have to specify one of the following variables: 'filter_dc=<dc_id>' or 'filter_group=<group_id>' or 'to=<device_id>' or 'from=<device_id>'."
         }
 <%cpp>
         return HTTP_BAD_REQUEST;
