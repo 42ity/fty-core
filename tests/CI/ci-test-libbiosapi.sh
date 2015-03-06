@@ -73,7 +73,8 @@ if pgrep malamute; then
     #[ -s malamute.pid ] || pidof malamute > malamute.pid
     #exit 1
 else
-    malamute /etc/malamute/malamute.cfg & && MALAMUTE_STARTED=yes
+    malamute /etc/malamute/malamute.cfg &
+    [ $? = 0 ] && MALAMUTE_STARTED=yes
     echo $! > malamute.pid
 fi
 
