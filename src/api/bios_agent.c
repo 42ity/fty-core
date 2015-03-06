@@ -9,8 +9,6 @@
 
 #define TIMEOUT 1000
 
-MLM_EXPORT extern volatile int mlm_client_verbose; // TODO (mvyskocil): description, usage....
-
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
     void* seq;              // message sequence number
@@ -326,7 +324,7 @@ ymsg_get_int64(ymsg_t* msg, const char *key) {
 }
 
 void
-ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
+ymsg_set_string(ymsg_t* msg, const char *key, char *value) {
     set_hash(msg, key, value);
 }
 
