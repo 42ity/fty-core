@@ -28,6 +28,7 @@ import hudson.utils.*
 
 def doJob(name,params) {
     job = Hudson.instance.getJob(name);
+    if( job.isDisabled() ) return 0;
     fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
     fut.waitForStart();
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
@@ -60,19 +61,23 @@ for(
 ){
     println "=== Starting $jobName ===";
     lastbuild = doJob(jobName, jobParams);
-    result = lastbuild.getResult();
-    if ( result == Result.SUCCESS ) {
-        print result.toString();
-        println ", see " + lastbuild.getAbsoluteUrl() + " for details";
-    } else  if ( result == Result.UNSTABLE ) {
-        println "WARNING: " + jobName + " result is " + result.toString();
-        println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+    if( lastbuild == 0 ) {
+        println "Job $jobName is disabled";
     } else {
-        println "ERROR: " + jobName + " result is " + result.toString();
-        println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
-        throw new Exception("Job $jobName failed");
+        result = lastbuild.getResult();
+        if ( result == Result.SUCCESS ) {
+            print result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else  if ( result == Result.UNSTABLE ) {
+            println "WARNING: " + jobName + " result is " + result.toString();
+            println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
+            println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+        } else {
+            println "ERROR: " + jobName + " result is " + result.toString();
+            println "see " + lastbuild.getAbsoluteUrl() + " for failed build";
+            println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+            throw new Exception("Job $jobName failed");
+        }
     }
 }
 
@@ -87,18 +92,23 @@ for(
         "test_general_database",
         "test_NUT",
         "test_rackpower",
+        "test_libbiosapi",
         "stop_bios"
     ]
 ){
     println "=== Starting $jobName ===";
     lastbuild = doJob(jobName, jobParams);
-    result = lastbuild.getResult();
-    if ( result == Result.SUCCESS ) {
-        print result.toString();
-        println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+    if( lastbuild == 0 ) {
+        println "Job $jobName is disabled, skipped";
     } else {
-        println "WARNING: " + jobName + " result is " + result.toString();
-        println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
-        println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+        result = lastbuild.getResult();
+            if ( result == Result.SUCCESS ) {
+            print result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else {
+            println "WARNING: " + jobName + " result is " + result.toString();
+            println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
+            println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+        }
     }
 }

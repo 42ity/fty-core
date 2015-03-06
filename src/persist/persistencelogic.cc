@@ -32,6 +32,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 #include "defs.h"
 #include "bios_agent.h"
+#include "preproc.h"
 #include "assetcrud.h"
 #include "cidr.h"
 #include "persistence.h"
