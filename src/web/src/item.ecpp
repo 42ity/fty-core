@@ -189,17 +189,20 @@ asset_manager asset_mgr;
 
     if ( ext_count > 0 ) {
 </%cpp>
-    , "ext" : {
+    , "ext" : [
 <%cpp>
         for ( i = 1, it = zhash_first(ext); it != 0;
                     i++,   it = zhash_next(ext) ) {
             if ( type_byte == asset_type::GROUP && !strcmp((char*) zhash_cursor (ext), "type") ) {
                 continue;
             }
+            const char* s = (const char*) it;
+            bool read_only = (s[0] != 'w');
+            const char* text = (const char*) s+2;
 </%cpp>
-        "<$ (char*) zhash_cursor (ext) $>":"<$ (char*)it $>"<? i != ext_count ? "," ?>
+        {"<$ (char*) zhash_cursor (ext) $>":"<$ text $> ", "read_only" : <$ read_only ? "true" : "false" $> }<? i != ext_count ? "," ?>
 %       }
-    }
+    ]
 %   }
 }
 <%cpp>
