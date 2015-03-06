@@ -324,7 +324,7 @@ ymsg_get_int64(ymsg_t* msg, const char *key) {
 }
 
 void
-ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
+ymsg_set_string(ymsg_t* msg, const char *key, char *value) {
     set_hash(msg, key, value);
 }
 
