@@ -631,8 +631,10 @@ LIBBIOSAPI_AGE=0
 
 lib_LTLIBRARIES +=		libbiosapi.la
 
-libbiosapi_la_HEADERS =		$(top_srcdir)/include/app.h \
+libbiosapi_la_noinst_HEADERS = \
+				$(top_srcdir)/include/app.h \
 				$(top_srcdir)/include/bios_agent.h \
+				$(top_srcdir)/include/bios_export.h \
 				$(top_srcdir)/include/agents.h \
 				$(top_srcdir)/include/ymsg.h
 
@@ -674,7 +676,7 @@ EXTRA_DIST +=			src/api/libbiosapi.pc.in  src/api/libbiosapi.pc
 DISTCLEANFILES +=		src/api/libbiosapi.pc
 
 pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS)
-EXTRA_DIST +=			$(libbiosapi_la_HEADERS)
+dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS)
 
 # Web
 pkglib_LTLIBRARIES += bios_web.la
