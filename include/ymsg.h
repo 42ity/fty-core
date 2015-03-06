@@ -59,17 +59,10 @@ Fields that are common with message 'send' are described there.
 
 #include <czmq.h>
 
+#include "bios_export.h"
+
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
 #endif
 
 //  Opaque class structure
@@ -149,7 +142,7 @@ BIOS_EXPORT int
         uint16_t seq,
         zhash_t *aux,
         zchunk_t *request);
-
+    
 //  Send the REPLY to the output in one step
 //  WARNING, this call will fail if output is of type ZMQ_ROUTER.
 BIOS_EXPORT int
@@ -160,7 +153,7 @@ BIOS_EXPORT int
         zhash_t *aux,
         zchunk_t *response,
         zchunk_t *request);
-
+    
 //  Duplicate the ymsg message
 BIOS_EXPORT ymsg_t *
     ymsg_dup (ymsg_t *self);
@@ -204,7 +197,7 @@ BIOS_EXPORT zhash_t *
 //  Set the aux field, transferring ownership from caller
 BIOS_EXPORT void
     ymsg_set_aux (ymsg_t *self, zhash_t **aux_p);
-
+    
 //  Get/set a value in the aux dictionary
 BIOS_EXPORT const char *
     ymsg_aux_string (ymsg_t *self,

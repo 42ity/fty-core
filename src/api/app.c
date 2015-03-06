@@ -13,7 +13,7 @@
      * The code generation script that built this file: zproto_codec_c_v1
     ************************************************************************
                                                                         
-    Copyright (C) 2014 Eaton                                            
+    Copyright (C) 2014 - 2015 Eaton                                     
                                                                         
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

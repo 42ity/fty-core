@@ -40,7 +40,6 @@ global:
         app_bin;
         app_get_bin;
         app_set_bin;
-        app_test;
 
         bios_agent_new;
         bios_agent_destroy;
@@ -58,10 +57,12 @@ global:
         bios_agent_sender;
         bios_agent_subject;
         bios_agent_content;
+        bios_agent_actor;
+        bios_agent_msgpipe;
 
-        ymsg_status;
+        ymsg_is_ok;
         ymsg_set_status;
-        ymsg_repeat;
+        ymsg_is_repeat;
         ymsg_set_repeat;
         ymsg_content_type;
         ymsg_set_content_type;
@@ -104,7 +105,6 @@ global:
         ymsg_response;
         ymsg_get_response;
         ymsg_set_response;
-        ymsg_test;
 		ymsg_set_string;
 		ymsg_set_int32;
 		ymsg_set_int64;
