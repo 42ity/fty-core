@@ -649,7 +649,7 @@ libbiosapi_la_SOURCES = \
 				src/shared/utils_ymsg.c \
 				src/shared/utils_ymsg.h \
 				src/include/defs.h \
-				$(libbiosapi_la_HEADERS)
+				$(libbiosapi_la_HEADERS_noinst)
 
 libbiosapi_la_CPPFLAGS = \
 		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
