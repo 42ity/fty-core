@@ -219,6 +219,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
+libpriv_db_la_LIBADD = -lbiosapi
+
 noinst_LTLIBRARIES += 	libpriv-proto.la
 libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.c \
@@ -414,6 +416,30 @@ test_dbtopology_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+bin_PROGRAMS += 	test-db-asset-crud
+
+test_db_asset_crud_SOURCES = \
+			tests/persist/test-asset-crud.cc
+
+
+test_db_asset_crud_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_db_asset_crud_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 #### total power tests

@@ -26,6 +26,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_msg.h"
 #include "dbtypes.h"
 #include "defs.h"
+#include "dbhelpers.h"
+#include <tntdb/connect.h>
+
+
 
 // ===============================================================
 // Functions for processing a special message type
@@ -84,7 +88,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg);
  *
  * \return zmsg_t - an encoded ASSET_MSG_ELEMENT or COMMON_MSG_FAIL message.
  */
-zmsg_t* select_asset_element(const char* url, a_elmnt_id_t element_id, 
+zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id, 
                               a_elmnt_tp_id_t element_type_id);
 
 /**
@@ -103,7 +107,7 @@ zmsg_t* select_asset_element(const char* url, a_elmnt_id_t element_id,
  *
  * \return zmsg_t - an encoded ASSET_MSG_DEVICE or COMMON_MSG_FAIL message.
  */
-zmsg_t* select_asset_device(const char* url, asset_msg_t** element, 
+zmsg_t* select_asset_device(tntdb::Connection &conn, asset_msg_t** element, 
                             a_elmnt_id_t element_id);
 
 /**
@@ -122,7 +126,7 @@ zmsg_t* select_asset_device(const char* url, asset_msg_t** element,
  *         filled object zhash_t  if there is at least one extra attribute 
  *                                for the specified element.
  */
-zhash_t* select_asset_element_attributes(const char* url, 
+zhash_t* select_asset_element_attributes(tntdb::Connection &conn, 
                                          a_elmnt_id_t element_id);
 /**
  * \brief Gets data about links for the specifeid device.
@@ -154,7 +158,7 @@ zhash_t* select_asset_element_attributes(const char* url,
  *         filled object zlist_t  if the specified device belongs to 
  *                                some links.
  */
-zlist_t* select_asset_device_link(const char* url, 
+zlist_t* select_asset_device_link(tntdb::Connection &conn, 
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id);
 
 /**
@@ -172,7 +176,26 @@ zlist_t* select_asset_device_link(const char* url,
  *         filled object zlist_t  if the specified element belongs to 
  *                                some groups.
  */
-zlist_t* select_asset_element_groups(const char* url, 
-       a_elmnt_id_t element_id);
+zlist_t* select_asset_element_groups(const char* url,
+                                   a_elmnt_id_t element_id);
+
+db_reply_t insert_into_asset_ext_attribute (tntdb::Connection &conn,
+                                   const char   *value,
+                                   const char   *keytag,
+                                   a_elmnt_id_t  asset_element_id,
+                                   bool          read_only);
+
+db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
+                                   zhash_t      *attributes,
+                                   a_elmnt_id_t  asset_element_id,
+                                   bool          read_only);
+
+db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
+                                   a_elmnt_id_t  asset_element_id);
+
+db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
+ //                                  const char   *value,
+                                   const char   *keytag,
+                                   a_elmnt_id_t  asset_element_id);
 
 #endif // SRC_PERSIST_ASSETCRUD_H_
