@@ -138,6 +138,72 @@ AM_LDFLAGS = \
 	 	-Wl,--gc-sections \
 		-Wl,--as-needed
 
+########################################################################
+# (Shared) Public $BIOS API Library
+# While this location in the Makefile hopefully ensures that this is
+# built before other objects, please do not neglect proper definition
+# of _DEPENDENCIES variables
+########################################################################
+
+# Current interface number
+LIBBIOSAPI_CURRENT=0
+# Revision (implementation number) within current interface
+LIBBIOSAPI_REVISION=0
+# How many previous interfaces are still supported
+LIBBIOSAPI_AGE=0
+
+# Note the public API binary library files are installed to the system
+# common $(libdir), not private $(pkglibdir) like e.g. REST API module
+lib_LTLIBRARIES +=		libbiosapi.la
+
+libbiosapi_la_HEADERS_noinst = \
+				$(top_srcdir)/include/app.h \
+				$(top_srcdir)/include/bios_agent.h \
+				$(top_srcdir)/include/bios_export.h \
+				$(top_srcdir)/include/agents.h \
+				$(top_srcdir)/include/ymsg.h
+
+# where to install the headers on the system
+libbiosapi_ladir =		$(includedir)/@PACKAGE@
+
+libbiosapi_la_SOURCES = \
+				src/api/app.c \
+				src/api/bios_agent.c \
+				src/api/agents.c \
+				src/api/ymsg.c \
+				src/shared/utils_ymsg.c \
+				src/shared/utils_ymsg.h \
+				src/include/defs.h \
+				$(libbiosapi_la_HEADERS_noinst)
+
+libbiosapi_la_CPPFLAGS = \
+		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
+
+libbiosapi_la_LDFLAGS = \
+		$(AM_LDFLAGS) \
+		-fPIC -shared \
+		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
+		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE)
+
+if HAVE_LD_VERSION_SCRIPT
+libbiosapi_la_LDFLAGS += \
+		-Wl,--version-script=$(top_srcdir)/src/api/libbiosapi.sym
+else
+libbiosapi_la_LDFLAGS += \
+		-export-symbols $(top_srcdir)/src/api/libbiosapi.sym
+endif
+
+libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym
+EXTRA_DIST +=			src/api/libbiosapi.sym
+
+pkgconfig_DATA +=		src/api/libbiosapi.pc
+EXTRA_DIST +=			src/api/libbiosapi.pc.in  src/api/libbiosapi.pc
+DISTCLEANFILES +=		src/api/libbiosapi.pc
+
+pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS_noinst)
+dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
+
+
 #----------------------------------------------------------------------
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
@@ -647,65 +713,9 @@ driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
 
 driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
-# Shared API Library
-
-# Current interface number
-LIBBIOSAPI_CURRENT=0
-# Revision (implementation number) within current interface
-LIBBIOSAPI_REVISION=0
-# How many previous interfaces are still supported
-LIBBIOSAPI_AGE=0
-
-lib_LTLIBRARIES +=		libbiosapi.la
-
-libbiosapi_la_HEADERS_noinst = \
-				$(top_srcdir)/include/app.h \
-				$(top_srcdir)/include/bios_agent.h \
-				$(top_srcdir)/include/bios_export.h \
-				$(top_srcdir)/include/agents.h \
-				$(top_srcdir)/include/ymsg.h
-
-# where to install the headers on the system
-libbiosapi_ladir =		$(includedir)/@PACKAGE@
-
-libbiosapi_la_SOURCES = \
-				src/api/app.c \
-				src/api/bios_agent.c \
-				src/api/agents.c \
-				src/api/ymsg.c \
-				src/shared/utils_ymsg.c \
-				src/shared/utils_ymsg.h \
-				src/include/defs.h \
-				$(libbiosapi_la_HEADERS_noinst)
-
-libbiosapi_la_CPPFLAGS = \
-		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
-
-libbiosapi_la_LDFLAGS = \
-		$(AM_LDFLAGS) \
-		-fPIC -shared \
-		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
-		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE)
-
-if HAVE_LD_VERSION_SCRIPT
-libbiosapi_la_LDFLAGS += \
-		-Wl,--version-script=$(top_srcdir)/src/api/libbiosapi.sym
-else
-libbiosapi_la_LDFLAGS += \
-		-export-symbols $(top_srcdir)/src/api/libbiosapi.sym
-endif
-
-libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym
-EXTRA_DIST +=			src/api/libbiosapi.sym
-
-pkgconfig_DATA +=		src/api/libbiosapi.pc
-EXTRA_DIST +=			src/api/libbiosapi.pc.in  src/api/libbiosapi.pc
-DISTCLEANFILES +=		src/api/libbiosapi.pc
-
-pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS_noinst)
-dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
-
-# Web
+###################################################################
+# Web Library (tntnet dynamic module for $BIOS REST API)
+###################################################################
 pkglib_LTLIBRARIES += bios_web.la
 
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
