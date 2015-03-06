@@ -21,33 +21,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
-#ifndef SRC_INCLUDE_BIOS_AGENT__
-#define SRC_INCLUDE_BIOS_AGENT__
+#ifndef INCLUDE_BIOS_AGENT_H__
+#define INCLUDE_BIOS_AGENT_H__
 
 #include <czmq.h>
 #include <malamute.h>
+#include <stdbool.h>
 
 #include "ymsg.h"
 
 #ifdef __cplusplus
 extern "C" {
-#endif
-
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
-#ifndef BIOS_EXPORT
-# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
-#  define BIOS_EXPORT __attribute__((__visibility__("default")))
-# else
-#  define BIOS_EXPORT
-# endif
-#endif
-
-// marker to tell humans and GCC that the unused parameter is there for some
-// reason (i.e. API compatibility) and compiler should not warn if not used
-#if !defined(UNUSED_PARAM) && defined (__GNUC__)
-# define UNUSED_PARAM __attribute__ ((__unused__))
-#else
-# define UNUSED_PARAM
 #endif
 
 typedef struct _bios_agent_t bios_agent_t;
@@ -232,102 +216,38 @@ BIOS_EXPORT const char *
 BIOS_EXPORT ymsg_t *
     bios_agent_content (bios_agent_t *self);
 
-/**
- *
- *#################### TODO: move the ymsg_ helpers to dedicated header ####################
- *
- **/
+BIOS_EXPORT zactor_t *
+    bios_agent_actor (bios_agent_t *self);
 
-// TODO ACE: write documentation
-BIOS_EXPORT uint64_t
-    ymsg_rowid (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_rowid (ymsg_t *self, uint64_t rowid);
-BIOS_EXPORT int
-    ymsg_errtype (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errtype (ymsg_t *self, int error_type);
-BIOS_EXPORT int
-    ymsg_errsubtype (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errsubtype (ymsg_t *self, int error_subtype);
-BIOS_EXPORT const char*
-    ymsg_errmsg (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_errmsg (ymsg_t *self, const char *error_msg);
+BIOS_EXPORT zsock_t *
+    bios_agent_msgpipe (bios_agent_t *self);
 
-// without ownership transfer
-BIOS_EXPORT zhash_t*
-    ymsg_addinfo (ymsg_t *self);   
 
-// transfer ownership
-BIOS_EXPORT zhash_t*
-    ymsg_get_addinfo (ymsg_t *self);
-BIOS_EXPORT int
-    ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo);
-BIOS_EXPORT ymsg_t*
-    ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo);
-BIOS_EXPORT ymsg_t*
-    ymsg_generate_fail (int errtype, int errsubtype, const char *errmsg, zhash_t *addinfo);
 
-/*!
- \brief Get number of rows affected of ROZP REPLY message
- \return  number of rows affected. If key is not specified, then -1.
-*/
-BIOS_EXPORT int
-    ymsg_affected_rows (ymsg_t *self);
+//! Returns true if status value of ROZP message is OK, false otherwise 
+BIOS_EXPORT bool
+    ymsg_is_ok (ymsg_t *self);
 
-/*!
- \brief Set number of rows affected in ROZP REPLY message
-*/
-BIOS_EXPORT int
-    ymsg_set_affected_rows (ymsg_t *self, int n);
-
-/*!
- \brief Get status value of ROZP REPLY message
- \return
-     -1 on failure (self, aux == NULL, key STATUS missing, message type not REPLY)
-    status value otherwise (0 - error, 1 - ok)
-*/
-BIOS_EXPORT int
-    ymsg_status (ymsg_t *self);
-
-/*!
- \brief Set status value of ROZP REPLY message
- \return -1 on failure (self, aux == NULL, message not ROZP REPLY), 0 on success
-*/
-BIOS_EXPORT int
+//! Set status value of ROZP message
+BIOS_EXPORT void
     ymsg_set_status (ymsg_t *self, bool status);
 
-/*!
- \brief Get repeat value
- \return
-    -1 on failure (self, aux == NULL)
-    repeat value otherwise (0 - no repeat, 1 - repeat)
-*/
-BIOS_EXPORT int
-    ymsg_repeat (ymsg_t *self);
+//! Returns true if repeat value of ROZP message is YES, false otherwise 
+BIOS_EXPORT bool
+    ymsg_is_repeat (ymsg_t *self);
 
-/*!
- \brief Set repeat value
- \return -1 on failure (self, aux == NULL), 0 on success
-*/
-BIOS_EXPORT int
+//! Set repeat value of ROZP message
+BIOS_EXPORT void
     ymsg_set_repeat (ymsg_t *self, bool repeat);
 
-/*!
- \brief Get content type
- /return NULL on failure, content type on success
-*/
+//! Get content type value of ROZP message
 BIOS_EXPORT const char *
     ymsg_content_type (ymsg_t *self);
-/*!
- \brief Set content type
- /return -1 on failure, 0 on success
-*/
-BIOS_EXPORT int
+//! Set content type value of ROZP message
+BIOS_EXPORT void
     ymsg_set_content_type (ymsg_t *self, const char *content_type);
 
+// TODO (miska): please change for utils_ymsg.h functions
 BIOS_EXPORT const char * ymsg_get_string(ymsg_t* msg, const char *key);
 BIOS_EXPORT int32_t ymsg_get_int32(ymsg_t* msg, const char *key);
 BIOS_EXPORT int64_t ymsg_get_int64(ymsg_t* msg, const char *key);
@@ -339,5 +259,5 @@ BIOS_EXPORT void ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value);
 }
 #endif
 
-#endif // SRC_INCLUDE_BIOS_AGENT__
+#endif // INCLUDE_BIOS_AGENT_H__
 

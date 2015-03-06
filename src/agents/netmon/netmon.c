@@ -51,7 +51,8 @@ TODO: Resolve ctrl-c unresponsiveness
 #include <malamute.h>
 
 #include "log.h"
-#include "defs.h"
+#include "str_defs.h"
+#include "preproc.h"
 #include "msg_send.h"
 
 // include/utils.h

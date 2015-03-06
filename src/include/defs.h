@@ -1,23 +1,5 @@
-#ifndef SRC_INCLUDE_DEFS_H_
-#define SRC_INCLUDE_DEFS_H_
-
-// marker to tell humans and GCC that the unused parameter is there for some
-// reason (i.e. API compatibility) and compiler should not warn if not used
-#if !defined(UNUSED_PARAM) && defined (__GNUC__)
-# define UNUSED_PARAM __attribute__ ((__unused__))
-#else
-# define UNUSED_PARAM
-#endif
-
-/* Implemented in defs.c, link with that if you use any of these values */
-extern const char* DB_SOCK;
-extern const char* FILIP_SOCK;
-extern const char* CLI_SOCK;
-
-extern const char* DRIVER_NMAP_SOCK;
-extern const char* DRIVER_NMAP_REPLY;
-
-extern const char* MLM_ENDPOINT;
+#ifndef SRC_INCLUDE_DEFS_H__
+#define SRC_INCLUDE_DEFS_H__
 
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
@@ -71,4 +53,55 @@ enum internal_err {
     INTERNAL_NOT_IMPLEMENTED
 };
 
-#endif // SRC_INCLUDE_DEFS_H_
+
+//! netmon (rtnetlink(7)) events 
+enum network_event {
+    AUTO_ADD,
+    AUTO_DEL,
+    MAN_ADD,
+    MAN_DEL,
+    EXCL_ADD,
+    EXCL_DEL
+};
+
+//! ip address version
+enum ipaddr_version {
+    IP_VERSION_4,
+    IP_VERSION_6
+};
+
+#define KEY_REPEAT "repeat"
+#define KEY_STATUS "status"
+#define KEY_CONTENT_TYPE "content-type"
+#define PREFIX_X "x-"
+#define OK      "ok"
+#define ERROR   "error"
+#define YES     "yes"
+#define NO      "no"
+#define KEY_ADD_INFO      "add_info"
+#define KEY_AFFECTED_ROWS "affected_rows"
+#define KEY_ERROR_TYPE     "error_type"
+#define KEY_ERROR_SUBTYPE  "error_subtype"
+#define KEY_ERROR_MSG      "error_msg"
+#define KEY_ROWID          "rowid"
+
+// netmon agent
+#define NETMON_KEY_EVENT        "event"
+#define NETMON_KEY_IFNAME       "interface name"
+#define NETMON_KEY_IPVER        "ip version"
+#define NETMON_KEY_IPADDR       "ip address"
+#define NETMON_KEY_PREFIXLEN    "prefix length"
+#define NETMON_KEY_MACADDR      "mac address"
+
+#define NETMON_VAL_AUTO_ADD     "automatic addition"
+#define NETMON_VAL_AUTO_DEL     "automatic deletion"
+#define NETMON_VAL_MAN_ADD      "manual addition"
+#define NETMON_VAL_MAN_DEL      "manual deletion"
+#define NETMON_VAL_EXCL_ADD     "exclusion addition"
+#define NETMON_VAL_EXCL_DEL     "exclusion deletion"
+
+#define NETMON_VAL_IPV4     "ip version 4"
+#define NETMON_VAL_IPV6     "ip version 6"
+
+#endif // SRC_INCLUDE_DEFS_H__
+

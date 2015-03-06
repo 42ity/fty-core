@@ -39,7 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "nmap-driver.h"
 #include "nmap-parse.h"
 #include "log.h"
-#include "defs.h"
+#include "str_defs.h"
+#include "preproc.h"
 #include "cidr.h"
 
 typedef shared::ProcessQue ProcessQue;
