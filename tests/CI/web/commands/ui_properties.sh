@@ -4,7 +4,7 @@
 #TEST for /ui/propertie GET/PUT
 
 test_it "GET_ui_properties"
-api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value2"}'
+api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value2"'
 print_result $?
 
 test_it "PUT_ui_properties"

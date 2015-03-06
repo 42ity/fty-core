@@ -140,3 +140,5 @@ tntnet.xml
 !src/agents/server-agent
 
 src/api/libbiosapi.pc
+!src/api/libbiosapi.pc.in
+
