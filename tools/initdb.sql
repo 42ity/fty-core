@@ -3,6 +3,10 @@ CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_c
 
 USE box_utf8;
 
+/* work around smart insert without duplicates*/
+CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
+INSERT INTO t_empty values (1);
+
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
@@ -267,6 +271,7 @@ CREATE TABLE t_bios_asset_ext_attributes(
   PRIMARY KEY (id_asset_ext_attribute),
   
   INDEX FK_ASSETEXTATTR_ELEMENT_idx (id_asset_element ASC),
+  UNIQUE INDEX `UI_t_bios_asset_ext_attributes` (`keytag`, `id_asset_element` ASC),
   
   CONSTRAINT FK_ASSETEXTATTR_ELEMENT
     FOREIGN KEY (id_asset_element)
