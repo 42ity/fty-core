@@ -76,7 +76,7 @@ fi
 function cleanup {
     killall malamute
     killall dshell
-    killall -9 netmon
+    killall -9 netmon lt-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
 }
 
