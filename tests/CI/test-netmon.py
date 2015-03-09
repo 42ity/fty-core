@@ -91,7 +91,7 @@ def compare_results(ipres, dbres):
 
 # check all deamons running
 for daemon in ("simple", "netmon", "mysqld"):
-    ret = subprocess.call(["/bin/pidof", daemon])
+    ret = subprocess.call(["/bin/pidof", daemon, "lt-%s" % (daemon, )])
     assert (ret == 0), "%s does not running!" % (daemon, )
 
 #### MAIN ####
