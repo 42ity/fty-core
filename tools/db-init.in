@@ -1,0 +1,12 @@
+#!/bin/sh
+
+prefix="@prefix@"
+
+if [ -z "`echo "select 'working';" | mysql -u root | grep working`" ]; then
+	echo "Can't connect to database"
+	exit 1
+fi
+
+if [ -z "`echo "show databases;" | mysql -u root | grep '^box_utf8$'`" ]; then
+	cat "@datarootdir@/@PACKAGE@/sql" | mysql -u root || exit 1
+fi
