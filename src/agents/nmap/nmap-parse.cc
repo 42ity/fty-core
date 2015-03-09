@@ -360,7 +360,6 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
     assert (zsock_is (socket));
 
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("start");    
 
     XmlReader r{inp, 0};

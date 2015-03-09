@@ -32,7 +32,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
            level == LOG_NOOP)
 
 static int log_syslog_level = LOG_SYSLOG_NA;
+#ifdef ENABLE_DEBUG_BUILD
+static int log_stderr_level = LOG_DEBUG;
+#else
 static int log_stderr_level = LOG_ERR;
+#endif
 static FILE* log_file = NULL;
 static int log_facility = LOG_DAEMON;
 

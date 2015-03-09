@@ -13,7 +13,6 @@
 TEST_CASE("Location topology from #1","[db][topology][location][location_topology.sql][from][lf1]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== LOCATION FROM #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
@@ -42,7 +41,6 @@ TEST_CASE("Location topology from #1","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #3","[db][topology][location][location_topology.sql][from][lf3]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -147,7 +145,6 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #4","[db][topology][location][location_topology.sql][from][lf4]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -276,7 +273,6 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #5","[db][topology][location][location_topology.sql][from][lf5]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -377,7 +373,6 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #5.1","[db][topology][location][location_topology.sql][from][lf5.1]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -471,7 +466,6 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
 TEST_CASE("Location topology from #6","[db][topology][location][location_topology.sql][from][lf6]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -569,7 +563,6 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #6.1","[db][topology][location][location_topology.sql][from][lf6.1]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -646,7 +639,6 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
 TEST_CASE("Location topology from #7","[db][topology][location][location_topology.sql][from][lf7]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -739,7 +731,6 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #8","[db][topology][location][location_topology.sql][from][lf8]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -833,7 +824,6 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #9","[db][topology][location][location_topology.sql][from][lf9]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -941,7 +931,6 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
 TEST_CASE("Location topology from #10","[db][topology][location][location_topology.sql][from][lf10]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -1035,7 +1024,6 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #11","[db][topology][location][location_topology.sql][from][lf11]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -1131,7 +1119,6 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #12","[db][topology][location][location_topology.sql][from][lf12]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -1234,7 +1221,6 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #13","[db][topology][location][location_topology.sql][from][lf13]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1334,7 +1320,6 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #14","[db][topology][location][location_topology.sql][from][lf14]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1430,7 +1415,6 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #15","[db][topology][location][location_topology.sql][from][lf15]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1508,7 +1492,6 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #16","[db][topology][location][location_topology.sql][from][lf16]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1587,7 +1570,6 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #17","[db][topology][location][location_topology.sql][from][lf17]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1666,7 +1648,6 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #18","[db][topology][location][location_topology.sql][from][lf18]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1745,7 +1726,6 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #19","[db][topology][location][location_topology.sql][from][lf19]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1825,7 +1805,6 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #20","[db][topology][location][location_topology.sql][from][lf20]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1904,7 +1883,6 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #21","[db][topology][location][location_topology.sql][from][lf21]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -1983,7 +1961,6 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #22","[db][topology][location][location_topology.sql][from][lf22]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_group  = 1;
@@ -2062,7 +2039,6 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #23","[db][topology][location][location_topology.sql][from][lf23]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -2155,7 +2131,6 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #24","[db][topology][location][location_topology.sql][from][lf24]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -2230,7 +2205,6 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #25","[db][topology][location][location_topology.sql][from][lf25]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -2331,7 +2305,6 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #26","[db][topology][location][location_topology.sql][from][lf26]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
@@ -2429,7 +2402,6 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
 TEST_CASE("Location topology from #27","[db][topology][location][location_topology.sql][from][lf27]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
  
     // TODO hardcoded constants
     uint8_t id_dc     = 2;
