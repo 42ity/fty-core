@@ -272,6 +272,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/measure_types.h \
 			src/persist/dbhelpers.cc \
 			src/persist/dbhelpers.h \
+			src/persist/measurement.h \
+			src/persist/measurement.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
