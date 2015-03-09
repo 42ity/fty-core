@@ -13,7 +13,6 @@
 TEST_CASE("Power topology group","[db][topology][power][group]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER GROUP id = 4999 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
@@ -37,7 +36,6 @@ TEST_CASE("Power topology group","[db][topology][power][group]")
 TEST_CASE("Power topology group empty","[db][topology][power][group]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER GROUP id = 4998 EMPTY ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
@@ -60,7 +58,6 @@ TEST_CASE("Power topology group empty","[db][topology][power][group]")
 TEST_CASE("Power topology datacenter1","[db][topology][power][datacenter]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER DATACENTER id = 1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
@@ -85,7 +82,6 @@ TEST_CASE("Power topology datacenter1","[db][topology][power][datacenter]")
 TEST_CASE("Power topology datacenter10","[db][topology][power][datacenter]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER DATACENTER id = 10 NIC ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);

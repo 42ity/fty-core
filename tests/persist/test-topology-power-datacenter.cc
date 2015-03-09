@@ -14,7 +14,6 @@
 TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][power_topology.sql][pd1]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER DATACENTER #1 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);
@@ -112,7 +111,6 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
 TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][power_topology.sql][pd2]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== POWER DATACENTER #2 ==================");
     asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_DATACENTER);

@@ -250,7 +250,6 @@ zmsg_t * nut_device_to_measurement_msg(const NUTDevice &dev, const std::string &
  */
 int main(int argc, char *argv[] ) {
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("%s", "driver-nut started");
 
     NUTDeviceList listOfUPS;
