@@ -11,12 +11,41 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_measurements;
+drop table if exists t_bios_measurement;
+drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_measurement_types;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
+
+CREATE TABLE t_bios_measurement_topic(
+    id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
+    device_id        INTEGER           NOT NULL DEFAULT '0',
+    units            VARCHAR(10)       NOT NULL,
+    topic            VARCHAR(255)      NOT NULL,
+    PRIMARY KEY(id),
+
+    INDEX(topic,units)
+);
+
+CREATE TABLE t_bios_measurement (
+    id            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    timestamp     DATETIME            NOT NULL,
+    value         INTEGER             NOT NULL,
+    scale         INTEGER             NOT NULL,
+    topic_id      INTEGER UNSIGNED    NOT NULL,
+
+    PRIMARY KEY(id),
+
+    INDEX(topic_id),
+    INDEX(timestamp),
+
+    FOREIGN KEY(topic_id)
+        REFERENCES t_bios_measurement_topic(id)
+        ON DELETE CASCADE
+);
 
 CREATE TABLE t_bios_measurement_types(
     id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
