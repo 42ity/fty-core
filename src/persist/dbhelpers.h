@@ -43,19 +43,58 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MAX_DESCRIPTION_LENGTH  255
 
-<template typename T>
-struct _db_reply{
+template <typename T>
+struct db_reply{
     int status; // ok/fail
     int errtype;
     int errsubtype;
+    uint64_t rowid;
+    uint64_t affected_rows;
     const char *msg;
     zhash_t *addinfo;
     T item;
-    uint64_t rowid;
-    uint64_t affected_rows;
 };
 
-typedef struct _db_reply<uint64_t> db_reply_t;
+typedef db_reply<uint64_t> db_reply_t;
+
+inline db_reply_t db_reply_new() {
+    return db_reply_t {
+        .status = 1,
+        .errtype = 0,
+        .errsubtype = 0,
+        .rowid = 0,
+        .affected_rows = 0,
+        .msg = NULL,
+        .addinfo = NULL,
+        .item = 0};
+}
+
+template <typename T>
+inline db_reply<T> db_reply_new(T& item) {
+    return db_reply<T> {
+        .status = 1,
+        .errtype = 0,
+        .errsubtype = 0,
+        .rowid = 0,
+        .affected_rows = 0,
+        .msg = NULL,
+        .addinfo = NULL,
+        .item = item};
+}
+
+/** 
+ * \brief helper structure for results of v_bios_measurement
+ */
+struct db_msrmnt_t {
+    m_msrmnt_id_t id;
+    time_t timestamp;
+    m_msrmnt_value_t value;
+    m_msrmnt_scale_t scale;
+    m_msrmnt_id_t device_id;
+    std::string units;
+    std::string topic;
+};
+
 
 /**
  * \brief This function looks for a device_discovered in a monitor part 

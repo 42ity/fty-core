@@ -66,21 +66,21 @@ void process_measurement(const std::string topic, zmsg_t **msg) {
     }
 
     errno = 0;
-    int32_t value = ymsg_get_int32(ymsg, "value");
-    int32_t scale = ymsg_get_int32(ymsg, "scale");
+    m_msrmnt_value_t value = ymsg_get_int32(ymsg, "value");
+    m_msrmnt_scale_t scale = (m_msrmnt_scale_t) ymsg_get_int32(ymsg, "scale");
     int64_t tme = ymsg_get_int64(ymsg, "time");
-    //XXX: time should be from DB only, discuss with Miska and Alenka
     const char *units = ymsg_get_string(ymsg, "units");
 
     if(errno != 0)
         return;
     
-    //XXX: time should be from DB only, discuss with Miska and Alenka
     if(tme < 1)
         tme = ::time(NULL);
 
-    //TODO: what about result of insert??
-    insert_into_measurement(conn, topic.c_str(), value, scale, tme, units);
+    time_t _time = (time_t) tme;
+    persist::insert_into_measurement(
+            conn, topic.c_str(), value, scale, _time, units);
+
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {

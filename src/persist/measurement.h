@@ -28,6 +28,8 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "dbhelpers.h"
 
+namespace persist {
+
 /**
  * \brief Inserts measurements data into t_bios_measurement_topic, t_bios_measurement
  *
@@ -43,12 +45,26 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
  * \return db_reply_t with affected rows from t_bios_measurement insertion
  *                    or info about an error
  */
-db_reply_t insert_into_measurement(
+
+db_reply_t
+insert_into_measurement(
         tntdb::Connection &conn,
         const char* topic,
         m_msrmnt_value_t value,
         m_msrmnt_scale_t scale,
         time_t time,
         const char* units);
+
+db_reply<std::vector<db_msrmnt_t>>
+select_from_measurement_by_topic(
+        tntdb::Connection &conn,
+        const char* topic);
+
+db_reply_t
+delete_from_measurement_by_id(
+        tntdb::Connection &conn,
+        m_msrmnt_id_t id);
+
+} //namespace persist
 
 #endif // SRC_PERSIST_MEASUREMENT_H_
