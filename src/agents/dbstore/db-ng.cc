@@ -10,10 +10,14 @@
 #include <zsys.h>
 
 int main (int argc, char *argv []) {
+    
+    log_open();
+    log_info ("persistence.measurement started");
+    
     // Basic settings
     if (argc > 3) {
         printf ("syntax: db-ng [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
-        return 0;
+        return 1;
     }
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
     if (argc > 2) {
@@ -23,12 +27,12 @@ int main (int argc, char *argv []) {
     // Create a client
     mlm_client_t *client = mlm_client_new();
     if(!client) {
-        zsys_error ("db-ng: server not reachable at ipc://@/malamute");
-        return 0;
+        log_error ("db-ng: error mlm_client_new");
+        return 1;
     }
-    if(mlm_client_connect(client, addr, 1000, "persistence") != 0) {
-        zsys_error ("db-ng: server not reachable at ipc://@/malamute");
-        return 0;
+    if(mlm_client_connect(client, addr, 1000, "persistence.measurement") != 0) {
+        log_error ("db-ng: server not reachable at '%s'", addr);
+        return 1;
     }
 
     // We are listening for measurements
@@ -70,5 +74,6 @@ int main (int argc, char *argv []) {
     }
 
     mlm_client_destroy (&client);
+    log_close();
     return 0;
 }
