@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "agents.h"
 #include "defs.h"
 
-BIOS_EXPORT ymsg_t *
+ymsg_t *
 bios_netmon_encode
 (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address) {
     ymsg_t *message = ymsg_new (YMSG_SEND);
@@ -81,7 +81,7 @@ bios_netmon_encode
     return message; 
 }
 
-BIOS_EXPORT int
+int
 bios_netmon_decode
 (ymsg_t **self_p, int *event, char *interface_name, int *ip_version, char *ip_address, uint8_t *prefix_length, char *mac_address) {
     if (!self_p || !event || !interface_name || !ip_version || !ip_address || !mac_address)
