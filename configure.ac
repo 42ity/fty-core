@@ -6,7 +6,7 @@ PACKAGE_VENDOR="Eaton"
 AC_CONFIG_SRCDIR([src/simple/main.cc])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile src/api/libbiosapi.pc])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile src/api/libbiosapi.pc tools/db-init])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -422,7 +422,7 @@ PKG_CHECK_MODULES([LIBNUTCLIENT], [libnutclient >= 0.27], [], [AC_MSG_ERROR([can
 PKG_CHECK_MODULES([CXXTOOLS], [cxxtools >= 2.2.0], [], [AC_MSG_ERROR([cannot find cxxtools >= 2.2.0])])
 PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot find libsodium >= 0.7.0])])
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
-PKG_CHECK_MODULES([LIBMLM], [libmlm >= 1.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 1.1.0])])
+PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 1.1.0])])
 
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.

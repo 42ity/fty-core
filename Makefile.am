@@ -570,6 +570,8 @@ server_agent_LDADD =	libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
+
+client_PROGRAMS +=	tools/db-init
 client_PROGRAMS +=	db-ng
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
@@ -591,7 +593,8 @@ db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
-			$(top_srcdir)/tools/dbinit.h
+			$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
