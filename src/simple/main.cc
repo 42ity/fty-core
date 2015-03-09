@@ -223,7 +223,6 @@ void term_children (void) {
 int main(int argc, char **argv) {
 
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("==========================================");
     log_info ("==========        SIMPLE        ==========");

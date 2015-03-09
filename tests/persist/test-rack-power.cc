@@ -17,7 +17,6 @@
 TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #1 ==================");
     
@@ -75,7 +74,6 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
 TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #2 ==================");
     
@@ -136,7 +134,6 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-  //  log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #3 ==================");
     
@@ -203,7 +200,6 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-  //  log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #4 ==================");
     
@@ -269,7 +265,6 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #5","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #5 ==================");
     
@@ -338,7 +333,6 @@ TEST_CASE("Rack power #5","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #6","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-//  log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #6 ==================");
     
@@ -408,7 +402,6 @@ TEST_CASE("Rack power #6","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-//    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #7 ==================");
     
@@ -484,7 +477,6 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
-    log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #8 ==================");
     
@@ -581,7 +573,6 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-    //log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #9 ==================");
     
@@ -644,7 +635,6 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
 TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
-    //log_set_level(LOG_DEBUG);
 
     log_info ("=============== RACK POWER #10 ==================");
     

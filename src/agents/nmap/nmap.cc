@@ -304,7 +304,6 @@ void nmap_stdout (UNUSED_PARAM zsock_t *pipe,
 int main (int argc, char **argv) {
 
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("nmap daemon start");
 
     bool test_mode = false;
