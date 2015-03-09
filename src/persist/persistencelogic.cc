@@ -41,6 +41,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "monitor.h"
 #include "log.h"
 #include "dbpath.h"
+#include "measurement.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -68,38 +69,18 @@ void process_measurement(const std::string topic, zmsg_t **msg) {
     int32_t value = ymsg_get_int32(ymsg, "value");
     int32_t scale = ymsg_get_int32(ymsg, "scale");
     int64_t tme = ymsg_get_int64(ymsg, "time");
+    //XXX: time should be from DB only, discuss with Miska and Alenka
     const char *units = ymsg_get_string(ymsg, "units");
 
     if(errno != 0)
         return;
-
+    
+    //XXX: time should be from DB only, discuss with Miska and Alenka
     if(tme < 1)
-        tme = time(NULL);
+        tme = ::time(NULL);
 
-    try {
-        tntdb::Statement st = conn.prepareCached(
-            "INSERT INTO t_bios_measurement_topic (topic, units) "
-            "SELECT :topic, :units FROM dual WHERE NOT EXISTS "
-            "(SELECT id from t_bios_measurement_topic WHERE topic=:topic AND "
-            " units=:units)");
-    st.set("topic", topic)
-      .set("units", units)
-      .execute();
-    st = conn.prepareCached(
-            "INSERT INTO t_bios_measurement "
-            "(timestamp, value, scale, units, topic_id) "
-            "SELECT FROM_UNIXTIME(:time), :value, :scale, :units, id FROM "
-            "t_bios_measurement_topic WHERE topic=:topic AND units=:units");
-    st.set("topic", topic)
-      .set("time",  tme)
-      .set("value", value)
-      .set("scale", scale)
-      .set("units", units)
-      .execute();
-    } catch(const std::exception &e) {
-        log_error("Saving new measurement failed with error '%s'", e.what());
-    }
-    log_debug("Measurement processed");
+    //TODO: what about result of insert??
+    insert_into_measurement(conn, topic.c_str(), value, scale, tme, units);
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {

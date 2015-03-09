@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_DBHELPERS_H_
 #define SRC_PERSIST_DBHELPERS_H_
 
+#include <czmq.h>
 #include "dbtypes.h"
 
 // all fields called name
@@ -42,18 +43,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define MAX_DESCRIPTION_LENGTH  255
 
+<template typename T>
 struct _db_reply{
     int status; // ok/fail
     int errtype;
     int errsubtype;
     const char *msg;
     zhash_t *addinfo;
-    void *item;
+    T item;
     uint64_t rowid;
     uint64_t affected_rows;
 };
 
-typedef struct _db_reply db_reply_t;
+typedef struct _db_reply<uint64_t> db_reply_t;
 
 /**
  * \brief This function looks for a device_discovered in a monitor part 
