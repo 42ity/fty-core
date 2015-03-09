@@ -8,5 +8,10 @@ if [ -z "`echo "select 'working';" | mysql -u root | grep working`" ]; then
 fi
 
 if [ -z "`echo "show databases;" | mysql -u root | grep '^box_utf8$'`" ]; then
-	cat "@datarootdir@/@PACKAGE@/sql" | mysql -u root || exit 1
+	if [ -r "@datarootdir@/@PACKAGE@/sql/initdb.sql" ]; then
+		cat "@datarootdir@/@PACKAGE@/sql/initdb.sql" | mysql -u root || exit 1
+	else
+		echo "Can't read '@datarootdir@/@PACKAGE@/sql/initdb.sql' !!!"
+		exit 1
+	fi
 fi
