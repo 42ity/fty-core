@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "utils_ymsg.h"
 #include "defs.h"
+#include "preproc.h"
 
 int
 ymsg_aux_uint64 (ymsg_t *self, const char *key, uint64_t *value)
@@ -323,7 +324,7 @@ ymsg_get_addinfo (ymsg_t *self) {
 }
 
 int
-ymsg_set_addinfo (ymsg_t *self, zhash_t *addinfo) {
+ymsg_set_addinfo (ymsg_t *self, UNUSED_PARAM zhash_t *addinfo) {
     if (!self || ymsg_id (self) != YMSG_REPLY) {
         return -1;
     }

@@ -23,12 +23,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef INCLUDE_BIOS_EXPORT_H__
 #define INCLUDE_BIOS_EXPORT_H__
 
-// For certain items, contradict the default of GCC "-fvisibility=hidden"
+// These macros allow to mark certain functions or variables in the headers
+// for $BIOS Project public API as "hidden" or "default". See details at:
+// http://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/Function-Attributes.html#index-g_t_0040code_007bvisibility_007d-attribute-3030
+// You don't need to (or rather should not) duplicate these in the .c files.
+
+// Note that these macros are only assigned some values during a build of
+// libbiosapi.{so,a} and are empty otherwise.
+
+// For certain items, contradict our default of GCC "-fvisibility=hidden"
 #ifndef BIOS_EXPORT
 # if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
 #  define BIOS_EXPORT __attribute__((__visibility__("default")))
 # else
 #  define BIOS_EXPORT
+# endif
+#endif
+
+// For certain items, enforce "-fvisibility=hidden"
+#ifndef BIOS_HIDDEN
+# if BUILDING_LIBBIOSAPI && HAVE_VISIBILITY
+#  define BIOS_HIDDEN __attribute__((__visibility__("hidden")))
+# else
+#  define BIOS_HIDDEN
 # endif
 #endif
 
