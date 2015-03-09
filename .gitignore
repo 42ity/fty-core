@@ -104,6 +104,7 @@ tools/dbpath.cc
 tools/run-test-doc.sh
 tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
+tools/db-init
 
 !tools/bios-driver-netmon.service.in
 !tools/bios-driver-nut.service.in

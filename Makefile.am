@@ -561,7 +561,7 @@ netmon_LDADD = \
 
 netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
 
-bin_PROGRAMS += 	server-agent
+client_PROGRAMS += 	server-agent
 
 server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
@@ -571,6 +571,8 @@ server_agent_LDADD =	libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
+
+client_PROGRAMS +=	tools/db-init
 client_PROGRAMS +=	db-ng
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
@@ -592,7 +594,8 @@ db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 # TODO: remove simple at the end
 EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
-			$(top_srcdir)/tools/dbinit.h
+			$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -836,20 +839,22 @@ if HAVE_SYSTEMD
 
 # copy from autoconf manual, note signle suffix rules can't be used there!!
 edit = sed \
-	-e 's|@libdir[@]|$(libdir)|g'
+	-e 's|@libexecdir[@]|$(libexecdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service: Makefile
+bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service: Makefile
 	rm -f $@
 	$(edit) '$(srcdir)/tools/$@.in' > $@
 
 bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
+bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
 
 systemdsystemunit_DATA = \
 			$(top_builddir)/bios-driver-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
-			$(top_builddir)/bios-db.service
+			$(top_builddir)/bios-db.service \
+			$(top_builddir)/bios-server-agent.service
 
 CLEANFILES += $(top_builddir)/bios-*.service
 endif
