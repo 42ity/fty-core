@@ -286,7 +286,6 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
-libpriv_db_la_LIBADD = -lbiosapi
 
 libpriv_db_la_LIBADD =	-lbiosapi
 libpriv_db_la_DEPENDENCIES =	libbiosapi.la
@@ -542,6 +541,7 @@ test_totalpower_LDFLAGS = \
 bin_PROGRAMS += 	test-database
 
 test_database_SOURCES = tests/persist/test-database.cc \
+			tests/persist/test-measurement.cc \
 			src/persist/persistencelogic.cc \
 			tools/dbpath.h
 
