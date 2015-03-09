@@ -82,7 +82,7 @@ void process_measurement(const std::string topic, zmsg_t **msg) {
             "SELECT :topic, :units FROM dual WHERE NOT EXISTS "
             "(SELECT id from t_bios_measurement_topic WHERE topic=:topic AND "
             " units=:units)");
-    st.set("topic", topic).
+    st.set("topic", topic)
       .set("units", units)
       .execute();
     st = conn.prepareCached(
