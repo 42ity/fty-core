@@ -22,8 +22,13 @@ bios_agent_new (const char* endpoint, const char* address) {
 
     bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));
     if (self) {
-        self->client = mlm_client_new (endpoint, TIMEOUT, address);
+        self->client = mlm_client_new();
         if (!self->client) {
+            free (self);
+            return NULL;
+        }
+        if(mlm_client_connect(self->client, endpoint, TIMEOUT, address) != 0) {
+            mlm_client_destroy(&self->client);
             free (self);
             return NULL;
         }
