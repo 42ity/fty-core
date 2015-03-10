@@ -1320,7 +1320,7 @@ common_msg_t* test_insert_measurement(const char         *url,
             "    id_subkey, value, timestamp)"
             " VALUES"
             "   (NULL, :clientid, :deviceid, :keytagid, :subkeytagid,"
-            "   :val, DATE_SUB(UTC_TIMESTAMP(), INTERVAL :seconds SECOND))" // TODO
+            "   :val, FROM_UNIXTIME(:seconds))" // TODO
         );
     
         // Insert one row or nothing
@@ -1329,7 +1329,7 @@ common_msg_t* test_insert_measurement(const char         *url,
                 set("keytagid", type_id).
                 set("subkeytagid", subtype_id).
                 set("val", value).
-                set("seconds", seconds).
+                set("seconds", time(NULL) - seconds).
                 execute();
         log_info ("was inserted %" PRIu64 " rows", n);
 
