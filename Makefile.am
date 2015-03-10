@@ -438,6 +438,7 @@ bin_PROGRAMS += 	test-db2
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
 			tests/persist/test-monitor-clientinfo.cc \
+			tests/persist/test-measurement.cc \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
@@ -541,7 +542,6 @@ test_totalpower_LDFLAGS = \
 bin_PROGRAMS += 	test-database
 
 test_database_SOURCES = tests/persist/test-database.cc \
-			tests/persist/test-measurement.cc \
 			src/persist/persistencelogic.cc \
 			tools/dbpath.h
 
