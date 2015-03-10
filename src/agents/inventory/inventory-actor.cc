@@ -5,6 +5,8 @@
 #include "common_msg.h"
 #include "defs.h"
 #include "log.h"
+#include "dbpath.h"
+#include "persistencelogic.h"
 
 // it is a persistence agent, so it has a right to comunicate with DB directly
 
@@ -13,7 +15,7 @@
  *
  * It waits for a message from measurements stream with subject "inventory.*"
  */
-int main(int argc, char *argv[] )
+int main (int argc, char *argv[])
 {
     // ASSUMPTION:
     //  this agent is already registred in DB
@@ -35,14 +37,9 @@ int main(int argc, char *argv[] )
     }
 
     // Create an agent
-    bios_agent_t *agent = bios_agent_new();
+    bios_agent_t *agent = bios_agent_new(addr, "persistence.inventory");
     if ( !agent ) {
         log_error ("db-inventory: error bios_agent_new");
-        return 1;
-    }
-    if ( bios_agent_connect (agent, addr, 1000, "persistence.inventory") != 0 )
-    {
-        log_error ("db-inventory: server is not reachable at '%s'", addr);
         return 1;
     }
     // listen on inventory messages

@@ -84,7 +84,6 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
     time_t _time = (time_t) tme;
     persist::insert_into_measurement(
             conn, topic.c_str(), value, scale, _time, units);
-
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {

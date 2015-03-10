@@ -667,7 +667,9 @@ server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 
 client_SCRIPTS =	tools/db-init
+
 client_PROGRAMS +=	db-ng
+
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
@@ -675,7 +677,6 @@ db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr  -lbiosapi
 
 db_ng_DEPENDENCIES =	libbiosapi.la
-
 
 db_ng_LDADD = \
             libpriv-db.la \
@@ -746,6 +747,30 @@ driver_nut_LDADD = \
 driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
 
 driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+client_PROGRAMS +=	agent-inventory
+
+agent_inventory_SOURCES = \
+			src/agents/inventory/inventory-actor.cc \
+			tools/dbpath.h
+
+agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
+
+agent_inventory_DEPENDENCIES =	libbiosapi.la
+
+agent_inventory_LDADD = \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la
+
+agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
+
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
