@@ -38,6 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 #include "defs.h"
+#include "dbpath.h"
 #include "assetcrud.h"
 #include "monitor.h"
 #include "persist_error.h"
@@ -433,6 +434,48 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
 }
 
 // GET functions
+
+db_reply_t
+    process_insert_inventory
+        (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes)
+{
+    LOG_START;
+    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+        
+    tntdb::Transaction trans (conn);
+
+    ret = select_device (conn, device_name);
+    if ( ret.status == 0 )
+        trans.commit(); // nothing was done, but we need to end the transaction
+    else
+    {
+        m_dvc_id_t id = *(int*) ret.item;
+        a_elmnt_id_t element_id = 0;
+        // TODO get rid of oldstyle functions
+        int rv = convert_monitor_to_asset_safe (url.c_str(), id, &element_id);
+        if ( rv != 0 )
+        {
+            ret.errtype = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT; // anebo jiny kod???
+            ret.msg = "";
+            trans.commit(); // nothing was done, but we need to end the transaction
+        }
+        else
+        {
+            ret = insert_into_asset_ext_attributes (conn, ext_attributes, element_id, true);
+            if ( ret.status == 0 )
+            {
+                ret.affected_rows = 0;
+                trans.rollback();
+            }
+            else
+                trans.commit();
+        }
+    }
+    LOG_END;
+    return ret;
+}
+
 
 zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
 {

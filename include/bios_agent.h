@@ -203,7 +203,7 @@ BIOS_EXPORT const char *
 /*
  \brief Return last received subject
  \param[in] self bios agent
- \return last received sender on success, NULL on failure
+ \return last received subject on success, NULL on failure
 */
 BIOS_EXPORT const char *
     bios_agent_subject (bios_agent_t *self);

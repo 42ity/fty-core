@@ -42,6 +42,8 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
+#include "agents.h"
+#include "assetcrud.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -732,7 +734,6 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
  * Broken down processing of generic database zmsg_t, this time asset message
  * case.
  */
-
 // Initial routing of messages
 zmsg_t* process_message(zmsg_t** msg) {
     if((msg == NULL) || (*msg == NULL)) return NULL;
@@ -749,6 +750,53 @@ zmsg_t* process_message(zmsg_t** msg) {
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
                                   "Wrong message received!", NULL);
     }
+}
+
+
+// should process destroy ymsg?
+//
+// TODO do we want to have void here?
+void process_inventory (ymsg_t **msg)
+{
+    // TODO need to analyse the repeat key
+    LOG_START;
+    if ( msg == NULL ) {
+        log_error ("NULL pointer to ymsg");
+        return;
+    }
+
+    char *device_name    = NULL;
+    char *module_name    = NULL;
+    zhash_t    *ext_attributes = NULL;
+
+    int rv = bios_inventory_decode 
+                (msg, &device_name, &ext_attributes, &module_name);
+    
+    if  ( rv != 0 )
+    {
+        // TODO: should we log whole message ?
+        log_error ("ignore msg: Malformed content of request message");
+        return;
+    }
+
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached(url);
+        conn.ping();
+        process_insert_inventory (conn, device_name, ext_attributes);
+
+        // RESULT is unimportant, because pub/sub.
+        //
+        // for REQ/REP write other wrapper
+        // TODO should be analysed result
+    } catch (const std::exception &e) {
+        log_error("ignore msg: Can't connect to the database");
+        return;
+    }
+
+      
+    
+    // TODO result        
 }
 
 } // namespace persist
