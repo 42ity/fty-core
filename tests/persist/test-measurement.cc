@@ -17,7 +17,7 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
-    const char* topic1 = "this";//.is.the.topic#1";
+    const char* topic1 = "this.is.the.topic#1";
     const char* topic2 = "second.sub.topic";
     const char* unit1 = "unit1";
     const char* unit2 = "unit2";
