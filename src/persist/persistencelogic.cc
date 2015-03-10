@@ -51,7 +51,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 namespace persist {
 
-void process_measurement(const std::string topic, zmsg_t **msg) {
+void process_measurement(const std::string &topic, zmsg_t **msg) {
     log_debug("Processing measurement");
     ymsg_t *ymsg = ymsg_decode(msg);
     if(ymsg == NULL) {

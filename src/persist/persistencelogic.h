@@ -25,7 +25,7 @@ namespace persist {
  */
 zmsg_t *asset_msg_process(zmsg_t **msg);
 
-void process_measurement(const std::string topic, zmsg_t **msg);
+void process_measurement(const std::string &topic, zmsg_t **msg);
 
 /**
  * \brief Basic message processing function
@@ -40,7 +40,7 @@ zmsg_t* process_message(zmsg_t** msg);
 
 // List of obsolete functions deemed to die
 bool
-process_message(const std::string& url, zmsg_t *msg);
+process_message(const std::string &url, zmsg_t *msg);
 
 zmsg_t* netdisc_msg_process(zmsg_t** msg);
 
