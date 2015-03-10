@@ -528,6 +528,18 @@ FROM t_bios_asset_element v1
      INNER JOIN v_bios_asset_device v5 
         ON (v5.id_asset_element = v1.id_asset_element);
 
+CREATE VIEW v_bios_measurement AS
+SELECT t1.id,
+       t1.timestamp,
+       t1.value,
+       t1.scale,
+       t2.device_id,
+       t2.units,
+       t2.topic
+FROM t_bios_measurement t1
+    LEFT JOIN t_bios_measurement_topic t2 ON
+        (t1.topic_id = t2.id);
+
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
