@@ -578,7 +578,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     a_ext_attr_id_t newid = 0;
     a_ext_attr_id_t n     = 0; // number of rows affected
 
-    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    db_reply_t ret = db_reply_new();
     // input parameters control 
     if ( asset_element_id == 0 )
     {
@@ -691,7 +691,7 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
     LOG_START;
     
     m_msrmnt_id_t n = 0; // number of rows affected
-    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    db_reply_t ret = db_reply_new();
 
     // input parameters control 
     if ( asset_element_id == 0 )
@@ -766,7 +766,7 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
     log_debug ("keytag = '%s'", keytag);
     log_debug ("asset_element_id = %" PRIu32, asset_element_id);
     
-    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    db_reply_t ret = db_reply_new();
 
     a_elmnt_id_t n = 0;
     try{
@@ -813,7 +813,7 @@ db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
 {
     LOG_START;
     
-    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    db_reply_t ret = db_reply_new();
     
     try{
         tntdb::Statement st = conn.prepareCached(
