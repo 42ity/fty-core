@@ -641,7 +641,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 
-client_PROGRAMS +=	tools/db-init
+client_SCRIPTS =	tools/db-init
 client_PROGRAMS +=	db-ng
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
