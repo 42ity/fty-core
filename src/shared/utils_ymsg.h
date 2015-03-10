@@ -56,9 +56,13 @@ void
 void
     ymsg_aux_set_double (ymsg_t *self, const char *key, uint8_t precision, double value);
 int
-    ymsg_aux_set_request (ymsg_t *self, app_t **request);
+    ymsg_request_set_app (ymsg_t *self, app_t **request);
+app_t *
+    ymsg_request_app(ymsg_t *ymsg);
 int
-    ymsg_aux_set_response (ymsg_t *self, app_t **response);
+    ymsg_response_set_app (ymsg_t *self, app_t **response);
+app_t *
+    ymsg_response_app(ymsg_t *ymsg);
 
 
 // TODO ACE: write documentation

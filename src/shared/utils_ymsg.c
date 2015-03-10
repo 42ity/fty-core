@@ -204,7 +204,7 @@ app_to_chunk (app_t **request) {
 }
 
 int
-ymsg_aux_set_request (ymsg_t *self, app_t **request) {
+ymsg_request_set_app (ymsg_t *self, app_t **request) {
     if (!self || !request) {
         return -1;
     }
@@ -216,8 +216,22 @@ ymsg_aux_set_request (ymsg_t *self, app_t **request) {
     return 0;
 }
 
+app_t *
+ymsg_request_app(ymsg_t *ymsg) {
+    zchunk_t *chunk = ymsg_request( ymsg );
+    if( ! chunk ) return NULL;
+
+    zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
+    if( (! zmsg) || (! is_app( zmsg ) ) ) {
+        ymsg_set_request( ymsg, &chunk );
+        zmsg_destroy( &zmsg );
+        return NULL;
+    }
+    return app_decode( &zmsg );
+}
+
 int
-ymsg_aux_set_response (ymsg_t *self, app_t **response) {
+ymsg_set_response_app (ymsg_t *self, app_t **response) {
     if (!self || !response) {
         return -1;
     }
@@ -227,6 +241,20 @@ ymsg_aux_set_response (ymsg_t *self, app_t **response) {
     }
     ymsg_set_response (self, &chunk);
     return 0;
+}
+
+app_t *
+ymsg_response_app(ymsg_t *ymsg) {
+    zchunk_t *chunk = ymsg_response( ymsg );
+    if( ! chunk ) return NULL;
+
+    zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
+    if( (! zmsg) || (! is_app( zmsg ) ) ) {
+        ymsg_set_response( ymsg, &chunk );
+        zmsg_destroy( &zmsg );
+        return NULL;
+    }
+    return app_decode( &zmsg );
 }
 
 int
