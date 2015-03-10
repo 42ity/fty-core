@@ -272,6 +272,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/measure_types.h \
 			src/persist/dbhelpers.cc \
 			src/persist/dbhelpers.h \
+			src/persist/measurement.h \
+			src/persist/measurement.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -284,6 +286,7 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
+
 libpriv_db_la_LIBADD =	-lbiosapi
 libpriv_db_la_DEPENDENCIES =	libbiosapi.la
 
@@ -435,6 +438,7 @@ bin_PROGRAMS += 	test-db2
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
 			tests/persist/test-monitor-clientinfo.cc \
+			tests/persist/test-measurement.cc \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
