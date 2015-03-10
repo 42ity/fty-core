@@ -164,7 +164,7 @@ reportGitInfo() {
             if [ -d ".git" -a -f ".git/FETCH_HEAD" -a\
                  -n "$PACKAGE_GIT_HASH_L" ]; then
                 echo "INFO: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD..." >&2
-                _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,')`"
+                _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,'`"
                 _B_RES=$?
             fi
 
