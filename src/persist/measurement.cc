@@ -46,10 +46,10 @@ insert_into_measurement(
         //XXX: time should be from DB only, discuss with Miska and Alenka
         //use UNIX_TIMESTAMP instead!!!
         st = conn.prepareCached(
-                "INSERT INTO t_bios_measurement "
-                "(timestamp, value, scale, units, topic_id) "
-                "SELECT FROM UNIXTIME(:time), :value, :scale, :units, id FROM "
-                "t_bios_measurement_topic WHERE topic=:topic AND units=:units");
+                " INSERT INTO t_bios_measurement"
+                " (timestamp, value, scale, topic_id)"
+                " SELECT FROM_UNIXTIME(:time), :value, :scale, id FROM"
+                " t_bios_measurement_topic WHERE topic=:topic AND units=:units");
         ret.affected_rows = st.set("topic", topic)
                               .set("time",  time)
                               .set("value", value)
@@ -59,9 +59,10 @@ insert_into_measurement(
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ", ret.affected_rows);
 
-        ret.status = 1;
         ret.rowid = conn.lastInsertId();
+        ret.status = 1;
     } catch(const std::exception &e) {
+        ret.status = 0;
         ret.errtype = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
@@ -91,15 +92,15 @@ select_from_measurement_by_topic(
     
     try {
         tntdb::Statement st = conn.prepareCached(
-                " SELECT :id, :timestamp, :value, :scale, :device_id, :units, :topic"
+                " SELECT id, UNIX_TIMESTAMP(timestamp), value, scale, device_id, units, topic"
                 " FROM v_bios_measurement"
-                " WHERE topic LIKE '%:topic%'");
-        ret.affected_rows = st.set("topic", topic)
-                              .execute();
+                " WHERE topic LIKE :topic");
+        tntdb::Result res = st.set("topic", topic)
+                              .select();
+        
+        log_debug ("was %u rows selected", res.size());
 
-        for (tntdb::Statement::const_iterator it = st.begin();
-                it != st.end(); ++it) {
-            tntdb::Row r = *it;
+        for (auto &r : res ) {
 
             db_msrmnt_t m = {0, 0, 0, 0, 0, "", ""};
 
@@ -113,13 +114,10 @@ select_from_measurement_by_topic(
 
             ret.item.push_back(m);
         }
+        ret.status = 1;
     
-    } catch(const tntdb::NotFound &e) {
-        ret.errtype = DB_ERR;
-        ret.errsubtype = DB_ERROR_NOTFOUND;
-        ret.msg = e.what();
-        LOG_END_ABNORMAL(e);
     } catch(const std::exception &e) {
+        ret.status = 0;
         ret.errtype = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
@@ -145,16 +143,9 @@ delete_from_measurement_by_id(
 
         ret.affected_rows = st.set("id", id)
                               .execute();
-        //TODO: is this mandatory?
-        if (ret.affected_rows == 0) {
-            ret.errtype = DB_ERR;
-            ret.errsubtype = DB_ERROR_NOTFOUND;
-            ret.msg = "Not found";
-            log_debug("[t_bios_measurement]: id %" PRIu64 " not found\n", id);
-            return ret;
-        }
-
+        ret.status = 1;
     } catch(const std::exception &e) {
+        ret.status = 0;
         ret.errtype = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
