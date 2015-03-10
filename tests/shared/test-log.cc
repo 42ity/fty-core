@@ -28,11 +28,19 @@ end:
 TEST_CASE("log-getset-level", "[log][level]") {
     // log_level is initially set to LOG_SYSLOG_NA
     CHECK(log_get_syslog_level() == LOG_SYSLOG_NA);
+#ifdef ENABLE_DEBUG_BUILD
+    CHECK(log_get_stderr_level() == LOG_DEBUG);
+#else
     CHECK(log_get_stderr_level() == LOG_ERR);
+#endif
 
     log_set_syslog_level(LOG_DEBUG);
     CHECK(log_get_syslog_level() == LOG_DEBUG);
+#ifdef ENABLE_DEBUG_BUILD
+    CHECK(log_get_stderr_level() == LOG_DEBUG);
+#else
     CHECK(log_get_stderr_level() == LOG_ERR);
+#endif
     
     log_set_stderr_level(LOG_WARNING);
     CHECK(log_get_syslog_level() == LOG_DEBUG);
