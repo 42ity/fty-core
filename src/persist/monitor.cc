@@ -1186,10 +1186,11 @@ db_reply_t
 {
     LOG_START;
     
-    db_reply_t ret {0, 0, 0, NULL, NULL, NULL, 0, 0};
+    db_reply_t ret = db_reply_new();
  
     if ( !is_ok_name_length (device_name) )
     {
+        ret.status     = 0; 
         log_info ("end: too long device name");
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
@@ -1213,16 +1214,15 @@ db_reply_t
                             selectRow();
         log_debug ("1 row was selected");
         
-        m_dvc_id_t *id = new m_dvc_id_t(0);
-        row[0].get(*id);
+        row[0].get(ret.item);
 
         ret.status = 1;
-        ret.item = id;
 
         LOG_END;
         return ret;
     }
     catch (const tntdb::NotFound &e){
+        ret.status     = 0; 
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_NOTFOUND;
         ret.msg        = e.what();
@@ -1230,6 +1230,7 @@ db_reply_t
         return ret;
     }
     catch (const std::exception &e) {
+        ret.status     = 0; 
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg        = e.what();
