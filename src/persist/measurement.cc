@@ -1,12 +1,8 @@
 #include <vector>
-#include <tntdb/row.h>
 #include <tntdb/result.h>
-#include <tntdb/error.h>
 #include <tntdb/statement.h>
-#include <tntdb/transaction.h>
 
 #include "log.h"
-#include "defs.h"
 #include "measurement.h"
 
 namespace persist {
@@ -67,9 +63,10 @@ insert_into_measurement(
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
         LOG_END_ABNORMAL(e);
+        return ret;
     }
-    LOG_END;
 
+    LOG_END;
     return ret;
 }
 
@@ -121,7 +118,9 @@ select_from_measurement_by_topic(
         ret.errtype = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
+        ret.item.clear();
         LOG_END_ABNORMAL(e);
+        return ret;
     }
 
     LOG_END;
@@ -150,6 +149,7 @@ delete_from_measurement_by_id(
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg = e.what();
         LOG_END_ABNORMAL(e);
+        return ret;
     }
 
     LOG_END;
