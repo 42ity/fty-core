@@ -509,7 +509,7 @@ test_db_asset_crud_CPPFLAGS = \
 test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-bin_PROGRAMS += 	test-agents
+check_PROGRAMS += 	test-agents
 
 test_agents_SOURCES = \
 			tests/api/test-agents.cc

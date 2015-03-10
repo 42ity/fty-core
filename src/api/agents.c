@@ -161,15 +161,13 @@ ymsg_t *
     app_set_args (request, ext_attributes);
     zhash_destroy (ext_attributes);
 
-    zmsg_t *request_encoded = app_encode (&request); // auto don't work
+    zmsg_t *request_encoded = app_encode (&request);
     byte *buffer;
     size_t sz = zmsg_encode (request_encoded, &buffer);
 
     zchunk_t *request_chunk = zchunk_new (buffer, sz);
 
     ymsg_set_request (message, &request_chunk);
-    // TODO need to free buffer
-    // TODO need to free chunk
     return message; 
 }
 
