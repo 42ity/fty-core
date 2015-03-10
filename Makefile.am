@@ -284,8 +284,6 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
-libpriv_db_la_LIBADD = -lbiosapi
-
 libpriv_db_la_LIBADD =	-lbiosapi
 libpriv_db_la_DEPENDENCIES =	libbiosapi.la
 
@@ -639,7 +637,7 @@ server_agent_LDADD =	libpriv-proto.la
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 
-client_PROGRAMS +=	tools/db-init
+client_SCRIPTS =	tools/db-init
 client_PROGRAMS +=	db-ng
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
