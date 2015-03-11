@@ -62,7 +62,7 @@ int main (int argc, char *argv []) {
 
                         // Create message and publish it
                         ymsg_t *msg = ymsg_new(YMSG_SEND);
-                        ymsg_set_string(msg, "units", strdup("C"));
+                        ymsg_set_string(msg, "units", "C");
                         ymsg_set_int32(msg, "value", temp / 100);
                         ymsg_set_int32(msg, "scale", -1);
                         ymsg_set_int64(msg, "time", -1);
