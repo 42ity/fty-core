@@ -25,8 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define INCLUDE_AGENTS_H__
 
 #include <czmq.h>
-#include <malamute.h>
-#include <string.h>
+#include <bios_export.h>
 
 #include "ymsg.h"
 
@@ -42,9 +41,17 @@ BIOS_EXPORT ymsg_t *
 BIOS_EXPORT int
     bios_netmon_decode (ymsg_t **self_p, int *event, char *interface_name, int *ip_version, char *ip_address, uint8_t *prefix_length, char *mac_address);
 
+
+BIOS_EXPORT ymsg_t *
+    bios_inventory_encode (const char *device_name, zhash_t **ext_attributes, const char *module_name);
+
+
+// on -1 (error) does not destroy *self_p
+BIOS_EXPORT int
+    bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif // INCLUDE_AGENTS_H__
-

@@ -32,6 +32,31 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "asset_types.h"
 #include "dbhelpers.h"
 
+int convert_asset_to_monitor_safe(const char* url, 
+                a_elmnt_id_t asset_element_id, m_dvc_id_t *device_id)
+{
+    if ( device_id == NULL )
+        return -5;
+    try
+    {
+        *device_id = convert_asset_to_monitor(url, asset_element_id);
+        return 0;
+    }
+    catch (const bios::NotFound &e){
+        return -1;
+    }
+    catch (const bios::InternalDBError &e) {
+        return -2;
+    }
+    catch (const bios::ElementIsNotDevice &e) {
+        return -3;
+    }
+    catch (const bios::MonitorCounterpartNotFound &e) {
+        return -4;
+    }
+}
+
+
 m_dvc_id_t convert_asset_to_monitor(const char* url, 
                 a_elmnt_id_t asset_element_id)
 {
@@ -82,6 +107,25 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
     log_info("end: asset element %" PRIu32 " converted to %" PRIu32, asset_element_id, device_discovered_id);
     return device_discovered_id;
 }
+
+int convert_monitor_to_asset_safe(const char* url, 
+                    m_dvc_id_t discovered_device_id, a_elmnt_id_t *asset_element_id)
+{
+    if ( asset_element_id == NULL )
+        return -5;
+    try
+    {
+        *asset_element_id = convert_monitor_to_asset (url, discovered_device_id);
+        return 0;
+    }
+    catch (const bios::NotFound &e){
+        return -1;
+    }
+    catch (const bios::InternalDBError &e) {
+        return -2;
+    }
+}
+
 
 a_elmnt_id_t convert_monitor_to_asset(const char* url, 
                     m_dvc_id_t discovered_device_id)

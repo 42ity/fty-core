@@ -26,7 +26,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 #include "common_msg.h"
+#include <tntdb/connect.h>
 #include "dbtypes.h"
+#include "dbhelpers.h"
 
 #define GEN_MEASUREMENTS_MAX 10
 
@@ -486,6 +488,11 @@ common_msg_t* update_device_type(const char* url,
 // ===============================================================
 // DEVICE
 // ===============================================================
+
+
+db_reply_t 
+    select_device (tntdb::Connection &conn, 
+                   const char* device_name);
 
 
 /**

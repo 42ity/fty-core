@@ -41,7 +41,7 @@ int main (int argc, char *argv []) {
         zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
             continue;
-        printf("Command is %s\n", mlm_client_command(client));
+        log_info ("Command is '%s'", mlm_client_command(client));
         // Mailbox deliver is direct message
         if(streq (mlm_client_command(client), "MAILBOX DELIVER")) {
             // Verify it is for us
