@@ -909,7 +909,7 @@ if HAVE_SYSTEMD
 edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service: Makefile
+bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
 	rm -f $@
 	$(edit) '$(srcdir)/tools/$@.in' > $@
 
@@ -917,12 +917,15 @@ bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
 bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
+bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
+
 
 systemdsystemunit_DATA = \
 			$(top_builddir)/bios-driver-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
 			$(top_builddir)/bios-db.service \
-			$(top_builddir)/bios-server-agent.service
+			$(top_builddir)/bios-server-agent.service \
+			$(top_builddir)/bios-agent-inventory.service
 
 CLEANFILES += $(top_builddir)/bios-*.service
 endif
