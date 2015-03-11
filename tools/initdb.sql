@@ -3,6 +3,8 @@ CREATE DATABASE IF NOT EXISTS box_utf8 character set utf8 collate utf8_general_c
 
 USE box_utf8;
 
+SET GLOBAL time_zone='+00:00';
+
 /* work around smart insert without duplicates*/
 CREATE TABLE IF NOT EXISTS t_empty (id TINYINT);
 INSERT INTO t_empty values (1);
