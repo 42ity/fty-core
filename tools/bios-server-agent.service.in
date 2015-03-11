@@ -7,3 +7,5 @@ Requires=malamute.service
 Type=simple
 ExecStart=@libexecdir@/bios/server-agent
 
+[Install]
+WantedBy=multi-user.target

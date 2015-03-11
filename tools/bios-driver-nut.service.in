@@ -6,3 +6,6 @@ Requires=malamute.service
 [Service]
 Type=simple
 ExecStart=@libdir@/bios/driver-nut
+
+[Install]
+WantedBy=multi-user.target

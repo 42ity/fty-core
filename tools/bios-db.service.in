@@ -8,3 +8,5 @@ Type=simple
 ExecStartPre=@libexecdir@/bios/db-init
 ExecStart=@libexecdir@/bios/db-ng
 
+[Install]
+WantedBy=multi-user.target
