@@ -37,13 +37,13 @@ int main (int argc, char *argv[])
     }
 
     // Create an agent
-    bios_agent_t *agent = bios_agent_new(addr, "persistence.inventory");
+    bios_agent_t *agent = bios_agent_new(addr, "persistenceinventory");
     if ( !agent ) {
         log_error ("db-inventory: error bios_agent_new");
         return 1;
     }
     // listen on inventory messages
-    bios_agent_set_consumer (agent, "bios", "*inventory*"); 
+    bios_agent_set_consumer (agent, "bios", ".*inventory.*"); 
 
     while ( !zsys_interrupted )
     {
