@@ -198,4 +198,8 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id);
 
+db_reply_t
+    process_insert_inventory
+        (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes);
+
 #endif // SRC_PERSIST_ASSETCRUD_H_

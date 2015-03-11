@@ -48,8 +48,8 @@ struct db_reply{
     int status; // ok/fail
     int errtype;
     int errsubtype;
-    uint64_t rowid;
-    uint64_t affected_rows;
+    uint64_t rowid;  // insert/update
+    uint64_t affected_rows; // for update/insert/delete
     const char *msg;
     zhash_t *addinfo;
     T item;
@@ -118,6 +118,11 @@ struct db_msrmnt_t {
 m_dvc_id_t convert_asset_to_monitor(const char* url, 
                 a_elmnt_id_t asset_element_id);
 
+// the same as previos. but c-style error handling
+int convert_asset_to_monitor_safe(const char* url, 
+                a_elmnt_id_t asset_element_id, m_dvc_id_t *device_id);
+
+
 /**
  * \brief This function looks for an asset_element in an asset part which 
  * is connected with the specified device_discovered in monitor part.
@@ -136,6 +141,8 @@ m_dvc_id_t convert_asset_to_monitor(const char* url,
 a_elmnt_id_t convert_monitor_to_asset(const char* url, 
                     m_dvc_id_t discovered_device_id);
 
+int convert_monitor_to_asset_safe(const char* url, 
+                    m_dvc_id_t discovered_device_id, a_elmnt_id_t *asset_element_id);
 
 /**
  * \brief Checks if the type is correct

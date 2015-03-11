@@ -2,6 +2,7 @@
 #define SRC_PERSIST_PERSISTENCELOGIC_H_
 
 #include <czmq.h>
+#include <zmq.h>
 
 // To be deleted - we should be fine with just zmsg_t
 #include "netdisc_msg.h"
@@ -9,6 +10,7 @@
 #include "common_msg.h"
 #include "nmap_msg.h"
 #include "ymsg.h"
+#include "app.h"
 
 #include <string>
 
@@ -23,7 +25,7 @@ namespace persist {
  */
 zmsg_t *asset_msg_process(zmsg_t **msg);
 
-void process_measurement(const std::string topic, zmsg_t **msg);
+void process_measurement(const std::string &topic, zmsg_t **msg);
 
 /**
  * \brief Basic message processing function
@@ -33,11 +35,12 @@ void process_measurement(const std::string topic, zmsg_t **msg);
  * otherwise returns nullptr.
  *
  */
+ymsg_t* process_message(ymsg_t** msg);
 zmsg_t* process_message(zmsg_t** msg);
 
 // List of obsolete functions deemed to die
 bool
-process_message(const std::string& url, zmsg_t *msg);
+process_message(const std::string &url, zmsg_t *msg);
 
 zmsg_t* netdisc_msg_process(zmsg_t** msg);
 
@@ -57,6 +60,9 @@ zmsg_t* common_msg_process(zmsg_t **msg);
 
 bool insert_new_client_info(const char* url, common_msg_t* msg);
 
+
+ymsg_t* app_msg_process (zmsg_t **msg);
+void process_inventory (ymsg_t **msg);
 } // namespace persist
 
 #endif // SRC_PERSIST_PERSISTENCELOGIC_H_

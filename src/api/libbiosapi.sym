@@ -112,6 +112,11 @@ global:
 		ymsg_get_int32;
 		ymsg_get_int64;
 
+        bios_netmon_decode;
+        bios_inventory_decode;
+        bios_inventory_encode;
+        bios_netmon_encode;
+
         is_app;
         is_ymsg;
 local:

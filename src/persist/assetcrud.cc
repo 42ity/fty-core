@@ -38,6 +38,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "log.h"
 #include "defs.h"
+#include "dbpath.h"
 #include "assetcrud.h"
 #include "monitor.h"
 #include "persist_error.h"
@@ -434,6 +435,49 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
 
 // GET functions
 
+db_reply_t
+    process_insert_inventory
+        (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes)
+{
+    LOG_START;
+    db_reply_t ret = db_reply_new();
+        
+    tntdb::Transaction trans (conn);
+
+    ret = select_device (conn, device_name);
+    if ( ret.status == 0 )
+        trans.commit(); // nothing was done, but we need to end the transaction
+    else
+    {
+        m_dvc_id_t id = (m_dvc_id_t) ret.item;
+        a_elmnt_id_t element_id = 0;
+        // TODO get rid of oldstyle functions
+        int rv = convert_monitor_to_asset_safe (url.c_str(), id, &element_id);
+        if ( rv != 0 )
+        {
+            ret.errtype = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT; // anebo jiny kod???
+            ret.msg = "";
+            ret.status = 1;
+            trans.commit(); // nothing was done, but we need to end the transaction
+        }
+        else
+        {
+            ret = insert_into_asset_ext_attributes (conn, ext_attributes, element_id, true);
+            if ( ret.status == 0 )
+            {
+                ret.affected_rows = 0;
+                trans.rollback();
+            }
+            else
+                trans.commit();
+        }
+    }
+    LOG_END;
+    return ret;
+}
+
+
 zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
 {
     log_info("%s ","start");
@@ -582,6 +626,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     // input parameters control 
     if ( asset_element_id == 0 )
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "apropriate asset element is not specified";
@@ -591,6 +636,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     }
     if ( !is_ok_value (value) )
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unexepetable value";
@@ -599,6 +645,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     }
     if ( !is_ok_keytag (keytag) )
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unexepetable keytag";
@@ -632,6 +679,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     }
     catch (const std::exception &e) {
         ret.affected_rows = n;
+        ret.status     = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
@@ -649,6 +697,7 @@ static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &c
     }
     else
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unexpected number of returned rows";
@@ -696,6 +745,7 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
     // input parameters control 
     if ( asset_element_id == 0 )
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "apropriate asset element is not specified";
@@ -705,6 +755,7 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
     }
     if ( attributes == NULL )
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "ext attributes are not specified (NULL)";
@@ -746,6 +797,7 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
         LOG_END;
     else
     {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "not all ext attributes were inserted";
@@ -787,6 +839,7 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
         log_debug("was deleted %" PRIu32 " ext attributes", n);
     } 
     catch (const std::exception &e) {
+        ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
@@ -800,6 +853,7 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
     }
     else
     {
+        ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_BADINPUT;
         ret.msg           = "unexpected number of rows was deleted";
@@ -828,6 +882,7 @@ db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
         log_debug("was deleted %zu ext attributes", ret.affected_rows);
     } 
     catch (const std::exception &e) {
+        ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = e.what();
