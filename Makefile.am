@@ -291,6 +291,7 @@ libpriv_db_la_LIBADD =	-lbiosapi
 libpriv_db_la_DEPENDENCIES =	libbiosapi.la
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
+
 libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.c \
 			src/msg/asset_msg.h \
@@ -512,6 +513,30 @@ test_db_asset_crud_CPPFLAGS = \
 test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+check_PROGRAMS += 	test-agents
+
+test_agents_SOURCES = \
+			tests/api/test-agents.cc
+
+
+test_agents_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_agents_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_agents_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS} -lbiosapi
+
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
 
@@ -642,18 +667,22 @@ server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 
 client_SCRIPTS =	tools/db-init
+
 client_PROGRAMS +=	db-ng
+
 db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
-			${LIBMLM_LIBS} -ltntdb -lcidr
+			${LIBMLM_LIBS} -ltntdb -lcidr  -lbiosapi
+
+db_ng_DEPENDENCIES =	libbiosapi.la
 
 db_ng_LDADD = \
-                        libpriv-db.la \
+            libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
-                        libpriv-proto.la
+            libpriv-proto.la
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
@@ -719,6 +748,30 @@ driver_nut_LDADD = \
 driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
 driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+client_PROGRAMS +=	agent-inventory
+
+agent_inventory_SOURCES = \
+			src/agents/inventory/inventory-actor.cc \
+			tools/dbpath.h
+
+agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
+
+agent_inventory_DEPENDENCIES =	libbiosapi.la
+
+agent_inventory_LDADD = \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la
+
+agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
+
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
