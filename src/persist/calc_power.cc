@@ -536,9 +536,7 @@ static rack_power_t
     try
     {
         tntdb::Connection conn = tntdb::connect(url);
-        // v_..._last contain only last measures
-        // TODO check its correctness
-        tntdb::Statement st = conn.prepare(
+        std::string select = \
             " SELECT"
             "    v.id_discovered_device, v.value, v.scale"
             " FROM"
@@ -548,9 +546,14 @@ static rack_power_t
                     + s_generate_in_clause(idmap) + ")"  // XXX
 //                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
             "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
-            "   AND (UNIX_TIMESTAMP(v.timestamp) BETWEEN"
-            "       :date_start AND :date_end)"
-        );
+            "   AND (v.timestamp BETWEEN"
+            "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))";
+
+        // v_..._last contain only last measures
+        // TODO check its correctness
+        tntdb::Statement st = conn.prepare(select);
+
+        log_debug("%s, %lu, %lu\n", select.c_str(), date_start, date_end);
 
         tntdb::Result result = st.set("date_start", date_start).
                                   set("date_end", date_end).
