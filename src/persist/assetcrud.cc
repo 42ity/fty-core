@@ -449,7 +449,7 @@ db_reply_t
         trans.commit(); // nothing was done, but we need to end the transaction
     else
     {
-        m_dvc_id_t id = *(int*) ret.item;
+        m_dvc_id_t id = (m_dvc_id_t) ret.item;
         a_elmnt_id_t element_id = 0;
         // TODO get rid of oldstyle functions
         int rv = convert_monitor_to_asset_safe (url.c_str(), id, &element_id);
