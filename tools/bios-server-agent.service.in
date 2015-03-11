@@ -1,5 +1,5 @@
 [Unit]
-Description=Start BIOS agent that collects data about server it is running on
+Description=BIOS agent that collects data about server it is running on
 After=malamute.service
 Requires=malamute.service
 

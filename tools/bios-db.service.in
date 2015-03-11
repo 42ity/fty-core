@@ -1,5 +1,5 @@
 [Unit]
-Description=Start database layer for BIOS
+Description=Database layer for BIOS
 After=malamute.service mysql.service
 Requires=malamute.service mysql.service
 
