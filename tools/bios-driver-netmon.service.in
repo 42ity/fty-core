@@ -6,3 +6,6 @@ Requires=malamute.service
 [Service]
 Type=simple
 ExecStart=@libdir@/bios/driver-netmon
+
+[Install]
+WantedBy=multi-user.target

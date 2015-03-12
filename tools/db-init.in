@@ -2,17 +2,19 @@
 
 prefix="@prefix@"
 
+INITSQL="@datarootdir@/@PACKAGE@/sql/mysql/initdb.sql"
+
 if [ -z "`echo "select 'working';" | mysql -u root | grep working`" ]; then
 	echo "Can't connect to database"
 	exit 1
 fi
 
 if [ -z "`echo "show databases;" | mysql -u root | grep '^box_utf8$'`" ]; then
-	if [ -r "@datarootdir@/@PACKAGE@/sql/initdb.sql" ] && \
-	   [ -s "@datarootdir@/@PACKAGE@/sql/initdb.sql" ]; then
-		cat "@datarootdir@/@PACKAGE@/sql/initdb.sql" | mysql -u root || exit 1
+	if [ -r "$INITSQL" ] && \
+	   [ -s "$INITSQL" ]; then
+		cat "$INITSQL" | mysql -u root || exit 1
 	else
-		echo "Can't read '@datarootdir@/@PACKAGE@/sql/initdb.sql' !!!"
+		echo "Can't read '$INITSQL' !!!"
 		exit 1
 	fi
 fi

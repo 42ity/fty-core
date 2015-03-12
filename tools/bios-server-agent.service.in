@@ -1,5 +1,5 @@
 [Unit]
-Description=Start BIOS agent that collects data about server it is running on
+Description=BIOS agent that collects data about server it is running on
 After=malamute.service
 Requires=malamute.service
 
@@ -7,3 +7,5 @@ Requires=malamute.service
 Type=simple
 ExecStart=@libexecdir@/bios/server-agent
 
+[Install]
+WantedBy=multi-user.target
