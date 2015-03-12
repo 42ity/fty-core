@@ -287,8 +287,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD =	-lbiosapi
-libpriv_db_la_DEPENDENCIES =	libbiosapi.la
+libpriv_db_la_LIBADD = libbiosapi.la
+
 
 noinst_LTLIBRARIES += 	libpriv-proto.la
 
@@ -305,8 +305,9 @@ libpriv_proto_la_SOURCES = \
 			src/msg/compute_msg.h \
 			src/msg/powerdev_msg.c \
 			src/msg/powerdev_msg.h
-libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} -lbiosapi
-libpriv_proto_la_DEPENDENCIES =	libbiosapi.la
+
+libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
+
 
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
@@ -676,13 +677,13 @@ db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr  -lbiosapi
 
-db_ng_DEPENDENCIES =	libbiosapi.la
-
 db_ng_LDADD = \
             libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
-            libpriv-proto.la
+            libpriv-proto.la \
+			libbiosapi.la
+
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
@@ -756,14 +757,13 @@ agent_inventory_SOURCES = \
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
 
-agent_inventory_DEPENDENCIES =	libbiosapi.la
-
 agent_inventory_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
 			libpriv-log.la \
-			libpriv-proto.la
+			libpriv-proto.la \
+			libbiosapi.la
 
 agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
