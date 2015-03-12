@@ -251,9 +251,9 @@ int
    d = ymsg_get_string( *self_p, "device" );
    q = ymsg_get_string( *self_p, "quantity" );
    u = ymsg_get_string( *self_p, "units" );
-   v = ymsg_get_string( *self_p, "quantity" );
-   s = ymsg_get_string( *self_p, "units" );
-   t = ymsg_get_string( *self_p, "quantity" );
+   v = ymsg_get_string( *self_p, "value" );
+   s = ymsg_get_string( *self_p, "scale" );
+   t = ymsg_get_string( *self_p, "time" );
 
    if( ! d || ! q || ! u || ! v || ! s || !t ) return -3;
 
