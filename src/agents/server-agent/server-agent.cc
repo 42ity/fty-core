@@ -87,7 +87,6 @@ int main (int argc, char *argv []) {
         sleep(1);
     }
 
-exit:
     bios_agent_destroy (&client);
     return ret;
 }
