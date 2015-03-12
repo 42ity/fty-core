@@ -676,7 +676,8 @@ db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr  -lbiosapi
 
-db_ng_DEPENDENCIES =	libbiosapi.la
+db_ng_DEPENDENCIES =	libbiosapi.la \
+			libpriv-db.la
 
 db_ng_LDADD = \
             libpriv-db.la \
@@ -757,7 +758,8 @@ agent_inventory_SOURCES = \
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
 
-agent_inventory_DEPENDENCIES =	libbiosapi.la
+agent_inventory_DEPENDENCIES =	libbiosapi.la \
+				libpriv-db.la
 
 agent_inventory_LDADD = \
 			libpriv-db.la \
