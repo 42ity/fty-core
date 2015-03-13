@@ -741,7 +741,8 @@ driver_nut_SOURCES = \
 
 driver_nut_LDADD = \
 			libpriv-log.la \
-			libpriv-proto.la
+			libpriv-proto.la \
+			libbiosapi.la
 
 driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
