@@ -36,7 +36,7 @@ CREATE TABLE t_bios_measurement (
     id            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     timestamp     DATETIME            NOT NULL,
     value         INTEGER             NOT NULL,
-    scale         INTEGER             NOT NULL,
+    scale         SMALLINT            NOT NULL,
     topic_id      INTEGER UNSIGNED    NOT NULL,
 
     PRIMARY KEY(id),
