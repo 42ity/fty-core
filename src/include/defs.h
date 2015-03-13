@@ -70,6 +70,10 @@ enum ipaddr_version {
     IP_VERSION_6
 };
 
+//! Time interval in which measurement will be send regardless of difference
+//TODO: Make it configurable
+#define WORST_SAMPLING_INTERVAL 300
+
 #define KEY_REPEAT "repeat"
 #define KEY_STATUS "status"
 #define KEY_CONTENT_TYPE "content-type"
