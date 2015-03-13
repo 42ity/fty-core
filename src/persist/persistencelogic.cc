@@ -56,7 +56,7 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
     ymsg_t *ymsg = ymsg_decode(msg);
     if(ymsg == NULL) {
         log_error("Can't decode the ymsg");
-    return;
+        return;
     }
 
     tntdb::Connection conn;
@@ -65,6 +65,8 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
         conn.ping();
     } catch (const std::exception &e) {
         log_error("Can't connect to the database");
+        ymsg_destroy(&ymsg);
+        return;
     }
 
     //TODO: convert to protocol!
@@ -75,8 +77,10 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
     int64_t tme = ymsg_get_int64(ymsg, "time");
     const char *units = ymsg_get_string(ymsg, "units");
 
-    if(errno != 0)
+    if(errno != 0) {
+        ymsg_destroy(&ymsg);
         return;
+    }
     
     if(tme < 1)
         tme = ::time(NULL);
