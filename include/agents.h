@@ -67,7 +67,7 @@ BIOS_EXPORT ymsg_t *
                              const char *units,
                              int64_t value,
                              int32_t scale,
-                             int64_t time);
+                             time_t time);
 
 
 /**
@@ -92,7 +92,7 @@ BIOS_EXPORT int
                              char **units,
                              int64_t *value,
                              int32_t *scale,
-                             int64_t *time);
+                             time_t *time);
 
 
     
