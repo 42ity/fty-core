@@ -39,8 +39,6 @@ insert_into_measurement(
 
         log_debug("[t_bios_measurement_topic]: inserted %" PRIu32 " rows ", n);
 
-        //XXX: time should be from DB only, discuss with Miska and Alenka
-        //use UNIX_TIMESTAMP instead!!!
         st = conn.prepareCached(
                 " INSERT INTO t_bios_measurement"
                 " (timestamp, value, scale, topic_id)"
