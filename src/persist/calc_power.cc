@@ -322,14 +322,14 @@ void compute_result_value_set (zhash_t *results, m_msrmnt_value_t value)
 {
     std::string val_s = std::to_string (value);
     zhash_insert (results, "value", (char*)val_s.c_str());
-    log_debug ("conv value from %" PRIi64 " to '%s' ", value, val_s.c_str());
+    log_debug ("conv value from %" PRIi32 " to '%s' ", value, val_s.c_str());
 }
 
 int compute_result_value_get (zhash_t *results, m_msrmnt_value_t *value)
 {
     char* value_str = (char *) zhash_lookup (results, "value");
-    int r = sscanf(value_str ,"%" SCNi64, value);
-    log_debug ("conv value from '%s' to %" PRIi64, value_str, *value);
+    int r = sscanf(value_str ,"%" SCNi32, value);
+    log_debug ("conv value from '%s' to %" PRIi32, value_str, *value);
     return (r == 0 ? 1:0);
 }
 
@@ -423,7 +423,7 @@ static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value,
 
     if (old_scale > new_scale) {
         for (auto i = 0; i != abs(old_scale - new_scale); i++) {
-            assert(value < (INT64_MAX / 10));
+            assert(value < (INT32_MAX / 10));
             value *= 10;
         }
         return value;
@@ -575,7 +575,7 @@ static rack_power_t
 
             s_add_scale(ret, value, scale);
             log_debug (" device %" PRIu32, dev_id);
-            log_debug ("    value %" PRIi64, value);
+            log_debug ("    value %" PRIi32, value);
             log_debug ("    scale %" PRIi16, scale);
         }
     }
@@ -695,7 +695,7 @@ compute_total_rack_power_v1(
                           );
     s_add_scale (ret, ret2.power, ret2.scale);
     // TODO manage quality + missed
-    log_debug ("end: power = %" PRIi64 ", scale = %" PRIi16, ret.power, ret.scale);
+    log_debug ("end: power = %" PRIi32 ", scale = %" PRIi16, ret.power, ret.scale);
     return ret;
 }
 
@@ -839,7 +839,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
                 url, rack_devices, 
                 300u);
         ret_results_rack.insert(ret_results_rack.begin(), aresult);
-        log_debug("end process the rack: %" PRIu32 " with value = %" PRIi64 " and scale = %" PRIi16, rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
+        log_debug("end process the rack: %" PRIu32 " with value = %" PRIi32 " and scale = %" PRIi16, rack_id, ret_results_rack[i].power, ret_results_rack[i].scale);
     }
     log_debug("here 11");
 
@@ -850,7 +850,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
         ret_result.date_start = one_rack.date_start;
         ret_result.date_end = one_rack.date_end;
     }
-    log_debug("total: value = %" PRIi64 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
+    log_debug("total: value = %" PRIi32 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
     zhash_t* result = zhash_new();
