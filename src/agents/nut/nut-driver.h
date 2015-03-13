@@ -157,7 +157,15 @@ class NUTDevice {
      *        all properties are returned.
      * \return bool, true if property exists
      */
-    std::map<std::string,int> physics(bool onlyChanged) const;
+    std::map<std::string,int64_t> physics(bool onlyChanged) const;
+
+    /**
+     * \brief Method returns list of inventory properties. If the parameter
+     *        is true, only changed properties are returned. Otherways
+     *        all properties are returned.
+     * \return bool, true if property exists
+     */
+    std::map<std::string,std::string> inventory(bool onlyChanged) const;
 
     /**
      * \brief method returns particular device property.

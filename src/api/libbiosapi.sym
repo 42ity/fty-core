@@ -115,6 +115,8 @@ global:
         bios_netmon_decode;
         bios_inventory_decode;
         bios_inventory_encode;
+        bios_measurement_decode;
+        bios_measurement_encode;
         bios_netmon_encode;
 
         is_app;

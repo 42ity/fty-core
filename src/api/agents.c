@@ -17,6 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <czmq.h>
 #include "utils_ymsg.h"
+#include "bios_agent.h"
 #include "agents.h"
 #include "defs.h"
 
@@ -210,4 +211,58 @@ int
         return 0;
     }
     return -5; 
+}
+
+
+ymsg_t *
+bios_measurement_encode (const char *device_name,
+                         const char *quantity,
+                         const char *units,
+                         int64_t value,
+                         int32_t scale,
+                         time_t time)
+{
+    if( ! device_name || ! quantity || ! units ) return NULL; 
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    ymsg_set_string(msg, "device", (char *)device_name );
+    ymsg_set_string(msg, "quantity", (char *)quantity );
+    ymsg_set_string(msg, "units", (char *)units );
+    ymsg_set_int64(msg, "value",  value );
+    ymsg_set_int32(msg, "scale", scale );
+    ymsg_set_int64(msg, "time", time );
+    return msg;
+}
+
+// on (error) does not destroy *self_p
+int
+    bios_measurement_decode (ymsg_t **self_p,
+                           char **device_name,
+                           char **quantity,
+                           char **units,
+                           int64_t *value,
+                           int32_t *scale,
+                           time_t *time)
+{
+   if( ! self_p || ! device_name || ! quantity || ! units || ! value || ! scale || ! time ) return -1;
+   if (  *self_p == NULL ) return -2;
+
+   const char *d, *q, *u, *v, *s, *t;
+
+   d = ymsg_get_string( *self_p, "device" );
+   q = ymsg_get_string( *self_p, "quantity" );
+   u = ymsg_get_string( *self_p, "units" );
+   v = ymsg_get_string( *self_p, "value" );
+   s = ymsg_get_string( *self_p, "scale" );
+   t = ymsg_get_string( *self_p, "time" );
+
+   if( ! d || ! q || ! u || ! v || ! s || !t ) return -3;
+
+   *device_name = strdup(d);
+   *quantity = strdup(q);
+   *units = strdup(u);
+   
+   *value = ymsg_get_int64( *self_p, "value" );
+   *scale = ymsg_get_int32( *self_p, "scale" );
+   *time = ymsg_get_int64( *self_p, "time" );
+   return 0;
 }
