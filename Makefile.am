@@ -738,14 +738,16 @@ client_PROGRAMS +=	driver-nut
 
 driver_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
-			src/agents/nut/nut-actor.cc \
-			src/shared/upsstatus.cc
+			src/agents/nut/nut-agent.cc \
+			src/shared/upsstatus.cc \
+			src/shared/utils_ymsg.c
 
 driver_nut_LDADD = \
 			libpriv-log.la \
-			libpriv-proto.la
+			libpriv-proto.la \
+			libbiosapi.la
 
-driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS}
+driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
 driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
