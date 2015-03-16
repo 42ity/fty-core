@@ -218,7 +218,7 @@ ymsg_t *
 bios_measurement_encode (const char *device_name,
                          const char *quantity,
                          const char *units,
-                         int64_t value,
+                         int32_t value,
                          int32_t scale,
                          time_t time)
 {
@@ -227,7 +227,7 @@ bios_measurement_encode (const char *device_name,
     ymsg_set_string(msg, "device", (char *)device_name );
     ymsg_set_string(msg, "quantity", (char *)quantity );
     ymsg_set_string(msg, "units", (char *)units );
-    ymsg_set_int64(msg, "value",  value );
+    ymsg_set_int32(msg, "value",  value );
     ymsg_set_int32(msg, "scale", scale );
     ymsg_set_int64(msg, "time", time );
     return msg;
@@ -239,7 +239,7 @@ int
                            char **device_name,
                            char **quantity,
                            char **units,
-                           int64_t *value,
+                           int32_t *value,
                            int32_t *scale,
                            time_t *time)
 {
@@ -261,7 +261,7 @@ int
    *quantity = strdup(q);
    *units = strdup(u);
    
-   *value = ymsg_get_int64( *self_p, "value" );
+   *value = ymsg_get_int32( *self_p, "value" );
    *scale = ymsg_get_int32( *self_p, "scale" );
    *time = ymsg_get_int64( *self_p, "time" );
    return 0;
