@@ -544,7 +544,6 @@ FROM t_bios_measurement t1
     LEFT JOIN t_bios_measurement_topic t2 ON
         (t1.topic_id = t2.id);
 
--- LENA
 CREATE VIEW v_bios_measurement_lastdate AS
 SELECT max(p.timestamp) maxdate,
        p.device_id,
