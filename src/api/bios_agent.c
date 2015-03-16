@@ -321,7 +321,7 @@ ymsg_get_int64(ymsg_t* msg, const char *key) {
         errno = EKEYREJECTED;
         return 0;
     }
-    if(sscanf(val, "%" PRIi64, &ret) != 1) {
+    if(sscanf(val, "%" SCNi64, &ret) != 1) {
         errno = EBADMSG;
         return 0;
     }
@@ -345,4 +345,3 @@ ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     sprintf(buff, "%" PRIi64, value);
     set_hash(msg, key, buff);
 }
-
