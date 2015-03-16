@@ -231,7 +231,7 @@ create_random_samples() {
 }
 
 produce_events(){
-    MEASUREMENTS=$(do_select "select count(*) from t_bios_measurements")
+    MEASUREMENTS=$(do_select "select count(*) from t_bios_measurement")
     LASTCHECK=$(date +%s)
     while read sample
     do
@@ -250,7 +250,7 @@ produce_events(){
         if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
             # 5 min since last check
             # check measurement flow
-            NEWCNT=$(do_select "select count(*) from t_bios_measurements")
+            NEWCNT=$(do_select "select count(*) from t_bios_measurement")
             if [ $NEWCNT = $MEASUREMENTS ] ; then
                 # no data flow
                 echo "ERROR: nothing appeared in measurement table since last check ($NEWCNT lines in table)"
