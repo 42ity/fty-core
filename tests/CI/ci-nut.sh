@@ -74,71 +74,54 @@ set_value_in_ups() {
     upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1
 }
 
+create_ups_dev_file() {
+    local FILE=$1
+    echo -e \
+        "device.type: ups" \
+        "\ndevice.model: B32" \
+        "\ndevice.mfr: BIOS" \
+        "\ndevice.serial: $(echo $FILE | md5sum | cut -d\  -f 1 )" \
+        "\ndevice.description: ups $(basename $FILE)" \
+        "\ndevice.contact: root@bios" \
+        "\ndevice.location: server room 10" \
+        "\nbattery.charge: 90" \
+        "\noutput.current: 1.20" \
+        "\noutput.voltage: 230.0" \
+        "\nups.realpower: 25" \
+        "\nups.temperature: 25" \
+        "\noutlet.1.voltage: 220" \
+        "\noutlet.2.voltage: 220" \
+        "\nups.load: 10" \
+        "\nups.status: OL" \
+        > $FILE
+}
+
+
 create_nut_config() {
     echo "creating nut config"
     echo "MODE=standalone" > $CFGDIR/nut.conf 
 
-    echo "[$UPS1]
-driver=dummy-ups
-port=$UPS1.dev
-desc=\"dummy-pdu in dummy mode\" 
+    echo -e \
+        "[$UPS1]" \
+        "\ndriver=dummy-ups" \
+        "\nport=$UPS1.dev" \
+        "\ndesc=\"dummy-pdu in dummy mode\"" \
+        "\n" \
+        "\n[$UPS2]" \
+        "\ndriver=dummy-ups" \
+        "\nport=$UPS2.dev" \
+        "\ndesc=\"dummy-ups 2 in dummy mode\"" \
+        > $CFGDIR/ups.conf
 
-[$UPS2]
-driver=dummy-ups
-port=$UPS2.dev
-desc=\"dummy-ups 2 in dummy mode\" " > $CFGDIR/ups.conf
+    echo -e \
+        "[$USR]" \
+        "\npassword=$PSW" \
+        "\nactions=SET" \
+        "\ninstcmds=ALL" \
+        > $CFGDIR/upsd.users
 
-    echo "[$USR]
-password=$PSW
-actions=SET
-instcmds=ALL" > $CFGDIR/upsd.users
-
-
-    echo "# dummy-ups1 example power sequence file
-#
-# Base is the same as .dev files, generated using:
-#  $ upsc ups@host > evolution500.seq
-#
-
-battery.charge: 90
-device.type: ups
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: 25
-ups.temperature: 25
-outlet.realpower: 20
-ups.load: 10
-ups.mfr: MGE UPS SYSTEMS
-ups.model: Pulsar Evolution 500
-ups.serial: AV2G3300L
-ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$UPS1.dev
-
-    echo "# dummy-ups2 example power sequence file
-#
-# Base is the same as .dev files, generated using:
-#  $ upsc ups@host > evolution500.seq
-#
-
-battery.charge: 90
-device.type: ups
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: 25
-ups.temperature: 25
-outlet.realpower: 20
-ups.load: 10
-ups.mfr: MGE UPS SYSTEMS
-ups.model: Pulsar Evolution 500
-ups.serial: AV2G3300L
-ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$UPS2.dev
+    create_ups_dev_file $CFGDIR/$UPS1.dev
+    create_ups_dev_file $CFGDIR/$UPS2.dev
 
     chown nut:root $CFGDIR/*.dev
     echo "restart NUT server"
@@ -171,7 +154,7 @@ expected_db_value() {
             esac
             ;;
         *)
-            expr $SAMPLE \* 10
+            expr $SAMPLE \* 100
             ;;
     esac
 }
@@ -208,7 +191,7 @@ for UPS in $UPS1 $UPS2 ; do
         for i in $(seq 0 $PARAMSCNT ); do
             PARAM=${PARAMS[$i]}
             NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
-            SELECT="select count(*) from t_bios_measurements where timestamp >= '$TIME' and value = $(expected_db_value $PARAM $NEWVALUE);"
+            SELECT="select count(*) from t_bios_measurement where timestamp >= '$TIME' and value = $(expected_db_value $PARAM $NEWVALUE);"
             #echo $SELECT
             if [ $(do_select "$SELECT") = 1 ]; then
                 echo "Looking for $PARAM: $NEWVALUE OK."
