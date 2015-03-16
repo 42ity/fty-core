@@ -73,7 +73,7 @@ int main (int argc, char *argv []) {
                         ymsg_t *msg = bios_measurement_encode(
                             hostname, quantity.c_str(), "C",
                             temp / 100, -1, -1);
-                        topic = "measurement." + quantity + "." + hostname;
+                        topic = "measurement." + quantity + "@" + hostname;
                         printf("Sending %s = %d.%d C\n", topic.c_str(),
                                temp / 1000, (temp % 1000) / 100);
                         bios_agent_send(client, topic.c_str(), &msg);
