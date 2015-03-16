@@ -53,7 +53,7 @@ void NUTAgent::advertisePhysics() {
         std::string topic;
         if( advertise || device.second.changed() ) {
             for(auto &measurement : device.second.physics( ! advertise ) ) {
-                topic = "measurement." + measurement.first + "." + device.second.name();
+                topic = "measurement." + measurement.first + "@" + device.second.name();
                 std::string type = physicalQuantityShortName(measurement.first);
                 std::string units = physicalQuantityToUnits(type);
                 if( units.empty() ) {
@@ -67,7 +67,7 @@ void NUTAgent::advertisePhysics() {
                     units.c_str(),
                     measurement.second, -2, -1);
                 if( msg ) {
-                    log_debug("sending new measurement for ups %s, type %s, value %li",
+                    log_debug("sending new measurement for ups %s, type %s, value %" PRIi64,
                               device.second.name().c_str(),
                               measurement.first.c_str(),
                               measurement.second );
@@ -78,7 +78,7 @@ void NUTAgent::advertisePhysics() {
             }
             // send also status as bitmap
             if( device.second.hasProperty("status") && ( advertise || device.second.changed("status") ) ) {
-                topic = "measurement.status." + device.second.name();
+                topic = "measurement.status@" + device.second.name();
                 std::string status_s = device.second.property("status");
                 uint16_t    status_i = shared::upsstatus_to_int( status_s );
                 ymsg_t *msg = bios_measurement_encode(
@@ -104,7 +104,7 @@ void NUTAgent::advertiseInventory() {
         _inventoryTimestamp = std::time(NULL);
     }
     for( auto &device : _deviceList ) {
-        std::string subject = "inventory." + device.second.name();
+        std::string topic = "inventory@" + device.second.name();
         zhash_t *inventory = zhash_new();
         for( auto &item : device.second.inventory( !advertise ) ) {
             if( item.first != "status" ) { 
@@ -118,7 +118,7 @@ void NUTAgent::advertiseInventory() {
                 &inventory,
                 "inventory" );
             if( message ) {
-                bios_agent_send( _bios_agent, subject.c_str(), &message );
+                bios_agent_send( _bios_agent, topic.c_str(), &message );
                 ymsg_destroy( &message );
             }
         }
