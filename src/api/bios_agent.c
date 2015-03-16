@@ -306,7 +306,7 @@ ymsg_get_int32(ymsg_t* msg, const char *key) {
         errno = EKEYREJECTED;
         return 0;
     }
-    if(sscanf(val, "%d", &ret) != 1) {
+    if(sscanf(val, "%" SCNi32, &ret) != 1) {
         errno = EBADMSG;
         return 0;
     }
@@ -335,7 +335,7 @@ void ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
 void
 ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
     char buff[16];
-    sprintf(buff, "%d", value);
+    sprintf(buff, "%" PRIi32, value);
     set_hash(msg, key, buff);
 }
 
