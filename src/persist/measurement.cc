@@ -44,6 +44,7 @@ insert_into_measurement(
                 " (timestamp, value, scale, topic_id)"
                 " SELECT FROM_UNIXTIME(:time), :value, :scale, id FROM"
                 " t_bios_measurement_topic WHERE topic=:topic AND units=:units");
+        log_debug("[t_bios_measurement]: inserting %" PRIi32 " * 10^%" PRIi16 " %s", value, scale, units);
         ret.affected_rows = st.set("topic", topic)
                               .set("time",  time)
                               .set("value", value)
