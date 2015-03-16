@@ -23,10 +23,11 @@ CPPCHECK=$(which cppcheck)
 
 [ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
 
-set -e
 
-apt-get update
-mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
+set -e
+( which apt-get >/dev/null &&  apt-get update ) || true
+( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
+
 cd $CHECKOUTDIR
 
 CPUS=$(getconf _NPROCESSORS_ONLN)
@@ -37,10 +38,12 @@ echo "======================== configure =========================="
 echo "======================== make ==============================="
 make -j $CPUS
 if [ -x "$CPPCHECK" ] ; then
+    echo -e "*:src/msg/*_msg.c\nunusedFunction:src/api/*\n" >cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-        --suppress=*:src/include/*_msg.c \
+        --suppressions-list=cppcheck.supp \
         src 2>cppcheck.xml
-        sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+    sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+    /bin/rm -f cppcheck.supp
 fi
 echo "======================== make check ========================="
 make -j $CPUS check
