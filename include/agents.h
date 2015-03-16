@@ -50,6 +50,52 @@ BIOS_EXPORT ymsg_t *
 BIOS_EXPORT int
     bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name);
 
+/**
+ * \brief encode measurement message
+ *
+ * \param device_name - name of device / hostname
+ * \param quantity - quantity name, for example "realpower.default"
+ * \param units - quantity units, for example "W" 
+ * \param value - real measurement value is value*10^scale 
+ * \param scale
+ * \param time - time, when measurement was done. Value -1 means use current time
+ * \return ymsg_t * or NULL if failed
+ */
+BIOS_EXPORT ymsg_t *
+    bios_measurement_encode (const char *device_name,
+                             const char *quantity,
+                             const char *units,
+                             int64_t value,
+                             int32_t scale,
+                             time_t time);
+
+
+/**
+ * \brief decode measurement message
+ *
+ * \param[in] ymsg - measurement message to decode
+ * \param[out] device_name - pointer name of device/hostname. Use free to dealocate memory.
+ * \param[out] quantity - quantity name, for example "realpower.default".
+ *             Use free to dealocate memory.
+ * \param[out] units - quantity units, for example "W". Use free to dealocate memory. 
+ * \param[out] value - real measurement value is value*10^scale
+ * \param[out] scale
+ * \param[out] time - time, when measurement was done. Value -1 means use current time
+ * \return int 0 = success, -1 = invalid/unspecified parameter, -2 = ymsg is NULL,
+ *             -3 = some or all information in message is missing. In case of error
+ *             ymsg is not destroyed.
+ */
+BIOS_EXPORT int
+    bios_measurement_decode (ymsg_t **self_p,
+                             char **device_name,
+                             char **quantity,
+                             char **units,
+                             int64_t *value,
+                             int32_t *scale,
+                             time_t *time);
+
+
+    
 #ifdef __cplusplus
 }
 #endif

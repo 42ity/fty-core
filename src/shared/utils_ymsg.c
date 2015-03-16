@@ -223,7 +223,6 @@ ymsg_request_app(ymsg_t *ymsg) {
 
     zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
     if( (! zmsg) || (! is_app( zmsg ) ) ) {
-        ymsg_set_request( ymsg, &chunk );
         zmsg_destroy( &zmsg );
         return NULL;
     }
@@ -250,7 +249,6 @@ ymsg_response_app(ymsg_t *ymsg) {
 
     zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
     if( (! zmsg) || (! is_app( zmsg ) ) ) {
-        ymsg_set_response( ymsg, &chunk );
         zmsg_destroy( &zmsg );
         return NULL;
     }

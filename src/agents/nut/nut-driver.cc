@@ -384,10 +384,20 @@ std::map<std::string,std::string> NUTDevice::properties() const {
     return map;
 }
 
-std::map<std::string,int> NUTDevice::physics(bool onlyChanged) const {
-    std::map<std::string,int> map;
+std::map<std::string,int64_t> NUTDevice::physics(bool onlyChanged) const {
+    std::map<std::string,int64_t> map;
     for(auto it : _physics ){
         if( ( ! onlyChanged ) || it.second.changed ) {
+            map[ it.first ] = it.second.value;
+        }
+    }
+    return map;
+}
+
+std::map<std::string,std::string> NUTDevice::inventory(bool onlyChanged) const {
+    std::map<std::string,std::string> map;
+    for(auto it : _inventory ){
+        if( ( ! onlyChanged ) || it.second.changed ) {        
             map[ it.first ] = it.second.value;
         }
     }
