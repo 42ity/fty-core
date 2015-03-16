@@ -102,7 +102,7 @@ typedef uint64_t m_msrmnt_id_t;
 
 // ----- table:  t_bios_measurements -------------
 // ----- column: value ---------------------------
-typedef  int64_t m_msrmnt_value_t;
+typedef  int32_t m_msrmnt_value_t;
 
 // ----- table:  t_bios_measurement_type ---------
 // ----- column: id ------------------------------

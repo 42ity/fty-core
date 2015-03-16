@@ -65,7 +65,7 @@ BIOS_EXPORT ymsg_t *
     bios_measurement_encode (const char *device_name,
                              const char *quantity,
                              const char *units,
-                             int64_t value,
+                             int32_t value,
                              int32_t scale,
                              time_t time);
 
@@ -90,7 +90,7 @@ BIOS_EXPORT int
                              char **device_name,
                              char **quantity,
                              char **units,
-                             int64_t *value,
+                             int32_t *value,
                              int32_t *scale,
                              time_t *time);
 

@@ -306,7 +306,7 @@ ymsg_get_int32(ymsg_t* msg, const char *key) {
         errno = EKEYREJECTED;
         return 0;
     }
-    if(sscanf(val, "%d", &ret) != 1) {
+    if(sscanf(val, "%" SCNi32, &ret) != 1) {
         errno = EBADMSG;
         return 0;
     }
@@ -321,29 +321,27 @@ ymsg_get_int64(ymsg_t* msg, const char *key) {
         errno = EKEYREJECTED;
         return 0;
     }
-    if(sscanf(val, "%ld", &ret) != 1) {
+    if(sscanf(val, "%" SCNi64, &ret) != 1) {
         errno = EBADMSG;
         return 0;
     }
     return ret;
 }
 
-void
-ymsg_set_string(ymsg_t* msg, const char *key, char *value) {
-    set_hash(msg, key, value);
+void ymsg_set_string(ymsg_t* msg, const char *key, const char *value) {
+    set_hash(msg, key, (void*)value);
 }
 
 void
 ymsg_set_int32(ymsg_t* msg, const char *key, int32_t value) {
     char buff[16];
-    sprintf(buff, "%d", value);
+    sprintf(buff, "%" PRIi32, value);
     set_hash(msg, key, buff);
 }
 
 void
 ymsg_set_int64(ymsg_t* msg, const char *key, int64_t value) {
     char buff[24];
-    sprintf(buff, "%ld", value);
+    sprintf(buff, "%" PRIi64, value);
     set_hash(msg, key, buff);
 }
-
