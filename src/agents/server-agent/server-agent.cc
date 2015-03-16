@@ -7,6 +7,9 @@
 #include <zsys.h>
 #include <map>
 
+#include "agents.h"
+#include "defs.h"
+
 #define CLIENT_ID "server-agent"
 #define THERMAL "/sys/class/thermal"
 
@@ -39,6 +42,7 @@ int main (int argc, char *argv []) {
         zsys_error ("server-agent: server not reachable at ipc://@/malamute");
         return 0;
     }
+    bios_agent_set_producer(client, BIOS_MLM_STREAM);
 
     // Until interrupted
     while(!zsys_interrupted) {
@@ -59,19 +63,12 @@ int main (int argc, char *argv []) {
                         } else {
                             cit->second = temp;
                         }
-
                         // Create message and publish it
-                        ymsg_t *msg = ymsg_new(YMSG_SEND);
-                        ymsg_set_string(msg, "units", "C");
-                        ymsg_set_int32(msg, "value", temp / 100);
-                        ymsg_set_int32(msg, "scale", -1);
-                        ymsg_set_int64(msg, "time", -1);
-
-                        bios_agent_set_producer(client, "measurements");
-                        topic = "temperature.";
-                        topic += *it;
-                        topic += ".";
-                        topic += hostname;
+                        std::string quantity = "temperature." + *it;
+                        ymsg_t *msg = bios_measurement_encode(
+                            hostname, quantity.c_str(), "C",
+                            temp / 100, -1, -1);
+                        topic = "measurement." + quantity + "." + hostname;
                         printf("Sending %s = %d.%d C\n", topic.c_str(),
                                temp / 1000, (temp % 1000) / 100);
                         bios_agent_send(client, topic.c_str(), &msg);

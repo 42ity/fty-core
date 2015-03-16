@@ -5,6 +5,7 @@
 #include "persistencelogic.h"
 #include "dbpath.h"
 #include "log.h"
+#include "defs.h"
 
 #include <stdio.h>
 #include <zsys.h>
@@ -36,7 +37,7 @@ int main (int argc, char *argv []) {
     }
 
     // We are listening for measurements
-    mlm_client_set_consumer(client, "measurements", ".*");
+    mlm_client_set_consumer(client, BIOS_MLM_STREAM, ".*"); // regex might be "^measurements\..+" 
     while(!zsys_interrupted) {
         zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
