@@ -14,7 +14,7 @@
 #include "calc_power.h"
 
 
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
 
@@ -473,7 +473,9 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
     zmsg_destroy (&res);
     log_close();
 }
-
+/*
+ *
+ * ACE: for now we are not supporting IPMI, so , no simulated tests for it
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
@@ -568,7 +570,7 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
     zmsg_destroy (&res);
     log_close();
 }
-
+*/
 
 TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
 {
