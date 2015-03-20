@@ -1328,19 +1328,11 @@ common_msg_t* test_insert_measurement(const char    *url,
         m_msrmnt_tpc_id_t topic_id = conn.lastInsertId();
 
         tntdb::Statement st_meas = conn.prepareCached(
-/*            " INSERT INTO"
-            " v_bios_client_info_measurements"
-            "   (id, id_client, id_discovered_device, id_key,"
-            "    id_subkey, value, timestamp)"
-            " VALUES"
-            "   (NULL, :clientid, :deviceid, :keytagid, :subkeytagid,"
-            "   :val, FROM_UNIXTIME(:seconds))" // TODO
-        );*/
             " INSERT INTO"
             " t_bios_measurement"
             "   (topic_id, value, scale, timestamp)"
             " VALUES"
-            "   (:topicid, :val, :scale, FROM_UNIXTIME(:seconds))" // TODO
+            "   (:topicid, :val, :scale, FROM_UNIXTIME(:seconds))" 
         );
 
         // Insert one row or nothing
@@ -1364,7 +1356,7 @@ common_msg_t* test_insert_measurement(const char    *url,
     else
     {
         // TODO need to return existing ID????
-        log_info ("JOOend: nothing was inserted");
+        log_info ("end: nothing was inserted");
         return generate_db_fail (DB_ERROR_NOTHINGINSERTED, 
                                                 "nothing was inserted", NULL);
     }
@@ -1372,10 +1364,7 @@ common_msg_t* test_insert_measurement(const char    *url,
 
 
 void generate_measurements (const char         *url, 
-                            m_clnt_id_t        client_id, 
                             m_dvc_id_t         device_id, 
-                            m_msrmnt_tp_id_t   type_id, 
-                            m_msrmnt_sbtp_id_t subtype_id,
                             uint32_t           max_seconds, 
                             m_msrmnt_value_t   last_value)
 {

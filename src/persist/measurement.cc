@@ -50,15 +50,6 @@ db_reply_t
                 " ON DUPLICATE KEY"
                 "   UPDATE"
                 "      id = LAST_INSERT_ID(id)"
-
-                /*
-                " WHERE NOT EXISTS"
-                "  (SELECT"
-                "       id"
-                "   FROM"
-                "       t_bios_measurement_topic"
-                "   WHERE topic=:topic AND"
-                "         units=:units)"*/
         );
         uint32_t n = st.set("topic", topic)
                        .set("units", units)

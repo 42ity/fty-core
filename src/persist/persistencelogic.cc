@@ -69,15 +69,6 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
         return;
     }
 
-    //TODO: convert to protocol!
- /*   errno = 0;
-    m_msrmnt_value_t value = ymsg_get_int64(ymsg, "value");
-    //TODO: create ymsg_get_int16
-    m_msrmnt_scale_t scale = (m_msrmnt_scale_t) ymsg_get_int32(ymsg, "scale");
-    int64_t tme = ymsg_get_int64(ymsg, "time");
-    const char *units = ymsg_get_string(ymsg, "units");
-   */ 
-
     int64_t tme = 0;
     char *device_name = NULL;
     char *quantity    = NULL;   // TODO: THA: what does this parameter mean?

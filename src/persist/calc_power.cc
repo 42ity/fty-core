@@ -531,25 +531,9 @@ static rack_power_t
     // as we're using plain int, there is no issue in generating 
     // SQL by hand
         
-    //TODO: read realpower.default from database, 
-    // SELECT v.id as id_subkey, v.id_type as id_key 
-    // FROM v_bios_measurement_subtypes v 
-    // WHERE name='default' AND typename='realpower';
     try
     {
         tntdb::Connection conn = tntdb::connect(url);
- /*       std::string select = \
-            " SELECT"
-            "    v.id_discovered_device, v.value, v.scale"
-            " FROM"
-            "   v_bios_client_info_measurements_last v"
-            " WHERE"
-            "   v.id_discovered_device IN (" 
-                    + s_generate_in_clause(idmap) + ")"  // XXX
-//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
-            "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
-            "   AND (v.timestamp BETWEEN"
-            "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))";*/
         std::string select = \
             " SELECT"
             "    v.device_id, v.value, v.scale"
@@ -558,13 +542,11 @@ static rack_power_t
             " WHERE"
             "   v.device_id IN (" 
                     + s_generate_in_clause(idmap) + ")"  // XXX
-//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
             "   AND v.topic LIKE '%realpower%'"    
             "   AND (v.timestamp BETWEEN"
             "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))";
 
         // v_..._last contain only last measures
-        // TODO check its correctness
         tntdb::Statement st = conn.prepare(select);
 
         log_debug("%s, %lu, %lu\n", select.c_str(), date_start, date_end);
