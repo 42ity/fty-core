@@ -29,14 +29,16 @@ CREATE TABLE t_bios_measurement_topic(
     topic            VARCHAR(255)      NOT NULL,
     PRIMARY KEY(id),
 
-    INDEX(topic,units)
+    INDEX(device_id,topic,units),
+    UNIQUE INDEX `UI_t_bios_measurement_topic` (`device_id`, `units`, `topic`  ASC)
+
 );
 
 CREATE TABLE t_bios_measurement (
     id            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     timestamp     DATETIME            NOT NULL,
     value         INTEGER             NOT NULL,
-    scale         INTEGER             NOT NULL,
+    scale         SMALLINT            NOT NULL,
     topic_id      INTEGER UNSIGNED    NOT NULL,
 
     PRIMARY KEY(id),
@@ -511,6 +513,7 @@ FROM    v_bios_client_info_measurements v
               ON v.id_discovered_device = dd.id
         ;
 
+
 CREATE VIEW v_bios_asset_element_super_parent AS 
 SELECT v1.id_asset_element, 
        v1.name , 
@@ -537,10 +540,36 @@ SELECT t1.id,
        t1.scale,
        t2.device_id,
        t2.units,
-       t2.topic
+       t2.topic,
+       t2.id AS topic_id
 FROM t_bios_measurement t1
     LEFT JOIN t_bios_measurement_topic t2 ON
         (t1.topic_id = t2.id);
+
+CREATE VIEW v_bios_measurement_lastdate AS
+SELECT max(p.timestamp) maxdate,
+       p.device_id,
+       p.topic
+FROM v_bios_measurement p
+GROUP BY p.topic, p.device_id;
+
+CREATE VIEW v_bios_measurement_last AS
+SELECT  v.id,
+        v.device_id,
+        v.timestamp,
+        v.topic,
+        v.topic_id,
+        v.value,
+        v.scale
+FROM       v_bios_measurement v
+INNER JOIN v_bios_measurement_lastdate grp 
+     ON v.timestamp = grp.maxdate  AND
+        v.device_id = grp.device_id;
+
+CREATE VIEW v_bios_measurement_topic AS
+SELECT *
+FROM   t_bios_measurement_topic;
+
 
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */

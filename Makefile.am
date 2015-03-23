@@ -1469,10 +1469,11 @@ CLEANFILES +=		src/include/git_details_override.c \
 # changes because if nothing else changed, these don't matter much but do
 # cause a rebuild of the C/H files and those which depend on them, on every
 # "make" run. Just remove the file (distclean) to regenerate everything truly.
+# For tests, can 'export GIT_DETAILS_BLANK=yes' to succeed even on git errors.
 $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@/bin/rm -f "$@.tmp"
-	@if ( cd $(abs_top_srcdir) && GIT_DETAILS_BLANK=yes ./tools/git_details.sh ) > "$@.tmp" && \
+	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
