@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
             Michal Vyskocil  <michalvyskocil@eaton.com>
 */
-
+#include <algorithm>    // std::set_intersection
 #include <tntdb/connect.h>
 #include <tntdb/error.h>
 #include <tntdb/value.h>
@@ -448,6 +448,8 @@ static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value,
     ret.power += s_rescale(value, ret.scale, scale);
 }
 
+
+// TODO use in general
 static std::string s_generate_in_clause(
                             const std::map<m_dvc_id_t, a_elmnt_id_t>& map)
 {
@@ -529,28 +531,22 @@ static rack_power_t
     // as we're using plain int, there is no issue in generating 
     // SQL by hand
         
-    //TODO: read realpower.default from database, 
-    // SELECT v.id as id_subkey, v.id_type as id_key 
-    // FROM v_bios_measurement_subtypes v 
-    // WHERE name='default' AND typename='realpower';
     try
     {
         tntdb::Connection conn = tntdb::connect(url);
         std::string select = \
             " SELECT"
-            "    v.id_discovered_device, v.value, v.scale"
+            "    v.device_id, v.value, v.scale"
             " FROM"
-            "   v_bios_client_info_measurements_last v"
+            "   v_bios_measurement_last v"
             " WHERE"
-            "   v.id_discovered_device IN (" 
+            "   v.device_id IN (" 
                     + s_generate_in_clause(idmap) + ")"  // XXX
-//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
-            "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
+            "   AND v.topic LIKE '%realpower%'"    
             "   AND (v.timestamp BETWEEN"
             "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))";
 
         // v_..._last contain only last measures
-        // TODO check its correctness
         tntdb::Statement st = conn.prepare(select);
 
         log_debug("%s, %lu, %lu\n", select.c_str(), date_start, date_end);
@@ -865,3 +861,253 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("end: normal");
     return retmsg;
 }
+/*
+
+static rack_power_t
+    doB(tntdb::Connection &conn,
+        const std::set <a_elmnt_id_t> &asset_ids,
+        time_t date_start,
+        time_t date_end)
+{
+    log_info("start real calculation");
+    if ( date_start > date_end )
+    {
+        throw new bios::BadInput("date_start must be smaller than date_end");
+    }
+
+    rack_power_t ret{0, 0, 255, all_asset_ids, date_start, date_end};
+    
+    if ( all_asset_ids.empty() )
+    {
+        log_debug ("end: no devices to compute was recieved");
+        return ret;
+    }
+    
+    // FIXME: asking for mapping each time sounds slow
+    // convert id from asset part to monitor part
+    std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
+    for ( a_elmnt_id_t asset_id : asset_ids ) 
+    {
+        try
+        {
+            m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
+            idmap[dev_id] = asset_id;
+        }
+        catch (const bios::NotFound &e) {
+            log_info("asset element %" PRIu32 " notfound, ignore it", asset_id);
+        }
+        catch (const bios::ElementIsNotDevice &e) {
+            log_info("asset element %" PRIu32 " is not a device, ignore it", asset_id);
+        }
+        catch (bios::MonitorCounterpartNotFound &e ) {
+            log_warning("monitor counterpart for the %" PRIu32 " was not found,"
+                                            " ignore it", asset_id);
+        }
+        // ATTENTION: if internal, leave it to upper level
+    }
+    if ( idmap.empty() ) // no id was correctly converted
+    {
+        log_debug ("end: all devices were converted to monitor part"
+                                                            "with errors");
+        return ret;
+    }
+
+    // NOTE: cannot cache as SQL query is not stable
+        
+    // XXX: SQL placeholders can't deal with list of values, 
+    // as we're using plain int, there is no issue in generating 
+    // SQL by hand
+        
+    //TODO: read realpower.default from database, 
+    // SELECT v.id as id_subkey, v.id_type as id_key 
+    // FROM v_bios_measurement_subtypes v 
+    // WHERE name='default' AND typename='realpower';
+    try
+    {
+        std::string select = \
+            " SELECT"
+            "    v.device_id, v.value, v.scale"
+            " FROM"
+            "   v_bios_measurement_last v"
+            " WHERE"
+            "   v.id_discovered_device IN (" 
+                    + s_generate_in_clause(idmap) + ")"  // XXX
+//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
+            "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
+            "   AND (v.timestamp BETWEEN"
+            "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))"
+            
+             SELECT p.id_asset_element_dest FROM v_bios_asset_link p, t_bios_asset_element p1  where p.id_asset_element_dest = p1.id_asset_element and p1.id_parent = 8000 and p.id_asset_element_src not in (select v.id_asset_element from t_bios_asset_element v where id_parent = 8000)
+;
+
+        // v_..._last contain only last measures
+        tntdb::Statement st = conn.prepare(select);
+
+        log_debug("%s, %lu, %lu\n", select.c_str(), date_start, date_end);
+
+        tntdb::Result result = st.set("date_start", date_start).
+                                  set("date_end", date_end).
+                                  select();
+        log_debug("rows selected %u", result.size());
+        for ( auto &row: result )
+        {
+            m_dvc_id_t dev_id = 0;
+            row[0].get(dev_id);
+            ret.missed.erase(idmap[dev_id]);  //<- no assert needed, 
+            // invalid value will raise an exception, 
+            // converts from device id back to asset id
+
+            m_msrmnt_value_t value = 0;
+            row[1].get(value);
+
+            m_msrmnt_scale_t scale = 0;
+            row[2].get(scale);
+
+            s_add_scale(ret, value, scale);
+            log_debug (" device %" PRIu32, dev_id);
+            log_debug ("    value %" PRIi64, value);
+            log_debug ("    scale %" PRIi16, scale);
+        }
+    }
+    catch (const std::exception &e) {
+        log_warning ("end: abnormal with '%s'", e.what());
+        throw bios::InternalDBError(e.what());
+    }
+    log_debug ("end: normal");
+    return ret;
+}
+
+*/
+/*
+rack_power_t
+compute_total_rack_power_v2(
+        tntdb::Connection &conn,
+        const std::set <device_info_t> &rack_devices,
+        const std::set <a_elmnt_id_t, a_elmnt_id_t> &links,
+        time_t date_start,
+        time_t date_end
+        )
+{
+    LOG_START;
+
+    if ( date_start > date_end )
+    {
+        throw new bios::BadInput ("date_start must be smaller than date_end");
+    }
+
+    if ( rack_devices.size() == 0 )
+    {
+        throw new bios::NotFound ();
+    }
+
+    std::set <device_info_t> dvc = {};
+// Fro links use multimap, ignore outlets and inlets
+    
+    // to benefit from operations with set, stansform device_info_t into set of id's
+    std::set <a_elmnt_id_t> r_ids;
+    for ( auto & adevice : rack_devices )
+        r_ids.insert (std::get<0>(adevice));
+
+    for ( auto &adevice : rack_devices )
+    {
+        if ( is_ups (adevice) )
+        {
+            dvc.insert (adevice);   // ups-epdu-device ; ups-pdu-device -> include ups
+            continue;
+        }
+        
+        auto adevice_srcs = find_srcs (links, r_ids);
+        std::set <a_elmnt_id_t> diff;
+        auto it = std::set_intersection (adevice_srcs.begin(), adevice_srcs.end(), r_ids.begin, r_ids.end(), diff.begin() );
+        if ( is_epdu (adevice) && ( diff.size() == 0 ) )
+        {
+            dvc.insert (adevice); // ups-epdu-device -> not include epdu;  epdu-device ->include epdu
+            continue;
+        }
+        // TODO this should be implemented in future
+        
+        if ( is_it_device (adevice) )
+        {
+            log_info ("IPMI is not implemented, ignore device");
+            //
+           // if ( diff.size() == 0 )
+         //      dvc.insert();    // device; -> include device
+         //   if ( src is pdu and src-src not in rack )
+         //      add
+        //    
+        }
+    }
+    log_debug ("number of devices to summ up is %zu", dvc.size());
+
+
+ */
+ 
+    // for every missed value try to find its power path
+/*    for ( auto &bdevice: ret.missed )
+    {
+        device_info_t src_device;
+        // find more info about device from device set
+        for ( auto &adevice : dvc )
+        {
+            if ( std::get<0>(adevice) == bdevice )
+            {
+                src_device = adevice;
+                break;
+            }
+        }
+        log_debug ("missed device processed:");
+        log_debug ("device_id = %" PRIu32, std::get<0>(src_device));
+        log_debug ("device_name = %s", std::get<1>(src_device).c_str());
+        log_debug ("device type name = %s", std::get<2>(src_device).c_str());
+        log_debug ("device type_id = %" PRIu16,std::get<3>(src_device));
+
+        auto new_power_srcs = select_pow_src_for_device (url, src_device);
+
+        // in V1 if power_source should be taken in account iff 
+        // it is in rack
+        
+        log_debug ("power sources for device %" PRIu32, std::get<0>(src_device));
+        log_debug ("num of epdus is %zu", std::get<0>(new_power_srcs).size());
+        log_debug ("num of upses is %zu", std::get<1>(new_power_srcs).size());
+        log_debug ("num of devices is %zu", std::get<2>(new_power_srcs).size());
+        
+        for ( auto &bdevice: std::get<0>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<0>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+
+        for ( auto &bdevice: std::get<1>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<1>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+
+        for ( auto &bdevice: std::get<2>(new_power_srcs) )
+            if ( rack_devices.count(bdevice) == 1 )
+                std::get<2>(power_sources).insert (bdevice);
+            else
+            {
+                // decrese quality
+            }
+    }
+    log_debug ("total power sources");
+    log_debug ("num of epdus is %zu", std::get<0>(power_sources).size());
+    log_debug ("num of upses is %zu", std::get<1>(power_sources).size());
+    log_debug ("num of devices is %zu", std::get<2>(power_sources).size());
+    auto ret2 = doA (url, std::get<1>(power_sources), 
+                          std::get<0>(power_sources),
+                          std::get<2>(power_sources),
+                          date_start,
+                          date_end
+                          );
+    s_add_scale (ret, ret2.power, ret2.scale);
+    // TODO manage quality + missed
+    log_debug ("end: power = %" PRIi64 ", scale = %" PRIi16, ret.power, ret.scale);
+    return ret;*/
+//}
+

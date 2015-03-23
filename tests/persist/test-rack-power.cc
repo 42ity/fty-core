@@ -14,7 +14,7 @@
 #include "calc_power.h"
 
 
-TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
+TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
 {
     log_open();
 
@@ -40,7 +40,7 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql][tttttt]")
     ids.insert (yy);
 
     for ( auto &device_id: ids )
-       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -100,7 +100,7 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(),device_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -166,7 +166,7 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -231,7 +231,7 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: expected_ids )
-       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX));
+       REQUIRE_NOTHROW ( generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX));
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -299,7 +299,7 @@ TEST_CASE("Rack power #5","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX);
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -368,7 +368,7 @@ TEST_CASE("Rack power #6","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX);
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -443,7 +443,7 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX);
+       generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX);
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -473,7 +473,9 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
     zmsg_destroy (&res);
     log_close();
 }
-
+/*
+ *
+ * ACE: for now we are not supporting IPMI, so , no simulated tests for it
 TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
 {
     log_open();
@@ -568,7 +570,7 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
     zmsg_destroy (&res);
     log_close();
 }
-
+*/
 
 TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
 {
@@ -601,7 +603,7 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX) );
+       REQUIRE_NOTHROW( generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX) );
     
     // calculate total rack power
     zmsg_t* res = NULL;
@@ -663,7 +665,7 @@ TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
 
     // fill DB with measurements
     for ( auto &device_id: ids )
-       REQUIRE_NOTHROW( generate_measurements (url.c_str(), client_id, device_id, type_id, subtype_id, 300, device_id + GEN_MEASUREMENTS_MAX) );
+       REQUIRE_NOTHROW( generate_measurements (url.c_str(), device_id, 300, device_id + GEN_MEASUREMENTS_MAX) );
     
     // calculate total rack power
     zmsg_t* res = NULL;
