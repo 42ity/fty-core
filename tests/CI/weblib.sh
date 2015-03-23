@@ -22,10 +22,15 @@
 #              which can be sourced to interactive shell
 #              You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+# ***********************************************
+echo 'BASE_URL = '$BASE_URL
+
+
+#[ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 [ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
-
+#[ -z "$BASE_URL" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
+#[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_NAME:$SUT_PORT/api/v1"
 # Should the test suite break upon first failed test?
 [ -z "$WEBLIB_QUICKFAIL" ] && WEBLIB_QUICKFAIL=no
 
