@@ -69,25 +69,27 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
         return;
     }
 
-    //TODO: convert to protocol!
-    errno = 0;
-    m_msrmnt_value_t value = ymsg_get_int64(ymsg, "value");
-    //TODO: create ymsg_get_int16
-    m_msrmnt_scale_t scale = (m_msrmnt_scale_t) ymsg_get_int32(ymsg, "scale");
-    int64_t tme = ymsg_get_int64(ymsg, "time");
-    const char *units = ymsg_get_string(ymsg, "units");
+    int64_t tme = 0;
+    char *device_name = NULL;
+    char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
+    char *units       = NULL;
+    m_msrmnt_value_t value = 0;
+    int32_t scale = -1;
 
-    if(errno != 0) {
-        ymsg_destroy(&ymsg);
+    int rv = bios_measurement_decode (&ymsg, &device_name, &quantity, 
+                                      &units, &value, &scale, &tme);
+    if ( rv != 0 ) {
+        log_error("Can't decode the ymsg, ignore it");
         return;
     }
-    
+
+    // TODO: MVY, why this is here???
     if(tme < 1)
         tme = ::time(NULL);
 
     time_t _time = (time_t) tme;
     persist::insert_into_measurement(
-            conn, topic.c_str(), value, scale, _time, units);
+            conn, topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {

@@ -1293,19 +1293,15 @@ common_msg_t* insert_device(const char* url, const char* device_type_name,
 ////////////////////////////////////////////////////////////////////////
 
 
-common_msg_t* test_insert_measurement(const char         *url, 
-                                 m_clnt_id_t        client_id, 
-                                 m_dvc_id_t         device_id, 
-                                 m_msrmnt_tp_id_t   type_id, 
-                                 m_msrmnt_sbtp_id_t subtype_id, 
-                                 m_msrmnt_value_t   value,
+common_msg_t* test_insert_measurement(const char    *url, 
+                                 m_dvc_id_t          device_id, 
+                                 const char         *topic, 
+                                 m_msrmnt_value_t    value,
+                                 m_msrmnt_scale_t    scale,
                                  uint32_t seconds)
 {
-    assert ( client_id );    // is required
     assert ( device_id );    // is required (if not device was measured, 
                              // then use "dummy_monitor_device") 
-    assert ( type_id );      // is required
-    assert ( subtype_id );   // is required
 
     m_msrmnt_id_t n     = 0;     // number of rows affected.
     m_msrmnt_id_t newid = 0;
@@ -1313,25 +1309,39 @@ common_msg_t* test_insert_measurement(const char         *url,
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
 
-        tntdb::Statement st = conn.prepareCached(
+        tntdb::Statement st_topic = conn.prepareCached(
             " INSERT INTO"
-            " v_bios_client_info_measurements"
-            "   (id, id_client, id_discovered_device, id_key,"
-            "    id_subkey, value, timestamp)"
+            "   t_bios_measurement_topic"
+            "     (topic, units, device_id)"
             " VALUES"
-            "   (NULL, :clientid, :deviceid, :keytagid, :subkeytagid,"
-            "   :val, FROM_UNIXTIME(:seconds))" // TODO
+            "   (:topic, 'aa', :device)"
+            " ON DUPLICATE KEY"
+            "   UPDATE"
+            "       id = LAST_INSERT_ID(id)"
         );
-    
+
         // Insert one row or nothing
-        n  = st.set("clientid", client_id).
-                set("deviceid", device_id).
-                set("keytagid", type_id).
-                set("subkeytagid", subtype_id).
-                set("val", value).
-                set("seconds", time(NULL) - seconds).
-                execute();
-        log_info ("was inserted %" PRIu64 " rows", n);
+        n  = st_topic.set("topic", topic).
+                      set("device", device_id).
+                      execute();
+        log_info ("[t_bios_measurement_topic]: was inserted %" PRIu64 " rows", n);
+        m_msrmnt_tpc_id_t topic_id = conn.lastInsertId();
+
+        tntdb::Statement st_meas = conn.prepareCached(
+            " INSERT INTO"
+            " t_bios_measurement"
+            "   (topic_id, value, scale, timestamp)"
+            " VALUES"
+            "   (:topicid, :val, :scale, FROM_UNIXTIME(:seconds))" 
+        );
+
+        // Insert one row or nothing
+        n  = st_meas.set("topicid", topic_id).
+                     set("scale", scale).
+                     set("val", value).
+                     set("seconds", time(NULL) - seconds).
+                     execute();
+        log_info ("[t_bios_measurement]: was inserted %" PRIu64 " rows", n);
 
         newid = conn.lastInsertId();
     }
@@ -1354,18 +1364,15 @@ common_msg_t* test_insert_measurement(const char         *url,
 
 
 void generate_measurements (const char         *url, 
-                            m_clnt_id_t        client_id, 
                             m_dvc_id_t         device_id, 
-                            m_msrmnt_tp_id_t   type_id, 
-                            m_msrmnt_sbtp_id_t subtype_id,
                             uint32_t           max_seconds, 
                             m_msrmnt_value_t   last_value)
 {
-    auto ret UNUSED_PARAM = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, -9, max_seconds + 10);
+    auto ret UNUSED_PARAM = test_insert_measurement (url, device_id, "realpower", -9,-1, max_seconds + 10);
     
     for ( int i = 1; i < GEN_MEASUREMENTS_MAX ; i++ )
-        ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, device_id + i, max_seconds - i);
-    ret = test_insert_measurement (url, client_id, device_id, type_id, subtype_id, last_value, max_seconds - GEN_MEASUREMENTS_MAX);
+        ret = test_insert_measurement (url, device_id, "realpower", device_id + i, -1, max_seconds - i);
+    ret = test_insert_measurement (url, device_id, "realpower", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
 }
 
 common_msg_t* insert_measurement(const char         *url, 

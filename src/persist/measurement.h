@@ -45,15 +45,15 @@ namespace persist {
  * \return db_reply_t with affected rows from t_bios_measurement insertion
  *                    or info about an error
  */
-
 db_reply_t
-insert_into_measurement(
+    insert_into_measurement(
         tntdb::Connection &conn,
-        const char* topic,
+        const char *topic,
         m_msrmnt_value_t value,
         m_msrmnt_scale_t scale,
         time_t time,
-        const char* units);
+        const char *units,
+        const char *device_name);
 
 db_reply<std::vector<db_msrmnt_t>>
 select_from_measurement_by_topic(

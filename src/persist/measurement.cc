@@ -8,33 +8,52 @@
 namespace persist {
 
 db_reply_t
-insert_into_measurement(
+    insert_into_measurement(
         tntdb::Connection &conn,
-        const char* topic,
-        m_msrmnt_value_t value,
-        m_msrmnt_scale_t scale,
-        time_t time,
-        const char* units) {
-
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        time_t             time,
+        const char        *units,
+        const char        *device_name)
+{
     LOG_START;
     db_reply_t ret = db_reply_new();
 
-    if (! units ) {
-        ret.errtype = DB_ERR;
+    if ( !units ) {
+        ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg = "NULL value of units not allowed";
+        ret.msg        = "NULL value of units is not allowed";
+        log_error("end: %s", ret.msg);
+        return ret;
+    }
+    
+    if ( !topic ) {
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "NULL value of topic is not allowed";
         log_error("end: %s", ret.msg);
         return ret;
     }
 
     try {
         tntdb::Statement st = conn.prepareCached(
-                "INSERT INTO t_bios_measurement_topic (topic, units) "
-                "SELECT :topic, :units FROM t_empty WHERE NOT EXISTS "
-                "(SELECT id from t_bios_measurement_topic WHERE topic=:topic AND "
-                " units=:units)");
+                " INSERT INTO"
+                "   t_bios_measurement_topic"
+                "    (topic, units, device_id)"
+                " SELECT"
+                "   :topic, :units, v.id_discovered_device"
+                " FROM"
+                "   t_bios_discovered_device v"
+                " WHERE"
+                "   v.name = :name"
+                " ON DUPLICATE KEY"
+                "   UPDATE"
+                "      id = LAST_INSERT_ID(id)"
+        );
         uint32_t n = st.set("topic", topic)
                        .set("units", units)
+                       .set("name", device_name)
                        .execute();
 
         log_debug("[t_bios_measurement_topic]: inserted %" PRIu32 " rows ", n);
@@ -44,6 +63,7 @@ insert_into_measurement(
                 " (timestamp, value, scale, topic_id)"
                 " SELECT FROM_UNIXTIME(:time), :value, :scale, id FROM"
                 " t_bios_measurement_topic WHERE topic=:topic AND units=:units");
+        log_debug("[t_bios_measurement]: inserting %" PRIi32 " * 10^%" PRIi16 " %s", value, scale, units);
         ret.affected_rows = st.set("topic", topic)
                               .set("time",  time)
                               .set("value", value)
@@ -68,16 +88,16 @@ insert_into_measurement(
     return ret;
 }
 
-db_reply<std::vector<db_msrmnt_t>>
-select_from_measurement_by_topic(
+db_reply <std::vector<db_msrmnt_t>>
+    select_from_measurement_by_topic(
         tntdb::Connection &conn,
-        const char* topic) {
-    
+        const char* topic)
+{   
     LOG_START;
     std::vector<db_msrmnt_t> item{};
     db_reply<std::vector<db_msrmnt_t>> ret = db_reply_new(item);
 
-    if (! topic ) {
+    if ( !topic ) {
         ret.errtype = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg = "NULL value of topic is not allowed";

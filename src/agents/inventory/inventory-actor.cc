@@ -43,7 +43,7 @@ int main (int argc, char *argv[])
         return 1;
     }
     // listen on inventory messages
-    bios_agent_set_consumer (agent, BIOS_MLM_STREAM, ".*inventory\\..*"); 
+    bios_agent_set_consumer (agent, BIOS_MLM_STREAM, "^inventory@.+"); 
 
     while ( !zsys_interrupted )
     {

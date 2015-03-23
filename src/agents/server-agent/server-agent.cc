@@ -1,4 +1,5 @@
 #include "bios_agent.h"
+#include "defs.h"
 
 #include <cxxtools/directory.h>
 #include <cxxtools/fileinfo.h>
@@ -26,7 +27,7 @@ int main (int argc, char *argv []) {
 
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
 
-    std::map<std::string, int> cache;
+    std::map<std::string, std::pair<int, time_t>> cache;
 
     // Form ID from hostname
     char id[HOST_NAME_MAX + sizeof(CLIENT_ID) + 5];
@@ -57,18 +58,22 @@ int main (int argc, char *argv []) {
                 if(fscanf(f, "%d", &temp) == 1) {
                     auto cit = cache.find(*it);
                     // Did it changed singificantly since the last time?
-                    if((cit == cache.end()) || (abs(cit->second - temp) > 1000)) {
+                    if((cit == cache.end()) ||
+                       (abs(cit->second.first - temp) > 1000) ||
+                       (time(NULL) - cit->second.second > WORST_SAMPLING_INTERVAL)) {
                         if(cit == cache.end()) {
-                            cache.insert(std::make_pair(*it, temp));
+                            cache.insert(std::make_pair(*it,
+                                std::make_pair(temp, time(NULL))));
                         } else {
-                            cit->second = temp;
+                            cit->second.first = temp;
+                            cit->second.second = time(NULL);
                         }
                         // Create message and publish it
                         std::string quantity = "temperature." + *it;
                         ymsg_t *msg = bios_measurement_encode(
                             hostname, quantity.c_str(), "C",
                             temp / 100, -1, -1);
-                        topic = "measurement." + quantity + "." + hostname;
+                        topic = "measurement." + quantity + "@" + hostname;
                         printf("Sending %s = %d.%d C\n", topic.c_str(),
                                temp / 1000, (temp % 1000) / 100);
                         bios_agent_send(client, topic.c_str(), &msg);
