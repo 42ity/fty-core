@@ -220,7 +220,7 @@ bios_measurement_encode (const char *device_name,
                          const char *units,
                          int32_t value,
                          int32_t scale,
-                         time_t time)
+                         int64_t time)
 {
     if( ! device_name || ! quantity || ! units ) return NULL; 
     ymsg_t *msg = ymsg_new(YMSG_SEND);
@@ -241,7 +241,7 @@ int
                            char **units,
                            int32_t *value,
                            int32_t *scale,
-                           time_t *time)
+                           int64_t *time)
 {
    if( ! self_p || ! device_name || ! quantity || ! units || ! value || ! scale || ! time ) return -1;
    if (  *self_p == NULL ) return -2;
