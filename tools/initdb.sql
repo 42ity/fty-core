@@ -29,7 +29,9 @@ CREATE TABLE t_bios_measurement_topic(
     topic            VARCHAR(255)      NOT NULL,
     PRIMARY KEY(id),
 
-    INDEX(topic,units)
+    INDEX(device_id,topic,units),
+    UNIQUE INDEX `UI_t_bios_measurement_topic` (`device_id`, `units`, `topic`  ASC)
+
 );
 
 CREATE TABLE t_bios_measurement (
@@ -551,7 +553,7 @@ SELECT max(p.timestamp) maxdate,
 FROM v_bios_measurement p
 GROUP BY p.topic, p.device_id;
 
-CREATE VIEW v_bios_measurement_last as
+CREATE VIEW v_bios_measurement_last AS
 SELECT  v.id,
         v.device_id,
         v.timestamp,
@@ -564,6 +566,9 @@ INNER JOIN v_bios_measurement_lastdate grp
      ON v.timestamp = grp.maxdate  AND
         v.device_id = grp.device_id;
 
+CREATE VIEW v_bios_measurement_topic AS
+SELECT *
+FROM   t_bios_measurement_topic;
 
 
 /* *************************************************************************** */
