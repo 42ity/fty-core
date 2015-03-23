@@ -222,9 +222,10 @@ libpriv_git_details_override_la_SOURCES = \
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
-				src/shared/utils.h
+				src/shared/utils.h \
+				src/include/str_defs.h
 
-libpriv_utils_la_LIBADD = libpriv-defs.la
+#libpriv_utils_la_LIBADD = libpriv-defs.la
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
