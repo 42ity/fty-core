@@ -224,6 +224,7 @@ noinst_LTLIBRARIES += 		libpriv-utils.la
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h
 
+libpriv_utils_la_LIBADD = libpriv-defs.la
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -791,6 +792,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
+                      src/web/src/average.cpp              \
                       src/include/git_details_override.h
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
@@ -822,7 +824,8 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-log.la libpriv-subprocess.la
+			libpriv-log.la libpriv-subprocess.la \
+			libpriv-utils.la libpriv-defs.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \

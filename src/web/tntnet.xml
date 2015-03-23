@@ -39,6 +39,12 @@
       <url>^/api/v1/admin/sysinfo$</url>
     </mapping>
 
+    <!-- Average POST -->
+    <mapping>
+      <target>average@bios_web</target>
+      <url>^/api/v1/metric/computed/average.*$</url>
+    </mapping>
+
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
       <target>auth-require@bios_web</target>
@@ -136,6 +142,7 @@
       <method>(GET|PUT)</method>
       <url>^/api/v1/ui/properties.*$</url>
     </mapping>
+
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
