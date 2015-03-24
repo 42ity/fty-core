@@ -98,7 +98,7 @@ PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
 #if [ ! echo $(ssh -p $SUT_PORT $SUT_NAME "pidof saslauthd" &)>/dev/null ];then
-if [ $(ssh -p $SUT_PORT $SUT_NAME "pidof saslauthd" & >/dev/null) ];then
+if [ $(echo $(ssh -p 2208 root@debian.roz.lab.etn.com "pidof saslauthd" &))>/dev/null ];then
     echo "saslauthd is running"
 else
     echo "saslauthd is not running, please start it first!" >&2
