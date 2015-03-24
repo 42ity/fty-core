@@ -84,8 +84,8 @@ bios_netmon_encode
 
 int
 bios_netmon_decode
-(ymsg_t **self_p, int *event, char *interface_name, int *ip_version, char *ip_address, uint8_t *prefix_length, char *mac_address) {
-    if (!self_p || !event || !interface_name || !ip_version || !ip_address || !mac_address)
+(ymsg_t **self_p, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address) {
+    if (!self_p || !event || !interface_name || !ip_version || !ip_address || !prefix_length || !mac_address)
         return -1;
     if (ymsg_id (*self_p) != YMSG_SEND) 
         return -1;
@@ -113,7 +113,7 @@ bios_netmon_decode
         } else {
             return -1;
         }
-        interface_name = strdup (ymsg_aux_string (self, NETMON_KEY_IFNAME, ""));
+        *interface_name = strdup (ymsg_aux_string (self, NETMON_KEY_IFNAME, ""));
         s = ymsg_aux_string (self, NETMON_KEY_IPVER, "");
         if (strcmp (s, NETMON_VAL_IPV4) == 0) {
             *ip_version = IP_VERSION_4;
@@ -124,14 +124,14 @@ bios_netmon_decode
         else {
             return -1;
         }
-        ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
+        *ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
         uint32_t ui;
         int rc = ymsg_aux_uint32 (self, NETMON_KEY_PREFIXLEN, &ui);
         if (rc != 0 || ui > 255) {
             return -1;
         }
         *prefix_length = (uint8_t) ui; 
-        mac_address = strdup (ymsg_aux_string (self, NETMON_KEY_MACADDR, ""));
+        *mac_address = strdup (ymsg_aux_string (self, NETMON_KEY_MACADDR, ""));
         ymsg_destroy (self_p);
         return 0;
     }
