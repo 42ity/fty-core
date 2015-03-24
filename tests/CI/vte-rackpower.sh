@@ -50,7 +50,7 @@ else
         esac
     done
 fi
-SUT_WEB_PORT=$(expr $PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
