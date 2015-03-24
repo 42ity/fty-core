@@ -19,13 +19,10 @@
 #define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
 </%pre>
 
+<%cpp>
     std::stringstream input (request.getBody(), std::ios_base::in);
     cxxtools::SerializationInfo si;
     cxxtools::JsonDeserializer deserializer (input);
-
-</%cpp>
-JSON: <$ request.getBody() $>
-<%cpp>
 
     std::string start_ts;
     std::string end_ts;
@@ -130,18 +127,8 @@ JSON: <$ request.getBody() $>
                 temp.append (value [i]).append (",");
             }
             app_args_insert (app, it->name().c_str() , "%s", temp.c_str());
-</%cpp>
-            <$ it->name()  $> : <$ temp $>
-<%cpp>
         }
         app_args_insert (app, "element_ids", "%s", element_ids.c_str());
-</%cpp>
-    element_ids : <$ element_ids $>
-    start_ts : <$ start_ts $>
-    end_ts : <$ end_ts $>
-    type : <$ type $>
-    step : <$ step $>
-<%cpp>
     }
     catch (const cxxtools::SerializationError& e) {
 </%cpp>
