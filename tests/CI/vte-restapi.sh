@@ -171,7 +171,7 @@ test_web_topo_l() {
 
 # ***** PERFORM THE TESTCASES *****
 set +e
-#if [ $# = 0 ]; then
+if [ $1 = "--port" || $# -eq 0 ]; then
     # *** start default admin network(s) TC's
     # admin_network needs a clean state of database, otherwise it does not work
     test_web_default admin_networks admin_network
@@ -181,22 +181,20 @@ set +e
     test_web_topo_p topology_power
     # *** start location topology TC's
     test_web_topo_l topology_location
-#else
-
-if [ 1 = 2 ]; then
-
-    # *** start test set given with parameter
-    # selective test routine
-    while [ $# -gt 0 ]; do
-	case "$1" in
-	    topology_location*)
-		test_web_topo_l "$1"
-		RESULT=$? ;;
-	    topology_power*)
-		test_web_topo_p "$1"
-		RESULT=$? ;;
-	    *)	test_web_default "$1"
-		RESULT=$? ;;
+else
+    if [ $# -gt 0 && $1 != "--port" ]; then
+        # *** start test set given with parameter
+        # selective test routine
+        while [ $# -gt 0 ]; do
+	    case "$1" in
+	        topology_location*)
+		    test_web_topo_l "$1"
+		    RESULT=$? ;;
+	        topology_power*)
+		    test_web_topo_p "$1"
+		    RESULT=$? ;;
+	        *)	test_web_default "$1"
+		    RESULT=$? ;;
 	esac
 	shift
 	[ "$RESULT" != 0 ] && break
