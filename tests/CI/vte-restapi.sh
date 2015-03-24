@@ -34,6 +34,26 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
     # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
 
+# ***** READ PARAMETERS IF PRESENT *****
+if [ $# -eq 0 ];then   # parameters missing
+    SUT_PORT="2206"
+    BIOS_PORT="8006"
+    BASE_URL="http://$SUT_NAME:8006/api/v1"
+else
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -o|--port)
+            SUT_PORT="$2"
+            shift 2
+            ;;
+        *)
+            break
+            ;;
+        esac
+    done
+fi
+BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
+
 # ***** SET CHECKOUTDIR *****
 if [ "x$CHECKOUTDIR" = "x" ]; then
     SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
@@ -52,10 +72,10 @@ echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'
 echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 RESULT=0
-# ***** SET (MANUALY) SUT_PORT,SUT_NAME AND BIOS_PORT - MANDATORY *****
-SUT_PORT="2206"
+# ***** SET (MANUALY) SUT_NAME - MANDATORY *****
+#SUT_PORT="2206"
 SUT_NAME="root@debian.roz.lab.etn.com"
-[ -z "$BIOS_PORT" ] && BIOS_PORT="8006"
+#[ -z "$BIOS_PORT" ] && BIOS_PORT="8006"
     # *** if used set BIOS_USER and BIOS_PASSWD
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
@@ -171,36 +191,16 @@ test_web_topo_l() {
 
 # ***** PERFORM THE TESTCASES *****
 set +e
-if [ $1 = "--port" || $# -eq 0 ]; then
     # *** start default admin network(s) TC's
-    # admin_network needs a clean state of database, otherwise it does not work
-    test_web_default admin_networks admin_network
+# admin_network needs a clean state of database, otherwise it does not work
+test_web_default admin_networks admin_network
     # *** start the other default TC's instead of sysinfo
-    test_web_default -topology -admin_network -admin_networks -sysinfo
+test_web_default -topology -admin_network -admin_networks -sysinfo
     # *** start power topology TC's
-    test_web_topo_p topology_power
+test_web_topo_p topology_power
     # *** start location topology TC's
-    test_web_topo_l topology_location
-else
-    if [ $# -gt 0 && $1 != "--port" ]; then
-        # *** start test set given with parameter
-        # selective test routine
-        while [ $# -gt 0 ]; do
-	    case "$1" in
-	        topology_location*)
-		    test_web_topo_l "$1"
-		    RESULT=$? ;;
-	        topology_power*)
-		    test_web_topo_p "$1"
-		    RESULT=$? ;;
-	        *)	test_web_default "$1"
-		    RESULT=$? ;;
-	esac
-	shift
-	[ "$RESULT" != 0 ] && break
-    done
-fi
-#fi
+test_web_topo_l topology_location
+
 # ***** RESULTS *****
 if [ "$RESULT" = 0 ]; then
     echo "$0: Overall result: SUCCESS"
