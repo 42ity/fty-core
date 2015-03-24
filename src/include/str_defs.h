@@ -13,5 +13,8 @@ extern const char* DRIVER_NMAP_REPLY;
 
 extern const char* MLM_ENDPOINT;
 
+#define AVG_STEPS_SIZE 5
+extern const char *AVG_STEPS[AVG_STEPS_SIZE];
+
 #endif // SRC_INCLUDE_STR_DEFS_H__
 

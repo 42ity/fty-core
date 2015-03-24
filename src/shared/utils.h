@@ -45,6 +45,9 @@ const char *safe_str(const char *s);
  * */
 bool streq(const char *a, const char *b);
 
+//! Return true if string representation of average step is supported 
+bool is_average_step_supported (const char *step);
+
 #ifdef __cplusplus
 }
 #endif
