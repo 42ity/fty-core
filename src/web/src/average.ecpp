@@ -19,17 +19,6 @@
 #define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
 </%pre>
 
-<%cpp>
-    std::string method = request.getMethod();
-    if (method.compare ("POST") != 0) {
-</%cpp>
-        {
-            "msg" : "Request method <$ method $> invalid."
-        }
-<%cpp>
-        return HTTP_METHOD_NOT_ALLOWED;
-    }
-
     std::stringstream input (request.getBody(), std::ios_base::in);
     cxxtools::SerializationInfo si;
     cxxtools::JsonDeserializer deserializer (input);

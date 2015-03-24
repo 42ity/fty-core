@@ -42,6 +42,7 @@
     <!-- Average POST -->
     <mapping>
       <target>average@bios_web</target>
+      <method>POST</method>
       <url>^/api/v1/metric/computed/average.*$</url>
     </mapping>
 
