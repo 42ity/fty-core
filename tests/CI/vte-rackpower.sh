@@ -32,12 +32,35 @@
     # *** tool directory with tools/initdb.sql tools/rack_power.sql present on MS ***
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
 
+# ***** READ PARAMETERS IF PRESENT *****
+if [ $# -eq 0 ];then   # parameters missing
+    SUT_PORT="2206"
+    SUT_NAME="root@debian.roz.lab.etn.com"
+    BASE_URL="http://$SUT_NAME:8006/api/v1"
+else
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            -o|--port)
+            SUT_PORT="$2"
+            shift 2
+            ;;
+        *)
+            break
+            ;;
+        esac
+done
+SUT_WEB_PORT=$(expr $PORT - 2200 + 8000)
+
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
     # *** required SUT port and SUT name
-SUT_PORT="2206"
+#SUT_PORT="2206"
+#SUT_NAME="root@debian.roz.lab.etn.com"
+#BASE_URL="http://$SUT_NAME:8006/api/v1"
+
 SUT_NAME="root@debian.roz.lab.etn.com"
-BASE_URL="http://$SUT_NAME:8006/api/v1"
+BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
