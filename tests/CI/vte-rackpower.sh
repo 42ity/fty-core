@@ -35,9 +35,9 @@
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
     # *** required SUT port and SUT name
-SUT_PORT="2207"
+SUT_PORT="2206"
 SUT_NAME="root@debian.roz.lab.etn.com"
-BASE_URL="http://$SUT_NAME:8007/api/v1"
+BASE_URL="http://$SUT_NAME:8006/api/v1"
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
