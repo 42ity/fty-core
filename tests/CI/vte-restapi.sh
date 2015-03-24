@@ -129,7 +129,7 @@ echo "CI-ERROR: saslauthd is NOT responsive or not configured!" >&2
     # *** starting the testcases
 test_web() {
     echo "============================================================"
-    /bin/bash tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
+    /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
     -s $SUT_NAME -o $SUT_PORT "$@"
     RESULT=$?
     echo "============================================================"
