@@ -67,7 +67,8 @@ CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
-(cat tools/initdb.sql tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.") 2>&1| tee /tmp/tmp
+#(cat tools/initdb.sql tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.") 2>&1| tee /tmp/tmp
+(cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.") 2>&1| tee /tmp/tmp
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()

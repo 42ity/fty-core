@@ -53,9 +53,9 @@ echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 RESULT=0
 # ***** SET (MANUALY) SUT_PORT,SUT_NAME AND BIOS_PORT - MANDATORY *****
-SUT_PORT="2207"
+SUT_PORT="2206"
 SUT_NAME="root@debian.roz.lab.etn.com"
-[ -z "$BIOS_PORT" ] && BIOS_PORT="8007"
+[ -z "$BIOS_PORT" ] && BIOS_PORT="8006"
     # *** if used set BIOS_USER and BIOS_PASSWD
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
