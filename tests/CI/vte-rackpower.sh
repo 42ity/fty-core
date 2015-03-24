@@ -48,7 +48,8 @@ else
             break
             ;;
         esac
-done
+    done
+fi
 SUT_WEB_PORT=$(expr $PORT - 2200 + 8000)
 
 # ***** GLOBAL VARIABLES *****
