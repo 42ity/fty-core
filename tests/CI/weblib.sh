@@ -17,6 +17,7 @@
 #
 # Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
 #            Jim Klimov <EvgenyKlimov@eaton.com>
+#            Karol Hrdina <KarolHrdina@eaton.com>
 #
 # Description: This is library of functions usefull for REST API testing,
 #              which can be sourced to interactive shell
@@ -285,3 +286,13 @@ api_auth_get_jsonv() {
     api_auth_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
 }
 
+api_post_json_cmp () {
+#    set -x
+    text=$(curl -v --progress-bar -d "$2" "$BASE_URL$1" 2>&1)
+    res=$(echo "${text}" | grep -E "$3")
+    if [ -z "$res" ]; then
+        return 1
+    else
+        return 0
+    fi
+}
