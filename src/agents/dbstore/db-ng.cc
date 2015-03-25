@@ -1,5 +1,4 @@
 #include "malamute.h"
-#include "measure_types.h"
 #include "monitor.h"
 #include "bios_agent.h"
 #include "persistencelogic.h"

@@ -37,7 +37,6 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
-#include "measure_types.h"
 #include "monitor.h"
 #include "log.h"
 #include "dbpath.h"
@@ -417,12 +416,14 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
 
         case COMMON_MSG_NEW_MEASUREMENT:
         {
-            bool r = insert_new_measurement(url.c_str(), &msg_nc);
+            //TODO
+            log_error ("this should never happen");
+  //          bool r = insert_new_measurement(url.c_str(), &msg_nc);
 //FIXME: JIM: 20150109 - if there was an error inserting the value, what should
 //we return? it was not "ignored" but did not end up in database either...
             result = true;
-        if (!r)
-            log_warning ("Did not succeed inserting new measurement; message id = '%d'", msg_id);
+        //if (!r)
+        //    log_warning ("Did not succeed inserting new measurement; message id = '%d'", msg_id);
             break;
         }
         default:
@@ -441,7 +442,7 @@ common_msg_process(const std::string& url, const common_msg_t& msg)
     return result;
 };
 
-
+/*
 bool insert_new_measurement(const char* url, common_msg_t* msg)
 {
     const char* devicename  = common_msg_device_name (msg);
@@ -509,7 +510,7 @@ bool insert_new_measurement(const char* url, common_msg_t* msg)
 
     common_msg_destroy (&retClient);
     return result;
-};
+};*/
 
 bool insert_new_client_info(const char* url, common_msg_t* msg)
 {
@@ -686,7 +687,9 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
     int msg_id = common_msg_id (cmsg);
     switch (msg_id) {
     case COMMON_MSG_NEW_MEASUREMENT: {
-        insert_new_measurement(url.c_str(), cmsg);
+        //TODO
+    //    insert_new_measurement(url.c_str(), cmsg);
+        log_error ("old protocol, this should never happen");
         break;
     }
     case COMMON_MSG_INSERT_DEVICE: {
@@ -718,7 +721,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
     case COMMON_MSG_GET_MEASURE_TYPE_S:
     case COMMON_MSG_GET_MEASURE_SUBTYPE_I:
     case COMMON_MSG_GET_MEASURE_SUBTYPE_S: {
-        ret = process_measures_meta(&cmsg);
+        log_error ("old get measure are not supported, ignore them");
         break;
     }
     default: {

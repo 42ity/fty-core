@@ -672,15 +672,12 @@ common_msg_t* generate_return_last_measurements (a_elmnt_id_t device_id,
  *
  * \param url       - connection url to database.
  * \param device_id - id of the monitor device that was measured.
- * \param name      - output parameter for device name.
  *
  * \return NULL            in case of errors.
  *         empty zlist_t   in case of nothing was found.
  *         filled zlist_t  in case of succcess.
  */
-// TODO change std:string to char*
-zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id, 
-                                  std::string& name);
+zlist_t* select_last_measurements(tntdb::Connection &conn, m_dvc_id_t device_id);
 
 
 /**
