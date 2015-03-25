@@ -12,11 +12,10 @@ INSERT INTO t_empty values (1);
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
-drop table if exists t_bios_measurements;
 drop table if exists t_bios_measurement;
-drop table if exists t_bios_measurement_topic;
-drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_measurement_types;
+drop table if exists t_bios_measurement_subtypes;
+drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
@@ -312,34 +311,6 @@ CREATE TABLE t_bios_asset_ext_attributes(
     ON DELETE RESTRICT
 );
 
-CREATE TABLE t_bios_measurements (
-    id_measurements         BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    id_client               TINYINT UNSIGNED    NOT NULL,
-    id_device               SMALLINT UNSIGNED   NOT NULL,
-    timestamp               datetime            NOT NULL,
-    id_subtype              SMALLINT UNSIGNED   NOT NULL,
-    id_type                 SMALLINT UNSIGNED   NOT NULL,
-    value                   BIGINT              NOT NULL,
-
-    PRIMARY KEY(id_measurements),
-
-    INDEX (id_device),
-    INDEX (id_subtype, id_type),
-    INDEX(id_client),
-
-    FOREIGN KEY (id_subtype, id_type)
-        REFERENCES t_bios_measurement_subtypes(id, id_type)
-        ON DELETE RESTRICT,
-    
-    FOREIGN KEY (id_device)
-        REFERENCES t_bios_discovered_device(id_discovered_device)
-        ON DELETE RESTRICT,
-
-    FOREIGN KEY (id_client)
-        REFERENCES t_bios_client(id_client)
-        ON DELETE RESTRICT
-);
-
 CREATE TABLE t_bios_monitor_asset_relation(
     id_ma_relation        INT UNSIGNED      NOT NULL AUTO_INCREMENT,
     id_discovered_device  SMALLINT UNSIGNED NOT NULL,
@@ -366,8 +337,6 @@ drop view if exists v_bios_client;
 drop view if exists v_bios_client_info;
 drop view if exists v_bios_discovered_ip;
 drop view if exists v_bios_net_history;
-drop view if exists v_bios_client_info_measurements;
-
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -380,8 +349,6 @@ create view v_bios_client_info as select id_client_info id, id_discovered_device
 create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
 
 create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
-
-create view v_bios_client_info_measurements as select  id_measurements as id, id_client, id_device as id_discovered_device, timestamp, id_type as id_key, id_subtype as id_subkey, value from t_bios_measurements;
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;
@@ -411,23 +378,7 @@ DROP view if exists v_bios_asset_element;
 DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
-DROP view if exists v_bios_client_info_measurements_last;
-DROP VIEW IF EXISTS v_bios_measurements_lastdate;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
-DROP VIEW IF EXISTS v_bios_measurement_subtypes;
-DROP VIEW IF EXISTS v_bios_measurement_types;
-
-
-create view v_bios_measurement_types as select * from t_bios_measurement_types ;
-
-create view v_bios_measurement_subtypes as
-SELECT
-    st.id , st.id_type, st.name, st.scale, t.name as typename
-FROM
-    v_bios_measurement_types t,
-    t_bios_measurement_subtypes st
-where
-    st.id_type = t.id;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
@@ -489,30 +440,6 @@ create view v_bios_asset_group_relation as select * from t_bios_asset_group_rela
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
-create view v_bios_measurements_lastdate as SELECT p.id_key, max(p.timestamp) maxdate, p.id_subkey, p.id_discovered_device FROM v_bios_client_info_measurements p  GROUP BY p.id_key, p.id_subkey, p.id_discovered_device;
-
-create view v_bios_client_info_measurements_last as
-SELECT  v.id,
-        v.id_discovered_device,
-        v.id_key,
-        v.id_subkey,
-        v.value,
-        v.timestamp,
-        sk.scale,
-        dd.name
-FROM    v_bios_client_info_measurements v
-        INNER JOIN v_bios_measurements_lastdate grp 
-              ON v.id_key = grp.id_key AND
-                 v.id_subkey = grp.id_subkey AND
-                 v.timestamp = grp.maxdate  AND
-                 v.id_discovered_device = grp.id_discovered_device
-        INNER JOIN t_bios_measurement_subtypes sk
-              ON v.id_subkey = sk.id AND
-                 v.id_key = sk.id_type
-        INNER JOIN v_bios_discovered_device dd
-              ON v.id_discovered_device = dd.id
-        ;
-
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
 SELECT v1.id_asset_element, 
