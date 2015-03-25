@@ -20,12 +20,6 @@ void NUTAgent::onStart( ) {
 
 
 void NUTAgent::onPoll() {
-    bool advertise = false;
-    if( _measurementTimestamp + NUT_MEASUREMENT_REPEAT_AFTER < std::time(NULL) ) {
-        advertise = true;
-        _measurementTimestamp = std::time(NULL);
-    }
-    _deviceList.update( advertise );
     advertisePhysics();
     advertiseInventory();
 }
@@ -67,7 +61,7 @@ void NUTAgent::advertisePhysics() {
                     units.c_str(),
                     measurement.second, -2, -1);
                 if( msg ) {
-                    log_debug("sending new measurement for ups %s, type %s, value %" PRIi64,
+                    log_debug("sending new measurement for ups %s, type %s, value %" PRIi32,
                               device.second.name().c_str(),
                               measurement.first.c_str(),
                               measurement.second );
