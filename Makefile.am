@@ -594,7 +594,8 @@ web-link-test: bios_web.la
 			$(abs_top_srcdir)/tests/web-linking-test.cpp \
 			${CXXTOOLS_LIBS} -ltntnet \
 			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "Everything for bios_web.so does link ok!"
+			echo "PASS: Everything for bios_web.so does link ok!" || \
+			( R=$$?; echo "FAIL ($$R): bios_web.so unusable"; exit $$R; )
 
 
 ###
