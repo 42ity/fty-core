@@ -30,6 +30,12 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include <tntdb/error.h>
 #include <time.h>
 
+#include <zmq.h>
+#include <czmq.h>
+
+
+#include "common_msg.h"
+
 #include "defs.h"
 #include "bios_agent.h"
 #include "preproc.h"
@@ -42,7 +48,6 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "dbpath.h"
 #include "measurement.h"
 #include "agents.h"
-#include "assetcrud.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'

@@ -5,7 +5,8 @@
 #include "dbpath.h"
 #include "monitor.h"
 #include "upsstatus.h"
-
+#include <zmq.h>
+#include <czmq.h>
 #include <tnt/http.h>
 
 #include <algorithm>

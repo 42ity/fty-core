@@ -18,6 +18,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 /*! \file measurement.h
     \brief functions to work with t_bios_measurement and t_bios_measurement_topic
     \author MichalVyskocil <michalvyskocil@eaton.com>
+            AlenaChernikava <alenachernikava@eaton.com>
  */
 
 #ifndef SRC_PERSIST_MEASUREMENT_H_
@@ -48,22 +49,22 @@ namespace persist {
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,
-        const char *topic,
-        m_msrmnt_value_t value,
-        m_msrmnt_scale_t scale,
-        time_t time,
-        const char *units,
-        const char *device_name);
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name);
 
 db_reply<std::vector<db_msrmnt_t>>
-select_from_measurement_by_topic(
+    select_from_measurement_by_topic(
         tntdb::Connection &conn,
-        const char* topic);
+        const char        *topic);
 
 db_reply_t
-delete_from_measurement_by_id(
+    delete_from_measurement_by_id(
         tntdb::Connection &conn,
-        m_msrmnt_id_t id);
+        m_msrmnt_id_t      id);
 
 } //namespace persist
 
