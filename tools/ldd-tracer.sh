@@ -38,6 +38,8 @@ LANG=C
 LC_ALL=C
 export LANG LC_ALL
 
+set -o pipefail 2>/dev/null
+
 ### This variable will hold the list of unresolved symbols
 ### after an execution of this function
 symbols_missing=""
