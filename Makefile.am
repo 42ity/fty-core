@@ -289,10 +289,10 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD = libbiosapi.la
+libpriv_db_la_LIBADD =	libbiosapi.la
 
 
-noinst_LTLIBRARIES += 	libpriv-proto.la
+noinst_LTLIBRARIES +=	libpriv-proto.la
 
 libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.c \
@@ -597,7 +597,7 @@ web-link-test: bios_web.la
 			echo "PASS: Everything for bios_web.so does link ok!" || \
 			( R=$$?; echo "FAIL ($$R): bios_web.so unusable"; exit $$R; )
 
-EXTRA_DIST +=		web-linking-test.cpp
+EXTRA_DIST +=		tests/web-linking-test.cpp
 
 ###
 bin_PROGRAMS +=		test-web
@@ -796,6 +796,7 @@ pkglib_LTLIBRARIES += bios_web.la
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
 # List them explicitly as separate sets, so that generated files can be cleaned
 BUILT_SOURCES_bios_web_la = \
+                      src/include/git_details_override.h                 \
                       src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/auth-require.cpp                       \
                       src/web/src/power.cpp src/web/src/item.cpp         \
@@ -805,8 +806,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
-                      src/web/src/average.cpp              \
-                      src/include/git_details_override.h
+                      src/web/src/average.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
@@ -1383,7 +1383,7 @@ clean-man:
 
 # Just in case we don't have all dependencies properly spelled out,
 # try to ensure that certain files are built early in the process
-all-local: $(abs_top_builddir)/.git_details \
+all-local: $(abs_top_builddir)/src/include/git_details_override.c \
             libbiosapi.la bios_web.la \
             all-docs sdk web-link-test
 
@@ -1395,15 +1395,37 @@ all-local: $(abs_top_builddir)/.git_details \
 check-local: check-dlls web-link-test test-sdk
 
 # Makes sense only for -shared builds
-check-dlls: check-dll-libbiosapi check-dll-bios_web
+check-dlls: check-dll-libs check-dll-progs
+
+CHECK_DLL_PROGS_TGT =
+
+define depend-check-dll-prog =
+# Define the dependency and the rule
+check-dll-binfile-$(1): $(1)
+	@P="$$<"; \
+	[ -x "$(abs_top_builddir)/.libs/$$(<F)" ] && P="$(abs_top_builddir)/.libs/$$(<F)" ; \
+	[ -x "$(abs_top_builddir)/.libs/lt-$$(<F)" ] && P="$(abs_top_builddir)/.libs/lt-$$(<F)" ; \
+	LD_LIBRARY_PATH="$(abs_top_builddir)/.libs:$$$$LD_LIBRARY_PATH" \
+	    $(abs_top_srcdir)/tools/ldd-tracer.sh "$$$$P" > /dev/null && \
+	echo "PASS: dynamic-link tracing '$$$$P' OK : found no undefined symbols" || \
+	( RES=$$$$?; echo "FAIL: dynamic-link tracing '$$$$P' failed ($$$$RES)"; exit $$$$RES )
+
+$(eval CHECK_DLL_PROGS_TGT +=	check-dll-binfile-$(1) )
+endef
+
+$(foreach p,$(bin_PROGRAMS) $(check_PROGRAMS) $(client_PROGRAMS), $(eval $(call depend-check-dll-prog,$(p))))
+
+check-dll-progs: $(CHECK_DLL_PROGS_TGT)
+
+check-dll-libs: check-dll-libbiosapi check-dll-bios_web
 
 check-dll-libbiosapi: libbiosapi.la
 	@$(abs_top_srcdir)/tools/ldd-tracer.sh $(abs_top_builddir)/.libs/libbiosapi.so > /dev/null && \
-	echo "PASS: dynamic-link tracing $@ found no undefines"
+	echo "PASS: dynamic-link tracing '$<' OK: found no undefined symbols"
 
 check-dll-bios_web: bios_web.la
 	@$(abs_top_srcdir)/tools/ldd-tracer.sh -l /usr/bin/tntnet $(abs_top_builddir)/.libs/bios_web.so > /dev/null && \
-	echo "PASS: dynamic-link tracing $@ found no undefines"
+	echo "PASS: dynamic-link tracing '$<' OK: found no undefined symbols"
 
 
 #----------------------------------------------------------------------
@@ -1535,7 +1557,7 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
 
-$(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details
+$(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
 	@echo "INFO: Checking that '$@' is up-to-date..."
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
