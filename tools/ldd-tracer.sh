@@ -34,6 +34,10 @@ target_default="bios_web.so"
 ### Use escape sequences for coloring?
 [ -z "$do_color" ] && do_color=yes
 
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
 ### This variable will hold the list of unresolved symbols
 ### after an execution of this function
 symbols_missing=""
@@ -45,7 +49,7 @@ trace_objfile() {
     shift
     libs_add="$@"
 
-    _SYMBOLS="$(nm -D "$target" | grep -w "U" | while read _U _S; do echo "$_S"; done)"
+    _SYMBOLS="$(nm -D "$target" | grep -w "U" | while read _U _S; do echo "$_S"; done | sort | uniq)"
     [ $? != 0 -o -z "$_SYMBOLS" ] && \
         echo "INFO: no external symbols detected in target '$target'" && \
         return 0
@@ -77,14 +81,18 @@ trace_objfile() {
     # See https://sourceware.org/binutils/docs/binutils/nm.html
     # for listing of symbol type codes in GNU nm
     # TODO: attention to error codes?
-    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiAN][\t ]' | grep -vw U | while read _O _U lib_symbol; do echo "$lib_symbol $library"; done; done )"
+    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiANWw][\t ]' | grep -vw U | while read _O sym_type lib_symbol; do echo "$lib_symbol $sym_type $library"; done; done )"
 
     NUMMISS=0
     symbols_missing=""
     for symbol in $_SYMBOLS ; do
         echo "$_LIBSYMS" | egrep '^'"$symbol"'[ @]' | ( found=no; RES=0
-            while read lib_symbol library; do
-                echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}' (as ${_BLU}$lib_symbol${_OFF})"
+            while read lib_symbol sym_type library; do
+                TAG=""
+                case "$sym_type" in
+                    [Ww]) TAG="${_MAG}WEAK${_OFF} " ;;
+                esac
+                echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}' (as ${TAG}${_BLU}$lib_symbol${_OFF})"
                 found=yes
             done
             [ "$found" = no ] && RES=1 && \
