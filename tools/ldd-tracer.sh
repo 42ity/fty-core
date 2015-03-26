@@ -81,7 +81,7 @@ trace_objfile() {
     # See https://sourceware.org/binutils/docs/binutils/nm.html
     # for listing of symbol type codes in GNU nm
     # TODO: attention to error codes?
-    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiANWwVvBb][\t ]' | grep -vw U | while read _O sym_type lib_symbol; do echo "$lib_symbol $sym_type $library"; done; done )"
+    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiANWwVvBbDdGgu][\t ]' | grep -vw U | while read _O sym_type lib_symbol; do echo "$lib_symbol $sym_type $library"; done; done )"
 
     NUMMISS=0
     symbols_missing=""
@@ -91,8 +91,9 @@ trace_objfile() {
                 TAG=""
                 case "$sym_type" in
                     [WwVv]) TAG="${_MAG}WEAK${_OFF} " ;;
+                    [BbDdGg]) TAG="${_MAG}DATA${_OFF} " ;;
                 esac
-                echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}' (as ${TAG}${_BLU}$lib_symbol${_OFF})"
+                echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}' (as ${TAG}${_BLU}$lib_symbol${_OFF} type '$sym_type')"
                 found=yes
             done
             [ "$found" = no ] && RES=1 && \
