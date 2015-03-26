@@ -258,6 +258,14 @@ produce_events(){
                 echo "OK: new measurements ($NEWCNT lines in table)"
             fi
             MEASUREMENTS=$NEWCNT
+            # check last 5 min data
+            CNT6MIN=$(do_select "select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $(date +%s --date '6 minutes ago') )")
+            if [ "$CNT6MIN" = "0" ] ; then
+                # no data flow
+                echo "ERROR: nothing appeared in measurement table in last 6 minutes"
+            else
+                echo "OK: $CNT6MIN new measurements in last 6 minutes"
+            fi
             # check servises
             if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
                 echo "OK: all services running"
