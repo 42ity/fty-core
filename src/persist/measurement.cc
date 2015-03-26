@@ -39,7 +39,7 @@ db_reply_t
     }
     
     // ATTENTION: now name is taken from t_bios_discovered_device
-    if ( !name ) {
+    if ( !device_name ) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
