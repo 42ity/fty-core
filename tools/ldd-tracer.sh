@@ -56,14 +56,23 @@ trace_objfile() {
 
     # Recurse over shared libraries until we've found them all
     # (via dynamic linker explicitly declared dependencies).
-    # TODO: Detect "file not found" link errors, etc.?
     _LPREV=""
     _LIBS="$target $libs_add"
+    _LIBSN=""
     while [ x"$_LPREV" != x"$_LIBS" ]; do
         _LPREV="$_LIBS"
         _LIBS="$(for L in $_LPREV ; do echo "$L"; ldd "$L"; done | sed -e 's,^[ \t]*\([^ ].*\)$,\1,' -e 's,^.* => \(.*\)$,\1,' -e 's, (0x.*)$,,' | egrep -v '^$|^[^/]|^'"$target"'$' | sort | uniq)"
+        _LIBSN="$( (echo "$_LIBSN" ; for L in $_LPREV ; do ldd "$L"; done | grep 'not found' | awk '{print $1}' ) | sort|uniq|egrep -v '^$' )"
     done
     unset _LPREV
+
+    if [ -n "$_LIBSN" ]; then
+        echo "WARN: the following links to external libraries were not resolved in target '$target':"
+        for L in $_LIBSN ; do
+            echo -e "    ${_RED}$L${_OFF} : not found : shared library name not resolved into a path" >&2
+        done
+        echo ""
+    fi
 
     if [ -z "$_LIBS" ]; then
         echo "INFO: no links to external libraries were found in target '$target'"
@@ -74,7 +83,7 @@ trace_objfile() {
     for L in $_LIBS ; do
         [ -s "$L" ] && \
             echo -e "    ${_BLU}$L${_OFF}" || \
-            echo -e "    ${_RED}$L${_OFF} : not found" >&2
+            echo -e "    ${_RED}$L${_OFF} : not found : shared library name is not a non-empty file" >&2
     done
     echo ""
 
