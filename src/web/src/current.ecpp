@@ -84,20 +84,24 @@ std::string dev;
             json += "{ \"id\":";
             json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
             json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
+            
             zlist_t *list = common_msg_measurements(dta);
-            for(void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
+            
+            for (void *it = zlist_first(list); it != 0; it = zlist_next(list)) {
                std::vector<std::string> measurements;
+               
                cxxtools::split(":", std::string((char*)it),
                                     std::back_inserter(measurements));
-               std::string name = mes_mgr.int_to_type(measurements[0])
-                    + "." + mes_mgr.int_to_subtype(measurements[1],
-                                                   measurements[0]); 
 
-               json += ", \"" + name +
-                       "\": " + mes_mgr.map_values(name,
-                       mes_mgr.scale(measurements[2],
-                                     measurements[1],
-                                     measurements[0]));
+               std::string name = measurements[2];
+               std::vector<std::string> topic_parts;
+               cxxtools::split("@", name,
+                                    std::back_inserter(topic_parts));
+
+               json += ", \"" + topic_parts[0] +
+                       "\": " + mes_mgr.map_values(topic_parts[0],
+                       mes_mgr.apply_scale(measurements[0],
+                                     measurements[1]));
             }
             json += " }";
             measure.push_back(json);
