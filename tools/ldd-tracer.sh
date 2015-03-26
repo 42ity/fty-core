@@ -57,12 +57,26 @@ trace_objfile() {
     _LIBS="$target $libs_add"
     while [ x"$_LPREV" != x"$_LIBS" ]; do
         _LPREV="$_LIBS"
-        _LIBS="$(for L in $_LPREV ; do echo "$L"; ldd "$L"; done | sed -e 's,^[ \t]*\([^ ].*\)$,\1,' -e 's,^.* => \(.*\)$,\1,' -e 's, (0x.*)$,,' | egrep -v '^$|^[^/]' | sort | uniq)"
+        _LIBS="$(for L in $_LPREV ; do echo "$L"; ldd "$L"; done | sed -e 's,^[ \t]*\([^ ].*\)$,\1,' -e 's,^.* => \(.*\)$,\1,' -e 's, (0x.*)$,,' | egrep -v '^$|^[^/]|^'"$target"'$' | sort | uniq)"
     done
     unset _LPREV
 
+    if [ -z "$_LIBS" ]; then
+        echo "INFO: no links to external libraries were found in target '$target'"
+        return 0
+    fi
+
+    echo "Libraries to check:"
+    for L in $_LIBS ; do
+        [ -s "$L" ] && \
+            echo -e "    ${_BLU}$L${_OFF}" || \
+            echo -e "    ${_RED}$L${_OFF} : not found" >&2
+    done
+    echo ""
+
     # See https://sourceware.org/binutils/docs/binutils/nm.html
     # for listing of symbol type codes in GNU nm
+    # TODO: attention to error codes?
     _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiAN][\t ]' | grep -vw U | while read _O _U lib_symbol; do echo "$lib_symbol $library"; done; done )"
 
     NUMMISS=0
