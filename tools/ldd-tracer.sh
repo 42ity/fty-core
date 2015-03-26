@@ -80,6 +80,10 @@ trace_objfile() {
 
     # See https://sourceware.org/binutils/docs/binutils/nm.html
     # for listing of symbol type codes in GNU nm
+    # NOTE: depending on library contents, there may be duplicate
+    # hits e.g. for "implementation-dependent" functions. While these
+    # can be filetered away with "sort|uniq" in between two done's,
+    # I chose to leave this as is for clarity during debugging.
     # TODO: attention to error codes?
     _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiANWwVvBbDdGgu][\t ]' | grep -vw U | while read _O sym_type lib_symbol; do echo "$lib_symbol $sym_type $library"; done; done )"
 
