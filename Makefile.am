@@ -587,12 +587,14 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
+### Verification that bios_web.so is in fact usable on binary level
+### Note that this creates no retainable output file
 web-link-test: bios_web.la
-			@$(CXX) -o /dev/null \
+			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
 			$(abs_top_srcdir)/tests/web-linking-test.cpp \
 			${CXXTOOLS_LIBS} -ltntnet \
 			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "Everything links ok!"
+			echo "Everything for bios_web.so does link ok!"
 
 
 ###
@@ -1377,7 +1379,14 @@ clean-man:
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: $(abs_top_builddir)/.git_details all-docs sdk
+# Just in case we don't have all dependencies properly spelled out,
+# try to ensure that certain files are built early in the process
+all-local: $(abs_top_builddir)/.git_details \
+            libbiosapi.la bios_web.la \
+            all-docs sdk web-link-test
+
+# Run compile/link tests defined in this Makefile
+check-local: web-link-test test-sdk
 
 
 #----------------------------------------------------------------------
