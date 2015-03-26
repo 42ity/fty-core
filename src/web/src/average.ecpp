@@ -13,12 +13,25 @@
 #include "persistence.h"
 #include "utils.h"
 #include "app.h"
+#include "str_defs.h"
 
-#define TYPE_DEFAULT "arithmetic_mean"
-//#define DATETIME_FORMAT "%4d%2d%2d%2d%2d%2dZ"
 #define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
+#define JSON_TEMPLATE "{\n\
+    \"start_ts\" : \"##START_TS##\",\n\
+    \"end_ts\" : \"##END_TS##\",\n\
+    \"type\" : \"##TYPE##\",\n\
+    \"step\" : \"##STEP##\",\n\
+    \"sources\" : [\n\
+        ##SOURCES##\n\
+    ]\n"
+#define SOURCE_TEMPLATE "{\n\
+    \"id\" : \"##ID##\",\n\
+    \"source\" : \"##SOURCE##\",\n\
+    \"unit\" : \"##UNIT##\",\n\
+    \"data\" : ##DATA##\n\
+}\n"
+   
 </%pre>
-
 <%cpp>
     std::stringstream input (request.getBody(), std::ios_base::in);
     cxxtools::SerializationInfo si;
@@ -73,16 +86,24 @@
         if (strptime (end_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
             throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
-        // TODO: Check that start_ts <= end_ts
+        // check that start_ts < end_ts
+        std::string start_ts_tmp (start_ts.substr (0, start_ts.size() - 1));
+        std::string end_ts_tmp (end_ts.substr (0, end_ts.size() - 1));
+        if (std::stoll (start_ts_tmp) >= std::stoll (end_ts_tmp)) {
+            throw std::invalid_argument ("start_ts must be <= end_ts");
+        }
         app_args_insert (app, "start_ts", "%s", start_ts.c_str());
         app_args_insert (app, "end_ts", "%s", end_ts.c_str());
 
+        if (si.getMember ("type").category () != cxxtools::SerializationInfo::Category::Value) {
+            throw std::invalid_argument ("Value of 'type' key must be a string (empty equals default value).");
+        }
         si.getMember ("type") >>= type;
         // type is optional, default type is arithmetic average
         if (type.empty ()) {
-            type.assign (TYPE_DEFAULT);
+            type.assign (AVG_TYPES[0]);
         }
-        else if (type.compare (TYPE_DEFAULT) != 0) {
+        else if (!is_average_type_supported (type.c_str ())) {
             throw std::invalid_argument ("Average type <$ type $> not recognized.");
         }
 

@@ -17,3 +17,8 @@ const char *AVG_STEPS[AVG_STEPS_SIZE] = {
     "1w",
     "1m"
 };
+
+const char *AVG_TYPES[AVG_TYPES_SIZE] = {
+    "arithmetic_mean",
+    "arithmetic_mean_mm"
+};

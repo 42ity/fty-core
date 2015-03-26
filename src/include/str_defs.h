@@ -15,6 +15,8 @@ extern const char* MLM_ENDPOINT;
 
 #define AVG_STEPS_SIZE 5
 extern const char *AVG_STEPS[AVG_STEPS_SIZE];
+#define AVG_TYPES_SIZE 2
+extern const char *AVG_TYPES[AVG_TYPES_SIZE];
 
 #endif // SRC_INCLUDE_STR_DEFS_H__
 
