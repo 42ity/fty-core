@@ -587,6 +587,14 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
+web-link-test: bios_web.la
+			@$(CXX) -o /dev/null \
+			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			${CXXTOOLS_LIBS} -ltntnet \
+			$(abs_top_builddir)/.libs/bios_web.so && \
+			echo "Everything links ok!"
+
+
 ###
 bin_PROGRAMS +=		test-web
 
@@ -859,7 +867,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la
+web-test-deps: tntnet.xml bios_web.la web-link-test
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
