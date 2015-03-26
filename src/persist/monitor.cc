@@ -1375,9 +1375,10 @@ void generate_measurements (const char      *url,
     ret = test_insert_measurement (url, device_id, "realpower", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
 }
 
-zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id)
+zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id, std::string &device_name)
 {
     LOG_START;
+    log_debug ("device_id (monitor) = %" PRIu32, device_id);
     assert ( device_id ); // is required
     
     zlist_t* measurements = zlist_new();
@@ -1386,10 +1387,12 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   value, scale, topic"
+            "   v.value, v.scale, v.topic, v1.name"
             " FROM"
-            "   v_bios_measurement_last"
-            " WHERE device_id = :deviceid"
+            "   v_bios_measurement_last v,"
+            "   t_bios_discovered_device v1"
+            " WHERE v.device_id = :deviceid AND"
+            "       v1.id_discovered_device = :deviceid"
         );
     
         tntdb::Result result = st.set("deviceid", device_id).
@@ -1412,8 +1415,11 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
 
             // topic
             std::string topic = "";
-            row[4].get(topic);
+            row[2].get(topic);
             assert ( !topic.empty() );   // database is corrupted
+            
+            // TODO this field would be updated a lot of time with the same value
+            row[3].get (device_name);
             
             zlist_push (measurements, (char *)( 
                              std::to_string (value) + ":" +
@@ -1471,10 +1477,10 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
     }
-    zlist_t* last_measurements = 
-            select_last_measurements(conn, device_id_monitor);
-    // TODO take care about it
     std::string device_name = "NOT IMPLEMENTED";
+    zlist_t* last_measurements = 
+            select_last_measurements(conn, device_id_monitor, device_name);
+    // TODO take care about it
     if ( last_measurements == NULL )
     {
         log_warning ("end: abnormal");

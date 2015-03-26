@@ -670,14 +670,16 @@ common_msg_t* generate_return_last_measurements (a_elmnt_id_t device_id,
  * Returns a list of strings. One string for one measurement.
  * Every string has the followng format: "keytag_id:subkeytag_id:value:scale".
  *
- * \param url       - connection url to database.
- * \param device_id - id of the monitor device that was measured.
+ * \param[in]  url         - connection url to database.
+ * \param[in]  device_id   - id of the monitor device that was measured.
+ * \param[out] device_name - name of measured device.
  *
  * \return NULL            in case of errors.
  *         empty zlist_t   in case of nothing was found.
  *         filled zlist_t  in case of succcess.
  */
-zlist_t* select_last_measurements(tntdb::Connection &conn, m_dvc_id_t device_id);
+zlist_t* select_last_measurements(tntdb::Connection &conn, m_dvc_id_t device_id,
+                                                std::string &device);
 
 
 /**

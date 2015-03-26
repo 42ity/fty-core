@@ -81,15 +81,14 @@ static const std::set<std::string> EXP{"6:1:931:-1", "5:1:17:-1", "4:1:56:-1", "
 TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasurements]")
 {
     //SUCCESS
-    uint32_t id = SELECT_DEVICE_ID;
+    uint32_t id = MONITOR_ASSET_MEASURE_ID;
     std::string name;
     tntdb::Connection conn;
     REQUIRE_NOTHROW (conn = tntdb::connectCached(url.c_str()));
-    zlist_t* measurements = select_last_measurements (conn, id);
+    zlist_t* measurements = select_last_measurements (conn, id, name);
     REQUIRE ( measurements );
-    //TODO
-   /* CHECK (name == "select_device");
-
+    CHECK (name == "select_device");
+/*
     REQUIRE (zlist_size(measurements) == EXP.size());
     std::set<std::string> results;
     for (char* s = (char*) zlist_first(measurements); s != NULL; s = (char*) zlist_next(measurements)) {
