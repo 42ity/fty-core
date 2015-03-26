@@ -23,7 +23,7 @@
 #   Description: Script to trace dynamically-linked objects (bin, lib)
 #   to find the libraries which define a target object's symbols and
 #   if there are some undefined symbols as well.
-#   NOTE: Uses bash syntax in the code (math, echo -e).
+#   NOTE: Uses bash syntax in the code (math, echo -e) and GNU nm.
 
 ### Input (see also command-line parameters below):
 target_default="bios_web.so"
@@ -46,27 +46,32 @@ trace_objfile() {
     libs_add="$@"
 
     _SYMBOLS="$(nm -D "$target" | grep -w "U" | while read _U _S; do echo "$_S"; done)"
+    [ $? != 0 -o -z "$_SYMBOLS" ] && \
+        echo "INFO: no external symbols detected in target '$target'" && \
+        return 0
 
-    # TODO: Detect "not found" link errors, etc.?
+    # Recurse over shared libraries until we've found them all
+    # (via dynamic linker explicitly declared dependencies).
+    # TODO: Detect "file not found" link errors, etc.?
     _LPREV=""
     _LIBS="$target $libs_add"
     while [ x"$_LPREV" != x"$_LIBS" ]; do
         _LPREV="$_LIBS"
-        _LIBS="$(for L in $_LPREV ; do echo $L; ldd $L; done | sed -e 's,^[ \t]*\([^ ].*\)$,\1,' -e 's,^.* => \(.*\)$,\1,' -e 's, (0x.*)$,,' | egrep -v '^$|^[^/]' | sort | uniq)"
+        _LIBS="$(for L in $_LPREV ; do echo "$L"; ldd "$L"; done | sed -e 's,^[ \t]*\([^ ].*\)$,\1,' -e 's,^.* => \(.*\)$,\1,' -e 's, (0x.*)$,,' | egrep -v '^$|^[^/]' | sort | uniq)"
     done
     unset _LPREV
 
-    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiAN][\t ]' | grep -vw U | while read _O _U lib_symbol; do echo "$library $lib_symbol"; done; done )"
+    # See https://sourceware.org/binutils/docs/binutils/nm.html
+    # for listing of symbol type codes in GNU nm
+    _LIBSYMS="$(for library in $_LIBS ; do nm -D "$library" | egrep '[ \t][TtiAN][\t ]' | grep -vw U | while read _O _U lib_symbol; do echo "$lib_symbol $library"; done; done )"
 
     NUMMISS=0
     symbols_missing=""
     for symbol in $_SYMBOLS ; do
-        echo "$_LIBSYMS" | ( found=no; RES=0
-            while read library lib_symbol; do
-                if [ "$symbol" = "$lib_symbol" ]; then
-                    echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}'"
-                    found=yes
-                fi
+        echo "$_LIBSYMS" | egrep '^'"$symbol"'[ @]' | ( found=no; RES=0
+            while read lib_symbol library; do
+                echo -e "${_GRN}Found${_OFF} symbol: ${_MAG}$symbol${_OFF} at '${_BLU}$library${_OFF}' (as ${_BLU}$lib_symbol${_OFF})"
+                found=yes
             done
             [ "$found" = no ] && RES=1 && \
                 echo -e "Symbol ${_RED}NOT FOUND${_OFF} anywhere: ${_MAG}$symbol${_OFF}" >&2
