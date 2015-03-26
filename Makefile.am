@@ -1386,8 +1386,23 @@ all-local: $(abs_top_builddir)/.git_details \
             libbiosapi.la bios_web.la \
             all-docs sdk web-link-test
 
+#----------------------------------------------------------------------
+#                        hook for make check custom verifications
+#----------------------------------------------------------------------
+
 # Run compile/link tests defined in this Makefile
-check-local: web-link-test test-sdk
+check-local: check-dlls web-link-test test-sdk
+
+# Makes sense only for -shared builds
+check-dlls: check-dll-libbiosapi check-dll-bios_web
+
+check-dll-libbiosapi: libbiosapi.la
+	@$(abs_top_srcdir)/tools/ldd-tracer.sh $(abs_top_builddir)/.libs/libbiosapi.so > /dev/null && \
+	echo "PASS: dynamic-link tracing $@ found no undefines"
+
+check-dll-bios_web: bios_web.la
+	@$(abs_top_srcdir)/tools/ldd-tracer.sh -l /usr/bin/tntnet $(abs_top_builddir)/.libs/bios_web.so > /dev/null && \
+	echo "PASS: dynamic-link tracing $@ found no undefines"
 
 
 #----------------------------------------------------------------------
@@ -1398,7 +1413,7 @@ sdk: libbiosapi.la
 
 sdk-tests: test-libbiosapiut
 
-test-sdk: sdk sdk-tests
+test-sdk: sdk sdk-tests check-dll-libbiosapi
 	cd $(abs_top_builddir) && ./test-libbiosapiut
 
 #----------------------------------------------------------------------
