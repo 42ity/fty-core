@@ -16,6 +16,21 @@ api_post_json_cmp "/metric/computed/average" \
     "HTTP/1.1 200 OK"
 print_result $?
 
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean_mm",
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 200 OK"
+print_result $?
+
+
 # end_ts can be empty
 api_post_json_cmp "/metric/computed/average" \
    '{
@@ -128,7 +143,91 @@ api_post_json_cmp "/metric/computed/average" \
         "start_ts" : "20150101000000Z",
         "end_ts" : "20150102000000Z",
         "step" : "8h",
-        "type" : "zelene koule frantu pepika",
+        "type" : {},
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : [],
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : { "type" : "arithmetic_mean" },
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : [ "arithmetic_mean" ],
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic mean",
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean_",
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic mean mm",
         "sources" :
         {
             "5" : [ "a.b" ]
@@ -303,7 +402,20 @@ api_post_json_cmp "/metric/computed/average" \
     "HTTP/1.1 400 Bad Request"
 print_result $?
 
-# TODO end_ts < start_ts
+# end_ts < start_ts
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150102000000Z",
+        "end_ts" : "20150101000000Z",
+        "step" : "8h",
+        "type" : "",
+        "sources" :
+        {
+            "5" : [ "a.b" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
 
 # sources empty
 api_post_json_cmp "/metric/computed/average" \
@@ -320,6 +432,22 @@ api_post_json_cmp "/metric/computed/average" \
 print_result $?
 
 # Bad sources
+
+# key value not number
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean",
+        "sources" :
+        {
+            "xt5" :  [ "asd.das",  "adsads" ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
 api_post_json_cmp "/metric/computed/average" \
    '{
         "start_ts" : "20150101000000Z",
@@ -334,7 +462,7 @@ api_post_json_cmp "/metric/computed/average" \
     "HTTP/1.1 400 Bad Request"
 print_result $?
 
-# 
+# value not an array, but string
 api_post_json_cmp "/metric/computed/average" \
    '{
         "start_ts" : "20150101000000Z",
@@ -349,7 +477,7 @@ api_post_json_cmp "/metric/computed/average" \
     "HTTP/1.1 400 Bad Request"
 print_result $?
 
-# 
+# empty array
 api_post_json_cmp "/metric/computed/average" \
    '{
         "start_ts" : "20150101000000Z",
@@ -364,7 +492,7 @@ api_post_json_cmp "/metric/computed/average" \
     "HTTP/1.1 400 Bad Request"
 print_result $?
 
-# 
+# one of array values not string
 api_post_json_cmp "/metric/computed/average" \
    '{
         "start_ts" : "20150101000000Z",
@@ -374,6 +502,77 @@ api_post_json_cmp "/metric/computed/average" \
         "sources" :
         {
             "5" :  [ "asd.das",  adsads ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+# TODO (KHR): When clarified, enable this test
+#api_post_json_cmp "/metric/computed/average" \
+#   '{
+#       "start_ts" : "20150101000000Z",
+#        "end_ts" : "20150102000000Z",
+#        "step" : "8h",
+#        "type" : "arithmetic_mean",
+#        "sources" :
+#        {
+#            "5" :  [ "asd.das",  6 ]
+#        }
+#    }' \
+#    "HTTP/1.1 400 Bad Request"
+#print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean",
+        "sources" :
+        {
+            "5" :  [ "asd.das",  [ "sdf", "sdf"] ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean",
+        "sources" :
+        {
+            "5" :  [ "asd.das",  { "sdf" : "sdf" } ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean",
+        "sources" :
+        {
+            "5" :  [ "asd.das",  {} ]
+        }
+    }' \
+    "HTTP/1.1 400 Bad Request"
+print_result $?
+
+api_post_json_cmp "/metric/computed/average" \
+   '{
+        "start_ts" : "20150101000000Z",
+        "end_ts" : "20150102000000Z",
+        "step" : "8h",
+        "type" : "arithmetic_mean",
+        "sources" :
+        {
+            "5" :  [ "asd.das",  [] ]
         }
     }' \
     "HTTP/1.1 400 Bad Request"
