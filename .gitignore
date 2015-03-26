@@ -89,6 +89,7 @@ server-agent
 
 tests/junit/
 tests/CI/web/log/
+tests/CI/tmp.*
 
 build/
 build-*/
@@ -125,6 +126,7 @@ bios-server-agent.service
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
 src/web/src/auth.cpp
+src/web/src/average.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp
 src/web/src/list.cpp
