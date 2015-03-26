@@ -1,6 +1,7 @@
 #include <tnt/tntnet.h>
 
-int main(int argc, char* argv[])
+//int main(int argc, char* argv[])
+int main()
 {
   try
   {
@@ -13,4 +14,5 @@ int main(int argc, char* argv[])
   {
     std::cerr << e.what() << std::endl;
   }
+  exit(0);
 }
