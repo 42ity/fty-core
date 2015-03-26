@@ -597,6 +597,7 @@ web-link-test: bios_web.la
 			echo "PASS: Everything for bios_web.so does link ok!" || \
 			( R=$$?; echo "FAIL ($$R): bios_web.so unusable"; exit $$R; )
 
+EXTRA_DIST +=		web-linking-test.cpp
 
 ###
 bin_PROGRAMS +=		test-web
