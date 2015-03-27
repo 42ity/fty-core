@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (C) 2014 Eaton
+# Copyright (C) 2015 Eaton
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,24 +20,41 @@
 # Description: tests the total rack power
 
 # ***** ABBREVIATIONS *****
-    # *** abbreviation SUT - System Under Test - remote server with BIOS ***
-    # *** abbreviation MS - Management Station - local server with this script ***
+    # *** SUT - System Under Test - remote server with BIOS
+    # *** MS - Management Station - local server with this script
+    # *** TRP - Total Rack Power
+
+# ***** DESCRIPTION *****
+    # *** test creates defined messages through nut using dummy nut driver
+    # *** data contained in the messages pass through nut into DB
+    # *** restAPI req. for TRP (arg1="$RACK"'&'arg2=total_power) is sent
+    # *** expected value of TRP is compared with the one get from restapi req.
+    # *** this way it contains also smoke test of the chain nut->DB->restAPI
 
 # ***** PREREQUISITES *****
-    # *** SUT_PORT and BASE_URL should be set to values corresponded to chosen server ***
-    # *** Must run as root without using password ***
-    # *** BIOS image must be installed and running on SUT ***
-    # *** SUT port and SUT name should be set properly (see below) ***
-    # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir ***
-    # *** tool directory with tools/initdb.sql tools/rack_power.sql present on MS ***
-    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
+    # *** SUT_PORT should be passed as parameter --port <value>
+    # *** it is currently from interval <2206;2209>
+    # *** must run as root without using password 
+    # *** BIOS image must be installed and running on SUT 
+    # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
+    # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
+    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-# ***** READ PARAMETERS IF PRESENT *****
-if [ $# -eq 0 ];then   # parameters missing
-    SUT_PORT="2206"
+# ***** INIT *****
+    # *** is system running?
+LOCKFILE=/tmp/ci-test-trp.lock
+if [ -f $LOCKFILE ]; then
+    echo -e "Script already running. Stopping."
+    exit 1
+fi
+    # *** lock the script with creating $LOCKFILE
+touch "$LOCKFILE"
+    # *** read parameters if present
+if [ $# -eq 0 ];then   # default if parameters missing
+    SUT_PORT="2206"    # port used for ssh requests
     SUT_NAME="root@debian.roz.lab.etn.com"
     BASE_URL="http://$SUT_NAME:8006/api/v1"
-else
+else                   # read parameter --port|-o
     while [ $# -gt 0 ]; do
         case "$1" in
             -o|--port)
@@ -50,18 +67,15 @@ else
         esac
     done
 fi
+                       # port used for http requests
 SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
-    # *** required SUT port and SUT name
-#SUT_PORT="2206"
-#SUT_NAME="root@debian.roz.lab.etn.com"
-#BASE_URL="http://$SUT_NAME:8006/api/v1"
 
+    # *** set SUT base URL and SUT name
 SUT_NAME="root@debian.roz.lab.etn.com"
 BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
-
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
@@ -74,7 +88,7 @@ PARAM2="outlet.realpower"
 USR=user1
 PSW=user1
 
-    # *** Numbers of passed/failed subtest
+    # *** numbers of passed/failed subtest
 SUM_PASS=0
 SUM_ERR=0
 
@@ -82,17 +96,17 @@ SUM_ERR=0
 function cleanup {
     rm -f "$LOCKFILE"
 }
-    # *** weblib include ***
+    # *** weblib include
 SCRIPTDIR=$(dirname $0)
 CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 . "$SCRIPTDIR/weblib.sh"
-    # *** web is listening ***
 
+    # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
-#(cat tools/initdb.sql tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.") 2>&1| tee /tmp/tmp
-(cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.") 2>&1| tee /tmp/tmp
+(cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 30 ; echo "DB updated.") 2>&1| tee /tmp/tmp
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
@@ -140,7 +154,8 @@ if [ $UPS = $UPS1 ]; then
 fi
 rem_copy_file $UPS.new $UPS.dev
 rem_copy_file ups.new ups.conf
-sleep 3
+sleep 10
+
     # *** start upsrw
 echo "start upsrw"
 rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
@@ -150,7 +165,7 @@ rem_cmd "systemctl stop nut-server"
 rem_cmd "systemctl stop nut-driver"
 rem_cmd "systemctl start nut-server"
 echo 'Wait ...' 
-sleep 10
+sleep 20
 }
 
     # *** testcase()
@@ -163,6 +178,7 @@ ERRORS=0
 SUCCESSES=0
 LASTPOW=(0 0)
 for UPS in $UPS1 $UPS2 ; do
+                       # count expected value of total power
     for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
         # set values
         NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
@@ -181,13 +197,16 @@ for UPS in $UPS1 $UPS2 ; do
                 LASTPOW[1]=$NEWVALUE
             fi
         fi
-
         TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
+                       # send restAPI request to find generated value of total power
         PAR=/metric/computed/rack_total?arg1="$RACK"'&'arg2=total_power
         RACK_TOTAL_POWER1_CONTENT=`api_get_content $PAR`
         POWER=$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+                       # synchronize format of the expected and generated values of total power
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
+                       # round both numbers and compare them
+                       # decide the test is successfull or failed
         DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
         if [ $DEL = 0 ]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
@@ -201,6 +220,7 @@ done
 }
 
     # *** results()
+                       # show number of the passed/failed sub TC's
 results() {
     SUCCESSES=$1
     ERRORS=$2
@@ -217,7 +237,7 @@ CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
     # *** check the processes running on SUT
 # TODO
 
-    # *** check the nut config files on SUTT 
+    # *** check the nut config files on SUT
 # TODO
 # upsd.conf, upssched.conf and upsmon.conf ARE PRESENT ON SUT
 rem_cmd "rm -f $CFGDIR/*.dev"
@@ -238,7 +258,7 @@ rem_copy_file nut.conf nut.conf
 rem_copy_file upsd.users upsd.users
 
     # *** create pattern .dev AND .conf files
-# pattern.dev (for <upsX.dev>) and pattern.conf (for ups.conf)
+                       # pattern.dev (for <upsX.dev>) and pattern.conf (for ups.conf)
         # * create the paterns of ups or epdu file on MS
 TYPE=$1
         # * Create "epdu" .dev pattern
