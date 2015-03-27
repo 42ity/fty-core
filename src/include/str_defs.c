@@ -11,11 +11,11 @@ const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 const char* MLM_ENDPOINT = "ipc://@/malamute";
 
 const char *AVG_STEPS[AVG_STEPS_SIZE] = {
+    "15m"
+    "30m",
+    "1h",
     "8h",
-    "16h",
-    "1d",
-    "1w",
-    "1m"
+    "24h"
 };
 
 const char *AVG_TYPES[AVG_TYPES_SIZE] = {
