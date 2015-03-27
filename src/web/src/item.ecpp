@@ -200,7 +200,7 @@ asset_manager asset_mgr;
             bool read_only = (s[0] != 'w');
             const char* text = (const char*) s+2;
 </%cpp>
-        {"<$ (char*) zhash_cursor (ext) $>":"<$ text $> ", "read_only" : <$ read_only ? "true" : "false" $> }<? i != ext_count ? "," ?>
+        {"<$ (char*) zhash_cursor (ext) $>":"<$ text $>", "read_only" : <$ read_only ? "true" : "false" $> }<? i != ext_count ? "," ?>
 %       }
     ]
 %   }
