@@ -81,7 +81,7 @@ static const std::set<std::string> EXP{"6:1:931:-1", "5:1:17:-1", "4:1:56:-1", "
 TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasurements]")
 {
     //SUCCESS
-    uint32_t id = MONITOR_ASSET_MEASURE_ID;
+    uint32_t id = SELECT_DEVICE_ID;
     std::string name;
     tntdb::Connection conn;
     REQUIRE_NOTHROW (conn = tntdb::connectCached(url.c_str()));
