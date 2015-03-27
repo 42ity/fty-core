@@ -1,6 +1,5 @@
-/* utils.h: various random helpers for C
- 
-Copyright (C) 2014 Eaton
+/* 
+Copyright (C) 2014 - 2015 Eaton
  
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -18,8 +17,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
+           Karol Hrdina <karolhrdina@eaton.com>
  
-Description: various random helpers for C
+Description: various random C and project wide helpers
 */
 
 #pragma once
@@ -44,6 +44,12 @@ const char *safe_str(const char *s);
  * a == b == NULL ->true
  * */
 bool streq(const char *a, const char *b);
+
+//! Return true if string representation of average step is supported 
+bool is_average_step_supported (const char *step);
+
+//! Return true if string representation of average type is supported 
+bool is_average_type_supported (const char *type);
 
 #ifdef __cplusplus
 }

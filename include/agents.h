@@ -39,7 +39,7 @@ BIOS_EXPORT ymsg_t *
 
 // on -1 (error) does not destroy *self_p
 BIOS_EXPORT int
-    bios_netmon_decode (ymsg_t **self_p, int *event, char *interface_name, int *ip_version, char *ip_address, uint8_t *prefix_length, char *mac_address);
+    bios_netmon_decode (ymsg_t **self_p, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address);
 
 
 BIOS_EXPORT ymsg_t *
@@ -67,7 +67,7 @@ BIOS_EXPORT ymsg_t *
                              const char *units,
                              int32_t value,
                              int32_t scale,
-                             time_t time);
+                             int64_t time);
 
 
 /**
@@ -92,7 +92,7 @@ BIOS_EXPORT int
                              char **units,
                              int32_t *value,
                              int32_t *scale,
-                             time_t *time);
+                             int64_t *time);
 
 
     
