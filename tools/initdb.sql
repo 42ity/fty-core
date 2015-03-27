@@ -476,9 +476,9 @@ FROM t_bios_measurement t1
 CREATE VIEW v_bios_measurement_lastdate AS
 SELECT max(p.timestamp) maxdate,
        p.device_id,
-       p.topic
+       p.topic_id
 FROM v_bios_measurement p
-GROUP BY p.topic, p.device_id;
+GROUP BY p.topic_id, p.device_id;
 
 CREATE VIEW v_bios_measurement_last AS
 SELECT  v.id,
@@ -491,7 +491,7 @@ SELECT  v.id,
 FROM       v_bios_measurement v
 INNER JOIN v_bios_measurement_lastdate grp 
      ON v.timestamp = grp.maxdate  AND
-        v.device_id = grp.device_id;
+        v.topic_id = grp.topic_id;
 
 CREATE VIEW v_bios_measurement_topic AS
 SELECT *
