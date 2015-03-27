@@ -101,7 +101,7 @@ values
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 1, 0, @test_topic_s_d_status_ups );
+    (NULL, "2014-11-12 09:59:59", 2, 0, @test_topic_s_d_status_ups );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
