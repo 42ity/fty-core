@@ -1368,11 +1368,11 @@ void generate_measurements (const char      *url,
                             uint32_t         max_seconds, 
                             m_msrmnt_value_t last_value)
 {
-    auto ret UNUSED_PARAM = test_insert_measurement (url, device_id, "realpower", -9,-1, max_seconds + 10);
+    auto ret UNUSED_PARAM = test_insert_measurement (url, device_id, "realpower.default" , -9,-1, max_seconds + 10);
     
     for ( int i = 1; i < GEN_MEASUREMENTS_MAX ; i++ )
-        ret = test_insert_measurement (url, device_id, "realpower", device_id + i, -1, max_seconds - i);
-    ret = test_insert_measurement (url, device_id, "realpower", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
+        ret = test_insert_measurement (url, device_id, "realpower.default", device_id + i, -1, max_seconds - i);
+    ret = test_insert_measurement (url, device_id, "realpower.default", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
 }
 
 zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id, std::string &device_name)

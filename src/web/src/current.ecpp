@@ -96,7 +96,7 @@ std::string dev;
                if ( measurements.size() != 3 )
                {
 </%cpp>
-{ "error": "internal_error - malformed result" }
+{ "error": "internal_error - malformed result (measurement)" }
 <%cpp>
                     return HTTP_INTERNAL_SERVER_ERROR;
                }
@@ -104,10 +104,10 @@ std::string dev;
                std::vector<std::string> topic_parts;
                cxxtools::split("@", name,
                                     std::back_inserter(topic_parts));
-               if ( measurements.size() != 2 )
+               if ( topic_parts.size() != 2 )
                {
 </%cpp>
-{ "error": "internal_error - malformed result" }
+{ "error": "internal_error - malformed result (topic)" }
 <%cpp>
                     return HTTP_INTERNAL_SERVER_ERROR;
                }
