@@ -1,6 +1,8 @@
 .*.swp
 .*.swo
 *.bnf
+.#*
+*~
 
 aclocal.m4
 autom4te.cache
@@ -8,7 +10,6 @@ build-aux
 config/
 config.h
 config.h.in
-config.h.in~
 confdefs.h
 config.log
 config.status
