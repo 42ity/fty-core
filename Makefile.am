@@ -222,8 +222,10 @@ libpriv_git_details_override_la_SOURCES = \
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
-				src/shared/utils.h
+				src/shared/utils.h \
+				src/include/str_defs.h
 
+#libpriv_utils_la_LIBADD = libpriv-defs.la
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -585,6 +587,14 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
+web-link-test: bios_web.la
+			@$(CXX) -o /dev/null \
+			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			${CXXTOOLS_LIBS} -ltntnet \
+			$(abs_top_builddir)/.libs/bios_web.so && \
+			echo "Everything links ok!"
+
+
 ###
 bin_PROGRAMS +=		test-web
 
@@ -791,6 +801,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
+                      src/web/src/average.cpp              \
                       src/include/git_details_override.h
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
@@ -822,7 +833,8 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-log.la libpriv-subprocess.la
+			libpriv-log.la libpriv-subprocess.la \
+			libpriv-utils.la libpriv-defs.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -855,7 +867,7 @@ dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 CLEANFILES +=		tntnet.xml tntnet.xml.example
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
-web-test-deps: tntnet.xml bios_web.la
+web-test-deps: tntnet.xml bios_web.la web-link-test
 
 ### Execute the test web-server for $BIOS REST API
 # LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
