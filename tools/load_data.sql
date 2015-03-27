@@ -67,7 +67,7 @@ insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL,
 SELECT @test_topic_s_d_temperature_default := id FROM t_bios_measurement_topic WHERE topic = "temperature.default@select_device";
 
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "W", "realpower.default@select_device" );
-SELECT @test_topic_s_d_realpower_defaulf := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@select_device";
+SELECT @test_topic_s_d_realpower_default := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@select_device";
 
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "A", "current.output.L1@select_device" );
 SELECT @test_topic_s_d_current_output_L1 := id FROM t_bios_measurement_topic WHERE topic = "current.output.L1@select_device";
@@ -121,7 +121,7 @@ values
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 1000, -4, @test_topic_s_d_realpower_defaulf );
+    (NULL, "2014-11-12 09:59:59", 1000, -4, @test_topic_s_d_realpower_default );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
