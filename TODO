@@ -133,8 +133,6 @@ if anything is needed to be done here.
 === The building infrastructure ===
 
 ==== Makefile.am =====
--> new feature: validate the built binaries and .so libraries that their
-   run-time linking dependencies can be satisfied (ldd | grep unresolved)
 -> Generate a docs/devel/index.html with the list of generated HTML and
    unprocessed text files and a link into "doxygen/" and deliver it;
    add a footer with the build information (git, host, timestamps...)
