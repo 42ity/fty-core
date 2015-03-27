@@ -91,9 +91,10 @@ void process_measurement(const std::string &topic, zmsg_t **msg) {
     if(tme < 1)
         tme = ::time(NULL);
 
+    std::string db_topic = std::string (quantity) + "@" + device_name; 
     time_t _time = (time_t) tme;
     persist::insert_into_measurement(
-            conn, topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
+            conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
