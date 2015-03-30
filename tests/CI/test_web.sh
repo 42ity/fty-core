@@ -33,10 +33,10 @@ TOTAL=0
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 NEED_BUILDSUBDIR=no determineDirs_default || true
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 
 while [ $# -gt 0 ]; do
     case "$1" in
