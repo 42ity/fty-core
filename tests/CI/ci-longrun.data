@@ -42,7 +42,7 @@ nut:ups103_2_.dev:ups.realpower:24.91:1
 nut:ups103_1_.dev:output.current:1.15:5
 nut:epdu101_2_.dev:outlet.current:0.96:10
 nut:ups103_2_.dev:output.current:1.14:7
-nut:ups103_1_.dev:battery.charge:86.00:3
+nut:ups103_1_.dev:battery.charge:86.00:600
 nut:epdu101_2_.dev:outlet.1.voltage:230.95:13
 nut:ups103_2_.dev:ups.status:BYPASS:10
 nut:ups103_1_.dev:ups.load:10.40:4
