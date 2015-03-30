@@ -30,14 +30,9 @@ set -e
 apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-CPUS=$(getconf _NPROCESSORS_ONLN) || CPUS=4
-echo "====================== autoreconf ==========================="
-autoreconf -vfi
-echo "====================== configure ============================"
-./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
+echo "==================== auto-configure ========================="
+./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "==================== make distcheck ========================="
-make -j $CPUS distcheck
-echo "========================= make =============================="
-make -j $CPUS || make
-echo "===================== make install =========================="
-make -j $CPUS install
+./autogen.sh --no-distclean distcheck
+echo "=================== make and install ========================"
+./autogen.sh --no-distclean install

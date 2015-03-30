@@ -101,7 +101,7 @@ copy_project() {
 remote_make() {
     echo "-- compiling"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && autoreconf -vfi && ./configure --prefix=\$HOME --with-saslauthd-mux=/var/run/saslauthd/mux && { make -j 4 -k || make; } && make install"
+    ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && ./autogen.sh --nodistclean --configure-flags '--prefix=\$HOME --with-saslauthd-mux=/var/run/saslauthd/mux' install"
 }
 
 remote_log_cleanup() {
