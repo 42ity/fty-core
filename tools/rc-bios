@@ -133,7 +133,7 @@ is_external_unit() {
     return 1
 }
 
-# find a proper name for unit file
+# find a proper name for a systemd unit file, if any
 # unit_name nut -> bios-driver-nut
 # unit_name db -> bios-db
 # unit_name malamute -> malamute
@@ -144,15 +144,17 @@ unit_name() {
 
     [ -n "${arg}" ] || die "unit name must not be empty"
 
-    arg=$(echo "${arg}" | sed -e 's/.service$//')
+    arg=$(basename "${arg}" .service)
 
     if is_external_unit "${arg}"; then
         echo "${arg}"
         return 0
     fi
 
-    for i in ${arg} bios-${arg} bios-driver-${arg}; do
-        if [ -r "${CHECKOUTDIR}/tools/${i}.service.in" ]; then
+    for i in ${arg} bios-${arg} bios-driver-${arg} bios-agent-${arg}; do
+        if [ -r "${CHECKOUTDIR}/tools/${i}.service.in" ] || \
+	   [ -r "/lib/systemd/system/${i}.service" ] \
+	; then
             echo "${i}"
             return 0
         fi
@@ -182,7 +184,8 @@ install_unit_sysd() {
     [ -n "${unit}" ] || \
         die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
-    subst_unit "${unit}" > /run/systemd/system/${unit}.service
+    subst_unit "${unit}" > /tmp/.${unit}.$$.service && \
+    $RUNAS mv -f /tmp/.${unit}.$$.service /run/systemd/system/${unit}.service
     my_systemctl daemon-reload
 }
 
