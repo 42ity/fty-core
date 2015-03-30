@@ -107,7 +107,7 @@ touch "$LOCKFILE"
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
     # *** weblib include
-. "$SCRIPTDIR/weblib.sh"
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
@@ -206,7 +206,7 @@ for UPS in $UPS1 $UPS2 ; do
                        # send restAPI request to find generated value of total power
         PAR=/metric/computed/rack_total?arg1="$RACK"'&'arg2=total_power
         RACK_TOTAL_POWER1_CONTENT=`api_get_content $PAR`
-        POWER=$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)
+        POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
@@ -217,7 +217,7 @@ for UPS in $UPS1 $UPS2 ; do
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
         else
-            echo "$TP does not equal expected value $TP <> $POWER - Test FAILED."
+            echo "$TP does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
             ERRORS=$(expr $ERRORS + 1)
         fi
     done
