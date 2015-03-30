@@ -34,8 +34,7 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 if [ ! -f Makefile ] ; then
-    autoreconf -vfi
-    ./configure
+    ./autogen.sh --nodistclean configure
 fi
 make V=0 web-test-deps
 make web-test >/tmp/web-test.log 2>&1 &

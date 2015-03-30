@@ -31,13 +31,10 @@ set -e
 ( which apt-get >/dev/null &&  apt-get update ) || true
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
-CPUS=$(getconf _NPROCESSORS_ONLN) || CPUS=4
-echo "======================== autoreconf ========================="
-autoreconf -vfi
-echo "======================== configure =========================="
-./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
+echo "=================== auto-configure =========================="
+./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "======================== make ==============================="
-make -j $CPUS || make
+./autogen.sh make
 if [ -x "$CPPCHECK" ] ; then
     echo -e "*:src/msg/*_msg.c\nunusedFunction:src/api/*\n" >cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
@@ -47,8 +44,8 @@ if [ -x "$CPPCHECK" ] ; then
     /bin/rm -f cppcheck.supp
 fi
 echo "======================== make check ========================="
-make -j $CPUS check
+./autogen.sh make check
 echo "======================== make dist =========================="
-make -j $CPUS dist
+./autogen.sh make dist
 echo "======================== make distcheck ====================="
-make -j $CPUS distcheck
+./autogen.sh make distcheck
