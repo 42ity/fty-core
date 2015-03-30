@@ -157,7 +157,7 @@ if anything is needed to be done here.
 -> there is a lot of duplicated logic regarding startup of components and
    needed system services (malamute, tntnet, mysql) across different scripts
    for CI and end-user runtime environments. Converge these so only one is
-   actually developed (e.g. `tools/rc`) and others call it.
+   actually developed (e.g. `tools/rc-bios`) and others call it.
 -> there is some duplication of CI scaffolding to configure and build a copy
    of the project, to initialize the database with sample data, and run the
    REST-based tests for example. Revise and converge the numerous scripts
@@ -169,6 +169,6 @@ if anything is needed to be done here.
    `LD_PRELOAD` when built with ASan support, like is currently done for the
    `bios_web.so` as part of `tntnet` during `make web-test` to support the
    third-party libraries with dynamic runtime instrumentation. If so, improve
-   the `tools/rc` script to detect (`ldd`?) and meet this need when running
-   our project's programs.
+   the `tools/rc-bios` script to detect (`ldd`?) and meet this need when
+   running our project's programs.
 
