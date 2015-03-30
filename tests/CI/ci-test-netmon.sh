@@ -39,6 +39,7 @@ LOCKFILE=/tmp/ci-test-netmon.lock
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
 if [ -f "$LOCKFILE" ]; then
     die "Script already running. Aborting."

@@ -44,7 +44,7 @@ LOCKFILE=/tmp/ci-test-trp.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-determineDirs_default || true
+NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
@@ -232,11 +232,6 @@ results() {
     echo "Pass: ${SUCCESSES}/Fails: ${ERRORS}"
 }
 
-# ***** INIT *****
-    # *** weblib include ***
-SCRIPTDIR=$(dirname $0)
-CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
-. "$SCRIPTDIR/weblib.sh"
 
 # ***** START *****
     # *** check the processes running on SUT

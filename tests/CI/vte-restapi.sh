@@ -61,8 +61,6 @@ BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
-
 RESULT=0
 # ***** SET (MANUALY) SUT_NAME - MANDATORY *****
 #SUT_PORT="2206"
