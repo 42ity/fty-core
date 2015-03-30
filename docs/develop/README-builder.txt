@@ -58,6 +58,9 @@ or automatic value for the 'install*' actions
  * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
 to the single-token parameter with values that would be passed to `configure`
 as its set of command-line parameters, should it be invoked in this run
+ * '--nodistclean' or '--disable-distclean' -- this sets 'NODISTCLEAN=yes'
+(see below) to skip the `make distclean` activity otherwise typical for
+the 'conf*' and 'build*' actions
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
@@ -338,6 +341,14 @@ being improved to counter the warnings, e.g.:
 :; ./tools/builder.sh make
 ...
 ----
+
+
+=== 'NODISTCLEAN' toggle
+The `builder.sh` script typically wraps a `make -k distclean` to
+wipe the workspace before doing a 'configure*' or a 'build*' action.
+
+For an incremental reconfigure+rebuild you can `export NODISTCLEAN=yes`
+or pass the '--nodistclean' parameter to `builder.sh`.
 
 
 === 'NOPARMAKE' toggle
