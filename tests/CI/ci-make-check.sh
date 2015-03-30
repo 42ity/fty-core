@@ -19,25 +19,18 @@
 #
 # Description: installs dependecies and compiles the project
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
 
 apt-get update
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-CPUS=$(getconf _NPROCESSORS_ONLN)
+CPUS=$(getconf _NPROCESSORS_ONLN) || CPUS=4
 echo "====================== autoreconf ==========================="
 autoreconf -vfi
 echo "====================== configure ============================"
@@ -45,6 +38,6 @@ echo "====================== configure ============================"
 echo "==================== make distcheck ========================="
 make -j $CPUS distcheck
 echo "========================= make =============================="
-make -j $CPUS
+make -j $CPUS || make
 echo "===================== make install =========================="
 make -j $CPUS install

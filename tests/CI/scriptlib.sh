@@ -1,0 +1,117 @@
+# shell include file: scriptlib.sh
+#
+# Copyright (C) 2014-2015 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# Description:
+#       Determine the directory name variables relevant for compiled
+#       workspace which is under test. Mainly for inclusion in $BIOS
+#       ./tests/CI scripts.
+#       The variable values may be set by caller or an earlier stage
+#       in script interpretation, otherwise they get defaulted here.
+
+### Store some important CLI values
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
+_SCRIPT_ARGS="$*"
+_SCRIPT_ARGC="$#"
+
+### Just a tag for pretty output below
+[ -z "$_SCRIPT_TYPE" ] && case "${_SCRIPT_NAME}" in
+    ci-*|CI-*) _SCRIPT_TYPE="Test" ;;
+    *) _SCRIPT_TYPE="Program" ;;
+esac
+
+determineDirs() {
+    ### Note: a set, but invalid, value will cause an error to the caller
+    if [ -z "$CHECKOUTDIR" ]; then
+        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
+        SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+        case "$SCRIPTDIR" in
+            */tests/CI|tests/CI)
+               CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
+               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
+               CHECKOUTDIR="" ;;
+            */tools|tools)
+               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
+               CHECKOUTDIR="" ;;
+        esac
+    fi
+    [ -z "$CHECKOUTDIR" -a -d ~/project ] && CHECKOUTDIR=~/project
+
+    [ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+    [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
+
+    export BUILDSUBDIR CHECKOUTDIR SCRIPTDIR
+
+    ### Ultimate status: if false, then the paths are non-development
+    [ -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
+    [ -d "$CHECKOUTDIR" -a -d "$BUILDSUBDIR" ] && \
+    [ -x "$BUILDSUBDIR/config.status" ]
+}
+
+### This is prefixed before ERROR, WARN, INFO tags in the logged messages
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-"
+logmsg_info() {
+    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+}
+
+logmsg_warn() {
+    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+}
+
+logmsg_error() {
+    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+}
+
+die() {
+    [ -n "$CODE" -a "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+    for LINE in "$@" ; do
+        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+    done
+    exit $CODE
+}
+
+determineDirs_default() {
+    determineDirs
+    RES=$?
+
+    [ "$NEED_CHECKOUTDIR" = no ] || \
+    if [ -n "$CHECKOUTDIR" -a -d "$CHECKOUTDIR" ]; then
+        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+    else
+        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' can not detect a CHECKOUTDIR value..." >&2
+        RES=1
+        if [ "$NEED_CHECKOUTDIR" = yes ]; then
+            exit $RES
+        fi
+    fi
+
+    [ "$NEED_BUILDSUBDIR" = no ] || \
+    if [ -n "$BUILDSUBDIR" -a -d "$BUILDSUBDIR" -a -x "$BUILDSUBDIR/config.status" ]; then
+        logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR'"
+    else
+        logmsg_error "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
+        logmsg_error "Search path checked: $CHECKOUTDIR, $PWD"
+        RES=1
+        if [ "$NEED_BUILDSUBDIR" = yes ]; then
+            exit $RES
+        fi
+    fi
+
+    return $RES
+}
+

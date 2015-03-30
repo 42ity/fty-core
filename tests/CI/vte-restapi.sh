@@ -55,21 +55,13 @@ fi
 BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
 
 # ***** SET CHECKOUTDIR *****
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 RESULT=0
 # ***** SET (MANUALY) SUT_NAME - MANDATORY *****
@@ -140,10 +132,10 @@ fi
 
 # ***** AUTHENTICATION ISSUES *****
 # check SASL is working
-echo "CI-INFO: Checking local SASL Auth Daemon"
-#testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios && \
-echo "CI-INFO: saslauthd is responsive and configured well!" || \
-echo "CI-ERROR: saslauthd is NOT responsive or not configured!" >&2
+logmsg_info "Checking remote SASL Auth Daemon"
+ssh -p $SUT_PORT $SUT_NAME "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
+  logmsg_info "saslauthd is responsive and configured well!" || \
+  logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
 # ***** FUNCTIONS *****
     # *** starting the testcases
@@ -156,9 +148,11 @@ test_web() {
     return $RESULT
 }
     # *** load db file specified in parameter
-    loaddb_file() {
+loaddb_file() {
     DB=$1
-    (cat $DB | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 20 ; echo "DB updated.")
+    (cat $DB | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql" || \
+        CODE=$? die "Failed to load $DB to remote system"
+     sleep 20 ; echo "DB updated.") || exit $?
 }
 
     # *** load default db setting
@@ -203,9 +197,9 @@ test_web_topo_l topology_location
 
 # ***** RESULTS *****
 if [ "$RESULT" = 0 ]; then
-    echo "$0: Overall result: SUCCESS"
+    logmsg_info "Overall result: SUCCESS"
 else
-    echo "$0: Overall result: FAILED ($RESULT) seek details above" >&2
+    logmsg_error "Overall result: FAILED ($RESULT) seek details above" >&2
 fi
 
 exit $RESULT

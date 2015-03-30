@@ -10,19 +10,21 @@ SQL_INIT="initdb.sql"
 SQL_LOAD="ci-DC-power-UC1.sql"
 XML_TNTNET="tntnet.xml"
 
-SCRIPTDIR=$(dirname $0)
-CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-. "$SCRIPTDIR/weblib.sh" || exit $?
+. "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
+
 # Disable intermediate failures due to CURL (there are currently too few tests
 # here to care), and the weblib infrastructure like test_it()/print_result()
 # is not used here yet anyway
 TESTWEB_CURLFAIL=no
 
-echo "Will try to run test in $CHECKOUTDIR"
-
 [ "x$INSTALLDIR" = "x" ] && INSTALLDIR=$CHECKOUTDIR/Installation
-echo "Installation directory : $INSTALLDIR"
+logmsg_info "Installation directory : $INSTALLDIR"
 
 CFGDIR=""
 for cfgd in "/etc/ups" "/etc/nut"; do
@@ -32,8 +34,7 @@ for cfgd in "/etc/ups" "/etc/nut"; do
     fi
 done
 if [ "$CFGDIR" = "" ] ; then
-    echo "NUT config dir not found" >&2
-    exit 1
+    die "NUT config dir not found"
 fi
 
 UPS1="UPS1-US477"
@@ -64,7 +65,7 @@ outlet.3.voltage: 220
 
 # Create a NUT config for 3 dummy UPS
 create_nut_config() {
-    echo "creating nut config"
+    logmsg_info "creating nut config"
     echo "MODE=standalone" > $CFGDIR/nut.conf 
 
     echo "[$UPS1]
@@ -87,27 +88,27 @@ create_ups_device $UPS2 700
 create_ups_device $UPS3 1200
 
     chown nut:root $CFGDIR/*.dev
-    echo "restart NUT server"
+    logmsg_info "restart NUT server"
     systemctl stop nut-server
     systemctl stop nut-driver
     systemctl start nut-server
-    echo "waiting for a while"
+    logmsg_info "waiting for a while"
     sleep 15
 }
 
 # drop and fill the database
 fill_database(){
     if [ -f $CHECKOUTDIR/tools/$SQL_INIT ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_INIT
+        mysql < $CHECKOUTDIR/tools/$SQL_INIT || \
+        die "Failure loading $SQL_INIT"
     else
-        echo "$SQL_INIT not found" >&2
-        exit 1
+        die "$SQL_INIT not found"
     fi
     if [ -f $CHECKOUTDIR/tools/$SQL_LOAD ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_LOAD
+        mysql < $CHECKOUTDIR/tools/$SQL_LOAD || \
+        die "Failure loading $SQL_LOAD"
     else
-        echo "$SQL_LOAD not found" >&2
-        exit 1
+        die "$SQL_LOAD not found"
     fi
 }
 
@@ -121,8 +122,7 @@ start_simple(){
     if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
         $INSTALLDIR/usr/local/bin/simple &
     else
-        echo "Can't find simple" >&2
-        exit 1
+        die "Can't find simple"
     fi
     # wait a bit
     sleep 15
@@ -141,7 +141,7 @@ start_tntnet(){
         echo "</tntnet>" >> $SCRIPTDIR/$XML_TNTNET
         tntnet -c $SCRIPTDIR/$XML_TNTNET &
     else
-        echo "$XML_TNTNET not found" >&2
+        logmsg_error "$XML_TNTNET not found"
         stop_processes
         exit 1
     fi
@@ -160,7 +160,7 @@ fill_database
 start_simple
 start_tntnet
 
-echo "starting the test"
+logmsg_info "starting the test"
 
 # Get first rack total power
 RACK_TOTAL_POWER1_CONTENT="`api_get_content '/metric/computed/rack_total?arg1=477002&arg2=total_power'`"
@@ -187,12 +187,12 @@ echo "Datacenter power :        $DATACENTER_POWER"
 stop_processes
 
 if [ "$DATACENTER_POWER" == "" ] ; then
-    echo "TEST FAILED - No Data" >&2
+    logmsg_error "TEST FAILED - No Data"
     exit 1
-elif [ $DATACENTER_POWER -eq $RACKS_TOTAL_POWER ] ; then
-    echo "TEST PASSED"
+elif [ "$DATACENTER_POWER" -eq "$RACKS_TOTAL_POWER" ] ; then
+    logmsg_info "TEST PASSED"
     exit 0
 else
-    echo "TEST FAILED" >&2
+    logmsg_error "TEST FAILED"
     exit 1
 fi

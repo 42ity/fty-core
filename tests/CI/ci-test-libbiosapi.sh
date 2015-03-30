@@ -24,37 +24,22 @@
 #   - devel tools and source code
 #
 
-
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
-if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "Search path: $CHECKOUTDIR, $PWD"
-    exit 1
-fi
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
-
-cd "${BUILDSUBDIR}" || exit $?
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+cd "${BUILDSUBDIR}" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
 
 # We don't have too many files so don't care much if the parallel make fails
 # due to resources
-MAKE_FLAGS="V=0 -j `/usr/bin/getconf _NPROCESSORS_ONLN`"
+CPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || CPUS=4
+MAKE_FLAGS="V=0 -j $CPUS"
 
 # ensure that what we test is built
-echo "CI-INFO: Ensure that we have a libbiosapi compiled..."
-make $MAKE_FLAGS sdk || make sdk || exit $?
+logmsg_info "Ensure that we have a libbiosapi compiled..."
+make $MAKE_FLAGS sdk || make sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
 # an .a static built, depending on configure flags. Both might be referenced
@@ -62,14 +47,13 @@ make $MAKE_FLAGS sdk || make sdk || exit $?
 # When rebuilding, note that both the .so and .la files should be removed.
 LIBDIR="$(dirname $(find "${BUILDSUBDIR}" -name 'libbiosapi.so' || find "${BUILDSUBDIR}" -name 'libbiosapi.a') | head -1)"
 if [ ! -d "${LIBDIR}" ]; then
-    echo "CI-ERROR: Cannot find libbiosapi under ${BUILDSUBDIR}" >&2
-    exit 1
+    die "CI-ERROR: Cannot find libbiosapi under ${BUILDSUBDIR}"
 fi
 
 # run malamute
 MALAMUTE_STARTED=no
 if pgrep malamute; then
-    echo "CI-INFO: malamute is already running!" >&2
+    logmsg_info "malamute is already running!"
     #[ -s malamute.pid ] || pidof malamute > malamute.pid
     #exit 1
 else
@@ -80,8 +64,8 @@ fi
 
 rm -f test-libbiosapi
 
-echo "CI-INFO: Try to compile and run a libbiosapi API-client..."
-echo "CC test-libbiosapi.c"
+logmsg_info "Try to compile and run a libbiosapi API-client..."
+echo "    CC test-libbiosapi.c"
 ### Note that we should not explicitly pull the other libraries that are used by API...
 #gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -lczmq -lzmq -lmlm -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
 gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
@@ -91,7 +75,7 @@ gccret=$?
 sleep 2
 
 if [ ${gccret} -eq 0 ]; then
-    echo "RUN test-libbiosapi"
+    echo "    RUN test-libbiosapi"
     LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapi
     ret=$?
 else
@@ -99,9 +83,10 @@ else
 fi
 
 retut=0
-echo "CI-INFO: Try to compile and run a libbiosapi Unit-tester..."
+logmsg_info "Try to compile and run a libbiosapi Unit-tester..."
 if make $MAKE_FLAGS test-libbiosapiut || make test-libbiosapiut ; then
-    ./test-libbiosapiut || retut=$?
+    echo "    RUN test-libbiosapiut"
+    LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapiut || retut=$?
 fi
 
 if [ x"$MALAMUTE_STARTED" = xyes ]; then
