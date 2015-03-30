@@ -48,6 +48,15 @@ trace_objfile() {
     [ -z "$target" -o ! -s "$target" ] && \
         echo "ERROR: no valid target supplied!" >&2 && return 1
 
+    _FT="`file "$target" 2>/dev/null`" || _FT=""
+    case "${_FT}" in
+        *ASCII*|*data*|*script*|*libtool*)
+            echo "ERROR: target '$target' contents seem like a non-executable file:" >&2
+            echo "    ${_FT}" >&2
+            return 1
+            ;;
+    esac
+
     shift
     libs_add="$@"
 
