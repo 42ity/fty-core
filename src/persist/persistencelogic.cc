@@ -55,7 +55,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 namespace persist {
 
-void process_measurement(const std::string &topic, zmsg_t **msg) {
+void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
     log_debug("Processing measurement");
     ymsg_t *ymsg = ymsg_decode(msg);
     if(ymsg == NULL) {
@@ -409,7 +409,7 @@ zmsg_t* netdisc_msg_process(zmsg_t** msg) {
  *          false - if message was ignored
  */
 bool
-common_msg_process(const std::string& url, const common_msg_t& msg)
+common_msg_process(UNUSED_PARAM const std::string& url, const common_msg_t& msg)
 {
     bool result = false;
 
