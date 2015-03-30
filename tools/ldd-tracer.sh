@@ -144,8 +144,10 @@ $symbols_missing"
 }
 
 usage() {
-    echo "Usage: $0 [-l 'libX.so libY.so...'] [--color|--no-color] [targetfile]"
-    echo "    -l        Singular or listed (as one token) additional libs to inspect"
+    echo "Usage: $0 [-l 'libX.so /a/libY.so...'] [-lp '.libs:/tmp/bld/.libs'] [--color|--no-color] [targetfile]"
+    echo "    -l        Singular or space-separated list (as one token) additional"
+    echo "              dynamic library and/or executable filenames to inspect"
+    echo "    -lp       Prepend the path (single or colon-separated) to LD_LIBRARY_PATH"
     echo "    --color|--no-color        Colorize the output?"
     echo "    target    The dynamically-linked program or library to inspect" \
          "(default: $target_default)"
@@ -154,6 +156,9 @@ usage() {
 while [ $# -gt 0 ]; do
     case "$1" in
         -l) libs_add="$libs_add $2"; shift ;;
+        -lp) LD_LIBRARY_PATH="$2:$LD_LIBRARY_PATH"
+            export LD_LIBRARY_PATH
+            shift ;;
         --color|--do-color) do_color=yes ;;
         --no-color) do_color=no ;;
         -h|--help) usage; exit 0;;
