@@ -25,8 +25,12 @@
 #   Must run as root (nut configuration)
 #
 
-SCRIPTDIR=$(dirname $0)
-CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
 CFGDIR=""
 NUTUSER=nut
 NUTPASSWORD=secret
@@ -41,8 +45,7 @@ nut_cfg_dir() {
         fi
     done
     if [ "$CFGDIR" = "" ] ; then
-        echo "NUT config dir not found"
-        exit 1
+        die "NUT config dir not found"
     fi
 }
 
@@ -149,11 +152,11 @@ create_nut_config() {
     create_ups_dev_file  $CFGDIR/ups103_2_.dev
 
     chown nut:root $CFGDIR/*.dev
-    echo "restart NUT server"
+    logmsg_info "restart NUT server"
     systemctl stop nut-server
     systemctl stop nut-driver
     systemctl start nut-server
-    echo "waiting for a while"
+    logmsg_info "waiting for a while"
     sleep 15
 }
 
@@ -253,24 +256,24 @@ produce_events(){
             NEWCNT=$(do_select "select count(*) from t_bios_measurement")
             if [ $NEWCNT = $MEASUREMENTS ] ; then
                 # no data flow
-                echo "ERROR: nothing appeared in measurement table since last check ($NEWCNT lines in table)"
+                logmsg_error "nothing appeared in measurement table since last check ($NEWCNT lines in table)"
             else
-                echo "OK: new measurements ($NEWCNT lines in table)"
+                logmsg_info "OK: new measurements ($NEWCNT lines in table)"
             fi
             MEASUREMENTS=$NEWCNT
             # check last 5 min data
             CNT6MIN=$(do_select "select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $(date +%s --date '6 minutes ago') )")
             if [ "$CNT6MIN" = "0" ] ; then
                 # no data flow
-                echo "ERROR: nothing appeared in measurement table in last 6 minutes"
+                logmsg_error "nothing appeared in measurement table in last 6 minutes"
             else
-                echo "OK: $CNT6MIN new measurements in last 6 minutes"
+                logmsg_info "OK: $CNT6MIN new measurements in last 6 minutes"
             fi
             # check servises
             if $SCRIPTDIR/ci-rc-bios.sh --status >/dev/null 2>&1 ; then
-                echo "OK: all services running"
+                logmsg_info "OK: all services running"
             else
-                echo "ERROR: some services are not running"
+                logmsg_error "some services are not running"
                 $SCRIPTDIR/ci-rc-bios.sh --status
             fi
             LASTCHECK=$(date +%s)
@@ -291,7 +294,7 @@ usage() {
 }
 
 ACTION=test
-SAMPLEFILE=$SCRIPTDIR/ci-longrun.data
+SAMPLEFILE="$SCRIPTDIR/ci-longrun.data"
 
 while [ "$#" -gt 0 ] ; do 
     case "$1" in
@@ -313,8 +316,7 @@ while [ "$#" -gt 0 ] ; do
 done
 
 if [ "$(id -u)" != 0 ] ; then
-    echo "ERROR: must run as root" >&2
-    exit 1
+    die "must run as root"
 fi
 
 nut_cfg_dir

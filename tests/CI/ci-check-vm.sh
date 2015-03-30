@@ -20,17 +20,11 @@
 # Description: checks files on VM, whether they are sync with local checkout.
 #              If they are not, files re copied to vitrual machine and compiled.
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
 
@@ -69,7 +63,7 @@ while [ $# -gt 0 ] ; do
             exit 1
             ;;
         *)
-            echo "Invalid switch $1"
+            logmsg_error "Invalid switch $1"
             usage
             exit 1
             ;;
@@ -77,16 +71,14 @@ while [ $# -gt 0 ] ; do
 done
 
 if [ ! "$VM" ] ; then
-    echo "Machine is not specified!"
+    logmsg_error "Machine is not specified!"
     usage
     exit 1
 fi
 
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
-
 remote_cleanup() {
     echo "-- VM cleanup"
-    ssh root@$VM -p $PORT "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
+    ssh "root@$VM" -p "$PORT" "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
 }
 
 compare_revisions() {
@@ -122,11 +114,11 @@ remote_log_cleanup() {
 #
 # taken from environment
 #
-echo "======================== BUILD PAREMETERS ==============================="
+echo "======================== BUILD PARAMETERS ==============================="
 echo "FORK:     $FORK"
 echo "BRANCH:   $BRANCH"
 echo "PLATFORM: $BUILDMACHINE"
-echo "======================== BUILD PAREMETERS ==============================="
+echo "======================== BUILD PARAMETERS ==============================="
 
 if ! compare_revisions ; then
     echo "-------------- project on $VM:$PORT need synchronization ----------------"
