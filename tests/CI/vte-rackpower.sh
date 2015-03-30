@@ -44,6 +44,8 @@ LOCKFILE=/tmp/ci-test-trp.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+# *** weblib include
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
@@ -106,8 +108,6 @@ touch "$LOCKFILE"
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
-    # *** weblib include
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
