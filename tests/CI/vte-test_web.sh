@@ -38,25 +38,20 @@ if [ $# -eq 0 ]; then
     echo "       either use ci-test-restapi.sh or specify test on a commandline"
     exit 1
 fi
+    # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
+
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+    # *** include weblib.sh
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+
     # *** set PASS and TOTAL to 0
 PASS=0
 TOTAL=0
-
-    # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-    # *** include weblib.sh
-. "`dirname $0`/weblib.sh" || exit $?
 
     # *** Set BIOS_USER,BIOS PASSWD,SUT_NAME and SUT_PORT from parameters
 while [ $# -gt 0 ]; do

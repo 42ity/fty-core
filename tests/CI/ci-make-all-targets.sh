@@ -21,22 +21,23 @@
 
 CPPCHECK=$(which cppcheck)
 
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
 ( which apt-get >/dev/null &&  apt-get update ) || true
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
-cd $CHECKOUTDIR
-
-CPUS=$(getconf _NPROCESSORS_ONLN)
+CPUS=$(getconf _NPROCESSORS_ONLN) || CPUS=4
 echo "======================== autoreconf ========================="
 autoreconf -vfi
 echo "======================== configure =========================="
 ./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
 echo "======================== make ==============================="
-make -j $CPUS
+make -j $CPUS || make
 if [ -x "$CPPCHECK" ] ; then
     echo -e "*:src/msg/*_msg.c\nunusedFunction:src/api/*\n" >cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \

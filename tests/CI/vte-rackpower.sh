@@ -40,15 +40,14 @@
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-# ***** INIT *****
-    # *** is system running?
 LOCKFILE=/tmp/ci-test-trp.lock
-if [ -f $LOCKFILE ]; then
-    echo -e "Script already running. Stopping."
-    exit 1
-fi
-    # *** lock the script with creating $LOCKFILE
-touch "$LOCKFILE"
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+
     # *** read parameters if present
 if [ $# -eq 0 ];then   # default if parameters missing
     SUT_PORT="2206"    # port used for ssh requests
@@ -96,13 +95,19 @@ SUM_ERR=0
 function cleanup {
     rm -f "$LOCKFILE"
 }
-    # *** weblib include
-SCRIPTDIR=$(dirname $0)
-CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
-. "$SCRIPTDIR/weblib.sh"
+    # *** is system running?
+if [ -f "$LOCKFILE" ]; then
+    die "Script already running. Aborting."
+fi
+
+    # *** lock the script with creating $LOCKFILE
+touch "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
+    # *** weblib include
+. "$SCRIPTDIR/weblib.sh"
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
