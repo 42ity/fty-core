@@ -152,6 +152,8 @@ if anything is needed to be done here.
 
 ==== builder.sh script ====
 -> use "builder make" from CI scripts instead of their inferior "make" calls
+-> add OPTSEQMAKE to only to a SEQMAKE if PARMAKE was done and failed;
+   make this default for dist/distcheck/check and other such targets
 
 ==== CI and RC scripts ====
 -> there is a lot of duplicated logic regarding startup of components and
