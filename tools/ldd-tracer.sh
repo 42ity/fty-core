@@ -46,12 +46,12 @@ symbols_missing=""
 trace_objfile() {
     target="$1"
     [ -z "$target" -o ! -s "$target" ] && \
-        echo "ERROR: no valid target supplied!" >&2 && return 1
+        echo "ERROR: $0: no valid target supplied ('$target')!" >&2 && return 1
 
     _FT="`file "$target" 2>/dev/null`" || _FT=""
     case "${_FT}" in
-        *ASCII*|*data*|*script*|*libtool*)
-            echo "ERROR: target '$target' contents seem like a non-executable file:" >&2
+        *\ ASCII\ *|*\ data\ *|*\ script\ *|*\ libtool\ *)
+            echo "ERROR: $0: target '$target' contents seem like a non-executable file:" >&2
             echo "    ${_FT}" >&2
             return 1
             ;;
@@ -174,7 +174,8 @@ while [ $# -gt 0 ]; do
         *)  if [ $# = 1 ]; then
                 target="$1"
             else
-                echo "Unknown param: $1"
+                echo "ERROR: $0: Unknown param: $1" >&2
+                exit 1
             fi ;;
     esac
     shift
