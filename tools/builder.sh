@@ -178,6 +178,12 @@ case "$NOSEQMAKE" in
     *)	NOSEQMAKE=no  ;;
 esac
 
+case "$NODISTCLEAN" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	NODISTCLEAN=yes ;;
+    *)	NODISTCLEAN=no  ;;
+esac
+
 case "$WARNLESS_UNUSED" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	WARNLESS_UNUSED=yes ;;
@@ -232,6 +238,10 @@ do_make() {
 do_make_dc() {
     # Wrapper for "make distclean" after which we intend to go on
     # Ensure that ./configure still exists after this, if it did exist before
+    [ "$NODISTCLEAN" = yes ] && \
+	echo "INFO: distclean action disabled by user request" && \
+	return 0
+
     REMAKE_CONFIGURE=n
     [ -s ./configure -a -x ./configure ] && REMAKE_CONFIGURE=y
 
@@ -333,7 +343,7 @@ usage() {
 	echo "		- without parameters does just a classic autogen.sh job"
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
-	echo "    [--disable-parallel-make|--disable-sequential-make] \ "
+	echo "    [--disable-parallel-make|--disable-sequential-make|--disable-distclean] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
@@ -421,6 +431,7 @@ showBuilderFlags() {
 	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only, if enabled)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
+	NODISTCLEAN toggle:	$NODISTCLEAN
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)
 	WARN_FATAL:		$WARN_FATAL"
 	[ -n "$CFLAGS" ] && echo \
@@ -470,6 +481,10 @@ while [ $# -gt 0 ]; do
 		;;
 	    -Werror|--warn-fatal)
 		WARN_FATAL=yes
+		shift
+		;;
+	    --nodistclean|--disable-distclean)
+		NODISTCLEAN=yes
 		shift
 		;;
 	    --noparmake|--disable-parallel-make)
