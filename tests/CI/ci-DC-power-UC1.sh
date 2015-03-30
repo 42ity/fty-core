@@ -16,7 +16,7 @@ XML_TNTNET="tntnet.xml"
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-. "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 
 # Disable intermediate failures due to CURL (there are currently too few tests
 # here to care), and the weblib infrastructure like test_it()/print_result()
