@@ -37,9 +37,12 @@ esac
 
 determineDirs() {
     ### Note: a set, but invalid, value will cause an error to the caller
-    if [ -z "$CHECKOUTDIR" ]; then
+    [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
         SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+
+    if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
             */tests/CI|tests/CI)
                CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
@@ -58,8 +61,8 @@ determineDirs() {
     export BUILDSUBDIR CHECKOUTDIR SCRIPTDIR
 
     ### Ultimate status: if false, then the paths are non-development
-    [ -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
-    [ -d "$CHECKOUTDIR" -a -d "$BUILDSUBDIR" ] && \
+    [ -n "$SCRIPTDIR" -a -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
+    [ -d "$SCRIPTDIR" -a -d "$CHECKOUTDIR" -a -d "$BUILDSUBDIR" ] && \
     [ -x "$BUILDSUBDIR/config.status" ]
 }
 
