@@ -1403,8 +1403,7 @@ check-dll-binfile-$(1): $(1)
 	@P="$$<"; \
 	[ -x "$(abs_top_builddir)/.libs/$$(<F)" ] && P="$(abs_top_builddir)/.libs/$$(<F)" ; \
 	[ -x "$(abs_top_builddir)/.libs/lt-$$(<F)" ] && P="$(abs_top_builddir)/.libs/lt-$$(<F)" ; \
-	LD_LIBRARY_PATH="$(abs_top_builddir)/.libs:$$$$LD_LIBRARY_PATH" \
-	    $(abs_top_srcdir)/tools/ldd-tracer.sh "$$$$P" > /dev/null && \
+	$(abs_top_srcdir)/tools/ldd-tracer.sh -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
 	echo "PASS: dynamic-link tracing '$$$$P' OK : found no undefined symbols" || \
 	( RES=$$$$?; echo "FAIL: dynamic-link tracing '$$$$P' failed ($$$$RES)"; exit $$$$RES )
 
