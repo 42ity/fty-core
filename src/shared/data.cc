@@ -1,15 +1,16 @@
 #include "defs.h"
 #include "data.h"
 #include "asset_types.h"
-#include "measure_types.h"
 #include "common_msg.h"
 #include "dbpath.h"
 #include "monitor.h"
 #include "upsstatus.h"
-
+#include <zmq.h>
+#include <czmq.h>
 #include <tnt/http.h>
 
 #include <algorithm>
+#include <string>
 #include <map>
 #include <limits.h>
 
@@ -50,62 +51,6 @@ std::string asset_manager::byte_to_type(byte type) {
             return "device";
         default:
             return "unknown";
-    }
-}
-
-std::string measures_manager::int_to_type(uint16_t i) {
-    zmsg_t *req = common_msg_encode_get_measure_type_i(i);
-    zmsg_t *rep = process_measures_meta(&req);
-    common_msg_t *dta = NULL;
-    if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
-       (common_msg_id(dta) == COMMON_MSG_RETURN_MEASURE_TYPE)) {
-        std::string ret = common_msg_mt_name(dta);
-        common_msg_destroy(&dta);
-        return ret;
-    } else {
-        zmsg_destroy(&rep);
-        common_msg_destroy(&dta);
-        return std::to_string(i);
-    }
-}
-
-std::string measures_manager::int_to_type(std::string i) {
-    errno = 0;
-    uint16_t id = strtol(i.c_str(), NULL, 10);
-    if(errno != 0) {
-        return i;
-    } else {
-        return int_to_type(id);
-    }
-}
-
-std::string measures_manager::int_to_subtype(uint16_t i, uint16_t tid) {
-    char buff[16];
-    zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
-    zmsg_t *rep = process_measures_meta(&req);
-    common_msg_t *dta = NULL;
-    if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
-       (common_msg_id(dta) == COMMON_MSG_RETURN_MEASURE_SUBTYPE)) {
-        std::string ret = common_msg_mts_name(dta);
-        common_msg_destroy(&dta);
-        return ret;
-    } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {
-        common_msg_print(dta); 
-    }
-    sprintf(buff, "%d", i);
-    zmsg_destroy(&rep);
-    common_msg_destroy(&dta);
-    return buff;
-}
-
-std::string measures_manager::int_to_subtype(std::string i, std::string t) {
-    errno = 0;
-    uint16_t id =  strtol(i.c_str(), NULL, 10);
-    uint16_t tid = strtol(t.c_str(), NULL, 10);
-    if(errno != 0) {
-        return i;
-    } else {
-        return int_to_subtype(id, tid);
     }
 }
 
@@ -151,38 +96,10 @@ static std::string s_scale(const std::string& val, int8_t scale) {
 
 }
 
-std::string measures_manager::scale(std::string val, uint16_t i, uint16_t tid) {
-    char buff[16];
-    zmsg_t *req = common_msg_encode_get_measure_subtype_i(tid, i);
-    zmsg_t *rep = process_measures_meta(&req);
-    common_msg_t *dta = NULL;
-    if((rep != NULL) && ((dta = common_msg_decode(&rep)) != NULL) &&
-       (common_msg_id(dta) == COMMON_MSG_RETURN_MEASURE_SUBTYPE)) {
-	/* The message passes an unsigned byte which we know to be
-	 * really a _signed_ 8-bit value */
-        int sc = (int8_t)common_msg_mts_scale(dta);
-
-        common_msg_destroy(&dta);
-        return s_scale(val, sc);
-    } else if((dta != NULL) && (common_msg_id(dta) == COMMON_MSG_FAIL)) {
-        common_msg_print(dta); 
-    }
-    sprintf(buff, "%d", i);
-    zmsg_destroy(&rep);
-    common_msg_destroy(&dta);
-    return val;
-}
-
-
-std::string measures_manager::scale(std::string val, std::string i, std::string t) {
-    errno = 0;
-    uint16_t id =  strtol(i.c_str(), NULL, 10);
-    uint16_t tid = strtol(t.c_str(), NULL, 10);
-    if(errno != 0) {
-        return val;
-    } else {
-        return scale(val, id, tid);
-    }
+std::string measures_manager::apply_scale(const std::string &val, const std::string &scale)
+{
+    int scale_num = std::stoi (scale, nullptr, 10);
+    return s_scale(val, scale_num);
 }
 
 std::string measures_manager::map_values(std::string name, std::string value) {

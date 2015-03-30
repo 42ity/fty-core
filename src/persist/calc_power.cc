@@ -542,7 +542,7 @@ static rack_power_t
             " WHERE"
             "   v.device_id IN (" 
                     + s_generate_in_clause(idmap) + ")"  // XXX
-            "   AND v.topic LIKE '%realpower%'"    
+            "   AND v.topic LIKE '%realpower.default%'"    
             "   AND (v.timestamp BETWEEN"
             "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))";
 

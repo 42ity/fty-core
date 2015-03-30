@@ -27,12 +27,7 @@ class measures_manager {
     public:
         std::string map_names(std::string name);
         std::string map_values(std::string name, std::string value);
-        std::string int_to_type(std::string i);
-        std::string int_to_subtype(std::string i, std::string t);
-        std::string scale(std::string val, std::string i, std::string t);
-        std::string int_to_type(uint16_t i);
-        std::string int_to_subtype(uint16_t i, uint16_t tid);
-        std::string scale(std::string val, uint16_t i, uint16_t tid);
+        std::string apply_scale(const std::string &val, const std::string &scale);
 };
 
 class ui_props_manager {

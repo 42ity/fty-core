@@ -13,7 +13,7 @@ db_reply_t
         const char        *topic,
         m_msrmnt_value_t   value,
         m_msrmnt_scale_t   scale,
-        time_t             time,
+        int64_t            time,
         const char        *units,
         const char        *device_name)
 {
@@ -21,6 +21,7 @@ db_reply_t
     db_reply_t ret = db_reply_new();
 
     if ( !units ) {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of units is not allowed";
@@ -29,9 +30,20 @@ db_reply_t
     }
     
     if ( !topic ) {
+        ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of topic is not allowed";
+        log_error("end: %s", ret.msg);
+        return ret;
+    }
+    
+    // ATTENTION: now name is taken from t_bios_discovered_device
+    if ( !device_name ) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "NULL value of device name is not allowed";
         log_error("end: %s", ret.msg);
         return ret;
     }
@@ -59,10 +71,16 @@ db_reply_t
         log_debug("[t_bios_measurement_topic]: inserted %" PRIu32 " rows ", n);
 
         st = conn.prepareCached(
-                " INSERT INTO t_bios_measurement"
-                " (timestamp, value, scale, topic_id)"
-                " SELECT FROM_UNIXTIME(:time), :value, :scale, id FROM"
-                " t_bios_measurement_topic WHERE topic=:topic AND units=:units");
+                " INSERT INTO"
+                "   t_bios_measurement"
+                "       (timestamp, value, scale, topic_id)"
+                " SELECT"
+                "   FROM_UNIXTIME(:time), :value, :scale, id"
+                " FROM"
+                "   t_bios_measurement_topic"
+                " WHERE topic=:topic AND"
+                "       units=:units"
+        );
         log_debug("[t_bios_measurement]: inserting %" PRIi32 " * 10^%" PRIi16 " %s", value, scale, units);
         ret.affected_rows = st.set("topic", topic)
                               .set("time",  time)
@@ -76,14 +94,13 @@ db_reply_t
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
     } catch(const std::exception &e) {
-        ret.status = 0;
-        ret.errtype = DB_ERR;
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg = e.what();
+        ret.msg        = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
     }
-
     LOG_END;
     return ret;
 }
@@ -91,14 +108,15 @@ db_reply_t
 db_reply <std::vector<db_msrmnt_t>>
     select_from_measurement_by_topic(
         tntdb::Connection &conn,
-        const char* topic)
+        const char        *topic)
 {   
     LOG_START;
     std::vector<db_msrmnt_t> item{};
     db_reply<std::vector<db_msrmnt_t>> ret = db_reply_new(item);
 
     if ( !topic ) {
-        ret.errtype = DB_ERR;
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg = "NULL value of topic is not allowed";
         log_error("end: %s", ret.msg);
@@ -115,7 +133,7 @@ db_reply <std::vector<db_msrmnt_t>>
         
         log_debug ("was %u rows selected", res.size());
 
-        for (auto &r : res ) {
+        for ( auto &r : res ) {
 
             db_msrmnt_t m = {0, 0, 0, 0, 0, "", ""};
 
@@ -130,31 +148,30 @@ db_reply <std::vector<db_msrmnt_t>>
             ret.item.push_back(m);
         }
         ret.status = 1;
-    
     } catch(const std::exception &e) {
-        ret.status = 0;
-        ret.errtype = DB_ERR;
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg = e.what();
+        ret.msg        = e.what();
         ret.item.clear();
         LOG_END_ABNORMAL(e);
         return ret;
     }
-
     LOG_END;
     return ret;
 }
 
 db_reply_t
-delete_from_measurement_by_id(
+    delete_from_measurement_by_id(
         tntdb::Connection &conn,
-        m_msrmnt_id_t id) {
+        m_msrmnt_id_t      id)
+{
     LOG_START;
     db_reply_t ret = db_reply_new();
     try {
         tntdb::Statement st = conn.prepareCached(
                 " DELETE FROM"
-                " t_bios_measurement "
+                "   t_bios_measurement"
                 " WHERE id = :id"
                 );
 
@@ -162,14 +179,13 @@ delete_from_measurement_by_id(
                               .execute();
         ret.status = 1;
     } catch(const std::exception &e) {
-        ret.status = 0;
-        ret.errtype = DB_ERR;
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg = e.what();
+        ret.msg        = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
     }
-
     LOG_END;
     return ret;
 }

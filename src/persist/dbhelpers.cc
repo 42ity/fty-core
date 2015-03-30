@@ -150,14 +150,15 @@ a_elmnt_id_t convert_monitor_to_asset(const char* url,
     }
     catch (const tntdb::NotFound &e){
         // apropriate asset element was not found
-        log_info("end: notfound");
+        log_warning("end: asset counterpart for the %" PRIu32 " was not found", 
+                                                discovered_device_id);
         throw bios::NotFound();
     }
     catch (const std::exception &e) {
         log_warning("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
-    log_info("end: normal");
+    log_info("end: monitor device %" PRIu32 " converted to %" PRIu32, discovered_device_id, asset_element_id);
     return asset_element_id;
 }
 

@@ -17,14 +17,18 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
-    const char* topic1 = "this.is.the.topic#1";
-    const char* topic2 = "second.sub.topic";
+    // it is supposed that topic has a predefined structure
+    // in  transport layer it can be longer than in database,
+    // because in database topic for measurements is supposed to be
+    // name_of_the_measurement@device_name
+    const char* topic1 = "this.is.complex.topic@DUMMY_DEVICE";
+    const char* topic2 = "that.is.more.complex.topic@DUMMY_DEVICE";
     const char* unit1 = "unit1";
     const char* unit2 = "unit2";
     const char* query1 = "%this%";
     const char* device_name = "DUMMY_DEVICE";
     //1.) assert empty database
-    auto ret = select_from_measurement_by_topic(conn, "%");
+    auto ret = select_from_measurement_by_topic(conn, "%DUMMY_DEVICE%");
     REQUIRE(ret.status == 1);
     REQUIRE(ret.item.size() == 0);
 
@@ -61,7 +65,7 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     }
 
     // 4.) SELECT all
-    ret = select_from_measurement_by_topic(conn, "%");
+    ret = select_from_measurement_by_topic(conn, "%DUMMY_DEVICE%");
     REQUIRE(ret.status == 1);
     REQUIRE(ret.item.size() == 3);
 

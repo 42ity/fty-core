@@ -1363,111 +1363,36 @@ common_msg_t* test_insert_measurement(const char    *url,
 }
 
 
-void generate_measurements (const char         *url, 
-                            m_dvc_id_t         device_id, 
-                            uint32_t           max_seconds, 
-                            m_msrmnt_value_t   last_value)
+void generate_measurements (const char      *url, 
+                            m_dvc_id_t       device_id, 
+                            uint32_t         max_seconds, 
+                            m_msrmnt_value_t last_value)
 {
-    auto ret UNUSED_PARAM = test_insert_measurement (url, device_id, "realpower", -9,-1, max_seconds + 10);
+    auto ret UNUSED_PARAM = test_insert_measurement (url, device_id, "realpower.default" , -9,-1, max_seconds + 10);
     
     for ( int i = 1; i < GEN_MEASUREMENTS_MAX ; i++ )
-        ret = test_insert_measurement (url, device_id, "realpower", device_id + i, -1, max_seconds - i);
-    ret = test_insert_measurement (url, device_id, "realpower", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
+        ret = test_insert_measurement (url, device_id, "realpower.default", device_id + i, -1, max_seconds - i);
+    ret = test_insert_measurement (url, device_id, "realpower.default", last_value, -1, max_seconds - GEN_MEASUREMENTS_MAX);
 }
 
-common_msg_t* insert_measurement(const char         *url, 
-                                 m_clnt_id_t        client_id, 
-                                 m_dvc_id_t         device_id, 
-                                 m_msrmnt_tp_id_t   type_id, 
-                                 m_msrmnt_sbtp_id_t subtype_id, 
-                                 m_msrmnt_value_t   value)
+zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id, std::string &device_name)
 {
-    log_info ("start");
-    assert ( client_id );    // is required
-    assert ( device_id );    // is required (if not device was measured, 
-                             // then use "dummy_monitor_device") 
-                             // TODO insert script
-    assert ( type_id );      // is required
-    assert ( subtype_id );   // is required
-
-    m_msrmnt_id_t n     = 0;     // number of rows affected.
-    m_msrmnt_id_t newid = 0;
-
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
-        tntdb::Statement st = conn.prepareCached(
-            " INSERT INTO"
-            " v_bios_client_info_measurements"
-            "   (id, id_client, id_discovered_device, id_key,"
-            "    id_subkey, value, timestamp)"
-            " VALUES"
-            "   (NULL, :clientid, :deviceid, :keytagid, :subkeytagid,"
-            "   :val, UTC_TIMESTAMP())"
-        );
-    
-        // Insert one row or nothing
-        n  = st.set("clientid", client_id).
-                set("deviceid", device_id).
-                set("keytagid", type_id).
-                set("subkeytagid", subtype_id).
-                set("val", value).
-                execute();
-        log_info ("was inserted %" PRIu64 " rows", n);
-
-        newid = conn.lastInsertId();
-    }
-    catch (const std::exception &e) {
-        log_warning ("end: abnormal with '%s'", e.what());
-        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
-    }
-    if ( n == 1 )
-    {
-        log_info ("end: normal");
-        return generate_ok (newid, NULL);
-    }
-    else
-    {
-        // TODO need to return existing ID????
-        log_info ("end: nothing was inserted");
-        return generate_db_fail (DB_ERROR_NOTHINGINSERTED, 
-                                                "nothing was inserted", NULL);
-    }
-}
-
-common_msg_t* generate_return_last_measurements (a_elmnt_id_t device_id, 
-                                                zlist_t** measurements)
-{
-    log_info ("start");
-
-    common_msg_t* resultmsg = common_msg_new 
-                                    (COMMON_MSG_RETURN_LAST_MEASUREMENTS);
-    common_msg_set_device_id (resultmsg, device_id);
-    common_msg_set_measurements (resultmsg, measurements);
-    
-    zlist_destroy (measurements);
-    log_info ("end: normal");
-    return resultmsg;
-}
-
-zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id, 
-                                  std::string& name)
-{
-    log_info ("start");
+    LOG_START;
+    log_debug ("device_id (monitor) = %" PRIu32, device_id);
     assert ( device_id ); // is required
     
     zlist_t* measurements = zlist_new();
     zlist_autofree(measurements);
 
     try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-
         tntdb::Statement st = conn.prepareCached(
-            " SELECT "
-            " id_key, value, id_subkey, scale, name"
+            " SELECT"
+            "   v.value, v.scale, v.topic, v1.name"
             " FROM"
-            " v_bios_client_info_measurements_last"
-            " WHERE id_discovered_device=:deviceid"
+            "   v_bios_measurement_last v,"
+            "   t_bios_discovered_device v1"
+            " WHERE v.device_id = :deviceid AND"
+            "       v1.id_discovered_device = :deviceid"
         );
     
         tntdb::Result result = st.set("deviceid", device_id).
@@ -1477,43 +1402,37 @@ zlist_t* select_last_measurements(const char* url, m_dvc_id_t device_id,
 
         // Go through the selected measurements
         for ( auto &row: result )
-        {
-            // type_id, required
-            m_msrmnt_tp_id_t type_id = 0;
-            row[0].get(type_id);
-            assert ( type_id );         // database is corrupted
-            
+        {          
             // value, required
             m_msrmnt_value_t value = 0;
-            bool isNotNull = row[1].get(value);
+            bool isNotNull = row[0].get(value);
             assert ( isNotNull );       // database is corrupted
-
-            // subtype_id, required
-            m_msrmnt_sbtp_id_t subtype_id = 0;
-            row[2].get(subtype_id);
-            assert ( subtype_id );      // database is corrupted
 
             // scale
             m_msrmnt_scale_t scale = 0;
-            isNotNull = row[3].get(scale);
+            isNotNull = row[1].get(scale);
             assert ( isNotNull );           // database is corrupted
 
-            // name
-            row[4].get(name);
-            assert ( !name.empty() );   // database is corrupted
+            // topic
+            std::string topic = "";
+            row[2].get(topic);
+            assert ( !topic.empty() );   // database is corrupted
             
-            zlist_push (measurements, (char *)(std::to_string (type_id) + ":" +
-                             std::to_string (subtype_id) + ":" + 
+            // TODO this field would be updated a lot of time with the same value
+            row[3].get (device_name);
+            
+            zlist_push (measurements, (char *)( 
                              std::to_string (value) + ":" +
-                             std::to_string (scale)).c_str());
+                             std::to_string (scale) + ":" + topic
+                             ).c_str());
         }
     }
     catch (const std::exception &e) {
         zlist_destroy (&measurements);
-        log_warning ("end: abnormal with '%s'", e.what());
+        LOG_END_ABNORMAL(e);
         return NULL;
     }
-    log_info ("end: normal");
+    LOG_END;
     return measurements;
 }
 
@@ -1530,6 +1449,9 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                      "Invalid element_id for device requested" , NULL);
     }
+
+    // TODO it in better way
+    tntdb::Connection conn = tntdb::connectCached(url);
 
     m_dvc_id_t device_id_monitor = 0;
     try{
@@ -1555,9 +1477,10 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
     }
-    std::string device_name = "";
+    std::string device_name = "NOT IMPLEMENTED";
     zlist_t* last_measurements = 
-            select_last_measurements(url, device_id_monitor, device_name);
+            select_last_measurements(conn, device_id_monitor, device_name);
+    // TODO take care about it
     if ( last_measurements == NULL )
     {
         log_warning ("end: abnormal");
