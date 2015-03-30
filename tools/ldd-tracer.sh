@@ -153,18 +153,21 @@ $symbols_missing"
 }
 
 usage() {
-    echo "Usage: $0 [-l 'libX.so /a/libY.so...'] [-lp '.libs:/tmp/bld/.libs'] [--color|--no-color] [targetfile]"
-    echo "    -l        Singular or space-separated list (as one token) additional"
+    echo "Usage: $0 [--color|--no-color]"
+    echo "          [-l 'libX.so /a/libY.so...'] [-lp '.libs:/tmp/bld/.libs']"
+    echo "          [targetfile]"
+    echo "    -l        Singular, colon- or space-separated list (as one token) additional"
     echo "              dynamic library and/or executable filenames to inspect"
     echo "    -lp       Prepend the path (single or colon-separated) to LD_LIBRARY_PATH"
     echo "    --color|--no-color        Colorize the output?"
-    echo "    target    The dynamically-linked program or library to inspect" \
-         "(default: $target_default)"
+    echo "    target    The dynamically-linked program or library to inspect"
+    echo "              (default: $target_default)"
 }
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -l) libs_add="$libs_add $2"; shift ;;
+        -l) libs_add="$libs_add `echo "$2" | sed 's,:, ,g'`"
+            shift ;;
         -lp) LD_LIBRARY_PATH="$2:$LD_LIBRARY_PATH"
             export LD_LIBRARY_PATH
             shift ;;
