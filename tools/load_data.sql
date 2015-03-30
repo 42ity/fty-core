@@ -40,8 +40,113 @@ select @client_nut := id_client from t_bios_client where name = 'NUT';
 
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
+
 SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "select_device";
 SELECT @monitor_asset_measure := id_discovered_device FROM t_bios_discovered_device WHERE name = "monitor_asset_measure";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @monitor_asset_measure, "W", "realpower.outlet.2@monitor_asset_measure" );
+SELECT @test_topic_m_a_m_realpower_outlet_2 := id FROM t_bios_measurement_topic WHERE topic = "realpower.outlet.2@monitor_asset_measure";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @monitor_asset_measure, "W", "realpower.outlet.1@monitor_asset_measure" );
+SELECT @test_topic_m_a_m_realpower_outlet_1 := id FROM t_bios_measurement_topic WHERE topic = "realpower.outlet.1@monitor_asset_measure";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @monitor_asset_measure, "W", "realpower.outlet@monitor_asset_measure" );
+SELECT @test_topic_m_a_m_realpower_outlet  := id FROM t_bios_measurement_topic WHERE topic = "realpower.outlet@monitor_asset_measure";
+
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "", "status.ups@select_device" );
+SELECT @test_topic_s_d_status_ups := id FROM t_bios_measurement_topic WHERE topic = "status.ups@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "charge.battery@select_device" );
+SELECT @test_topic_s_d_charge_battery := id FROM t_bios_measurement_topic WHERE topic = "charge.battery@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "load.default@select_device" );
+SELECT @test_topic_s_d_load_default := id FROM t_bios_measurement_topic WHERE topic = "load.default@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "C", "temperature.default@select_device" );
+SELECT @test_topic_s_d_temperature_default := id FROM t_bios_measurement_topic WHERE topic = "temperature.default@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "W", "realpower.default@select_device" );
+SELECT @test_topic_s_d_realpower_default := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "A", "current.output.L1@select_device" );
+SELECT @test_topic_s_d_current_output_L1 := id FROM t_bios_measurement_topic WHERE topic = "current.output.L1@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "A", "current.output@select_device" );
+SELECT @test_topic_s_d_current_output := id FROM t_bios_measurement_topic WHERE topic = "current.output@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "V", "voltage.output.L1-N@select_device" );
+SELECT @test_topic_s_d_voltage_otput_L1_N := id FROM t_bios_measurement_topic WHERE topic = "voltage.output.L1-N@select_device";
+
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "V", "voltage.output@select_device" );
+SELECT @test_topic_s_d_voltage_output := id FROM t_bios_measurement_topic WHERE topic = "voltage.output@select_device";
+
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:59", 50, 0, @test_topic_m_a_m_realpower_outlet_2 );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 2405, -1, @test_topic_m_a_m_realpower_outlet_1 );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:57", 2405, -1, @test_topic_m_a_m_realpower_outlet );
+
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:59", 2, 0, @test_topic_s_d_status_ups );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 9310, -2, @test_topic_s_d_charge_battery );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:57", 17, -1, @test_topic_s_d_load_default );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:59", 56, -1, @test_topic_s_d_temperature_default );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:59", 1000, -4, @test_topic_s_d_realpower_default );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 12, -1, @test_topic_s_d_current_output_L1 );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:57", 31, -1, @test_topic_s_d_current_output );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 10, -2, @test_topic_s_d_voltage_otput_L1_N );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:57", 3, -1, @test_topic_s_d_voltage_output );
+
+/*
+-{"current":[{"id":"6","name":"monitor_asset_measure","realpower.outlet.2":50.0,"realpower.outlet.1":240.5,"realpower.outlet":240.5}]}
+-{"current":[{"id":"7","name":"select_device","status.ups":"TRIM","charge.battery":93.1,"load.default":1.7,"temperature.default":5.6,"realpower.default":0.1,"current.output.L1":1.2,"current.output":3.1,"voltage.output.L1-N":0.1,"voltage.output":0.3}]}
+*/
 
 /* Total rack Power tests */
 INSERT INTO t_bios_discovered_device (name, id_device_type) values ("test_rc_pwr_epdu1", @device_epdu);
@@ -304,206 +409,6 @@ values
 
 INSERT INTO t_bios_discovered_device (id_device_type, name) values (@device_unclassified, "measures");
 SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "measures";
-
-/* voltage.output */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    1,
-    1,
-    32,
-    "2014-11-12 09:45:59",
-    @client_nut,
-    @select_device
-);
-
-/* voltage.output */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    1,
-    1,
-    3,
-    "2014-11-12 09:46:59",
-    @client_nut,
-    @select_device
-);
-
-/* current.output */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    2,
-    1,
-    31,
-    "2014-11-12 09:47:59",
-    @client_nut,
-    @select_device
-);
-
-/* current.output.L1 */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    2,
-    2,
-    12,
-    "2014-11-12 09:48:59",
-    @client_nut,
-    @select_device
-);
-
-/* voltage.output.L1-N */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    1,
-    2,
-    1,
-    "2014-11-12 09:49:59",
-    @client_nut,
-    @select_device
-);
-
-/* realpower.output */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    1,
-    1,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @select_device
-);
-
-/* status.ups */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    7,
-    1,
-    2,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @select_device
-);
-
-/* temperature.default */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    4,
-    1,
-    56,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @select_device
-);
-
-/* load.ups */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    5,
-    1,
-    17,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @select_device
-);
-
-/* charge.battery */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    6,
-    1,
-    931,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @select_device
-);
-
-/* epdu */
-
-/* realpower.outlet */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    5,
-    2405,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @monitor_asset_measure
-);
-
-/* realpower.outlet.1 */
-SELECT @realpower_outlet_1 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.1";
-SELECT @realpower_outlet_2 := id FROM t_bios_measurement_subtypes WHERE name = "outlet.2";
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    @realpower_outlet_1,
-    2405,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @monitor_asset_measure
-);
-
-/* realpower.outlet.2 */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    @realpower_outlet_2,
-    500,
-    "2014-11-12 09:59:59",
-    @client_nut,
-    @monitor_asset_measure
-);
-
-/* ### test total rack power ### */
-/* realpower.outlet */
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    5,
-    2405,
-    UTC_TIMESTAMP(),
-    @client_nut,
-    @test_rc_pwr_epdu1
-);
-
-insert into t_bios_measurements
-    (id_type, id_subtype, value, timestamp, id_client, id_device)
-values
-(
-    3,
-    5,
-    2405,
-    DATE_SUB(UTC_TIMESTAMP(), INTERVAL 60 MINUTE),
-    @client_nut,
-    @test_rc_pwr_epdu2
-);
-
 
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
 INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
