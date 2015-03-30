@@ -40,12 +40,10 @@ echo "======================== update ============================="
 apt-get update >/dev/null 2>&1
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
 
-echo "====================== autoreconf ==========================="
-autoreconf -vfi >/dev/null 2>&1
-echo "====================== configure ============================"
-./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux >/dev/null 2>&1
-echo "========================= make =============================="
-make 2>&1 | tee make.log
+echo "==================== auto-configure ========================="
+./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
+echo "====================== auto-make ============================"
+./autogen.sh make 2>&1 | tee make.log
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
