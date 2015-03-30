@@ -66,13 +66,13 @@ warn() {
 }
 
 usage() {
-    echo "Usage: rc [--kill] names [of [processes [to [start]]]]" >&2
+    echo "Usage: rc-bios [--kill] names [of [processes [to [start]]]]" >&2
     if can_use_sysd; then
         echo "       systemd activation WILL BE used" >&2
     else
         echo "       systemd activation WILL NOT BE used" >&2
     fi
-    echo "       tool supports short names, so rc nut == rc bios-driver-nut" >&2
+    echo "       tool supports short names, so rc-bios nut == rc-bios bios-driver-nut" >&2
     exit 1
 }
 
