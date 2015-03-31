@@ -140,9 +140,9 @@ ssh -p $SUT_PORT $SUT_NAME "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s b
 test_web() {
     echo "============================================================"
     /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-    -s $SUT_NAME -o $SUT_PORT "$@"
+        -s $SUT_NAME -o $SUT_PORT "$@"
     RESULT=$?
-    echo "============================================================"
+    echo "==== RESULT: ($RESULT) ==========================================="
     return $RESULT
 }
     # *** load db file specified in parameter
@@ -150,7 +150,8 @@ loaddb_file() {
     DB=$1
     (cat $DB | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql" || \
         CODE=$? die "Failed to load $DB to remote system"
-     sleep 20 ; echo "DB updated.") || exit $?
+     sleep 20 ; echo "DB updated.") || return $?
+    return 0
 }
 
     # *** load default db setting
@@ -184,20 +185,22 @@ test_web_topo_l() {
 # ***** PERFORM THE TESTCASES *****
 set +e
     # *** start default admin network(s) TC's
+
+RESULT_OVERALL=0
 # admin_network needs a clean state of database, otherwise it does not work
-test_web_default admin_networks admin_network
+test_web_default admin_networks admin_network || RESULT_OVERALL=$?
     # *** start the other default TC's instead of sysinfo
-test_web_default -topology -admin_network -admin_networks -sysinfo
+test_web_default -topology -admin_network -admin_networks -sysinfo || RESULT_OVERALL=$?
     # *** start power topology TC's
-test_web_topo_p topology_power
+test_web_topo_p topology_power || RESULT_OVERALL=$?
     # *** start location topology TC's
-test_web_topo_l topology_location
+test_web_topo_l topology_location || RESULT_OVERALL=$?
 
 # ***** RESULTS *****
-if [ "$RESULT" = 0 ]; then
+if [ "$RESULT_OVERALL" = 0 ]; then
     logmsg_info "Overall result: SUCCESS"
 else
-    logmsg_error "Overall result: FAILED ($RESULT) seek details above" >&2
+    logmsg_error "Overall result: FAILED ($RESULT_OVERALL) seek details above" >&2
 fi
 
-exit $RESULT
+exit $RESULT_OVERALL
