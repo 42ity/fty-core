@@ -262,7 +262,7 @@ do_make_dc() {
     # If there were some dependencies like Makefile.in or automake scripts
     # this also ensures they exist again
     if [ x"$REMAKE_CONFIGURE" = xy ]; then
-        verb_run ./autogen.sh || exit
+	verb_run ./autogen.sh || exit
 	[ -s ./configure -a -x ./configure ] || exit
     fi
 
@@ -272,6 +272,10 @@ do_make_dc() {
 
 do_build() {
 	MRES=255
+
+	MRES_P="SKIPPED"
+	MRES_S="SKIPPED"
+
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
@@ -282,25 +286,29 @@ do_build() {
 		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@"
 		    MRES=$? ;;
 	    esac
-            if [ "$MRES" = 0 -a "$OPTSEQMAKE" = yes ]; then
-                echo "=== SEQMAKE disabled by user request as optional" \
-                    "(only required if PARMAKE failed)"
-                return $MRES
-            fi
+	    MRES_P="$MRES"
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
 
+	if [ "$MRES_P" = 0 -a "$OPTSEQMAKE" = yes ]; then
+	    echo "=== SEQMAKE disabled by user request as optional" \
+		"(only required if PARMAKE failed)"
+	else
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
-	if [ x"$NOSEQMAKE" != xyes ]; then 
-	    echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
-	    do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
-	    MRES=$?
-	else
-	    echo "=== SEQMAKE disabled by user request"
+	    if [ x"$NOSEQMAKE" != xyes ]; then 
+		echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
+		do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
+		MRES=$?
+		MRES_S="$MRES"
+	    else
+		echo "=== SEQMAKE disabled by user request"
+	    fi
 	fi
+
+	echo "=== make '$@' results: PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
 
 	return $MRES
 }
@@ -358,7 +366,7 @@ usage() {
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
 	echo "    [--disable-parallel-make|--disable-sequential-make|--disable-distclean] \ "
-        echo "    [--optional-sequential-make [yes|no|auto] ] \ "
+	echo "    [--optional-sequential-make [yes|no|auto] ] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
@@ -367,7 +375,7 @@ usage() {
 	echo "      | make-samedir | make-subdir } [maketargets...]"
 	echo ""
 	echo "Usage: $0 [--debug-makefile] \ "
-	echo "           { build*|install*|make*|conf* } [maketargets...]"
+	echo "	   { build*|install*|make*|conf* } [maketargets...]"
 	echo ""
 	echo "These modes (re-)create the configure script and optionally either just"
 	echo "rebuild, or rebuild and install into a DESTDIR, or make the requested"
@@ -376,9 +384,9 @@ usage() {
 	echo "pre-build step with 'export NOPARMAKE=Y' or '--noparmake' flag, while the"
 	echo "'--debug-makefile' flag quickly enables several options at once, including"
 	echo "verbosity, -Werror, and enforced sequential builds to trace make failures."
-        echo "The '--optional-sequential-make' (silent default: 'auto'; implicit value if"
-        echo "only the flag was specified: 'yes') skips a seqmake if parmake succeeded;"
-        echo "where 'auto' is like 'yes' only for some tasks like check or dist."
+	echo "The '--optional-sequential-make' (silent default: 'auto'; implicit value if"
+	echo "only the flag was specified: 'yes') skips a seqmake if parmake succeeded;"
+	echo "where 'auto' is like 'yes' only for some tasks like check or dist."
 	echo ""
 	echo "Some special uses without further parameters (--options above are accepted):"
 	echo "Usage: $0 distcheck [<list of configure flags>]"
@@ -407,11 +415,11 @@ showGitFlags() {
     _srcdir_abs="$CHECKOUTDIR"
 
     if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
-        PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s`"			&& HAVE_PACKAGE_GIT=1
     fi 2>/dev/null
 
@@ -506,18 +514,18 @@ while [ $# -gt 0 ]; do
 		NODISTCLEAN=yes
 		shift
 		;;
-            --optseqmake|--optional-sequential-make)
-                case "$2" in
-                    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
-                        OPTSEQMAKE=yes ; shift ;;
-                    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
-                        OPTSEQMAKE=no ; shift ;;
-                    [Aa][Uu][Tt][Oo])
-                        OPTSEQMAKE=auto ; shift ;;
-                    *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
-                esac
-                shift
-                ;;
+	    --optseqmake|--optional-sequential-make)
+		case "$2" in
+		    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+			OPTSEQMAKE=yes ; shift ;;
+		    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+			OPTSEQMAKE=no ; shift ;;
+		    [Aa][Uu][Tt][Oo])
+			OPTSEQMAKE=auto ; shift ;;
+		    *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
+		esac
+		shift
+		;;
 	    --noparmake|--disable-parallel-make|--no-parmake)
 		NOPARMAKE=yes
 		shift
@@ -574,7 +582,7 @@ while [ $# -gt 0 ]; do
 		# linear output
 		NOPARMAKE=no
 		NPARMAKES=1
-                OPTSEQMAKE=no
+		OPTSEQMAKE=no
 		shift
 		;;
 	    *)	break ;;
@@ -591,9 +599,9 @@ done
 
 [ "$OPTSEQMAKE" = auto ] && case "$*" in
     *check*|*test*|*dist*|*conf*|*clean*)
-        echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen actions and/or targets: $*"
-        OPTSEQMAKE=yes
-        ;;
+	echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen actions and/or targets: $*"
+	OPTSEQMAKE=yes
+	;;
 esac
 
 case "$1" in
