@@ -1,5 +1,6 @@
 #include "malamute.h"
 #include "monitor.h"
+#include "ymsg.h"
 #include "bios_agent.h"
 #include "persistencelogic.h"
 #include "dbpath.h"
@@ -44,19 +45,51 @@ int main (int argc, char *argv []) {
         log_info ("Command is '%s'", mlm_client_command(client));
         // Mailbox deliver is direct message
         if(streq (mlm_client_command(client), "MAILBOX DELIVER")) {
-            // Verify it is for us
-            if(!streq(mlm_client_subject(client), "persistence")) {
-                log_warning("Got direct message with wrong subject, discarding!\n");
-                continue;
-            }
-
-            zmsg_t *rep = persist::process_message(&msg);
-            if(rep != NULL) {
-                // Send a reply back
+            if(is_ymsg(msg)) {
+                ymsg_t *in = ymsg_decode(&msg);
+                if(ymsg_id(in) != YMSG_SEND) {
+                    log_warning("Got REPLY ymsg, that looks weird, discarding!\n");
+                    ymsg_destroy(&in);
+                    continue;
+                }
+                ymsg_t *out = ymsg_new(YMSG_REPLY);
+                char* out_subj = NULL;
+                persist::process_ymsg(out, &out_subj, in, mlm_client_subject(client));
+                if(out_subj == NULL) {
+                    ymsg_destroy(&in);
+                    ymsg_destroy(&out);
+                    continue;
+                }
+                ymsg_set_version(out, ymsg_version(in));
+                ymsg_set_seq(out, ymsg_seq(in));
+                ymsg_set_rep(out, ymsg_seq(in));
+                if(ymsg_is_repeat(in)) { // default is not to repeat
+                    zchunk_t *chunk = ymsg_get_request(in);
+                    ymsg_set_request(out, &chunk);
+                }
+                zmsg_t *out_z = ymsg_encode(&out);
+                if(out_z != NULL)
                 mlm_client_sendto(client, (char*)mlm_client_sender(client),
-                                        "persistence", NULL, 0, &rep);
-            } else
-                continue;
+                                          out_subj, NULL, 0, &out_z);
+                ymsg_destroy(&in);
+                ymsg_destroy(&out);
+                zmsg_destroy(&out_z);
+                free(out_subj);
+            } else {
+                // Verify it is for us
+                if(!streq(mlm_client_subject(client), "persistence")) {
+                    log_warning("Got direct message with wrong subject, discarding!\n");
+                    continue;
+                }
+
+                zmsg_t *rep = persist::process_message(&msg);
+                if(rep != NULL) {
+                    // Send a reply back
+                    mlm_client_sendto(client, (char*)mlm_client_sender(client),
+                                            "persistence", NULL, 0, &rep);
+                } else
+                    continue;
+            }
         // Other option is stream aka publish subscribe
         } else {
             // New measurements publish

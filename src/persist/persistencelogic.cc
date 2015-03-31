@@ -43,6 +43,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "cidr.h"
 #include "persistence.h"
 #include "persistencelogic.h"
+#include "measurement_getter.h"
 #include "monitor.h"
 #include "log.h"
 #include "dbpath.h"
@@ -743,12 +744,24 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
 }
 
 /**
- * \brief Processes message of type asset_msg_t
+ * \brief Processes message of type ymsg_t
  *
- * Broken down processing of generic database zmsg_t, this time asset message
- * case.
+ * Processing of generic ymsg_t and breaking it into particular processing
+ * functions for ymsg.
  */
-// Initial routing of messages
+void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj) {
+    if(streq(in_subj, "get_measurements")) {
+        get_measurements(out, out_subj, in, in_subj);
+        return;
+    }
+}
+
+/**
+ * \brief Initial routing of messages
+ *
+ * Processing of generic zmsg_t, breaking it into particular processing
+ * functions.
+ */
 zmsg_t* process_message(zmsg_t** msg) {
     if((msg == NULL) || (*msg == NULL)) return NULL;
     if(is_common_msg(*msg)) {
