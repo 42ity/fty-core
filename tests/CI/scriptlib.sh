@@ -35,6 +35,13 @@ _SCRIPT_ARGC="$#"
     *) _SCRIPT_TYPE="Program" ;;
 esac
 
+### Set the default language (e.g. for CI apt-get to stop complaining)
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
 determineDirs() {
     ### Note: a set, but invalid, value will cause an error to the caller
     [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
