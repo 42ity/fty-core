@@ -29,6 +29,11 @@
 #   i.e. as "./tools/builder.sh" or, for simplicity, by passing its
 #   supported command-line parameters to the main "autogen.sh" script.
 
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+export LANG LANGUAGE LC_ALL
+
 # Some of our CI-scripts can define the CHECKOUTDIR variable
 # Otherwise we define it ourselves to use below
 if [ x"$CHECKOUTDIR" = x ]; then
