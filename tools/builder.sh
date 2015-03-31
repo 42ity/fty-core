@@ -502,7 +502,7 @@ while [ $# -gt 0 ]; do
 		WARN_FATAL=yes
 		shift
 		;;
-	    --nodistclean|--disable-distclean)
+	    --nodistclean|--disable-distclean|--no-distclean)
 		NODISTCLEAN=yes
 		shift
 		;;
@@ -517,7 +517,7 @@ while [ $# -gt 0 ]; do
                     *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
                 esac
                 ;;
-	    --noparmake|--disable-parallel-make)
+	    --noparmake|--disable-parallel-make|--no-parmake)
 		NOPARMAKE=yes
 		shift
 		;;
@@ -525,7 +525,7 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		shift
 		;;
-	    --noseqmake|--disable-sequential-make)
+	    --noseqmake|--disable-sequential-make|--no-seqmake)
 		NOSEQMAKE=yes
 		shift
 		;;
