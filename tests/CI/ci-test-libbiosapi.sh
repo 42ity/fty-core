@@ -29,17 +29,12 @@
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-cd "${BUILDSUBDIR}" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
-
-# We don't have too many files so don't care much if the parallel make fails
-# due to resources
-CPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || CPUS=4
-MAKE_FLAGS="V=0 -j $CPUS"
 
 # ensure that what we test is built
 logmsg_info "Ensure that we have a libbiosapi compiled..."
-make $MAKE_FLAGS sdk || make sdk || CODE=$? die "Failed to make sdk"
+./autogen.sh make sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
 # an .a static built, depending on configure flags. Both might be referenced
@@ -84,7 +79,7 @@ fi
 
 retut=0
 logmsg_info "Try to compile and run a libbiosapi Unit-tester..."
-if make $MAKE_FLAGS test-libbiosapiut || make test-libbiosapiut ; then
+if ./autogen.sh make test-libbiosapiut ; then
     echo "    RUN test-libbiosapiut"
     LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapiut || retut=$?
 fi

@@ -150,9 +150,6 @@ if anything is needed to be done here.
 -> Thread Sanitizer builds currently do not work; possibly some compiler
    flags are in conflict. Research and fix.
 
-==== builder.sh script ====
--> use "builder make" from CI scripts instead of their inferior "make" calls
-
 ==== CI and RC scripts ====
 -> there is a lot of duplicated logic regarding startup of components and
    needed system services (malamute, tntnet, mysql) across different scripts
