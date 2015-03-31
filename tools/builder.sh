@@ -308,7 +308,7 @@ do_build() {
 buildSamedir() {
 	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS && \
-	{ do_make -k clean; do_build "$@"; }
+	{ do_make_dc -k clean; do_build "$@"; }
 }
 
 buildSubdir() {
