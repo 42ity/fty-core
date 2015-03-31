@@ -24,9 +24,10 @@
 #   NOTE: It expects to be run in the root of the project directory
 #   (probably the checkout directory, unless you use strange set-ups).
 
-command -v libtool >/dev/null 2>&1
+command -v libtool >/dev/null 2>&1 || command -v libtoolize >/dev/null 2>&1
 if  [ $? -ne 0 ]; then
-    echo "autogen.sh: error: could not find libtool.  libtool is required to run autogen.sh." 1>&2
+    echo "autogen.sh: error: could not find libtool nor libtoolize." 1>&2
+    echo "ERROR: libtool(ize) is required to run autogen.sh." 1>&2
     exit 1
 fi
 
