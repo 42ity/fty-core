@@ -178,6 +178,15 @@ case "$NOSEQMAKE" in
     *)	NOSEQMAKE=no  ;;
 esac
 
+case "$OPTSEQMAKE" in
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+	OPTSEQMAKE=no   ;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	OPTSEQMAKE=yes  ;;
+    *)	OPTSEQMAKE=auto ;;
+	# By default, don't require seqmake for certain targets
+esac
+
 case "$NODISTCLEAN" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	NODISTCLEAN=yes ;;
@@ -272,7 +281,12 @@ do_build() {
 		*)
 		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@"
 		    MRES=$? ;;
-		esac
+	    esac
+            if [ "$MRES" = 0 -a "$OPTSEQMAKE" = yes ]; then
+                echo "=== SEQMAKE disabled by user request as optional" \
+                    "(only required if PARMAKE failed)"
+                return $MRES
+            fi
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
@@ -344,6 +358,7 @@ usage() {
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
 	echo "    [--disable-parallel-make|--disable-sequential-make|--disable-distclean] \ "
+        echo "    [--optional-sequential-make [yes|no|auto] ] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
@@ -361,6 +376,9 @@ usage() {
 	echo "pre-build step with 'export NOPARMAKE=Y' or '--noparmake' flag, while the"
 	echo "'--debug-makefile' flag quickly enables several options at once, including"
 	echo "verbosity, -Werror, and enforced sequential builds to trace make failures."
+        echo "The '--optional-sequential-make' (silent default: 'auto'; implicit value if"
+        echo "only the flag was specified: 'yes') skips a seqmake if parmake succeeded;"
+        echo "where 'auto' is like 'yes' only for some tasks like check or dist."
 	echo ""
 	echo "Some special uses without further parameters (--options above are accepted):"
 	echo "Usage: $0 distcheck [<list of configure flags>]"
@@ -428,6 +446,7 @@ showBuilderFlags() {
 
 	echo \
 "	NOSEQMAKE toggle:	$NOSEQMAKE	(* 'yes' == parallel only, if enabled)
+	OPTSEQMAKE toggle:	$OPTSEQMAKE
 	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only, if enabled)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
@@ -487,6 +506,17 @@ while [ $# -gt 0 ]; do
 		NODISTCLEAN=yes
 		shift
 		;;
+            --optseqmake|--optional-sequential-make)
+                case "$2" in
+                    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+                        OPTSEQMAKE=yes ; shift ;;
+                    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+                        OPTSEQMAKE=no ; shift ;;
+                    [Aa][Uu][Tt][Oo])
+                        OPTSEQMAKE=auto ; shift ;;
+                    *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
+                esac
+                ;;
 	    --noparmake|--disable-parallel-make)
 		NOPARMAKE=yes
 		shift
@@ -543,6 +573,7 @@ while [ $# -gt 0 ]; do
 		# linear output
 		NOPARMAKE=no
 		NPARMAKES=1
+                OPTSEQMAKE=no
 		shift
 		;;
 	    *)	break ;;
@@ -556,6 +587,13 @@ done
 ### This is the last flag-reaction in the stack of such
 [ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
 [ x"$SHOW_REPOSITORY_METADATA_GIT" = xyes ] && showGitFlags
+
+[ "$OPTSEQMAKE" = auto ] && case "$*" in
+    *check*|*test*|*dist*|*conf*|*clean*)
+        echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen targets"
+        OPTSEQMAKE=yes
+        ;;
+esac
 
 case "$1" in
     "")
