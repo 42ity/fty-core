@@ -516,6 +516,7 @@ while [ $# -gt 0 ]; do
                         OPTSEQMAKE=auto ; shift ;;
                     *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
                 esac
+                shift
                 ;;
 	    --noparmake|--disable-parallel-make|--no-parmake)
 		NOPARMAKE=yes
