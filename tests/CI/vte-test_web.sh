@@ -92,7 +92,7 @@ BASE_URL="http://$SUT_NAME:$SUT_HTTP_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
-if [ $(ssh -p $SUT_PORT $SUT_NAME 'pidof saslauthd'|wc -l &) ];then
+if [ "$(ssh -p $SUT_PORT $SUT_NAME 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
     echo "saslauthd is running"
 else
     echo "saslauthd is not running, please start it first!" >&2
@@ -102,9 +102,10 @@ fi
 # is bios user present?
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-if [ ! echo $(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'" &)>/dev/null ];then
+LINE="$(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'")"
+if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database"
+    echo "User $BIOS_USER is not known to system administrative database at $SUT_NAME:$SUT_PORT"
     echo "To add it locally, run: "
     echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
@@ -112,9 +113,9 @@ if [ ! echo $(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'" &)>/dev/nu
 fi
 
 # is bios access to sasl right?
-SASLTEST=$(ssh -p $SUT_PORT $SUT_NAME "which testsaslauthd" &)
-
-if ! echo $(ssh -p $SUT_PORT $SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" &) -s bios > /dev/null; then
+SASLTEST=$(ssh -p $SUT_PORT $SUT_NAME "which testsaslauthd")
+LINE="$(ssh -p $SUT_PORT $SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
+if [ $? != 0 -o -z "$LINE" ]; then
     echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
