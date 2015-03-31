@@ -590,7 +590,7 @@ done
 
 [ "$OPTSEQMAKE" = auto ] && case "$*" in
     *check*|*test*|*dist*|*conf*|*clean*)
-        echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen targets"
+        echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen actions and/or targets: $*"
         OPTSEQMAKE=yes
         ;;
 esac
