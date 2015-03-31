@@ -33,6 +33,6 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 echo "==================== auto-configure ========================="
 ./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "==================== make distcheck ========================="
-./autogen.sh --no-distclean distcheck
+./autogen.sh --no-distclean make distcheck
 echo "=================== make and install ========================"
-./autogen.sh --no-distclean install
+./autogen.sh --no-distclean make install
