@@ -602,8 +602,11 @@ done
 [ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
 [ x"$SHOW_REPOSITORY_METADATA_GIT" = xyes ] && showGitFlags
 
+### TODO: This currently grabs ALL actions and optional make-targets
+### to make a decision... move the logic elsewhere to act per-target?
+### consider e.g. "./autogen.sh make clean check all install"
 [ "$OPTSEQMAKE" = auto ] && case "$*" in
-    *check*|*test*|*dist*|*conf*|*clean*)
+    *check*|*test*|*dist*|*conf*|*clean*|*install*)
 	echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen actions and/or targets: $*"
 	OPTSEQMAKE=yes
 	;;
