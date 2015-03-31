@@ -274,6 +274,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/measurement_getter.h \
+			src/persist/measurement_getter.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -441,6 +443,7 @@ test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
 			tests/persist/test-monitor-clientinfo.cc \
 			tests/persist/test-measurement.cc \
+			tests/persist/test-measurement-getter.cc \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
