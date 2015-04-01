@@ -46,7 +46,16 @@ symbols_missing=""
 trace_objfile() {
     target="$1"
     [ -z "$target" -o ! -s "$target" ] && \
-        echo "ERROR: no valid target supplied!" >&2 && return 1
+        echo "ERROR: $0: no valid target supplied ('$target')!" >&2 && return 1
+
+    _FT="`file "$target" 2>/dev/null`" || _FT=""
+    case "${_FT}" in
+        *\ ASCII\ *|*\ data\ *|*\ script\ *|*\ libtool\ *)
+            echo "ERROR: $0: target '$target' contents seem like a non-executable file:" >&2
+            echo "    ${_FT}" >&2
+            return 1
+            ;;
+    esac
 
     shift
     libs_add="$@"
@@ -144,23 +153,32 @@ $symbols_missing"
 }
 
 usage() {
-    echo "Usage: $0 [-l 'libX.so libY.so...'] [--color|--no-color] [targetfile]"
-    echo "    -l        Singular or listed (as one token) additional libs to inspect"
+    echo "Usage: $0 [--color|--no-color]"
+    echo "          [-l 'libX.so /a/libY.so...'] [-lp '.libs:/tmp/bld/.libs']"
+    echo "          [targetfile]"
+    echo "    -l        Singular, colon- or space-separated list (as one token) additional"
+    echo "              dynamic library and/or executable filenames to inspect"
+    echo "    -lp       Prepend the path (single or colon-separated) to LD_LIBRARY_PATH"
     echo "    --color|--no-color        Colorize the output?"
-    echo "    target    The dynamically-linked program or library to inspect" \
-         "(default: $target_default)"
+    echo "    target    The dynamically-linked program or library to inspect"
+    echo "              (default: $target_default)"
 }
 
 while [ $# -gt 0 ]; do
     case "$1" in
-        -l) libs_add="$libs_add $2"; shift ;;
+        -l) libs_add="$libs_add `echo "$2" | sed 's,:, ,g'`"
+            shift ;;
+        -lp) LD_LIBRARY_PATH="$2:$LD_LIBRARY_PATH"
+            export LD_LIBRARY_PATH
+            shift ;;
         --color|--do-color) do_color=yes ;;
         --no-color) do_color=no ;;
         -h|--help) usage; exit 0;;
         *)  if [ $# = 1 ]; then
                 target="$1"
             else
-                echo "Unknown param: $1"
+                echo "ERROR: $0: Unknown param: $1" >&2
+                exit 1
             fi ;;
     esac
     shift
