@@ -793,3 +793,10 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
 );
 
+/* Example averages */
+INSERT INTO t_bios_measurement_topic (device_id, units,topic) SELECT r.id_discovered_device,'C','temperature.thermal_zone0.avg_8@srv1.lab.mbt.etn.com' FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE e.name = 'SRV1-LAB' AND e.id_asset_element = r.id_asset_element;
+set @topic_id = LAST_INSERT_ID();
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:00:00", 560, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:08:00", 480, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:16:00", 510, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-14 00:00:00", 650, -1, @topic_id);
