@@ -211,8 +211,8 @@ void get_measurements(ymsg_t* out, char** out_subj,
             "    WHERE rel.id_asset_element = :id AND "
             "          t.device_id = id_discovered_device AND "
             "          t.topic LIKE :topic) AND "
-            "timestamp > FROM_UNIXTIME(:time_st) AND "
-            "timestamp < FROM_UNIXTIME(:time_end) "
+            "timestamp >= FROM_UNIXTIME(:time_st) AND "
+            "timestamp <  FROM_UNIXTIME(:time_end) "
             "ORDER BY timestamp ASC "
         );
         std::string topic = ymsg_get_string(in,"source");
