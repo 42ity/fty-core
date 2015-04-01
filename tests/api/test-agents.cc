@@ -45,3 +45,128 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
 
     log_close ();
 }
+
+TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
+
+    SECTION ("bios_web_average_request_encode") {
+        CHECK ( bios_web_average_request_encode (NULL, "", "", "", 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode ("", NULL, "", "", 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode ("", "", NULL, "", 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode ("", "", "", NULL, 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode ("", "", "", "", 0, NULL) == NULL );
+    }
+
+    SECTION ("bios_web_average_request_decode") {
+        char *start_ts, *end_ts, *type, *step, *source;
+        uint64_t element_id;
+        ymsg_t *msg_null = NULL;
+        ymsg_t *msg = ymsg_new (YMSG_SEND);
+        REQUIRE (msg);
+
+        CHECK ( bios_web_average_request_decode (NULL, &start_ts, &end_ts, &type, &step, &element_id, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg_null, &start_ts, &end_ts, &type, &step, &element_id, &source) == -1 );
+
+        CHECK ( bios_web_average_request_decode (&msg, NULL, &end_ts, &type, &step, &element_id, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg, &start_ts, NULL, &type, &step, &element_id, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, NULL, &step, &element_id, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, NULL, &element_id, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, &step, NULL, &source) == -1 );
+        CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, &step, &element_id, NULL) == -1 );
+    }
+    // TODO: finish for the rest
+
+}
+
+TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]") {
+    const char *start_ts = "2015030112000000Z";
+    const char *end_ts = "2015030213000000Z";
+    const char *type = "arithmetic_mean";
+    const char *step = "8h";
+    uint64_t element_id = 412;
+    const char *source = "temperature.default";
+
+    ymsg_t *msg = bios_web_average_request_encode (start_ts, end_ts, type, step, element_id, source);
+    REQUIRE (msg);
+
+    char *start_ts_r = NULL;
+    char *end_ts_r = NULL;
+    char *type_r = NULL;
+    char *step_r = NULL;
+    uint64_t element_id_r = 0;
+    char *source_r = NULL;
+   
+    int rv = bios_web_average_request_decode (&msg, &start_ts_r, &end_ts_r, &type_r, &step_r, &element_id_r, &source_r);
+    REQUIRE (rv != -1);
+
+    CHECK ( strcmp (start_ts, start_ts_r) == 0 );
+    CHECK ( strcmp (end_ts, end_ts_r) == 0 );
+    CHECK ( strcmp (type, type_r) == 0 );
+    CHECK ( strcmp (step, step_r) == 0 );
+    CHECK ( element_id == element_id_r );
+    CHECK ( strcmp (source, source_r) == 0 );
+
+    CHECK (msg == NULL);
+    free (start_ts_r);
+    free (end_ts_r);
+    free (type_r);
+    free (step_r);
+    free (source_r);
+}
+
+TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
+    const char *json = "abrakadabra ";
+    ymsg_t *msg = bios_web_average_reply_encode (json);
+    REQUIRE ( msg );
+
+    char *json_r = NULL;
+    int rv = bios_web_average_reply_decode (&msg, &json_r);
+    REQUIRE ( rv != -1 );
+    REQUIRE ( strcmp (json, json_r) == 0 );
+    free (json_r);
+    REQUIRE ( msg == NULL );
+}
+
+TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][public_api]") {
+    const char *start_ts = "2015030112000000Z";
+    const char *end_ts = "2015030213000000Z";
+    uint64_t element_id = 412;
+    const char *source = "temperature.default";
+    char *subject = NULL;
+   
+    ymsg_t *msg = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &subject);
+    REQUIRE ( msg );
+    REQUIRE ( subject );
+    free (subject);
+
+    char *start_ts_r = NULL;
+    char *end_ts_r = NULL;
+    uint64_t element_id_r = 0;
+    char *source_r = NULL;
+
+    int rv = bios_db_measurements_read_request_decode (&msg, &start_ts_r, &end_ts_r, &element_id_r, &source_r);
+    REQUIRE (rv != -1);
+
+    CHECK ( strcmp (start_ts, start_ts_r) == 0 );
+    CHECK ( strcmp (end_ts, end_ts_r) == 0 );
+    CHECK ( element_id == element_id_r );
+    CHECK ( strcmp (source, source_r) == 0 );
+
+    CHECK (msg == NULL);
+    free (start_ts_r);
+    free (end_ts_r);
+    free (source_r);
+}
+
+TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_api]") {
+    const char *json = "{ \"key\" : \"value\", \"key2\" : [1, 2, 3, 4]}";
+    ymsg_t *msg = bios_db_measurements_read_reply_encode (json);
+    REQUIRE ( msg );
+
+    char *json_r = NULL;
+    int rv = bios_db_measurements_read_reply_decode (&msg, &json_r);
+    REQUIRE ( rv != -1 );
+    REQUIRE ( strcmp (json, json_r) == 0 );
+    free (json_r);
+    REQUIRE ( msg == NULL );
+   
+}
