@@ -27,7 +27,8 @@
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
 [ -z "$LC_ALL" ] && LC_ALL=C
-export LANG LANGUAGE LC_ALL
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
 
 command -v libtool >/dev/null 2>&1 || command -v libtoolize >/dev/null 2>&1
 if  [ $? -ne 0 ]; then

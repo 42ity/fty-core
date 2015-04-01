@@ -32,7 +32,8 @@
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
 [ -z "$LC_ALL" ] && LC_ALL=C
-export LANG LANGUAGE LC_ALL
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
 
 # Some of our CI-scripts can define the CHECKOUTDIR variable
 # Otherwise we define it ourselves to use below
