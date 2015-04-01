@@ -49,15 +49,14 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
 TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 
     SECTION ("bios_web_average_request_encode") {
-        CHECK ( bios_web_average_request_encode (NULL, "", "", "", 0, "") == NULL );
-        CHECK ( bios_web_average_request_encode ("", NULL, "", "", 0, "") == NULL );
-        CHECK ( bios_web_average_request_encode ("", "", NULL, "", 0, "") == NULL );
-        CHECK ( bios_web_average_request_encode ("", "", "", NULL, 0, "") == NULL );
-        CHECK ( bios_web_average_request_encode ("", "", "", "", 0, NULL) == NULL );
+        CHECK ( bios_web_average_request_encode (0, 0, NULL, "", 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode (0, 0, "", NULL, 0, "") == NULL );
+        CHECK ( bios_web_average_request_encode (0, 0, "", "", 0, NULL) == NULL );
     }
 
     SECTION ("bios_web_average_request_decode") {
-        char *start_ts, *end_ts, *type, *step, *source;
+        int64_t start_ts, end_ts;
+        char *type, *step, *source;
         uint64_t element_id;
         ymsg_t *msg_null = NULL;
         ymsg_t *msg = ymsg_new (YMSG_SEND);
@@ -78,8 +77,8 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 }
 
 TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]") {
-    const char *start_ts = "2015030112000000Z";
-    const char *end_ts = "2015030213000000Z";
+    int64_t start_ts = 20150301;
+    int64_t end_ts = 20150302;
     const char *type = "arithmetic_mean";
     const char *step = "8h";
     uint64_t element_id = 412;
@@ -88,8 +87,8 @@ TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]")
     ymsg_t *msg = bios_web_average_request_encode (start_ts, end_ts, type, step, element_id, source);
     REQUIRE (msg);
 
-    char *start_ts_r = NULL;
-    char *end_ts_r = NULL;
+    int64_t start_ts_r;
+    int64_t end_ts_r;
     char *type_r = NULL;
     char *step_r = NULL;
     uint64_t element_id_r = 0;
@@ -98,16 +97,14 @@ TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]")
     int rv = bios_web_average_request_decode (&msg, &start_ts_r, &end_ts_r, &type_r, &step_r, &element_id_r, &source_r);
     REQUIRE (rv != -1);
 
-    CHECK ( strcmp (start_ts, start_ts_r) == 0 );
-    CHECK ( strcmp (end_ts, end_ts_r) == 0 );
+    CHECK ( start_ts == start_ts_r );
+    CHECK ( end_ts == end_ts_r );
     CHECK ( strcmp (type, type_r) == 0 );
     CHECK ( strcmp (step, step_r) == 0 );
     CHECK ( element_id == element_id_r );
     CHECK ( strcmp (source, source_r) == 0 );
 
     CHECK (msg == NULL);
-    free (start_ts_r);
-    free (end_ts_r);
     free (type_r);
     free (step_r);
     free (source_r);

@@ -6,75 +6,31 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <ctime>
-#include <cxxtools/jsondeserializer.h>
-#include <cxxtools/serializationerror.h>
 #include <cxxtools/split.h>
 
 #include "persistence.h"
 #include "utils.h"
-#include "app.h"
+#include "bios_agent.h"
+#include "agents.h"
+#include "ymsg.h"
 #include "str_defs.h"
 
 #define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
-#define JSON_TEMPLATE "{\n\
-    \"start_ts\" : \"##START_TS##\",\n\
-    \"end_ts\" : \"##END_TS##\",\n\
-    \"type\" : \"##TYPE##\",\n\
-    \"step\" : \"##STEP##\",\n\
-    \"sources\" : [\n\
-        ##SOURCES##\n\
-    ]\n"
-#define SOURCE_TEMPLATE "{\n\
-    \"id\" : \"##ID##\",\n\
-    \"source\" : \"##SOURCE##\",\n\
-    \"unit\" : \"##UNIT##\",\n\
-    \"data\" : ##DATA##\n\
-}\n"
-   
-</%pre>
-<%cpp>
-    std::stringstream input (request.getBody(), std::ios_base::in);
-    cxxtools::SerializationInfo si;
-    cxxtools::JsonDeserializer deserializer (input);
 
+</%pre>
+<%args>
     std::string start_ts;
     std::string end_ts;
     std::string type;
     std::string step;
-
-    app_t *app = NULL;
-    std::vector<std::string> tokens;
+    std::string source;
+    std::string element_id;
+</%args>
+<%cpp>
+    int64_t st;
+    int64_t end;
+    uint64_t eid;
     try {
-        deserializer.deserialize(si);
-        app = app_new (APP_DB);
-        if (!app) {
-            throw std::bad_alloc ();
-        }
-
-        if (si.category () != cxxtools::SerializationInfo::Category::Object) {
-            throw std::invalid_argument ("Root type is not object.");
-        }
-
-        si.getMember ("start_ts") >>= start_ts;
-        if (start_ts.empty ()) {
-            throw std::invalid_argument ("Field 'start_ts' is empty.");
-        }
-        si.getMember ("end_ts") >>= end_ts;
-        // end_ts is optional in which case current utc datetime is filled in
-        if (end_ts.empty ()) {
-            char s[16];
-            time_t t;
-            struct tm *tmp;
-            t = time (NULL);
-            tmp = localtime (&t);
-            if (tmp == NULL) {
-                throw std::runtime_error ("localtime() failed.");
-            }
-            if (strftime (s, 16, DATETIME_FORMAT, tmp) == 0) {
-                throw std::runtime_error ("strftime() failed.");
-            }
-            end_ts = s;
-        }
         // check both start_ts and end_ts
         if (start_ts.size() != 15 || end_ts.size() != 15) {
             throw std::invalid_argument ("Format for start_ts and end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
@@ -83,22 +39,16 @@
         if (strptime (start_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
             throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
+        st = mktime(&tm);
         if (strptime (end_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
-            throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
+            throw std::invalid_argument ("Format for end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
+        end = mktime(&tm);
         // check that start_ts < end_ts
-        std::string start_ts_tmp (start_ts.substr (0, start_ts.size() - 1));
-        std::string end_ts_tmp (end_ts.substr (0, end_ts.size() - 1));
-        if (std::stoll (start_ts_tmp) >= std::stoll (end_ts_tmp)) {
+        if (end >= st) {
             throw std::invalid_argument ("start_ts must be <= end_ts");
         }
-        app_args_insert (app, "start_ts", "%s", start_ts.c_str());
-        app_args_insert (app, "end_ts", "%s", end_ts.c_str());
 
-        if (si.getMember ("type").category () != cxxtools::SerializationInfo::Category::Value) {
-            throw std::invalid_argument ("Value of 'type' key must be a string (empty equals default value).");
-        }
-        si.getMember ("type") >>= type;
         // type is optional, default type is arithmetic average
         if (type.empty ()) {
             type.assign (AVG_TYPES[0]);
@@ -107,89 +57,61 @@
             throw std::invalid_argument ("Average type <$ type $> not recognized.");
         }
 
-        app_args_insert (app, "type", "%s", type.c_str());
-
-        si.getMember ("step") >>= step;
         if (step.empty ()) {
             throw std::invalid_argument ("Field 'step' is empty.");
         }
         if (!is_average_step_supported (step.c_str ())) {
             throw std::invalid_argument ("Average step <$ step $> not supported.");
         }
-        app_args_insert (app, "step", "%s", step.c_str());
 
-        if (si.getMember("sources").category () != cxxtools::SerializationInfo::Category::Object) {
-            throw std::runtime_error ("Value of key 'sources' is not an object.");
-        }
-        auto sources = si.getMember ("sources");
-        if (sources.memberCount() == 0) {
+        if (source.empty()) {
             throw std::invalid_argument ("Key 'sources' is empty.");
         }
-        std::string element_ids;
-        for (auto it = sources.begin(); it != sources.end(); ++it) {
-            if ( it->category () != cxxtools::SerializationInfo::Category::Array || it->memberCount() == 0) {
-                std::string message;
-                message.append ("Value of key '").append (it->name ()).append ("' is not an array or the array is empty.");
-                throw std::invalid_argument (message.c_str());
-            }
-            // verify the key is a number
-            std::stoull (it->name());
-            element_ids.append(it->name()).append(";");
-            std::vector <std::string> value;
-            *it >>= value;
-            std::string temp;
-            for (std::size_t i = 0; i < value.size (); ++i) {
-                // TODO: If possible, verify it's a valid string
-                if (value[i].empty ()) {
-                    std::string message = value[i];
-                    message.append (" is not a valid source string.");
-                    throw std::invalid_argument (message.c_str());
-                }
-                temp.append (value [i]).append (",");
-            }
-            app_args_insert (app, it->name().c_str() , "%s", temp.c_str());
+        if (element_id.empty()) {
+            throw std::invalid_argument ("Mandatory argument 'element_id' not specified.");
         }
-        app_args_insert (app, "element_ids", "%s", element_ids.c_str());
-    }
-    catch (const cxxtools::SerializationError& e) {
-</%cpp>
-        {
-            "msg" : "<$ e.what () $>" 
-        }
-<%cpp>
-        app_destroy (&app);
-        return HTTP_BAD_REQUEST;
+        eid = std::stoul(element_id);
     }
     catch (const std::logic_error& e) { // invalid_argument, length_error, out_of_range
 </%cpp>
         {
-            "msg" : "<$ e.what () $>" 
+            "msg" : "<$ e.what () $>"
         }
 <%cpp>
-        app_destroy (&app);
         return HTTP_BAD_REQUEST;
     }
     catch (const std::exception& e) {
 </%cpp>
         {
-            "msg" : "<$ e.what () $>" 
+            "msg" : "<$ e.what () $>"
         }
 <%cpp>
-        app_destroy (&app);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
     catch (...) {
 </%cpp>
         {
-            "msg" : "Unknown internal error." 
+            "msg" : "Unknown internal error."
         }
 <%cpp>
-        app_destroy (&app);
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    // TODO: Send the message
-    // TODO: Receive message back and construct output
-
+    char a_name[64];
+    sprintf(a_name, "rest.%d", getpid());
+    bios_agent_t* agent = bios_agent_new("ipc://malamute", a_name);
+    ymsg_t *msg = bios_web_average_request_encode(st, end, type.c_str(),
+                                            step.c_str(), eid, source.c_str());
+    bios_agent_sendto(agent, "computation", "average", &msg);
+    msg = bios_agent_recv(agent);
+    char *json = NULL;
+    if(msg == NULL || bios_web_average_reply_decode(&msg, &json)) {
 </%cpp>
-
+        {
+            "msg" : "Got incorect reply from computation module."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+</%cpp>
+<$$ json $>

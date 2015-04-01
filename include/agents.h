@@ -95,10 +95,10 @@ BIOS_EXPORT int
                              int64_t *time);
 
 BIOS_EXPORT ymsg_t *
-    bios_web_average_request_encode (const char *start_timestamp, const char *end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source);
+    bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source);
 
 BIOS_EXPORT int
-    bios_web_average_request_decode (ymsg_t **self_p, char **start_timestamp, char **end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
+    bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
 
 BIOS_EXPORT ymsg_t *
     bios_web_average_reply_encode (const char *json);
