@@ -313,7 +313,8 @@ do_build() {
 	    fi
 	fi
 
-	echo "=== make '$@' results: PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
+	echo "=== do_build results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
+	echo ""
 
 	return $MRES
 }
