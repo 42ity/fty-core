@@ -28,33 +28,22 @@ LOW_IMPORTANCE_WARNINGS=(
   '[-Wno-unused-but-set-variable]'
 )
 
-
-
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
 
 echo "======================== update ============================="
 apt-get update >/dev/null 2>&1
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
 
-echo "====================== autoreconf ==========================="
-autoreconf -vfi >/dev/null 2>&1
-echo "====================== configure ============================"
-./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux >/dev/null 2>&1
-echo "========================= make =============================="
-make 2>&1 | tee make.log
+echo "==================== auto-configure ========================="
+./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
+echo "====================== auto-make ============================"
+./autogen.sh make 2>&1 | tee make.log
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
