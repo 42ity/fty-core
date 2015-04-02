@@ -29,6 +29,12 @@
 #   i.e. as "./tools/builder.sh" or, for simplicity, by passing its
 #   supported command-line parameters to the main "autogen.sh" script.
 
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
 # Some of our CI-scripts can define the CHECKOUTDIR variable
 # Otherwise we define it ourselves to use below
 if [ x"$CHECKOUTDIR" = x ]; then
@@ -178,6 +184,21 @@ case "$NOSEQMAKE" in
     *)	NOSEQMAKE=no  ;;
 esac
 
+case "$OPTSEQMAKE" in
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+	OPTSEQMAKE=no   ;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	OPTSEQMAKE=yes  ;;
+    *)	OPTSEQMAKE=auto ;;
+	# By default, don't require seqmake for certain targets
+esac
+
+case "$NODISTCLEAN" in
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+	NODISTCLEAN=yes ;;
+    *)	NODISTCLEAN=no  ;;
+esac
+
 case "$WARNLESS_UNUSED" in
     [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
 	WARNLESS_UNUSED=yes ;;
@@ -232,6 +253,10 @@ do_make() {
 do_make_dc() {
     # Wrapper for "make distclean" after which we intend to go on
     # Ensure that ./configure still exists after this, if it did exist before
+    [ "$NODISTCLEAN" = yes ] && \
+	echo "INFO: distclean action disabled by user request" && \
+	return 0
+
     REMAKE_CONFIGURE=n
     [ -s ./configure -a -x ./configure ] && REMAKE_CONFIGURE=y
 
@@ -243,7 +268,7 @@ do_make_dc() {
     # If there were some dependencies like Makefile.in or automake scripts
     # this also ensures they exist again
     if [ x"$REMAKE_CONFIGURE" = xy ]; then
-        verb_run ./autogen.sh || exit
+	verb_run ./autogen.sh || exit
 	[ -s ./configure -a -x ./configure ] || exit
     fi
 
@@ -253,6 +278,10 @@ do_make_dc() {
 
 do_build() {
 	MRES=255
+
+	MRES_P="SKIPPED"
+	MRES_S="SKIPPED"
+
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
@@ -262,21 +291,31 @@ do_build() {
 		*)
 		    do_make V=0 $MAKE_OPTS_PAR -j $NPARMAKES -k "$@"
 		    MRES=$? ;;
-		esac
+	    esac
+	    MRES_P="$MRES"
 	else
 	    echo "=== PARMAKE disabled by user request"
 	fi
 
+	if [ "$MRES_P" = 0 -a "$OPTSEQMAKE" = yes ]; then
+	    echo "=== SEQMAKE disabled by user request as optional" \
+		"(only required if PARMAKE failed)"
+	else
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
-	if [ x"$NOSEQMAKE" != xyes ]; then 
-	    echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
-	    do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
-	    MRES=$?
-	else
-	    echo "=== SEQMAKE disabled by user request"
+	    if [ x"$NOSEQMAKE" != xyes ]; then 
+		echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
+		do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
+		MRES=$?
+		MRES_S="$MRES"
+	    else
+		echo "=== SEQMAKE disabled by user request"
+	    fi
 	fi
+
+	echo "=== do_build results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
+	echo ""
 
 	return $MRES
 }
@@ -284,7 +323,7 @@ do_build() {
 buildSamedir() {
 	do_make_dc -k distclean
 	verb_run $TIME_CONF ./configure $CONFIGURE_FLAGS && \
-	{ do_make -k clean; do_build "$@"; }
+	{ do_make_dc -k clean; do_build "$@"; }
 }
 
 buildSubdir() {
@@ -333,7 +372,8 @@ usage() {
 	echo "		- without parameters does just a classic autogen.sh job"
 	echo ""
 	echo "Usage: $0 [--warnless-unused] [--warn-fatal|-Werror] \ "
-	echo "    [--disable-parallel-make|--disable-sequential-make] \ "
+	echo "    [--disable-parallel-make|--disable-sequential-make|--disable-distclean] \ "
+	echo "    [--optional-sequential-make [yes|no|auto] ] \ "
 	echo "    [--show-timing|--show-timing-make|--show-timing-conf] \ "
 	echo "    [--show-repository-metadata] [--verbose] \ "
 	echo "    [--show-builder-flags] [--configure-flags '...'] \ "
@@ -342,7 +382,7 @@ usage() {
 	echo "      | make-samedir | make-subdir } [maketargets...]"
 	echo ""
 	echo "Usage: $0 [--debug-makefile] \ "
-	echo "           { build*|install*|make*|conf* } [maketargets...]"
+	echo "	   { build*|install*|make*|conf* } [maketargets...]"
 	echo ""
 	echo "These modes (re-)create the configure script and optionally either just"
 	echo "rebuild, or rebuild and install into a DESTDIR, or make the requested"
@@ -351,6 +391,9 @@ usage() {
 	echo "pre-build step with 'export NOPARMAKE=Y' or '--noparmake' flag, while the"
 	echo "'--debug-makefile' flag quickly enables several options at once, including"
 	echo "verbosity, -Werror, and enforced sequential builds to trace make failures."
+	echo "The '--optional-sequential-make' (silent default: 'auto'; implicit value if"
+	echo "only the flag was specified: 'yes') skips a seqmake if parmake succeeded;"
+	echo "where 'auto' is like 'yes' only for some tasks like check or dist."
 	echo ""
 	echo "Some special uses without further parameters (--options above are accepted):"
 	echo "Usage: $0 distcheck [<list of configure flags>]"
@@ -379,11 +422,11 @@ showGitFlags() {
     _srcdir_abs="$CHECKOUTDIR"
 
     if test ! -z "$GIT" -a -x "$GIT" -a -d "$_srcdir_abs/.git" ; then
-        PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
-        PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_ORIGIN="`cd "$_srcdir_abs" && $GIT config --get remote.origin.url`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_BRANCH="`cd "$_srcdir_abs" && $GIT rev-parse --abbrev-ref HEAD`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_TSTAMP="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%ct'`"	&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_S="`cd "$_srcdir_abs" && $GIT log -n 1 --format='%h'`"		&& HAVE_PACKAGE_GIT=1
+	PACKAGE_GIT_HASH_L="`cd "$_srcdir_abs" && $GIT rev-parse --verify HEAD`"	&& HAVE_PACKAGE_GIT=1
 	PACKAGE_GIT_STATUS="`cd "$_srcdir_abs" && $GIT status -s`"			&& HAVE_PACKAGE_GIT=1
     fi 2>/dev/null
 
@@ -418,9 +461,11 @@ showBuilderFlags() {
 
 	echo \
 "	NOSEQMAKE toggle:	$NOSEQMAKE	(* 'yes' == parallel only, if enabled)
+	OPTSEQMAKE toggle:	$OPTSEQMAKE
 	NOPARMAKE toggle:	$NOPARMAKE	(* 'yes' == sequential only, if enabled)
 	 NCPUS (private var):	$NCPUS
 	 NPARMAKES jobs:	$NPARMAKES
+	NODISTCLEAN toggle:	$NODISTCLEAN
 	WARNLESS_UNUSED:	$WARNLESS_UNUSED	(* 'yes' == skip warnings about unused)
 	WARN_FATAL:		$WARN_FATAL"
 	[ -n "$CFLAGS" ] && echo \
@@ -472,7 +517,23 @@ while [ $# -gt 0 ]; do
 		WARN_FATAL=yes
 		shift
 		;;
-	    --noparmake|--disable-parallel-make)
+	    --nodistclean|--disable-distclean|--no-distclean)
+		NODISTCLEAN=yes
+		shift
+		;;
+	    --optseqmake|--optional-sequential-make)
+		case "$2" in
+		    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])
+			OPTSEQMAKE=yes ; shift ;;
+		    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee])
+			OPTSEQMAKE=no ; shift ;;
+		    [Aa][Uu][Tt][Oo])
+			OPTSEQMAKE=auto ; shift ;;
+		    *)  OPTSEQMAKE=yes ;; # Default for standalone keyword
+		esac
+		shift
+		;;
+	    --noparmake|--disable-parallel-make|--no-parmake)
 		NOPARMAKE=yes
 		shift
 		;;
@@ -480,7 +541,7 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		shift
 		;;
-	    --noseqmake|--disable-sequential-make)
+	    --noseqmake|--disable-sequential-make|--no-seqmake)
 		NOSEQMAKE=yes
 		shift
 		;;
@@ -528,6 +589,7 @@ while [ $# -gt 0 ]; do
 		# linear output
 		NOPARMAKE=no
 		NPARMAKES=1
+		OPTSEQMAKE=no
 		shift
 		;;
 	    *)	break ;;
@@ -541,6 +603,16 @@ done
 ### This is the last flag-reaction in the stack of such
 [ x"$SHOW_BUILDER_FLAGS" = xyes ] && showBuilderFlags "$@"
 [ x"$SHOW_REPOSITORY_METADATA_GIT" = xyes ] && showGitFlags
+
+### TODO: This currently grabs ALL actions and optional make-targets
+### to make a decision... move the logic elsewhere to act per-target?
+### consider e.g. "./autogen.sh make clean check all install"
+[ "$OPTSEQMAKE" = auto ] && case "$*" in
+    *check*|*test*|*dist*|*conf*|*clean*|*install*)
+	echo "INFO: Switching from OPTSEQMAKE=auto to OPTSEQMAKE=yes due to chosen actions and/or targets: $*"
+	OPTSEQMAKE=yes
+	;;
+esac
 
 case "$1" in
     "")

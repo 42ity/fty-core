@@ -113,5 +113,15 @@ enum ipaddr_version {
 #define NETMON_VAL_IPV4     "ip version 4"
 #define NETMON_VAL_IPV6     "ip version 6"
 
+// web component
+// average.ecpp
+#define WEB_AVERAGE_KEY_START_TS    "start_ts"
+#define WEB_AVERAGE_KEY_END_TS      "end_ts"
+#define WEB_AVERAGE_KEY_TYPE        "type"
+#define WEB_AVERAGE_KEY_STEP        "step"
+#define WEB_AVERAGE_KEY_ELEMENT_ID  "element_id"
+#define WEB_AVERAGE_KEY_SOURCE      "source"
+
+
 #endif // SRC_INCLUDE_DEFS_H__
 

@@ -16,6 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include <czmq.h>
+#include <string.h>
 #include "utils_ymsg.h"
 #include "bios_agent.h"
 #include "agents.h"
@@ -265,4 +266,178 @@ int
    *scale = ymsg_get_int32( *self_p, "scale" );
    *time = ymsg_get_int64( *self_p, "time" );
    return 0;
+}
+
+ymsg_t *
+bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source) {
+    if (!start_timestamp || !end_timestamp || !type || !step || !source)
+        return NULL;
+    
+    ymsg_t *message = ymsg_new (YMSG_SEND);
+    if (!message) 
+        return NULL;
+    
+    ymsg_aux_set_int64 (message, WEB_AVERAGE_KEY_START_TS, start_timestamp);
+    ymsg_aux_set_int64 (message, WEB_AVERAGE_KEY_END_TS, end_timestamp);
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_TYPE, "%s", type);
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_STEP, "%s", step);
+    ymsg_aux_set_uint64 (message,  WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_SOURCE, "%s", source);
+    return message;
+}
+
+int
+bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source) {   
+    if (!self_p || !*self_p || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source)
+        return -1;
+
+    assert (*self_p);
+    ymsg_t *self = *self_p;
+    int rc = 0;
+
+    if (ymsg_id (self) != YMSG_SEND) 
+        return -1;
+
+    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
+    if (rc != 0)
+        goto bios_web_average_request_decode_err;
+    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_END_TS, end_timestamp);
+    if (rc != 0)
+        goto bios_web_average_request_decode_err;
+    *type = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_TYPE, ""));
+    *step = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_STEP, ""));
+    rc = ymsg_aux_uint64 (self, WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    if (rc != 0)
+        goto bios_web_average_request_decode_err;
+    *source = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_SOURCE, ""));
+
+    ymsg_destroy (self_p);
+    return 0;
+
+bios_web_average_request_decode_err:
+    if(*type)
+        free(*type);
+    if(*step)
+        free(*step);
+    if(*source)
+        free(*source);
+    ymsg_destroy (self_p);
+    return -1;
+}
+
+ymsg_t *
+bios_web_average_reply_encode (const char *json) {
+    ymsg_t *message = ymsg_new (YMSG_REPLY);
+    if (!message) 
+        return NULL;
+    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    if (!chunk) {
+        ymsg_destroy (&message);       
+        return NULL;
+    }
+    ymsg_set_response (message, &chunk);
+    return message;
+}
+
+int
+bios_web_average_reply_decode (ymsg_t **self_p, char **json) {
+    if (!self_p || !*self_p || !json)
+        return -1;
+    
+    assert (*self_p);
+    ymsg_t *self = *self_p;
+
+    if (ymsg_id (self) != YMSG_REPLY) {
+        ymsg_destroy (self_p);
+        return -1;
+    }
+
+    zchunk_t *chunk = ymsg_response (self);
+    if (!chunk) {
+        ymsg_destroy (self_p);
+        return -1;
+    }
+    *json = (char*)malloc(zchunk_size (chunk) * sizeof(char));
+    if(json == NULL) {
+        ymsg_destroy (self_p);
+        return -1;
+    }
+    *json = strndup ((char *) zchunk_data (chunk), zchunk_size (chunk));
+    ymsg_destroy (self_p);
+    return 0;
+}
+
+ymsg_t *
+bios_db_measurements_read_request_encode (const char *start_timestamp, const char *end_timestamp, uint64_t element_id, const char *source, char **subject) {
+    if (!start_timestamp || !end_timestamp || !source)
+        return NULL;
+
+    ymsg_t *message = ymsg_new (YMSG_SEND);
+    if (!message) 
+        return NULL;
+    
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_START_TS, "%s", start_timestamp);
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_END_TS, "%s", end_timestamp);
+    ymsg_aux_set_uint64 (message,  WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    ymsg_aux_insert (message, WEB_AVERAGE_KEY_SOURCE, "%s", source);
+
+    if (subject)
+        *subject = strdup ("get_measurements");
+    return message;
+}
+
+int
+bios_db_measurements_read_request_decode (ymsg_t **self_p, char **start_timestamp, char **end_timestamp, uint64_t *element_id, char **source) {
+    if (!self_p || !*self_p || !start_timestamp || !end_timestamp || !element_id || !source)
+        return -1;
+
+    assert (*self_p);
+    ymsg_t *self = *self_p;
+
+    if (ymsg_id (self) != YMSG_SEND) 
+        return -1;
+
+    *start_timestamp = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_START_TS, ""));
+    *end_timestamp = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_END_TS, ""));
+    int rc = ymsg_aux_uint64 (self, WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    if (rc != 0)
+        return -1;
+    *source = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_SOURCE, ""));
+
+    ymsg_destroy (self_p);
+    return 0;
+}
+
+
+ymsg_t *
+bios_db_measurements_read_reply_encode (const char *json) {
+    ymsg_t *message = ymsg_new (YMSG_REPLY);
+    if (!message) 
+        return NULL;
+    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    if (!chunk) {
+        ymsg_destroy (&message);       
+        return NULL;
+    }
+    ymsg_set_response (message, &chunk);
+    return message;
+}
+
+int
+bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json) {
+    if (!self_p || !*self_p || !json)
+        return -1;
+    
+    assert (*self_p);
+    ymsg_t *self = *self_p;
+
+    if (ymsg_id (self) != YMSG_REPLY) 
+        return -1;
+
+    zchunk_t *chunk = ymsg_get_response (self);
+    if (!chunk)
+        return -1;
+    *json = strndup ((char *) zchunk_data (chunk), zchunk_size (chunk));
+    ymsg_destroy (self_p);
+    return 0;
 }

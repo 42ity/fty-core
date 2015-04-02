@@ -28,6 +28,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 #include "defs.h"
 #include "dbhelpers.h"
+#include "ymsg.h"
 
 namespace persist {
 
@@ -65,6 +66,10 @@ db_reply_t
     delete_from_measurement_by_id(
         tntdb::Connection &conn,
         m_msrmnt_id_t      id);
+
+//! Process get measurement message and creates an answer
+void get_measurements(ymsg_t* out, char** out_subj,
+                      ymsg_t* in, const char* in_subj);
 
 } //namespace persist
 

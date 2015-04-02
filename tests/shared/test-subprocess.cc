@@ -138,7 +138,7 @@ TEST_CASE("subprocess-poll-sleep", "[subprocess][poll]") {
     CHECK(bret);
     ret = proc.getReturnCode();
 
-    for (i = 0; i != 6; i++) {
+    for (i = 0; i != 600; i++) {
         ret = proc.poll();
         if (! proc.isRunning()) {
             break;
@@ -162,7 +162,7 @@ TEST_CASE("subprocess-kill", "[subprocess][kill]") {
 
     ret = proc.kill();
     CHECK(ret == 0);
-    for (auto i = 1u; i != 10; i++) {
+    for (auto i = 1u; i != 1000; i++) {
         usleep(i*50);
         proc.poll();
         if (!proc.isRunning()) {
@@ -224,7 +224,7 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     CHECK(bret);
 
     kill(proc.getPid(), SIGTERM);
-    for (auto i = 1u; i != 10; i++) {
+    for (auto i = 1u; i != 1000; i++) {
         usleep(i*50);
         proc.poll();
         if (!proc.isRunning()) {
@@ -233,7 +233,7 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
     }
     proc.poll();
 
-    for (auto i = 1u; i != 10; i++) {
+    for (auto i = 1u; i != 1000; i++) {
         usleep(i*50);
         proc.poll();
         if (!proc.isRunning()) {

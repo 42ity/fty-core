@@ -28,6 +28,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "dbhelpers.h"
 #include <tntdb/connect.h>
+#include "asset_types.h"
+
+typedef struct _asset_link
+{
+    a_elmnt_id_t    src;     //!< id of src element
+    a_elmnt_id_t    dest;    //!< id of dest element
+    a_lnk_src_out_t src_out; //!< outlet in src
+    a_lnk_src_out_t dest_in; //!< inlet in dest
+    a_lnk_tp_id_t   type;    //!< link type id
+} link_t;
 
 
 
@@ -197,9 +207,83 @@ db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
  //                                  const char   *value,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id);
-
 db_reply_t
     process_insert_inventory
         (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes);
+
+
+/// insert
+
+db_reply_t
+    insert_asset_element_into_asset_group 
+        (tntdb::Connection &conn,
+         a_elmnt_id_t group_id,
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    insert_into_asset_device
+        (tntdb::Connection &conn,
+         a_elmnt_id_t   asset_element_id,
+         const char    *hostname,
+         const char    *fullhostname,
+         const char    *ip,
+         const char    *mac,
+         a_dvc_tp_id_t  asset_device_type_id);
+
+db_reply_t
+    insert_into_asset_link
+        (tntdb::Connection &conn,
+         a_elmnt_id_t    asset_element_src_id,
+         a_elmnt_id_t    asset_element_dest_id,
+         a_lnk_tp_id_t   link_type_id,
+         const a_lnk_src_out_t src_out,
+         const a_lnk_dest_in_t dest_in);
+
+db_reply_t
+    insert_into_asset_ext_attribute
+        (tntdb::Connection &conn,
+         const char   *value,
+         const char   *keytag,
+         a_elmnt_id_t  asset_element_id);
+
+db_reply_t
+    insert_into_asset_ext_attributes
+        (tntdb::Connection &conn, 
+         zhash_t      *attributes,
+         a_elmnt_id_t  asset_element_id);
+
+db_reply_t
+    insert_into_asset_element
+        (tntdb::Connection &conn, 
+         const char      *element_name, 
+         a_elmnt_tp_id_t  element_type_id,
+         a_elmnt_id_t     parent_id);
+
+db_reply_t
+    insert_into_asset_links
+        (tntdb::Connection       &conn,
+         std::set <link_t> const &links);
+
+db_reply_t
+    insert_dc_room_row_rack_group
+    (tntdb::Connection  &conn,
+     const char      *element_name,
+     a_elmnt_tp_id_t  element_type_id,
+     a_elmnt_id_t     parent_id,
+     zhash_t         *extattributes);
+
+db_reply_t
+    insert_device
+       (tntdb::Connection &conn,
+        std::set <link_t>  const &links,
+        std::set <a_elmnt_id_t> const &groups,
+        const char    *element_name, 
+        a_elmnt_id_t   parent_id,
+        zhash_t       *extattributes,
+        const char    *mac,
+        const char    *hostname,
+        const char    *ip,
+        const char    *fullhostname,
+        a_dvc_tp_id_t  asset_device_type_id);
 
 #endif // SRC_PERSIST_ASSETCRUD_H_

@@ -27,22 +27,14 @@
 #   nut must be installed
 #
 
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="$(dirname $0)"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-
-cd $CHECKOUTDIR
 if [ ! -f Makefile ] ; then
-    autoreconf -vfi
-    ./configure
+    ./autogen.sh --nodistclean configure
 fi
 make V=0 web-test-deps
 make web-test >/tmp/web-test.log 2>&1 &
@@ -62,7 +54,7 @@ PARAM2="outlet.realpower"
 CFGDIR="/etc/ups"
 [ -d $CFGDIR ] || CFGDIR="/etc/nut"
 if [ ! -d $CFGDIR ] ; then
-    echo "NUT config dir not found"
+    logmsg_error "NUT config dir not found"
     kill $WEBTESTPID >/dev/null 2>&1
     exit 1
 fi
@@ -101,7 +93,7 @@ outlet.realpower: 0
 }
 
 create_nut_config() {
-    echo "creating nut config"
+    logmsg_info "creating nut config"
     echo "MODE=standalone" > $CFGDIR/nut.conf 
     echo "[$UPS1]
 driver=dummy-ups
@@ -122,11 +114,11 @@ instcmds=ALL" > $CFGDIR/upsd.users
     create_device_definition_file "$CFGDIR/$UPS2.dev"
 
     chown nut:root $CFGDIR/*.dev
-    echo "restart NUT server"
+    logmsg_info "restart NUT server"
     systemctl stop nut-server
     systemctl stop nut-driver
     systemctl start nut-server
-    echo "waiting for a while"
+    logmsg_info "waiting for a while..."
     sleep 15
 }
 
@@ -139,9 +131,9 @@ testcase() {
     UPS2=$2
     SAMPLES=$3
     RACK=$4
-    PARAM=
-echo "starting the test"
- 
+    PARAM=""
+    logmsg_info "starting the test"
+
 SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
 ERRORS=0
 SUCCESSES=0
@@ -180,12 +172,13 @@ for UPS in $UPS1 $UPS2 ; do
                 ;;
         esac
         TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
+        # TODO: parametrize
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
         DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
-        if [ $DEL = 0 ]; then
+        if [ "$DEL" = 0 ]; then
            echo "The total power has an expected value $TP = $POWER. Test PASSED."
            SUCCESSES=$(expr $SUCCESSES + 1)
         else
