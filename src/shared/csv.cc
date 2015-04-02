@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace shared {
 
 /* Workaround for a fact a) std::transform to do a strip and lower is weird, b) it breaks the map somehow*/
-const std::string _ci_strip(const std::string& str) {
+static const std::string _ci_strip(const std::string& str) {
      std::ostringstream b;
 
      for (const char c: str) {
