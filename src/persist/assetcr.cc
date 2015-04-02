@@ -56,7 +56,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_element_id is not allowed";
+        ret.msg        = "0 value of asset_element_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -65,7 +65,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of group_id is not allowed";
+        ret.msg        = "0 value of group_id is not allowed";
         log_error ("end: %s, %s","ignore insert", ret.msg);
         return ret;
     }
@@ -124,7 +124,6 @@ db_reply_t
          a_dvc_tp_id_t  asset_device_type_id)
 {
     LOG_START;
-    log_debug ("  hostname = '%s'", hostname);
     log_debug ("  fullhostname = '%s'", fullhostname);
     log_debug ("  hostname = '%s'", hostname);
     log_debug ("  ip = '%s'", ip);
@@ -140,7 +139,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_element_id is not allowed";
+        ret.msg        = "0 value of asset_element_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -149,7 +148,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_device_type_id is not allowed";
+        ret.msg        = "0 value of asset_device_type_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -237,6 +236,7 @@ db_reply_t
 }
 
 //=============================================================================
+// TODO: check, if it works with multiple powerlinks between two devices
 db_reply_t
     insert_into_asset_link
         (tntdb::Connection &conn,
@@ -293,7 +293,7 @@ db_reply_t
             "   (id_asset_device_src, id_asset_device_dest,"
             "        id_asset_link_type, src_out, dest_in)"
             " SELECT"
-            "   v1.id_asset_device, v2.id_asset_device, :link,"
+            "   v1.id_asset_device, v2.id_asset_device, :linktype,"
             "   :out, :in"
             " FROM"
             "   t_bios_asset_device v1,"  // src
@@ -309,7 +309,9 @@ db_reply_t
             "             t_bios_asset_link v3"
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_device AND"
-            "               v3.id_asset_device_dest = v2.id_asset_device"
+            "               v3.id_asset_device_dest = v2.id_asset_device AND"
+            "               ( ((v3.src_out == :out) AND (v3.dest_in == :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) "
+            "               v3.id_asset_device_dest = v2.id_asset_device AND"
             "    )"
         );
         
@@ -324,7 +326,7 @@ db_reply_t
 
         ret.affected_rows = st.set("src", asset_element_src_id).
                                set("dest", asset_element_dest_id).
-                               set("link", link_type_id).
+                               set("linktype", link_type_id).
                                execute();
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_device]: was inserted %" 
@@ -366,7 +368,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_element_id is not allowed";
+        ret.msg        = "0 value of asset_element_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -450,7 +452,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_element_id is not allowed";
+        ret.msg        = "0 value of asset_element_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -529,7 +531,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of element_type_id is not allowed";
+        ret.msg        = "0 value of element_type_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -540,7 +542,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "Datacentes should be unlockated elements";
+        ret.msg        = "Datacenters should be unlockated elements";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
@@ -700,7 +702,7 @@ db_reply_t
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "NULL value of asset_element_id is not allowed";
+        ret.msg        = "0 value of asset_element_id is not allowed";
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
