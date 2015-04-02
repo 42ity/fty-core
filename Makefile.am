@@ -245,6 +245,13 @@ noinst_LTLIBRARIES += 		libpriv-cidr.la
 libpriv_cidr_la_SOURCES = 	src/shared/cidr.h \
 				src/shared/cidr.cc
 
+noinst_LTLIBRARIES +=		libpriv-csv.la
+
+libpriv_csv_la_SOURCES =	src/shared/csv.h \
+				src/shared/csv.cc
+
+libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
+
 noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = \
@@ -416,6 +423,15 @@ test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 test_cidr_LDFLAGS =	-lcidr
 
+check_PROGRAMS += 	test-csv
+test_csv_SOURCES =		src/shared/csv.h \
+					tests/shared/test-csv.cc
+test_csv_LDADD = 		libpriv-csv.la \
+						libpriv-log.la \
+					libpriv-test-run.la
+test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
+					-I$(abs_top_srcdir)/tests/include/
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
 bin_PROGRAMS += 	test-db
 
