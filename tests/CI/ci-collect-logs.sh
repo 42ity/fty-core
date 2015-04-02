@@ -21,17 +21,11 @@
 # Description: Downloads log files from VM and prints them on stdout.
 #              Suppose to be post build step.
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 usage() {
     echo "Usage: $(basename $0) [options]"
@@ -74,8 +68,6 @@ if [ ! "$VM" ] ; then
     usage
     exit 1
 fi
-
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 
 log_list() {
     ssh -p $PORT root@$VM "find . -type f -name '*.log'"

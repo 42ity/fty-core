@@ -24,6 +24,12 @@
 #   NOTE: It expects to be run in the root of the project directory
 #   (probably the checkout directory, unless you use strange set-ups).
 
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
 command -v libtool >/dev/null 2>&1 || command -v libtoolize >/dev/null 2>&1
 if  [ $? -ne 0 ]; then
     echo "autogen.sh: error: could not find libtool nor libtoolize." 1>&2

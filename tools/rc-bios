@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2015 Eaton
 #
@@ -16,7 +16,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>,
-#            Jim Klimov <EvgenyKlimov@eaton.com>
+#            Jim Klimov <EvgenyKlimov@eaton.com>,
+#            Tomas Halman <TomasHalman@eaton.com>
 #
 # Description:
 #   tool for starting processes with proper dependencies and in a
@@ -32,6 +33,17 @@
 #   TODO: what about mysql?
 #
 
+### System-provided daemons (available as systemd units)
+DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
+### $BIOS-provided daemons (available as systemd units)
+DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-driver-nut bios-server-agent"
+### Programs which we execute manually
+DAEMONS_OUR_BINS=""
+
+### List of daemons that we manage as one mega-unit by default
+[ -z "$DAEMONS" ] && \
+    DAEMONS="$DAEMONS_OS_SYSTEMD $DAEMONS_OUR_SYSTEMD $DAEMONS_OUR_BINS"
+
 if [ "x$CHECKOUTDIR" = "x" ]; then
     SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
     SCRIPTDIR="`dirname $0`"
@@ -44,17 +56,21 @@ if [ "x$CHECKOUTDIR" = "x" ]; then
            CHECKOUTDIR="" ;;
     esac
 fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+[ "x$CHECKOUTDIR" = "x" -a -d ~/project ] && CHECKOUTDIR=~/project
+echo "INFO: Init-umbrella '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
 
 [ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "Search path: $CHECKOUTDIR, $PWD"
-    exit 1
+    echo "Cannot find $BUILDSUBDIR/config.status, using system binaries..."
+    PATH="/usr/local/bin:/usr/local/lib:/usr/local/libexec:/usr/local/lib/bios:/usr/local/libexec/bios:$PATH"
+    PATH="/usr/bin:/usr/lib:/usr/libexec:/usr/lib/bios:/usr/libexec/bios:$PATH"
+else
+    echo "Found $BUILDSUBDIR/config.status, using built binaries preferentially..."
+    echo "Search path: $PWD, $BUILDSUBDIR, $CHECKOUTDIR, under home, system PATH..."
+    PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
 fi
-echo "INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to locate project binaries..."
+export PATH
 
 die() {
     echo "FATAL: ${@}" >&2
@@ -66,35 +82,58 @@ warn() {
 }
 
 usage() {
-    echo "Usage: rc [--kill] names [of [processes [to [start]]]]" >&2
+    echo "Usage: rc-bios [{start|stop|restart|status|help}] [names [of [daemons]]]" >&2
     if can_use_sysd; then
         echo "       systemd activation WILL BE used" >&2
     else
         echo "       systemd activation WILL NOT BE used" >&2
     fi
-    echo "       tool supports short names, so rc nut == rc bios-driver-nut" >&2
+    echo "       Tool supports short names, so rc-bios nut == rc-bios bios-driver-nut" >&2
+    echo "       If no action is given, assume 'start' of given parameters" >&2
+    echo "       If no daemons are given, assume all of: $DAEMONS" >&2
     exit 1
 }
 
+# Simple check for whether sudo is needed for high-privilege tasks
+# We assume here that the non-privileged user running this command
+# does have "sudo" permissions set up per $BIOS documentation.
+RUNAS=""
+CURID="`id -u`" || CURID=""
+[ "$CURID" = 0 -o "$CURID" = root ] || RUNAS="sudo"
 
 my_systemctl() {
-    /usr/bin/systemctl --system --no-pager --full "${@}"
+    $RUNAS /usr/bin/systemctl --system --no-pager --full "$@"
+}
+
+systemctl_start() {
+    my_systemctl start "$@"
+}
+
+systemctl_stop() {
+    my_systemctl stop "$@" || true
+    sleep 2
+    pidof "$@" >/dev/null 2>&1 && return 1
+    return 0
+}
+
+systemctl_status() {
+    my_systemctl status "$@"
 }
 
 is_external_unit() {
     local unit
     unit=${1}
 
-    case "${unit}" in
-        malamute|mysql|saslauthd)
-            return 0
-            ;;
-    esac
+    for U in $DAEMONS_OS_SYSTEMD $DAEMONS_OUR_SYSTEMD ; do
+	if [ x"$unit" = x"$U" ]; then
+		return 0
+	fi
+    done
 
     return 1
 }
 
-# find a proper name for unit file
+# find a proper name for a systemd unit file, if any
 # unit_name nut -> bios-driver-nut
 # unit_name db -> bios-db
 # unit_name malamute -> malamute
@@ -105,15 +144,17 @@ unit_name() {
 
     [ -n "${arg}" ] || die "unit name must not be empty"
 
-    arg=$(echo "${arg}" | sed -e 's/.service$//')
+    arg=$(basename "${arg}" .service)
 
     if is_external_unit "${arg}"; then
         echo "${arg}"
         return 0
     fi
 
-    for i in ${arg} bios-${arg} bios-driver-${arg}; do
-        if [ -r "${CHECKOUTDIR}/tools/${i}.service.in" ]; then
+    for i in ${arg} bios-${arg} bios-driver-${arg} bios-agent-${arg}; do
+        if [ -r "${CHECKOUTDIR}/tools/${i}.service.in" ] || \
+	   [ -r "/lib/systemd/system/${i}.service" ] \
+	; then
             echo "${i}"
             return 0
         fi
@@ -143,7 +184,8 @@ install_unit_sysd() {
     [ -n "${unit}" ] || \
         die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
 
-    subst_unit "${unit}" > /run/systemd/system/${unit}.service
+    subst_unit "${unit}" > /tmp/.${unit}.$$.service && \
+    $RUNAS mv -f /tmp/.${unit}.$$.service /run/systemd/system/${unit}.service
     my_systemctl daemon-reload
 }
 
@@ -207,7 +249,7 @@ start_daemon() {
     # will be done by a program! this was script reports success or a fail
     sleep 3
     warn "START-DAEMON: Testing if PID $pid is still alive..."
-    kill -0 ${pid}
+    [ -d /proc/${pid} ] && kill -0 ${pid}
 }
 
 stop_daemon() {
@@ -277,11 +319,8 @@ run_unit_sysd() {
 }
 
 can_use_sysd() {
-    if [ $(id -u) != 0 ]; then
-        return 1
-    fi
-    
-    readlink -f /proc/1/exe | grep -q "/lib/systemd/systemd$"
+    [ -x /usr/bin/systemctl ] && \
+    readlink -f /proc/1/exe | egrep -q "/lib/systemd/systemd$"
 }
 
 main() {
