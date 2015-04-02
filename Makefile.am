@@ -259,6 +259,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/nethistory.h \
 			src/persist/assetcrud.cc \
 			src/persist/assetcr.cc \
+			src/persist/assetd.cc \
 			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
 			src/persist/assettopology.h \
