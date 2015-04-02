@@ -17,8 +17,9 @@
 #
 # Author(s): Tomas Halman <TomasHalman@eaton.com>
 #
-# Description: installs basics components we need
+# Description: installs basic components we need
 
+# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
 SCRIPTDIR=$(dirname $0)
 CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 
