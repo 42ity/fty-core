@@ -39,10 +39,10 @@
       <url>^/api/v1/admin/sysinfo$</url>
     </mapping>
 
-    <!-- Average POST -->
+    <!-- Average GET -->
     <mapping>
       <target>average@bios_web</target>
-      <method>POST</method>
+      <method>GET</method>
       <url>^/api/v1/metric/computed/average.*$</url>
     </mapping>
 

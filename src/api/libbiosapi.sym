@@ -119,6 +119,15 @@ global:
         bios_measurement_encode;
         bios_netmon_encode;
 
+        bios_web_average_request_encode;
+        bios_web_average_request_decode;
+        bios_web_average_reply_encode;
+        bios_web_average_reply_decode;
+        bios_db_measurements_read_request_encode;
+        bios_db_measurements_read_request_decode;
+        bios_db_measurements_read_reply_encode;
+        bios_db_measurements_read_reply_decode;
+
         is_app;
         is_ymsg;
 local:
