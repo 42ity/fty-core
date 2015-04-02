@@ -58,6 +58,9 @@ or automatic value for the 'install*' actions
  * '--configure-flags "--flag1=a --flag2=b"' -- (re)sets '$CONFIGURE_FLAGS'
 to the single-token parameter with values that would be passed to `configure`
 as its set of command-line parameters, should it be invoked in this run
+ * '--nodistclean' or '--disable-distclean' -- this sets 'NODISTCLEAN=yes'
+(see below) to skip the `make distclean` activity otherwise typical for
+the 'conf*' and 'build*' actions
  * '--noparmake' or '--disable-parallel-make' -- this sets 'NOPARMAKE=yes'
 (see below) for this invokation of the script i.e. to override the current
 environment variable
@@ -68,6 +71,12 @@ environment variable
 to enable parallel makes (enabled by default unless envvars forbid)
  * '--seqmake' or '--enable-sequential-make' -- this sets 'NOSEQMAKE=no'
 to enable sequential makes (enabled by default unless envvars forbid)
+ * '--optseqmake' or '--optional-sequential-make' -- this sets 'OPTSEQMAKE'
+to the next provided value ('yes', 'no', 'auto') or to 'yes' if no value
+was provided. The effect of 'yes' is to skip the sequential build phase
+iff the parallel build phase succeeded, which may be acceptable for certain
+targets ('auto' changes into a 'yes' if the selected actions or targets
+match a predefined pattern).
  * '--show-builder-flags' -- before executing an action, display the
 setup of `builder.sh` for this run
  * '--show-repository-metadata' -- before executing an action, display
@@ -340,6 +349,14 @@ being improved to counter the warnings, e.g.:
 ----
 
 
+=== 'NODISTCLEAN' toggle
+The `builder.sh` script typically wraps a `make -k distclean` to
+wipe the workspace before doing a 'configure*' or a 'build*' action.
+
+For an incremental reconfigure+rebuild you can `export NODISTCLEAN=yes`
+or pass the '--nodistclean' parameter to `builder.sh`.
+
+
 === 'NOPARMAKE' toggle
 The `builder.sh` script makes a lot of effort to build the project in
 parallel first (for speed, with a best-effort approach ignoring any
@@ -365,6 +382,15 @@ For general feature-parity, as well as to speed up certain kinds of
 `Makefile`-debugging builds, the sequential build phase can be disabled
 with `export NOSEQMAKE=yes` so that only the parallel build is attempted
 (if not disabled as well).
+
+
+=== 'OPTSEQMAKE' toggle
+Valid values include 'yes' ('on', 'true'), 'no' ('off', 'false'), and 'auto',
+to which the variable defaults if an invalid or empty value was detected.
+The effect of 'yes' is to skip the sequential build phase if (and only if)
+the parallel build phase succeeded, which may be acceptable for certain
+targets; an 'auto' changes into a 'yes' if the selected actions or targets
+match a predefined pattern.
 
 
 === 'NCPUS' count (semi-private)

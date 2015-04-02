@@ -245,6 +245,13 @@ noinst_LTLIBRARIES += 		libpriv-cidr.la
 libpriv_cidr_la_SOURCES = 	src/shared/cidr.h \
 				src/shared/cidr.cc
 
+noinst_LTLIBRARIES +=		libpriv-csv.la
+
+libpriv_csv_la_SOURCES =	src/shared/csv.h \
+				src/shared/csv.cc
+
+libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
+
 noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = \
@@ -258,6 +265,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/nethistory.cc \
 			src/persist/nethistory.h \
 			src/persist/assetcrud.cc \
+			src/persist/assetcr.cc \
 			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
 			src/persist/assettopology.h \
@@ -416,6 +424,15 @@ test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 test_cidr_LDFLAGS =	-lcidr
 
+check_PROGRAMS += 	test-csv
+test_csv_SOURCES =		src/shared/csv.h \
+					tests/shared/test-csv.cc
+test_csv_LDADD = 		libpriv-csv.la \
+						libpriv-log.la \
+					libpriv-test-run.la
+test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
+					-I$(abs_top_srcdir)/tests/include/
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
 bin_PROGRAMS += 	test-db
 
@@ -592,8 +609,8 @@ web-link-test: bios_web.la
 			$(abs_top_srcdir)/tests/web-linking-test.cpp \
 			${CXXTOOLS_LIBS} -ltntnet \
 			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "PASS: Everything for bios_web.so does link ok!" || \
-			( R=$$?; echo "FAIL ($$R): bios_web.so unusable"; exit $$R; )
+			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
+			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
 
 EXTRA_DIST +=		tests/web-linking-test.cpp
 
@@ -923,11 +940,12 @@ if HAVE_SYSTEMD
 
 # copy from autoconf manual, note signle suffix rules can't be used there!!
 edit = sed \
-	-e 's|@libexecdir[@]|$(libexecdir)|g'
+	-e 's|@libexecdir[@]|$(libexecdir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g'
 
 bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
 	rm -f $@
-	$(edit) '$(srcdir)/tools/$@.in' > $@
+	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
@@ -1396,34 +1414,53 @@ check-local: check-dlls web-link-test test-sdk
 check-dlls: check-dll-libs check-dll-progs
 
 CHECK_DLL_PROGS_TGT =
+CHECK_DLL_LIBS_TGT =
 
 define depend-check-dll-prog =
-# Define the dependency and the rule
 check-dll-binfile-$(1): $(1)
 	@P="$$<"; \
+	[ -x "$(abs_top_builddir)/$$(<F)" ] && P="$(abs_top_builddir)/$$(<F)" ; \
 	[ -x "$(abs_top_builddir)/.libs/$$(<F)" ] && P="$(abs_top_builddir)/.libs/$$(<F)" ; \
 	[ -x "$(abs_top_builddir)/.libs/lt-$$(<F)" ] && P="$(abs_top_builddir)/.libs/lt-$$(<F)" ; \
-	LD_LIBRARY_PATH="$(abs_top_builddir)/.libs:$$$$LD_LIBRARY_PATH" \
-	    $(abs_top_srcdir)/tools/ldd-tracer.sh "$$$$P" > /dev/null && \
-	echo "PASS: dynamic-link tracing '$$$$P' OK : found no undefined symbols" || \
-	( RES=$$$$?; echo "FAIL: dynamic-link tracing '$$$$P' failed ($$$$RES)"; exit $$$$RES )
+	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
+	echo "     DL_TRACE_EXE    $$$$P    $$$$PA"; \
+	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
+	echo "PASS: dynamic-link tracing EXE '$$$$P' OK : found no undefined symbols" || \
+	( RES=$$$$?; echo "FAIL: dynamic-link tracing EXE '$$$$P' failed ($$$$RES)"; exit $$$$RES )
 
 $(eval CHECK_DLL_PROGS_TGT +=	check-dll-binfile-$(1) )
 endef
 
+define depend-check-dll-lib =
+check-dll-libfile-$(1): $(1)
+	@P="$$(addprefix $(abs_top_builddir)/.libs/,$$(patsubst %.la,%.so,$$(<F)))"; \
+	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
+	echo "     DL_TRACE_LIB    $$$$P    $$$$PA"; \
+	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
+	echo "PASS: dynamic-link tracing LIB '$$$$P' OK : found no undefined symbols" || \
+	( RES=$$$$?; echo "FAIL: dynamic-link tracing LIB '$$$$P' failed ($$$$RES)"; exit $$$$RES )
+
+$(eval CHECK_DLL_LIBS_TGT +=	check-dll-libfile-$(1) )
+endef
+
+# Define the rulesets for specific targets dynamically
 $(foreach p,$(bin_PROGRAMS) $(check_PROGRAMS) $(client_PROGRAMS), $(eval $(call depend-check-dll-prog,$(p))))
 
+# TODO: Later consider building from pkglib_LTLIBRARIES or lib_LTLIBRARIES
+# if we get many of these...
+$(eval $(call depend-check-dll-lib,libbiosapi.la))
+$(eval $(call depend-check-dll-lib,bios_web.la,/usr/bin/tntnet))
+
+# Umbrella targets
 check-dll-progs: $(CHECK_DLL_PROGS_TGT)
 
-check-dll-libs: check-dll-libbiosapi check-dll-bios_web
+check-dll-libs: $(CHECK_DLL_LIBS_TGT)
 
-check-dll-libbiosapi: libbiosapi.la
-	@$(abs_top_srcdir)/tools/ldd-tracer.sh $(abs_top_builddir)/.libs/libbiosapi.so > /dev/null && \
-	echo "PASS: dynamic-link tracing '$<' OK: found no undefined symbols"
+# Simplify tests for certain target names (e.g. our few libraries)
+# and their historical targets per below dependencies in e.g. SDK
+check-dll-libbiosapi: check-dll-libfile-libbiosapi.la
 
-check-dll-bios_web: bios_web.la
-	@$(abs_top_srcdir)/tools/ldd-tracer.sh -l /usr/bin/tntnet $(abs_top_builddir)/.libs/bios_web.so > /dev/null && \
-	echo "PASS: dynamic-link tracing '$<' OK: found no undefined symbols"
+check-dll-bios_web: check-dll-libfile-bios_web.la
 
 
 #----------------------------------------------------------------------
