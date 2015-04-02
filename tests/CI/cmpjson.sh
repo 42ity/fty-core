@@ -14,8 +14,8 @@ determineDirs || true
 
 [ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 # By default we do sorted comparisons; pass a " " space envvar to unset options
-[ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n"
-[ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n"
+[ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n -Nnx=%.16f"
+[ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n -Nnx=%.16f"
 
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && die "JSON.sh is not executable (tried '$JSONSH')"
 
