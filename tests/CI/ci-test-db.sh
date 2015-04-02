@@ -28,26 +28,12 @@
 #   - mariadb running
 #   - db user root without password
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
-if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "Search path: $CHECKOUTDIR, $PWD"
-    exit 1
-fi
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
 set -u
 set -e
@@ -62,10 +48,9 @@ DB_RACK_POWER="rack_power.sql"
 
 RESULT=0
 
-cd $CHECKOUTDIR
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_DATA"
+mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_DATA" || CODE=$? die "Failed to load $DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
 make -C "$BUILDSUBDIR" test-db && "$BUILDSUBDIR"/test-db
@@ -87,8 +72,8 @@ fi
 make -C "$BUILDSUBDIR" test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
-    mysql -u root < "$DB_LOADDIR/$DB_BASE"
-    mysql -u root < "$DB_LOADDIR/$P"
+    mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
+    mysql -u root < "$DB_LOADDIR/$P" || CODE=$? die "Failed to load $P"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
     "$BUILDSUBDIR"/test-dbtopology "[$P]"
@@ -109,8 +94,8 @@ fi
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
 make -C "$BUILDSUBDIR" test-totalpower 
-mysql -u root < "$DB_LOADDIR/$DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER"
+mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER" || CODE=$? die "Failed to load $DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
