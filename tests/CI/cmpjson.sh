@@ -7,28 +7,17 @@
 # Usage: bash cmpjson.sh file1 file2
 # Authors: Jim Klimov <EvgenyKlimov@eaton.com>
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-#echo "INFO: Program '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..." >&2
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs || true
 
 [ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 # By default we do sorted comparisons; pass a " " space envvar to unset options
 [ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n"
 [ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n"
 
-die() {
-    [ -n "$CODE" -a "$CODE" -ge 0 ] 2>/dev/null || CODE=1
-    echo "ERROR: $1"
-    exit $CODE
-}
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && die "JSON.sh is not executable (tried '$JSONSH')"
 
 self_test() {
     local jsonstr1='{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}'
@@ -136,7 +125,6 @@ usage() {
         echo ""
 }
 
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && die "JSON.sh is not executable (tried '$JSONSH')"
 case "$1" in
     -t)
         self_test

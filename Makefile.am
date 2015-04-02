@@ -939,11 +939,12 @@ if HAVE_SYSTEMD
 
 # copy from autoconf manual, note signle suffix rules can't be used there!!
 edit = sed \
-	-e 's|@libexecdir[@]|$(libexecdir)|g'
+	-e 's|@libexecdir[@]|$(libexecdir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g'
 
 bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
 	rm -f $@
-	$(edit) '$(srcdir)/tools/$@.in' > $@
+	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
