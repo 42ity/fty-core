@@ -14,7 +14,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     std::stringstream buf;
 
     buf << "Name, Type, Group.1, group.2,description\n";
-    buf << "RACK-01,rack,GR-01,GR-02,just my dc\n";
+    buf << "RACK-01,rack,GR-01,GR-02,\"just,my,dc\"\n";
     buf << "RACK-02,rack,GR-01,GR-02,just my rack\n";
 
     std::vector<std::vector<std::string> > data;
@@ -43,6 +43,9 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     REQUIRE_THROWS_AS(cm.get(42, ""), std::out_of_range);
     // unknown key
     REQUIRE_THROWS_AS(cm.get(0, ""), std::out_of_range);
+
+    // test values with commas
+    REQUIRE(gm.get(1, "description") == "just,my,dc");
 }
 
 TEST_CASE("CSV multiple field names", "[csv]") {
