@@ -30,9 +30,9 @@ static const std::string _ci_strip(const std::string& str) {
      std::ostringstream b;
 
      for (const char c: str) {
-         if (::isspace(c))
-             continue;
-         b << static_cast<char>(::tolower(c));
+         // allowed chars [a-zA-Z0-9_\.]
+         if (::isalnum(c) || c == '_' || c == '.')
+            b << static_cast<char>(::tolower(c));
      }
 
      return b.str();
