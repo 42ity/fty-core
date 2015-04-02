@@ -359,10 +359,6 @@ DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
             v1.id_asset_element,
-            v1.hostname,
-            v1.full_hostname,
-            v1.ip,
-            v1.mac,
             v1.id_asset_device_type,
             v2.name
     FROM t_bios_asset_device v1
@@ -477,8 +473,6 @@ FROM   t_bios_measurement_topic;
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 7, "ups", 0);
-
 
 /* t_bios_device_type */
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
