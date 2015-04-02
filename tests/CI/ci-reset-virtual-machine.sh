@@ -29,6 +29,7 @@
 # * set debian proxy from parameter or $http_proxy
 #
 
+# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
 die() {
 	echo "$1"
 	exit 1

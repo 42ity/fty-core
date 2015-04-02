@@ -33,43 +33,16 @@
 # - perform real parallel-proof locking; now it's kindergarden stuff :)
 
 LOCKFILE=/tmp/ci-test-netmon.lock
-if [ -f $LOCKFILE ]; then
-    echo -e "Script already running. Stopping."
-    exit 1 
-fi
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
-export BUILDSUBDIR
-if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "CI-ERROR: Search path checked: $CHECKOUTDIR, $PWD"
-    exit 1
-fi
-
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
-
-### Section: setting necessary variables
-DEBUG=
-if [ x"$1" = "x-d" ]; then
-    DEBUG=1
-fi
-
-dsh_file=$(mktemp -p "$CHECKOUTDIR/tests/CI/")
-if [ -n "$DEBUG" ]; then
-    echo "DEBUG: dsh_file='$dsh_file'" >&2
+if [ -f "$LOCKFILE" ]; then
+    die "Script already running. Aborting."
 fi
 
 ### Section: actual steps being performed
@@ -82,6 +55,19 @@ function cleanup {
 
 touch "$LOCKFILE"
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
+
+### Section: setting necessary variables
+DEBUG=
+if [ x"$1" = "x-d" ]; then
+    DEBUG=1
+fi
+
+mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
+dsh_file=$(mktemp -p "$BUILDSUBDIR/tests/CI/")
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: dsh_file='$dsh_file'" >&2
+fi
 
 killall malamute
 

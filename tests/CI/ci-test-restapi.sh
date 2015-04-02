@@ -21,27 +21,12 @@
 # Description: sets up the sandbox and runs the tests of REST API for
 # the $BIOS project.
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
-if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "CI-ERROR: Cannot find $BUILDSUBDIR/config.status, did you run configure?"
-    echo "CI-ERROR: Search path checked: $CHECKOUTDIR, $PWD"
-    exit 1
-fi
-
-echo "CI-INFO: Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
@@ -101,7 +86,7 @@ test_web_process() {
     [ -z "$MAKEPID" ] && return 0
 
     if [ ! -d /proc/$MAKEPID ]; then
-	echo "CI-ERROR: Web-server process seems to have died!" >&2
+	logmsg_error "Web-server process seems to have died!" >&2
 	# Ensure it is dead though, since we abort the tests now
 	kill $MAKEPID >/dev/null 2>&1
 	wait $MAKEPID >/dev/null 2>&1
@@ -118,46 +103,45 @@ wait_for_web() {
             return 0
         fi
     done
-    echo "CI-ERROR: Port ${BIOS_PORT} still not in LISTEN state" >&2
+    logmsg_error "Port ${BIOS_PORT} still not in LISTEN state" >&2
     return 1
 }
 
 
 # prepare environment
-  cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
-
   # might have some mess
   killall tntnet 2>/dev/null || true
   sleep 1
-  test_web_port && echo "CI-ERROR: Port ${BIOS_PORT} is in LISTEN state when it should be free" >&2 && exit 1
+  test_web_port && die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
-      echo "CI-WARNING: Could not restart saslauthd, make sure SASL and SUDO are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs" >&2
+      logmsg_warn "Could not restart saslauthd, make sure SASL and SUDO" \
+        "are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs"
   fi
   # check SASL is working
-  echo "CI-INFO: Checking local SASL Auth Daemon"
+  logmsg_info "Checking local SASL Auth Daemon"
   testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios && \
-    echo "CI-INFO: saslauthd is responsive and configured well!" || \
-    echo "CI-ERROR: saslauthd is NOT responsive or not configured!" >&2
+    logmsg_info "saslauthd is responsive and configured well!" || \
+    logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
 # do the webserver
   # make clean
   LC_ALL=C
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
-  echo "CI-INFO: Ensure files for web-test exist and are up-to-date..."
+  logmsg_info "Ensure files for web-test exist and are up-to-date..."
   make -C "$BUILDSUBDIR" V=0 web-test-deps || exit
-  echo "CI-INFO: Spawn the web-server in the background..."
+  logmsg_info "Spawn the web-server in the background..."
   make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
-  echo "CI-INFO: Wait for web-server to begin responding..."
+  logmsg_info "Wait for web-server to begin responding..."
   wait_for_web && \
-    echo "CI-INFO: Web-server is responsive!" || \
-    echo "CI-ERROR: Web-server is NOT responsive!" >&2
-  echo "CI-INFO: Waiting for webserver process $MAKEPID to settle after startup..."
+    logmsg_info "Web-server is responsive!" || \
+    logmsg_error "Web-server is NOT responsive!" >&2
+  logmsg_info "Waiting for webserver process $MAKEPID to settle after startup..."
   sleep 5
   test_web_process || exit
 
@@ -170,7 +154,8 @@ test_web() {
 }
 
 loaddb_file() {
-    mysql -u root < "$1" > /dev/null
+    mysql -u root < "$1" > /dev/null || \
+        CODE=$? die "Could not load $1"
 }
 
 loaddb_default() {
@@ -248,9 +233,9 @@ killall tntnet >/dev/null 2>&1
 sleep 2
 
 if [ "$RESULT" = 0 ]; then
-    echo "$0: Overall result: SUCCESS"
+    logmsg_info "Overall result: SUCCESS"
 else
-    echo "$0: Overall result: FAILED ($RESULT) seek details above" >&2
+    logmsg_error "Overall result: FAILED ($RESULT) seek details above"
 fi
 
 exit $RESULT

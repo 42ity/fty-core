@@ -19,32 +19,20 @@
 #
 # Description: installs dependecies and compiles the project
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
 
 apt-get update
-cd $CHECKOUTDIR || { echo "FATAL: Unusable CHECKOUTDIR='$CHECKOUTDIR'" >&2; exit 1; }
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-CPUS=$(getconf _NPROCESSORS_ONLN)
-echo "====================== autoreconf ==========================="
-autoreconf -vfi
-echo "====================== configure ============================"
-./configure --prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux
+echo "==================== auto-configure ========================="
+./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "==================== make distcheck ========================="
-make -j $CPUS distcheck
-echo "========================= make =============================="
-make -j $CPUS
-echo "===================== make install =========================="
-make -j $CPUS install
+./autogen.sh --no-distclean make distcheck
+echo "=================== make and install ========================"
+./autogen.sh --no-distclean make install

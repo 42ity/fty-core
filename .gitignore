@@ -68,6 +68,7 @@ docs/doxygen/*.tmp
 test-log.*
 test-*.log
 test-*.trs
+make.log
 
 test-api
 test-cidr
