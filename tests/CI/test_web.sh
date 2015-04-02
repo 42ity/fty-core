@@ -30,19 +30,13 @@ fi
 PASS=0
 TOTAL=0
 
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+NEED_BUILDSUBDIR=no determineDirs_default || true
+#cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-. "`dirname $0`/weblib.sh" || exit $?
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -64,17 +58,16 @@ PATH="$PATH:/sbin:/usr/sbin"
 
 # fixture ini
 if ! pidof saslauthd > /dev/null; then
-    echo "saslauthd is not running, please start it first!" >&2
-    exit 1
+    CODE=1 die "saslauthd is not running, please start it first!"
 fi
 
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
 if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database"
-    echo "To add it locally, run: "
-    echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
-    echo "and don't forget the password '$BIOS_PASSWD'"
+    CODE=2 die "User $BIOS_USER is not known to system administrative database" \
+        "To add it locally, run: "
+        "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
+        "and don't forget the password '$BIOS_PASSWD'"
     exit 2
 fi
 
@@ -83,13 +76,12 @@ SASLTEST="`which testsaslauthd`"
 [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
 
 if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
-    echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-    exit 3
+    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+        "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 fi
 
 if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
-    echo "Webserver is not running, please start it first!"
-    exit 4
+    CODE=4 die echo "Webserver is not running, please start it first!"
 fi
 
 cd "`dirname "$0"`"
@@ -144,10 +136,10 @@ for i in $POSITIVE; do
     done
 done
 
-echo "Testing completed, $PASS/$TOTAL tests passed"
+logmsg_info "Testing completed, $PASS/$TOTAL tests passed"
 [ -z "$FAILED" ] && exit 0
 
-echo "Following tests failed:"
+logmsg_error "The following tests have failed:"
 for i in $FAILED; do
     echo " * $i"
 done
