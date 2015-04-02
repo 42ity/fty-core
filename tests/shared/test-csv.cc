@@ -14,8 +14,8 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     std::stringstream buf;
 
     buf << "Name, Type, Group.1, group.2,description\n";
-    buf << "RACK-01, rack,GR-01, GR-02,just my dc\n";
-    buf << "RACK-02, rack,GR-01, GR-02,just my rack\n";
+    buf << "RACK-01,rack,GR-01,GR-02,just my dc\n";
+    buf << "RACK-02,rack,GR-01,GR-02,just my rack\n";
 
     std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(buf);
@@ -34,6 +34,10 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     // an access to data
     REQUIRE(cm.get(1, "Name") == "RACK-01");
     REQUIRE(cm.get(2, "Name") == "RACK-02");
+    
+    // an access to data
+    REQUIRE(cm.get(1, "Type") == "rack");
+    REQUIRE(cm.get(2, "tYpe") == "rack");
 
     // out of bound access
     REQUIRE_THROWS_AS(cm.get(42, ""), std::out_of_range);

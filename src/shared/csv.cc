@@ -45,12 +45,13 @@ void CsvMap::deserialize() {
 
         std::string title = _ci_strip(title_name);
 
-        if (_field_to_index.find(title) != _field_to_index.end()) {
+        if (_field_to_index.count(title) == 1) {
             std::ostringstream buf;
             buf << "duplicate field name '" << title << "'";
             throw std::invalid_argument(buf.str());
         }
         _field_to_index.emplace(title, i);
+        i++;
     }
 }
 
