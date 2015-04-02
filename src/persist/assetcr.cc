@@ -21,10 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#include <exception>
-#include <assert.h>
-
-#include <czmq.h>
 #include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
