@@ -15,7 +15,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
 
     buf << "Name, Type, Group.1, group.2,description\n";
     buf << "RACK-01,rack,GR-01,GR-02,\"just,my,dc\"\n";
-    buf << "RACK-02,rack,GR-01,GR-02,just my rack\n";
+    buf << "RACK-02,rack,GR-01,GR-02,\"just\tmy\nrack\"\n";
 
     std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(buf);
@@ -45,7 +45,8 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     REQUIRE_THROWS_AS(cm.get(0, ""), std::out_of_range);
 
     // test values with commas
-    REQUIRE(gm.get(1, "description") == "just,my,dc");
+    REQUIRE(cm.get(1, "description") == "just,my,dc");
+    REQUIRE(cm.get(2, "description") == "just\tmy\nrack");
 }
 
 TEST_CASE("CSV multiple field names", "[csv]") {
