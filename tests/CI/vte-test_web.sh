@@ -38,25 +38,20 @@ if [ $# -eq 0 ]; then
     echo "       either use ci-test-restapi.sh or specify test on a commandline"
     exit 1
 fi
+    # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
+
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+# *** include weblib.sh
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+
     # *** set PASS and TOTAL to 0
 PASS=0
 TOTAL=0
-
-    # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-    # *** include weblib.sh
-. "`dirname $0`/weblib.sh" || exit $?
 
     # *** Set BIOS_USER,BIOS PASSWD,SUT_NAME and SUT_PORT from parameters
 while [ $# -gt 0 ]; do
@@ -97,7 +92,7 @@ BASE_URL="http://$SUT_NAME:$SUT_HTTP_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
-if [ $(ssh -p $SUT_PORT $SUT_NAME 'pidof saslauthd'|wc -l &) ];then
+if [ "$(ssh -p $SUT_PORT $SUT_NAME 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
     echo "saslauthd is running"
 else
     echo "saslauthd is not running, please start it first!" >&2
@@ -107,9 +102,10 @@ fi
 # is bios user present?
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-if [ ! echo $(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'" &)>/dev/null ];then
+LINE="$(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'")"
+if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database"
+    echo "User $BIOS_USER is not known to system administrative database at $SUT_NAME:$SUT_PORT"
     echo "To add it locally, run: "
     echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
@@ -117,9 +113,9 @@ if [ ! echo $(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'" &)>/dev/nu
 fi
 
 # is bios access to sasl right?
-SASLTEST=$(ssh -p $SUT_PORT $SUT_NAME "which testsaslauthd" &)
-
-if ! echo $(ssh -p $SUT_PORT $SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" &) -s bios > /dev/null; then
+SASLTEST=$(ssh -p $SUT_PORT $SUT_NAME "which testsaslauthd")
+LINE="$(ssh -p $SUT_PORT $SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
+if [ $? != 0 -o -z "$LINE" ]; then
     echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
 fi
