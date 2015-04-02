@@ -206,7 +206,7 @@ CREATE TABLE t_bios_asset_group_relation (
   INDEX FK_ASSETGROUPRELATION_ELEMENT_idx (id_asset_element ASC),
   INDEX FK_ASSETGROUPRELATION_GROUP_idx   (id_asset_group   ASC),
   
-  UNIQUE INDEX `UI_t_bios_asset_group_relation` (`id_asset_group`, `id_asset_element` ASC)
+  UNIQUE INDEX `UI_t_bios_asset_group_relation` (`id_asset_group`, `id_asset_element` ASC),
 
   CONSTRAINT FK_ASSETGROUPRELATION_ELEMENT
     FOREIGN KEY (id_asset_element)
