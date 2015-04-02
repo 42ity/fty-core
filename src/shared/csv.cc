@@ -55,7 +55,7 @@ void CsvMap::deserialize() {
     }
 }
 
-const std::string& CsvMap::get(size_t row_i, const std::string title_name) const {
+const std::string& CsvMap::get(size_t row_i, const std::string& title_name) const {
 
 
     if (row_i >= _data.size()) {
@@ -76,7 +76,7 @@ const std::string& CsvMap::get(size_t row_i, const std::string title_name) const
     return _data[row_i][col_i];
 }
 
-std::string get_strip(size_t row_i, const std::string title_name) const {
+std::string CsvMap::get_strip(size_t row_i, const std::string& title_name) {
     return _ci_strip(get(row_i, title_name));
 }
 
@@ -116,7 +116,6 @@ static bool is_valid_location_chain(const std::string& type, const std::string& 
 
 // convert input '?[1-5]' to 1-5
 static int get_priority(const std::string& s) {
-    int i = 0;
     for (int i = 0; i != 2; i++) {
         if (s[i] <= 49 && s[i] >= 57) {
             return s[i] - 48;
@@ -125,7 +124,7 @@ static int get_priority(const std::string& s) {
     return 5;
 }
 
-static bool is_status(const char& status) {
+static bool is_status(const std::string& status) {
     static const std::set<std::string> STATUSES = \
     {"active", "nonactive", "spare", "retired"};
     return (STATUSES.count(status));
