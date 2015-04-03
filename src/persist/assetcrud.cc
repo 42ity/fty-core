@@ -808,88 +808,125 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
 
 
 
-db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn, 
-//                                   const char   *value,
-                                   const char   *keytag,
-                                   a_elmnt_id_t  asset_element_id)
+zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
+                a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id)
 {
-    LOG_START;
-  //  log_debug ("value = '%s'", value);
-    log_debug ("keytag = '%s'", keytag);
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
+    log_info("start");
+    zlist_t* links = zlist_new();
+    zlist_autofree(links);
     
-    db_reply_t ret = db_reply_new();
+    try {
+        // Get information about the links the specified device 
+        // belongs to
+        // Can return more than one row
+        
+        tntdb::Result result;
+        if ( link_type_id == 0 )
+        {
+            // take links of any type
+            tntdb::Statement st_pow = conn.prepareCached(
+                " SELECT"
+                "   v.id_asset_element_dest, v.id_asset_element_src,"
+                "   v.src_out, v.dest_in"
+                " FROM"
+                "   v_bios_asset_link v"
+                " WHERE (v.id_asset_element_dest = :device OR"
+                "       v.id_asset_element_src = :device)"
+            );
+            result = st_pow.set("device", device_id).
+                            select();
+        }
+        else
+        {
+            // take links of specified type
+            tntdb::Statement st_pow = conn.prepareCached(
+                " SELECT"
+                "   v.id_asset_element_dest, v.id_asset_element_src,"
+                "   v.src_out, v.dest_in"
+                " FROM"
+                "   v_bios_asset_link v"
+                " WHERE (v.id_asset_element_dest = :device OR"
+                "       v.id_asset_element_src = :device) AND"
+                "       v.id_asset_link_type = :link"
+            );
+            result = st_pow.set("device", device_id).
+                            set("link", link_type_id).
+                            select();
+        }
+        // TODO move 26 to constants
+        char buff[26];     // 10+3+3+10
 
-    a_elmnt_id_t n = 0;
-    try{
-        tntdb::Statement st = conn.prepareCached(
-            " DELETE FROM"
-            "   t_bios_asset_ext_attributes"
-            " WHERE"
-//            "   value = :value AND"
-            "   keytag = :keytag AND"
-            "   id_asset_element = :element"
-        );
-    
-        n  = st.set("keytag", keytag).
-//                set("value", value).
-                set("element", asset_element_id).
-                execute();
-        ret.affected_rows = n;
-        log_debug("was deleted %" PRIu32 " ext attributes", n);
-    } 
+        // Go through the selected links
+        for ( auto &row: result )
+        { 
+            // dest
+            a_elmnt_id_t element_id_dest = 0;
+            row[0].get(element_id_dest);
+            assert ( element_id_dest != 0 );  // database is corrupted
+
+            // src
+            a_elmnt_id_t element_id_src = 0;
+            row[1].get(element_id_src);
+            assert ( element_id_src != 0 );  // database is corrupted
+
+            // src_out
+            std::string src_out = SRCOUT_DESTIN_IS_NULL;
+            row[2].get(src_out);
+
+            // dest_in
+            std::string dest_in = SRCOUT_DESTIN_IS_NULL;
+            row[3].get(dest_in);
+
+            sprintf(buff, "%s:%" PRIu32 ":%s:%" PRIu32, 
+                src_out.c_str(), 
+                element_id_src, 
+                dest_in.c_str(), 
+                element_id_dest);
+            zlist_push(links, buff);
+        }
+        log_info("end: normal");
+        return links;
+    }
     catch (const std::exception &e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
-        return ret;
+        // internal error in database
+        zlist_destroy (&links);
+        log_warning("end: abnormal with '%s'", e.what());
+        return NULL;
     }
-    if ( ( n == 1 ) || ( n == 0 ) )
-    {
-        LOG_END;
-        ret.status = 1;
-    }
-    else
-    {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_BADINPUT;
-        ret.msg           = "unexpected number of rows was deleted";
-        log_error ("end: %" PRIu32 " - unexpected number of rows deleted", n);
-    }
-    return ret;
 }
 
-db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn, 
-                                    a_elmnt_id_t  asset_element_id)
+std::set <a_elmnt_id_t> select_asset_group_elements (tntdb::Connection &conn, a_elmnt_id_t group_id)
 {
     LOG_START;
-    
-    db_reply_t ret = db_reply_new();
+    log_debug ("asset_group_id = %" PRIu32, group_id);
     
     try{
         tntdb::Statement st = conn.prepareCached(
-            " DELETE FROM"
-            "   t_bios_asset_ext_attributes"
+            " SELECT"
+            "   v.id_asset_element"
+            " FROM"
+            "   t_bios_asset_group_relation v"
             " WHERE"
-            "   id_asset_element = :element"
+            "   v.id_asset_group = :group"
         );
     
-        ret.affected_rows = st.set("element", asset_element_id).
-                               execute();
-        log_debug("was deleted %zu ext attributes", ret.affected_rows);
-    } 
-    catch (const std::exception &e) {
-        ret.status        = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
+        tntdb::Result result = st.set("group", group_id).
+                                  select();
+
+        log_debug ("was selected %u elements in group %" PRIu32, result.size(), group_id);
+        
+        std::set <a_elmnt_id_t> ret;
+        a_elmnt_id_t asset_element_id = 0;
+        for ( auto &row: result )
+        {
+            row[0].get(asset_element_id);
+            ret.insert(asset_element_id);
+        }
+
         return ret;
     }
-    ret.status = 1;
-    LOG_END;
-    return ret;
+    catch (const std::exception &e) {
+        log_warning("end: abnormal with '%s'", e.what());
+        throw bios::InternalDBError(e.what());
+    }
 }

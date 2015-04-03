@@ -117,17 +117,9 @@ db_reply_t
     insert_into_asset_device
         (tntdb::Connection &conn,
          a_elmnt_id_t   asset_element_id,
-         const char    *hostname,
-         const char    *fullhostname,
-         const char    *ip,
-         const char    *mac,
          a_dvc_tp_id_t  asset_device_type_id)
 {
     LOG_START;
-    log_debug ("  fullhostname = '%s'", fullhostname);
-    log_debug ("  hostname = '%s'", hostname);
-    log_debug ("  ip = '%s'", ip);
-    log_debug ("  mac = '%s'", mac);
     log_debug ("  asset_element_id = %" PRIu32, asset_element_id);
     log_debug ("  asset_device_type_id = %" PRIu32, asset_device_type_id);
 
@@ -152,52 +144,15 @@ db_reply_t
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
-    if ( !is_ok_hostname (hostname) )
-    {   
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "hostname is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
-        return ret;
-    }
-    if ( !is_ok_fullhostname (fullhostname) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "fullhostname is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
-        return ret;
-    }
-    if ( !is_ok_ip (ip) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "IP address is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
-        return ret;
-    }
-    if ( !is_ok_mac (mac) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "MAC address is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
-        return ret;
-    }
     log_debug ("input parameters are correct");
 
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
             "   t_bios_asset_device"
-            "   (id_asset_element, id_asset_device_type,"
-            "        hostname, full_hostname, ip, mac)"
+            "   (id_asset_element, id_asset_device_type)"
             " SELECT"
-            "   :element, :type, :hostname, :fullhostname, :ip, :mac"
+            "   :element, :type"
             " FROM"
             "   t_empty"
             " WHERE NOT EXISTS"
@@ -212,12 +167,8 @@ db_reply_t
         );
    
         ret.affected_rows = st.set("element", asset_element_id).
-               set("type", asset_device_type_id).
-               set("hostname", (hostname == NULL ? "": hostname) ).
-               set("fullhostname", (fullhostname == NULL ? "": fullhostname)).
-               set("ip", (ip == NULL ? "": ip) ).
-               set("mac", (mac == NULL ? "": mac) ).
-               execute();
+                               set("type", asset_device_type_id).
+                               execute();
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_device]: was inserted %" 
                                         PRIu64 " rows", ret.affected_rows);
@@ -804,19 +755,11 @@ db_reply_t
         const char    *element_name, 
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
-        const char    *mac,
-        const char    *hostname,
-        const char    *ip,
-        const char    *fullhostname,
         a_dvc_tp_id_t  asset_device_type_id)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
     log_debug ("  parent_id = %" PRIu32, parent_id);
-    log_debug ("  mac = '%s'", mac);
-    log_debug ("  hostname = '%s'", hostname);
-    log_debug ("  ip = '%s'", ip);
-    log_debug ("  fullhostname = '%s'", fullhostname);
     log_debug ("  asset_device_type_id = %" PRIu32, asset_device_type_id);
 
     tntdb::Transaction trans(conn);
@@ -849,8 +792,7 @@ db_reply_t
     }
     
     auto reply_insert4 = insert_into_asset_device
-        (conn, element_id, hostname, fullhostname, ip, mac, 
-         asset_device_type_id);
+        (conn, element_id, asset_device_type_id);
     if ( reply_insert4.affected_rows == 0 )
     {
         trans.rollback();

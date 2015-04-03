@@ -117,7 +117,7 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
  *
  * \return zmsg_t - an encoded ASSET_MSG_DEVICE or COMMON_MSG_FAIL message.
  */
-zmsg_t* select_asset_device(tntdb::Connection &conn, asset_msg_t** element, 
+zmsg_t* select_asset_device(tntdb::Connection &conn, 
                             a_elmnt_id_t element_id);
 
 /**
@@ -212,6 +212,11 @@ db_reply_t
         (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes);
 
 
+std::set <a_elmnt_id_t> select_asset_group_elements (tntdb::Connection &conn, a_elmnt_id_t group_id);
+
+
+zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
+                a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id);
 /// insert
 
 db_reply_t
@@ -224,10 +229,6 @@ db_reply_t
     insert_into_asset_device
         (tntdb::Connection &conn,
          a_elmnt_id_t   asset_element_id,
-         const char    *hostname,
-         const char    *fullhostname,
-         const char    *ip,
-         const char    *mac,
          a_dvc_tp_id_t  asset_device_type_id);
 
 db_reply_t
@@ -242,7 +243,6 @@ db_reply_t
 db_reply_t
     insert_into_asset_ext_attribute
         (tntdb::Connection &conn,
-         const char   *value,
          const char   *keytag,
          a_elmnt_id_t  asset_element_id);
 
@@ -280,10 +280,81 @@ db_reply_t
         const char    *element_name, 
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
-        const char    *mac,
-        const char    *hostname,
-        const char    *ip,
-        const char    *fullhostname,
         a_dvc_tp_id_t  asset_device_type_id);
+
+////////////////// DELETE
+//
+db_reply_t
+    delete_asset_device
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_link
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_element_id_src,
+         a_elmnt_id_t asset_element_id_dest);
+
+db_reply_t
+    delete_asset_links_all
+        (tntdb::Connection &conn,
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_links_to
+        (tntdb::Connection &conn, 
+         a_dvc_id_t asset_device_id);
+
+db_reply_t
+    delete_asset_links_from
+        (tntdb::Connection &conn, 
+         a_dvc_id_t asset_device_id);
+
+db_reply_t
+    delete_asset_group_links
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_group_id);
+
+db_reply_t
+    delete_asset_ext_attribute
+        (tntdb::Connection &conn, 
+         const char   *keytag,
+         a_elmnt_id_t  asset_element_id);
+
+db_reply_t
+    delete_asset_ext_attributes
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_element
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_element_from_asset_groups
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_asset_element_from_asset_group
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t asset_group_id,
+         a_elmnt_id_t asset_element_id);
+
+db_reply_t
+    delete_dc_room_row_rack
+        (tntdb::Connection &conn,
+        a_elmnt_id_t element_id);
+
+db_reply_t
+    delete_group
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id);
+
+db_reply_t
+    delete_device
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id);
 
 #endif // SRC_PERSIST_ASSETCRUD_H_

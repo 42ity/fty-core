@@ -13,8 +13,6 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_net_history;
 drop table if exists t_bios_measurement;
-drop table if exists t_bios_measurement_types;
-drop table if exists t_bios_measurement_subtypes;
 drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
@@ -50,32 +48,9 @@ CREATE TABLE t_bios_measurement (
         ON DELETE CASCADE
 );
 
-CREATE TABLE t_bios_measurement_types(
-    id               SMALLINT UNSIGNED  NOT NULL AUTO_INCREMENT,
-    name             VARCHAR(25) NOT NULL,
-    unit             VARCHAR(10) NOT NULL,
-    PRIMARY KEY(id)
-);
-
-CREATE TABLE t_bios_measurement_subtypes(
-    id               SMALLINT UNSIGNED  NOT NULL,
-    id_type          SMALLINT UNSIGNED  NOT NULL,
-    name             VARCHAR(25) NOT NULL,
-    scale            TINYINT NOT NULL,
-
-    PRIMARY KEY(id, id_type),
-    INDEX(id),
-    INDEX(id_type),
-    INDEX(id_type, name),
-
-    FOREIGN KEY(id_type)
-	REFERENCES t_bios_measurement_types(id)
-        ON DELETE RESTRICT
-);
-
 CREATE TABLE t_bios_device_type(
     id_device_type      TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name                VARCHAR(25)      NOT NULL,
+    name                VARCHAR(50)      NOT NULL,
 
     PRIMARY KEY(id_device_type),
 
@@ -85,7 +60,7 @@ CREATE TABLE t_bios_device_type(
 
 CREATE TABLE t_bios_discovered_device(
     id_discovered_device    SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    name                    VARCHAR(25)       NOT NULL,
+    name                    VARCHAR(50)       NOT NULL,
     id_device_type          TINYINT UNSIGNED  NOT NULL,
 
     PRIMARY KEY(id_discovered_device),
@@ -117,7 +92,7 @@ CREATE TABLE t_bios_net_history(
     mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
     ip              CHAR(19)            NOT NULL,
-    name            VARCHAR(25),
+    name            VARCHAR(50),
     timestamp       datetime            NOT NULL,
 
     PRIMARY KEY(id_net_history)
@@ -125,7 +100,7 @@ CREATE TABLE t_bios_net_history(
 
 CREATE TABLE t_bios_client(
     id_client   TINYINT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    name        VARCHAR(25)         NOT NULL,
+    name        VARCHAR(50)         NOT NULL,
 
     PRIMARY KEY(id_client),
 
@@ -166,7 +141,7 @@ DROP TABLE if exists t_bios_asset_element_type;
 
 CREATE TABLE t_bios_asset_element_type (
   id_asset_element_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  name                  VARCHAR(25)      NOT NULL,
+  name                  VARCHAR(50)      NOT NULL,
   
   PRIMARY KEY (id_asset_element_type),
   
@@ -176,9 +151,12 @@ CREATE TABLE t_bios_asset_element_type (
 
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(25)         NOT NULL,
+  name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
-  id_parent         int UNSIGNED,
+  id_parent         INT UNSIGNED,
+  status            char(9)             NOT NULL DEFAULT "inactive",
+  priority          TINYINT             NOT NULL DEFAULT 5,
+  business_crit     TINYINT             NOT NULL DEFAULT 0,
 
   PRIMARY KEY (id_asset_element),
 
@@ -222,7 +200,7 @@ CREATE TABLE t_bios_asset_group_relation (
 
 CREATE TABLE t_bios_asset_device_type(
   id_asset_device_type TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  name                 VARCHAR(25)        NOT NULL,
+  name                 VARCHAR(50)        NOT NULL,
   
   PRIMARY KEY (id_asset_device_type),
   UNIQUE INDEX `UI_t_bios_asset_device_type` (`name` ASC)
@@ -233,10 +211,6 @@ CREATE TABLE t_bios_asset_device_type(
 CREATE TABLE t_bios_asset_device (
   id_asset_device       INT UNSIGNED     NOT NULL AUTO_INCREMENT,
   id_asset_element      INT UNSIGNED     NOT NULL,
-  hostname              VARCHAR(25),
-  full_hostname         VARCHAR(45),
-  ip                    CHAR(45),
-  mac                   CHAR(17),
   id_asset_device_type  TINYINT UNSIGNED NOT NULL,
 
   PRIMARY KEY (id_asset_device),
@@ -257,7 +231,7 @@ CREATE TABLE t_bios_asset_device (
 
 CREATE TABLE t_bios_asset_link_type(
   id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  name                 VARCHAR(25)        NOT NULL,
+  name                 VARCHAR(50)        NOT NULL,
   
   PRIMARY KEY (id_asset_link_type),
   UNIQUE INDEX `UI_t_bios_asset_link_type_name` (`name` ASC)
@@ -385,10 +359,6 @@ DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
             v1.id_asset_element,
-            v1.hostname,
-            v1.full_hostname,
-            v1.ip,
-            v1.mac,
             v1.id_asset_device_type,
             v2.name
     FROM t_bios_asset_device v1
@@ -503,49 +473,6 @@ FROM   t_bios_measurement_topic;
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
-
-/* t_bios_measurement_types */
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (1, "voltage", "V");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (2, "current", "A");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (3, "realpower", "W");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (4, "temperature", "C");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (5, "load", "%");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (6, "charge", "%");
-INSERT INTO t_bios_measurement_types (id, name, unit) VALUES (7, "status", "");
-
-
-/* t_bios_measurement_subtypes */
-/* voltage */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 1, "output", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 1, "output.L1-N", -1); 
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 1, "output.L2-N", -1); 
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 1, "output.L3-N", -1);
-/* current */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 2, "output", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 2, "output.L1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 2, "output.L2", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 2, "output.L3", -1);
-/* realpower */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 3, "default", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (2, 3, "output.L1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (3, 3, "output.L2", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (4, 3, "output.L3", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (5, 3, "outlet", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (6, 3, "outlet.1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (7, 3, "outlet.2", -1);
-    /* devices can have more PSU and for example via IMPI return values separetly for every PSU*/
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (8, 3, "PSU.1", -1);
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (9, 3, "PSU.2", -1);
-
-/* temperature */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 4, "default", -1);
-/* load */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 5, "default", -1);
-/* charge */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 6, "battery", -1);
-/* status */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 7, "ups", 0);
-
 
 /* t_bios_device_type */
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");

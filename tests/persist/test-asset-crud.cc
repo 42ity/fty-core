@@ -4,11 +4,11 @@
 #include "log.h"
 
 #include "assetcrud.h"
+#include "common_msg.h"
 
 TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ext_attribute][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
     log_info ("=============== ASSET EXT ATTRIBUTE DELETE/INSERT #1 NULL ->true, true->true ==================");
     
@@ -78,7 +78,6 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
 TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][asset_ext_attribute][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
     log_info ("=============== ASSET EXT ATTRIBUTE DELETE/INSERT #2 NULL -> false, false->false ==================");
     
@@ -160,13 +159,12 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
 
 // general standart case
 // TODO: alternaternative flow: too long name or other
-/*
-TEST_CASE("asset element INSERT/DELETE #1","[db][CRUD][insert][delete][asset_element][crud_test.sql]")
+
+TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_element][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== ASSET ELEMENT DELETE/INSERT #1 ==================");
+    log_info ("=============== ASSET ELEMENT DELETE/INSERT #3 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -177,12 +175,10 @@ TEST_CASE("asset element INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ele
 
     // first insert
     auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t rowid = common_msg_rowid (reply_insert);
-    auto aux = common_msg_aux (reply_insert);
-    char *item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.status == 1 );
+    uint64_t rowid = reply_insert.rowid;
+    CAPTURE (rowid);
+    REQUIRE ( reply_insert.affected_rows == 1 );
 
     // check select
     zmsg_t* reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -198,21 +194,13 @@ TEST_CASE("asset element INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ele
     
     // must handle duplicate insert without insert
     reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errtype (reply_insert) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (reply_insert) == DB_ERROR_BADINPUT );
-    aux = common_msg_aux (reply_insert);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.affected_rows == 0 );
 
     // first delete
     auto reply_delete = delete_asset_element (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -227,72 +215,49 @@ TEST_CASE("asset element INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ele
 
     // must handle second delete without crash
     reply_delete = delete_asset_element (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
-TEST_CASE("asset device INSERT/DELETE #3","[db][CRUD][insert][delete][asset_device][crud_test.sql]")
+TEST_CASE("asset device INSERT/DELETE #4","[db][CRUD][insert][delete][asset_device][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== ASSET DEVICE DELETE/INSERT #3 ==================");
+    log_info ("=============== ASSET DEVICE DELETE/INSERT #4 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
 
     a_elmnt_id_t   asset_element_id = 2; // it is written in crud_test.sql file
-    const char    *hostname = "this is host name";
-    const char    *fullhostname = "this is full host name";
-    const char    *ip = "this is ip";
-    const char    *mac = "this is mac";
     a_dvc_tp_id_t  asset_device_type_id = 4; // TODO deal with map id to name
     const char*    asset_device_type = "pdu";
 
     // first insert
-    auto reply_insert = insert_into_asset_device (conn, asset_element_id, hostname, fullhostname, ip, mac, asset_device_type_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t rowid = common_msg_rowid (reply_insert);
-    auto aux = common_msg_aux (reply_insert);
-    char *item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    auto reply_insert = insert_into_asset_device (conn, asset_element_id, asset_device_type_id);
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
+    uint64_t rowid = reply_insert.rowid;
 
     // check select
     zmsg_t *reply_select = select_asset_device (conn, asset_element_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_DEVICE);
-    REQUIRE ( !strcmp(asset_msg_ip (reply_select_decode), ip) );
-    REQUIRE ( !strcmp(asset_msg_hostname (reply_select_decode), hostname) );
-    REQUIRE ( !strcmp(asset_msg_fqdn (reply_select_decode), fullhostname) );
-    REQUIRE ( !strcmp(asset_msg_mac (reply_select_decode), mac) );
     REQUIRE ( !strcmp(asset_msg_device_type (reply_select_decode), asset_device_type) );
     zmsg_destroy (&reply_select);
     asset_msg_destroy (&reply_select_decode);
     
     // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_device (conn, asset_element_id, hostname, fullhostname, ip, mac, asset_device_type_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errtype (reply_insert) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (reply_insert) == DB_ERROR_BADINPUT );
-    aux = common_msg_aux (reply_insert);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    reply_insert = insert_into_asset_device (conn, asset_element_id, asset_device_type_id);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_asset_device (conn, asset_element_id);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_device (conn, asset_element_id);
@@ -307,21 +272,18 @@ TEST_CASE("asset device INSERT/DELETE #3","[db][CRUD][insert][delete][asset_devi
 
     // must handle second delete without crash
     reply_delete = delete_asset_device (conn, asset_element_id);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
-TEST_CASE("into asset group INSERT/DELETE #4","[db][CRUD][insert][delete][grp_element][crud_test.sql]")
+ 
+TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_element][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== ASSET ELEMENT INTO GROUP INSERT/DELETE #4 ==================");
+    log_info ("=============== ASSET ELEMENT INTO GROUP INSERT/DELETE #5 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -331,12 +293,9 @@ TEST_CASE("into asset group INSERT/DELETE #4","[db][CRUD][insert][delete][grp_el
 
     // first insert
     auto reply_insert = insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t rowid = common_msg_rowid (reply_insert);
-    auto aux = common_msg_aux (reply_insert);
-    char *item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     std::set <a_elmnt_id_t> reply_select;
@@ -346,21 +305,13 @@ TEST_CASE("into asset group INSERT/DELETE #4","[db][CRUD][insert][delete][grp_el
        
     // must handle duplicate insert without insert
     reply_insert = insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errtype (reply_insert) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (reply_insert) == DB_ERROR_BADINPUT );
-    aux = common_msg_aux (reply_insert);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select.clear();
@@ -369,22 +320,18 @@ TEST_CASE("into asset group INSERT/DELETE #4","[db][CRUD][insert][delete][grp_el
 
     // must handle second delete without crash
     reply_delete = delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
 
-TEST_CASE("into asset link INSERT/DELETE #5","[db][CRUD][insert][delete][asset_link][crud_test.sql]")
+TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_link][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== ASSET LINK INSERT/DELETE #5 ==================");
+    log_info ("=============== ASSET LINK INSERT/DELETE #6 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -397,12 +344,9 @@ TEST_CASE("into asset link INSERT/DELETE #5","[db][CRUD][insert][delete][asset_l
     // first insert
     auto reply_insert = insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
                                        src_out, dest_in);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t rowid = common_msg_rowid (reply_insert);
-    auto aux = common_msg_aux (reply_insert);
-    char *item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zlist_t *reply_select;
@@ -415,21 +359,13 @@ TEST_CASE("into asset link INSERT/DELETE #5","[db][CRUD][insert][delete][asset_l
     // must handle duplicate insert without insert
     reply_insert = insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
                                        src_out, dest_in);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errtype (reply_insert) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (reply_insert) == DB_ERROR_BADINPUT );
-    aux = common_msg_aux (reply_insert);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_asset_link (conn, asset_element_id_src, asset_element_id_dest);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     REQUIRE_NOTHROW ( reply_select = select_asset_device_links_all (conn, asset_element_id_src, INPUT_POWER_CHAIN));
@@ -438,23 +374,19 @@ TEST_CASE("into asset link INSERT/DELETE #5","[db][CRUD][insert][delete][asset_l
 
     // must handle second delete without crash
     reply_delete = delete_asset_link  (conn, asset_element_id_src, asset_element_id_dest);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
     
     zlist_destroy (&reply_select);
     log_close();
 }
 
 
-TEST_CASE("dc unlockated INSERT/DELETE #6","[db][CRUD][insert][delete][dc][unlockated][crud_test.sql]")
+TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unlockated][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== dc INSERT/DELETE #6 ==================");
+    log_info ("=============== dc INSERT/DELETE #7 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -480,13 +412,9 @@ TEST_CASE("dc unlockated INSERT/DELETE #6","[db][CRUD][insert][delete][dc][unloc
 
     // first insert
     auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -503,8 +431,9 @@ TEST_CASE("dc unlockated INSERT/DELETE #6","[db][CRUD][insert][delete][dc][unloc
     char *value = (char*) zhash_first  (reply_ext_attributes);
     while ( value != NULL)
     {
-        char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        char *key = (char*) zhash_cursor (reply_ext_attributes);
+        // value = r:aaaaaa or value = w:aaaaa ; w,r means read_only or writable, need to remove these 2 characters, as they are not value
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value+2)));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -513,21 +442,13 @@ TEST_CASE("dc unlockated INSERT/DELETE #6","[db][CRUD][insert][delete][dc][unloc
 
     // second insert
     reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -542,23 +463,18 @@ TEST_CASE("dc unlockated INSERT/DELETE #6","[db][CRUD][insert][delete][dc][unloc
  
     // second delete
     reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
 
-TEST_CASE("room unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][unlockated][room][crud_test.sql]")
+TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockated][room][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== room INSERT/DELETE #7 ==================");
+    log_info ("=============== room INSERT/DELETE #8 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -578,13 +494,9 @@ TEST_CASE("room unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][unlocka
 
     // first insert
     auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -602,7 +514,7 @@ TEST_CASE("room unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][unlocka
     while ( value != NULL)
     {
         char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value + 2)));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -611,21 +523,13 @@ TEST_CASE("room unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][unlocka
 
     // second insert
     reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -640,23 +544,17 @@ TEST_CASE("room unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][unlocka
  
     // second delete
     reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
-
-TEST_CASE("row unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockated][row][crud_test.sql]")
+TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockated][row][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== row INSERT/DELETE #8 ==================");
+    log_info ("=============== row INSERT/DELETE #9 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -676,13 +574,9 @@ TEST_CASE("row unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockat
 
     // first insert
     auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -700,7 +594,7 @@ TEST_CASE("row unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockat
     while ( value != NULL)
     {
         char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value+2)));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -709,21 +603,13 @@ TEST_CASE("row unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockat
 
     // second insert
     reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -738,22 +624,17 @@ TEST_CASE("row unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockat
  
     // second delete
     reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
-TEST_CASE("rack unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockated][rack][crud_test.sql]")
+TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlockated][rack][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== rack INSERT/DELETE #9 ==================");
+    log_info ("=============== rack INSERT/DELETE #10 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -780,13 +661,9 @@ TEST_CASE("rack unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlocka
 
     // first insert
     auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -804,7 +681,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlocka
     while ( value != NULL)
     {
         char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value + 2)));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -813,21 +690,13 @@ TEST_CASE("rack unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlocka
 
     // second insert
     reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -842,22 +711,17 @@ TEST_CASE("rack unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlocka
  
     // second delete
     reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
-TEST_CASE("group unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlockated][group][crud_test.sql]")
+TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unlockated][group][crud_test.sql]")
 {
     log_open ();
-//    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== group INSERT/DELETE #10 ==================");
+    log_info ("=============== group INSERT/DELETE #11 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -877,13 +741,9 @@ TEST_CASE("group unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unloc
 
     // first insert
     auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -901,7 +761,7 @@ TEST_CASE("group unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unloc
     while ( value != NULL)
     {
         char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value + 2)));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -910,21 +770,13 @@ TEST_CASE("group unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unloc
 
     // second insert
     reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -939,23 +791,18 @@ TEST_CASE("group unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unloc
  
     // second delete
     reply_delete = delete_dc_room_row_rack (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
 
     log_close();
 }
 
 
-TEST_CASE("device unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlockated][device][crud_test.sql]")
+TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlockated][device][crud_test.sql][3]")
 {
     log_open ();
-    log_set_level (LOG_DEBUG);
 
-    log_info ("=============== device INSERT/DELETE #10 ==================");
+    log_info ("=============== device INSERT/DELETE #12 ==================");
     
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -977,23 +824,15 @@ TEST_CASE("device unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlo
     std::set <link_t>        links;      // left empty, simple case
     std::set <a_elmnt_id_t>  groups;     // left empty, simple case
     zhash_t       *extattributes = NULL; // left empty, simple case, TODO with NEW
-    const char    *mac           = "MAC:ADDRESS";
-    const char    *hostname      = "HOSTNAME";
-    const char    *ip            = "boooo!";
-    const char    *fullhostname  = "But i never really have a doubt";
     a_dvc_tp_id_t  asset_device_type_id = 4;
     const char    *asset_device_type = "pdu";
 
     // first insert
-    auto reply_insert = insert_device (conn, name, links, parent_id, groups, 
-                            ext_attributes, mac, hostname, ip, fullhostname, asset_device_type_id);
-
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_DB_OK );
-    uint64_t  rowid = common_msg_rowid (reply_insert);
-    auto      aux   = common_msg_aux (reply_insert);
-    char     *item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_insert);
+    auto reply_insert = insert_device (conn, links, groups, name, parent_id,
+                            ext_attributes, asset_device_type_id);
+    uint64_t rowid = reply_insert.rowid;
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // check select
     //              element
@@ -1012,7 +851,7 @@ TEST_CASE("device unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlo
     while ( value != NULL)
     {
         char *key   = (char*) zhash_cursor (reply_ext_attributes);
-        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value)));
+        real_ext_attributes.insert (std::make_pair (std::string (key), std::string (value + 2 )));
         value = (char *) zhash_next (reply_ext_attributes);
     }
     REQUIRE ( real_ext_attributes == expected_ext_attributes );
@@ -1023,31 +862,20 @@ TEST_CASE("device unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlo
     REQUIRE ( is_asset_msg (reply_select) );
     reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_DEVICE);
-    REQUIRE ( !strcmp(asset_msg_ip (reply_select_decode), ip) );
-    REQUIRE ( !strcmp(asset_msg_hostname (reply_select_decode), hostname) );
-    REQUIRE ( !strcmp(asset_msg_fqdn (reply_select_decode), fullhostname) );
-    REQUIRE ( !strcmp(asset_msg_mac (reply_select_decode), mac) );
     REQUIRE ( !strcmp(asset_msg_device_type (reply_select_decode), asset_device_type) );
     zmsg_destroy (&reply_select);
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_device (conn, name, links, parent_id, groups, 
-                            ext_attributes, mac, hostname, ip, fullhostname, asset_device_type_id);
-    REQUIRE ( common_msg_id (reply_insert) == COMMON_MSG_FAIL );
-    aux   = common_msg_aux (reply_insert);
-    item  = (char *)zhash_lookup (aux, "count");
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_insert);
+    reply_insert = insert_device (conn, links, groups, name, parent_id, 
+                            ext_attributes, asset_device_type_id);
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.status == 1 );
 
     // first delete
     auto reply_delete = delete_device (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "1") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 1 );
+    REQUIRE ( reply_delete.status == 1 );
 
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
@@ -1062,13 +890,8 @@ TEST_CASE("device unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlo
  
     // second delete
     reply_delete = delete_device (conn, rowid);
-    REQUIRE ( common_msg_id (reply_delete) == COMMON_MSG_DB_OK );
-    aux = common_msg_aux (reply_delete);
-    item = (char *)zhash_lookup (aux, "count");
-    INFO (item);
-    REQUIRE ( !strcmp (item, "0") );
-    common_msg_destroy (&reply_delete);
+    REQUIRE ( reply_delete.affected_rows == 0 );
+    REQUIRE ( reply_delete.status == 1 );
     
     log_close();
 }
-*/
