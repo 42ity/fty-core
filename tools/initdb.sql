@@ -154,9 +154,9 @@ CREATE TABLE t_bios_asset_element (
   name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
   id_parent         INT UNSIGNED,
-  status            char(9)             NOT NULL,
-  priority          char(2)             NOT NULL,
-  business_crit     TINYINT             NOT NULL,
+  status            char(9)             NOT NULL DEFAULT "inactive",
+  priority          TINYINT             NOT NULL DEFAULT 5,
+  business_crit     TINYINT             NOT NULL DEFAULT 0,
 
   PRIMARY KEY (id_asset_element),
 
@@ -359,10 +359,6 @@ DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
             v1.id_asset_element,
-            v1.hostname,
-            v1.full_hostname,
-            v1.ip,
-            v1.mac,
             v1.id_asset_device_type,
             v2.name
     FROM t_bios_asset_device v1
@@ -477,7 +473,6 @@ FROM   t_bios_measurement_topic;
 /* *************************************************************************** */
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
-INSERT INTO t_bios_measurement_subtypes (id, id_type, name, scale) VALUES (1, 7, "ups", 0);
 
 
 /* t_bios_device_type */
