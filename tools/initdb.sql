@@ -474,7 +474,6 @@ FROM   t_bios_measurement_topic;
 /* **********************          INSERTIONS          *********************** */
 /* *************************************************************************** */
 
-
 /* t_bios_device_type */
 INSERT INTO t_bios_device_type (name) VALUES ("not_classified");
 INSERT INTO t_bios_device_type (name) VALUES ("ups");
