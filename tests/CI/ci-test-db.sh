@@ -45,6 +45,7 @@ DB_DATA="load_data.sql"
 DB_TOPO="power_topology.sql"
 DB_TOPO1="location_topology.sql"
 DB_RACK_POWER="rack_power.sql"
+DB_CRUD="crud_test.sql"
 
 RESULT=0
 
@@ -68,6 +69,17 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     RESULT=1
 fi
+echo "-------------------- test-db-asset-crud-----"
+make -C "$BUILDSUBDIR" test-db-asset-crud && "$BUILDSUBDIR"/test-db-asset-crud
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-db-asset-crud failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
+
+
+
 
 make -C "$BUILDSUBDIR" test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
