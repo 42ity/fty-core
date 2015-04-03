@@ -32,6 +32,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ----- column: id_asset_element ---------------------
 typedef uint32_t a_elmnt_id_t;
 
+// ----- table:  t_bios_asset_element -----------------
+// ----- column: status           ---------------------
+typedef char     a_elmnt_status_t[9];
+
+// ----- table:  t_bios_asset_element -----------------
+// ----- column: priority -----------------------------
+typedef uint16_t a_elmnt_pr_t;
+
+// ----- table:  t_bios_asset_element -----------------
+// ----- column: business_crit ------------------------
+typedef uint16_t a_elmnt_bc_t;
+
 // ----- table:  t_bios_asset_ext_attributes ----------
 // ----- column: id_asset_ext_attribute ---------------
 typedef uint32_t a_ext_attr_id_t;

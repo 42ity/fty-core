@@ -126,6 +126,7 @@ namespace shared {
         };
 
 
+void load_asset_csv(std::istream& input);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H

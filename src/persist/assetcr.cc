@@ -458,7 +458,10 @@ db_reply_t
         (tntdb::Connection &conn, 
          const char      *element_name, 
          a_elmnt_tp_id_t  element_type_id,
-         a_elmnt_id_t     parent_id)
+         a_elmnt_id_t     parent_id,
+         const char      *status,
+         a_elmnt_pr_t     priority,
+         a_elmnt_bc_t     bc)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -713,7 +716,10 @@ db_reply_t
      const char      *element_name,
      a_elmnt_tp_id_t  element_type_id,
      a_elmnt_id_t     parent_id,
-     zhash_t         *extattributes)
+     zhash_t         *extattributes,
+     const char      *status,
+     a_elmnt_pr_t     priority,
+     a_elmnt_bc_t     bc)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -723,7 +729,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
 
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, element_type_id, parent_id);
+                        (conn, element_name, element_type_id, parent_id, status, priority, bc);
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();
@@ -755,7 +761,10 @@ db_reply_t
         const char    *element_name, 
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
-        a_dvc_tp_id_t  asset_device_type_id)
+        a_dvc_tp_id_t  asset_device_type_id,
+        const char    *status,
+        a_elmnt_pr_t   priority,
+        a_elmnt_bc_t   bc)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -765,7 +774,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
         
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, asset_type::DEVICE, parent_id);
+                        (conn, element_name, asset_type::DEVICE, parent_id, status, priority, bc);
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();

@@ -9,15 +9,16 @@
 
 using namespace shared;
 
-TEST_CASE("CSV map basic get test", "[csv]") {
+TEST_CASE("CSV multiple field names", "[csv]") {
 
+    
     std::stringstream buf;
 
     buf << "Name, Type, Group.1, group.2,description\n";
     buf << "RACK-01,rack,GR-01,GR-02,\"just,my,dc\"\n";
-    buf << "RACK-02,rack,GR-01,GR-02,\"just\tmy\nrack\"\n";
+    buf << "RACK-02,rack,GR-011,GR-02,\"just\tmy\nrack\"\n";
 
-    std::vector<std::vector<std::string> > data;
+    /*std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(buf);
     deserializer.delimiter(',');
     deserializer.readTitle(false);
@@ -47,22 +48,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     // test values with commas
     REQUIRE(cm.get(1, "description") == "just,my,dc");
     REQUIRE(cm.get(2, "description") == "just\tmy\nrack");
-}
-
-TEST_CASE("CSV multiple field names", "[csv]") {
-
-    std::stringstream buf;
-
-    buf << "Name, name\n";
-
-    std::vector<std::vector<std::string> > data;
-    cxxtools::CsvDeserializer deserializer(buf);
-    deserializer.delimiter(',');
-    deserializer.readTitle(false);
-    deserializer.deserialize(data);
-
-    shared::CsvMap cm{data};
-    REQUIRE_THROWS_AS(cm.deserialize(), std::invalid_argument);
+*/
+    load_asset_csv(buf);
     
 }
-

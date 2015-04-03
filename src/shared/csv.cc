@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 
 #include "csv.h"
+#include "assetcrud.h"
+#include "dbpath.h"
 
 namespace shared {
 
@@ -139,70 +141,152 @@ static bool is_email(const std::string& str) {
     return false;
 }
 
+static std::map<std::string,int> read_element_types(tntdb::Connection &conn)
+{
+    auto res = get_dictionary_element_type(conn);
+    return res.item;
+}
+
+static std::map<std::string,int> read_device_types(tntdb::Connection &conn)
+{
+    auto res = get_dictionary_device_type(conn);
+    return res.item;
+}
+
+void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
+{
+    // TODO move somewhere else
+    static const std::set<std::string> STATUSES = \
+        {"active", "inactive"}; // TODO check
+    static auto TYPES = read_element_types (conn);
+    static auto SUBTYPES = read_device_types (conn);
+    //       {"server", "sts", "ups", "epdu", "pdu", "genset", "main"};
+
+
+    auto name = cm.get(row_i, "name");
+    if ( !name.empty() )
+        throw std::invalid_argument("name is empty");
+
+    auto type = cm.get_strip(row_i, "type");
+    if ( TYPES.find(type) == TYPES.end() )
+        throw std::invalid_argument("Type '" + type + "' is not allowed");
+    auto type_id = TYPES.find(type)->second;
+
+    auto status = cm.get_strip(row_i, "status");
+    if ( STATUSES.find(status) == STATUSES.end() )
+    {
+        throw std::invalid_argument( "Status '" + status + "' is not allowed");
+        // OR
+        // status = "nonactive";
+    }
+
+    auto bs_critical = cm.get_strip(row_i, "business_critical");
+    if (bs_critical != "yes" && bs_critical != "no") {
+        throw std::invalid_argument( "Business critical '" + status 
+                            + "' is not allowed");
+        // OR
+        // bs_critical = "no";
+    }
+    // TODO function
+    int bc = 1;
+    if (bs_critical == "no")
+        bc = 0;
+
+    int priority = get_priority(cm.get_strip(row_i, "priority"));
+
+    auto location = cm.get(row_i, "location");
+    a_elmnt_id_t parent_id = 0;
+    if ( !location.empty() )
+    {
+        auto ret = select_asset_element_by_name(conn, location.c_str());
+        if ( ret.status == 1 )
+            parent_id = ret.item.id;
+        else
+        {
+            // jestli parent podle jmena se nenasel
+            // throw ?????
+        }
+    }
+    
+    auto subtype = cm.get_strip(row_i, "subtype");
+    if ( ( type == "device" ) && ( SUBTYPES.find(subtype) == SUBTYPES.end() ) ) {
+        throw std::invalid_argument ("Subtype '" + subtype + "' is not allowed");
+    }
+    if ( ( type != "device" ) && ( type != "group") )
+    {
+        // need to write somewhere, that this column would be ignored
+    }
+    auto subtype_id = TYPES.find(type)->second;
+
+    
+    std::set <a_elmnt_id_t>  groups{}; // list of element id of all groups, the element belongs to   
+    for (int group_index = 1 ; true; group_index++ )
+    {
+        try {
+            auto group = cm.get(row_i, "group." + std::to_string(group_index));
+            auto ret = select_asset_element_by_name(conn, group.c_str());
+            if ( ret.status == 1 )
+                groups.insert(ret.item.id);
+        }
+        catch (...)
+        {
+            break;
+        }
+    }
+    
+    std::set <link_t>  links{};
+    // TODO read and fill this
+    zhash_t           *extattributes = NULL;
+    // all columns, that were not jet read, insert as ext attributes
+    // TODO: on some ext attributes need to have more checks
+
+    if ( type != "device")
+    {
+        auto ret = insert_dc_room_row_rack_group (conn, name.c_str(), type_id, parent_id, 
+                extattributes, status.c_str(), priority, bc);
+    }
+    else
+    {    auto ret = insert_device (conn, links, groups, name.c_str(), parent_id,
+                    extattributes, subtype_id, status.c_str(), priority, bc);
+    }
+    //TODO: check from DB and call is_valid_location_chain
+
+}
+
+
 /*
  * XXX: an example how it should look like - go through a file and
  * check the values - Database will obsolete most of this
-inline void load_asset_csv(std::istream& input) {
-
-    static const std::set<std::string> TYPES = \
-        {"datacenter", "room", "rack", "row", "device"};
-
-    static const std::set<std::string> SUBTYPES = \
-        {"server", "sts", "ups", "epdu", "pdu", "genset", "main"};
-
+ * */
+inline void load_asset_csv(std::istream& input)
+{
     std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(input);
     deserializer.delimiter(',');
     deserializer.readTitle(false);
     deserializer.deserialize(data);
 
-    shared::CsvMap cm{data};
+    CsvMap cm{data};
     cm.deserialize();
 
-    for (size_t row_i = 1; row_i != cm.rows(); row_i++) {
-        auto name = cm.get(row_i, "name");
-        if (name.size() == 0)
-            throw std::invalid_argument("name is empty");
-
-        auto type = cm.get_strip(row_i, "type");
-        if (TYPES.count(type) == 0) {
-            std::ostringstream b;
-            b << "Type '" << type <<"' is not allowed";
-            throw std::invalid_argument(b.str());
+    tntdb::Connection conn;
+    try{
+        conn = tntdb::connect(url);
+    }
+    catch(...)
+    {
+        return;
+    }
+    for (size_t row_i = 1; row_i != cm.rows(); row_i++)
+    {
+        try{
+            process_row(conn, cm,row_i);
+            //add to statistic
         }
-
-        auto subtype = cm.get_strip(row_i, "subtype");
-        if (SUBTYPES.count(subtype) == 0) {
-            std::ostringstream b;
-            b << "Subtype '" << subtype <<"' is not allowed";
-            throw std::invalid_argument(b.str());
+        catch(...)
+        {
         }
-
-        auto location = cm.get(row_i, "location");
-        //TODO: check from DB and call is_valid_location_chain
-
-        auto status = cm.get_strip(row_i, "status");
-        if (STATUSES.count(status) == 0) {
-            std::ostringstream b;
-            b << "Status '" << status <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-            // OR
-            // status = "nonactive";
-        }
-
-        auto bs_critical = cm.get_strip(row_i, "business_critical");
-        if (bs_critical != "yes" && bs_critical != "no") {
-            std::ostringstream b;
-            b << "Business critical '" << status <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-            // OR
-            // bs_critical = "no";
-        }
-
-        int priority = get_priority(
-                cm.get_strip(row_i, "priority"));
     }
 }
-*/
 
 } //namespace shared

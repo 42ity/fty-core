@@ -250,6 +250,13 @@ noinst_LTLIBRARIES +=		libpriv-csv.la
 libpriv_csv_la_SOURCES =	src/shared/csv.h \
 				src/shared/csv.cc
 
+libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_src_dir)/src/msg
+
 libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
 
 noinst_LTLIBRARIES += 		libpriv-db.la
