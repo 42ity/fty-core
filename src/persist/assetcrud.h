@@ -215,7 +215,7 @@ db_reply_t
 std::set <a_elmnt_id_t> select_asset_group_elements (tntdb::Connection &conn, a_elmnt_id_t group_id);
 
 
-zlist_t* select_asset_device_links_all(tntdb::Connection conn,
+zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id);
 /// insert
 
