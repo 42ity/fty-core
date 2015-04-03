@@ -48,6 +48,8 @@ Example:
 #include <map>
 #include <cstdint>
 
+#include <cxxtools/csvdeserializer.h>
+
 namespace shared {
     /**
      * \class CsvMap
@@ -69,13 +71,13 @@ namespace shared {
            */
             CsvMap(const Data& data) :
                 _data{data},
-                _field_to_index{}
+                _title_to_index{}
             {};
 
             /**
-             * \brief deserialize provided data, inicialize map of field name to index
+             * \brief deserialize provided data, inicialize map of row title to index
              *
-             * \throws std::invalid_argument if csv contain multiple fields with the
+             * \throws std::invalid_argument if csv contain multiple title with the
              *         same name
              */
             void deserialize();
@@ -85,8 +87,15 @@ namespace shared {
              *
              * \throws std::out_of_range if row_i > data.size() or title_name is not known
              */
-            const std::string& get(size_t row_i, const std::string title_name) const;
-
+            const std::string& get(size_t row_i, const std::string& title_name) const;
+            
+            /**
+             * \brief return the content on row with the given title name striped and in lower case
+             *
+             * \throws std::out_of_range if row_i > data.size() or title_name is not known
+             */
+            std::string get_strip(size_t row_i, const std::string& title_name);
+            
             /**
              * \brief return number of rows
              */
@@ -101,10 +110,21 @@ namespace shared {
                 return _data[0].size();
             }
 
+            /**
+             * \brief return if given title does not exist
+             */
+            bool hasTitle(const std::string& title_name) const;
+
+            /**
+             * \brief get copy of titles
+             */
+            std::vector<std::string> getTitles() const;
+
         private:
             Data _data;
-            std::map<std::string, size_t> _field_to_index;
+            std::map<std::string, size_t> _title_to_index;
         };
+
 
 } //namespace shared
 
