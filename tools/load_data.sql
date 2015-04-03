@@ -26,10 +26,6 @@ select @asset_element_device := id_asset_element_type from t_bios_asset_element_
 /* t_bios_asset_link_type; */
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
 
-/* t_bios_measurement_types */
-select @measurement_temperature := id from t_bios_measurement_types where name = 'temperature';
-select @measurement_voltage := id from t_bios_measurement_types where name = 'voltage';
-
 /* t_bios_client */
 select @client_nmap := id_client from t_bios_client where name = 'nmap';
 select @client_mymodule := id_client from t_bios_client where name = 'mymodule';
@@ -266,12 +262,11 @@ values
 );
 
 insert into t_bios_asset_device
-    (id_asset_element, id_asset_device_type, mac)
+    (id_asset_element, id_asset_device_type)
 values
 (
     (select id_asset_element from t_bios_asset_element where name = 'serv1'),
-    @asset_device_server,
-    "11:22:33:44:55:66"
+    @asset_device_server
 );
 insert into t_bios_asset_device
     (id_asset_element, id_asset_device_type)
@@ -370,7 +365,7 @@ values
             AND id_asset_device_type = @asset_device_epdu),
     (select id_asset_device from t_bios_asset_device
      where id_asset_element = (select id_asset_element from t_bios_asset_element where name = 'serv1')
-            AND id_asset_device_type = @asset_device_server AND mac = '11:22:33:44:55:66'),
+            AND id_asset_device_type = @asset_device_server),
     @asset_link_powerchain
 );
 
