@@ -202,12 +202,14 @@ db_reply_t
             "   t_bios_asset_link"
             "   INNER JOIN t_bios_asset_device"
             " WHERE"
-            "   t_bios_asset_link.id_asset_device_src = "
-            "               t_bios_asset_device.id_asset_device AND"
-            "   t_bios_asset_device.id_asset_element = :element"
+            "   t_bios_asset_device.id_asset_element = :element AND"
+            "   ( ( t_bios_asset_link.id_asset_device_src = "
+            "               t_bios_asset_device.id_asset_device) OR"
+            "     ( t_bios_asset_link.id_asset_device_dest = "
+            "               t_bios_asset_device.id_asset_device) )"
         );
 
-        ret.affected_rows = st.set("dvc", asset_element_id).
+        ret.affected_rows = st.set("element", asset_element_id).
                                execute();
         log_debug ("[t_bios_asset_link]: was deleted %"
                                 PRIu64 " rows", ret.affected_rows);
@@ -792,7 +794,7 @@ db_reply_t
     if ( reply_delete3.status == 0 )
     {
         trans.rollback();
-        log_info ("end: error occured during removing element");
+        log_info ("end: error occured during removing links");
         return reply_delete3;
     }
 

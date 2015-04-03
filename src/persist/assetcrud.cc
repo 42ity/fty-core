@@ -808,7 +808,7 @@ db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
 
 
 
-zlist_t* select_asset_device_links_all(tntdb::Connection conn,
+zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id)
 {
     log_info("start");

@@ -24,6 +24,9 @@
 #       The variable values may be set by caller or an earlier stage
 #       in script interpretation, otherwise they get defaulted here.
 
+### Some variables might not be initialized
+set +u
+
 ### Store some important CLI values
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"
