@@ -814,6 +814,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/include/git_details_override.h                 \
                       src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
                       src/web/src/auth-require.cpp                       \
+                      src/web/src/agent.cpp                              \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \

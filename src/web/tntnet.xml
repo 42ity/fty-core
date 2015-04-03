@@ -22,6 +22,10 @@
     <mapping>
       <target>json@bios_web</target>
     </mapping>
+    <!-- Make sure we have malamute connection -->
+    <mapping>
+      <target>agent@bios_web</target>
+    </mapping>
     <!-- We are getting authorized -->
     <mapping>
       <target>auth@bios_web</target>

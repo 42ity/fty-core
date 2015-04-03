@@ -98,9 +98,9 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
 
     errno = 0;
     ymsg_set_int64(in, "element_id", 26);
-    ymsg_set_int64(in, "time_st", 0);
-    ymsg_set_int64(in, "time_end", time(NULL));
-    ymsg_set_string(in, "source", "temperature.thermal_zone0.avg_8");
+    ymsg_set_int64(in, "start_ts", 0);
+    ymsg_set_int64(in, "end_ts", time(NULL));
+    ymsg_set_string(in, "source", "temperature.thermal_zone0.arithmetic_mean_8h");
     REQUIRE(errno == 0);
 
     persist::process_ymsg(out, &out_s, in, "get_measurements");
@@ -117,8 +117,6 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     std::string test;
     REQUIRE(si.getMember("units", test));
     REQUIRE(test == "C");
-    REQUIRE(si.getMember("source", test));
-    REQUIRE(test == "temperature.thermal_zone0.avg_8");
     REQUIRE(si.getMember("data").memberCount() > 2);
 
     log_close();
