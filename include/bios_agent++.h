@@ -52,10 +52,11 @@ class BIOSAgent {
     zactor_t * actor(  ) { return bios_agent_actor( _bios_agent ); };
     zsock_t * msgpipe(  ) { return bios_agent_msgpipe( _bios_agent ); };
 
-    void timeout(int timeoutms) { _timeout = timeoutms; };
+    void timeout(const int timeoutms) { _timeout = timeoutms; };
     int timeout() { return _timeout; };
 
     std::string agentName() { return _agentName; };
+    void agentName(const std::string newname) { _agentName = newname; }
     virtual void onSend( ymsg_t **message ) { ymsg_destroy( message ); };
     virtual void onReply( ymsg_t **message ) { ymsg_destroy( message ); };
     virtual void onPoll() { };
@@ -83,23 +84,27 @@ class BIOSAgent {
         }
         zpoller_destroy( &poller );
     };
-    bool connect(const char * endpoint, const char *stream, const char *pattern) {
-        if( endpoint == NULL || stream == NULL || _agentName.empty() ) return false; 
+    bool connect(const char * endpoint, const char *stream = NULL,
+                                        const char *pattern = NULL) {
+        if( endpoint == NULL || _agentName.empty() ) return false; 
         if( _bios_agent ) bios_agent_destroy( &_bios_agent );
         _bios_agent = bios_agent_new( endpoint, _agentName.c_str() );
         if( _bios_agent == NULL ) return false;
-        if( set_producer( stream ) < 0 ) {
-            bios_agent_destroy( &_bios_agent );
-            return false;
-        }
-        if( pattern ) {
-            if( set_consumer( stream, pattern ) < 0 ) {
-                bios_agent_destroy(&_bios_agent);
+        if( stream ) {
+            if( set_producer( stream ) < 0 ) {
+                bios_agent_destroy( &_bios_agent );
                 return false;
+            }
+            if( pattern ) {
+                if( set_consumer( stream, pattern ) < 0 ) {
+                    bios_agent_destroy(&_bios_agent);
+                    return false;
+                }
             }
         }
         return true;
     };
+    bios_agent_t *get_c_bios_agent() { return _bios_agent; }
     int run() { onStart(); main(); onEnd(); return _exitStatus; }
  private:
     void handleReplies( ymsg_t *message );
