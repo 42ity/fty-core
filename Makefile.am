@@ -292,7 +292,6 @@ DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -472,7 +471,6 @@ test_db2_LDADD = \
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -501,7 +499,6 @@ test_dbtopology_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -525,7 +522,6 @@ test_db_asset_crud_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -549,7 +545,6 @@ test_agents_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -574,7 +569,6 @@ test_totalpower_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -626,8 +620,7 @@ test_web_LDADD = 	libpriv-test-run.la \
 
 test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/web/include \
-			-I$(abs_top_srcdir)/src/simple
+			-I$(abs_top_srcdir)/src/web/include
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
@@ -675,8 +668,7 @@ netmon_SOURCES = \
 			src/agents/netmon/msg_send.h
 
 netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/agents/netmon \
-			-I$(abs_top_srcdir)/src/simple
+			-I$(abs_top_srcdir)/src/agents/netmon
 
 netmon_LDADD = \
 			libpriv-defs.la \
@@ -721,9 +713,7 @@ db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-# TODO: remove simple at the end
-EXTRA_DIST +=		$(top_srcdir)/src/simple/main.cc \
-			$(top_srcdir)/tools/dbinit.h \
+EXTRA_DIST += $(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/db-init.in
 
 dist_noinst_HEADERS += \
@@ -749,8 +739,7 @@ driver_nmap_LDADD = \
 
 driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
 
-driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/simple
+driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS)
 
 #FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
 bin_PROGRAMS += 	dshell
@@ -840,7 +829,6 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/src/web/include \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools \
@@ -1069,8 +1057,7 @@ TXT_DOCS_PLAINTEXT =
 # (as in case of the _ASCIIDOC list).
 # Filenames here should not have spaces and should have the '.txt' suffix.
 
-MAPPED_TXT_DOCS_PLAINTEXT = \
-	src/simple/README:$(myDEVDOCDIR)/README-archdoc-simplePOC.txt
+MAPPED_TXT_DOCS_PLAINTEXT = 
 
 MAPPED_TXT_DOCS_ASCIIDOC = \
 	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
