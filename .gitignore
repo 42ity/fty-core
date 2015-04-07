@@ -92,6 +92,7 @@ server-agent
 tests/junit/
 tests/CI/web/log/
 tests/CI/tmp.*
+tests/CI/web/commands/tmp.*
 
 build/
 build-*/
