@@ -433,14 +433,25 @@ test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
 test_cidr_LDFLAGS =	-lcidr
 
 check_PROGRAMS += 	test-csv
+
 test_csv_SOURCES =		src/shared/csv.h \
-					tests/shared/test-csv.cc
-test_csv_LDADD = 		libpriv-csv.la \
-						libpriv-log.la \
-					libpriv-test-run.la
+					    tests/shared/test-csv.cc
+
+test_csv_LDADD = 		libpriv-log.la \
+						libpriv-db.la \
+						libpriv-csv.la \
+					    libpriv-test-run.la \
+					    libpriv-proto.la
+
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_src_dir)/src/msg \
 					-I$(abs_top_srcdir)/tests/include/
-test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
+
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS} -ltntdb	 
 
 bin_PROGRAMS += 	test-db
 
@@ -469,11 +480,11 @@ test_db2_SOURCES = \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
+			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-test-run.la
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \

@@ -153,7 +153,7 @@ static std::map<std::string,int> read_device_types(tntdb::Connection &conn)
     return res.item;
 }
 
-void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
+static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 {
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
@@ -258,7 +258,7 @@ void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
  * XXX: an example how it should look like - go through a file and
  * check the values - Database will obsolete most of this
  * */
-inline void load_asset_csv(std::istream& input)
+void load_asset_csv(std::istream& input)
 {
     std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(input);
