@@ -10,7 +10,7 @@
 
 #include "persistence.h"
 #include "utils.h"
-#include "bios_agent.h"
+#include "bios_agent++.h"
 #include "agents.h"
 #include "ymsg.h"
 #include "str_defs.h"
@@ -27,7 +27,7 @@
     std::string element_id;
 </%args>
 <%thread scope="global">
-    bios_agent_t* agent = NULL;
+    BIOSAgent agent("not_here");
 </%thread>
 <%cpp>
     int64_t st;
@@ -105,8 +105,8 @@
                                             step.c_str(), eid,
                                             (source+"." + type + "_" + step).
                                             c_str());
-    bios_agent_sendto(agent, "persistence.measurement", "get_measurements", &msg);
-    msg = bios_agent_recv(agent);
+    agent.sendto("persistence.measurement", "get_measurements", &msg);
+    msg = agent.recv();
     char *json = NULL;
     if(msg == NULL) {
 </%cpp>
