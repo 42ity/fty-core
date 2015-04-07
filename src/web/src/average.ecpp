@@ -26,6 +26,9 @@
     std::string source;
     std::string element_id;
 </%args>
+<%thread scope="global">
+    bios_agent_t* agent = NULL;
+</%thread>
 <%cpp>
     int64_t st;
     int64_t end;
@@ -45,7 +48,7 @@
         }
         end = mktime(&tm);
         // check that start_ts < end_ts
-        if (end >= st) {
+        if (end <= st) {
             throw std::invalid_argument ("start_ts must be <= end_ts");
         }
 
@@ -97,15 +100,23 @@
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    char a_name[64];
-    sprintf(a_name, "rest.%d", getpid());
-    bios_agent_t* agent = bios_agent_new("ipc://malamute", a_name);
+    // TODO: Replace with a real computation module
     ymsg_t *msg = bios_web_average_request_encode(st, end, type.c_str(),
-                                            step.c_str(), eid, source.c_str());
-    bios_agent_sendto(agent, "computation", "average", &msg);
+                                            step.c_str(), eid,
+                                            (source+"." + type + "_" + step).
+                                            c_str());
+    bios_agent_sendto(agent, "persistence.measurement", "get_measurements", &msg);
     msg = bios_agent_recv(agent);
     char *json = NULL;
-    if(msg == NULL || bios_web_average_reply_decode(&msg, &json)) {
+    if(msg == NULL) {
+</%cpp>
+        {
+            "msg" : "Computation module didn't replied."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    if(bios_web_average_reply_decode(&msg, &json)) {
 </%cpp>
         {
             "msg" : "Got incorect reply from computation module."
