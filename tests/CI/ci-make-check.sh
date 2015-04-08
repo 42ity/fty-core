@@ -31,8 +31,9 @@ apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
 echo "==================== auto-configure ========================="
-./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
-echo "==================== make distcheck ========================="
-./autogen.sh --no-distclean make distcheck
+#  --no-distclean (?)
+./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "=================== make and install ========================"
-./autogen.sh --no-distclean make install
+./autogen.sh make install | tee make.log
+echo "==================== make distcheck ========================="
+./autogen.sh make distcheck
