@@ -344,6 +344,7 @@ libpriv_loadcsv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools
 
 libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS} \
+			libpriv-csv.la \
 			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-proto.la
@@ -497,7 +498,6 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 test_loadcsv_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
-			libpriv-csv.la \
 			libpriv-loadcsv.la \
 			libpriv-cidr.la \
 			libpriv-test-run.la
