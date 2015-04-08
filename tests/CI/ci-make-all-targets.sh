@@ -52,8 +52,8 @@ unusedFunction:src/api/*
 fi
 
 echo "======================== make check ========================="
-./autogen.sh make check
+./autogen.sh make check | tee -a make.log
 echo "======================== make dist =========================="
-./autogen.sh make dist
+./autogen.sh make dist | tee -a make.log
 echo "======================== make distcheck ====================="
-./autogen.sh make distcheck
+./autogen.sh make distcheck | tee -a make.log
