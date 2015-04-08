@@ -911,7 +911,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-log.la libpriv-subprocess.la \
+			 libpriv-subprocess.la \
 			libpriv-utils.la libpriv-defs.la
 
 dist_noinst_HEADERS += \
