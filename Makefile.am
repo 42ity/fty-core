@@ -684,7 +684,8 @@ server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-server_agent_LDADD =	libpriv-proto.la
+server_agent_LDADD = \
+				 libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
@@ -748,7 +749,9 @@ dshell_SOURCES =	tools/dshell.cc
 
 dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
 
-dshell_LDADD =		libpriv-proto.la
+dshell_LDADD = \
+			libpriv-proto.la \
+			libpriv-defs.la
 
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
@@ -791,6 +794,22 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
+
+# WIP (KHR)
+client_PROGRAMS +=	cm-agent
+
+cm_agent_SOURCES = \
+			src/agents/computation/cm-agent.cc
+
+cm_agent_LDADD = \
+			libpriv-log.la \
+			libpriv-utils.la
+
+cm_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+
+cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)
+
+#
 
 
 ###################################################################
