@@ -52,7 +52,7 @@ bool is_average_step_supported (const char *step);
 bool is_average_type_supported (const char *type);
 
 // Macros
-#define str(X) #X
+#define STR (X) #X
 
 #ifdef __cplusplus
 }
