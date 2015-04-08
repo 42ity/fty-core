@@ -156,6 +156,37 @@ bios_agent_recv (bios_agent_t *self) {
     return ymsg;
 }
 
+ymsg_t *
+bios_agent_recv_wait(bios_agent_t *self, int timeout) {
+
+    if(!self) {
+        return NULL;
+    }
+
+    zsock_t *pipe = bios_agent_msgpipe(self);
+    if(!pipe) {
+        return NULL;
+    }
+
+    zmsg_t *zmsg = NULL;
+    zsock_t *which = NULL;
+    zpoller_t *poller = zpoller_new(pipe, NULL);
+    if(poller) {
+        which = (zsock_t *)zpoller_wait(poller, timeout);
+        if(which) {
+            zmsg = mlm_client_recv(self->client);
+        }
+        zpoller_destroy(&poller);
+    }
+
+    if (!zmsg) {
+        return NULL;
+    }
+    ymsg_t *ymsg = ymsg_decode(&zmsg);
+    return ymsg;
+}
+
+
 const char *
 bios_agent_command (bios_agent_t *self) {
     if (!self) {

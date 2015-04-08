@@ -123,6 +123,18 @@ BIOS_EXPORT int
 BIOS_EXPORT ymsg_t *
     bios_agent_recv (bios_agent_t *self);
 
+/*!
+ \brief Receive message from malamute without blocking forever
+
+ Takes ownership of the message received.
+ \param[in] self    Bios agent
+ \param[in] timeout Don't wait if nothing comes within X ms
+ \note Caller is responsible to destroy the received message when done
+ \return Received ROZP message on success, NULL on failure
+*/
+BIOS_EXPORT ymsg_t *
+    bios_agent_recv_wait (bios_agent_t *self, int timeout);
+
 /*! 
  \brief Prepare to publish to a specified stream. 
  

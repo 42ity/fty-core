@@ -255,6 +255,8 @@ void get_measurements(ymsg_t* out, char** out_subj,
                "  \"source\": \"" + ymsg_get_string(in,"source") + "\",\n" +
 #endif
                "  \"element_id\": " + ymsg_get_string(in,"element_id") + ",\n" +
+               "  \"start_ts\": " + ymsg_get_string(in,"start_ts") + ",\n" +
+               "  \"end_ts\": " + ymsg_get_string(in,"end_ts") + ",\n" +
                "\"data\": [\n" + json + "\n] }";
     } catch(const std::exception &e) {
         log_error("Run into '%s' while getting measurements", e.what());
