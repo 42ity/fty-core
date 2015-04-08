@@ -37,6 +37,9 @@ TOTAL=0
 NEED_BUILDSUBDIR=no determineDirs_default || true
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+set -o pipefail 2>/dev/null || true
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -104,17 +107,13 @@ POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
     if [ -z "`echo "x$1" | grep "^x-"`" ]; then
-        POSITIVE="$POSITIVE $1"
+        POSITIVE="$POSITIVE `echo "$1" | sed 's|.sh$||'`"
     else
-        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`"
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||' | sed 's|.sh$||'`"
     fi
     shift
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
-
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
-set -o pipefail 2>/dev/null || true
 
 for i in $POSITIVE; do
     for NAME in *$i*.sh; do
