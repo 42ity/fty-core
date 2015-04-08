@@ -40,6 +40,8 @@ echo "======================== update ============================="
 apt-get update >/dev/null 2>&1
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
 
+### Note that configure and make are used explicitly to avoid a cleanup
+### and full rebuild of the project if nothing had changed.
 echo "==================== auto-configure ========================="
 ./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
 echo "====================== auto-make ============================"
@@ -48,7 +50,8 @@ echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-              --suppress=*:src/include/*_msg.c \
+              --suppress=*:src/msg/*_msg.c \
+              --suppress=*:src/include/git_details_override.c \
               src 2>cppcheck.xml
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
 fi
