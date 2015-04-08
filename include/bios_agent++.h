@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <ctime>
 
-#include <bios_agent.h>
+#include "bios_agent.h"
     
 class BIOSAgent {
  public:
@@ -40,6 +40,7 @@ class BIOSAgent {
     int replyto(  const char *address,  const char *subject,  ymsg_t **reply_p,  ymsg_t *send ) { return bios_agent_replyto( _bios_agent, address, subject, reply_p, send ); };
     int sendfor(  const char *address,  const char *subject,  ymsg_t **send_p ) { return bios_agent_sendfor( _bios_agent, address, subject, send_p ); };
     ymsg_t * recv(  ) { return bios_agent_recv( _bios_agent ); };
+    ymsg_t * recv_wait(  int timeout ) { return bios_agent_recv_wait( _bios_agent, timeout ); };
     int set_producer(  const char *stream ) { return bios_agent_set_producer( _bios_agent, stream ); };
     int set_consumer(  const char *stream,  const char *pattern ) { return bios_agent_set_consumer( _bios_agent, stream, pattern ); };
     const char * command(  ) { return bios_agent_command( _bios_agent ); };
