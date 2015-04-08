@@ -33,10 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 typedef uint32_t a_elmnt_id_t;
 
 // ----- table:  t_bios_asset_element -----------------
-// ----- column: status           ---------------------
-typedef char     a_elmnt_status_t[9];
-
-// ----- table:  t_bios_asset_element -----------------
 // ----- column: priority -----------------------------
 typedef uint16_t a_elmnt_pr_t;
 
@@ -78,11 +74,11 @@ typedef uint8_t  a_lnk_tp_id_t;
 
 // ----- table:  t_bios_asset_link --------------------
 // ----- column: src_out ------------------------------
-typedef char  a_lnk_src_out_t[4];
+typedef char*  a_lnk_src_out_t;
 
 // ----- table:  t_bios_asset_link --------------------
 // ----- column: dest_in ------------------------------
-typedef char  a_lnk_dest_in_t[4];
+typedef char*  a_lnk_dest_in_t;
 
 // ----- table:  t_bios_monitor_asset_relation --------
 // ----- column: id_ma_relation -----------------------

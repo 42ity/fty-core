@@ -271,7 +271,7 @@ db_reply_t
 db_reply_t
     insert_into_asset_links
         (tntdb::Connection       &conn,
-         std::set <link_t> const &links);
+         std::vector <link_t> const &links);
 
 db_reply_t
     insert_dc_room_row_rack_group
@@ -287,7 +287,7 @@ db_reply_t
 db_reply_t
     insert_device
         (tntdb::Connection &conn,
-         std::set <link_t>  const &links,
+         std::vector <link_t> &links,
          std::set <a_elmnt_id_t> const &groups,
          const char    *element_name, 
          a_elmnt_id_t   parent_id,

@@ -24,23 +24,23 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "loadcsv.h"
 
 #include "csv.h"
+#include "log.h"
 #include "assetcrud.h"
 #include "dbpath.h"
 
 using namespace shared;
 
-//TODO TODO TODO
-
 // check if it is valid location chain
 // valid_location_chain("device", "rack") -> true
 // valid_location_chain("room", "rack") -> false
 static bool is_valid_location_chain(const std::string& type, const std::string& parent_type) {
+    // TODO hardcoded constants
     static const std::vector<std::string> LOCATION_CHAIN = \
         {"datacenter", "room", "row", "rack", "device"};
 
     size_t i, ti, pi;
     i = 0;
-    for (auto x : LOCATION_CHAIN) {
+    for (auto &x : LOCATION_CHAIN) {
         if (x == type)
             ti = i;
         if (x == parent_type)
@@ -61,6 +61,7 @@ static int get_priority(const std::string& s) {
 }
 
 static bool is_status(const std::string& status) {
+    //TODO STATIC common
     static const std::set<std::string> STATUSES = \
     {"active", "nonactive", "spare", "retired"};
     return (STATUSES.count(status));
@@ -126,7 +127,7 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 
     auto bs_critical = cm.get_strip(row_i, "business_critical");
     if (bs_critical != "yes" && bs_critical != "no") {
-        throw std::invalid_argument( "Business critical '" + status 
+        throw std::invalid_argument( "Business critical '" + bs_critical 
                             + "' is not allowed");
         // OR
         // bs_critical = "no";
@@ -149,26 +150,27 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
             parent_id = ret.item.id;
         else
         {
-            // jestli parent podle jmena se nenasel
-            // throw ?????
+            throw std::invalid_argument( "Location '" + location 
+                            + "' is not present in DB");
         }
     }
     unused_columns.erase("location");
     
-    auto subtype = cm.get_strip(row_i, "subtype");
+    auto subtype = cm.get_strip(row_i, "sub_type");
     if ( ( type == "device" ) && ( SUBTYPES.find(subtype) == SUBTYPES.end() ) ) {
         throw std::invalid_argument ("Subtype '" + subtype + "' is not allowed");
     }
     if ( ( type != "device" ) && ( type != "group") )
     {
-        // need to write somewhere, that this column would be ignored
+        // TODO LOG
+        log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
     auto subtype_id = TYPES.find(type)->second;
-    unused_columns.erase("subtype");
+    unused_columns.erase("sub_type");
 
     
     std::set <a_elmnt_id_t>  groups{}; // list of element id of all groups, the element belongs to   
-    for (int group_index = 1 ; true; group_index++ )
+    for ( int group_index = 1 ; true; group_index++ )
     {
         try {
             auto grp_col_name = "group." + std::to_string(group_index);   // column name
@@ -179,28 +181,85 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
                 groups.insert(ret.item.id);  // if OK, then take ID
             else
             {
-                //LOG this group would be ignored
+                // TODO LOG
+                log_warning ("'%s' - the group was ignored, because doesn't exist in DB", group.c_str());
             }
         }
-        catch (...) // if column doesn't exists, then reak the cycle
+        catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
         {
+            log_debug ("end of group processing");
+            log_debug (e.what());
             break;
         }
     }
     
-    std::set <link_t>  links{};
-    // TODO read and fill this
+    std::vector <link_t>  links{};
+    for ( int link_index = 1 ; true; link_index++ )
+    {
+        link_t one_link{0, 0, NULL, NULL, 0};
+        try {
+            auto link_col_name = "power_source." + std::to_string(link_index);   // column name
+            unused_columns.erase(link_col_name);                           // remove from unused
+            auto link_source = cm.get(row_i, link_col_name);               // take value
+            auto ret = select_asset_element_by_name(conn, link_source.c_str());   // find an id from DB 
+            if ( ret.status == 1 )                                          
+                one_link.src = ret.item.id;  // if OK, then take ID
+            else
+            {
+                // TODO LOG
+                log_warning ("'%s' - the unknown power source, all information would be ignored (doesn't exist in DB)", link_col_name.c_str());
+            }
+        }
+        catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
+        {
+            log_debug ("end of power links processing");
+            log_debug (e.what());
+            break;
+        }
+        
+        auto link_col_name1 = "power_plug_src." + std::to_string(link_index);   // column name
+        try{   
+            unused_columns.erase(link_col_name1);                                   // remove from unused
+            auto link_source1 = cm.get(row_i, link_col_name1);               // take value
+        }
+        catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
+        {
+            log_debug ("'%s' - is missing at all", link_col_name1.c_str());
+            log_debug (e.what());
+        }
+        
+        auto link_col_name2 = "power_input." + std::to_string(link_index);   // column name
+        try{
+            unused_columns.erase(link_col_name2);                            // remove from unused
+            auto link_source2 = cm.get(row_i, link_col_name2);               // take value
+        }
+        catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
+        {
+            log_debug ("'%s' - is missing at all", link_col_name2.c_str());
+            log_debug (e.what());
+        }
 
+        if ( one_link.src != 0 ) // if first column was ok
+        {
+            // TODO
+//            one_link.src_out
+//            one_link.dest_in
+            one_link.type = 1; // TODO remove hardcoded constant
+            // TODO smth is wrong here
+            links.push_back(one_link);
+        }
+    }
     zhash_t *extattributes = zhash_new();
     zhash_autofree(extattributes);
     for ( auto &key: unused_columns )
     {
+        // try is not needed, because here are keys that are defenitly there
         auto value = cm.get(row_i, key);
         // TODO: on some ext attributes need to have more checks
         zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
     }
 
-    if ( type != "device")
+    if ( type != "device" )
     {
         auto ret = insert_dc_room_row_rack_group (conn, name.c_str(), type_id, parent_id, 
                 extattributes, status.c_str(), priority, bc);
@@ -210,7 +269,6 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
                     extattributes, subtype_id, status.c_str(), priority, bc);
     }
     //TODO: check from DB and call is_valid_location_chain
-
 }
 
 
@@ -237,17 +295,22 @@ void
     }
     catch(...)
     {
+        log_error ("no connection to database");
         return;
     }
-    // TODO != ????
+    
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
             process_row(conn, cm,row_i);
-            //log_somewhere, that it is was successfull
+            // TODO LOG
+            // TODO print format for size_t
+            log_info ("%" PRIu64 " that it is was successfull", row_i);
         }
-        catch(...)
+        catch ( const std::invalid_argument &e)
         {
+            // TODO
+            log_error ("%s", e.what());
             // log_somewhere an error
         }
     }

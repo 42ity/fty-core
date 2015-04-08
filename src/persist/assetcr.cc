@@ -579,7 +579,7 @@ db_reply_t
 db_reply_t
     insert_into_asset_links
         (tntdb::Connection       &conn,
-         std::set <link_t> const &links)
+         std::vector <link_t> const &links)
 {
     LOG_START;
     
@@ -753,10 +753,12 @@ db_reply_t
 }
 
 // because of transactions, previos function is not used here!
+// u links, neni definovan dest, prortoze to jeste neni znamo, tak musime
+// uvnitr funkce to opravit
 db_reply_t
     insert_device
        (tntdb::Connection &conn,
-        std::set <link_t>  const &links,
+        std::vector <link_t> &links,
         std::set <a_elmnt_id_t> const &groups,
         const char    *element_name, 
         a_elmnt_id_t   parent_id,
@@ -809,11 +811,17 @@ db_reply_t
         return reply_insert4;
     }
 
-    auto reply_insert5 = insert_into_asset_links (conn, links);
-    if ( reply_insert5.affected_rows == 0 )
+    for ( auto &one_link: links )
+    {
+        one_link.src = element_id;
+    }
+
+    auto reply_insert5 = insert_into_asset_links
+           (conn, links);
+    if ( reply_insert5.affected_rows != links.size() )
     {
         trans.rollback();
-        log_info ("end: device was not inserted (fail links)");
+        log_info ("end: not all links were inserted (fail asset_link)");
         return reply_insert5;
     }
 
