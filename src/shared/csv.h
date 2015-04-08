@@ -118,15 +118,14 @@ namespace shared {
             /**
              * \brief get copy of titles
              */
-            std::vector<std::string> getTitles() const;
+            std::set<std::string> getTitles() const;
 
         private:
             Data _data;
             std::map<std::string, size_t> _title_to_index;
-        };
+    };
 
 
-void load_asset_csv(std::istream& input);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H

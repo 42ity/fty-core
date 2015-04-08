@@ -330,6 +330,21 @@ libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
 			src/agents/nmap/nmap-parse.cc
 
+noinst_LTLIBRARIES +=	libpriv-loadcsv.la
+
+libpriv_loadcsv_la_SOURCES =	src/persist/loadcsv.h \
+							src/persist/loadcsv.cc
+
+libpriv_loadcsv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_src_dir)/src/msg \
+			-I$(abs_top_builddir)/tools
+
+libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS}
+
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
@@ -445,13 +460,14 @@ test_csv_LDADD = 		libpriv-log.la \
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
 			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_src_dir)/src/msg \
-					-I$(abs_top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/tests/include
 
-test_csv_LDFLAGS =		${CXXTOOLS_LIBS} -ltntdb	 
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
 bin_PROGRAMS += 	test-db
 
@@ -470,6 +486,27 @@ test_db_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
+
+bin_PROGRAMS += 	test-loadcsv
+
+test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
+
+test_loadcsv_LDADD = \
+			libpriv-db.la \
+			libpriv-log.la \
+			libpriv-csv.la \
+			libpriv-loadcsv.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la
+
+test_loadcsv_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
 bin_PROGRAMS += 	test-db2
 

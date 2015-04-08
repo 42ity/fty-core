@@ -1,5 +1,4 @@
 #include <catch.hpp>
-#include <csv.h>
 #include <cxxtools/csvdeserializer.h>
 
 #include <sstream>
@@ -7,6 +6,7 @@
 #include <string>
 #include <stdexcept>
 
+#include "csv.h"
 using namespace shared;
 
 TEST_CASE("CSV map basic get test", "[csv]") {
