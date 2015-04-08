@@ -32,7 +32,8 @@ set -e
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
 echo "=================== auto-configure =========================="
-./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
+# --no-distclean ($?)
+./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "======================== make ==============================="
 ./autogen.sh make | tee make.log
 if [ -x "$CPPCHECK" ] ; then
