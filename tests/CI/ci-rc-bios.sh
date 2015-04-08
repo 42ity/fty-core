@@ -24,7 +24,9 @@ DAEMONS="db-ng driver-nut driver-nmap netmon"
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-determineDirs_default || true
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using system binaries..."
