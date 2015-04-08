@@ -303,7 +303,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD =	libbiosapi.la
+libpriv_db_la_LIBADD =	libbiosapi.la \
+			libpriv-log.la 
 
 
 noinst_LTLIBRARIES +=	libpriv-proto.la
