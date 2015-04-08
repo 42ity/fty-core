@@ -37,7 +37,7 @@ int main (int argc, char *argv []) {
     }
 
     // We are listening for measurements
-    mlm_client_set_consumer(client, BIOS_MLM_STREAM, ".*"); // regex might be "^measurements\..+" 
+    mlm_client_set_consumer(client, bios_get_stream_main (), ".*"); // regex might be "^measurements\..+" 
     while(!zsys_interrupted) {
         zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
