@@ -30,15 +30,19 @@
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-if [ ! -f Makefile ] ; then
+if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     ./autogen.sh --nodistclean configure
 fi
-make V=0 web-test-deps
-make web-test >/tmp/web-test.log 2>&1 &
+./autogen.sh make V=0 web-test-deps
+./autogen.sh make web-test >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
+
+# Ensure that no processes remain dangling when test completes
+trap '[ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ] && echo "INFO: Killing make web-test PID $WEBTESTPID to exit" && kill "$WEBTESTPID"' 0 1 2 3 15
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"

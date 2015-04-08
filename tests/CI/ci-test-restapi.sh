@@ -25,6 +25,7 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
@@ -133,13 +134,13 @@ wait_for_web() {
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensure files for web-test exist and are up-to-date..."
-  make -C "$BUILDSUBDIR" V=0 web-test-deps || exit
+  ./autogen.sh make V=0 web-test-deps || exit
   logmsg_info "Spawn the web-server in the background..."
-  make -C "$BUILDSUBDIR" web-test &
+  ./autogen.sh make web-test &
   MAKEPID=$!
 
-  # Ensure
-  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID" && kill "$MAKEPID"' 0 1 2 3 15
+  # Ensure that no processes remain dangling when test completes
+  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"' 0 1 2 3 15
 
   logmsg_info "Wait for web-server to begin responding..."
   wait_for_web && \
