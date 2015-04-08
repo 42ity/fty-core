@@ -101,8 +101,13 @@ copy_project() {
 remote_make() {
     echo "-- compiling"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    # autogen --nodistclean (?)
-    ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags '--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux' install | tee make.log; }"
+    if ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && [ -s make.log ]" ; then
+        # This branch was already configured and compiled on that VM, refresh only
+        ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && { eval ./autogen.sh --nodistclean make install | tee -a make.log; }"
+    else
+        # Newly fetched branch - clean up, configure and make it fully
+        ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags '--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux' install | tee make.log; }"
+    fi
 }
 
 remote_log_cleanup() {

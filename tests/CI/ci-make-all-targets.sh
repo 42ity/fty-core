@@ -31,11 +31,13 @@ set -e
 ( which apt-get >/dev/null &&  apt-get update ) || true
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
+# NOTE: with this job we want everything wiped and rebuilt in the workspace
 echo "=================== auto-configure =========================="
-# --no-distclean ($?)
 ./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "======================== make ==============================="
 ./autogen.sh make | tee make.log
+
+echo "========================= cppcheck =========================="
 if [ -x "$CPPCHECK" ] ; then
     echo '\
 *:src/msg/*_msg.c
@@ -48,6 +50,7 @@ unusedFunction:src/api/*
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     /bin/rm -f cppcheck.supp
 fi
+
 echo "======================== make check ========================="
 ./autogen.sh make check
 echo "======================== make dist =========================="
