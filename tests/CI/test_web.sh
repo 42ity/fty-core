@@ -81,7 +81,8 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
 fi
 
 if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
-    CODE=4 die "Webserver is not running, please start it first!"
+    api_get "" >&2
+    CODE=4 die "Webserver is not running or code is broken, please start it first!"
 fi
 
 cd "`dirname "$0"`"
