@@ -34,9 +34,13 @@ set -e
 echo "=================== auto-configure =========================="
 ./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
 echo "======================== make ==============================="
-./autogen.sh make
+./autogen.sh make | tee make.log
 if [ -x "$CPPCHECK" ] ; then
-    echo -e "*:src/msg/*_msg.c\nunusedFunction:src/api/*\n" >cppcheck.supp
+    echo '\
+*:src/msg/*_msg.c
+*:src/include/git_details_override.c
+unusedFunction:src/api/*
+' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
         --suppressions-list=cppcheck.supp \
         src 2>cppcheck.xml

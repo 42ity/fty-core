@@ -53,11 +53,16 @@ fi
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
+    echo '\
+*:src/msg/*_msg.c
+*:src/include/git_details_override.c
+unusedFunction:src/api/*
+' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-              --suppress=*:src/msg/*_msg.c \
-              --suppress=*:src/include/git_details_override.c \
+              --suppressions-list=cppcheck.supp \
               src 2>cppcheck.xml
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+    /bin/rm -f cppcheck.supp
 fi
 
 sort_warnings() {
