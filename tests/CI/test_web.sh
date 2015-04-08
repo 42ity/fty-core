@@ -110,7 +110,7 @@ done
 set -o pipefail 2>/dev/null || true
 
 for i in $POSITIVE; do
-    for NAME in *$i*; do
+    for NAME in *$i*.sh; do
     SKIP=""
     for n in $NEGATIVE; do
         if expr match $NAME .\*"$n".\* > /dev/null; then

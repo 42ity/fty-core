@@ -1,0 +1,47 @@
+<%pre>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <cstdlib>
+#include <ctime>
+#include <cxxtools/split.h>
+
+#include "persistence.h"
+#include "utils.h"
+#include "bios_agent.h"
+#include "agents.h"
+#include "ymsg.h"
+#include "str_defs.h"
+
+#define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
+
+</%pre>
+<%args>
+    std::string start_ts;
+    std::string end_ts;
+    std::string type;
+    std::string step;
+    std::string source;
+    std::string element_id;
+</%args>
+<%thread scope="global">
+    bios_agent_t* agent = NULL;
+</%thread>
+<%cpp>
+    if(agent == NULL) {
+        char a_name[64];
+        sprintf(a_name, "rest.%d", getpid());
+        agent = bios_agent_new("ipc://@/malamute", a_name);
+        if(agent == NULL) {
+</%cpp>
+        {
+            "msg" : "Can't create agent <$ a_name $>"
+        }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+	return DECLINED;
+</%cpp>
