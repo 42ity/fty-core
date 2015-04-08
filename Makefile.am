@@ -1572,7 +1572,7 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
 	      echo "INFO: Replacing '$@' with newly generated data" && \
-	      mv -f "$@.tmp" "$@"; \
+	      mv -f "$@.tmp" "$@"; touch "$@"; \
 	    else echo "INFO: No substantial changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; \
 	    fi; \
 	 else \
@@ -1603,12 +1603,12 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
 	    { echo "INFO: Replacing '$@' with newly generated data"; \
-	      mv -f "$@.tmp" "$@"; } } } || { \
+	      mv -f "$@.tmp" "$@"; touch "$@"; } } } || { \
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch -r "$<" "$@" || true
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
 
 src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
 
@@ -1643,6 +1643,6 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch -r "$<" "$@" || true
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
 
