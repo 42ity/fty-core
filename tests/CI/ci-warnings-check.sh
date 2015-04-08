@@ -42,9 +42,13 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
-if [ ! -s "make.log" ] ; then
+if [ -s "make.log" ] ; then
+    # This branch was already configured and compiled here, only refresh it now
+    echo "================= auto-make (refresh) ======================="
+    ./autogen.sh --no-distclean make 2>&1 | tee -a make.log
+else
+    # Newly checked-out branch, rebuild
     echo "==================== auto-configure ========================="
-    #  --no-distclean ?
     ./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
     echo "====================== auto-make ============================"
     ./autogen.sh make 2>&1 | tee make.log
