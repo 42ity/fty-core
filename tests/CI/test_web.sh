@@ -68,7 +68,6 @@ if ! getent passwd "$BIOS_USER" > /dev/null; then
         "To add it locally, run: "
         "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
         "and don't forget the password '$BIOS_PASSWD'"
-    exit 2
 fi
 
 SASLTEST="`which testsaslauthd`"
@@ -80,20 +79,24 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
         "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 fi
 
-if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
+logmsg_info "Testing webserver ability to serve the REST API"
+if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+    logmsg_error "api_get() returned an error:"
     api_get "" >&2
     CODE=4 die "Webserver is not running or code is broken, please start it first!"
 fi
 
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
-mkdir -p "$LOG_DIR" || exit 4
+mkdir -p "$LOG_DIR" || CODE=4 die "Can not create log directory for tests $LOG_DIR"
 CMPJSON_SH="`pwd`/cmpjson.sh"
 CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
 [ -z "$CMP" ] && CMP="$CMPJSON_SH"
-[ -s "$CMP" ] || exit 5
-cd web/commands
+[ -s "$CMP" ] || CODE=5 die "Can not use comparator '$CMP'"
+
+cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
+
 POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
