@@ -137,6 +137,10 @@ wait_for_web() {
   logmsg_info "Spawn the web-server in the background..."
   make -C "$BUILDSUBDIR" web-test &
   MAKEPID=$!
+
+  # Ensure
+  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID" && kill "$MAKEPID"' 0 1 2 3 15
+
   logmsg_info "Wait for web-server to begin responding..."
   wait_for_web && \
     logmsg_info "Web-server is responsive!" || \
