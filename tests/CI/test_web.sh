@@ -86,10 +86,17 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
 fi
 
 logmsg_info "Testing webserver ability to serve the REST API"
-if [ -z "`api_get "" 2>&1 | egrep '^< HTTP/.* (500|404 Not Found)'`" ]; then
+if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
+    # We do expect an HTTP-404 on the API base URL
     logmsg_error "api_get() returned an error:"
     api_get "" >&2
-    CODE=4 die "Webserver is not running or code is broken, please start it first!"
+    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+fi
+
+if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
+    logmsg_error "api_get() returned an error:"
+    api_get "" >&2
+    CODE=4 die "Webserver code is deeply broken, please fix it first!"
 fi
 
 cd "`dirname "$0"`"
