@@ -1,28 +1,43 @@
 #include <catch.hpp>
 #include <cxxtools/csvdeserializer.h>
 #include "csv.h"
+#include "log.h"
 #include "loadcsv.h"
 #include "assetcrud.h"
-
+#include <fstream>    
 
 
 TEST_CASE("CSV multiple field names", "[csv]") {
 
     
-    std::stringstream buf;
+    //std::stringstream buf;
+    std::ifstream buf;
+    buf.open ("csv_gerald1.txt", std::ifstream::in);
+    if ( buf.good() )
+        log_debug ("everything is ok");
+    load_asset_csv(buf);
+    buf.close();
+    
+  /*       char *buffer = new char [100];
+    buf.read (buffer, 100);
+    log_debug ("test buffer %s", buffer);
+//    buf << "Name, Type, Group.1, group.2,description\n";
+//    buf << "RACK-01,rack,GR-01,GR-02,\"just,my,dc\"\n";
+//    buf << "RACK-02,rack,GR-011,GR-02,\"just\tmy\nrack\"\n";
 
-    buf << "Name, Type, Group.1, group.2,description\n";
-    buf << "RACK-01,rack,GR-01,GR-02,\"just,my,dc\"\n";
-    buf << "RACK-02,rack,GR-011,GR-02,\"just\tmy\nrack\"\n";
-
+ 
     std::vector<std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(buf);
-    deserializer.delimiter(',');
+    log_debug ("1");
+    deserializer.delimiter('\t');
     deserializer.readTitle(false);
     deserializer.deserialize(data);
-
+    
+    log_debug ("11");
     shared::CsvMap cm{data};
+    log_debug ("111");
     cm.deserialize();
+    log_debug ("1111");
     
     // an access to headers
     REQUIRE(cm.get(0, "Name") == "Name");
@@ -45,7 +60,5 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     // test values with commas
     REQUIRE(cm.get(1, "description") == "just,my,dc");
     REQUIRE(cm.get(2, "description") == "just\tmy\nrack");
-
-    load_asset_csv(buf);
-    
+   */ 
 }

@@ -204,7 +204,6 @@ db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
                                    a_elmnt_id_t  asset_element_id);
 
 db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
- //                                  const char   *value,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id);
 db_reply_t
@@ -245,7 +244,7 @@ db_reply_t
          a_lnk_tp_id_t   link_type_id,
          const a_lnk_src_out_t src_out,
          const a_lnk_dest_in_t dest_in);
-
+/*
 db_reply_t
     insert_into_asset_ext_attribute
         (tntdb::Connection &conn,
@@ -257,7 +256,7 @@ db_reply_t
         (tntdb::Connection &conn, 
          zhash_t      *attributes,
          a_elmnt_id_t  asset_element_id);
-
+*/
 db_reply_t
     insert_into_asset_element
         (tntdb::Connection &conn, 

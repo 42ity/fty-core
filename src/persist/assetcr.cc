@@ -467,6 +467,9 @@ db_reply_t
     log_debug ("  element_name = '%s'", element_name);
     log_debug ("  element_type_id = %" PRIu32, element_type_id);
     log_debug ("  parent_id = %" PRIu32, parent_id);
+    log_debug ("  status = '%s'", status);
+    log_debug ("  priority = %" PRIu16, priority);
+    log_debug ("  bc = %" PRIu16, bc);
 
     db_reply_t ret = db_reply_new();
  
@@ -500,6 +503,7 @@ db_reply_t
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
+    // TODO:should we add more checks here???
     log_debug ("input parameters are correct");
     
     try{
@@ -509,9 +513,9 @@ db_reply_t
             st = conn.prepareCached(
                 " INSERT INTO"
                 "   t_bios_asset_element"
-                "   (name, id_type, id_parent)"
+                "   (name, id_type, id_parent, status, priority, business_crit)"
                 " SELECT"
-                "   :name, :type, NULL"
+                "   :name, :type, NULL, :status, :priority, :business_crit"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -529,6 +533,9 @@ db_reply_t
 
             ret.affected_rows = st.set("name", element_name).
                                    set("type", element_type_id).
+                                   set("status", status).
+                                   set("priority", priority).
+                                   set("business_crit", bc).
                                    execute();
         }
         else
@@ -556,6 +563,9 @@ db_reply_t
             ret.affected_rows = st.set("name", element_name).
                                    set("type", element_type_id).
                                    set("parent", parent_id).
+                                   set("status", status).
+                                   set("priority", priority).
+                                   set("business_crit", bc).
                                    execute();
         }
         ret.rowid = conn.lastInsertId();

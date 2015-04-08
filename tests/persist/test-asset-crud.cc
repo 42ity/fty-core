@@ -172,7 +172,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     a_elmnt_id_t     parent_id       = 1;  // it is written in crud_test.sql file
     a_elmnt_tp_id_t  element_type_id = asset_type::ROOM;
     const char      *element_name    = "Room_insert_test";
-    a_elmnt_status_t status = "active";
+    const char *status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -342,8 +342,8 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     a_elmnt_id_t asset_element_id_src  = 4; // it is written in crud_test.sql file
     a_elmnt_id_t asset_element_id_dest = 5; // it is written in crud_test.sql file
     
-    a_lnk_src_out_t src_out = SRCOUT_DESTIN_IS_NULL;
-    a_lnk_dest_in_t dest_in = SRCOUT_DESTIN_IS_NULL;
+    const a_lnk_src_out_t src_out = SRCOUT_DESTIN_IS_NULL;
+    const a_lnk_dest_in_t dest_in = SRCOUT_DESTIN_IS_NULL;
     // first insert
     auto reply_insert = insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
                                        src_out, dest_in);
@@ -399,7 +399,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char *status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -490,7 +490,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -573,7 +573,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -656,7 +656,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -746,7 +746,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -830,7 +830,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     a_elmnt_id_t     parent_id = 0;                     // unlockated
     zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
-    a_elmnt_status_t status = "active";
+    const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
 
@@ -842,7 +842,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     
-    std::set <link_t>        links;      // left empty, simple case
+    std::vector <link_t>        links;      // left empty, simple case
     std::set <a_elmnt_id_t>  groups;     // left empty, simple case
     zhash_t       *extattributes = NULL; // left empty, simple case, TODO with NEW
     a_dvc_tp_id_t  asset_device_type_id = 4;

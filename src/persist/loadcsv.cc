@@ -261,12 +261,24 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 
     if ( type != "device" )
     {
+        // this is a transaction
         auto ret = insert_dc_room_row_rack_group (conn, name.c_str(), type_id, parent_id, 
                 extattributes, status.c_str(), priority, bc);
+        if ( ret.status != 1 )
+        {
+            throw std::invalid_argument("insertion was unsuccess");
+        }
     }
     else
-    {    auto ret = insert_device (conn, links, groups, name.c_str(), parent_id,
+    {   
+        // this is a transaction 
+        auto ret = insert_device (conn, links, groups, name.c_str(), parent_id,
                     extattributes, subtype_id, status.c_str(), priority, bc);
+        if ( ret.status != 1 )
+        {
+            throw std::invalid_argument("insertion was unsuccess");
+        }
+
     }
     //TODO: check from DB and call is_valid_location_chain
 }
@@ -280,14 +292,17 @@ void
     load_asset_csv
         (std::istream& input)
 {
+    LOG_START;
     std::vector <std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(input);
-    deserializer.delimiter(',');
+    deserializer.delimiter('\t');
     deserializer.readTitle(false);
     deserializer.deserialize(data);
-
+    log_debug ("first");
     CsvMap cm{data};
+    log_debug ("first1");
     cm.deserialize();
+    log_debug ("first2");
 
     tntdb::Connection conn;
     try{
@@ -304,8 +319,7 @@ void
         try{
             process_row(conn, cm,row_i);
             // TODO LOG
-            // TODO print format for size_t
-            log_info ("%" PRIu64 " that it is was successfull", row_i);
+            log_info ("%zu that it is was successfull", row_i);
         }
         catch ( const std::invalid_argument &e)
         {
