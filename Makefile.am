@@ -303,7 +303,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD =	libbiosapi.la
+libpriv_db_la_LIBADD =	libbiosapi.la\
+			libpriv-log.la
 
 
 noinst_LTLIBRARIES +=	libpriv-proto.la
@@ -343,7 +344,10 @@ libpriv_loadcsv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_src_dir)/src/msg \
 			-I$(abs_top_builddir)/tools
 
-libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS}
+libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS} \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -492,8 +496,8 @@ bin_PROGRAMS += 	test-loadcsv
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
-			libpriv-db.la \
 			libpriv-log.la \
+			libpriv-db.la \
 			libpriv-csv.la \
 			libpriv-loadcsv.la \
 			libpriv-cidr.la \
