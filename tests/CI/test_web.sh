@@ -83,7 +83,7 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
 fi
 
 logmsg_info "Testing webserver ability to serve the REST API"
-if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+if [ -z "`api_get "" 2>&1 | egrep '^< HTTP/.* (500|404 Not Found)'`" ]; then
     logmsg_error "api_get() returned an error:"
     api_get "" >&2
     CODE=4 die "Webserver is not running or code is broken, please start it first!"
