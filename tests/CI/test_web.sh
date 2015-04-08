@@ -114,16 +114,16 @@ POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
     if [ -z "`echo "x$1" | grep "^x-"`" ]; then
-        POSITIVE="$POSITIVE `echo "$1" | sed 's|.sh$||'`"
+        POSITIVE="$POSITIVE `echo "$1" | sed 's|.sh$||'`".sh
     else
-        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||' | sed 's|.sh$||'`"
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||' | sed 's|.sh$||'`".sh
     fi
     shift
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
 for i in $POSITIVE; do
-    for NAME in *$i*.sh; do
+    for NAME in *$i*; do
     SKIP=""
     for n in $NEGATIVE; do
         if expr match $NAME .\*"$n".\* > /dev/null; then
