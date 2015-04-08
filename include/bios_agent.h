@@ -234,6 +234,9 @@ BIOS_EXPORT zactor_t *
 BIOS_EXPORT zsock_t *
     bios_agent_msgpipe (bios_agent_t *self);
 
+//! Get name of the main bios stream
+BIOS_EXPORT const char *
+    bios_get_stream_main ();
 
 
 //! Returns true if status value of ROZP message is OK, false otherwise 

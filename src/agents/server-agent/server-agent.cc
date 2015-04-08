@@ -43,7 +43,7 @@ int main (int argc, char *argv []) {
         zsys_error ("server-agent: server not reachable at ipc://@/malamute");
         return 0;
     }
-    bios_agent_set_producer(client, BIOS_MLM_STREAM);
+    bios_agent_set_producer(client, bios_get_stream_main ());
 
     // Until interrupted
     while(!zsys_interrupted) {

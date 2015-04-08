@@ -8,6 +8,7 @@
 #include "defs.h"
 
 #define TIMEOUT 1000
+#define BIOS_MLM_STREAM "bios"
 
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
@@ -259,6 +260,12 @@ bios_agent_msgpipe (bios_agent_t *self) {
         return NULL;
     return mlm_client_msgpipe (self->client);
 }
+
+const char *
+bios_get_stream_main () {
+    return BIOS_MLM_STREAM;
+}
+
 
 bool
 ymsg_is_ok (ymsg_t *self) {
