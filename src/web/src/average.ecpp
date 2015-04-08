@@ -27,10 +27,21 @@
     std::string source;
     std::string element_id;
 </%args>
-<%thread scope="global">
-    BIOSAgent agent("to_init");
-</%thread>
 <%cpp>
+    // TODO: Use shared agent and figure out why it is not working
+    char a_name[64];
+    sprintf(a_name, "rest.%d", getpid());
+    BIOSAgent agent(a_name);
+    if(!agent.connect("ipc://@/malamute")) {
+</%cpp>
+        {
+            "msg" : "Can't connect agent"
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    // End of ugly hack
+
     int64_t st;
     int64_t end;
     uint64_t eid;
