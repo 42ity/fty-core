@@ -91,7 +91,7 @@ logmsg_error() {
 }
 
 die() {
-    [ -n "$CODE" -a "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+    [ -n "$CODE" ] && [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
         echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
     done
