@@ -1,6 +1,7 @@
 #include <catch.hpp>
 #include <cxxtools/csvdeserializer.h>
 
+#include <iomanip>
 #include <sstream>
 #include <fstream>
 #include <vector>
@@ -67,6 +68,10 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     
 }
 
+inline std::string to_utf8(const cxxtools::String& ws) {
+    return cxxtools::Utf8Codec::encode(ws);
+}
+
 /*
  * This tests output from MS Excel, type Unicode Text, which is UTF-16 LE with BOM
  * As we support utf-8 only, file has been converted using iconv
@@ -84,7 +89,8 @@ TEST_CASE("CSV utf-8 input", "[csv]") {
     std::fstream buf{path};
     skip_utf8_BOM(buf);
 
-    std::vector<std::vector<std::string> > data;
+    std::vector<std::vector<cxxtools::String> > data;
+
     cxxtools::CsvDeserializer deserializer(buf);
     deserializer.delimiter('\t');
     deserializer.readTitle(false);
@@ -94,22 +100,10 @@ TEST_CASE("CSV utf-8 input", "[csv]") {
     REQUIRE_NOTHROW(cm.deserialize());
 
     REQUIRE(cm.get(0, "field") == "Field");
+    REQUIRE(cm.get(0, "Ananotherone") == "An another one");
 
-    /*
-    cxxtools::String ret = data[0][0];
-    cxxtools::String exp{"Field"};
-
-    REQUIRE(ret.size() == exp.size());
-    //TODO the comparion fail because of BOM, don't forget to handle that!!!
-    //REQUIRE(data[0][0] == cxxtools::String("Field"));
-    //
-    */
-
-    /*
-    //TODO: convert it to CsvMap
-    REQUIRE(data[0][1] == "An another one");
-    REQUIRE(data[1][0] == cxxtools::String(L"тест"));
-    REQUIRE(data[1][0] == L"тест");
-    */
+    REQUIRE(cm.get(1, "field") == to_utf8(cxxtools::String(L"тест")));
+    REQUIRE(cm.get(2, "field") == to_utf8(cxxtools::String(L"测试")));
+    REQUIRE(cm.get(3, "field") == to_utf8(cxxtools::String(L"Test")));
 
 }
