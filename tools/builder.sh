@@ -220,11 +220,11 @@ do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
 		    *clean*)
-				echo "INFO: Makefile absent, skipping '$MAKE $@' for a cleaning action"
+				echo "INFO: Makefile absent in '`pwd`, skipping '$MAKE $@' for a cleaning action"
 #distclean?#			[ -d config ] && rm -rf config
 				return 0 ;;
 		    *)
-				echo "ERROR: Makefile absent, can not fulfill '$MAKE $@'" >&2
+				echo "ERROR: Makefile absent in '`pwd`', can not fulfill '$MAKE $@'" >&2
 				return 1 ;;
 		esac
 	fi
@@ -287,6 +287,7 @@ do_build() {
 	MRES_P="SKIPPED"
 	MRES_S="SKIPPED"
 
+	echo "INFO-MAKE: `date`: beginning do_build() in directory '`pwd`'"
 	if [ x"$NOPARMAKE" != xyes ]; then 
 	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
@@ -319,7 +320,7 @@ do_build() {
 	    fi
 	fi
 
-	echo "=== do_build results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
+	echo "INFO-MAKE: `date`: do_build() results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
 	echo ""
 
 	return $MRES
