@@ -1,7 +1,7 @@
 
 #!/bin/sh
 
-#TEST for /ui/propertie GET/PUT
+#TEST for /ui/properties GET/PUT
 
 test_it "GET_ui_properties"
 api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value2"'
@@ -20,5 +20,5 @@ api_auth_put /ui/properties '{"key1" : "value1", "key2" : "value2"}' | grep -q '
 print_result $?
 
 #TODO: can't validate JSON via cxxtools
-#test_it "PUT invalid JSON"
+#test_it "PUT_invalid_JSON"
 #api_auth_put /usr/properties

@@ -1,4 +1,4 @@
-test_it "topology/power bad_input 1"
+test_it "topology/power__bad_input__1"
 
 [ "`api_get "/topology/power?from=x" | \
             grep "HTTP/1.1 400 Bad Request"`" ]
