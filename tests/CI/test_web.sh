@@ -67,6 +67,14 @@ if ! pidof saslauthd > /dev/null; then
     CODE=1 die "saslauthd is not running, please start it first!"
 fi
 
+if ! pidof malamute > /dev/null; then
+    logmsg_error "malamute is not running (locally), you may need to start it first!"
+fi
+
+if ! pidof mysqld > /dev/null ; then
+    logmsg_error "mysqld is not running (locally), you may need to start it first!"
+fi
+
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
 if ! getent passwd "$BIOS_USER" > /dev/null; then
