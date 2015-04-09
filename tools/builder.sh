@@ -595,6 +595,7 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		NPARMAKES=1
 		OPTSEQMAKE=no
+		[ -z "$MAKE_OPTS_SEQ" ] && MAKE_OPTS_SEQ="V=1 --trace"
 		shift
 		;;
 	    *)	break ;;
