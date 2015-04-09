@@ -31,10 +31,11 @@ NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
+export BUILDSUBDIR CHECKOUTDIR
 
 # ensure that what we test is built
 logmsg_info "Ensure that we have a libbiosapi compiled..."
-./autogen.sh make sdk || CODE=$? die "Failed to make sdk"
+./autogen.sh make-subdir sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
 # an .a static built, depending on configure flags. Both might be referenced
@@ -79,7 +80,7 @@ fi
 
 retut=0
 logmsg_info "Try to compile and run a libbiosapi Unit-tester..."
-if ./autogen.sh make test-libbiosapiut ; then
+if ./autogen.sh make-subdir test-libbiosapiut ; then
     echo "    RUN test-libbiosapiut"
     LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapiut || retut=$?
 fi
