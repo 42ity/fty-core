@@ -42,7 +42,7 @@ fi
 WEBTESTPID=$!
 
 # Ensure that no processes remain dangling when test completes
-trap '[ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ] && echo "INFO: Killing make web-test PID $WEBTESTPID to exit" && kill "$WEBTESTPID"' 0 1 2 3 15
+trap '[ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ] && echo "INFO: Killing make web-test PID $WEBTESTPID to exit" && kill "$WEBTESTPID" killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet && echo "CI-ERROR: tntnet still alive">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"

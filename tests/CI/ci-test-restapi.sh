@@ -128,6 +128,22 @@ wait_for_web() {
     logmsg_info "saslauthd is responsive and configured well!" || \
     logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
+  # make sure message bus is running
+  if ! $RUNAS systemctl --quiet is-active malamute; then
+    $RUNAS systemctl start malamute || \
+      [ x"$RUNAS" = x ] || \
+      logmsg_warn "Could not restart malamute, make sure SASL and SUDO" \
+        "are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs"
+  fi
+
+  # make sure database is running
+  if ! $RUNAS systemctl --quiet is-active mysql; then
+    $RUNAS systemctl start mysql || \
+      [ x"$RUNAS" = x ] || \
+      logmsg_warn "Could not restart mysql, make sure SASL and SUDO" \
+        "are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs"
+  fi
+
 # do the webserver
   # make clean
   LC_ALL=C
@@ -140,7 +156,7 @@ wait_for_web() {
   MAKEPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"' 0 1 2 3 15
+  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet && echo "CI-ERROR: tntnet still alive">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
 
   logmsg_info "Wait for web-server to begin responding..."
   wait_for_web && \
