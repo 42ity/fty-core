@@ -88,13 +88,17 @@ print_result() {
 }
 
 test_it() {
-#    [ "$TNAME" ] || TNAME="$NAME"
+    [ -z "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
         TNAME="$1"
     fi
-    [ "$TNAME" ] || TNAME="`basename "$0" .sh`"
-    TNAME="`echo "$TNAME" | sed 's, ,__,g'`"
-    echo "Running test $TNAME:"
+    [ -z "$TNAME" ] || TNAME="$0"
+    TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
+    if [ "$TNAME" = "`basename "$NAME" .sh`" ]; then
+        echo "Running test $TNAME:"
+    else
+        echo "Running test $NAME:$TNAME:"
+    fi
 }
 
 ### This is what we will sig-kill if needed
