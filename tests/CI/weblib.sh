@@ -57,10 +57,11 @@ print_result() {
         echo " * FAILED"
         _ret=1
 	if [ "$TNAME" = "$NAME" ]; then
-            FAILED="$FAILED `echo "$NAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
 	else
-            FAILED="$FAILED `echo "$NAME:$TNAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME::$TNAME" | sed 's, ,__,g'`"
 	fi
+        FAILED="$FAILED $LASTFAILED"
 
 	# This optional envvar can be set by the caller
 	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
@@ -68,7 +69,7 @@ print_result() {
 	    echo "$PASS previous tests have succeeded"
 	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"WEBLIB_QUICKFAIL=$WEBLIB_QUICKFAIL" \
-		"after first failure with test $NAME"
+		"after first failure with test $LASTFAILED"
 	    exit $_ret
 	fi >&2
 
@@ -78,7 +79,7 @@ print_result() {
 	    echo "$PASS previous tests have succeeded"
 	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
 		"WEBLIB_FORCEABORT=$WEBLIB_FORCEABORT" \
-		"after forced abortion in test $NAME"
+		"after forced abortion in test $LASTFAILED"
 	    exit $_ret
 	fi >&2
     fi
@@ -88,16 +89,16 @@ print_result() {
 }
 
 test_it() {
-    [ -z "$TNAME" ] || TNAME="$NAME"
+    [ -n "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
         TNAME="$1"
     fi
-    [ -z "$TNAME" ] || TNAME="$0"
+    [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
     if [ "$TNAME" = "`basename "$NAME" .sh`" ]; then
-        echo "Running test $TNAME:"
+        echo "Running test $TNAME :"
     else
-        echo "Running test $NAME:$TNAME:"
+        echo "Running test $NAME::$TNAME :"
     fi
 }
 

@@ -29,6 +29,7 @@ fi
 
 PASS=0
 TOTAL=0
+FAILED=""
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -126,6 +127,18 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
+summarizeResults() {
+    logmsg_info "Testing completed, $PASS/$TOTAL tests passed"
+    [ -z "$FAILED" ] && exit 0
+
+    logmsg_info "The following tests have failed:"
+    for i in $FAILED; do
+        echo " * $i"
+    done
+    logmsg_error "`expr $TOTAL - $PASS`/$TOTAL tests FAILED"
+    exit 1
+}
+
 POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
@@ -138,6 +151,8 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
+trap "summarizeResults" 0 1 2 3 15
+
 for i in $POSITIVE; do
     for NAME in *$i*; do
     SKIP=""
@@ -148,11 +163,22 @@ for i in $POSITIVE; do
     done
     [ -z "$SKIP" ] && case "$NAME" in
         *.sh)   ;;      # OK to proceed
-        "$i")   ;;      # Also OK for explicitly named test files
-        *) logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
-            SKIP="true" ;;
+        *) [ "$POSITIVE" = '*' ] && SKIP=true || case "$i" in
+            *\**|*\?*) # Wildcards are not good
+                SKIP="true" ;;
+            "$NAME") logmsg_warn "Non-'.sh' test file executed due to explicit request: '$NAME' (matched for '$i')"
+                sleep 3 ;;
+            *)  SKIP="true" ;;
+           esac
+           [ "$SKIP" = true ] && \
+             logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
+           ;;
     esac
     [ -z "$SKIP" ] || continue
+
+    ### Default value for logging the test items
+    TNAME="$NAME"
+
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res
@@ -174,12 +200,3 @@ for i in $POSITIVE; do
     done
 done
 
-logmsg_info "Testing completed, $PASS/$TOTAL tests passed"
-[ -z "$FAILED" ] && exit 0
-
-logmsg_info "The following tests have failed:"
-for i in $FAILED; do
-    echo " * $i"
-done
-logmsg_error "`expr $TOTAL - $PASS`/$TOTAL tests FAILED"
-exit 1
