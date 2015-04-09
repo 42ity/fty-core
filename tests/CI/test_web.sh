@@ -183,7 +183,14 @@ for i in $POSITIVE; do
     TNAME="$NAME"
 
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
+    RES=$?
+    # Stash the last result-code for trivial tests and no expectations below
+    # For better reliability, all test files should call print_result to verify
+    # the basic test commands, because here we essentially get result of inclusion
+    # itself (which is usually "true")
+
     if [ -r "../results/$NAME".res ]; then
+        test_it "compare_expectation"
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
         if [ -x "../results/$NAME".cmp ]; then
@@ -198,6 +205,9 @@ for i in $POSITIVE; do
         if [ $RES -ne 0 ]; then
             diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
         fi
+        print_result $RES
+    else
+        # This might do nothing, if the test file already ended with a print_result
         print_result $RES
     fi
     done
