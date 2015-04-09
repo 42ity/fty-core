@@ -795,23 +795,6 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-# WIP (KHR)
-client_PROGRAMS +=	cm-agent
-
-cm_agent_SOURCES = \
-			src/agents/computation/cm-agent.cc
-
-cm_agent_LDADD = \
-			libpriv-log.la \
-			libpriv-utils.la
-
-cm_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
-
-cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)
-
-#
-
-
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
