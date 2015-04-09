@@ -24,19 +24,26 @@
 #              You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
 # ***********************************************
-echo 'BASE_URL = '$BASE_URL
+echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 
-
-#[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$SUT_NAME" ] && SUT_NAME="127.0.0.1"
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
-[ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
+[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+#[ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
 #[ -z "$BASE_URL" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
-#[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_NAME:$SUT_PORT/api/v1"
-# Should the test suite break upon first failed test?
+
+echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
+
+### Should the test suite break upon first failed test?
 [ -z "$WEBLIB_QUICKFAIL" ] && WEBLIB_QUICKFAIL=no
 
 # Should the test suite abort if "curl" errors out?
 [ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes
+
+[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR="`dirname $0`/../.."
+[ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 
 _TOKEN_=""
 WEBLIB_FORCEABORT=no
@@ -130,12 +137,26 @@ api_get_content() {
 }
 
 api_get_json() {
+    ### Properly normalize JSON markup into a single string via JSON.sh
+    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
+        api_get_json_sed "$@"
+        return $?
+    fi
+
+    CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
+    | $JSONSH -N
+}
+
+api_get_json_sed() {
+    ### Old approach to strip any whitespace including linebreaks from JSON
     CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
 api_get_jsonv() {
-    api_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
+    ### Sort of a JSON validity check by passing it through Python parser
+    api_get_json "$@" | \
+        python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
 }
 
 api_post() {
