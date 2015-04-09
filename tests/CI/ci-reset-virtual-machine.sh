@@ -92,12 +92,11 @@ while [ $# -gt 0 ] ; do
 done
 
 #
-# check VM exists
+# check if VM exists
 #
 RESULT=$(virsh -c lxc:// list --all | tail -n +3 | cut -d " " -f 3 | grep -E "^$VM\$" | wc -l)
 if [ $RESULT != 1 ] ; then
-    echo "VM $VM does not exists"
-    exit 1
+    die "VM $VM does not exist"
 fi
 
 # This should not be hit...
