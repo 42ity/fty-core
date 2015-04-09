@@ -56,12 +56,13 @@ cmpjson_strings() {
             rm -f "$TMPF1" "$TMPF2"
             trap '' 0 1 2 3 15
 	fi
-    else
-        [ "$res1" != 0 ] && echo "=== DEBUG: error parsing input 1:" >&2 && \
-            echo "$1" >&2
-        [ "$res2" != 0 ] && echo "=== DEBUG: error parsing input 2:" >&2 && \
-            echo "$2" >&2
     fi
+
+    [ "$res1" != 0 ] && echo "=== DEBUG: error parsing input 1:" >&2 && \
+        echo "$1" >&2
+    [ "$res2" != 0 ] && echo "=== DEBUG: error parsing input 2:" >&2 && \
+        echo "$2" >&2
+
     return 1
 }
 
@@ -80,10 +81,10 @@ cmpjson_files() {
     local eof2=0
     local data1
     local data2
+    local RES=255
     # Open files
     eval exec "$FD1<'$file1'" || return
     eval exec "$FD2<'$file2'" || return
-    RES=0
     while [ "$eof1" = 0 -o "$eof2" = 0 ]
     do
         if read data1 <&$FD1; then
@@ -100,15 +101,25 @@ cmpjson_files() {
             eof2=1
 	fi
 
+        # Both empty files - ok, contents are the same
+        [ "$eof1" = 1 -a "$eof2" = 1 -a "$RES" = 255 ] && RES=0
+
         [ "$eof1" = 0 -a "$eof2" = 0 ] && { \
+            [ "$RES" = 255 ] && RES=0; \
             cmpjson_strings "$data1" "$data2" \
             || RES=$(($RES+1)); }
     done
     # Close files
     eval exec "$FD1>&-"
     eval exec "$FD2>&-"
-    if [ "$eof1" = 0 -o "$eof2" = 0 ]; then
-        echo "ERROR: read $count1 lines, and '$file1' EOF=$eof1 while '$file2' EOF=$eof2" >&2
+    if [ "$RES" = 0 ] ; then
+        if  [ "$count1" = 0 -a "$count2" != 0 ] || \
+            [ "$count2" = 0 -a "$count1" != 0 ]; then RES=255; fi
+    fi
+    [ "$RES" = 255 ] && \
+        echo "ERROR: one of the files '$file1' or '$file2' is empty" >&2
+    if [ "$eof1" = 0 -o "$eof2" = 0 -o "$count1" != "$count2" ]; then
+        echo "ERROR: read $count1 lines from '$file1' EOF1=$eof1 and $count2 lines from '$file2' EOF2=$eof2" >&2
         [ "$RES" = 0 ] && RES=126
     fi
     [ $RES != 0 ] && \
