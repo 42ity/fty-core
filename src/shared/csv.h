@@ -125,7 +125,8 @@ namespace shared {
             std::map<std::string, size_t> _title_to_index;
     };
 
-
+//TODO: does not belongs to csv, move somewhere else
+void skip_utf8_BOM (std::istream& i);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H

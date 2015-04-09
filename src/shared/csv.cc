@@ -93,4 +93,19 @@ std::set<std::string> CsvMap::getTitles() const {
     return ret;
 }
 
+//TODO: does not belongs to csv, move somewhere else
+void skip_utf8_BOM (std::istream& i) {
+    int c1, c2, c3;
+    c1 = i.get();
+    c2 = i.get();
+    c3 = i.get();
+
+    if (c1 == 0xef && c2 == 0xbb && c3 == 0xbf)
+        return;
+
+    i.putback(c3);
+    i.putback(c2);
+    i.putback(c1);
+}
+
 } //namespace shared

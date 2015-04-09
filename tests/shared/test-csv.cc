@@ -2,6 +2,7 @@
 #include <cxxtools/csvdeserializer.h>
 
 #include <sstream>
+#include <fstream>
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -64,4 +65,51 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     shared::CsvMap cm{data};
     REQUIRE_THROWS_AS(cm.deserialize(), std::invalid_argument);
     
+}
+
+/*
+ * This tests output from MS Excel, type Unicode Text, which is UTF-16 LE with BOM
+ * As we support utf-8 only, file has been converted using iconv
+ * iconv -f UTF-16LE -t UTF-8 INPUT > OUTPUT
+ *
+ * The file still have BOM, but at least unix end of lines, which is close to
+ * expected usage, where iconv will be involved!
+ *
+ */
+TEST_CASE("CSV utf-8 input", "[csv]") {
+
+    std::string path{__FILE__};
+    path += ".csv";
+
+    std::fstream buf{path};
+    skip_utf8_BOM(buf);
+
+    std::vector<std::vector<std::string> > data;
+    cxxtools::CsvDeserializer deserializer(buf);
+    deserializer.delimiter('\t');
+    deserializer.readTitle(false);
+    deserializer.deserialize(data);
+
+    shared::CsvMap cm{data};
+    REQUIRE_NOTHROW(cm.deserialize());
+
+    REQUIRE(cm.get(0, "field") == "Field");
+
+    /*
+    cxxtools::String ret = data[0][0];
+    cxxtools::String exp{"Field"};
+
+    REQUIRE(ret.size() == exp.size());
+    //TODO the comparion fail because of BOM, don't forget to handle that!!!
+    //REQUIRE(data[0][0] == cxxtools::String("Field"));
+    //
+    */
+
+    /*
+    //TODO: convert it to CsvMap
+    REQUIRE(data[0][1] == "An another one");
+    REQUIRE(data[1][0] == cxxtools::String(L"тест"));
+    REQUIRE(data[1][0] == L"тест");
+    */
+
 }
