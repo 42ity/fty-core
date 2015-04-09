@@ -179,32 +179,35 @@ for i in $POSITIVE; do
     esac
     [ -z "$SKIP" ] || continue
 
+    EXPECTED_RESULT="../results/$NAME".res
+    REALLIFE_RESULT="$LOG_DIR/$NAME".log
+
     ### Default value for logging the test items
     TNAME="$NAME"
 
-    . ./"$NAME" 5> "$LOG_DIR/$NAME".log
+    . ./"$NAME" 5> "$REALLIFE_RESULT"
     RES=$?
     # Stash the last result-code for trivial tests and no expectations below
     # For better reliability, all test files should call print_result to verify
     # the basic test commands, because here we essentially get result of inclusion
-    # itself (which is usually "true")
+    # itself (which is usually "true") and of redirection into the logfile
 
-    if [ -r "../results/$NAME".res ]; then
-        RESULT="../results/$NAME".res
-        EXPECT="$LOG_DIR/$NAME".log
+    if [ -r "$EXPECTED_RESULT" ]; then
+        ls -la "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         if [ -x "../results/$NAME".cmp ]; then
             ### Use an optional custom comparator
-            test_it "compare_expectation__$NAME.cmp"
-            ../results/"$NAME".cmp "$RESULT" "$EXPECT"
+            test_it "compare_expectation_custom"
+            ../results/"$NAME".cmp "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES=$?
         else
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
-            test_it "compare_expectation__$CMP"
-            "$CMP" "$RESULT" "$EXPECT"
+            test_it "compare_expectation_`basename "$CMP"`"
+            "$CMP" "$EXPECTED_RESULT" "$REALLIFE_RESULT"
+            RES=$?
         fi
-        RES=$?
         if [ $RES -ne 0 ]; then
-            diff -Naru "../results/$NAME".res "$LOG_DIR/$NAME".log
+            diff -Naru "$EXPECTED_RESULT" "$REALLIFE_RESULT"
         fi
         print_result $RES
     else
