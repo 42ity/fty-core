@@ -40,6 +40,26 @@ static const std::string _ci_strip(const std::string& str) {
      return b.str();
 }
 
+CsvMap::CsvMap(const CsvMap::CxxData& data) :
+    _data{},
+    _title_to_index{}
+{
+    //XXX: this is ugly part, which takes the table of cxxtools::String and convert it to table of utf-8 encoded std::string
+    for (size_t i = 0; i != data.size(); i++) {
+        auto row = std::vector<std::string>{};
+        row.reserve(data[0].size());
+
+        /*FIXME: segfaults!
+         * std::transform(data[i].begin(), data[i].end(), row.begin(),
+                [&](const cxxtools::String& s) -> std::string { return to_utf8(s); });
+        */
+        for (const auto& s: data[i]) {
+            row.push_back(cxxtools::Utf8Codec::encode(s));
+        }
+        _data.push_back(row);
+    }
+}
+
 void CsvMap::deserialize() {
 
     size_t i = 0;
