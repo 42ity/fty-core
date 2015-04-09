@@ -48,6 +48,7 @@ stop_malamute(){
     $RUNAS systemctl stop malamute || true
     sleep 2
     pidof malamute >/dev/null 2>&1 && return 1
+    echo "INFO: malamute is not running"
     return 0
 }
 
@@ -153,6 +154,7 @@ stop() {
         pidof $d lt-$d >/dev/null 2>&1 && \
             echo "ERROR: $d still running (`pidof $d lt-$d`)" && return 1
     done
+    echo "INFO: none of the DAEMONS ($DAEMONS) are running"
     return 0
 }
 
