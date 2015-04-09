@@ -129,9 +129,9 @@ POSITIVE=""
 NEGATIVE=""
 while [ "$1" ]; do
     if [ -z "`echo "x$1" | grep "^x-"`" ]; then
-        POSITIVE="$POSITIVE `echo "$1" | sed 's|.sh$||'`".sh
+        POSITIVE="$POSITIVE $1"
     else
-        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||' | sed 's|.sh$||'`".sh
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`".sh
     fi
     shift
 done
@@ -145,14 +145,22 @@ for i in $POSITIVE; do
             SKIP="true"
         fi
     done
+    [ -z "$SKIP" ] && case "$i" in
+        *.sh)   ;;      # OK to proceed
+        *) logmsg_warn "Non-'.sh' test file ignored: '$i'"
+            SKIP="true" ;;
+    esac
     [ -z "$SKIP" ] || continue
     . ./"$NAME" 5> "$LOG_DIR/$NAME".log
     if [ -r "../results/$NAME".res ]; then
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
         if [ -x "../results/$NAME".cmp ]; then
+            ### Use an optional custom comparator
             ../results/"$NAME".cmp "$RESULT" "$EXPECT"
         else
+            ### Use the default comparation script which makes sure that
+            ### each line of RESULT matches the same-numbered line of EXPECT
             "$CMP" "$RESULT" "$EXPECT"
         fi
         RES=$?
