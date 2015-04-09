@@ -53,9 +53,14 @@ cmpjson_strings() {
             { echo "$1" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF1"; res1=$?
               echo "$2" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF2"; res2=$?
               [ "$res1" = 0 -a "$res2" = 0 ] && diff -bu "$TMPF1" "$TMPF2"; }
-            rm -f "$TMPF1" "$TMPF1"
+            rm -f "$TMPF1" "$TMPF2"
             trap '' 0 1 2 3 15
 	fi
+    else
+        [ "$res1" != 0 ] && echo "=== DEBUG: error parsing input 1:" >&2 && \
+            echo "$1" >&2
+        [ "$res2" != 0 ] && echo "=== DEBUG: error parsing input 2:" >&2 && \
+            echo "$2" >&2
     fi
     return 1
 }
