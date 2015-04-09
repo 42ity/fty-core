@@ -162,7 +162,7 @@ wait_for_web() {
   MAKEPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet && ps -ef | grep -v grep | egrep "$$|make" && echo "CI-ERROR: tntnet still alive">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
+  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet | egrep "^`id -u -n` " && ps -ef | grep -v grep | egrep "$$|make" && echo "CI-ERROR: tntnet still alive, trying SIGKILL">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
