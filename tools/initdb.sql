@@ -406,11 +406,11 @@ CREATE VIEW v_bios_asset_link_topology AS
         LEFT JOIN t_bios_asset_device_type v7
         ON (v3.id_asset_device_type = v7.id_asset_device_type);
 
-create view v_bios_asset_device_type as select * from t_bios_asset_device_type ;
+create view v_bios_asset_device_type as select id_asset_device_type as id, name from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
-create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
-create view v_bios_asset_element_type as select * from t_bios_asset_element_type ;
+create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
+create view v_bios_asset_element_type as select id_asset_element_type as id, name from t_bios_asset_element_type ;
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
