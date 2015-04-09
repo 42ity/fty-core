@@ -38,7 +38,7 @@ if ( ! request.isSsl() ) {
 </%cpp>
 % if(grant_type != "password") {
 {
-    "error":" unsupported_grant_type"
+    "error":"unsupported_grant_type"
 }
 % } else {
 <%cpp>

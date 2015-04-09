@@ -70,7 +70,7 @@ std::string dev;
             } else {
 </%cpp>
 { "error":"<$ error $>",
-  "msg":"<$ msg $> $>" }
+  "msg":"<$ msg $>" }
 <%cpp>
             }
             common_msg_destroy(&dta);
@@ -84,12 +84,12 @@ std::string dev;
             json += "{ \"id\":";
             json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
             json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
-            
+
             zlist_t *list = common_msg_measurements(dta);
-            
+
             for (void *it = zlist_first(list); it != nullptr; it = zlist_next(list)) {
                std::vector<std::string> measurements;
-               
+
                cxxtools::split(":", std::string((char*)it),
                                     std::back_inserter(measurements));
 

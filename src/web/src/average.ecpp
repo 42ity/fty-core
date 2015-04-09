@@ -35,7 +35,7 @@
     if(!agent.connect("ipc://@/malamute")) {
 </%cpp>
         {
-            "msg" : "Can't connect agent"
+            "msg" : "Can't connect agent <$ a_name $>"
         }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
