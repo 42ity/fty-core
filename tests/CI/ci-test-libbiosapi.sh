@@ -34,7 +34,7 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
 export BUILDSUBDIR CHECKOUTDIR
 
 # ensure that what we test is built
-logmsg_info "Ensure that we have a libbiosapi compiled..."
+logmsg_info "Ensuring that we have a libbiosapi compiled..."
 ./autogen.sh make-subdir sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
