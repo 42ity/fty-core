@@ -149,7 +149,7 @@ fi
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
 [ x"$MAXPARMAKES" != x ] && [ "$MAXPARMAKES" -ge 1 ] && \
     [ "$NPARMAKES" -gt "$MAXPARMAKES" ] && \
-    echo "INFO: Detected or requested NPARMAKES=$NPARMAKES, " \
+    echo "INFO: Detected or requested NPARMAKES=$NPARMAKES," \
         "however a limit of MAXPARMAKES=$MAXPARMAKES was configured" && \
     NPARMAKES="$MAXPARMAKES"
 
