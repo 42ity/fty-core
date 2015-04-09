@@ -50,9 +50,9 @@ print_result() {
         echo " * FAILED"
         _ret=1
 	if [ "$TNAME" = "$NAME" ]; then
-            FAILED="$FAILED $NAME"
+            FAILED="$FAILED `echo "$NAME" | sed 's, ,__,g'`"
 	else
-            FAILED="$FAILED $NAME:$TNAME"
+            FAILED="$FAILED `echo "$NAME:$TNAME" | sed 's, ,__,g'`"
 	fi
 
 	# This optional envvar can be set by the caller
@@ -81,10 +81,12 @@ print_result() {
 }
 
 test_it() {
+#    [ "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
         TNAME="$1"
     fi
     [ "$TNAME" ] || TNAME="`basename "$0" .sh`"
+    TNAME="`echo "$TNAME" | sed 's, ,__,g'`"
     echo "Running test $TNAME:"
 }
 
