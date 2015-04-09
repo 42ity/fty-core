@@ -25,6 +25,7 @@
 LOW_IMPORTANCE_WARNINGS=(
   "[-Wunused-variable]"
   '[-Wunused-parameter]'
+  '[-Wunused-function]'
   '[-Wno-unused-but-set-variable]'
 )
 
@@ -99,7 +100,7 @@ HIGH=$(echo $WARNINGS | cut -d " " -f 2 )
 
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
-    echo "error: $HIGH unknown warnings"
+    echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
     echo "============================================"
     exit 1
