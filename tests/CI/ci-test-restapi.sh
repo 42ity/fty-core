@@ -28,6 +28,7 @@ NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
+export BUILDSUBDIR CHECKOUTDIR
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
@@ -150,9 +151,9 @@ wait_for_web() {
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensure files for web-test exist and are up-to-date..."
-  ./autogen.sh make V=0 web-test-deps || exit
+  ./autogen.sh make-subdir V=0 web-test-deps || exit
   logmsg_info "Spawn the web-server in the background..."
-  ./autogen.sh make web-test &
+  ./autogen.sh --noparmake make-subdir web-test &
   MAKEPID=$!
 
   # Ensure that no processes remain dangling when test completes
