@@ -114,6 +114,8 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   sleep 1
+  killall -9 tntnet 2>/dev/null || true
+  sleep 1
   test_web_port && die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
