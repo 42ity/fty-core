@@ -128,7 +128,9 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
-    logmsg_info "Testing completed, $PASS/$TOTAL tests passed"
+    logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
+    logmsg_info "  POSIIVE  = $POSITIVE"
+    logmsg_info "  NEGATIVE = $NEGATIVE"
     [ -z "$FAILED" ] && exit 0
 
     logmsg_info "The following tests have failed:"
@@ -145,7 +147,7 @@ while [ "$1" ]; do
     if [ -z "`echo "x$1" | grep "^x-"`" ]; then
         POSITIVE="$POSITIVE $1"
     else
-        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`".sh
+        NEGATIVE="$NEGATIVE `echo "x$1" | sed 's|^x-||'`"
     fi
     shift
 done
@@ -163,16 +165,17 @@ for i in $POSITIVE; do
     done
     [ -z "$SKIP" ] && case "$NAME" in
         *.sh)   ;;      # OK to proceed
-        *) [ "$POSITIVE" = '*' ] && SKIP=true || case "$i" in
-            *\**|*\?*) # Wildcards are not good
-                SKIP="true" ;;
-            "$NAME") logmsg_warn "Non-'.sh' test file executed due to explicit request: '$NAME' (matched for '$i')"
-                sleep 3 ;;
-            *)  SKIP="true" ;;
-           esac
-           [ "$SKIP" = true ] && \
-             logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
-           ;;
+        *)  [ "$POSITIVE" = '*' ] && SKIP=true || \
+            case "$i" in
+                *\**|*\?*) # Wildcards are not good
+                    SKIP="true" ;;
+                "$NAME") logmsg_warn "Non-'.sh' test file executed due to explicit request: '$NAME' (matched for '$i')" ;;
+                *)  SKIP="true" ;;
+            esac
+            [ "$SKIP" = true ] && \
+                logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
+            sleep 3
+            ;;
     esac
     [ -z "$SKIP" ] || continue
 
