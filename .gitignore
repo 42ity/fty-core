@@ -71,8 +71,10 @@ test-*.trs
 make.log
 cppcheck.supp
 
+test-agents
 test-api
 test-cidr
+test-csv
 test-database
 test-db
 test-db2
