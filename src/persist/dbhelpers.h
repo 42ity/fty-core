@@ -169,6 +169,15 @@ int convert_monitor_to_asset_safe(const char* url,
  */
 bool is_ok_element_type (a_elmnt_tp_id_t element_type_id);
 
+/**
+ * \brief Checks if name is correct 
+ *
+ * \param name - name to check
+ *
+ * \return true if name is correct
+ *         false if name is not correct
+ */
+bool is_ok_name (const char* name);
 
 /**
  * \brief Checks if the keytag is correct

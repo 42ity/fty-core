@@ -92,6 +92,8 @@ static std::map<std::string,int> read_device_types(tntdb::Connection &conn)
 
 static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 {
+    LOG_START;
+    log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
         {"active", "inactive"}; // TODO check
@@ -106,31 +108,33 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
     auto unused_columns = cm.getTitles();
 
     auto name = cm.get(row_i, "name");
-    if ( !name.empty() )
+    log_debug ("name = '%s'", name.c_str());
+    if ( name.empty() )
         throw std::invalid_argument("name is empty");
     unused_columns.erase("name");
 
     auto type = cm.get_strip(row_i, "type");
+    log_debug ("type = '%s'", type.c_str());
     if ( TYPES.find(type) == TYPES.end() )
         throw std::invalid_argument("Type '" + type + "' is not allowed");
     auto type_id = TYPES.find(type)->second;
     unused_columns.erase("type");
 
     auto status = cm.get_strip(row_i, "status");
+    log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
-        throw std::invalid_argument( "Status '" + status + "' is not allowed");
-        // OR
-        // status = "nonactive";
+        log_warning ("Status '%s'is not allowed, use default", status.c_str());
+        status = "inactive";    // default
     }
     unused_columns.erase("status");
 
     auto bs_critical = cm.get_strip(row_i, "business_critical");
-    if (bs_critical != "yes" && bs_critical != "no") {
-        throw std::invalid_argument( "Business critical '" + bs_critical 
-                            + "' is not allowed");
-        // OR
-        // bs_critical = "no";
+    log_debug ("bc = '%s'", bs_critical.c_str());
+    if ( bs_critical != "yes" && bs_critical != "no")
+    {
+        log_warning ( "Business critical '%s' is not allowed, use default", bs_critical.c_str());
+        bs_critical = "no";
     }
     unused_columns.erase("business_critical");
     // TODO function
@@ -139,9 +143,11 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         bc = 0;
 
     int priority = get_priority(cm.get_strip(row_i, "priority"));
+    log_debug ("priority = %d", priority);
     unused_columns.erase("priority");
 
     auto location = cm.get(row_i, "location");
+    log_debug ("location = '%s'", location.c_str());
     a_elmnt_id_t parent_id = 0;
     if ( !location.empty() )
     {
@@ -157,10 +163,11 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
     unused_columns.erase("location");
     
     auto subtype = cm.get_strip(row_i, "sub_type");
+    log_debug ("subtype = '%s'", subtype.c_str());
     if ( ( type == "device" ) && ( SUBTYPES.find(subtype) == SUBTYPES.end() ) ) {
         throw std::invalid_argument ("Subtype '" + subtype + "' is not allowed");
     }
-    if ( ( type != "device" ) && ( type != "group") )
+    if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
     {
         // TODO LOG
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
@@ -176,13 +183,17 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
             auto grp_col_name = "group." + std::to_string(group_index);   // column name
             unused_columns.erase(grp_col_name);                           // remove from unused
             auto group = cm.get(row_i, grp_col_name);                     // take value
-            auto ret = select_asset_element_by_name(conn, group.c_str()); // find an id from DB 
-            if ( ret.status == 1 )                                          
-                groups.insert(ret.item.id);  // if OK, then take ID
-            else
+            log_debug ("group_name = '%s'", group.c_str());
+            if ( !group.empty() )   // if group was not specified, just skip it
             {
-                // TODO LOG
-                log_warning ("'%s' - the group was ignored, because doesn't exist in DB", group.c_str());
+                auto ret = select_asset_element_by_name(conn, group.c_str()); // find an id from DB 
+                if ( ret.status == 1 )                                          
+                    groups.insert(ret.item.id);  // if OK, then take ID
+                else
+                {
+                    // TODO LOG
+                    log_warning ("'%s' - the group was ignored, because doesn't exist in DB", group.c_str());
+                }
             }
         }
         catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
@@ -194,20 +205,24 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
     }
     
     std::vector <link_t>  links{};
-    for ( int link_index = 1 ; true; link_index++ )
+    for ( int link_index = 1; true; link_index++ )
     {
         link_t one_link{0, 0, NULL, NULL, 0};
         try {
             auto link_col_name = "power_source." + std::to_string(link_index);   // column name
             unused_columns.erase(link_col_name);                           // remove from unused
             auto link_source = cm.get(row_i, link_col_name);               // take value
-            auto ret = select_asset_element_by_name(conn, link_source.c_str());   // find an id from DB 
-            if ( ret.status == 1 )                                          
-                one_link.src = ret.item.id;  // if OK, then take ID
-            else
+            log_debug ("power_source_name = '%s'", link_source.c_str());
+            if ( !link_source.empty() ) // if power source is not specified
             {
-                // TODO LOG
-                log_warning ("'%s' - the unknown power source, all information would be ignored (doesn't exist in DB)", link_col_name.c_str());
+                auto ret = select_asset_element_by_name(conn, link_source.c_str());   // find an id from DB 
+                if ( ret.status == 1 )                                          
+                    one_link.src = ret.item.id;  // if OK, then take ID
+                else
+                {
+                    // TODO LOG
+                    log_warning ("'%s' - the unknown power source, all information would be ignored (doesn't exist in DB)", link_col_name.c_str());
+                }
             }
         }
         catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
@@ -221,6 +236,9 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         try{   
             unused_columns.erase(link_col_name1);                                   // remove from unused
             auto link_source1 = cm.get(row_i, link_col_name1);               // take value
+            // TODO: bad idea, char = byte
+            one_link.src_out = new char [4];
+            strcpy ( one_link.src_out, link_source1.substr (0,4).c_str());
         }
         catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
         {
@@ -232,6 +250,9 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         try{
             unused_columns.erase(link_col_name2);                            // remove from unused
             auto link_source2 = cm.get(row_i, link_col_name2);               // take value
+            // TODO: bad idea, char = byte
+            one_link.dest_in = new char [4];
+            strcpy ( one_link.dest_in, link_source2.substr (0,4).c_str());
         }
         catch (const std::out_of_range &e) // if column doesn't exist, then break the cycle
         {
@@ -242,8 +263,6 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         if ( one_link.src != 0 ) // if first column was ok
         {
             // TODO
-//            one_link.src_out
-//            one_link.dest_in
             one_link.type = 1; // TODO remove hardcoded constant
             // TODO smth is wrong here
             links.push_back(one_link);
@@ -256,7 +275,8 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         // try is not needed, because here are keys that are defenitly there
         auto value = cm.get(row_i, key);
         // TODO: on some ext attributes need to have more checks
-        zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+        if ( !value.empty() )
+            zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
     }
 
     if ( type != "device" )
@@ -280,9 +300,21 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
         }
 
     }
+    LOG_END;
     //TODO: check from DB and call is_valid_location_chain
 }
 
+
+static bool mandatory_present (CsvMap cm)
+{
+    auto all_fields = cm.getTitles();
+    if ( (all_fields.count("name") == 0 ) ||
+         (all_fields.count("type") == 0 ) ||
+         (all_fields.count("location") == 0) )
+        return false;
+    else
+        return true;
+}
 
 /*
  * XXX: an example how it should look like - go through a file and
@@ -295,6 +327,7 @@ void
     LOG_START;
     std::vector <std::vector<std::string> > data;
     cxxtools::CsvDeserializer deserializer(input);
+    // TODO make it configurable
     deserializer.delimiter('\t');
     deserializer.readTitle(false);
     deserializer.deserialize(data);
@@ -303,6 +336,12 @@ void
     log_debug ("first1");
     cm.deserialize();
     log_debug ("first2");
+
+    if ( !mandatory_present(cm) )
+    {
+        log_error ("mandatory columns are not present, import is aborted");
+        return;
+    }
 
     tntdb::Connection conn;
     try{
@@ -317,9 +356,9 @@ void
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
-            process_row(conn, cm,row_i);
+            process_row(conn, cm, row_i);
             // TODO LOG
-            log_info ("%zu that it is was successfull", row_i);
+            log_info ("row %zu was imported successfully", row_i);
         }
         catch ( const std::invalid_argument &e)
         {

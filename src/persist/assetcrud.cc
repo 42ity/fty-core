@@ -250,10 +250,10 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
     log_debug ("asset_element_id = %" PRIu32, element_id);
     assert ( element_id );
     
-    std::string mac = "";
-    std::string ip = "";
-    std::string hostname = "";
-    std::string fqdn = "";
+//    std::string mac = "";
+//    std::string ip = "";
+//    std::string hostname = "";
+//    std::string fqdn = "";
     std::string type_name = "";
     a_dvc_tp_id_t id_asset_device_type = 0;
 
@@ -261,7 +261,7 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
         // Can return one row or nothing 
         tntdb::Statement st_dev = conn.prepareCached(
             " SELECT"
-            "   v.mac, v.ip, v.hostname, v.full_hostname,"
+//            "   v.mac, v.ip, v.hostname, v.full_hostname,"
             "   v.id_asset_device_type, v.name"
             " FROM"
             "   v_bios_asset_device v"
@@ -273,16 +273,16 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
                                 selectRow();
 
         // mac
-        row[0].get(mac);
+//        row[0].get(mac);
         
         // ip
-        row[1].get(ip);
+//        row[1].get(ip);
 
         // hostname
-        row[2].get(hostname);
+//        row[2].get(hostname);
 
         // fdqn
-        row[3].get(fqdn);
+//        row[3].get(fqdn);
 
         // id_asset_device_type, required
         row[4].get(id_asset_device_type);
@@ -293,8 +293,8 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
         assert ( !type_name.empty() );
 
         return  asset_msg_encode_device (
-                type_name.c_str(), NULL, NULL, ip.c_str(), 
-                hostname.c_str(), fqdn.c_str(), mac.c_str(), NULL);
+                type_name.c_str(), NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
     }
     catch (const tntdb::NotFound &e) {
         log_warning("end: apropriate row in asset_device was not found");
@@ -1010,7 +1010,7 @@ db_reply <db_a_elmnt_t>
     db_a_elmnt_t item{0,"","",0,5,0,0};
     db_reply <db_a_elmnt_t> ret = db_reply_new(item);
 
-    if ( is_ok_name_length(element_name) )
+    if ( !is_ok_name (element_name) )
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;

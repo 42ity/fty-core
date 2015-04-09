@@ -35,14 +35,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "persist_error.h"
 #include "dbhelpers.h"
 
-bool is_ok_name_length (const char* name)
-{
-    size_t length = strlen (name);
-    if ( ( length == 0 ) || ( length > MAX_NAME_LENGTH ) )
-        return false;
-    else 
-        return true;
-}
 
 common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, 
                                zhash_t** erraux)

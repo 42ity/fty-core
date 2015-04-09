@@ -9,14 +9,13 @@
 
 TEST_CASE("CSV multiple field names", "[csv]") {
 
-    
-    //std::stringstream buf;
-    std::ifstream buf;
-    buf.open ("csv_gerald1.txt", std::ifstream::in);
-    if ( buf.good() )
-        log_debug ("everything is ok");
+    std::string path{__FILE__};
+    path += ".csv";
+    std::cout << path << std::endl;
+    std::fstream buf{path};
+
     load_asset_csv(buf);
-    buf.close();
+
     
   /*       char *buffer = new char [100];
     buf.read (buffer, 100);

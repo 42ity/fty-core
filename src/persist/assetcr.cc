@@ -31,8 +31,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "assetcrud.h"
 
-#include "monitor.h" // is_ok_... functions
-
 //////////////////////////////////////////////////////////////////////////////
 ///                               INSERT API                  ////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -474,7 +472,7 @@ db_reply_t
     db_reply_t ret = db_reply_new();
  
     // input parameters control 
-    if ( !is_ok_name_length (element_name) )
+    if ( !is_ok_name (element_name) )
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -732,9 +730,9 @@ db_reply_t
      a_elmnt_bc_t     bc)
 {
     LOG_START;
-    log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
+//    log_debug ("  element_name = '%s'", element_name);
+//    log_debug ("  element_type_id = %" PRIu32, element_type_id);
+//    log_debug ("  parent_id = %" PRIu32, parent_id);
 
     tntdb::Transaction trans(conn);
 
