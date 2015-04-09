@@ -119,6 +119,8 @@ determineDirs_default() {
     else
         logmsg_error "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
         logmsg_error "Search path checked: $CHECKOUTDIR, $PWD"
+        ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
+            "$PWD/config.status" >&2
         RES=1
         if [ "$NEED_BUILDSUBDIR" = yes ]; then
             exit $RES
