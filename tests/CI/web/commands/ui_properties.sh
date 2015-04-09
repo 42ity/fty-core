@@ -1,6 +1,3 @@
-
-#!/bin/sh
-
 #TEST for /ui/properties GET/PUT
 
 test_it "GET_ui_properties"
@@ -22,3 +19,4 @@ print_result $?
 #TODO: can't validate JSON via cxxtools
 #test_it "PUT_invalid_JSON"
 #api_auth_put /usr/properties
+#print_result $?
