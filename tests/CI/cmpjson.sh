@@ -17,7 +17,8 @@ determineDirs || true
 [ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n -Nnx=%.16f"
 [ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n -Nnx=%.16f"
 
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && die "JSON.sh is not executable (tried '$JSONSH')"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && \
+    die "JSON.sh is not executable (tried '$JSONSH')"
 
 self_test() {
     local jsonstr1='{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}'
@@ -113,6 +114,8 @@ cmpjson_files() {
 usage() {
         echo "Usage: $0 {file1} {file2}"
         echo "  The two files should contain the same amount of single-line JSON documents"
+        echo "Usage: $0 -f {file1} {file2}"
+        echo "  Each of two files should contain a complete JSON document, maybe multiline"
         echo "Usage: $0 -s {string1} {string2}"
         echo "  The two strings should each contain a complete JSON document"
         echo "Usage: $0 -t"
@@ -128,8 +131,14 @@ usage() {
 case "$1" in
     -t)
         self_test
-        exit
+        exit $?
 	;;
+    -f) [ ! -r "$2" -o ! -r "$3" ] && usage && \
+            die "Not readable files '$2' and '$3' were provided!"
+
+        cmpjson_strings "`cat "$2"`" "`cat "$3"`"
+        exit $?
+        ;;
     -s) cmpjson_strings "$2" "$3"; exit ;;
     -h|--help)
         usage
@@ -138,6 +147,8 @@ case "$1" in
 esac
 
 [ $# != 2 ] && usage && die "Bad number of parameters ($#)!"
-[ ! -r "$1" -o ! -r "$2" ] && usage && die "Not readable files '$1' and '$2' were provided!"
+[ ! -r "$1" -o ! -r "$2" ] && usage && \
+    die "Not readable files '$1' and '$2' were provided!"
 
 cmpjson_files "$1" "$2"
+exit $?
