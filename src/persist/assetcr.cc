@@ -259,26 +259,39 @@ db_reply_t
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_device AND"
             "               v3.id_asset_device_dest = v2.id_asset_device AND"
-            "               ( ((v3.src_out == :out) AND (v3.dest_in == :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) "
-            "               v3.id_asset_device_dest = v2.id_asset_device AND"
+            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) AND"
+            "               v3.id_asset_device_dest = v2.id_asset_device"
             "    )"
         );
         
-        if ( !strcmp(src_out, "") )
-            st.setNull("out");
+        if ( strcmp(src_out, "") == 0 )
+        {
+                st = st.setNull("out");
+                log_debug ("src-out is null");
+        }
         else
-            st.set("out", src_out);
-        if ( !strcmp(dest_in, "") )
-            st.setNull("in");
+        {
+                st = st.set("out", src_out);
+                log_debug ("src-out is not null");
+        }
+        
+        if ( strcmp(dest_in, "") == 0)
+        {
+                st = st.setNull("in");
+                log_debug ("dest is  null");
+        }
         else
-            st.set("in", dest_in);
+        {
+                st = st.set("in", dest_in);
+                log_debug ("dest is not  null");
+        }
 
         ret.affected_rows = st.set("src", asset_element_src_id).
                                set("dest", asset_element_dest_id).
                                set("linktype", link_type_id).
                                execute();
         ret.rowid = conn.lastInsertId();
-        log_debug ("[t_bios_asset_device]: was inserted %" 
+        log_debug ("[t_bios_asset_link]: was inserted %" 
                                         PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
         LOG_END;
@@ -803,7 +816,7 @@ db_reply_t
     }
            
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
-    if ( reply_insert3.affected_rows == 0 )
+    if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows == 0 ) )
     {
         trans.rollback();
         log_info ("end: device was not inserted (fail into groups)");

@@ -285,11 +285,11 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
 //        row[3].get(fqdn);
 
         // id_asset_device_type, required
-        row[4].get(id_asset_device_type);
+        row[0].get(id_asset_device_type);
         assert ( id_asset_device_type != 0 );  // database is corrupted
         
         // string representation of device type
-        row[5].getString(type_name);
+        row[1].getString(type_name);
         assert ( !type_name.empty() );
 
         return  asset_msg_encode_device (

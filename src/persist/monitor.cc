@@ -100,7 +100,7 @@ common_msg_t* select_client(const char* url, const char* client_name)
 {
     log_info ("start");
     
-    if ( !is_ok_name_length (client_name) )
+    if ( !is_ok_name (client_name) )
     {
         log_info ("end: too long client name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -176,7 +176,7 @@ common_msg_t* insert_client(const char* url, const char* client_name)
 {
     log_info ("start");
 
-    if ( !is_ok_name_length (client_name) )
+    if ( !is_ok_name (client_name) )
     {
         log_info ("end: too long client name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -262,7 +262,7 @@ common_msg_t* update_client(const char* url, m_clnt_id_t client_id,
 
     const char* client_name = common_msg_name (*client);
    
-    if ( !is_ok_name_length (client_name) )
+    if ( !is_ok_name (client_name) )
     {
         log_info ("end: too long client name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -722,7 +722,7 @@ common_msg_t* select_device_type(const char* url,
 {
     log_info ("start");
     
-    if ( !is_ok_name_length (device_type_name) )
+    if ( !is_ok_name (device_type_name) )
     {
         log_info ("end: too long device type name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -800,7 +800,7 @@ common_msg_t* insert_device_type(const char* url,
 {
     log_info ("start");
    
-    if ( !is_ok_name_length (device_type_name) )
+    if ( !is_ok_name (device_type_name) )
     {
         log_info ("end: too long device type name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -885,7 +885,7 @@ common_msg_t* update_device_type(const char* url,
     assert ( common_msg_id (*device_type) == COMMON_MSG_DEVICE_TYPE );
     const char* device_type_name = common_msg_name (*device_type);
 
-    if ( !is_ok_name_length (device_type_name) )
+    if ( !is_ok_name (device_type_name) )
     {
         common_msg_destroy (device_type);
         log_info ("end: too long device type name");
@@ -973,7 +973,7 @@ common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id,
     log_info ("start");
     assert ( device_type_id );       // is required
     
-    if ( !is_ok_name_length (device_name) )
+    if ( !is_ok_name (device_name) )
     {
         log_info ("end: too long device name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -1066,7 +1066,7 @@ common_msg_t* select_device (const char* url, m_dvc_tp_id_t device_type_id,
     log_info ("start");
     assert ( device_type_id );
     
-    if ( !is_ok_name_length (device_name) )
+    if ( !is_ok_name (device_name) )
     {
         log_info ("end: too long device name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -1127,13 +1127,13 @@ common_msg_t* select_device (const char* url, const char* device_type_name,
 {
     log_info ("start");
  
-    if ( !is_ok_name_length (device_name) )
+    if ( !is_ok_name (device_name) )
     {
         log_info ("end: too long device name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
             "device name length is not in range [1, MAX_NAME_LENGTH]", NULL);
     }
-    if ( !is_ok_name_length (device_type_name) )
+    if ( !is_ok_name (device_type_name) )
     {
         log_info ("end: too long device type name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
@@ -1180,7 +1180,7 @@ db_reply_t
     
     db_reply_t ret = db_reply_new();
  
-    if ( !is_ok_name_length (device_name) )
+    if ( !is_ok_name (device_name) )
     {
         ret.status     = 0; 
         log_info ("end: too long device name");
@@ -1236,13 +1236,13 @@ common_msg_t* insert_device(const char* url, const char* device_type_name,
 {
     log_info ("start");
     
-    if ( !is_ok_name_length (device_name) )
+    if ( !is_ok_name (device_name) )
     {
         log_info ("end: too long device name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
             "device name length is not in range [1, MAX_NAME_LENGTH]", NULL);
     }
-    if ( !is_ok_name_length (device_type_name) )
+    if ( !is_ok_name (device_type_name) )
     {
         log_info ("end: too long device type name");
         return generate_db_fail (DB_ERROR_BADINPUT, 
