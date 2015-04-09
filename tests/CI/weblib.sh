@@ -50,6 +50,7 @@ WEBLIB_FORCEABORT=no
 
 print_result() {
     _ret=0
+    TOTAL="`expr $TOTAL + 1`"
     if [ "$1" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
@@ -83,7 +84,6 @@ print_result() {
 	    exit $_ret
 	fi >&2
     fi
-    TOTAL="`expr $TOTAL + 1`"
     echo
     return $_ret
 }
