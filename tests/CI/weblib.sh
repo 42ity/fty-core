@@ -134,11 +134,11 @@ CURL() {
 }
 
 api_get() {
-    CURL -v --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_get_content() {
-    CURL "$BASE_URL$1" 2>/dev/null
+    CURL --insecure "$BASE_URL$1" 2>/dev/null
 }
 
 api_get_json() {
@@ -148,13 +148,13 @@ api_get_json() {
         return $?
     fi
 
-    CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
+    CURL --insecure -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | $JSONSH -N
 }
 
 api_get_json_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
-    CURL -v --progress-bar "$BASE_URL$1" 2> /dev/null \
+    CURL --insecure -v --progress-bar "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
@@ -165,7 +165,7 @@ api_get_jsonv() {
 }
 
 api_post() {
-    CURL -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 ### Flag for _api_get_token_certainPlus()
@@ -244,7 +244,7 @@ api_auth_post() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -H "Authorization: Bearer $TOKEN" -d "$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content() {
@@ -252,7 +252,7 @@ api_auth_post_content() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
+    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_post_wToken() {
@@ -260,7 +260,7 @@ api_auth_post_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -d "access_token=$TOKEN&$2" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_post_content_wToken() {
@@ -268,12 +268,12 @@ api_auth_post_content_wToken() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
+    CURL --insecure -d "access_token=$TOKEN&$2" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_delete() {
     TOKEN="`_api_get_token`"
-    CURL -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -H "Authorization: Bearer $TOKEN" -X "DELETE" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_put() {
@@ -281,12 +281,12 @@ api_auth_put() {
     #	$1	Relative URL for API call
     #	$2	PUT data
     TOKEN="`_api_get_token`"
-    CURL -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get() {
     TOKEN="`_api_get_token`"
-    CURL -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
+    CURL --insecure -v -H "Authorization: Bearer $TOKEN" --progress-bar "$BASE_URL$1" 2>&1
 }
 
 api_auth_get_wToken() {
@@ -295,12 +295,12 @@ api_auth_get_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    CURL -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
+    CURL --insecure -v --progress-bar "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>&1
 }
 
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
-    CURL -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
+    CURL --insecure -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2>/dev/null
 }
 
 api_auth_get_content_wToken() {
@@ -309,12 +309,12 @@ api_auth_get_content_wToken() {
     case "$1" in
         *"?"*) URLSEP='&' ;;
     esac
-    CURL "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
+    CURL --insecure "$BASE_URL$1$URLSEP""access_token=$TOKEN" 2>/dev/null
 }
 
 api_auth_get_json() {
     TOKEN="`_api_get_token`"
-    CURL -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
+    CURL --insecure -v --progress-bar -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }
 
@@ -323,10 +323,10 @@ api_auth_get_jsonv() {
     api_auth_get_json "$@" | python -c "import sys, json; s=sys.stdin.read(); json.loads(s); print(s)"
 }
 
-api_post_json_cmp () {
+api_post_json_cmp() {
 #    set -x
-    text=$(curl -v --progress-bar -d "$2" "$BASE_URL$1" 2>&1)
-    res=$(echo "${text}" | grep -E "$3")
+    text=$(CURL --insecure -v --progress-bar -d "$2" "$BASE_URL$1" 2>&1)
+    res=$(echo "${text}" | egrep "$3")
     if [ -z "$res" ]; then
         return 1
     else
