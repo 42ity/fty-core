@@ -57,8 +57,8 @@ fi
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
 if [ -x "$CPPCHECK" ] ; then
-    echo '\
-*:src/msg/*_msg.c
+    echo \
+'*:src/msg/*_msg.c
 *:src/include/git_details_override.c
 unusedFunction:src/api/*
 ' > cppcheck.supp

@@ -39,8 +39,8 @@ echo "======================== make ==============================="
 
 echo "========================= cppcheck =========================="
 if [ -x "$CPPCHECK" ] ; then
-    echo '\
-*:src/msg/*_msg.c
+    echo \
+'*:src/msg/*_msg.c
 *:src/include/git_details_override.c
 unusedFunction:src/api/*
 ' > cppcheck.supp
