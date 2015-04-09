@@ -190,15 +190,16 @@ for i in $POSITIVE; do
     # itself (which is usually "true")
 
     if [ -r "../results/$NAME".res ]; then
-        test_it "compare_expectation"
         RESULT="../results/$NAME".res
         EXPECT="$LOG_DIR/$NAME".log
         if [ -x "../results/$NAME".cmp ]; then
             ### Use an optional custom comparator
+            test_it "compare_expectation__$NAME.cmp"
             ../results/"$NAME".cmp "$RESULT" "$EXPECT"
         else
             ### Use the default comparation script which makes sure that
             ### each line of RESULT matches the same-numbered line of EXPECT
+            test_it "compare_expectation__$CMP"
             "$CMP" "$RESULT" "$EXPECT"
         fi
         RES=$?
