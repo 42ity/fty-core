@@ -145,9 +145,10 @@ for i in $POSITIVE; do
             SKIP="true"
         fi
     done
-    [ -z "$SKIP" ] && case "$i" in
+    [ -z "$SKIP" ] && case "$NAME" in
         *.sh)   ;;      # OK to proceed
-        *) logmsg_warn "Non-'.sh' test file ignored: '$i'"
+        "$i")   ;;      # Also OK for explicitly named test files
+        *) logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
             SKIP="true" ;;
     esac
     [ -z "$SKIP" ] || continue
