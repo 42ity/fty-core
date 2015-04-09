@@ -152,8 +152,9 @@ done
 logmsg_info "Testing completed, $PASS/$TOTAL tests passed"
 [ -z "$FAILED" ] && exit 0
 
-logmsg_error "The following tests have failed:"
+logmsg_info "The following tests have failed:"
 for i in $FAILED; do
     echo " * $i"
 done
+logmsg_error "`expr $TOTAL - $PASS`/$TOTAL tests FAILED"
 exit 1
