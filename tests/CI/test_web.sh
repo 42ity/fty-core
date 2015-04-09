@@ -113,6 +113,7 @@ if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
     api_get "/oauth2/token" >&2
     CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
 fi
+logmsg_info "Webserver seems basically able to serve the REST API"
 
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
