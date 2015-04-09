@@ -120,6 +120,7 @@ wait_for_web() {
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
+    logmsg_info "Starting saslauthd..."
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
       logmsg_warn "Could not restart saslauthd, make sure SASL and SUDO" \
@@ -133,6 +134,7 @@ wait_for_web() {
 
   # make sure message bus is running
   if ! $RUNAS systemctl --quiet is-active malamute; then
+    logmsg_info "Starting malamute..."
     $RUNAS systemctl start malamute || \
       [ x"$RUNAS" = x ] || \
       logmsg_warn "Could not restart malamute, make sure SASL and SUDO" \
@@ -141,6 +143,7 @@ wait_for_web() {
 
   # make sure database is running
   if ! $RUNAS systemctl --quiet is-active mysql; then
+    logmsg_info "Starting mysql..."
     $RUNAS systemctl start mysql || \
       [ x"$RUNAS" = x ] || \
       logmsg_warn "Could not restart mysql, make sure SASL and SUDO" \
@@ -152,16 +155,16 @@ wait_for_web() {
   LC_ALL=C
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
-  logmsg_info "Ensure files for web-test exist and are up-to-date..."
+  logmsg_info "Ensuring files for web-test exist and are up-to-date..."
   ./autogen.sh make-subdir V=0 web-test-deps || exit
-  logmsg_info "Spawn the web-server in the background..."
+  logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake make-subdir web-test &
   MAKEPID=$!
 
   # Ensure that no processes remain dangling when test completes
   trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet && ps -ef | grep -v grep | egrep "$$|make" && echo "CI-ERROR: tntnet still alive">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
 
-  logmsg_info "Wait for web-server to begin responding..."
+  logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
     logmsg_info "Web-server is responsive!" || \
     logmsg_error "Web-server is NOT responsive!" >&2
