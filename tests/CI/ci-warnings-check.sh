@@ -34,6 +34,7 @@ LOW_IMPORTANCE_WARNINGS=(
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+set -o pipefail || true
 set -e
 
 echo "======================== update ============================="
