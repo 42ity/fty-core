@@ -33,13 +33,12 @@
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-export BUILDSUBDIR CHECKOUTDIR
 
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-    ./autogen.sh --nodistclean configure-subdir
+    ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh make-subdir web-test-deps
-./autogen.sh --noparmake make-subdir web-test >/tmp/web-test.log 2>&1 &
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps
+./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
 
 # Ensure that no processes remain dangling when test completes
