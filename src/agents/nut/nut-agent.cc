@@ -71,20 +71,20 @@ void NUTAgent::advertisePhysics() {
                 }
             }
             // send also status as bitmap
-            if( device.second.hasProperty("status") && ( advertise || device.second.changed("status") ) ) {
+            if( device.second.hasProperty("status.ups") && ( advertise || device.second.changed("status.ups") ) ) {
                 topic = "measurement.status@" + device.second.name();
-                std::string status_s = device.second.property("status");
+                std::string status_s = device.second.property("status.ups");
                 uint16_t    status_i = shared::upsstatus_to_int( status_s );
                 ymsg_t *msg = bios_measurement_encode(
                     device.second.name().c_str(),
-                    "status",
+                    "status.ups",
                     "",
                     status_i, 0, -1);
                 if( msg ) {
                     log_debug("sending new status for ups %s, value %i (%s)", device.second.name().c_str(), status_i, status_s.c_str() );
                     send( topic.c_str(), &msg );
                     ymsg_destroy(&msg);
-                    device.second.setChanged("status",false);
+                    device.second.setChanged("status.ups",false);
                 }
             }
         }
@@ -101,7 +101,7 @@ void NUTAgent::advertiseInventory() {
         std::string topic = "inventory@" + device.second.name();
         zhash_t *inventory = zhash_new();
         for( auto &item : device.second.inventory( !advertise ) ) {
-            if( item.first != "status" ) { 
+            if( item.first != "status.ups" ) { 
                 zhash_insert( inventory, item.first.c_str(), (void *)item.second.c_str() );
                 device.second.setChanged(item.first,false);
             }
@@ -129,7 +129,7 @@ int main(int argc, char *argv[]){
     log_set_level(LOG_DEBUG);
     log_info ("nut agent started");
     NUTAgent agent("NUT");
-    if( agent.connect("ipc://@/malamute","bios",NULL) ) {
+    if( agent.connect("ipc://@/malamute", bios_get_stream_main(), NULL) ) {
         result = agent.run();
     }
     log_info ("nut agent exited with code %i\n", result);
