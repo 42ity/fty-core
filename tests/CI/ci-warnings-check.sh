@@ -94,13 +94,15 @@ sort_warnings() {
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
                 LOW=$(expr $LOW + 1)
+                echo "CI-INFO-CPPCHECK: Detected a low-priority warning:" \
+                    "$line" >&2
                 FOUND=1
                 break
             fi
         done
         if [[ "$FOUND" == "0" ]] ; then
             HIGH=$(expr $HIGH + 1)
-            logmsg_warn "Detected a warning not known" \
+            echo "CI-INFO-CPPCHECK: Detected a warning not known" \
                 "as a low-priority: $line" >&2
         fi
     done
@@ -121,7 +123,7 @@ if [[ "$HIGH" != "0" ]] ; then
     echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
     [[ "$NEWBUILD" = no ]] && \
-    echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
+        echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     echo "============================================"
     exit 1
 else
@@ -129,7 +131,7 @@ else
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
         [[ "$NEWBUILD" = no ]] && \
-        echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
+            echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     else
         echo "OK, no warnings detected"
     fi
