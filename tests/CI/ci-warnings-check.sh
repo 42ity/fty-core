@@ -51,9 +51,11 @@ if [ -s "${MAKELOG}" ] ; then
 else
     # Newly checked-out branch, rebuild
     echo "=============== auto-configure and rebuild =================="
+    /bin/rm -f ${MAKELOG}
+    touch ${MAKELOG}
     ./autogen.sh --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-        ${AUTOGEN_ACTION_BUILD} >/dev/null 2>&1 | tee ${MAKELOG}
+        ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
 fi
 
 echo "======================= cppcheck ============================"
