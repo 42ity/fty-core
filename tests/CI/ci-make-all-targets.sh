@@ -36,7 +36,7 @@ set -e
 echo "============= auto-configure and rebuild ===================="
 ./autogen.sh --configure-flags \
     "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-    ${AUTOGEN_ACTION_BUILD} 2>&1 | tee make.log
+    ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
 
 echo "========================= cppcheck =========================="
 CPPCHECK_RES=0
@@ -56,8 +56,8 @@ unusedFunction:src/api/*
 fi
 
 echo "======================== make check ========================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a ${MAKELOG}
 echo "======================== make dist =========================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} dist 2>&1 | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} dist 2>&1 | tee -a ${MAKELOG}
 echo "======================== make distcheck ====================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}

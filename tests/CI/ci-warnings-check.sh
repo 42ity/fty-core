@@ -44,16 +44,16 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
-if [ -s "make.log" ] ; then
+if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     echo "================= auto-make (refresh) ======================="
-    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} 2>&1 | tee -a make.log
+    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} 2>&1 | tee -a ${MAKELOG}
 else
     # Newly checked-out branch, rebuild
     echo "=============== auto-configure and rebuild =================="
     ./autogen.sh --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-        ${AUTOGEN_ACTION_BUILD} >/dev/null 2>&1 | tee make.log
+        ${AUTOGEN_ACTION_BUILD} >/dev/null 2>&1 | tee ${MAKELOG}
 fi
 
 echo "======================= cppcheck ============================"
@@ -100,12 +100,12 @@ sort_warnings() {
 }
 
 echo "==================== sort_warnings =========================="
-ls -la make.log
+ls -la ${MAKELOG}
 set -x
-WARNINGS=$(sort_warnings < make.log)
+WARNINGS=$(sort_warnings < ${MAKELOG})
 LOW=$(echo $WARNINGS | cut -d " " -f 1 ) 
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
-#/bin/rm -f make.log
+#/bin/rm -f ${MAKELOG}
 set +x
 
 if [[ "$HIGH" != "0" ]] ; then
