@@ -31,20 +31,20 @@ set -e
 apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-if [ -s "make.log" ] ; then
+if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     echo "=========== auto-make (refresh) and install ================="
     ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} \
-        install 2>&1 | tee -a make.log
+        install 2>&1 | tee -a ${MAKELOG}
 else
     # Newly checked-out branch, rebuild
     echo "========= auto-configure, rebuild and install ==============="
     ./autogen.sh --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-        ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee make.log
+        ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}
 fi
 
 echo "======================== make check ========================="
-./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a make.log
+./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a ${MAKELOG}
 echo "==================== make distcheck ========================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}
