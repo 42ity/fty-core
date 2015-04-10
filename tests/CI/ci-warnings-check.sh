@@ -47,13 +47,13 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 if [ -s "make.log" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     echo "================= auto-make (refresh) ======================="
-    ./autogen.sh --no-distclean make 2>&1 | tee -a make.log
+    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} 2>&1 | tee -a make.log
 else
     # Newly checked-out branch, rebuild
-    echo "==================== auto-configure ========================="
-    ./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
-    echo "====================== auto-make ============================"
-    ./autogen.sh make 2>&1 | tee make.log
+    echo "=============== auto-configure and rebuild =================="
+    ./autogen.sh --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_BUILD} >/dev/null 2>&1 | tee make.log
 fi
 
 echo "======================= cppcheck ============================"
@@ -67,7 +67,9 @@ unusedFunction:src/api/*
 ' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
               --suppressions-list=cppcheck.supp \
-              src 2>cppcheck.xml || CPPCHECK_RES=$?
+              src 2>cppcheck.xml || { CPPCHECK_RES=$?; \
+        logmsg_warn "cppcheck reported failure ($CPPCHECK_RES)" \
+            "but we consider it not fatal"; }
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     ls -la cppcheck.xml
     /bin/rm -f cppcheck.supp

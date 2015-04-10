@@ -70,6 +70,20 @@ determineDirs() {
 
     export BUILDSUBDIR CHECKOUTDIR SCRIPTDIR
 
+    if [ -n "$BUILDSUBDIR" -a x"$BUILDSUBDIR" != x"$CHECKOUTDIR" ]; then
+        AUTOGEN_ACTION_MAKE=make-subdir
+        AUTOGEN_ACTION_BUILD=build-subdir
+        AUTOGEN_ACTION_CONFIG=configure-subdir
+        AUTOGEN_ACTION_INSTALL=install-subdir
+    else
+        AUTOGEN_ACTION_MAKE=make
+        AUTOGEN_ACTION_BUILD=build
+        AUTOGEN_ACTION_CONFIG=configure
+        AUTOGEN_ACTION_INSTALL=install
+    fi
+    export AUTOGEN_ACTION_MAKE AUTOGEN_ACTION_BUILD AUTOGEN_ACTION_CONFIG \
+        AUTOGEN_ACTION_INSTALL
+
     ### Ultimate status: if false, then the paths are non-development
     [ -n "$SCRIPTDIR" -a -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
     [ -d "$SCRIPTDIR" -a -d "$CHECKOUTDIR" -a -d "$BUILDSUBDIR" ] && \

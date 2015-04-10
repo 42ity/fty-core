@@ -33,12 +33,13 @@ set -e
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
 # NOTE: with this job we want everything wiped and rebuilt in the workspace
-echo "=================== auto-configure =========================="
-./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
-echo "======================== make ==============================="
-./autogen.sh make | tee make.log
+echo "============= auto-configure and rebuild ===================="
+./autogen.sh --configure-flags \
+    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    ${AUTOGEN_ACTION_BUILD} 2>&1 | tee make.log
 
 echo "========================= cppcheck =========================="
+CPPCHECK_RES=0
 if [ -x "$CPPCHECK" ] ; then
     echo \
 '*:src/msg/*_msg.c
@@ -46,15 +47,17 @@ if [ -x "$CPPCHECK" ] ; then
 unusedFunction:src/api/*
 ' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-        --suppressions-list=cppcheck.supp \
-        src 2>cppcheck.xml
+            --suppressions-list=cppcheck.supp \
+            src 2>cppcheck.xml || { CPPCHECK_RES=$?; \
+        logmsg_warn "cppcheck reported failure ($CPPCHECK_RES)" \
+            "but we consider it not fatal" ; }
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     /bin/rm -f cppcheck.supp
 fi
 
 echo "======================== make check ========================="
-./autogen.sh make check | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a make.log
 echo "======================== make dist =========================="
-./autogen.sh make dist | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} dist 2>&1 | tee -a make.log
 echo "======================== make distcheck ====================="
-./autogen.sh make distcheck | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a make.log

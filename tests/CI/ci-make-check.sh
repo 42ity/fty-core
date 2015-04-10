@@ -33,17 +33,18 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 
 if [ -s "make.log" ] ; then
     # This branch was already configured and compiled here, only refresh it now
-    echo "================= auto-make (refresh) ======================="
-    ./autogen.sh --no-distclean make 2>&1 | tee -a make.log
+    echo "=========== auto-make (refresh) and install ================="
+    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} \
+        install 2>&1 | tee -a make.log
 else
     # Newly checked-out branch, rebuild
-    echo "==================== auto-configure ========================="
-    ./autogen.sh --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
-    echo "=================== make and install ========================"
-    ./autogen.sh make install | tee make.log
+    echo "========= auto-configure, rebuild and install ==============="
+    ./autogen.sh --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee make.log
 fi
 
 echo "======================== make check ========================="
-./autogen.sh make check | tee -a make.log
+./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a make.log
 echo "==================== make distcheck ========================="
-./autogen.sh make distcheck | tee -a make.log
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a make.log
