@@ -94,9 +94,13 @@ done
 #
 # check if VM exists
 #
-RESULT=$(virsh -c lxc:// list --all | tail -n +3 | cut -d " " -f 3 | grep -E "^$VM\$" | wc -l)
-if [ $RESULT != 1 ] ; then
+RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9]+/ {print $2}' | grep -E "^$VM\$" | wc -l)
+if [ $RESULT = 0 ] ; then
     die "VM $VM does not exist"
+fi
+if [ $RESULT -gt 1 ] ; then
+    ### Should not get here via CI
+    die "VM pattern $VM matches too much ($RESULT)"
 fi
 
 # This should not be hit...
