@@ -147,6 +147,11 @@ fi
 [ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
 [ x"$NPARMAKES" = x ] && { NPARMAKES="`do_math "$NCPUS" '*' 2`" || NPARMAKES=2; }
 [ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
+[ x"$MAXPARMAKES" != x ] && [ "$MAXPARMAKES" -ge 1 ] && \
+    [ "$NPARMAKES" -gt "$MAXPARMAKES" ] && \
+    echo "INFO: Detected or requested NPARMAKES=$NPARMAKES," \
+        "however a limit of MAXPARMAKES=$MAXPARMAKES was configured" && \
+    NPARMAKES="$MAXPARMAKES"
 
 #[ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""
 
@@ -215,11 +220,11 @@ do_make() {
 	if [ ! -s Makefile ]; then
 		case "$*" in
 		    *clean*)
-				echo "INFO: Makefile absent, skipping '$MAKE $@' for a cleaning action"
+				echo "INFO: Makefile absent in '`pwd`, skipping '$MAKE $@' for a cleaning action"
 #distclean?#			[ -d config ] && rm -rf config
 				return 0 ;;
 		    *)
-				echo "ERROR: Makefile absent, can not fulfill '$MAKE $@'" >&2
+				echo "ERROR: Makefile absent in '`pwd`', can not fulfill '$MAKE $@'" >&2
 				return 1 ;;
 		esac
 	fi
@@ -282,8 +287,9 @@ do_build() {
 	MRES_P="SKIPPED"
 	MRES_S="SKIPPED"
 
+	echo "INFO-MAKE[$$]: `date`: beginning do_build() in directory '`pwd`'"
 	if [ x"$NOPARMAKE" != xyes ]; then 
-	    echo "=== PARMAKE (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
+	    echo "=== PARMAKE[$$] (fast first pass which is allowed to fail): $MAKE_OPTS_PAR $MAKE_OPTS $@"
 	    case " $MAKE_OPTS_PAR $MAKE_OPTS $*" in
 		*\ V=*|*\ --trace*)
 		    do_make $MAKE_OPTS_PAR $MAKE_OPTS -j $NPARMAKES -k "$@"
@@ -294,27 +300,27 @@ do_build() {
 	    esac
 	    MRES_P="$MRES"
 	else
-	    echo "=== PARMAKE disabled by user request"
+	    echo "=== PARMAKE[$$]: disabled by user request"
 	fi
 
 	if [ "$MRES_P" = 0 -a "$OPTSEQMAKE" = yes ]; then
-	    echo "=== SEQMAKE disabled by user request as optional" \
+	    echo "=== SEQMAKE[$$]: disabled by user request as optional" \
 		"(only required if PARMAKE failed)"
 	else
 	# User can request 'builder.sh install-subdir V=0' or somesuch
 	# to suppress the build tracing, or '... --trace' to increase it
 	# ...or the MAKE variable can be overridden to the same effect
 	    if [ x"$NOSEQMAKE" != xyes ]; then 
-		echo "=== SEQMAKE: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
+		echo "=== SEQMAKE[$$]: $MAKE_OPTS_SEQ $MAKE_OPTS $@"
 		do_make $MAKE_OPTS_SEQ $MAKE_OPTS "$@"
 		MRES=$?
 		MRES_S="$MRES"
 	    else
-		echo "=== SEQMAKE disabled by user request"
+		echo "=== SEQMAKE[$$]: disabled by user request"
 	    fi
 	fi
 
-	echo "=== do_build results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
+	echo "INFO-MAKE[$$]: `date`: do_build() results: make '$@' : PARMAKE=$MRES_P SEQMAKE=$MRES_S overall=$MRES"
 	echo ""
 
 	return $MRES
@@ -590,6 +596,7 @@ while [ $# -gt 0 ]; do
 		NOPARMAKE=no
 		NPARMAKES=1
 		OPTSEQMAKE=no
+		[ -z "$MAKE_OPTS_SEQ" ] && MAKE_OPTS_SEQ="V=1 --trace"
 		shift
 		;;
 	    *)	break ;;

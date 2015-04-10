@@ -1,5 +1,3 @@
-#!/bin/sh
-
 # Check getting token
 test_it "login"
 TOKEN="`api_get "/oauth2/token?username=$BIOS_USER&password=$BIOS_PASSWD&grant_type=password" | \
