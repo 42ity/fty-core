@@ -17,7 +17,8 @@ determineDirs || true
 [ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n -Nnx=%.16f"
 [ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n -Nnx=%.16f"
 
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && die "JSON.sh is not executable (tried '$JSONSH')"
+[ -z "$JSONSH" -o ! -x "$JSONSH" ] && \
+    die "JSON.sh is not executable (tried '$JSONSH')"
 
 self_test() {
     local jsonstr1='{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}'
@@ -52,10 +53,16 @@ cmpjson_strings() {
             { echo "$1" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF1"; res1=$?
               echo "$2" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF2"; res2=$?
               [ "$res1" = 0 -a "$res2" = 0 ] && diff -bu "$TMPF1" "$TMPF2"; }
-            rm -f "$TMPF1" "$TMPF1"
+            rm -f "$TMPF1" "$TMPF2"
             trap '' 0 1 2 3 15
 	fi
     fi
+
+    [ "$res1" != 0 ] && echo "=== DEBUG: error parsing input 1:" >&2 && \
+        echo "$1" >&2
+    [ "$res2" != 0 ] && echo "=== DEBUG: error parsing input 2:" >&2 && \
+        echo "$2" >&2
+
     return 1
 }
 
@@ -74,10 +81,10 @@ cmpjson_files() {
     local eof2=0
     local data1
     local data2
+    local RES=255
     # Open files
     eval exec "$FD1<'$file1'" || return
     eval exec "$FD2<'$file2'" || return
-    RES=0
     while [ "$eof1" = 0 -o "$eof2" = 0 ]
     do
         if read data1 <&$FD1; then
@@ -94,15 +101,25 @@ cmpjson_files() {
             eof2=1
 	fi
 
+        # Both empty files - ok, contents are the same
+        [ "$eof1" = 1 -a "$eof2" = 1 -a "$RES" = 255 ] && RES=0
+
         [ "$eof1" = 0 -a "$eof2" = 0 ] && { \
+            [ "$RES" = 255 ] && RES=0; \
             cmpjson_strings "$data1" "$data2" \
             || RES=$(($RES+1)); }
     done
     # Close files
     eval exec "$FD1>&-"
     eval exec "$FD2>&-"
-    if [ "$eof1" = 0 -o "$eof2" = 0 ]; then
-        echo "ERROR: read $count1 lines, and '$file1' EOF=$eof1 while '$file2' EOF=$eof2" >&2
+    if [ "$RES" = 0 ] ; then
+        if  [ "$count1" = 0 -a "$count2" != 0 ] || \
+            [ "$count2" = 0 -a "$count1" != 0 ]; then RES=255; fi
+    fi
+    [ "$RES" = 255 ] && \
+        echo "ERROR: one of the files '$file1' or '$file2' is empty" >&2
+    if [ "$eof1" = 0 -o "$eof2" = 0 -o "$count1" != "$count2" ]; then
+        echo "ERROR: read $count1 lines from '$file1' EOF1=$eof1 and $count2 lines from '$file2' EOF2=$eof2" >&2
         [ "$RES" = 0 ] && RES=126
     fi
     [ $RES != 0 ] && \
@@ -113,6 +130,8 @@ cmpjson_files() {
 usage() {
         echo "Usage: $0 {file1} {file2}"
         echo "  The two files should contain the same amount of single-line JSON documents"
+        echo "Usage: $0 -f {file1} {file2}"
+        echo "  Each of two files should contain a complete JSON document, maybe multiline"
         echo "Usage: $0 -s {string1} {string2}"
         echo "  The two strings should each contain a complete JSON document"
         echo "Usage: $0 -t"
@@ -128,8 +147,14 @@ usage() {
 case "$1" in
     -t)
         self_test
-        exit
+        exit $?
 	;;
+    -f) [ ! -r "$2" -o ! -r "$3" ] && usage && \
+            die "Not readable files '$2' and '$3' were provided!"
+
+        cmpjson_strings "`cat "$2"`" "`cat "$3"`"
+        exit $?
+        ;;
     -s) cmpjson_strings "$2" "$3"; exit ;;
     -h|--help)
         usage
@@ -138,6 +163,8 @@ case "$1" in
 esac
 
 [ $# != 2 ] && usage && die "Bad number of parameters ($#)!"
-[ ! -r "$1" -o ! -r "$2" ] && usage && die "Not readable files '$1' and '$2' were provided!"
+[ ! -r "$1" -o ! -r "$2" ] && usage && \
+    die "Not readable files '$1' and '$2' were provided!"
 
 cmpjson_files "$1" "$2"
+exit $?

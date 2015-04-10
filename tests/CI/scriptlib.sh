@@ -65,10 +65,31 @@ determineDirs() {
     fi
     [ -z "$CHECKOUTDIR" -a -d ~/project ] && CHECKOUTDIR=~/project
 
-    [ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-    [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
+    if [ -z "$BUILDSUBDIR" ]; then
+        ### Keep a caller-defined BUILDSUBDIR value even if it is not made yet
+        [ ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+        [ ! -x "$BUILDSUBDIR/config.status" -a ! -s "$BUILDSUBDIR/autogen.sh" ] && \
+            BUILDSUBDIR="$PWD"
+    fi
 
     export BUILDSUBDIR CHECKOUTDIR SCRIPTDIR
+
+    if [ -n "$BUILDSUBDIR" -a x"$BUILDSUBDIR" != x"$CHECKOUTDIR" ]; then
+        AUTOGEN_ACTION_MAKE=make-subdir
+        AUTOGEN_ACTION_BUILD=build-subdir
+        AUTOGEN_ACTION_CONFIG=configure-subdir
+        AUTOGEN_ACTION_INSTALL=install-subdir
+    else
+        AUTOGEN_ACTION_MAKE=make
+        AUTOGEN_ACTION_BUILD=build
+        AUTOGEN_ACTION_CONFIG=configure
+        AUTOGEN_ACTION_INSTALL=install
+    fi
+    export AUTOGEN_ACTION_MAKE AUTOGEN_ACTION_BUILD AUTOGEN_ACTION_CONFIG \
+        AUTOGEN_ACTION_INSTALL
+
+    [ -z "$MAKELOG" ] && MAKELOG="$BUILDSUBDIR/make.output"
+    export MAKELOG
 
     ### Ultimate status: if false, then the paths are non-development
     [ -n "$SCRIPTDIR" -a -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
@@ -91,7 +112,8 @@ logmsg_error() {
 }
 
 die() {
-    [ -n "$CODE" -a "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+    CODE="${CODE-1}"
+    [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
         echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
     done
@@ -119,6 +141,8 @@ determineDirs_default() {
     else
         logmsg_error "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
         logmsg_error "Search path checked: $CHECKOUTDIR, $PWD"
+        ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
+            "$PWD/config.status" >&2
         RES=1
         if [ "$NEED_BUILDSUBDIR" = yes ]; then
             exit $RES
