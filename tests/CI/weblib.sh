@@ -49,8 +49,8 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 #       debug   Do not fail but do print STDERR and STDOUT for the request upon hits
 #       ignore  Don't care, and don't test
 #       expect  Fail if stderr is not empty but result is OK
-#       *       Anything else gives a warning if error was matched and goes on
-[ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && WEBLIB_CURLFAIL_HTTPERRORS=warn
+#       warn    Anything else (*) gives a warning if error was matched and goes on
+[ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && WEBLIB_CURLFAIL_HTTPERRORS=debug
 [ -z "$WEBLIB_HTTPERRORS_REGEX" ] && WEBLIB_HTTPERRORS_REGEX='HTTP/[^ ]+ [45]'
 
 # Print out the CURL stdout and stderr (via FD#3)?
