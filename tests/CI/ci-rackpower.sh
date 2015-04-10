@@ -46,13 +46,13 @@ kill_daemons() {
         kill -2 "$DBNGPID"
     fi
 
-    killall -2 tntnet db-ng 2>/dev/null || true; sleep 1
-    killall    tntnet db-ng 2>/dev/null || true; sleep 1
+    killall -2 tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall    tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
-        { killall -9 tntnet db-ng 2>/dev/null ; exit 1; }
+        { killall -9 tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
 
     return 0
 }
