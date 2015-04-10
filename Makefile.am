@@ -250,6 +250,13 @@ noinst_LTLIBRARIES +=		libpriv-csv.la
 libpriv_csv_la_SOURCES =	src/shared/csv.h \
 				src/shared/csv.cc
 
+libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_src_dir)/src/msg
+
 libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
 
 noinst_LTLIBRARIES += 		libpriv-db.la
@@ -295,8 +302,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD =	libbiosapi.la
-
+libpriv_db_la_LIBADD =	libbiosapi.la \
+			libpriv-log.la 
 
 noinst_LTLIBRARIES +=	libpriv-proto.la
 
@@ -321,6 +328,25 @@ noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
 			src/agents/nmap/nmap-parse.cc
+
+noinst_LTLIBRARIES +=	libpriv-loadcsv.la
+
+libpriv_loadcsv_la_SOURCES =	src/persist/loadcsv.h \
+							src/persist/loadcsv.cc
+
+libpriv_loadcsv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_src_dir)/src/msg \
+			-I$(abs_top_builddir)/tools
+
+libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS} \
+			libpriv-csv.la \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -425,13 +451,25 @@ test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
 test_cidr_LDFLAGS =	-lcidr
 
 check_PROGRAMS += 	test-csv
+
 test_csv_SOURCES =		src/shared/csv.h \
-					tests/shared/test-csv.cc
-test_csv_LDADD = 		libpriv-csv.la \
-						libpriv-log.la \
-					libpriv-test-run.la
+					    tests/shared/test-csv.cc
+
+test_csv_LDADD = 		libpriv-log.la \
+						libpriv-db.la \
+						libpriv-csv.la \
+					    libpriv-test-run.la \
+					    libpriv-proto.la
+
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(abs_top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/tests/include
+
 test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
 bin_PROGRAMS += 	test-db
@@ -452,6 +490,26 @@ test_db_CPPFLAGS = \
 
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
+bin_PROGRAMS += 	test-loadcsv
+
+test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
+
+test_loadcsv_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-loadcsv.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la
+
+test_loadcsv_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
+
 bin_PROGRAMS += 	test-db2
 
 test_db2_SOURCES = \
@@ -461,11 +519,11 @@ test_db2_SOURCES = \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
+			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-test-run.la
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -844,7 +902,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-log.la libpriv-subprocess.la \
+			 libpriv-subprocess.la \
 			libpriv-utils.la libpriv-defs.la
 
 dist_noinst_HEADERS += \
@@ -921,7 +979,8 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
-			$(top_srcdir)/src/web/include/*.h
+			$(top_srcdir)/src/web/include/*.h \
+			$(top_srcdir)/tests/shared/test-csv.cc.csv
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
