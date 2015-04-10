@@ -250,10 +250,10 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
     log_debug ("asset_element_id = %" PRIu32, element_id);
     assert ( element_id );
     
-    std::string mac = "";
-    std::string ip = "";
-    std::string hostname = "";
-    std::string fqdn = "";
+//    std::string mac = "";
+//    std::string ip = "";
+//    std::string hostname = "";
+//    std::string fqdn = "";
     std::string type_name = "";
     a_dvc_tp_id_t id_asset_device_type = 0;
 
@@ -261,7 +261,7 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
         // Can return one row or nothing 
         tntdb::Statement st_dev = conn.prepareCached(
             " SELECT"
-            "   v.mac, v.ip, v.hostname, v.full_hostname,"
+//            "   v.mac, v.ip, v.hostname, v.full_hostname,"
             "   v.id_asset_device_type, v.name"
             " FROM"
             "   v_bios_asset_device v"
@@ -273,28 +273,28 @@ zmsg_t* select_asset_device (tntdb::Connection &conn, a_elmnt_id_t element_id)
                                 selectRow();
 
         // mac
-        row[0].get(mac);
+//        row[0].get(mac);
         
         // ip
-        row[1].get(ip);
+//        row[1].get(ip);
 
         // hostname
-        row[2].get(hostname);
+//        row[2].get(hostname);
 
         // fdqn
-        row[3].get(fqdn);
+//        row[3].get(fqdn);
 
         // id_asset_device_type, required
-        row[4].get(id_asset_device_type);
+        row[0].get(id_asset_device_type);
         assert ( id_asset_device_type != 0 );  // database is corrupted
         
         // string representation of device type
-        row[5].getString(type_name);
+        row[1].getString(type_name);
         assert ( !type_name.empty() );
 
         return  asset_msg_encode_device (
-                type_name.c_str(), NULL, NULL, ip.c_str(), 
-                hostname.c_str(), fqdn.c_str(), mac.c_str(), NULL);
+                type_name.c_str(), NULL, NULL, NULL, 
+                NULL, NULL, NULL, NULL);
     }
     catch (const tntdb::NotFound &e) {
         log_warning("end: apropriate row in asset_device was not found");
@@ -930,3 +930,136 @@ std::set <a_elmnt_id_t> select_asset_group_elements (tntdb::Connection &conn, a_
         throw bios::InternalDBError(e.what());
     }
 }
+
+
+/// get information from our database dictionaries
+//
+//
+
+static std::string st_dictionary_element_type = \
+            " SELECT"
+            "   v.name, v.id"
+            " FROM"
+            "   v_bios_asset_element_type v";
+
+static std::string st_dictionary_device_type = \
+            " SELECT"
+            "   v.name, v.id"
+            " FROM"
+            "   v_bios_asset_device_type v";
+
+static 
+db_reply < std::map <std::string, int> >
+    get_dictionary
+        (tntdb::Connection &conn, const std::string &st_str)
+{
+    LOG_START;
+    std::map<std::string, int> mymap;
+    db_reply < std::map<std::string, int> > ret = db_reply_new(mymap);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(st_str);
+        tntdb::Result res = st.select();
+        
+        std::string name = "";
+        int id = 0;
+        for ( auto &row : res )
+        {
+            row[0].get(name);
+            row[1].get(id);
+            ret.item.insert ( std::pair<std::string,int>(name,id) );
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        ret.item.clear();           // in case of error, clean up partial data
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+db_reply < std::map <std::string, int> >
+    get_dictionary_element_type
+        (tntdb::Connection &conn)
+{
+    return get_dictionary(conn, st_dictionary_element_type);
+}
+
+db_reply < std::map <std::string, int> >
+    get_dictionary_device_type
+        (tntdb::Connection &conn)
+{
+    return get_dictionary(conn, st_dictionary_device_type);
+}
+
+// select basic information about asset element by name
+db_reply <db_a_elmnt_t>
+    select_asset_element_by_name
+        (tntdb::Connection &conn,
+         const char *element_name)
+{
+    LOG_START;
+    log_debug ("  element_name = '%s'", element_name);
+
+    db_a_elmnt_t item{0,"","",0,5,0,0};
+    db_reply <db_a_elmnt_t> ret = db_reply_new(item);
+
+    if ( !is_ok_name (element_name) )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "name is not valid";
+        log_error ("end: %s", ret.msg);
+        return ret;
+    }
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id"
+            " FROM"
+            "   v_bios_asset_element v"
+            " WHERE v.name = :name"
+        );
+
+        tntdb::Row row = st.set("name", element_name).
+                            selectRow();
+        
+        row[0].get(ret.item.name);
+        assert ( !ret.item.name.empty() );  // database is corrupted
+
+        row[1].get(ret.item.parent_id);
+        row[2].get(ret.item.status);
+        row[3].get(ret.item.priority);
+        row[4].get(ret.item.bc);
+        row[5].get(ret.item.id);
+        
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch (const tntdb::NotFound &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_NOTFOUND;
+        ret.msg           = "element with specified name was not found";
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
+

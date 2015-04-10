@@ -45,17 +45,6 @@ void generate_measurements (const char         *url,
 // ===============================================================
 
 /**
- * \brief Checks if length is in the ragne [1,MAX_NAME_LENGTH]
- *
- * \param name - name to check
- *
- * \return true if name is in range
- *         false if name is not in range
- */
-bool is_ok_name_length (const char* name);
-
-
-/**
  * \brief Generates a COMMON_MSG_FAIL message.
  * 
  * Generates a COMMON_MSG_FAIL with error type BIOS_ERROR_DB , with 

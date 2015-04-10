@@ -91,6 +91,18 @@ while [ $# -gt 0 ] ; do
     esac
 done
 
+#
+# check if VM exists
+#
+RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9]+ +'"$VM"' / {print $2}' | wc -l)
+if [ $RESULT = 0 ] ; then
+    die "VM $VM does not exist"
+fi
+if [ $RESULT -gt 1 ] ; then
+    ### Should not get here via CI
+    die "VM pattern '$VM' matches too much ($RESULT)"
+fi
+
 # This should not be hit...
 [ -z "$APT_PROXY" ] && APT_PROXY="$http_proxy"
 [ x"$APT_PROXY" = x- ] && APT_PROXY=""
@@ -169,6 +181,13 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
+
+# add xterm terminfo
+mkdir -p ../rootfs/$VM/lib/terminfo/x
+cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+
+# copy enviroment settings
+cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
 
 # put hostname in resolv.conf
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"

@@ -48,6 +48,7 @@ global:
         bios_agent_sendfor;
         bios_agent_replyto;
         bios_agent_recv;
+        bios_agent_recv_wait;
         bios_agent_set_producer;
         bios_agent_set_consumer;
         bios_agent_command;
@@ -59,6 +60,7 @@ global:
         bios_agent_content;
         bios_agent_actor;
         bios_agent_msgpipe;
+        bios_get_stream_main;
 
         ymsg_is_ok;
         ymsg_set_status;
