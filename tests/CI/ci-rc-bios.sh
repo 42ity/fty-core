@@ -24,7 +24,10 @@ DAEMONS="db-ng driver-nut driver-nmap netmon"
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+# do not set NEED_BUILDSUBDIR=yes because this aborts on unbuilt project
 determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using system binaries..."
@@ -45,6 +48,7 @@ stop_malamute(){
     $RUNAS systemctl stop malamute || true
     sleep 2
     pidof malamute >/dev/null 2>&1 && return 1
+    echo "INFO: malamute is not running"
     return 0
 }
 
@@ -150,6 +154,7 @@ stop() {
         pidof $d lt-$d >/dev/null 2>&1 && \
             echo "ERROR: $d still running (`pidof $d lt-$d`)" && return 1
     done
+    echo "INFO: none of the DAEMONS ($DAEMONS) are running"
     return 0
 }
 

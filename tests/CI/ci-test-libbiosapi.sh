@@ -28,13 +28,13 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the libbiosapi tests"
 
 # ensure that what we test is built
-logmsg_info "Ensure that we have a libbiosapi compiled..."
-./autogen.sh make sdk || CODE=$? die "Failed to make sdk"
+logmsg_info "Ensuring that we have a libbiosapi compiled..."
+./autogen.sh ${AUTOGEN_ACTION_MAKE} sdk || CODE=$? die "Failed to make sdk"
 
 # Note: while we typically use the .so shared library, there can also be
 # an .a static built, depending on configure flags. Both might be referenced
@@ -45,25 +45,35 @@ if [ ! -d "${LIBDIR}" ]; then
     die "CI-ERROR: Cannot find libbiosapi under ${BUILDSUBDIR}"
 fi
 
+trap_stop_malamute() {
+    if [ x"$MALAMUTE_STARTED" = xyes -a -s ${BUILDSUBDIR}/malamute.pid ]; then
+        kill -9 $(cat ${BUILDSUBDIR}/malamute.pid)
+        rm -f ${BUILDSUBDIR}/malamute.pid
+    fi
+}
+
 # run malamute
 MALAMUTE_STARTED=no
 if pgrep malamute; then
     logmsg_info "malamute is already running!"
-    #[ -s malamute.pid ] || pidof malamute > malamute.pid
+    #[ -s ${BUILDSUBDIR}/malamute.pid ] || \
+    #   pidof malamute > ${BUILDSUBDIR}/malamute.pid
     #exit 1
 else
     malamute /etc/malamute/malamute.cfg &
     [ $? = 0 ] && MALAMUTE_STARTED=yes
-    echo $! > malamute.pid
+    echo $! > ${BUILDSUBDIR}/malamute.pid
+    trap trap_stop_malamute 0 1 2 3 15
 fi
 
-rm -f test-libbiosapi
+rm -f ${BUILDSUBDIR}/test-libbiosapi
 
 logmsg_info "Try to compile and run a libbiosapi API-client..."
 echo "    CC test-libbiosapi.c"
 ### Note that we should not explicitly pull the other libraries that are used by API...
 #gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -lczmq -lzmq -lmlm -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
-gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
+gcc -g -o ${BUILDSUBDIR}/test-libbiosapi -I ${CHECKOUTDIR}/include/ \
+    -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
 gccret=$?
 
 # to get malamute enough time to start on slow HW
@@ -71,7 +81,7 @@ sleep 2
 
 if [ ${gccret} -eq 0 ]; then
     echo "    RUN test-libbiosapi"
-    LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapi
+    LD_LIBRARY_PATH=${LIBDIR}/ ${BUILDSUBDIR}/test-libbiosapi
     ret=$?
 else
     ret=${gccret}
@@ -79,18 +89,14 @@ fi
 
 retut=0
 logmsg_info "Try to compile and run a libbiosapi Unit-tester..."
-if ./autogen.sh make test-libbiosapiut ; then
+if ./autogen.sh ${AUTOGEN_ACTION_MAKE} test-libbiosapiut ; then
     echo "    RUN test-libbiosapiut"
-    LD_LIBRARY_PATH=${LIBDIR}/ ./test-libbiosapiut || retut=$?
+    LD_LIBRARY_PATH=${LIBDIR}/ ${BUILDSUBDIR}/test-libbiosapiut || retut=$?
 fi
 
-if [ x"$MALAMUTE_STARTED" = xyes ]; then
-    kill -9 $(cat malamute.pid)
-    rm -f malamute.pid
-fi
 
 # Caller may set this to not delete the program file
-[ x"$KEEP_TEST_LIBBOISAPI" = xyes ] || rm -f test-libbiosapi
+[ x"$KEEP_TEST_LIBBIOSAPI" = xyes ] || rm -f ${BUILDSUBDIR}/test-libbiosapi
 if [ $ret -eq 0 ]; then
     echo "ci-test-libbiosapi: OK"
 else

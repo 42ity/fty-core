@@ -25,6 +25,7 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
@@ -112,10 +113,13 @@ wait_for_web() {
   # might have some mess
   killall tntnet 2>/dev/null || true
   sleep 1
+  killall -9 tntnet 2>/dev/null || true
+  sleep 1
   test_web_port && die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
+    logmsg_info "Starting saslauthd..."
     $RUNAS systemctl start saslauthd || \
       [ x"$RUNAS" = x ] || \
       logmsg_warn "Could not restart saslauthd, make sure SASL and SUDO" \
@@ -127,17 +131,38 @@ wait_for_web() {
     logmsg_info "saslauthd is responsive and configured well!" || \
     logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
+  # make sure message bus is running
+  if ! $RUNAS systemctl --quiet is-active malamute; then
+    logmsg_info "Starting malamute..."
+    $RUNAS systemctl start malamute || \
+      [ x"$RUNAS" = x ] || \
+      logmsg_warn "Could not restart malamute, make sure SASL and SUDO" \
+        "are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs"
+  fi
+
+  # make sure database is running
+  if ! $RUNAS systemctl --quiet is-active mysql; then
+    logmsg_info "Starting mysql..."
+    $RUNAS systemctl start mysql || \
+      [ x"$RUNAS" = x ] || \
+      logmsg_warn "Could not restart mysql, make sure SASL and SUDO" \
+        "are installed and /etc/sudoers.d/bios_01_citest is set up per INSTALL docs"
+  fi
+
 # do the webserver
-  # make clean
   LC_ALL=C
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
-  logmsg_info "Ensure files for web-test exist and are up-to-date..."
-  make -C "$BUILDSUBDIR" V=0 web-test-deps || exit
-  logmsg_info "Spawn the web-server in the background..."
-  make -C "$BUILDSUBDIR" web-test &
+  logmsg_info "Ensuring files for web-test exist and are up-to-date..."
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+  logmsg_info "Spawning the web-server in the background..."
+  ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
   MAKEPID=$!
-  logmsg_info "Wait for web-server to begin responding..."
+
+  # Ensure that no processes remain dangling when test completes
+  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet | egrep "^`id -u -n` " && ps -ef | grep -v grep | egrep "$$|make" && echo "CI-ERROR: tntnet still alive, trying SIGKILL">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
+
+  logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
     logmsg_info "Web-server is responsive!" || \
     logmsg_error "Web-server is NOT responsive!" >&2

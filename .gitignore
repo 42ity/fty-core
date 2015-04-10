@@ -69,9 +69,14 @@ test-log.*
 test-*.log
 test-*.trs
 make.log
+make.output
+cppcheck.supp
 
+test-agents
 test-api
 test-cidr
+test-csv
+test-loadcsv
 test-database
 test-db
 test-db2
