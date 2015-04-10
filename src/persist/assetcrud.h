@@ -281,7 +281,8 @@ db_reply_t
          zhash_t         *extattributes,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc);
+         a_elmnt_bc_t     bc,
+         std::set <a_elmnt_id_t> const &groups);
 
 db_reply_t
     insert_device
