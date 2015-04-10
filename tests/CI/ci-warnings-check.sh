@@ -45,6 +45,7 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
+NEWBUILD=no
 if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     echo "================= auto-make (refresh) ======================="
@@ -57,6 +58,7 @@ else
     ./autogen.sh --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
+    NEWBUILD=yes
 fi
 
 echo "======================= cppcheck ============================"
@@ -84,7 +86,9 @@ sort_warnings() {
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
     LOW=0
     HIGH=0
-    ( egrep ":[0-9]+:[0-9]+: warning: "; echo "" ) | ( while read line ; do
+    ( egrep ":[0-9]+:[0-9]+: warning: "; echo "" ) | \
+      sort | uniq | \
+    ( while read line ; do
         FOUND=0
         [ -z "$line" ] && continue
         for i in $(seq 0 $LAST) ; do
@@ -116,12 +120,16 @@ if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
     echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
+    [[ "$NEWBUILD" = no ]] && \
+    echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     echo "============================================"
     exit 1
 else
     echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
+        [[ "$NEWBUILD" = no ]] && \
+        echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     else
         echo "OK, no warnings detected"
     fi
