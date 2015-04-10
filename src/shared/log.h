@@ -43,8 +43,6 @@ Example:
     }
  */
 
-#pragma once
-
 #ifndef _SHARED_SRC_LOG_H
 #define _SHARED_SRC_LOG_H
 

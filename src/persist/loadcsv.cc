@@ -109,7 +109,7 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
-    if ( name.empty() )
+    if ( is_ok_name(name.c_str()) )
         throw std::invalid_argument("name is empty");
     unused_columns.erase("name");
 
@@ -316,10 +316,6 @@ static bool mandatory_present (CsvMap cm)
         return true;
 }
 
-/*
- * XXX: an example how it should look like - go through a file and
- * check the values - Database will obsolete most of this
- * */
 void
     load_asset_csv
         (std::istream& input)
