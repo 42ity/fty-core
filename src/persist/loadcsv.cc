@@ -109,8 +109,8 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
 
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
-    if ( is_ok_name(name.c_str()) )
-        throw std::invalid_argument("name is empty");
+    if ( !is_ok_name(name.c_str()) )
+        throw std::invalid_argument("name is not valid");
     unused_columns.erase("name");
 
     auto type = cm.get_strip(row_i, "type");
