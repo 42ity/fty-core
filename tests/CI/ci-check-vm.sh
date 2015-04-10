@@ -78,7 +78,7 @@ fi
 
 remote_cleanup() {
     echo "-- VM cleanup"
-    ssh "root@$VM" -p "$PORT" "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  project  share"
+    ssh "root@$VM" -p "$PORT" "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  libexec  project  share"
 }
 
 compare_revisions() {
@@ -104,17 +104,27 @@ remote_make() {
         # This branch was already configured and compiled on that VM, refresh only
         echo "-- compiling to refresh"
         ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { ./autogen.sh --nodistclean ${AUTOGEN_ACTION_MAKE} install 2>&1 | tee -a ${MAKELOG}; }'"
+        return $?
     else
         # Newly fetched branch - clean up, configure and make it fully
         echo "-- compiling to rebuild"
         ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}; }'"
+        return $?
     fi
 }
 
 remote_log_cleanup() {
     echo "-- deleting old log files"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -ls && find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm -f {} \; "
+    FLIST=$(ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -ls")
+    if [ $? = 0 -a -n "$FLIST" ]; then
+        echo "$FLIST"
+        ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm -f {} \; "
+        return $?
+    else
+        echo "-- > no old log files detected on the remote system (root@$VM:$BCHECKOUTDIR/), nothing to delete"
+        return 0
+    fi
 }
 
 
