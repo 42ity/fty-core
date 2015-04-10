@@ -543,9 +543,9 @@ db_reply_t
             st = conn.prepareCached(
                 " INSERT INTO"
                 "   t_bios_asset_element"
-                "   (name, id_type, id_parent)"
+                "   (name, id_type, id_parent, status, priority, business_crit)"
                 " SELECT"
-                "   :name, :type, :parent"
+                "   :name, :type, :parent, :status, :priority, :business_crit"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -617,7 +617,7 @@ db_reply_t
     if ( ret.affected_rows == links.size() )
     {
         ret.status = 1;
-        log_debug ("all linnks were inserted successfully");
+        log_debug ("all links were inserted successfully");
         LOG_END;
         return ret;
     }
@@ -729,7 +729,8 @@ db_reply_t
      zhash_t         *extattributes,
      const char      *status,
      a_elmnt_pr_t     priority,
-     a_elmnt_bc_t     bc)
+     a_elmnt_bc_t     bc,
+     std::set <a_elmnt_id_t> const &groups)
 {
     LOG_START;
 //    log_debug ("  element_name = '%s'", element_name);
@@ -755,6 +756,14 @@ db_reply_t
         trans.rollback();
         log_error ("end: element was not inserted (fail in ext_attributes)");
         return reply_insert2;
+    }
+
+    auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
+    if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows == 0 ) )
+    {
+        trans.rollback();
+        log_info ("end: device was not inserted (fail into groups)");
+        return reply_insert3;
     }
 
     trans.commit();
