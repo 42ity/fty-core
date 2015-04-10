@@ -43,7 +43,8 @@ Example:
     }
  */
 
-#pragma once
+#ifndef _SHARED_SRC_LOG_H
+#define _SHARED_SRC_LOG_H
 
 // Trick to avoid conflict with CXXTOOLS logger, currently the BIOS code
 // prefers OUR logger macros
@@ -166,3 +167,6 @@ int do_log(
 #ifdef __cplusplus
 }
 #endif
+
+#endif
+
