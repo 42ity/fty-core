@@ -23,16 +23,16 @@ ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libzmq4_4.2.0~20
 RUN dpkg -i /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
 
 #RUN apt-get install -y --force-yes libczmq1
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb  /tmp/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb 
-RUN dpkg -i /tmp/libczmq1_3.0.0~20150120git5d02abb40-1_amd64.deb 
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb  /tmp/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb 
+RUN dpkg -i /tmp/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb 
 
 #RUN apt-get install -y --force-yes libmlm1
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb   /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb  
-RUN dpkg -i /tmp/libmlm1_1.1.0~20150120git28b4fdaca6-1_amd64.deb 
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb /tmp/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb  
+RUN dpkg -i /tmp/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb 
 
 #RUN apt-get install -y --force-yes malamute
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb /tmp/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb 
-RUN dpkg -i /tmp/malamute_1.1.0~20150120git28b4fdaca6-1_amd64.deb
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_0.1.0~20150309git2964bb19-1_amd64.deb  /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb  
+RUN dpkg -i /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb 
    
 #RUN apt-get install -y --force-yes libnutclient0
 ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-3_amd64.deb   /tmp/libnutclient0_2.7.2-3_amd64.deb  
@@ -47,9 +47,15 @@ ADD ./usr/local/libexec/bios/db-ng /usr/local/libexec/bios/db-ng
 ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/driver-nut /usr/local/libexec/bios/driver-nut
+ADD ./usr/local/libexec/bios/driver-nut /usr/local/libexec/bios/agent-inventory
 ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
 RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
+ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
+RUN ln -s /usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0
+RUN ln -s /usr/local/lib/libbiosapi.so.0 /usr/local/lib/libbiosapi.so
 RUN mkdir -p /usr/local/share/bios/web
+
+ENV LD_LIBRARY_PATH /usr/local/lib/
 
 #User PAM
 RUN sed -i 's/START=no/START=yes/' /etc/default/saslauthd
@@ -80,8 +86,8 @@ RUN chmod 644 /etc/nut/*
 RUN chown root:nut /etc/nut/*
 
 #prepare entry point
-ADD ./usr/local/share/bios/docker/resources/start_bios.sh /usr/local/bin/start_bios.sh 
-#ENTRYPOINT ["/bin/bash", "-e", "/usr/local/bin/start_bios.sh"] 
+ADD ./usr/local/share/bios/docker/resources/start_bios.sh /usr/local/libexec/bios/start_bios.sh 
+#ENTRYPOINT ["/bin/bash", "-e", "/usr/local/libexec/bios/start_bios.sh"] 
 
 EXPOSE 8000
 
