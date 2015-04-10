@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbtypes.h"
 
 // all fields called name
-#define MAX_NAME_LENGTH         25
+#define MAX_NAME_LENGTH         50
 // t_bios_asset_ext_attributes.keytag
 #define MAX_KEYTAG_LENGTH       40
 // t_bios_asset_ext_attributes.value
@@ -95,6 +95,19 @@ struct db_msrmnt_t {
     std::string topic;
 };
 
+/** 
+ * \brief helper structure for results of v_bios_asset_element
+ */
+struct db_a_elmnt_t {
+    a_elmnt_id_t     id;        
+    std::string      name;      
+    std::string      status;    
+    a_elmnt_id_t     parent_id; 
+    a_elmnt_pr_t     priority;
+    a_elmnt_bc_t     bc;        // business critical
+    a_elmnt_tp_id_t  type_id;
+};
+
 
 /**
  * \brief This function looks for a device_discovered in a monitor part 
@@ -156,6 +169,15 @@ int convert_monitor_to_asset_safe(const char* url,
  */
 bool is_ok_element_type (a_elmnt_tp_id_t element_type_id);
 
+/**
+ * \brief Checks if name is correct 
+ *
+ * \param name - name to check
+ *
+ * \return true if name is correct
+ *         false if name is not correct
+ */
+bool is_ok_name (const char* name);
 
 /**
  * \brief Checks if the keytag is correct

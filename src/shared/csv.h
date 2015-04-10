@@ -65,6 +65,7 @@ namespace shared {
 
         public:
             typedef std::vector<std::vector<std::string> > Data;
+            typedef std::vector<std::vector<cxxtools::String> > CxxData;
 
           /**
            * \brief Creates new CsvMap instance with data inside
@@ -73,6 +74,11 @@ namespace shared {
                 _data{data},
                 _title_to_index{}
             {};
+
+           /**
+           * \brief Creates new CsvMap instance with data inside
+           */
+            CsvMap(const CxxData& data);
 
             /**
              * \brief deserialize provided data, inicialize map of row title to index
@@ -118,14 +124,15 @@ namespace shared {
             /**
              * \brief get copy of titles
              */
-            std::vector<std::string> getTitles() const;
+            std::set<std::string> getTitles() const;
 
         private:
             Data _data;
             std::map<std::string, size_t> _title_to_index;
-        };
+    };
 
-
+//TODO: does not belongs to csv, move somewhere else
+void skip_utf8_BOM (std::istream& i);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H

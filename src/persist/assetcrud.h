@@ -204,7 +204,6 @@ db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
                                    a_elmnt_id_t  asset_element_id);
 
 db_reply_t delete_asset_ext_attribute(tntdb::Connection &conn,
- //                                  const char   *value,
                                    const char   *keytag,
                                    a_elmnt_id_t  asset_element_id);
 db_reply_t
@@ -217,6 +216,12 @@ std::set <a_elmnt_id_t> select_asset_group_elements (tntdb::Connection &conn, a_
 
 zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
                 a_elmnt_id_t device_id, a_lnk_tp_id_t link_type_id);
+
+db_reply <db_a_elmnt_t>
+    select_asset_element_by_name
+        (tntdb::Connection &conn,
+         const char *element_name);
+
 /// insert
 
 db_reply_t
@@ -239,7 +244,7 @@ db_reply_t
          a_lnk_tp_id_t   link_type_id,
          const a_lnk_src_out_t src_out,
          const a_lnk_dest_in_t dest_in);
-
+/*
 db_reply_t
     insert_into_asset_ext_attribute
         (tntdb::Connection &conn,
@@ -251,36 +256,45 @@ db_reply_t
         (tntdb::Connection &conn, 
          zhash_t      *attributes,
          a_elmnt_id_t  asset_element_id);
-
+*/
 db_reply_t
     insert_into_asset_element
         (tntdb::Connection &conn, 
          const char      *element_name, 
          a_elmnt_tp_id_t  element_type_id,
-         a_elmnt_id_t     parent_id);
+         a_elmnt_id_t     parent_id,
+         const char      *status,
+         a_elmnt_pr_t     priority,
+         a_elmnt_bc_t     bc);
 
 db_reply_t
     insert_into_asset_links
         (tntdb::Connection       &conn,
-         std::set <link_t> const &links);
+         std::vector <link_t> const &links);
 
 db_reply_t
     insert_dc_room_row_rack_group
-    (tntdb::Connection  &conn,
-     const char      *element_name,
-     a_elmnt_tp_id_t  element_type_id,
-     a_elmnt_id_t     parent_id,
-     zhash_t         *extattributes);
+         (tntdb::Connection  &conn,
+         const char      *element_name,
+         a_elmnt_tp_id_t  element_type_id,
+         a_elmnt_id_t     parent_id,
+         zhash_t         *extattributes,
+         const char      *status,
+         a_elmnt_pr_t     priority,
+         a_elmnt_bc_t     bc);
 
 db_reply_t
     insert_device
-       (tntdb::Connection &conn,
-        std::set <link_t>  const &links,
-        std::set <a_elmnt_id_t> const &groups,
-        const char    *element_name, 
-        a_elmnt_id_t   parent_id,
-        zhash_t       *extattributes,
-        a_dvc_tp_id_t  asset_device_type_id);
+        (tntdb::Connection &conn,
+         std::vector <link_t> &links,
+         std::set <a_elmnt_id_t> const &groups,
+         const char    *element_name, 
+         a_elmnt_id_t   parent_id,
+         zhash_t       *extattributes,
+         a_dvc_tp_id_t  asset_device_type_id,
+         const char      *status,
+         a_elmnt_pr_t     priority,
+         a_elmnt_bc_t     bc);
 
 ////////////////// DELETE
 //
@@ -356,5 +370,35 @@ db_reply_t
     delete_device
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
+// dictionaries
+
+/**
+ * \brief Reads from database all available element types.
+ *
+ * Reads from the table t_bios_asset_element_type;
+ *
+ * \param[in] conn - the connection to database.
+ *
+ * \return a database reply where item is a map of names at the ids.
+ *         In case of any erorrs item would be empty.
+ */
+db_reply < std::map <std::string, int> >
+    get_dictionary_element_type
+        (tntdb::Connection &conn);
+
+
+/**
+ * \brief Reads from database all available device types.
+ *
+ * Reads from the table t_bios_asset_device_type;
+ *
+ * \param[in] conn - the connection to database.
+ *
+ * \return a database reply where item is a map of names at the ids.
+ *         In case of any erorrs item would be empty.
+ */
+db_reply < std::map <std::string, int> >
+    get_dictionary_device_type
+        (tntdb::Connection &conn);
 
 #endif // SRC_PERSIST_ASSETCRUD_H_
