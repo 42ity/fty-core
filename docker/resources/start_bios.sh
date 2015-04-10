@@ -32,7 +32,8 @@ echo "Starting SASL auth .."
 service saslauthd start
 
 echo "Starting web srv .."
-service tntnet start
+#service tntnet start
+tntnet -c /etc/tntnet/tntnet.xml &
 
 echo "starting nut .."
 service nut-server start
@@ -42,6 +43,7 @@ malamute /etc/malamute/malamute.cfg &
 
 echo "starting BIOS .."
 /usr/local/libexec/bios/db-ng &
+/usr/local/libexec/bios/agent-inventory &
 /usr/local/libexec/bios/driver-nut 
 
  
