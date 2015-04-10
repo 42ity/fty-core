@@ -38,6 +38,7 @@ LOCKFILE=/tmp/ci-test-netmon.lock
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
@@ -48,7 +49,7 @@ fi
 ### Section: actual steps being performed
 function cleanup {
     killall malamute
-    killall dshell
+    killall dshell lt-dshell
     killall -9 netmon lt-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
 }
