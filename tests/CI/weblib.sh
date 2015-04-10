@@ -46,6 +46,7 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 # This can be overridden on a per-call basis for those api_get's
 # where we do expect errors as the proper response.
 #       fatal   Fail if errors are detected in stderr contents
+#       debug   Do not fail but do print STDERR and STDOUT for the request upon hits
 #       ignore  Don't care, and don't test
 #       expect  Fail if stderr is not empty but result is OK
 #       *       Anything else gives a warning if error was matched and goes on
@@ -155,10 +156,12 @@ CURL() {
 #        echo "$OUT_CURL"
     fi
 
+    _PRINT_CURL_TRACE=no
     if [ $RES_CURL != 0 ]; then
         ### Based on caller redirections, this output may never be seen
         echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
             "perhaps the web server is not available or has crashed?" >&3
+        _PRINT_CURL_TRACE=yes
     fi
 
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
@@ -166,6 +169,7 @@ CURL() {
         if [ -n "$ERR_MATCH" ]; then
             echo "CI-WEBLIB-WARN-CURL: Last response headers matched an HTTP" \
                 "error code: '$ERR_MATCH'" >&3
+            [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xdebug ] && _PRINT_CURL_TRACE=yes
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xfatal ]; then
                 echo "CI-WEBLIB-ERROR-CURL: WEBLIB_CURLFAIL_HTTPERRORS=fatal" \
                     "is set, so failing now" >&3
@@ -182,7 +186,7 @@ CURL() {
         fi
     fi
 
-    if [ x"$WEBLIB_TRACE_CURL" = xyes -o $RES_CURL != 0 ]; then
+    if [ x"$WEBLIB_TRACE_CURL" = xyes -o x"$_PRINT_CURL_TRACE" = xyes ]; then
         echo "CI-WEBLIB-TRACE-CURL: curl $@: RES=$RES"
         echo "=== ERR vvv"
         echo "$ERR_CURL"
