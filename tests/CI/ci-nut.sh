@@ -89,6 +89,7 @@ create_ups_dev_file() {
         "\noutput.voltage: 230.0" \
         "\nups.realpower: 25" \
         "\nups.temperature: 25" \
+        "\noutlet.count: 2" \
         "\noutlet.1.voltage: 220" \
         "\noutlet.2.voltage: 220" \
         "\nups.load: 10" \

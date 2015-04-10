@@ -120,7 +120,8 @@ static const std::vector<std::string> inventoryNUT {
     "ups.alarm",
     "ups.serial",
     "battery.date",
-    "battery.type"
+    "battery.type",
+    "outlet.count"        
 };
 
 static const std::vector<std::string> inventoryBIOS {
@@ -136,7 +137,8 @@ static const std::vector<std::string> inventoryBIOS {
     "ups.alarm",
     "ups.serial",
     "battery.date",
-    "battery.type"
+    "battery.type",
+    "outlet.count"        
 };
 
 NUTDevice::NUTDevice() {  
