@@ -54,6 +54,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+[ -n "$BIOS_USER"   ] || BIOS_USER="bios"
+[ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="nosoup4u"
+
 PATH="$PATH:/sbin:/usr/sbin"
 
 # fixture ini
@@ -65,8 +68,8 @@ fi
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
 if ! getent passwd "$BIOS_USER" > /dev/null; then
     CODE=2 die "User $BIOS_USER is not known to system administrative database" \
-        "To add it locally, run: "
-        "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
+        "To add it locally, run: " \
+        "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER" \
         "and don't forget the password '$BIOS_PASSWD'"
     exit 2
 fi
@@ -110,7 +113,7 @@ done
 set -o pipefail 2>/dev/null || true
 
 for i in $POSITIVE; do
-    for NAME in *$i*; do
+    for NAME in *$i*.sh; do
     SKIP=""
     for n in $NEGATIVE; do
         if expr match $NAME .\*"$n".\* > /dev/null; then

@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <czmq.h>
 #include <zchunk.h>
+#include <inttypes.h>
 
 #include "log.h"
 #include "measurement.h"
@@ -220,8 +221,13 @@ void get_measurements(ymsg_t* out, char** out_subj,
         errno = 0;
         st.set("id", ymsg_get_int64(in,"element_id"))
           .set("topic", topic)
-          .set("time_st", ymsg_get_int64(in,"time_st"))
-          .set("time_end", ymsg_get_int64(in,"time_end"));
+          .set("time_st", ymsg_get_int64(in,"start_ts"))
+          .set("time_end", ymsg_get_int64(in,"end_ts"));
+        log_debug("Got request regarding %s from %" PRId64 " till %" PRId64
+                  " for %" PRId64,
+            topic.c_str(), ymsg_get_int64(in,"start_ts"),
+            ymsg_get_int64(in,"end_ts"),ymsg_get_int64(in,"element_id")
+        );
         if(errno != 0)
             throw std::invalid_argument("Message decoding error");
         tntdb::Result result = st.select();
@@ -239,8 +245,18 @@ void get_measurements(ymsg_t* out, char** out_subj,
             json += " }";
         }
         json = "{ \"units\": \"" + units + "\",\n" +
+        // TODO: Remove ugly fake data hack
+#define UGLY_FAKE_DATA_HACK
+#ifdef UGLY_FAKE_DATA_HACK
+               "  \"source\": \"temperature.thermal_zone\",\n" +
+               "  \"step\": \"8h\",\n" +
+               "  \"type\": \"arithmetic_mean\",\n" +
+#else
                "  \"source\": \"" + ymsg_get_string(in,"source") + "\",\n" +
+#endif
                "  \"element_id\": " + ymsg_get_string(in,"element_id") + ",\n" +
+               "  \"start_ts\": " + ymsg_get_string(in,"start_ts") + ",\n" +
+               "  \"end_ts\": " + ymsg_get_string(in,"end_ts") + ",\n" +
                "\"data\": [\n" + json + "\n] }";
     } catch(const std::exception &e) {
         log_error("Run into '%s' while getting measurements", e.what());

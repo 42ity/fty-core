@@ -123,6 +123,18 @@ BIOS_EXPORT int
 BIOS_EXPORT ymsg_t *
     bios_agent_recv (bios_agent_t *self);
 
+/*!
+ \brief Receive message from malamute without blocking forever
+
+ Takes ownership of the message received.
+ \param[in] self    Bios agent
+ \param[in] timeout Don't wait if nothing comes within X ms
+ \note Caller is responsible to destroy the received message when done
+ \return Received ROZP message on success, NULL on failure
+*/
+BIOS_EXPORT ymsg_t *
+    bios_agent_recv_wait (bios_agent_t *self, int timeout);
+
 /*! 
  \brief Prepare to publish to a specified stream. 
  
@@ -222,6 +234,9 @@ BIOS_EXPORT zactor_t *
 BIOS_EXPORT zsock_t *
     bios_agent_msgpipe (bios_agent_t *self);
 
+//! Get name of the main bios stream
+BIOS_EXPORT const char *
+    bios_get_stream_main ();
 
 
 //! Returns true if status value of ROZP message is OK, false otherwise 

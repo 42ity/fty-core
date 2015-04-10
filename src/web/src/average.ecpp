@@ -11,6 +11,7 @@
 #include "persistence.h"
 #include "utils.h"
 #include "bios_agent.h"
+#include "bios_agent++.h"
 #include "agents.h"
 #include "ymsg.h"
 #include "str_defs.h"
@@ -27,6 +28,20 @@
     std::string element_id;
 </%args>
 <%cpp>
+    // TODO: Use shared agent and figure out why it is not working
+    char a_name[64];
+    sprintf(a_name, "rest.%d", getpid());
+    BIOSAgent agent(a_name);
+    if(!agent.connect("ipc://@/malamute")) {
+</%cpp>
+        {
+            "msg" : "Can't connect agent"
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    // End of ugly hack
+
     int64_t st;
     int64_t end;
     uint64_t eid;
@@ -45,7 +60,7 @@
         }
         end = mktime(&tm);
         // check that start_ts < end_ts
-        if (end >= st) {
+        if (end <= st) {
             throw std::invalid_argument ("start_ts must be <= end_ts");
         }
 
@@ -97,15 +112,23 @@
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    char a_name[64];
-    sprintf(a_name, "rest.%d", getpid());
-    bios_agent_t* agent = bios_agent_new("ipc://malamute", a_name);
+    // TODO: Replace with a real computation module
     ymsg_t *msg = bios_web_average_request_encode(st, end, type.c_str(),
-                                            step.c_str(), eid, source.c_str());
-    bios_agent_sendto(agent, "computation", "average", &msg);
-    msg = bios_agent_recv(agent);
+                                            step.c_str(), eid,
+                                            (source+"." + type + "_" + step).
+                                            c_str());
+    agent.sendto("persistence.measurement", "get_measurements", &msg);
+    msg = agent.recv_wait(1000);
     char *json = NULL;
-    if(msg == NULL || bios_web_average_reply_decode(&msg, &json)) {
+    if(msg == NULL) {
+</%cpp>
+        {
+            "msg" : "Computation module didn't replied."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    if(bios_web_average_reply_decode(&msg, &json)) {
 </%cpp>
         {
             "msg" : "Got incorect reply from computation module."

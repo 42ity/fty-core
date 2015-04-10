@@ -39,13 +39,6 @@
       <url>^/api/v1/admin/sysinfo$</url>
     </mapping>
 
-    <!-- Average GET -->
-    <mapping>
-      <target>average@bios_web</target>
-      <method>GET</method>
-      <url>^/api/v1/metric/computed/average.*$</url>
-    </mapping>
-
     <!-- And from now on all modifying requests have to be authenticated -->
     <mapping>
       <target>auth-require@bios_web</target>
@@ -143,6 +136,20 @@
       <method>(GET|PUT)</method>
       <url>^/api/v1/ui/properties.*$</url>
     </mapping>
+
+    <!-- Make sure we have malamute connection -->
+    <!-- Currently doesn't work, needs to be debugged
+    <mapping>
+      <target>agent@bios_web</target>
+    </mapping> -->
+
+    <!-- Average GET -->
+    <mapping>
+      <target>average@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/metric/computed/average.*$</url>
+    </mapping>
+
 
  </mappings>
 
