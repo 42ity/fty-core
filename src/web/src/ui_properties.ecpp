@@ -51,7 +51,7 @@ ui_props_manager mgr;
         std::string errmsg = mgr.put(request.getBody());
         if (errmsg != "") {
 </%cpp>
-{ "error" : "Database update have failed",
+{ "error" : "database update has failed",
   "what"  : "<$$ errmsg $>"
 }
 <%cpp>
