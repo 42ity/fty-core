@@ -93,7 +93,8 @@ sort_warnings() {
         done
         if [[ "$FOUND" == "0" ]] ; then
             HIGH=$(expr $HIGH + 1)
-            echo "Detected a warning not known as a low-priority: $line" >&2
+            logmsg_warn "Detected a warning not known" \
+                "as a low-priority: $line" >&2
         fi
     done
     echo $LOW $HIGH )
@@ -101,12 +102,12 @@ sort_warnings() {
 
 echo "==================== sort_warnings =========================="
 ls -la ${MAKELOG}
-set -x
+[ -s "${MAKELOG}" ] || \
+    logmsg_warn "make log file '$MAKELOG' is absent or empty!"
 WARNINGS=$(sort_warnings < ${MAKELOG})
 LOW=$(echo $WARNINGS | cut -d " " -f 1 ) 
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
 #/bin/rm -f ${MAKELOG}
-set +x
 
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
