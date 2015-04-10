@@ -182,6 +182,7 @@ for i in $POSITIVE; do
             esac
             if [ "$SKIP" = true ]; then
                 logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
+                echo ""
                 SKIPPED_NONSH_TESTS=$(($SKIPPED_NONSH_TESTS+1))
             fi
             sleep 3
