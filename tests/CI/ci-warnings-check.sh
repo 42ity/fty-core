@@ -27,6 +27,7 @@ LOW_IMPORTANCE_WARNINGS=(
   '[-Wunused-parameter]'
   '[-Wunused-function]'
   '[-Wno-unused-but-set-variable]'
+  'deprecated '
 )
 
 # Include our standard routines for CI scripts
