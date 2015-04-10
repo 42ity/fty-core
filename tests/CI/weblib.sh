@@ -49,7 +49,11 @@ print_result() {
     else
         echo " * FAILED"
         _ret=1
-        FAILED="$FAILED $NAME"
+	if [ "$TNAME" = "$NAME" ]; then
+            FAILED="$FAILED $NAME"
+	else
+            FAILED="$FAILED $NAME:$TNAME"
+	fi
 
 	# This optional envvar can be set by the caller
 	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
@@ -78,10 +82,10 @@ print_result() {
 
 test_it() {
     if [ "$1" ]; then
-        NAME="$1"
+        TNAME="$1"
     fi
-    [ "$NAME" ] || NAME="`basename "$0" .sh`"
-    echo "Running test $NAME:"
+    [ "$TNAME" ] || TNAME="`basename "$0" .sh`"
+    echo "Running test $TNAME:"
 }
 
 ### This is what we will sig-kill if needed
