@@ -84,6 +84,9 @@ determineDirs() {
     export AUTOGEN_ACTION_MAKE AUTOGEN_ACTION_BUILD AUTOGEN_ACTION_CONFIG \
         AUTOGEN_ACTION_INSTALL
 
+    [ -z "$MAKELOG" ] && MAKELOG="$BUILDSUBDIR/make.output"
+    export MAKELOG
+
     ### Ultimate status: if false, then the paths are non-development
     [ -n "$SCRIPTDIR" -a -n "$CHECKOUTDIR" -a -n "$BUILDSUBDIR" ] && \
     [ -d "$SCRIPTDIR" -a -d "$CHECKOUTDIR" -a -d "$BUILDSUBDIR" ] && \
