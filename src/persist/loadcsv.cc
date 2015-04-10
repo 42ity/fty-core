@@ -145,6 +145,7 @@ static void
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
+        // TODO LOG
         log_warning ("Status '%s' is not allowed, use default",
                                                             status.c_str());
         status = "inactive";    // default
@@ -155,6 +156,7 @@ static void
     log_debug ("bc = '%s'", bs_critical.c_str());
     if ( bs_critical != "yes" && bs_critical != "no")
     {
+        // TODO LOG
         log_warning ( "Business critical '%s' is not allowed, use default",
                                                         bs_critical.c_str());
         bs_critical = "no";
@@ -274,8 +276,8 @@ static void
             break;
         }
 
-        auto link_col_name1 = "power_plug_src." + std::to_string(link_index);
         // column name
+        auto link_col_name1 = "power_plug_src." + std::to_string(link_index);
         try{
             // remove from unused
             unused_columns.erase(link_col_name1);
@@ -286,7 +288,6 @@ static void
             strcpy ( one_link.src_out, link_source1.substr (0,4).c_str());
         }
         catch (const std::out_of_range &e)
-        // if column doesn't exist, then break the cycle
         {
             log_debug ("'%s' - is missing at all", link_col_name1.c_str());
             log_debug (e.what());
@@ -302,7 +303,6 @@ static void
             strcpy ( one_link.dest_in, link_source2.substr (0,4).c_str());
         }
         catch (const std::out_of_range &e)
-        // if column doesn't exist, then break the cycle
         {
             log_debug ("'%s' - is missing at all", link_col_name2.c_str());
             log_debug (e.what());
@@ -310,9 +310,7 @@ static void
 
         if ( one_link.src != 0 ) // if first column was ok
         {
-            // TODO
             one_link.type = 1; // TODO remove hardcoded constant
-            // TODO smth is wrong here
             links.push_back(one_link);
         }
     }
@@ -351,9 +349,7 @@ static void
 
     }
     LOG_END;
-    //TODO: check from DB and call is_valid_location_chain
 }
-
 
 static bool
     mandatory_present
@@ -368,6 +364,10 @@ static bool
         return true;
 }
 
+// function return the log info about csv file
+// TODO, now it returns nothing
+// std::map <  uit64_t , std::tuple (uint64     , std::string) >>
+//            rownumber              element_id   msg
 void
     load_asset_csv
         (std::istream& input)
@@ -407,8 +407,13 @@ void
         }
         catch ( const std::invalid_argument &e)
         {
-            // TODO
+            // TODO LOG
             log_error ("%s", e.what());
         }
     }
+    // as we want to have an whole file returned plus additional information, than
+    // we should do it somwhere outside,
+    // here we just return information about status of all rows from the input csv
+
+    //return infolog;
 }
