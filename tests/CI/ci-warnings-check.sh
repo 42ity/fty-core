@@ -94,14 +94,15 @@ sort_warnings() {
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
                 LOW=$(expr $LOW + 1)
-                logmsg_warn "Detected a low-priority warning: $line" >&2
+                echo "CI-INFO-CPPCHECK: Detected a low-priority warning:" \
+                    "$line" >&2
                 FOUND=1
                 break
             fi
         done
         if [[ "$FOUND" == "0" ]] ; then
             HIGH=$(expr $HIGH + 1)
-            logmsg_warn "Detected a warning not known" \
+            echo "CI-INFO-CPPCHECK: Detected a warning not known" \
                 "as a low-priority: $line" >&2
         fi
     done
