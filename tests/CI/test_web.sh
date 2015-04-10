@@ -31,6 +31,11 @@ PASS=0
 TOTAL=0
 FAILED=""
 
+# There is a logic below that selects only *.sh filenames as eligible for testing
+# If this value is not "yes" then any filenames which match the requested POSITIVE
+# pattern will be permitted as test contents.
+[ -z "$SKIP_NONSH_TESTS" ] && SKIP_NONSH_TESTS=yes
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -129,8 +134,9 @@ cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
     logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
-    logmsg_info "  POSIIVE  = $POSITIVE"
+    logmsg_info "  POSITIVE = $POSITIVE"
     logmsg_info "  NEGATIVE = $NEGATIVE"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS"
     [ -z "$FAILED" ] && exit 0
 
     logmsg_info "The following tests have failed:"
@@ -163,7 +169,8 @@ for i in $POSITIVE; do
             SKIP="true"
         fi
     done
-    [ -z "$SKIP" ] && case "$NAME" in
+    [ -z "$SKIP" -a x"$SKIP_NONSH_TESTS" = xyes ] && \
+    case "$NAME" in
         *.sh)   ;;      # OK to proceed
         *)  [ "$POSITIVE" = '*' ] && SKIP=true || \
             case "$i" in
