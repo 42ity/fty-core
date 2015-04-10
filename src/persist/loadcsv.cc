@@ -124,7 +124,7 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
-        log_warning ("Status '%s'is not allowed, use default", status.c_str());
+        log_warning ("Status '%s' is not allowed, use default", status.c_str());
         status = "inactive";    // default
     }
     unused_columns.erase("status");
@@ -283,7 +283,7 @@ static void process_row (tntdb::Connection &conn, CsvMap cm, size_t row_i)
     {
         // this is a transaction
         auto ret = insert_dc_room_row_rack_group (conn, name.c_str(), type_id, parent_id, 
-                extattributes, status.c_str(), priority, bc);
+                extattributes, status.c_str(), priority, bc, groups);
         if ( ret.status != 1 )
         {
             throw std::invalid_argument("insertion was unsuccess");
