@@ -32,6 +32,7 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
@@ -54,7 +55,7 @@ mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_DATA" || CODE=$? die "Failed to load $DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
-make -C "$BUILDSUBDIR" test-db && "$BUILDSUBDIR"/test-db
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db && "$BUILDSUBDIR"/test-db
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db failed"
@@ -62,7 +63,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 echo "-------------------- test-db2 --------------------"
-make -C "$BUILDSUBDIR" test-db2 && "$BUILDSUBDIR"/test-db2
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db2 && "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db2 failed"
@@ -74,7 +75,8 @@ echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
 mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_DATA"
-make -C "$BUILDSUBDIR" test-db-asset-crud && "$BUILDSUBDIR"/test-db-asset-crud
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db-asset-crud && \
+    "$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db-asset-crud failed"
@@ -82,7 +84,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 
-make -C "$BUILDSUBDIR" test-dbtopology
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
     mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
@@ -106,7 +108,7 @@ fi
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-make -C "$BUILDSUBDIR" test-totalpower 
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-totalpower 
 mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER" || CODE=$? die "Failed to load $DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"

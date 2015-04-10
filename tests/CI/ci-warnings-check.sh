@@ -25,7 +25,9 @@
 LOW_IMPORTANCE_WARNINGS=(
   "[-Wunused-variable]"
   '[-Wunused-parameter]'
+  '[-Wunused-function]'
   '[-Wno-unused-but-set-variable]'
+  'deprecated '
 )
 
 # Include our standard routines for CI scripts
@@ -34,31 +36,61 @@ LOW_IMPORTANCE_WARNINGS=(
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+set -o pipefail || true
 set -e
 
 echo "======================== update ============================="
 apt-get update >/dev/null 2>&1
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
 
-echo "==================== auto-configure ========================="
-./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure >/dev/null 2>&1
-echo "====================== auto-make ============================"
-./autogen.sh make 2>&1 | tee make.log
+### Note that configure and make are used explicitly to avoid a cleanup
+### and full rebuild of the project if nothing had changed.
+NEWBUILD=no
+if [ -s "${MAKELOG}" ] ; then
+    # This branch was already configured and compiled here, only refresh it now
+    echo "================= auto-make (refresh) ======================="
+    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} 2>&1 | tee -a ${MAKELOG}
+else
+    # Newly checked-out branch, rebuild
+    echo "=============== auto-configure and rebuild =================="
+    /bin/rm -f ${MAKELOG}
+    touch ${MAKELOG}
+    ./autogen.sh --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
+    NEWBUILD=yes
+fi
+
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
+CPPCHECK_RES=0
 if [ -x "$CPPCHECK" ] ; then
+    echo \
+'*:src/msg/*_msg.c
+*:src/include/git_details_override.c
+unusedFunction:src/api/*
+' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-              --suppress=*:src/include/*_msg.c \
-              src 2>cppcheck.xml
+              --suppressions-list=cppcheck.supp \
+              src 2>cppcheck.xml || { CPPCHECK_RES=$?; \
+        logmsg_warn "cppcheck reported failure ($CPPCHECK_RES)" \
+            "but we consider it not fatal"; }
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+    ls -la cppcheck.xml
+    /bin/rm -f cppcheck.supp
 fi
 
 sort_warnings() {
+    # This routine parses its stdin and outputs counts of lower and higher
+    # priority warnings in two columns
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
     LOW=0
     HIGH=0
-    grep -E ":[0-9]+:[0-9]+: warning: " < $CHECKOUTDIR/make.log | ( while read line ; do
+    ( egrep ":[0-9]+:[0-9]+: warning: "; echo "" ) | \
+      sort | uniq | \
+    ( while read line ; do
         FOUND=0
+        [ -z "$line" ] && continue
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
                 LOW=$(expr $LOW + 1)
@@ -68,30 +100,39 @@ sort_warnings() {
         done
         if [[ "$FOUND" == "0" ]] ; then
             HIGH=$(expr $HIGH + 1)
-            echo "unknown warning: $line" >&2
+            logmsg_warn "Detected a warning not known" \
+                "as a low-priority: $line" >&2
         fi
     done
     echo $LOW $HIGH )
 }
 
-WARNINGS=$(sort_warnings)
+echo "==================== sort_warnings =========================="
+ls -la ${MAKELOG}
+[ -s "${MAKELOG}" ] || \
+    logmsg_warn "make log file '$MAKELOG' is absent or empty!"
+WARNINGS=$(sort_warnings < ${MAKELOG})
 LOW=$(echo $WARNINGS | cut -d " " -f 1 ) 
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
-/bin/rm make.log
+#/bin/rm -f ${MAKELOG}
 
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
-    echo "error: $HIGH unknown warnings"
+    echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
+    [[ "$NEWBUILD" = no ]] && \
+    echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     echo "============================================"
     exit 1
 else
     echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
+        [[ "$NEWBUILD" = no ]] && \
+        echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     else
-        echo "OK"
+        echo "OK, no warnings detected"
     fi
     echo "============================================"
     exit 0
-fi
+fi >&2
