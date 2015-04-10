@@ -65,8 +65,12 @@ determineDirs() {
     fi
     [ -z "$CHECKOUTDIR" -a -d ~/project ] && CHECKOUTDIR=~/project
 
-    [ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-    [ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
+    if [ -z "$BUILDSUBDIR" ]; then
+        ### Keep a caller-defined BUILDSUBDIR value even if it is not made yet
+        [ ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+        [ ! -x "$BUILDSUBDIR/config.status" -a ! -s "$BUILDSUBDIR/autogen.sh" ] && \
+            BUILDSUBDIR="$PWD"
+    fi
 
     export BUILDSUBDIR CHECKOUTDIR SCRIPTDIR
 
