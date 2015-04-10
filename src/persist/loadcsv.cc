@@ -355,15 +355,11 @@ void
     {
         try{
             process_row(conn, cm, row_i);
-            // TODO LOG
             log_info ("row %zu was imported successfully", row_i);
         }
         catch ( const std::invalid_argument &e)
         {
-            // TODO
-            log_error ("%s", e.what());
-            throw e;
-            // log_somewhere an error
+            log_warning ("row %zu not imported: %s", row_i, e.what());
         }
     }
 }
