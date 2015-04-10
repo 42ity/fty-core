@@ -120,22 +120,22 @@ kill_daemons() {
         kill -2 "$DBNGPID"
     fi
 
-    killall -2 tntnet db-ng 2>/dev/null || true; sleep 1
-    killall    tntnet db-ng 2>/dev/null || true; sleep 1
+    killall -2 tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall    tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
-        { killall -9 tntnet db-ng 2>/dev/null ; exit 1; }
+        { killall -9 tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
 
     return 0
 }
 
 # prepare environment
   # might have some mess
-  killall tntnet db-ng 2>/dev/null || true
+  killall tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
-  killall -9 tntnet db-ng 2>/dev/null || true
+  killall -9 tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
   test_web_port && \
     die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
