@@ -132,7 +132,7 @@ static const std::vector<std::string> inventoryBIOS {
     "device.contact",
     "device.location",
     "device.part",
-    "status",
+    "status.ups",
     "ups.alarm",
     "ups.serial",
     "battery.date",
