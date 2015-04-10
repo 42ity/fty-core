@@ -8,13 +8,22 @@
 
 <%cpp>
     if (request.getMethod() != "POST") {
-        return HTTP_BAD_REQUEST;
+        return HTTP_METHOD_NOT_ALLOWED;
     }
 
     std::stringstream input(request.getBody(), std::ios_base::in);
-    load_asset_csv(input);
+    std::cout << input.peek() << std::endl;
+    try {
+        load_asset_csv(input);
+    }
+    catch (const std::invalid_argument &e) {
+</%cpp>
+{
+    "error" : "<$$ e.what() $>"
+}
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
     std::string output{"There\twill\tbe\toutput\n"};
 </%cpp>
-
 <$$ output $>
-

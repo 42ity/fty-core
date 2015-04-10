@@ -335,8 +335,9 @@ void
 
     if ( !mandatory_present(cm) )
     {
-        log_error ("mandatory columns are not present, import is aborted");
-        return;
+        std::string msg{"mandatory columns are not present, import is aborted"};
+        log_error("%s\n", msg.c_str());
+        throw std::invalid_argument(msg.c_str());
     }
 
     tntdb::Connection conn;
@@ -345,8 +346,9 @@ void
     }
     catch(...)
     {
-        log_error ("no connection to database");
-        return;
+        std::string msg{"no connection to database"};
+        log_error("%s\n", msg.c_str());
+        throw std::invalid_argument(msg.c_str());
     }
     
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
@@ -360,6 +362,7 @@ void
         {
             // TODO
             log_error ("%s", e.what());
+            throw e;
             // log_somewhere an error
         }
     }
