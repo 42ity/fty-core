@@ -45,6 +45,7 @@ DB_DATA="load_data.sql"
 DB_TOPO="power_topology.sql"
 DB_TOPO1="location_topology.sql"
 DB_RACK_POWER="rack_power.sql"
+DB_CRUD="crud_test.sql"
 
 RESULT=0
 
@@ -65,6 +66,18 @@ make -C "$BUILDSUBDIR" test-db2 && "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db2 failed"
+    echo "----------------------------------------"
+    RESULT=1
+fi
+
+echo "-------------------- test-db-asset-crud-----"
+echo "-------------------- reset db --------------------"
+mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
+mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_DATA"
+make -C "$BUILDSUBDIR" test-db-asset-crud && "$BUILDSUBDIR"/test-db-asset-crud
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-db-asset-crud failed"
     echo "----------------------------------------"
     RESULT=1
 fi
