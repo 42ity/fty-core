@@ -89,6 +89,12 @@
       </args>
     </mapping>
 
+    <!-- Asset import -->
+    <mapping>
+      <target>asset_import@bios_web</target>
+      <url>^/api/v1/asset/import.*</url>
+    </mapping>
+
     <!-- Current meassurements -->
     <mapping>
       <target>current@bios_web</target>
