@@ -58,6 +58,7 @@ fi
 
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
+CPPCHECK_RES=0
 if [ -x "$CPPCHECK" ] ; then
     echo \
 '*:src/msg/*_msg.c
@@ -66,16 +67,19 @@ unusedFunction:src/api/*
 ' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
               --suppressions-list=cppcheck.supp \
-              src 2>cppcheck.xml
+              src 2>cppcheck.xml || CPPCHECK_RES=$?
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
+    ls -la cppcheck.xml
     /bin/rm -f cppcheck.supp
 fi
 
 sort_warnings() {
+    # This routine parses its stdin and outputs counts of lower and higher
+    # priority warnings in two columns
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
     LOW=0
     HIGH=0
-    grep -E ":[0-9]+:[0-9]+: warning: " < make.log | ( while read line ; do
+    egrep ":[0-9]+:[0-9]+: warning: " | ( while read line ; do
         FOUND=0
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
@@ -86,17 +90,20 @@ sort_warnings() {
         done
         if [[ "$FOUND" == "0" ]] ; then
             HIGH=$(expr $HIGH + 1)
-            echo "unknown warning: $line" >&2
+            echo "Detected a warning not known as a low-priority: $line" >&2
         fi
     done
     echo $LOW $HIGH )
 }
 
 echo "==================== sort_warnings =========================="
-WARNINGS=$(sort_warnings)
+ls -la make.log
+set -x
+WARNINGS=$(sort_warnings < make.log)
 LOW=$(echo $WARNINGS | cut -d " " -f 1 ) 
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
 #/bin/rm -f make.log
+set +x
 
 if [[ "$HIGH" != "0" ]] ; then
     echo "================ Result ===================="
@@ -109,8 +116,8 @@ else
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
     else
-        echo "OK"
+        echo "OK, no warnings detected"
     fi
     echo "============================================"
     exit 0
-fi
+fi >&2
