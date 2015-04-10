@@ -76,6 +76,7 @@ test-agents
 test-api
 test-cidr
 test-csv
+test-loadcsv
 test-database
 test-db
 test-db2
