@@ -402,6 +402,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
@@ -417,7 +418,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -447,7 +448,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -493,6 +494,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
@@ -502,7 +504,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -531,7 +533,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -576,6 +578,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
@@ -585,7 +588,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -614,7 +617,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -659,6 +662,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
@@ -675,7 +679,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -704,7 +708,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -749,6 +753,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    std::set <a_elmnt_id_t>  groups;    // left empty, simple cass
 
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people, do we have any problems with % and %% characters"));
@@ -758,7 +763,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -787,7 +792,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     asset_msg_destroy (&reply_select_decode);
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -816,7 +821,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
 }
 
 
-TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlockated][device][crud_test.sql][3]")
+TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlockated][device][crud_test.sql]")
 {
     log_open ();
 
