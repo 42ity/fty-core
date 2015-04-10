@@ -404,7 +404,7 @@ The `builder.sh` script tries several methods to detect the number of
 CPUs on the system, or defaults to "1" upon errors.
 
 
-=== 'NPARMAKES' count
+=== 'NPARMAKES' count and 'MAXPARMAKES' limiter
 The 'NPARMAKES' variable contains the number of `make` processes that
 should be run in parallel on the first pass (if not disabled with the
 'NOPARMAKE' toggle).
@@ -414,5 +414,9 @@ twice the 'NCPUS' per general recommendation (two processes per CPU,
 one is actively compiling and another is waiting for disk I/O), or
 to "2" upon errors.
 
+If the enviroment defines a non-negative 'MAXPARMAKES' value (e.g. set
+by Jenkins), and if the automatically detected or explicitly requestsd
+'NPARMAKES' value exceeds that limit, then 'NPARMAKES' is reduced to
+match the required 'MAXPARMAKES'.
 
 

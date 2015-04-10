@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Copyright (C) 2014 Eaton
 #
@@ -25,14 +25,26 @@
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+set -o pipefail || true
 set -e
 
 apt-get update
 mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-echo "==================== auto-configure ========================="
-./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
+if [ -s "${MAKELOG}" ] ; then
+    # This branch was already configured and compiled here, only refresh it now
+    echo "=========== auto-make (refresh) and install ================="
+    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} \
+        install 2>&1 | tee -a ${MAKELOG}
+else
+    # Newly checked-out branch, rebuild
+    echo "========= auto-configure, rebuild and install ==============="
+    ./autogen.sh --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}
+fi
+
+echo "======================== make check ========================="
+./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a ${MAKELOG}
 echo "==================== make distcheck ========================="
-./autogen.sh --no-distclean make distcheck
-echo "=================== make and install ========================"
-./autogen.sh --no-distclean make install
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}
