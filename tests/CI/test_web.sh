@@ -35,6 +35,7 @@ FAILED=""
 # If this value is not "yes" then any filenames which match the requested POSITIVE
 # pattern will be permitted as test contents.
 [ -z "$SKIP_NONSH_TESTS" ] && SKIP_NONSH_TESTS=yes
+SKIPPED_NONSH_TESTS=0
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -136,7 +137,7 @@ summarizeResults() {
     logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
     logmsg_info "  POSITIVE = $POSITIVE"
     logmsg_info "  NEGATIVE = $NEGATIVE"
-    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS"
+    logmsg_info "  SKIP_NONSH_TESTS = $SKIP_NONSH_TESTS (so skipped $SKIPPED_NONSH_TESTS tests)"
     [ -z "$FAILED" ] && exit 0
 
     logmsg_info "The following tests have failed:"
@@ -179,8 +180,10 @@ for i in $POSITIVE; do
                 "$NAME") logmsg_warn "Non-'.sh' test file executed due to explicit request: '$NAME' (matched for '$i')" ;;
                 *)  SKIP="true" ;;
             esac
-            [ "$SKIP" = true ] && \
+            if [ "$SKIP" = true ]; then
                 logmsg_warn "Non-'.sh' test file ignored: '$NAME' (matched for '$i')"
+                SKIPPED_NONSH_TESTS=$(($SKIPPED_NONSH_TESTS+1))
+            fi
             sleep 3
             ;;
     esac
