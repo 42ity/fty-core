@@ -265,31 +265,20 @@ db_reply_t
         );
         
         if ( strcmp(src_out, "") == 0 )
-        {
-                st = st.setNull("out");
-                log_debug ("src-out is null");
-        }
+            st = st.setNull("out");
         else
-        {
-                st = st.set("out", src_out);
-                log_debug ("src-out is not null");
-        }
+            st = st.set("out", src_out);
         
         if ( strcmp(dest_in, "") == 0)
-        {
-                st = st.setNull("in");
-                log_debug ("dest is  null");
-        }
+            st = st.setNull("in");
         else
-        {
-                st = st.set("in", dest_in);
-                log_debug ("dest is not  null");
-        }
+            st = st.set("in", dest_in);
 
         ret.affected_rows = st.set("src", asset_element_src_id).
                                set("dest", asset_element_dest_id).
                                set("linktype", link_type_id).
                                execute();
+
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_asset_link]: was inserted %" 
                                         PRIu64 " rows", ret.affected_rows);
@@ -834,7 +823,7 @@ db_reply_t
 
     for ( auto &one_link: links )
     {
-        one_link.src = element_id;
+        one_link.dest = element_id;
     }
 
     auto reply_insert5 = insert_into_asset_links
