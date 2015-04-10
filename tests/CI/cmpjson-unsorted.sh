@@ -8,5 +8,5 @@ CMPJSON="`dirname $0`/cmpjson.sh"
 [ ! -x "$CMPJSON" ] && echo "ERROR: Can't find '$CMPJSON'!" >&2 && exit 1
 
 JSONSH_OPTIONS='-N -Nnx=%.16f' \
-JSONSH_OPTIONS_VERBOSE=' ' \
+JSONSH_OPTIONS_VERBOSE='-Nnx=%.16f' \
 exec "$CMPJSON" "$@"
