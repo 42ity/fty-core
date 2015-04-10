@@ -108,7 +108,7 @@ remote_make() {
     else
         # Newly fetched branch - clean up, configure and make it fully
         echo "-- compiling to rebuild"
-        ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}; }'"
+        ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_BUILD} install 2>&1 | tee ${MAKELOG}; }'"
         return $?
     fi
 }
