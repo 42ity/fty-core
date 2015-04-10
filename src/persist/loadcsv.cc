@@ -310,8 +310,16 @@ static void
 
         if ( one_link.src != 0 ) // if first column was ok
         {
-            one_link.type = 1; // TODO remove hardcoded constant
-            links.push_back(one_link);
+            if ( type == "device" )
+            {
+                one_link.type = 1; // TODO remove hardcoded constant
+                links.push_back(one_link);
+            }
+            else
+            {
+                // TODO LOG
+                log_warning ("information about power sources is ignored for type '%s'", type);
+            }
         }
     }
     zhash_t *extattributes = zhash_new();
@@ -324,6 +332,12 @@ static void
         if ( !value.empty() )
             zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
     }
+    // if the row represents group, the subtype represents a type 
+    // of the group.
+    // As group has no special table as device, then this information
+    // sould be inserted as external attribute
+    if ( type == group )
+        zhash_insert (extattributes, "type", (void*) subtype.c_str() );
 
     if ( type != "device" )
     {
