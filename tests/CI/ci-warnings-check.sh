@@ -79,7 +79,7 @@ sort_warnings() {
     LAST=$(expr ${#LOW_IMPORTANCE_WARNINGS[*]} - 1)
     LOW=0
     HIGH=0
-    egrep ":[0-9]+:[0-9]+: warning: " | ( while read line ; do
+    ( egrep ":[0-9]+:[0-9]+: warning: "; echo "" ) | ( while read line ; do
         FOUND=0
         for i in $(seq 0 $LAST) ; do
             if [[ "$line" =~ "${LOW_IMPORTANCE_WARNINGS[$i]}" ]] ; then
