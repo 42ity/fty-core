@@ -36,7 +36,7 @@
 ### System-provided daemons (available as systemd units)
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
 ### $BIOS-provided daemons (available as systemd units)
-DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-driver-nut bios-server-agent"
+DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-agent-nut bios-server-agent"
 ### Programs which we execute manually
 DAEMONS_OUR_BINS=""
 
@@ -88,7 +88,7 @@ usage() {
     else
         echo "       systemd activation WILL NOT BE used" >&2
     fi
-    echo "       Tool supports short names, so rc-bios nut == rc-bios bios-driver-nut" >&2
+    echo "       Tool supports short names, so rc-bios nut == rc-bios bios-agent-nut" >&2
     echo "       If no action is given, assume 'start' of given parameters" >&2
     echo "       If no daemons are given, assume all of: $DAEMONS" >&2
     exit 1
@@ -134,7 +134,7 @@ is_external_unit() {
 }
 
 # find a proper name for a systemd unit file, if any
-# unit_name nut -> bios-driver-nut
+# unit_name nut -> bios-agent-nut
 # unit_name db -> bios-db
 # unit_name malamute -> malamute
 # unit_name mysql.service -> mysql
