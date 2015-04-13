@@ -202,6 +202,8 @@ static void
     }
     auto subtype_id = TYPES.find(type)->second;
     unused_columns.erase("sub_type");
+
+    std::string group;
     
     // list of element id of all groups, the element belongs to
     std::set <a_elmnt_id_t>  groups{};
@@ -213,7 +215,7 @@ static void
             // remove from unused
             unused_columns.erase(grp_col_name);
             // take value
-            auto group = cm.get(row_i, grp_col_name);
+            group = cm.get(row_i, grp_col_name);
             log_debug ("group_name = '%s'", group.c_str());
             // if group was not specified, just skip it
             if ( !group.empty() )
@@ -225,8 +227,8 @@ static void
                 else
                 {
                     // TODO LOG
-                    log_warning ("'%s' - the group was ignored, 
-                            because doesn't exist in DB", group.c_str());
+                    log_warning ("'%s' - the group was ignored, "
+                            "because doesn't exist in DB", group.c_str());
                 }
             }
         }
@@ -262,9 +264,9 @@ static void
                 else
                 {
                     // TODO LOG
-                    log_warning ("'%s' - the unknown power source, 
-                        all information would be ignored 
-                        (doesn't exist in DB)", link_col_name.c_str());
+                    log_warning ("'%s' - the unknown power source, "
+                        "all information would be ignored "
+                        "(doesn't exist in DB)", link_col_name.c_str());
                 }
             }
         }
@@ -318,7 +320,7 @@ static void
             else
             {
                 // TODO LOG
-                log_warning ("information about power sources is ignored for type '%s'", type);
+                log_warning ("information about power sources is ignored for type '%s'", type.c_str());
             }
         }
     }
@@ -336,6 +338,7 @@ static void
     // of the group.
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
+    
     if ( type == group )
         zhash_insert (extattributes, "type", (void*) subtype.c_str() );
 
