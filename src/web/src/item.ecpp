@@ -181,9 +181,14 @@ asset_manager asset_mgr;
         }
         if ( type == NULL ) {
             type = (char*) "";
+        }else{
+            //take in account that type starts with 'w:' read only flag
+            type = type +2;
+            //remove type from ext_count total 
+            ext_count--;
         }
 </%cpp>
-    "type":"<$ (char*) type $>"
+    , "type":"<$ (char*) type $>"
 <%cpp>
     }
 
