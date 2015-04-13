@@ -797,22 +797,22 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-client_PROGRAMS +=	driver-nut
+client_PROGRAMS +=	agent-nut
 
-driver_nut_SOURCES = \
+agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
 			src/agents/nut/nut-agent.cc \
 			src/shared/upsstatus.cc \
 			src/shared/utils_ymsg.c
 
-driver_nut_LDADD = \
+agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la
 
-driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
-driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	agent-inventory
 
@@ -977,11 +977,11 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
+bios-agent-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
-bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
+bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
 bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
@@ -989,7 +989,7 @@ bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.i
 
 
 systemdsystemunit_DATA = \
-			$(top_builddir)/bios-driver-nut.service \
+			$(top_builddir)/bios-agent-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
 			$(top_builddir)/bios-db.service \
 			$(top_builddir)/bios-server-agent.service \

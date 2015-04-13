@@ -44,7 +44,7 @@ malamute /etc/malamute/malamute.cfg &
 echo "starting BIOS .."
 /usr/local/libexec/bios/db-ng &
 /usr/local/libexec/bios/agent-inventory &
-/usr/local/libexec/bios/driver-nut 
+/usr/local/libexec/bios/agent-nut 
 
  
 

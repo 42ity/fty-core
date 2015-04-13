@@ -46,8 +46,8 @@ ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/m
 ADD ./usr/local/libexec/bios/db-ng /usr/local/libexec/bios/db-ng
 ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
-ADD ./usr/local/libexec/bios/driver-nut /usr/local/libexec/bios/driver-nut
-ADD ./usr/local/libexec/bios/driver-nut /usr/local/libexec/bios/agent-inventory
+ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut
+ADD ./usr/local/libexec/bios/agent-inventory /usr/local/libexec/bios/agent-inventory
 ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
 RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
 ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
