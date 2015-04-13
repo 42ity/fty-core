@@ -108,14 +108,37 @@ wait_for_web() {
     return 1
 }
 
+MAKEPID=""
+DBNGPID=""
+kill_daemons() {
+    if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
+        logmsg_info "Killing make web-test PID $MAKEPID to exit"
+        kill -2 "$MAKEPID"
+    fi
+    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
+        logmsg_info "Killing db-ng PID $DBNGPID to exit"
+        kill -2 "$DBNGPID"
+    fi
+
+    killall -2 tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall    tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+
+    ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
+        ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
+        logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
+        { killall -9 tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
+
+    return 0
+}
 
 # prepare environment
   # might have some mess
-  killall tntnet 2>/dev/null || true
+  killall tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
-  killall -9 tntnet 2>/dev/null || true
+  killall -9 tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
-  test_web_port && die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
+  test_web_port && \
+    die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
@@ -154,13 +177,19 @@ wait_for_web() {
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensuring files for web-test exist and are up-to-date..."
-  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
+
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
   MAKEPID=$!
 
+  # TODO: this requirement should later become the REST AGENT
+  logmsg_info "Spawning the db-ng server in the background..."
+  ${BUILDSUBDIR}/db-ng &
+  DBNGPID=$!
+
   # Ensure that no processes remain dangling when test completes
-  trap '[ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ] && echo "INFO: Killing make web-test PID $MAKEPID to exit" && kill "$MAKEPID"; killall tntnet 2>/dev/null || true; sleep 1; ps -ef | grep -v grep | grep tntnet | egrep "^`id -u -n` " && ps -ef | grep -v grep | egrep "$$|make" && echo "CI-ERROR: tntnet still alive, trying SIGKILL">&2 && killall -9 tntnet && exit 1' 0 1 2 3 15
+  trap 'kill_daemons' 0 1 2 3 15
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
