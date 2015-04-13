@@ -94,7 +94,7 @@ done
 #
 # check if VM exists
 #
-RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9]+ +'"$VM"' / {print $2}' | wc -l)
+RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
 if [ $RESULT = 0 ] ; then
     die "VM $VM does not exist"
 fi
