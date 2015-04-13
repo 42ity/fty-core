@@ -20,6 +20,9 @@ if (request.getMethod() != "POST") {
 }
 
 //HARDCODED limit: can't import things larger than 128K
+// this prevents DoS attacks against the box - can be raised if needed
+// don't forget internal processing is in UCS-32, therefor the
+// real memory requirements are ~640kB
 if (request.getContentSize() > 128*1024) {
     </%cpp>
     {
@@ -41,13 +44,11 @@ if (it == mp.end()) {
         return HTTP_BAD_REQUEST;
 }
 
-int HTTP_CODE = HTTP_OK;
 char path[22] = "/tmp/import-csvXXXXXX";
 
 try {
     int r = ::mkstemp(path);
     if (r == -1) {
-        HTTP_CODE = HTTP_INTERNAL_SERVER_ERROR;
         throw std::runtime_error{::strerror(errno)};
     }
     ::close(r);
@@ -63,7 +64,6 @@ try {
     // check the encoding
     auto encoding = file_encoding(path);
     if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
-        HTTP_CODE = HTTP_BAD_REQUEST;
         std::string msg = "Unsupported encoding '";
         msg += encoding;
         msg += "', supported utf-8 or utf-16le";
@@ -75,7 +75,6 @@ try {
         char new_path[22] = "/tmp/import-csvXXXXXX";
         int r2 = ::mkstemp(new_path);
         if (r2 == -1) {
-            HTTP_CODE = HTTP_INTERNAL_SERVER_ERROR;
             throw std::runtime_error{::strerror(errno)};
         }
         ::close(r2);
@@ -85,7 +84,6 @@ try {
         int res = shared::call(args);
         if (res != 0) {
             ::unlink(new_path);
-            HTTP_CODE = HTTP_INTERNAL_SERVER_ERROR;
             throw std::runtime_error("Can't convert input file to utf-8");
         }
         ::unlink(path);
@@ -97,14 +95,23 @@ try {
     load_asset_csv(inp);
     inp.close();
 }
-catch (const std::exception &e) {
+catch (const std::logic_error &e) {
     ::unlink(path);
 </%cpp>
 {
     "error" : "<$$ e.what() $>"
 }
 <%cpp>
-    return HTTP_CODE;
+    return HTTP_BAD_REQUEST;
+}
+catch (const std::runtime_error &e) {
+    ::unlink(path);
+</%cpp>
+{
+    "error" : "<$$ e.what() $>"
+}
+<%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
 }
 
 std::string output{"There\twill\tbe\toutput\n"};
