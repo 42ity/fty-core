@@ -113,7 +113,7 @@ test_it() {
     fi
     [ -n "$TNAME" ] || TNAME="$0"
     TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
-    if [ "$TNAME" = "`basename "$NAME" .sh`" ]; then
+    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
         echo "Running test $TNAME :"
     else
         echo "Running test $NAME::$TNAME :"
@@ -314,9 +314,13 @@ api_auth_post() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
+    local url data
+    url=$1
+    data=$2
+    shift 2
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$2" \
-        -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$data" \
+        -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
 api_auth_post_content() {

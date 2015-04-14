@@ -19,7 +19,7 @@
 #
 # Description: starts or stops the $BIOS daemons installed in $HOME
 
-DAEMONS="db-ng driver-nut driver-nmap netmon"
+DAEMONS="db-ng agent-nut driver-nmap netmon"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
