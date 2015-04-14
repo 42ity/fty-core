@@ -177,6 +177,8 @@ kill_daemons() {
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensuring files for web-test exist and are up-to-date..."
+
+  [ -x "${BUILDSUBDIR}/configure.status" ] || ./autogen.sh ${AUTOGEN_ACTION_CONFIG} || exit
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
 
   logmsg_info "Spawning the web-server in the background..."
