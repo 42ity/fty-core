@@ -986,6 +986,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
+SYSTEMD_UNITS =
 # systemd integration
 if HAVE_SYSTEMD
 
@@ -994,7 +995,11 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
+SYSTEMD_UNITS += bios-driver-nut.service bios-driver-netmon.service \
+                        bios-db.service bios-server-agent.service \
+                        bios-agent-inventory.service
+
+$(SYSTEMD_UNITS): Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
@@ -1451,7 +1456,12 @@ clean-man:
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
             libbiosapi.la bios_web.la \
-            all-docs sdk web-link-test
+            all-docs sdk sdk-link-test web-link-test
+
+# Try to build everything buildable, e.g. for further warning counters
+all-buildproducts: all-local all sdk-tests web-test-deps \
+            $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
+            $(SYSTEMD_UNITS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
@@ -1519,7 +1529,9 @@ check-dll-bios_web: check-dll-libfile-bios_web.la
 
 sdk: libbiosapi.la
 
-sdk-tests: test-libbiosapiut
+sdk-link-test: sdk test-libbiosapiut
+
+sdk-tests: sdk sdk-link-test
 
 test-sdk: sdk sdk-tests check-dll-libbiosapi
 	cd $(abs_top_builddir) && ./test-libbiosapiut

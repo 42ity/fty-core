@@ -46,11 +46,7 @@ mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
 NEWBUILD=no
-if [ -s "${MAKELOG}" ] ; then
-    # This branch was already configured and compiled here, only refresh it now
-    echo "================= auto-make (refresh) ======================="
-    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} 2>&1 | tee -a ${MAKELOG}
-else
+if [ ! -s "${MAKELOG}" ] ; then
     # Newly checked-out branch, rebuild
     echo "=============== auto-configure and rebuild =================="
     /bin/rm -f ${MAKELOG}
@@ -60,6 +56,11 @@ else
         ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
     NEWBUILD=yes
 fi
+
+# This branch was already configured and compiled here, only refresh it now
+echo "======== auto-make (refresh all-buildproducts) =============="
+./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} all-buildproducts 2>&1 | \
+    tee -a ${MAKELOG}
 
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
