@@ -866,6 +866,8 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/tokens.cc src/shared/data.cc           \
                       src/shared/upsstatus.cc src/web/src/enc.cc
 
+EXTRA_DIST +=		src/web/include/enc.h
+
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
 
