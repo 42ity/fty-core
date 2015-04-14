@@ -122,7 +122,7 @@ static void
     static auto TYPES = read_element_types (conn);
 
     static auto SUBTYPES = read_device_types (conn);
-
+    
     // This is used to track, what columns we had already proceeded,
     // because if we didn't proceed it yet,
     // then it should treated as external attribute
@@ -200,7 +200,7 @@ static void
         // TODO LOG
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
-    auto subtype_id = TYPES.find(type)->second;
+    auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
     std::string group;
