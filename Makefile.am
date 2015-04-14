@@ -219,6 +219,9 @@ libpriv_git_details_override_la_SOURCES = \
 				src/include/git_details_override.h \
 				src/include/git_details_override.c
 
+libpriv_git_details_override_la_DEPENDENCIES = \
+				$(abs_top_builddir)/.git_details
+
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
@@ -1618,6 +1621,7 @@ CLEANFILES +=		src/include/git_details_override.c \
 .PHONY_GIT:
 
 .git_details: $(abs_top_builddir)/.git_details
+	@sync || true
 
 # NOTE that in the target routine below we filter out PACKAGE_BUILD_TSTAMP
 # changes because if nothing else changed, these don't matter much but do
@@ -1651,8 +1655,10 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	      touch "$@"; fi; \
 	    fi; \
 	 fi
+	@sync || true
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
+	@sync || true
 
 $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
 	@echo "INFO: Checking that '$@' is up-to-date..."
@@ -1669,8 +1675,10 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
+	@sync || true
 
 src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
+	@sync || true
 
 $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git_details
 	@echo "INFO: Checking that '$@' is up-to-date..."
@@ -1705,4 +1713,5 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
+	@sync || true
 
