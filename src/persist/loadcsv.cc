@@ -414,7 +414,7 @@ void
     {
         std::string msg{"no connection to database"};
         log_error("%s\n", msg.c_str());
-        throw std::invalid_argument(msg.c_str());
+        throw std::runtime_error(msg.c_str());
     }
     
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
