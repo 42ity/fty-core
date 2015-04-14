@@ -377,6 +377,8 @@ libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
 
 SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 
+src/web/src/sysinfo.cpp: src/include/git_details_override.h
+
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
 .gif.cpp:
