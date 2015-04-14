@@ -293,6 +293,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/loadcsv.h \
+			src/persist/loadcsv.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -306,7 +308,7 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
-			libpriv-log.la 
+			libpriv-log.la libpriv-csv.la
 
 noinst_LTLIBRARIES +=	libpriv-proto.la
 
@@ -331,25 +333,6 @@ noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
 			src/agents/nmap/nmap-parse.cc
-
-noinst_LTLIBRARIES +=	libpriv-loadcsv.la
-
-libpriv_loadcsv_la_SOURCES =	src/persist/loadcsv.h \
-							src/persist/loadcsv.cc
-
-libpriv_loadcsv_la_CPPFLAGS =$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/shared \
-			-I$(abs_top_srcdir)/src/simple \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_src_dir)/src/msg \
-			-I$(abs_top_builddir)/tools
-
-libpriv_loadcsv_la_LIBADD = ${CXXTOOLS_LIBS} \
-			libpriv-csv.la \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-proto.la
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -500,8 +483,8 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 test_loadcsv_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
-			libpriv-loadcsv.la \
 			libpriv-cidr.la \
+			libpriv-proto.la \
 			libpriv-test-run.la
 
 test_loadcsv_CPPFLAGS = \
@@ -817,22 +800,22 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-client_PROGRAMS +=	driver-nut
+client_PROGRAMS +=	agent-nut
 
-driver_nut_SOURCES = \
+agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
 			src/agents/nut/nut-agent.cc \
 			src/shared/upsstatus.cc \
 			src/shared/utils_ymsg.c
 
-driver_nut_LDADD = \
+agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la
 
-driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
-driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	agent-inventory
 
@@ -875,7 +858,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
-                      src/web/src/average.cpp
+                      src/web/src/average.cpp src/web/src/asset_import.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
@@ -906,7 +889,7 @@ bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			 libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la
+			libpriv-utils.la libpriv-defs.la 
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -998,7 +981,7 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-SYSTEMD_UNITS += bios-driver-nut.service bios-driver-netmon.service \
+SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service
 
@@ -1006,7 +989,7 @@ $(SYSTEMD_UNITS): Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
-bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
+bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
 bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
@@ -1014,7 +997,7 @@ bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.i
 
 
 systemdsystemunit_DATA = \
-			$(top_builddir)/bios-driver-nut.service \
+			$(top_builddir)/bios-agent-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
 			$(top_builddir)/bios-db.service \
 			$(top_builddir)/bios-server-agent.service \
