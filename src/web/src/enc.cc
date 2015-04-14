@@ -1,7 +1,7 @@
 #include <magic.h>
 #include <stdexcept>
 
-#include "enc.h"
+#include <enc.h>
 
 std::string file_encoding(const char* path) {
     magic_t magic_cookie = magic_open(MAGIC_MIME_ENCODING | MAGIC_ERROR | MAGIC_NO_CHECK_COMPRESS | MAGIC_NO_CHECK_TAR);
