@@ -122,7 +122,7 @@ static void
     static auto TYPES = read_element_types (conn);
 
     static auto SUBTYPES = read_device_types (conn);
-
+    
     // This is used to track, what columns we had already proceeded,
     // because if we didn't proceed it yet,
     // then it should treated as external attribute
@@ -200,7 +200,7 @@ static void
         // TODO LOG
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
-    auto subtype_id = TYPES.find(type)->second;
+    auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
     std::string group;
@@ -414,7 +414,7 @@ void
     {
         std::string msg{"no connection to database"};
         log_error("%s\n", msg.c_str());
-        throw std::invalid_argument(msg.c_str());
+        throw std::runtime_error(msg.c_str());
     }
     
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)

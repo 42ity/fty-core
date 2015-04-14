@@ -403,6 +403,7 @@ AS_IF([test -n "$_CC_ORIG"], [
 
 # Checks for the header files
 AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
+AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([cannot find required header magic.h]))
 
 AC_LANG_PUSH([C++])
 AC_SEARCH_LIBS([ll_remember_index], [netlink],
