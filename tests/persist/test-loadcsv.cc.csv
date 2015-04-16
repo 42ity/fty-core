@@ -1,5 +1,5 @@
 name	type	sub_type	description	location	group.1	group.2	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	business_critical	priority	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer(brand)	model	asset_tag	serial_no	runtime(autonomy)	phase(feeds)	installation_date	maintenance_date	maintenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_maintenance_date	IP.1 (IP)	hostname.1 (hostname)	http_link.1
-DC-LAB	datacenter		Lab DC										active	yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	"Place de la Gare, 1345 Le Lieu"	John Smith	john.smith@company.com	476010203																										
+DC-LAB	datacenter		Lab DC(тест)										active	yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	"Place de la Gare, 1345 Le Lieu"	John Smith	john.smith@company.com	476010203																										
 ROOM-01	room		main room	DC-LAB									active	no	P1																																		
 ANNEX-01	room		Annex	DC-LAB									active	yes	P1																																		
 CAGE-01	group	cage	cage 01	ROOM-01									active	yes	P1																																		
