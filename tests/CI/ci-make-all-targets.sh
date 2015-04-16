@@ -27,25 +27,37 @@ CPPCHECK=$(which cppcheck)
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+set -o pipefail || true
 set -e
 ( which apt-get >/dev/null &&  apt-get update ) || true
 ( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
-echo "=================== auto-configure =========================="
-./autogen.sh --no-distclean --configure-flags "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" configure
-echo "======================== make ==============================="
-./autogen.sh make
+# NOTE: with this job we want everything wiped and rebuilt in the workspace
+echo "============= auto-configure and rebuild ===================="
+./autogen.sh --configure-flags \
+    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
+
+echo "========================= cppcheck =========================="
+CPPCHECK_RES=0
 if [ -x "$CPPCHECK" ] ; then
-    echo -e "*:src/msg/*_msg.c\nunusedFunction:src/api/*\n" >cppcheck.supp
+    echo \
+'*:src/msg/*_msg.c
+*:src/include/git_details_override.c
+unusedFunction:src/api/*
+' > cppcheck.supp
     $CPPCHECK --enable=all --inconclusive --xml --xml-version=2 \
-        --suppressions-list=cppcheck.supp \
-        src 2>cppcheck.xml
+            --suppressions-list=cppcheck.supp \
+            src 2>cppcheck.xml || { CPPCHECK_RES=$?; \
+        logmsg_warn "cppcheck reported failure ($CPPCHECK_RES)" \
+            "but we consider it not fatal" ; }
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     /bin/rm -f cppcheck.supp
 fi
+
 echo "======================== make check ========================="
-./autogen.sh make check
+./autogen.sh ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a ${MAKELOG}
 echo "======================== make dist =========================="
-./autogen.sh make dist
+./autogen.sh ${AUTOGEN_ACTION_MAKE} dist 2>&1 | tee -a ${MAKELOG}
 echo "======================== make distcheck ====================="
-./autogen.sh make distcheck
+./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}

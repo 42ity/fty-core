@@ -8,6 +8,7 @@
 #include "assetcrud.h"
 
 #include "dbpath.h"
+#include "log.h"
 
 TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]")
 {
@@ -211,14 +212,15 @@ TEST_CASE("Common messages: insert_client/delete_client","[common][insert][delet
 
 TEST_CASE("Common messages: insert_client/delete_client fail","[common][insert][delete][client][db]")
 {
-    char name[] = "insert/delete/tooooooooooooooooooooooolongname";
+    LOG_START;
+    char name[] = "insert/delete/tooooooooooooooooooooooolongnameandtooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooolong";
     common_msg_t* response = insert_client (url.c_str(), name);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
     // this row shold not be inserted
     REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT);
+    REQUIRE ( common_msg_errorno (response) == DB_ERROR_INTERNAL);
 
     common_msg_destroy (&response);
 
@@ -291,14 +293,14 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client][db]")
 
     common_msg_destroy (&response);
 
-    common_msg_t* client = generate_client ("toooooooooooooooooooooooooooooolongname");
+    common_msg_t* client = generate_client ("toooooooooooooooooooooooooooooolongnameandmoretooooooooooooooooooolonglonglonglomgname");
     response = update_client (url.c_str(), newid, &client);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
     // this row should not be updated
     REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_BADINPUT );
+    REQUIRE ( common_msg_errorno (response) == DB_ERROR_INTERNAL );
     
     common_msg_destroy (&response);
     common_msg_destroy (&client);

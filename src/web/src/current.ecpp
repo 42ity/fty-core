@@ -10,6 +10,7 @@
 #include "common_msg.h"
 #include "monitor.h"
 #include "data.h"
+#include "upsstatus.h"
 </%pre>
 <%thread scope="global">
 measures_manager mes_mgr;
@@ -70,7 +71,7 @@ std::string dev;
             } else {
 </%cpp>
 { "error":"<$ error $>",
-  "msg":"<$ msg $> $>" }
+  "msg":"<$ msg $>" }
 <%cpp>
             }
             common_msg_destroy(&dta);
@@ -84,12 +85,12 @@ std::string dev;
             json += "{ \"id\":";
             json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
             json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
-            
+
             zlist_t *list = common_msg_measurements(dta);
-            
+
             for (void *it = zlist_first(list); it != nullptr; it = zlist_next(list)) {
                std::vector<std::string> measurements;
-               
+
                cxxtools::split(":", std::string((char*)it),
                                     std::back_inserter(measurements));
 
@@ -111,10 +112,18 @@ std::string dev;
 <%cpp>
                     return HTTP_INTERNAL_SERVER_ERROR;
                }
+               std::string value;
+               if( topic_parts[0] == "status.ups" ) {
+                   value = "\"" + shared::upsstatus_to_string(measurements[0]) + "\"";
+               } else {
+                   value = mes_mgr.map_values(
+                       topic_parts[0],
+                       mes_mgr.apply_scale(
+                           measurements[0],
+                           measurements[1]));
+               }
                json += ", \"" + topic_parts[0] +
-                       "\": " + mes_mgr.map_values(topic_parts[0],
-                       mes_mgr.apply_scale(measurements[0],
-                                     measurements[1]));
+                   "\": " + value;
             }
             json += " }";
             measure.push_back(json);

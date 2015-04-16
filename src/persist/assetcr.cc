@@ -31,8 +31,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "assetcrud.h"
 
-#include "monitor.h" // is_ok_... functions
-
 //////////////////////////////////////////////////////////////////////////////
 ///                               INSERT API                  ////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -261,26 +259,28 @@ db_reply_t
             "           WHERE"
             "               v3.id_asset_device_src = v1.id_asset_device AND"
             "               v3.id_asset_device_dest = v2.id_asset_device AND"
-            "               ( ((v3.src_out == :out) AND (v3.dest_in == :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) "
-            "               v3.id_asset_device_dest = v2.id_asset_device AND"
+            "               ( ((v3.src_out = :out) AND (v3.dest_in = :in)) OR ( v3.src_out is NULL) OR (v3.dest_in is NULL) ) AND"
+            "               v3.id_asset_device_dest = v2.id_asset_device"
             "    )"
         );
         
-        if ( !strcmp(src_out, "") )
-            st.setNull("out");
+        if ( strcmp(src_out, "") == 0 )
+            st = st.setNull("out");
         else
-            st.set("out", src_out);
-        if ( !strcmp(dest_in, "") )
-            st.setNull("in");
+            st = st.set("out", src_out);
+        
+        if ( strcmp(dest_in, "") == 0)
+            st = st.setNull("in");
         else
-            st.set("in", dest_in);
+            st = st.set("in", dest_in);
 
         ret.affected_rows = st.set("src", asset_element_src_id).
                                set("dest", asset_element_dest_id).
                                set("linktype", link_type_id).
                                execute();
+
         ret.rowid = conn.lastInsertId();
-        log_debug ("[t_bios_asset_device]: was inserted %" 
+        log_debug ("[t_bios_asset_link]: was inserted %" 
                                         PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
         LOG_END;
@@ -458,17 +458,23 @@ db_reply_t
         (tntdb::Connection &conn, 
          const char      *element_name, 
          a_elmnt_tp_id_t  element_type_id,
-         a_elmnt_id_t     parent_id)
+         a_elmnt_id_t     parent_id,
+         const char      *status,
+         a_elmnt_pr_t     priority,
+         a_elmnt_bc_t     bc)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
     log_debug ("  element_type_id = %" PRIu32, element_type_id);
     log_debug ("  parent_id = %" PRIu32, parent_id);
+    log_debug ("  status = '%s'", status);
+    log_debug ("  priority = %" PRIu16, priority);
+    log_debug ("  bc = %" PRIu16, bc);
 
     db_reply_t ret = db_reply_new();
  
     // input parameters control 
-    if ( !is_ok_name_length (element_name) )
+    if ( !is_ok_name (element_name) )
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -497,6 +503,7 @@ db_reply_t
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
+    // TODO:should we add more checks here???
     log_debug ("input parameters are correct");
     
     try{
@@ -506,9 +513,9 @@ db_reply_t
             st = conn.prepareCached(
                 " INSERT INTO"
                 "   t_bios_asset_element"
-                "   (name, id_type, id_parent)"
+                "   (name, id_type, id_parent, status, priority, business_crit)"
                 " SELECT"
-                "   :name, :type, NULL"
+                "   :name, :type, NULL, :status, :priority, :business_crit"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -526,6 +533,9 @@ db_reply_t
 
             ret.affected_rows = st.set("name", element_name).
                                    set("type", element_type_id).
+                                   set("status", status).
+                                   set("priority", priority).
+                                   set("business_crit", bc).
                                    execute();
         }
         else
@@ -533,9 +543,9 @@ db_reply_t
             st = conn.prepareCached(
                 " INSERT INTO"
                 "   t_bios_asset_element"
-                "   (name, id_type, id_parent)"
+                "   (name, id_type, id_parent, status, priority, business_crit)"
                 " SELECT"
-                "   :name, :type, :parent"
+                "   :name, :type, :parent, :status, :priority, :business_crit"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -553,6 +563,9 @@ db_reply_t
             ret.affected_rows = st.set("name", element_name).
                                    set("type", element_type_id).
                                    set("parent", parent_id).
+                                   set("status", status).
+                                   set("priority", priority).
+                                   set("business_crit", bc).
                                    execute();
         }
         ret.rowid = conn.lastInsertId();
@@ -576,7 +589,7 @@ db_reply_t
 db_reply_t
     insert_into_asset_links
         (tntdb::Connection       &conn,
-         std::set <link_t> const &links)
+         std::vector <link_t> const &links)
 {
     LOG_START;
     
@@ -604,7 +617,7 @@ db_reply_t
     if ( ret.affected_rows == links.size() )
     {
         ret.status = 1;
-        log_debug ("all linnks were inserted successfully");
+        log_debug ("all links were inserted successfully");
         LOG_END;
         return ret;
     }
@@ -713,17 +726,21 @@ db_reply_t
      const char      *element_name,
      a_elmnt_tp_id_t  element_type_id,
      a_elmnt_id_t     parent_id,
-     zhash_t         *extattributes)
+     zhash_t         *extattributes,
+     const char      *status,
+     a_elmnt_pr_t     priority,
+     a_elmnt_bc_t     bc,
+     std::set <a_elmnt_id_t> const &groups)
 {
     LOG_START;
-    log_debug ("  element_name = '%s'", element_name);
-    log_debug ("  element_type_id = %" PRIu32, element_type_id);
-    log_debug ("  parent_id = %" PRIu32, parent_id);
+//    log_debug ("  element_name = '%s'", element_name);
+//    log_debug ("  element_type_id = %" PRIu32, element_type_id);
+//    log_debug ("  parent_id = %" PRIu32, parent_id);
 
     tntdb::Transaction trans(conn);
 
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, element_type_id, parent_id);
+                        (conn, element_name, element_type_id, parent_id, status, priority, bc);
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();
@@ -741,21 +758,34 @@ db_reply_t
         return reply_insert2;
     }
 
+    auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
+    if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows == 0 ) )
+    {
+        trans.rollback();
+        log_info ("end: device was not inserted (fail into groups)");
+        return reply_insert3;
+    }
+
     trans.commit();
     LOG_END;
     return reply_insert1;
 }
 
 // because of transactions, previos function is not used here!
+// u links, neni definovan dest, prortoze to jeste neni znamo, tak musime
+// uvnitr funkce to opravit
 db_reply_t
     insert_device
        (tntdb::Connection &conn,
-        std::set <link_t>  const &links,
+        std::vector <link_t> &links,
         std::set <a_elmnt_id_t> const &groups,
         const char    *element_name, 
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
-        a_dvc_tp_id_t  asset_device_type_id)
+        a_dvc_tp_id_t  asset_device_type_id,
+        const char    *status,
+        a_elmnt_pr_t   priority,
+        a_elmnt_bc_t   bc)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -765,7 +795,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
         
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, asset_type::DEVICE, parent_id);
+                        (conn, element_name, asset_type::DEVICE, parent_id, status, priority, bc);
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();
@@ -784,7 +814,7 @@ db_reply_t
     }
            
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
-    if ( reply_insert3.affected_rows == 0 )
+    if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows == 0 ) )
     {
         trans.rollback();
         log_info ("end: device was not inserted (fail into groups)");
@@ -800,11 +830,17 @@ db_reply_t
         return reply_insert4;
     }
 
-    auto reply_insert5 = insert_into_asset_links (conn, links);
-    if ( reply_insert5.affected_rows == 0 )
+    for ( auto &one_link: links )
+    {
+        one_link.dest = element_id;
+    }
+
+    auto reply_insert5 = insert_into_asset_links
+           (conn, links);
+    if ( reply_insert5.affected_rows != links.size() )
     {
         trans.rollback();
-        log_info ("end: device was not inserted (fail links)");
+        log_info ("end: not all links were inserted (fail asset_link)");
         return reply_insert5;
     }
 

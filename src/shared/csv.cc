@@ -22,6 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 
 #include "csv.h"
+#include "assetcrud.h"
+#include "dbpath.h"
 
 namespace shared {
 
@@ -36,6 +38,26 @@ static const std::string _ci_strip(const std::string& str) {
      }
 
      return b.str();
+}
+
+CsvMap::CsvMap(const CsvMap::CxxData& data) :
+    _data{},
+    _title_to_index{}
+{
+    //XXX: this is ugly part, which takes the table of cxxtools::String and convert it to table of utf-8 encoded std::string
+    for (size_t i = 0; i != data.size(); i++) {
+        auto row = std::vector<std::string>{};
+        row.reserve(data[0].size());
+
+        /*FIXME: segfaults!
+         * std::transform(data[i].begin(), data[i].end(), row.begin(),
+                [&](const cxxtools::String& s) -> std::string { return to_utf8(s); });
+        */
+        for (const auto& s: data[i]) {
+            row.push_back(cxxtools::Utf8Codec::encode(s));
+        }
+        _data.push_back(row);
+    }
 }
 
 void CsvMap::deserialize() {
@@ -85,124 +107,25 @@ bool CsvMap::hasTitle(const std::string& title_name) const {
     return (_title_to_index.count(title) == 1);
 }
 
-std::vector<std::string> CsvMap::getTitles() const {
-    std::vector<std::string> ret;
-    std::copy(_data[0].cbegin(), _data[0].cend(),
-            std::back_inserter(ret));
+std::set<std::string> CsvMap::getTitles() const {
+    std::set<std::string> ret;
+    ret.insert(_data[0].cbegin(), _data[0].cend());
     return ret;
 }
 
-//TODO TODO TODO
-// helper functions to check data from csv, move to an another location!!!
+//TODO: does not belongs to csv, move somewhere else
+void skip_utf8_BOM (std::istream& i) {
+    int c1, c2, c3;
+    c1 = i.get();
+    c2 = i.get();
+    c3 = i.get();
 
-// check if it is valid location chain
-// valid_location_chain("device", "rack") -> true
-// valid_location_chain("room", "rack") -> false
-static bool is_valid_location_chain(const std::string& type, const std::string& parent_type) {
-    static const std::vector<std::string> LOCATION_CHAIN = \
-        {"datacenter", "room", "row", "rack", "device"};
+    if (c1 == 0xef && c2 == 0xbb && c3 == 0xbf)
+        return;
 
-    size_t i, ti, pi;
-    i = 0;
-    for (auto x : LOCATION_CHAIN) {
-        if (x == type)
-            ti = i;
-        if (x == parent_type)
-            pi = i;
-        i++;
-    }
-    return pi < ti;
+    i.putback(c3);
+    i.putback(c2);
+    i.putback(c1);
 }
-
-// convert input '?[1-5]' to 1-5
-static int get_priority(const std::string& s) {
-    for (int i = 0; i != 2; i++) {
-        if (s[i] <= 49 && s[i] >= 57) {
-            return s[i] - 48;
-        }
-    }
-    return 5;
-}
-
-static bool is_status(const std::string& status) {
-    static const std::set<std::string> STATUSES = \
-    {"active", "nonactive", "spare", "retired"};
-    return (STATUSES.count(status));
-}
-
-static bool is_email(const std::string& str) {
-    for (char ch : str) {
-        if (ch == '@') {
-            return true;
-        }
-    }
-    return false;
-}
-
-/*
- * XXX: an example how it should look like - go through a file and
- * check the values - Database will obsolete most of this
-inline void load_asset_csv(std::istream& input) {
-
-    static const std::set<std::string> TYPES = \
-        {"datacenter", "room", "rack", "row", "device"};
-
-    static const std::set<std::string> SUBTYPES = \
-        {"server", "sts", "ups", "epdu", "pdu", "genset", "main"};
-
-    std::vector<std::vector<std::string> > data;
-    cxxtools::CsvDeserializer deserializer(input);
-    deserializer.delimiter(',');
-    deserializer.readTitle(false);
-    deserializer.deserialize(data);
-
-    shared::CsvMap cm{data};
-    cm.deserialize();
-
-    for (size_t row_i = 1; row_i != cm.rows(); row_i++) {
-        auto name = cm.get(row_i, "name");
-        if (name.size() == 0)
-            throw std::invalid_argument("name is empty");
-
-        auto type = cm.get_strip(row_i, "type");
-        if (TYPES.count(type) == 0) {
-            std::ostringstream b;
-            b << "Type '" << type <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-        }
-
-        auto subtype = cm.get_strip(row_i, "subtype");
-        if (SUBTYPES.count(subtype) == 0) {
-            std::ostringstream b;
-            b << "Subtype '" << subtype <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-        }
-
-        auto location = cm.get(row_i, "location");
-        //TODO: check from DB and call is_valid_location_chain
-
-        auto status = cm.get_strip(row_i, "status");
-        if (STATUSES.count(status) == 0) {
-            std::ostringstream b;
-            b << "Status '" << status <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-            // OR
-            // status = "nonactive";
-        }
-
-        auto bs_critical = cm.get_strip(row_i, "business_critical");
-        if (bs_critical != "yes" && bs_critical != "no") {
-            std::ostringstream b;
-            b << "Business critical '" << status <<"' is not allowed";
-            throw std::invalid_argument(b.str());
-            // OR
-            // bs_critical = "no";
-        }
-
-        int priority = get_priority(
-                cm.get_strip(row_i, "priority"));
-    }
-}
-*/
 
 } //namespace shared

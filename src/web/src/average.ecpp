@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <cxxtools/split.h>
+#include <signal.h>
 
 #include "persistence.h"
 #include "utils.h"
@@ -30,14 +31,20 @@
 <%cpp>
     // TODO: Use shared agent and figure out why it is not working
     char a_name[64];
+    // TODO: Better signal handling
+    #define SIG_SAVE { sigaction(SIGINT, NULL, &sig_int); sigaction(SIGTERM, NULL, &sig_term); }
+    #define SIG_LOAD { sigaction(SIGINT, &sig_int, NULL); sigaction(SIGTERM, &sig_term, NULL); }
+    struct sigaction sig_int, sig_term;
+    SIG_SAVE
     sprintf(a_name, "rest.%d", getpid());
     BIOSAgent agent(a_name);
     if(!agent.connect("ipc://@/malamute")) {
 </%cpp>
         {
-            "msg" : "Can't connect agent"
+            "msg" : "Can't connect agent <$ a_name $>"
         }
 <%cpp>
+        SIG_LOAD
         return HTTP_INTERNAL_SERVER_ERROR;
     }
     // End of ugly hack
@@ -96,6 +103,7 @@
             "msg" : "<$ e.what () $>"
         }
 <%cpp>
+        SIG_LOAD
         return HTTP_BAD_REQUEST;
     }
     catch (const std::exception& e) {
@@ -104,6 +112,7 @@
             "msg" : "<$ e.what () $>"
         }
 <%cpp>
+        SIG_LOAD
         return HTTP_INTERNAL_SERVER_ERROR;
     }
     catch (...) {
@@ -112,6 +121,7 @@
             "msg" : "Unknown internal error."
         }
 <%cpp>
+        SIG_LOAD
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
@@ -123,10 +133,11 @@
     agent.sendto ("cm-agent", "metric/computed/average", &msg);    
     msg = agent.recv_wait (1000);
     char *json = NULL;
+    SIG_LOAD
     if(msg == NULL) {
 </%cpp>
         {
-            "msg" : "Computation module didn't replied."
+            "msg" : "Computation module didn't reply."
         }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;

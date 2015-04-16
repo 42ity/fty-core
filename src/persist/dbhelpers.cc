@@ -177,6 +177,15 @@ bool is_ok_element_type (a_elmnt_tp_id_t element_type_id)
     }
 }
 
+bool is_ok_name (const char* name)
+{
+    size_t length = strlen (name);
+    if ( length == 0 )
+        return false;
+    else 
+        return true;
+}
+
 bool is_ok_keytag (const char *keytag)
 {
     auto length = strlen(keytag);

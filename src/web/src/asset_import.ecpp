@@ -1,0 +1,119 @@
+<%pre>
+#include <string>
+#include <sstream>
+#include <fstream>
+#include <stdexcept>
+#include <cxxtools/jsondeserializer.h>
+
+#include <cerrno>
+#include <cstring>
+#include <unistd.h>
+
+#include "loadcsv.h"
+#include "enc.h"
+#include "subprocess.h"
+</%pre>
+
+<%cpp>
+if (request.getMethod() != "POST") {
+    return HTTP_METHOD_NOT_ALLOWED;
+}
+
+//HARDCODED limit: can't import things larger than 128K
+// this prevents DoS attacks against the box - can be raised if needed
+// don't forget internal processing is in UCS-32, therefor the
+// real memory requirements are ~640kB
+if (request.getContentSize() > 128*1024) {
+    </%cpp>
+    {
+        "error" : "Content size too big, maximum size is 128 kB"
+    }
+    <%cpp>
+        return HTTP_BAD_REQUEST;
+}
+
+// http://www.tntnet.org/howto/upload-howto.html
+const tnt::Multipart& mp = request.getMultipart();
+tnt::Multipart::const_iterator it = mp.find("assets");
+if (it == mp.end()) {
+    </%cpp>
+    {
+        "error" : "file 'assets' not found!"
+    }
+    <%cpp>
+        return HTTP_BAD_REQUEST;
+}
+
+char path[22] = "/tmp/import-csvXXXXXX";
+
+try {
+    int r = ::mkstemp(path);
+    if (r == -1) {
+        throw std::runtime_error{::strerror(errno)};
+    }
+    ::close(r);
+
+    std::ofstream out(path);
+    // store the content in temporary location
+    for (tnt::Part::const_iterator pi = it->getBodyBegin(); pi != it->getBodyEnd(); ++pi)
+        out << *pi;
+
+    out.flush();
+    out.close();
+
+    // check the encoding
+    auto encoding = file_encoding(path);
+    if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
+        std::string msg = "Unsupported encoding '";
+        msg += encoding;
+        msg += "', supported utf-8 or utf-16le";
+        throw std::invalid_argument{msg.c_str()};
+    }
+
+    if (encoding == "utf-16le") {
+        // convert utf-16le using iconv
+        char new_path[22] = "/tmp/import-csvXXXXXX";
+        int r2 = ::mkstemp(new_path);
+        if (r2 == -1) {
+            throw std::runtime_error{::strerror(errno)};
+        }
+        ::close(r2);
+
+        // iconv -f utf-16le -t utf-8 Book1.txt > Book1.utf8.txt
+        shared::Argv args = {"/usr/bin/iconv", "-f", encoding, "-t", "utf-8", path, "-o", new_path};
+        int res = shared::call(args);
+        if (res != 0) {
+            ::unlink(new_path);
+            throw std::runtime_error("Can't convert input file to utf-8");
+        }
+        ::unlink(path);
+        *path = *new_path;
+    }
+
+    //load the file and make the import
+    std::ifstream inp(path);
+    load_asset_csv(inp);
+    inp.close();
+}
+catch (const std::logic_error &e) {
+    ::unlink(path);
+</%cpp>
+{
+    "error" : "<$$ e.what() $>"
+}
+<%cpp>
+    return HTTP_BAD_REQUEST;
+}
+catch (const std::runtime_error &e) {
+    ::unlink(path);
+</%cpp>
+{
+    "error" : "<$$ e.what() $>"
+}
+<%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+//FIXME: the output needs to be finalized in regards to web UI
+//       commented out for now
+//std::string output{"There\twill\tbe\toutput\n"};
+</%cpp>
