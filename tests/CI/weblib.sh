@@ -61,7 +61,7 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 
 _TOKEN_=""
 WEBLIB_FORCEABORT=no
-_weblib_result_printed=no
+_weblib_result_printed=notest
 
 print_result() {
     [ "$_weblib_result_printed" = yes ] && return 0
@@ -106,7 +106,7 @@ print_result() {
 }
 
 test_it() {
-    _weblib_result_printed=no
+    _weblib_result_printed=notyet
     [ -n "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
         TNAME="$1"

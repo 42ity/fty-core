@@ -24,7 +24,7 @@
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=yes determineDirs_default || true
+NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
@@ -177,6 +177,8 @@ kill_daemons() {
   LANG=C
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensuring files for web-test exist and are up-to-date..."
+
+  [ -x "${BUILDSUBDIR}/configure.status" ] || ./autogen.sh ${AUTOGEN_ACTION_CONFIG} || exit
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
 
   logmsg_info "Spawning the web-server in the background..."
@@ -189,7 +191,8 @@ kill_daemons() {
   DBNGPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap 'kill_daemons' 0 1 2 3 15
+  trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' 0
+  trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 15
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
