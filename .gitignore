@@ -134,6 +134,7 @@ bios-server-agent.service
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
 src/web/src/auth.cpp
+src/web/src/asset_import.cpp
 src/web/src/agent.cpp
 src/web/src/average.cpp
 src/web/src/item.cpp
