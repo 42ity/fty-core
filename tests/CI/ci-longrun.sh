@@ -1,4 +1,4 @@
-#!/bin/bash -u
+#!/bin/bash
 
 # Copyright (C) 2014 Eaton
 #
