@@ -49,6 +49,7 @@ class NUTAgent : public BIOSAgent {
         { "charge",      "%" },
         { "frequency",   "Hz"},
         { "power",       "W" },
+        { "runtime",     "s" },
     };
 };
 
