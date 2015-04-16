@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
             Alena  Chernikava <alenachernikava@eaton.com>
 */
 #include <tntdb/connect.h>
+#include <cxxtools/regex.h>
+
 #include "loadcsv.h"
 
 #include "csv.h"
@@ -67,16 +69,6 @@ static int
     return 5;
 }
 
-static bool
-    is_status
-        (const std::string& status)
-{
-    //TODO STATIC common
-    static const std::set<std::string> STATUSES = \
-    {"active", "nonactive", "spare", "retired"};
-    return (STATUSES.count(status));
-}
-
 static bool 
     is_email
         (const std::string& str)
@@ -107,6 +99,35 @@ static std::map<std::string,int>
     return res.item;
 }
 
+static bool
+    check_location_u_pos
+        (const std::string &s)
+{
+    cxxtools::Regex regex("^[0-9]+([uU]|[uU][rR])?");
+    if ( !regex.match(s) )
+        return false;
+    else
+        return true;
+}
+
+static bool
+    match_ext_attr
+        (std::string value, std::string key)
+{
+    if ( key == "location_u_pos" )
+    {
+        return check_location_u_pos(value);
+    }
+    return true;
+}
+
+/*
+ * \brief Processes a single row from csv file
+ *
+ * \param conn - a connection to DB
+ * \param cm - already parsed csv file
+ * \param row_i - number of row to process
+ */
 static void 
     process_row
         (tntdb::Connection &conn,
@@ -117,7 +138,7 @@ static void
     log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
-        {"active", "inactive"}; // TODO check
+        {"active", "inactive", "spare", "retired"};
 
     static auto TYPES = read_element_types (conn);
 
@@ -332,7 +353,8 @@ static void
         auto value = cm.get(row_i, key);
         // TODO: on some ext attributes need to have more checks
         if ( !value.empty() )
-            zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+            if ( match_ext_attr (value, key) )
+                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
     }
     // if the row represents group, the subtype represents a type 
     // of the group.
@@ -367,6 +389,16 @@ static void
     }
     LOG_END;
 }
+
+/*
+ * \brief Checks if mandatory columns are present in csv file
+ *
+ * This check is implemented according BAM DC010
+ *
+ * \param cm - already parsed csv file
+ *
+ * \return true if all mandatory columns are present
+ */
 
 static bool
     mandatory_present
@@ -403,6 +435,7 @@ void
     {
         std::string msg{"mandatory columns are not present, import is aborted"};
         log_error("%s\n", msg.c_str());
+        LOG_END;
         throw std::invalid_argument(msg.c_str());
     }
 
@@ -414,6 +447,7 @@ void
     {
         std::string msg{"no connection to database"};
         log_error("%s\n", msg.c_str());
+        LOG_END;
         throw std::runtime_error(msg.c_str());
     }
     
@@ -428,6 +462,7 @@ void
             log_warning ("row %zu not imported: %s", row_i, e.what());
         }
     }
+    LOG_END;
     // as we want to have an whole file returned plus additional information, than
     // we should do it somwhere outside,
     // here we just return information about status of all rows from the input csv
