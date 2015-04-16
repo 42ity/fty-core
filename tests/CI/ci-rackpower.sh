@@ -30,15 +30,48 @@
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
+NEED_BUILDSUBDIR=yes determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-if [ ! -f Makefile ] ; then
-    ./autogen.sh --nodistclean configure
+WEBTESTPID=""
+DBNGPID=""
+kill_daemons() {
+    if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
+        logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
+        kill -2 "$WEBTESTPID"
+    fi
+    if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
+        logmsg_info "Killing db-ng PID $DBNGPID to exit"
+        kill -2 "$DBNGPID"
+    fi
+
+    killall -2 tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall    tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+
+    ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
+        ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
+        logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
+        { killall -9 tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
+
+    return 0
+}
+
+if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+    ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
 fi
-make V=0 web-test-deps
-make web-test >/tmp/web-test.log 2>&1 &
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng
+./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
+    >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
+
+# TODO: this requirement should later become the REST AGENT
+logmsg_info "Spawning the db-ng server in the background..."
+${BUILDSUBDIR}/db-ng &
+DBNGPID=$!
+
+# Ensure that no processes remain dangling when test completes
+trap 'kill_daemons' 0 1 2 3 15
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"

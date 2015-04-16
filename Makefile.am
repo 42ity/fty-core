@@ -248,6 +248,13 @@ noinst_LTLIBRARIES +=		libpriv-csv.la
 libpriv_csv_la_SOURCES =	src/shared/csv.h \
 				src/shared/csv.cc
 
+libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_src_dir)/src/msg
+
 libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
 
 noinst_LTLIBRARIES += 		libpriv-db.la
@@ -281,6 +288,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/loadcsv.h \
+			src/persist/loadcsv.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -293,8 +302,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
-libpriv_db_la_LIBADD =	libbiosapi.la
-
+libpriv_db_la_LIBADD =	libbiosapi.la \
+			libpriv-log.la libpriv-csv.la
 
 noinst_LTLIBRARIES +=	libpriv-proto.la
 
@@ -423,13 +432,25 @@ test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
 test_cidr_LDFLAGS =	-lcidr
 
 check_PROGRAMS += 	test-csv
+
 test_csv_SOURCES =		src/shared/csv.h \
-					tests/shared/test-csv.cc
-test_csv_LDADD = 		libpriv-csv.la \
-						libpriv-log.la \
-					libpriv-test-run.la
+					    tests/shared/test-csv.cc
+
+test_csv_LDADD = 		libpriv-log.la \
+						libpriv-db.la \
+						libpriv-csv.la \
+					    libpriv-test-run.la \
+					    libpriv-proto.la
+
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(abs_top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/src/simple \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/tests/include
+
 test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
 bin_PROGRAMS += 	test-db
@@ -450,6 +471,26 @@ test_db_CPPFLAGS = \
 
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
+bin_PROGRAMS += 	test-loadcsv
+
+test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
+
+test_loadcsv_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-test-run.la
+
+test_loadcsv_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
+
 bin_PROGRAMS += 	test-db2
 
 test_db2_SOURCES = \
@@ -459,11 +500,11 @@ test_db2_SOURCES = \
 			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
+			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-test-run.la
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -755,22 +796,22 @@ dshell_LDADD = \
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
 
-client_PROGRAMS +=	driver-nut
+client_PROGRAMS +=	agent-nut
 
-driver_nut_SOURCES = \
+agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
 			src/agents/nut/nut-agent.cc \
 			src/shared/upsstatus.cc \
 			src/shared/utils_ymsg.c
 
-driver_nut_LDADD = \
+agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la
 
-driver_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
-driver_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=	agent-inventory
 
@@ -812,7 +853,6 @@ cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 #
 
-
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
@@ -832,13 +872,15 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
-                      src/web/src/average.cpp
+                      src/web/src/average.cpp src/web/src/asset_import.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/mock.cc   src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc
+                      src/shared/upsstatus.cc src/web/src/enc.cc
+
+EXTRA_DIST +=		src/web/include/enc.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -857,13 +899,13 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-			-module -lm -ltntdb -ltntnet -lcidr
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			libpriv-log.la libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la
+			 libpriv-subprocess.la \
+			libpriv-utils.la libpriv-defs.la 
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -939,7 +981,8 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
-			$(top_srcdir)/src/web/include/*.h
+			$(top_srcdir)/src/web/include/*.h \
+			$(top_srcdir)/tests/shared/test-csv.cc.csv
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
@@ -953,11 +996,11 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-bios-driver-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
+bios-agent-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
-bios-driver-nut.service: $(top_srcdir)/tools/bios-driver-nut.service.in
+bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
 bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
@@ -965,7 +1008,7 @@ bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.i
 
 
 systemdsystemunit_DATA = \
-			$(top_builddir)/bios-driver-nut.service \
+			$(top_builddir)/bios-agent-nut.service \
 			$(top_builddir)/bios-driver-netmon.service \
 			$(top_builddir)/bios-db.service \
 			$(top_builddir)/bios-server-agent.service \
@@ -1579,7 +1622,7 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
 	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
 	      echo "INFO: Replacing '$@' with newly generated data" && \
-	      mv -f "$@.tmp" "$@"; \
+	      mv -f "$@.tmp" "$@"; touch "$@"; \
 	    else echo "INFO: No substantial changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; \
 	    fi; \
 	 else \
@@ -1610,12 +1653,12 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
 	    echo "INFO: No changes in contents of '$@'" || \
 	    { echo "INFO: Replacing '$@' with newly generated data"; \
-	      mv -f "$@.tmp" "$@"; } } } || { \
+	      mv -f "$@.tmp" "$@"; touch "$@"; } } } || { \
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch -r "$<" "$@" || true
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
 
 src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
 
@@ -1650,6 +1693,6 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
 	  true
 	@/bin/rm -f "$@.tmp"
-	@[ -s "$@" ] || echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"
-	@touch -r "$<" "$@" || true
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
 
