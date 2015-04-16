@@ -36,7 +36,7 @@ set -e
 echo "============= auto-configure and rebuild ===================="
 ./autogen.sh --configure-flags \
     "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
-    ${AUTOGEN_ACTION_BUILD} 2>&1 | tee ${MAKELOG}
+    ${AUTOGEN_ACTION_BUILD} all-buildproducts 2>&1 | tee ${MAKELOG}
 
 echo "========================= cppcheck =========================="
 CPPCHECK_RES=0
