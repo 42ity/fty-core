@@ -23,7 +23,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_LOADCSV_H
 #define SRC_PERSIST_LOADCSV_H
 
-
+/*
+ * \brief Processes a csv file
+ *
+ * Resuls are written in DB and into log
+ *
+ * \param input - input file
+ */
 void load_asset_csv(std::istream& input);
 
 #endif
