@@ -65,13 +65,6 @@ SHOULD_AUTORECONF=no
 [ x"$FORCE_AUTORECONF" != xyes -a x"$FORCE_AUTORECONF" != xno ] && \
     FORCE_AUTORECONF=auto
 
-# Likewise, detect if prerequisite packages needed for the build should
-# automagically be installed (creates a core-build-deps_0.1_all.deb in
-# workspace directory); root privs or sudo permissions may be required
-SHOULD_MKBUILDDEPS=no
-[ x"$FORCE_MKBUILDDEPS" != xyes -a x"$FORCE_MKBUILDDEPS" != xno ] && \
-    FORCE_MKBUILDDEPS=auto
-
 if [ x"$FORCE_AUTORECONF" != xyes ]; then
     if [ ! -s "./configure" ]; then
 	echo "autogen.sh: info: configure does not exist."
@@ -140,60 +133,6 @@ if [ ! -s "./configure" -o ! -x "./configure" ]; then
     echo "autogen.sh: error: configure does not exist or is not executable!" 1>&2
     exit 1
 fi
-
-MKBD_DSC="`dirname $0`/obs/core.dsc"
-MKBD_DEB_PATTERN='*-build-deps_*_all.deb'
-MKBD_DEB="`ls -1 $MKBD_DEB_PATTERN 2>/dev/null | egrep 'bios|core' | head -1`" || \
-    MKBD_DEB=""
-[ -z "$MKBD_DEB" ] && MKBD_DEB="core-build-deps_0.1_all.deb"
-
-if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DSC" ] ; then
-    # mk-build-deps and debian packaging are at all supported
-    if [ x"$FORCE_MKBUILDDEPS" != xyes ]; then
-        if [ ! -s "$MKBD_DEB" ]; then
-	    echo "autogen.sh: info: $MKBD_DEB does not exist."
-	    SHOULD_MKBUILDDEPS=yes
-        else
-	    _OUT="`find . -maxdepth 1 -type f -name "$MKBD_DEB_PATTERN" \! -newer "$MKBD_DSC"`"
-	    if [ $? != 0 -o x"$_OUT" != x"" ]; then
-	        echo "autogen.sh: info: $MKBD_DEB is older than $MKBD_DSC."
-	        SHOULD_MKBUILDDEPS=yes
-            fi
-	fi
-    fi
-
-    case x"$FORCE_MKBUILDDEPS" in
-    xauto)
-	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
-	    FORCE_MKBUILDDEPS=yesauto
-	else
-	    echo "autogen.sh: info: no prerequisite package requirement changes detected."
-	fi
-	;;
-    xno)
-	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
-	    echo "autogen.sh: info: not verifying and perhaps installing prerequisite packages, even though the system may be obsolete." >&2
-	fi # else = don't want and don't have to verify pkgs, noop
-	;;
-    esac
-
-    if [ x"$FORCE_MKBUILDDEPS" = xyes -o x"$FORCE_MKBUILDDEPS" = xyesauto ]; then
-        echo "autogen.sh: info: Making sure all needed packages are installed (note: may try to elevate privileges)."
-        { echo "Trying direct invokation..."
-          mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "Retrying sudo..."
-          sudo mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "Retrying su..."
-          su - -c "mk-build-deps --tool 'apt-get --yes --force-yes' --install '$MKBD_DSC'"; }
-        RES=$?
-        if [ $RES -ne 0 ]; then
-            echo "autogen.sh: error: mk-build-deps exited with status $RES" 1>&2
-            [ x"$FORCE_MKBUILDDEPS" = xyes ] && \
-                exit 1 || \
-                echo "...continuing with autogen, but it may fail later due to this." >&2
-        fi
-    fi
-fi # clause-if we try mk-build-deps at all?
 
 if [ $# = 0 ]; then
     # Ensure that an exit at this point is "successful"
