@@ -1,16 +1,16 @@
 #include <catch.hpp>
 
-#include <utils.h>
+#include "utils.h"
 
-TEST_CASE("streq","[utils][streq]"){
+TEST_CASE("str_eq","[utils][streq]"){
     CHECK(streq(NULL, NULL));
-    CHECK_FALSE(streq("a", NULL));
-    CHECK_FALSE(streq(NULL, "b"));
+    CHECK_FALSE(str_eq("a", NULL));
+    CHECK_FALSE(str_eq(NULL, "b"));
     CHECK(streq("a", "a"));
-    CHECK_FALSE(streq("yyy","bb"));
-    CHECK_FALSE(streq("yyy","yy"));
-    CHECK_FALSE(streq("YY","yy"));
-    CHECK_FALSE(streq("\0",NULL));
+    CHECK_FALSE(str_eq("yyy","bb"));
+    CHECK_FALSE(str_eq("yyy","yy"));
+    CHECK_FALSE(str_eq("YY","yy"));
+    CHECK_FALSE(str_eq("\0",NULL));
     CHECK(streq("","\0")); 
 } 
 
@@ -18,8 +18,8 @@ TEST_CASE("streq","[utils][streq]"){
 TEST_CASE("str_bool","[str_bool][utils]") {
     CHECK(streq(str_bool(true), "true"));
     CHECK(streq(str_bool(false), "false"));
-    CHECK_FALSE(streq(str_bool(true),"True"));
-    CHECK_FALSE(streq(str_bool(false),"False"));
+    CHECK_FALSE(str_eq(str_bool(true),"True"));
+    CHECK_FALSE(str_eq(str_bool(false),"False"));
 }
 
 TEST_CASE("safe_str","[safe_str][utils]"){

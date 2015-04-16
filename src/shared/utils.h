@@ -43,7 +43,7 @@ const char *safe_str(const char *s);
  * This is a safe variant, so it handles NULL inputs well
  * a == b == NULL ->true
  * */
-bool streq(const char *a, const char *b);
+bool str_eq(const char *a, const char *b);
 
 //! Return true if string representation of average step is supported 
 bool is_average_step_supported (const char *step);
@@ -52,7 +52,7 @@ bool is_average_step_supported (const char *step);
 bool is_average_type_supported (const char *type);
 
 // Macros
-#define STR (X) #X
+#define STR(X) #X
 
 #ifdef __cplusplus
 }

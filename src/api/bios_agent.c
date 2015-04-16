@@ -266,6 +266,10 @@ bios_get_stream_main () {
     return BIOS_MLM_STREAM;
 }
 
+uint16_t
+bios_agent_seq (bios_agent_t *self) {
+    return (uint16_t) zmq_atomic_counter_value (self->seq);
+}
 
 bool
 ymsg_is_ok (ymsg_t *self) {

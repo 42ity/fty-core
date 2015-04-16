@@ -6,6 +6,7 @@
 #include "dbpath.h"
 #include "log.h"
 #include "defs.h"
+#include "str_defs.h"
 
 #include <stdio.h>
 #include <zsys.h>
@@ -31,7 +32,7 @@ int main (int argc, char *argv []) {
         log_error ("db-ng: error mlm_client_new");
         return 1;
     }
-    if(mlm_client_connect(client, addr, 1000, "persistence.measurement") != 0) {
+    if(mlm_client_connect(client, addr, 1000, BIOS_AGENT_NAME_DB_MEASUREMENT) != 0) {
         log_error ("db-ng: server not reachable at '%s'", addr);
         return 1;
     }

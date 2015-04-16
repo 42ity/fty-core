@@ -7,6 +7,10 @@ const char* DRIVER_NMAP_REPLY = "ipc://@/bios/driver/nmap_reply";
 
 const char* MLM_ENDPOINT = "ipc://@/malamute";
 
+const char *BIOS_AGENT_NAME_COMPUTATION = "cm-agent";
+const char *BIOS_AGENT_PREFIX_REST = "rest.";
+const char *BIOS_AGENT_NAME_DB_MEASUREMENT = "persistence.measurement";
+
 const char *AVG_STEPS[AVG_STEPS_SIZE] = {
     "15m",
     "30m",

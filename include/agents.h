@@ -93,30 +93,70 @@ BIOS_EXPORT int
                              int32_t *value,
                              int32_t *scale,
                              int64_t *time);
-
+/*
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source);
 
+/*!
+ \brief Decode request message TODO
+ \note You are responsible for freeing `type`, `step`, `source` on success
+ \return 0 on success, -1 or failure
+*/
 BIOS_EXPORT int
-    bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
+    bios_web_average_request_decode (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
 
+/*!
+ \brief Encode reply message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_web_average_reply_encode (const char *json);
 
+/*!
+ \brief Decode reply message TODO
+ \note You are responsible for freeing `json` on success
+ \return 0 on success, -1 or failure
+*/
 BIOS_EXPORT int
-    bios_web_average_reply_decode (ymsg_t **self_p, char **json);
+    bios_web_average_reply_decode (ymsg_t *self, char **json);
 
+/*!
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \note You are responsible for freeing `subject` on success
+ \return Encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
-    bios_db_measurements_read_request_encode (const char *start_timestamp, const char *end_timestamp, uint64_t element_id, const char *source, char **subject);
+    bios_db_measurements_read_request_encode (int64_t start_timestamp, int64_t end_timestamp, uint64_t element_id, const char *source, char **subject);
 
+/*!
+ \brief Decode request message TODO
+ \note You are responsible for freeing `source` on success
+ \return 0 on success, -1 or failure
+*/
 BIOS_EXPORT int
-    bios_db_measurements_read_request_decode (ymsg_t **self_p, char **start_timestamp, char **end_timestamp, uint64_t *element_id, char **source);
-    
+    bios_db_measurements_read_request_decode (ymsg_t *self, int64_t *start_timestamp, int64_t  *end_timestamp, uint64_t *element_id, char **source);
+
+/*!
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return Encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_db_measurements_read_reply_encode (const char *json);
 
+/*!
+ \brief Decode request message TODO
+ \note You are responsible for freeing `json`
+ \return 0 on success, -1 or failure
+*/
 BIOS_EXPORT int
-    bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json);
+    bios_db_measurements_read_reply_decode (ymsg_t *self, char **json);
 
 #ifdef __cplusplus
 }

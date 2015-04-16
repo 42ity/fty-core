@@ -33,7 +33,7 @@ const char *safe_str(const char *s) {
     return s == NULL ? "(null)" : s;
 }
 
-bool streq(const char *a, const char *b) {
+bool str_eq(const char *a, const char *b) {
 	if (!a || !b) {
 		return (!a && !b);
 	}

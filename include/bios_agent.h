@@ -77,7 +77,7 @@ BIOS_EXPORT int
  \param[in] address Name of target bios agent
  \param[in] subject Message subject
  \param[in] send_p  ROZP SEND message to be sent, upon which it gets destroyed and nullified.
- \note Message is destroyed and nullified when sent.
+ \note Message is destroyed and nullified even on failure.
  \return 0 on success, -2 on bad input (bad arguments), -1 on fail for any other reason
 */
 BIOS_EXPORT int
@@ -238,6 +238,9 @@ BIOS_EXPORT zsock_t *
 BIOS_EXPORT const char *
     bios_get_stream_main ();
 
+//! Get value of client member 'seq' which will be used on next send
+BIOS_EXPORT uint16_t
+    bios_agent_seq (bios_agent_t *self);
 
 //! Returns true if status value of ROZP message is OK, false otherwise 
 BIOS_EXPORT bool

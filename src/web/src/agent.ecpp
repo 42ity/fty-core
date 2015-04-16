@@ -7,21 +7,22 @@
 
 #include "bios_agent++.h"
 #include "ymsg.h"
+#include "str_defs.h"
 
 </%pre>
 <%thread scope="global">
     BIOSAgent agent("to_init");
 </%thread>
 <%cpp>
-    if(agent.agentName() == "to_init") {
+    if(agent.agentName() == "to_init") {        
         char a_name[64];
-        sprintf(a_name, "rest.%d", getpid());
-	agent.agentName(a_name);
-	if(!agent.connect("ipc://@/malamute")) {
+        sprintf (a_name, "%s%d", BIOS_AGENT_PREFIX_REST, getpid ());
+    	agent.agentName(a_name);
+	    if (!agent.connect (MLM_ENDPOINT)) {
 </%cpp>
-        {
-            "msg" : "Can't connect agent <$ a_name $>"
-        }
+            {
+                    "msg" : "Can't connect agent <$ a_name $>"
+            }
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
