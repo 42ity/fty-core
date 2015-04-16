@@ -390,7 +390,7 @@ void
         (std::istream& input)
 {
     LOG_START;
-    std::vector <std::vector<std::string> > data;
+    std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
     // TODO make it configurable
     deserializer.delimiter('\t');
