@@ -225,8 +225,6 @@ libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h \
 				src/include/str_defs.h
 
-#libpriv_utils_la_LIBADD = libpriv-defs.la
-
 noinst_LTLIBRARIES += 		libpriv-log.la
 
 libpriv_log_la_SOURCES = 	src/shared/log.h \
@@ -705,7 +703,8 @@ db_ng_LDADD = \
 			libpriv-cidr.la \
 			libpriv-log.la \
             libpriv-proto.la \
-			libbiosapi.la
+			libbiosapi.la \
+			libpriv-defs.la
 
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -799,15 +798,17 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	cm-agent
 
 cm_agent_SOURCES = \
-			src/agents/computation/cm-agent.cc
+			src/agents/computation/cm-agent.cc \
+			src/shared/utils_ymsg.c
 
 cm_agent_LDADD = \
 			libpriv-log.la \
-			libpriv-utils.la
+			libpriv-utils.la \
+			libpriv-defs.la
 
-cm_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+cm_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)
+cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)					
 
 #
 
