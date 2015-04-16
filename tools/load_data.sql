@@ -56,6 +56,9 @@ SELECT @test_topic_s_d_status_ups := id FROM t_bios_measurement_topic WHERE topi
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "charge.battery@select_device" );
 SELECT @test_topic_s_d_charge_battery := id FROM t_bios_measurement_topic WHERE topic = "charge.battery@select_device";
 
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "s", "runtime.battery@select_device" );
+SELECT @test_topic_s_d_runtime_battery := id FROM t_bios_measurement_topic WHERE topic = "runtime.battery@select_device";
+
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "load.default@select_device" );
 SELECT @test_topic_s_d_load_default := id FROM t_bios_measurement_topic WHERE topic = "load.default@select_device";
 
@@ -103,6 +106,11 @@ insert into t_bios_measurement
     (id, timestamp, value, scale, topic_id)
 values 
     (NULL, "2014-11-12 09:59:58", 9310, -2, @test_topic_s_d_charge_battery );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 3600, 0, @test_topic_s_d_runtime_battery );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
