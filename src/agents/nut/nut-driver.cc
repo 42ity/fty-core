@@ -127,7 +127,7 @@ static const std::vector<std::string> inventoryNUT {
 static const std::vector<std::string> inventoryBIOS {
     "model",
     "manufacturer",
-    "serial",
+    "serial_no",
     "type",
     "device.description",
     "device.contact",
