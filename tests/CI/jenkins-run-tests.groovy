@@ -31,7 +31,7 @@ def doJob(name,params) {
     if( job.isDisabled() ) return 0;
     fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
     fut.waitForStart();
-    println "    See " + job.getLastBuild().getAbsoluteUrl() + "consoleFull for console output.";
+    println "See " + job.getLastBuild().getAbsoluteUrl() + "consoleFull for console output.";
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
@@ -111,4 +111,6 @@ for(
     }
 }
 
-/* TODO: Print some "Metadata about the Build" here, like the username, duration, scheduledOn... */
+println "=== Overall build result: " + build.getResult().toString();
+println "Build scheduled: " + build.getTimestamp().getTime().toString();
+println "Build duration: " + build.getDurationString();
