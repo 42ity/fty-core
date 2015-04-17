@@ -14,6 +14,7 @@ void Alert::state(alert_state_t newState)
         std::cout << "changing state to " << newState << "\n";
         _state = newState;
         _published = 0;
+        _persistenceInformed = false;
         _since = std::time(NULL);
     }
 }
@@ -27,6 +28,9 @@ time_t Alert::since()
 std::string Alert::name() { return _name; }
 void Alert::name(const char *name) { _name = name; }
 void Alert::name(const std::string &name) { _name = name; }
+
+bool Alert::persistenceInformed() { return _persistenceInformed; }
+void Alert::persistenceInformed(bool informed) { _persistenceInformed = informed; }
 
 std::string Alert::devices() { return _devices; }
 std::string Alert::description()

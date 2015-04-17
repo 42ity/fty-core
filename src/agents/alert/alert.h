@@ -61,6 +61,8 @@ class Alert {
     std::string name();
     void name(const char *name);
     void name(const std::string &name);
+    bool persistenceInformed();
+    void persistenceInformed(bool informed);
     std::string devices();
     std::string description();
     alert_severity_t severity();
@@ -79,6 +81,7 @@ class Alert {
     
     time_t _since = 0;
     time_t _published = 0;
+    bool _persistenceInformed = false;
     std::string _name;
     std::string _devices;
     

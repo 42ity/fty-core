@@ -96,8 +96,10 @@ void AlertAgent::onSend( ymsg_t **message )
 
 void AlertAgent::onReply( ymsg_t **message )
 {
-    //ymsg_print( *message );
+    std::cout << "onReply start\n";
+    ymsg_print( *message );
     ymsg_destroy( message );
+    std::cout << "onReply end\n";
 }
 
 void AlertAgent::onPoll() {
@@ -111,8 +113,16 @@ void AlertAgent::onPoll() {
                 NULL, // TODO get description into alert
                 al.since());
             std::string topic = "alert." + al.name() + "@" + al.devices();
+            if( ! al.persistenceInformed() ) {
             ymsg_print(msg);
-            send( topic.c_str(), &msg );
+                ymsg_t *pmsg = ymsg_dup(msg);
+                ymsg_set_repeat( pmsg, true );
+                ymsg_print(pmsg);
+                sendto("persistence.measurement",topic.c_str(),&pmsg);
+                ymsg_destroy(&pmsg);
+            }
+            // ymsg_print(msg);
+            // send( topic.c_str(), &msg );
             ymsg_destroy(&msg);
             al.published();
             zclock_sleep(100);
