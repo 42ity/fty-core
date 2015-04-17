@@ -50,12 +50,18 @@ DB_CRUD="crud_test.sql"
 
 RESULT=0
 
+echo "--------------- ensure bins to test --------------"
+./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
+    test-db test-db2 \
+    test-db-asset-crud test-dbtopology test-totalpower \
+    || true
+
 echo "-------------------- reset db --------------------"
 mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_DATA" || CODE=$? die "Failed to load $DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db && "$BUILDSUBDIR"/test-db
+"$BUILDSUBDIR"/test-db
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db failed"
@@ -63,7 +69,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 echo "-------------------- test-db2 --------------------"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db2 && "$BUILDSUBDIR"/test-db2
+"$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db2 failed"
@@ -74,9 +80,8 @@ fi
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
 mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_DATA"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db-asset-crud && \
-    "$BUILDSUBDIR"/test-db-asset-crud
+mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_CRUD"
+"$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db-asset-crud failed"
@@ -84,7 +89,6 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
     mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
@@ -99,16 +103,9 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         RESULT=1
     fi
 done
-if [ "$?" != 0 ] ; then
-    echo "----------------------------------------"
-    echo "ERROR: test-dbtopology failed"
-    echo "----------------------------------------"
-    RESULT=1
-fi
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-totalpower 
 mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
 mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER" || CODE=$? die "Failed to load $DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
