@@ -189,7 +189,8 @@ update_compiled() {
     if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
         ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
     fi
-    ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng agent-nut driver-nmap netmon
+    ./autogen.sh --optparmake ${AUTOGEN_ACTION_MAKE} \
+        web-test-deps db-ng agent-nut driver-nmap netmon
 }
 
 start() {
@@ -204,6 +205,9 @@ Options:
     --stop       stop BIOS processes
     --start      start BIOS processes (does restart if BIOS is running)
     --status     check whether all processes are running
+    --update-compiled   when using custom compiled code (rather than packaged)
+                 use this option to ensure needed programs are up-to-date
+                 (invoked automatically before a start)
     --help|-h    print this help"
 }
 
@@ -222,6 +226,9 @@ while [ $# -gt 0 ] ; do
             ;;
         --status)
             OPERATION=status
+            ;;
+        --update-compiled)
+            OPERATION=update_compiled
             ;;
         *)
             echo "Invalid option $1" 1>&2
