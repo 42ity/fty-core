@@ -860,7 +860,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
-                      src/web/src/average.cpp src/web/src/asset_import.cpp
+                      src/web/src/average.cpp src/web/src/asset_import.cpp \
+                      src/web/src/alerts.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
