@@ -184,7 +184,7 @@ update_compiled() {
     if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
         ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
     fi
-    ./autogen.sh --optparmake ${AUTOGEN_ACTION_MAKE} \
+    ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
         web-test-deps db-ng agent-nut driver-nmap netmon
 }
 
