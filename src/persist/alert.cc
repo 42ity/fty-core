@@ -90,7 +90,8 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
             "   t_bios_alert"
-            "   (rule_name, priority, state, descriprion, notification, from, till)"
+            "   (rule_name, priority, state, descriprion,"
+            "   notification, from, till)"
             " SELECT"
             "    :rule, :priority, :state, :desc, :note, :from, NULL"
             " FROM"
@@ -417,4 +418,151 @@ db_reply_t
         LOG_END_ABNORMAL(e);
         return ret;
     }
+}
+
+
+//=============================================================================
+db_reply_t
+    insert_new_alert 
+        (tntdb::Connection  &conn,
+         const char         *rule_name,
+         a_elmnt_pr_t        priority,
+         m_alrt_state_t      alert_state,
+         const char         *description,
+         m_alrt_ntfctn_t     notification,
+         int64_t             date_from,
+         std::vector<std::string> device_names)
+{
+    LOG_START;
+ 
+    tntdb::Transaction trans(conn);
+    auto reply_internal1 = insert_into_alert
+        (conn, rule_name, priority, alert_state, description,
+         notification, date_from);
+    if ( ( reply_internal1.status == 0 ) ||
+         ( reply_internal1.affected_rows == 0 ) )
+    {
+        trans.rollback();
+        log_info ("end: alarm was not inserted (fail in alert");
+        return reply_internal1;
+    }
+    auto alert_id = reply_internal1.rowid;
+
+    auto reply_internal2 = insert_into_alert_devices
+                                    (conn, alert_id, device_names);
+    if ( ( reply_internal2.status == 0 ) ||
+         ( reply_internal2.affected_rows == 0 ) )
+    {
+        trans.rollback();
+        log_info ("end: alarm was not inserted (fail in alert devices");
+        return reply_internal2;
+    }
+    trans.commit();
+    LOG_END;
+    return reply_internal1;
+}
+
+
+//=============================================================================
+db_reply <std::vector<db_alert_t>>
+    select_alert_all_opened
+        (tntdb::Connection  &conn)
+{   
+    LOG_START;
+    std::vector<db_alert_t> item{};
+    db_reply<std::vector<db_alert_t>> ret = db_reply_new(item);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "    v.id, v.rule_name, v.priority, v.alert_state,"
+                "    v.descriprion, v.notification, v.date_from, v.date_till"
+                " FROM"
+                "   v_bios_alert"
+                " WHERE date_till is NULL"
+        );
+        tntdb::Result res = st.select();
+        
+        log_debug ("[t_bios_alert]: was %u rows selected", res.size());
+
+        for ( auto &r : res ) {
+            std::vector<m_dvc_id_t> dvc_ids{}; 
+            db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+
+            r[0].get(m.id);
+            r[1].get(m.rule_name);
+            r[2].get(m.priority);
+            r[3].get(m.alert_state);
+            r[4].get(m.description);
+            r[5].get(m.notification);
+            r[6].get(m.date_from);
+            r[7].get(m.date_till);
+            
+            auto reply_internal = select_alert_devices (conn, m.id);
+            if ( reply_internal.status == 0 )
+            {
+                ret.status     = 0;
+                ret.errtype    = DB_ERR;
+                ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
+                ret.msg        = "error in device selecting";
+                ret.item.clear();
+                log_error ("end: %s, %s", "ignore insert", ret.msg);
+                return ret;
+            }
+            ret.item.push_back(m);
+        }
+        ret.status = 1;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    LOG_END;
+    return ret;
+}
+
+//=============================================================================
+db_reply <std::vector<m_dvc_id_t>>
+    select_alert_devices
+        (tntdb::Connection &conn,
+         m_alrt_id_t        alert_id)
+{   
+    LOG_START;
+    std::vector<m_dvc_id_t> item{};
+    db_reply<std::vector<m_dvc_id_t>> ret = db_reply_new(item);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "    v.device_id"
+                " FROM"
+                "   v_bios_alert_device"
+                " WHERE alert_id = :alert"
+        );
+        tntdb::Result res = st.set("alert", alert_id).
+                               select();
+        
+        log_debug ("[t_bios_alert_device]: was %u rows selected", res.size());
+
+        for ( auto &r : res ) {
+            m_dvc_id_t device_id = 0;
+            r[0].get(device_id);
+            ret.item.push_back(device_id);
+        }
+        ret.status = 1;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    LOG_END;
+    return ret;
 }

@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SRC_PERSIST_DBHELPERS_H_
 
 #include <czmq.h>
+#include <vector>
 #include "dbtypes.h"
 
 #include "preproc.h"
@@ -107,6 +108,21 @@ struct db_a_elmnt_t {
     a_elmnt_pr_t     priority;
     a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
+};
+
+/** 
+ * \brief helper structure for results of v_bios_alert + v_bios_alert_devices
+ */
+struct db_alert_t {
+    m_alrt_id_t         id;
+    std::string         rule_name;
+    a_elmnt_pr_t        priority;
+    m_alrt_state_t      alert_state;
+    std::string         description;
+    m_alrt_ntfctn_t     notification;
+    int64_t             date_from;
+    int64_t             date_till;
+    std::vector<m_dvc_id_t> device_ids;
 };
 
 

@@ -77,4 +77,47 @@ db_reply_t
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 
+
+db_reply_t
+    insert_into_alert_devices 
+        (tntdb::Connection  &conn,
+         m_alrt_id_t               alert_id,
+         std::vector <std::string> device_names);
+
+
+db_reply_t
+    insert_into_alert_device
+        (tntdb::Connection &conn,
+         m_alrt_id_t        alert_id,
+         const char        *device_name);
+
+
+db_reply_t
+    delete_alert_device
+        (tntdb::Connection &conn,
+         m_alrtdvc_id_t    id);
+
+
+db_reply_t
+    insert_new_alert 
+        (tntdb::Connection  &conn,
+         const char         *rule_name,
+         a_elmnt_pr_t        priority,
+         m_alrt_state_t      alert_state,
+         const char         *description,
+         m_alrt_ntfctn_t     notification,
+         int64_t             date_from,
+         std::vector<std::string> device_names);
+
+
+db_reply <std::vector<db_alert_t>>
+    select_alert_all_opened
+        (tntdb::Connection  &conn);
+
+
+db_reply <std::vector<m_dvc_id_t>>
+    select_alert_devices
+        (tntdb::Connection &conn,
+         m_alrt_id_t        alert_id);
+
 #endif //SRC_PERSIST_ALERT
