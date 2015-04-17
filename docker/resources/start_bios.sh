@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 #   Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
-#   Copyright (c) 2014 Eaton Corporation <www.eaton.com>
+#   Copyright (c) 2015 Eaton Corporation <www.eaton.com>
 #   Copyright other contributors as noted in the AUTHORS file.
 #
 #   This file is part of the Eaton $BIOS project.
@@ -32,8 +32,8 @@ echo "Starting SASL auth .."
 service saslauthd start
 
 echo "Starting web srv .."
-#service tntnet start
-tntnet -c /etc/tntnet/tntnet.xml &
+service tntnet start
+#tntnet -c /etc/tntnet/tntnet.xml &
 
 echo "starting nut .."
 service nut-server start
