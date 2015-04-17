@@ -31,6 +31,7 @@ def doJob(name,params) {
     if( job.isDisabled() ) return 0;
     fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
     fut.waitForStart();
+    println "    See " + fut.getAbsoluteUrl() + "consoleFull for console output.";
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
@@ -64,7 +65,7 @@ for(
     println "=== Starting $jobName ===";
     lastbuild = doJob(jobName, jobParams);
     if( lastbuild == 0 ) {
-        println "Job $jobName is disabled, skipped";
+        println "SKIPPED: Job $jobName is disabled, skipped";
     } else {
         result = lastbuild.getResult();
             if ( result == Result.SUCCESS ) {
@@ -72,8 +73,7 @@ for(
             println ", see " + lastbuild.getAbsoluteUrl() + " for details";
         } else {
             println "WARNING: " + jobName + " result is " + result.toString();
-            println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
-            println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
+            println "see " + lastbuild.getAbsoluteUrl() + "  for failed build.";
         }
     }
 }
