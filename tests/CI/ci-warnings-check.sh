@@ -59,8 +59,8 @@ fi
 
 # This branch was already configured and compiled here, only refresh it now
 echo "======== auto-make (refresh all-buildproducts) =============="
-./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} all-buildproducts 2>&1 | \
-    tee -a ${MAKELOG}
+./autogen.sh --no-distclean --optseqmake ${AUTOGEN_ACTION_MAKE} \
+    all-buildproducts 2>&1 | tee -a ${MAKELOG}
 
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
