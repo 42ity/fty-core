@@ -36,6 +36,7 @@ LOW_IMPORTANCE_WARNINGS=(
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+RESULT=0
 set -o pipefail || true
 set -e
 
@@ -110,6 +111,11 @@ sort_warnings() {
     echo $LOW $HIGH )
 }
 
+echo "=================== good GitIgnores ========================="
+cat "$BUILDSUBDIR/.git_details" | grep PACKAGE_GIT_STATUS_ESCAPED | \
+    grep -v 'PACKAGE_GIT_STATUS_ESCAPED=""'
+[ $? = 0 ] && RESULT=1 && logmsg_warn "Some build products are not in .gitignore"
+
 echo "==================== sort_warnings =========================="
 ls -la ${MAKELOG}
 [ -s "${MAKELOG}" ] || \
@@ -137,5 +143,5 @@ else
         echo "OK, no warnings detected"
     fi
     echo "============================================"
-    exit 0
+    exit $RESULT
 fi >&2
