@@ -31,10 +31,11 @@ def doJob(name,params) {
     if( job.isDisabled() ) return 0;
     fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
     fut.waitForStart();
-    println "See " + job.getLastBuild().getAbsoluteUrl() + "consoleFull for console output.";
+    println "* See " + job.getLastBuild().getAbsoluteUrl() + "consoleFull for console output.";
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
+    println "* Job duration: " + job.getLastBuild().getDurationString();
     return job.getLastBuild();
 }
 
@@ -72,8 +73,8 @@ for(
             print result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for details";
         } else {
-            println "WARNING: " + jobName + " result is " + result.toString();
-            println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
+            print "WARNING: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + "  for failed build details";
         }
     }
 }
