@@ -1,0 +1,43 @@
+{ "alerts":
+  [
+    {
+        "id":3,
+        "source_ts":"20150327163012Z",
+        "application_name":"ALERT", 
+        "rule_name":"upsonbattery@UPS1-LAB",
+        "element_id":"22",
+        "element_name":"UPS1-LAB",
+        "severity":"alert",
+        "priority":"P2",
+        "description":"UPS is on battery",
+        "state":"active",
+        "last_state_ts":null
+    },
+    {
+        "id":2,
+        "source_ts":"20150328064110Z",
+        "application_name":"ALERT", 
+        "rule_name":"upsonbypass@UPS2-LAB",
+        "element_id":"23",
+        "element_name":"UPS2-LAB",
+        "severity":"alert",
+        "priority":"P1",
+        "description":"UPS is on bypass",
+        "state":"active",
+        "last_state_ts":null
+    },
+    {
+        "id":2423,
+        "source_ts":"20150423233411Z",
+        "application_name":"ALERT", 
+        "rule_name":"upslowbattery@UPS1-LAB",
+        "element_id":"22",
+        "element_name":"UPS1-LAB",
+        "severity":"alert",
+        "priority":"P1",
+        "description":"Low battery in UPS",
+        "state":"active",
+        "last_state_ts":null
+    }
+  ]
+}
