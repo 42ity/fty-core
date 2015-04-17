@@ -841,6 +841,23 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
+client_PROGRAMS +=      agent-alert
+
+agent_alert_SOURCES = \
+                        src/agents/alert/alert.cc \
+                        src/agents/alert/alert-measurement.cc \
+                        src/agents/alert/alert-agent.cc \
+                        src/agents/alert/alert-model.cc \
+                        src/shared/utils_ymsg.c
+
+agent_alert_LDADD = \
+                        libpriv-log.la \
+                        libbiosapi.la
+
+agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+agent_alert_CPPFLAGS = $(AM_CPPFLAGS)
+
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
