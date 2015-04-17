@@ -16,12 +16,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file alert.cc
-    \brief Pure DB API for CRUD operations on slerts
+    \brief Pure DB API for CRUD operations on alerts
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#include <tntdb/connect.h>
 #include <tntdb/row.h>
 #include <tntdb/result.h>
 #include <tntdb/error.h>
@@ -91,9 +90,9 @@ db_reply_t
             " INSERT INTO"
             "   t_bios_alert"
             "   (rule_name, priority, state, descriprion,"
-            "   notification, from, till)"
+            "   notification, date_from)"
             " SELECT"
-            "    :rule, :priority, :state, :desc, :note, :from, NULL"
+            "    :rule, :priority, :state, :desc, :note, FROM_UNIXTIME(:from)"
             " FROM"
             "   t_empty"
             " WHERE NOT EXISTS"
@@ -101,10 +100,10 @@ db_reply_t
             "       SELECT"
             "           id"
             "       FROM"
-            "           t_bios_alert"
+            "           t_bios_alert v"
             "       WHERE"
-            "           till is NULL AND"
-            "           rule_name = :rule"
+            "           v.date_till is NULL AND"
+            "           v.rule_name = :rule"
             "   )"
         );
    
@@ -193,7 +192,7 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " UPDATE"
             "   t_bios_alert"
-            " SET till = :till"
+            " SET till = FROM_UNIXTIME(:till)"
             " WHERE  id = :id"
         );
    
@@ -219,7 +218,7 @@ db_reply_t
 
 //=============================================================================
 db_reply_t
-    delete_alert
+    delete_from_alert
         (tntdb::Connection &conn,
          m_alrt_id_t id)
 {
@@ -384,7 +383,7 @@ db_reply_t
 
 //=============================================================================
 db_reply_t
-    delete_alert_device
+    delete_from_alert_device
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id)
 {
@@ -475,11 +474,12 @@ db_reply <std::vector<db_alert_t>>
     try {
         tntdb::Statement st = conn.prepareCached(
                 " SELECT"
-                "    v.id, v.rule_name, v.priority, v.alert_state,"
-                "    v.descriprion, v.notification, v.date_from, v.date_till"
+                "    v.id, v.rule_name, v.priority, v.state,"
+                "    v.descriprion, v.notification,"
+                "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
                 " FROM"
-                "   v_bios_alert"
-                " WHERE date_till is NULL"
+                "   v_bios_alert v"
+                " WHERE v.date_till is NULL"
         );
         tntdb::Result res = st.select();
         
@@ -540,8 +540,8 @@ db_reply <std::vector<m_dvc_id_t>>
                 " SELECT"
                 "    v.device_id"
                 " FROM"
-                "   v_bios_alert_device"
-                " WHERE alert_id = :alert"
+                "   v_bios_alert_device v"
+                " WHERE v.alert_id = :alert"
         );
         tntdb::Result res = st.set("alert", alert_id).
                                select();

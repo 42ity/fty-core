@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file alert.h
-    \brief Pure DB API for CRUD operations on slerts
+    \brief Pure DB API for CRUD operations on alerts
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
@@ -24,6 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_ALERT
 #define SRC_PERSIST_ALERT
 
+#include <tntdb/connect.h>
 #include "dbtypes.h"
 #include "dbhelpers.h"
 
@@ -73,7 +74,7 @@ db_reply_t
 
 
 db_reply_t
-    delete_alert
+    delete_from_alert
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 
@@ -93,7 +94,7 @@ db_reply_t
 
 
 db_reply_t
-    delete_alert_device
+    delete_from_alert_device
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 

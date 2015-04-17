@@ -394,6 +394,32 @@ DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
 
+
+DROP VIEW IF EXISTS v_bios_alert_device;
+CREATE VIEW v_bios_alert_device AS
+    SELECT
+        id,
+        alert_id,
+        device_id
+    FROM
+        t_bios_alert_device;
+
+
+DROP VIEW IF EXISTS v_bios_alert;
+CREATE VIEW v_bios_alert AS
+    SELECT
+        id,
+        rule_name,
+        date_from,
+        priority,
+        state,
+        descriprion,
+        date_till,
+        notification
+    FROM
+        t_bios_alert;
+
+
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
             v1.id_asset_element,
