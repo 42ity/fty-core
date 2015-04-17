@@ -668,11 +668,9 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
     expected_ext_attributes.insert (std::make_pair ("contact_name", "thisisanemailaddress@gmail.com"));
     expected_ext_attributes.insert (std::make_pair ("free_space", "123"));
-    expected_ext_attributes.insert (std::make_pair ("band", "Be calm"));      // TODO should we check this parametr??
-    expected_ext_attributes.insert (std::make_pair ("type", "2"));
-    expected_ext_attributes.insert (std::make_pair ("height", "3"));
-    expected_ext_attributes.insert (std::make_pair ("depth", "1"));
-    expected_ext_attributes.insert (std::make_pair ("width", "22"));
+    expected_ext_attributes.insert (std::make_pair ("manufacturer", "Be calm"));      // TODO should we check this parametr??
+    expected_ext_attributes.insert (std::make_pair ("model", "2"));
+    expected_ext_attributes.insert (std::make_pair ("u_size", "3"));
     expected_ext_attributes.insert (std::make_pair ("asset_tag", "This doesn't matter"));
     
     for ( auto &ea : expected_ext_attributes )
