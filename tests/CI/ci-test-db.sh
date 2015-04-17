@@ -36,6 +36,11 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
+loaddb_file() {
+    mysql -u root < "$1" > /dev/null || \
+        CODE=$? die "Could not load $1"
+}
+
 set -u
 set -e
 
@@ -57,8 +62,8 @@ echo "--------------- ensure bins to test --------------"
     || true
 
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_DATA" || CODE=$? die "Failed to load $DB_DATA"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
 "$BUILDSUBDIR"/test-db
@@ -79,8 +84,8 @@ fi
 
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_CRUD"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_CRUD"
 "$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -91,8 +96,8 @@ fi
 
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
-    mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-    mysql -u root < "$DB_LOADDIR/$P" || CODE=$? die "Failed to load $P"
+    loaddb_file "$DB_LOADDIR/$DB_BASE"
+    loaddb_file "$DB_LOADDIR/$P"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
     "$BUILDSUBDIR"/test-dbtopology "[$P]"
@@ -106,8 +111,8 @@ done
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER" || CODE=$? die "Failed to load $DB_RACK_POWER"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
