@@ -54,12 +54,13 @@ DB_RACK_POWER="rack_power.sql"
 DB_CRUD="crud_test.sql"
 
 RESULT=0
+FAILED=""
 
 echo "--------------- ensure bins to test --------------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
     test-db test-db2 \
     test-db-asset-crud test-dbtopology test-totalpower \
-    || true
+    || FAILED="compilation"
 
 echo "-------------------- reset db --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
@@ -72,6 +73,7 @@ if [ "$?" != 0 ] ; then
     echo "ERROR: test-db failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-db"
 fi
 echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
@@ -80,6 +82,7 @@ if [ "$?" != 0 ] ; then
     echo "ERROR: test-db2 failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-db2"
 fi
 
 echo "-------------------- test-db-asset-crud-----"
@@ -92,6 +95,7 @@ if [ "$?" != 0 ] ; then
     echo "ERROR: test-db-asset-crud failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-db-asset-crud"
 fi
 
 for P in "$DB_TOPO" "$DB_TOPO1"; do
@@ -106,6 +110,7 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         echo "ERROR: test-dbtopology $P failed"
         echo "----------------------------------------"
         RESULT=1
+        FAILED="$FAILED test-dbtopology::$P"
     fi
 done
 
@@ -119,6 +124,12 @@ if [ "$?" != 0 ] ; then
     echo "ERROR: test-totalpower failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-totalpower"
+fi
+
+if [ -n "$FAILED" ]; then
+    logmsg_error "The following tests have failed:"
+    for F in $FAILED; do echo " * $F" >&2; done
 fi
 
 cd -
