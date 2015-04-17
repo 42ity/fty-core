@@ -219,6 +219,9 @@ libpriv_git_details_override_la_SOURCES = \
 				src/include/git_details_override.h \
 				src/include/git_details_override.c
 
+libpriv_git_details_override_la_DEPENDENCIES = \
+				$(abs_top_builddir)/.git_details
+
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
@@ -373,6 +376,8 @@ libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
 #----------------------------------------------------------------------
 
 SUFFIXES=.ecpp .gif .jpg .css .js .cpp
+
+src/web/src/sysinfo.cpp: src/include/git_details_override.h
 
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
@@ -862,7 +867,9 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/mock.cc   src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc
+                      src/shared/upsstatus.cc src/web/src/enc.cc
+
+EXTRA_DIST +=		src/web/include/enc.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -881,7 +888,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-			-module -lm -ltntdb -ltntnet -lcidr
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
@@ -970,6 +977,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
+SYSTEMD_UNITS =
 # systemd integration
 if HAVE_SYSTEMD
 
@@ -978,7 +986,11 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
-bios-agent-nut.service bios-driver-netmon.service bios-db.service bios-server-agent.service bios-agent-inventory.service: Makefile
+SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
+                        bios-db.service bios-server-agent.service \
+                        bios-agent-inventory.service
+
+$(SYSTEMD_UNITS): Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
@@ -1435,7 +1447,12 @@ clean-man:
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
             libbiosapi.la bios_web.la \
-            all-docs sdk web-link-test
+            all-docs sdk sdk-link-test web-link-test
+
+# Try to build everything buildable, e.g. for further warning counters
+all-buildproducts: all-local all sdk-tests web-test-deps \
+            $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
+            $(SYSTEMD_UNITS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
@@ -1503,7 +1520,9 @@ check-dll-bios_web: check-dll-libfile-bios_web.la
 
 sdk: libbiosapi.la
 
-sdk-tests: test-libbiosapiut
+sdk-link-test: sdk test-libbiosapiut
+
+sdk-tests: sdk sdk-link-test
 
 test-sdk: sdk sdk-tests check-dll-libbiosapi
 	cd $(abs_top_builddir) && ./test-libbiosapiut
@@ -1590,6 +1609,7 @@ CLEANFILES +=		src/include/git_details_override.c \
 .PHONY_GIT:
 
 .git_details: $(abs_top_builddir)/.git_details
+	@sync || true
 
 # NOTE that in the target routine below we filter out PACKAGE_BUILD_TSTAMP
 # changes because if nothing else changed, these don't matter much but do
@@ -1623,8 +1643,10 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	      touch "$@"; fi; \
 	    fi; \
 	 fi
+	@sync || true
 
 src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
+	@sync || true
 
 $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
 	@echo "INFO: Checking that '$@' is up-to-date..."
@@ -1641,8 +1663,10 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
+	@sync || true
 
 src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
+	@sync || true
 
 $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git_details
 	@echo "INFO: Checking that '$@' is up-to-date..."
@@ -1677,4 +1701,5 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
+	@sync || true
 

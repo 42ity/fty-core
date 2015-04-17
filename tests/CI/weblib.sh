@@ -61,7 +61,7 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 
 _TOKEN_=""
 WEBLIB_FORCEABORT=no
-_weblib_result_printed=no
+_weblib_result_printed=notest
 
 print_result() {
     [ "$_weblib_result_printed" = yes ] && return 0
@@ -106,7 +106,7 @@ print_result() {
 }
 
 test_it() {
-    _weblib_result_printed=no
+    _weblib_result_printed=notyet
     [ -n "$TNAME" ] || TNAME="$NAME"
     if [ "$1" ]; then
         TNAME="$1"
@@ -314,12 +314,36 @@ api_auth_post() {
     # Params:
     #	$1	Relative URL for API call
     #	$2	POST data
+    #   $@  aditional params for curl
     local url data
     url=$1
     data=$2
     shift 2
     TOKEN="`_api_get_token`"
     CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$data" \
+        -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+# POST the file to the server with Content-Type multipart/form-data according
+# to RFC 2388 - this simulates the HTML form and Submit button
+#
+# Params:
+#	$1	Relative URL for API call
+#	$2	filename=@/file/path[;mime/type]
+#   $@  aditional params for curl
+# Example:
+#   send file 'assets':
+#   api_auth_post_file assets=@tests/persist/test-loadcsv.cc.csv
+#   send file 'foo' with proper mime type
+#   api_auth_post_file foo=@path/to/foo.json;type=application/json
+#   see man curl, parameter -F/--form
+api_auth_post_file() {
+    local url data
+    url=$1
+    data=$2
+    shift 2
+    TOKEN="`_api_get_token`"
+    CURL --insecure -H "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
