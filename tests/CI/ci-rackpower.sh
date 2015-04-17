@@ -57,10 +57,11 @@ kill_daemons() {
     return 0
 }
 
+logmsg_info "Ensuring that the tested programs have been built and up-to-date"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng agent-nut driver-nmap netmon
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
