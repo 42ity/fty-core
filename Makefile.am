@@ -1446,7 +1446,7 @@ clean-man:
 # Just in case we don't have all dependencies properly spelled out,
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
-            libbiosapi.la bios_web.la agent-nut \
+            libbiosapi.la bios_web.la $(client_PROGRAMS) \
             all-docs sdk sdk-link-test web-link-test
 
 # Try to build everything buildable, e.g. for further warning counters
