@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <czmq.h>
 #include "dbtypes.h"
 
+#include "preproc.h"
 // all fields called name
 #define MAX_NAME_LENGTH         50
 // t_bios_asset_ext_attributes.keytag
@@ -272,5 +273,38 @@ bool is_ok_mac (const char *mac);
  *         false - link type is not correct
  */
 bool is_ok_link_type (a_lnk_tp_id_t link_type_id);
+
+
+/**
+ * \brief Checks if the rule_name is correct
+ *
+ * \param rule_name - rule name to check
+ *
+ * \return true  - ok
+ *         false - rule_name is not correct
+ */
+bool is_ok_rule_name (const char *rule_name);
+
+
+/**
+ * \brief Checks if priority is correct
+ *
+ * \param priority - priority type to check
+ *
+ * \return true  - ok
+ *         false - priority is not correct
+ */
+bool is_ok_priority (a_elmnt_pr_t priority);
+
+
+/**
+ * \brief Checks if state of alert is correct
+ *
+ * \param state - state to check
+ *
+ * \return true  - ok
+ *         false - state is not correct
+ */
+bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
 #endif // SRC_PERSIST_DBHELPERS_H_

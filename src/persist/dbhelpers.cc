@@ -261,3 +261,25 @@ bool is_ok_link_type (a_lnk_tp_id_t link_type_id)
     else
         return false;
 }
+
+bool is_ok_rule_name (const char *rule_name)
+{
+    if ( ( rule_name != NULL ) && ( strlen(rule_name) >0 ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_priority (a_elmnt_pr_t priority)
+{
+    if ( ( priority > 0 ) && ( priority < 6 ) )
+        return true;
+    else
+        return false;
+}
+
+bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state)
+{
+    // TODO
+    return true;
+}
