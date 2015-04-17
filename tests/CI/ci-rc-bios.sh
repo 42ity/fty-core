@@ -36,11 +36,6 @@ else
     echo "Found $BUILDSUBDIR/config.status, using custom-built binaries..."
     echo "Search path: $CHECKOUTDIR, $PWD"
     export PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
-    logmsg_info "Ensuring that the tested programs have been built and up-to-date"
-    if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-        ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
-    fi
-    ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng agent-nut driver-nmap netmon
 fi
 
 # Simple check for whether sudo is needed to restart saslauthd
