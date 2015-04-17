@@ -98,7 +98,7 @@ for(
     println "=== Starting $jobName ===";
     lastbuild = doJob(jobName, jobParams);
     if( lastbuild == 0 ) {
-        println "Job $jobName is disabled, skipped";
+        println "SKIPPED: Job $jobName is disabled, skipped";
     } else {
         result = lastbuild.getResult();
             if ( result == Result.SUCCESS ) {
@@ -107,7 +107,15 @@ for(
         } else {
             println "WARNING: " + jobName + " result is " + result.toString();
             println "see " + lastbuild.getAbsoluteUrl() + "  for failed build";
-            println "or  " + lastbuild.getAbsoluteUrl() + "console for console output.";
         }
     }
 }
+
+// get current thread / Executor
+def thr = Thread.currentThread();
+// get current build
+def thisbuild = thr?.executable;
+
+println "=== Overall build result: " + thisbuild.result;
+println "Build scheduled by " + username + " on " + thisbuild.scheduled;
+println "Build duration: " + thisbuild.duration.display;
