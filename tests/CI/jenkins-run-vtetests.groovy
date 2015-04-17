@@ -79,6 +79,8 @@ for(
     }
 }
 
-println "=== Overall build result: " + build.getResult().toString();
-println "Build scheduled: " + build.getTimestamp().getTime().toString();
-println "Build duration: " + build.getDurationString();
+println ""
+println "=== Wrapping up the umbrella build:"
+println "* Build scheduled: " + build.getTimestamp().getTime().toString();
+println "* Build duration: " + build.getDurationString() + " (finishing now)";
+println ""
