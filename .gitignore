@@ -91,7 +91,7 @@ test-libbiosapiut
 test-db-asset-crud
 agent-inventory
 db-ng
-driver-nut
+agent-nut
 server-agent
 
 tests/junit/
@@ -125,7 +125,7 @@ tools/db-init
 !tools/bios-agent-inventory.service.in
 !tools/bios-server-agent.service.in
 bios-driver-netmon.service
-bios-driver-nut.service
+bios-agent-nut.service
 bios-db.service
 bios-agent-inventory.service
 bios-server-agent.service
@@ -134,7 +134,9 @@ bios-server-agent.service
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
 src/web/src/auth.cpp
+src/web/src/asset_import.cpp
 src/web/src/agent.cpp
+src/web/src/alerts.cpp
 src/web/src/average.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp

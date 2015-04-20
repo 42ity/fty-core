@@ -56,6 +56,9 @@ SELECT @test_topic_s_d_status_ups := id FROM t_bios_measurement_topic WHERE topi
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "charge.battery@select_device" );
 SELECT @test_topic_s_d_charge_battery := id FROM t_bios_measurement_topic WHERE topic = "charge.battery@select_device";
 
+insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "s", "runtime.battery@select_device" );
+SELECT @test_topic_s_d_runtime_battery := id FROM t_bios_measurement_topic WHERE topic = "runtime.battery@select_device";
+
 insert into t_bios_measurement_topic (id, device_id, units, topic) values (NULL, @select_device, "%", "load.default@select_device" );
 SELECT @test_topic_s_d_load_default := id FROM t_bios_measurement_topic WHERE topic = "load.default@select_device";
 
@@ -103,6 +106,11 @@ insert into t_bios_measurement
     (id, timestamp, value, scale, topic_id)
 values 
     (NULL, "2014-11-12 09:59:58", 9310, -2, @test_topic_s_d_charge_battery );
+
+insert into t_bios_measurement 
+    (id, timestamp, value, scale, topic_id)
+values 
+    (NULL, "2014-11-12 09:59:58", 3600, 0, @test_topic_s_d_runtime_battery );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
@@ -436,13 +444,12 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values (NULL, "RACK1-LAB", @asset_element_rack, @last_room);
 set @last_asset_element := LAST_INSERT_ID();
 set @last_rack := @last_asset_element;
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "BIOS Rack Validation", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("free_space",  "27",      @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand",       "EATON",   @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("type",        "1",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("height",      "27U",     @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("width",       "600",     @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("depth",       "800",     @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RESSPU4210KB 600mm x 1000mm - 42U Rack", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("free_space", "27",      @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Cooper",   @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",      "27U",     @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("asset_tag",       "EATON123456",     @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("serial_no",       "21545212HGFV2",     @last_asset_element);
 
 /* UPS1-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("UPS1-LAB", @asset_element_device, @last_rack);
@@ -454,9 +461,9 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "3",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "3",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "0",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "9PX-BiosDown", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "9PX-BiosDown.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
@@ -471,9 +478,9 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_installation_date", "2014-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_warranty_expiration_date", "2019-11-12", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("battery_maintenance_date", "2016-11-12", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "3",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "3",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "3",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "9PX-BiosUp", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "9PX-BiosUp.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
@@ -482,7 +489,7 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU1-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU1 eMAA10", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosLeft", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosLeft.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
@@ -491,7 +498,7 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU2-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU2 eMAA10", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosRight", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosRight.Bios.Labo.Kalif.com", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
@@ -500,25 +507,25 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV1-LAB",  @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV1 PRIMERGY RX100 G8",  @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "6",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Fujitsu", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Fujitsu", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
 
 /* SRV2-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV2-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV2 PRIMERGY RX100 G8", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "7",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Fujitsu", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Fujitsu", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* MAIN-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("MAIN-LAB", @asset_element_device, @last_datacenter);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "MAIN 240V", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("feeds",       "2",         @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("phase",       "2",         @last_asset_element);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_main);
 
 /* GROUP1-LAB */
@@ -540,36 +547,36 @@ values
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV3-LAB",  @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV3 DL320e G8",  @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "8",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "HP", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "HP", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
 
 /* SRV4-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV4-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV4 DL320e G8", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "9",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "HP", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "HP", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* SRV5-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV5-LAB",  @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "SRV5 PowerEdge R320",  @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "11",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "Dell", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Dell", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values (NULL, @last_asset_element, @asset_device_server);
 
 /* SRV6-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("SRV6-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","SRV6 System x 3530 M4", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_height",  "1",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "13",       @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("brand", "IBM", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "IBM", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* Asset links */
