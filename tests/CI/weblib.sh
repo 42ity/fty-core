@@ -160,6 +160,7 @@ curlfail_push() {
     ### also saves "$WEBLIB_HTTPERRORS_REGEX" to its stack and changes to
     ### "$2" (if provided), or retains it as is otherwise
 
+    [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes -o x"$WEBLIB_TRACE_CURL" = xyes ] && \
     echo "CI-WEBLIB-TRACE-CURL: curlfail_push(): setting" \
         "WEBLIB_CURLFAIL_HTTPERRORS='$1' instead of '$WEBLIB_CURLFAIL_HTTPERRORS'" \
         "and WEBLIB_HTTPERRORS_REGEX='$2' instead of '$WEBLIB_HTTPERRORS_REGEX'" \
@@ -219,6 +220,7 @@ curlfail_pop() {
         STACKED_HTTPERRORS_COUNT="`echo "$STACKED_HTTPERRORS_ACTIONS" | wc -l`"
     fi
 
+    [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes -o x"$WEBLIB_TRACE_CURL" = xyes ] && \
     echo "CI-WEBLIB-TRACE-CURL: curlfail_pop(): returned to " \
         "WEBLIB_CURLFAIL_HTTPERRORS='$WEBLIB_CURLFAIL_HTTPERRORS'" \
         "and WEBLIB_HTTPERRORS_REGEX='$WEBLIB_HTTPERRORS_REGEX';" \
@@ -300,6 +302,7 @@ CURL() {
         ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`"
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
+                [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
                 echo "CI-WEBLIB-INFO-CURL: Last response headers matched" \
                     "'$WEBLIB_HTTPERRORS_REGEX' for an HTTP result code," \
                     "as expected: '$ERR_MATCH'" >&3
