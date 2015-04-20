@@ -73,21 +73,21 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 // this is ups let's create simple alert configuration
                 Alert A;
                 A.name("upsonbattery");
-                A.severity( ALERT_SEVERITY_P5 ); //FIXME remove this and get it from DB
+                A.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 A.addTopic( measurement.topic() );
                 A.setEvaluateFunction( evaluate_on_battery_alert );
                 _alerts.push_back(A);
                 
                 Alert B;
                 B.name("upslowbattery");
-                B.severity( ALERT_SEVERITY_P5 ); //FIXME remove this and get it from DB
+                B.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 B.addTopic( measurement.topic() );
                 B.setEvaluateFunction( evaluate_low_battery_alert );
                 _alerts.push_back(B);
 
                 Alert C;
                 C.name("upsonbypass");
-                C.severity( ALERT_SEVERITY_P5 ); //FIXME remove this and get it from DB
+                C.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 C.addTopic( measurement.topic() );
                 C.setEvaluateFunction( evaluate_on_bypass_alert );
                 _alerts.push_back(C);
@@ -107,6 +107,16 @@ void AlertModel::print()
         std::cout << "\n" << it.first << "\n";
         it.second.print();
     }
+}
+
+Alert *AlertModel::alertByRule(std::string ruleName)
+{
+    for( auto &it: _alerts ) {
+        if( it.ruleName() == ruleName ) {
+            return &(it);
+        }
+    }
+    return NULL;
 }
 
 std::vector<Alert> &AlertModel::alerts() {

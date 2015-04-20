@@ -1,7 +1,6 @@
 #include "alert.h"
 
 #include <ctime>
-#include <iostream>
 
 alert_state_t Alert::state() const
 {
@@ -11,7 +10,6 @@ alert_state_t Alert::state() const
 void Alert::state(alert_state_t newState)
 {
     if( _state != newState ) {
-        std::cout << "changing state to " << newState << "\n";
         _state = newState;
         _published = 0;
         _persistenceInformed = false;
@@ -21,8 +19,8 @@ void Alert::state(alert_state_t newState)
 
 time_t Alert::since()
 {
-    if( _state == ALERT_STATE_ONGOING_ALERT ) return _since;
-    return (time_t)0;
+    if( _state == ALERT_STATE_UNKNOWN ) return time_t(0);
+    return _since;
 }
 
 std::string Alert::name() { return _name; }
@@ -33,18 +31,19 @@ bool Alert::persistenceInformed() { return _persistenceInformed; }
 void Alert::persistenceInformed(bool informed) { _persistenceInformed = informed; }
 
 std::string Alert::devices() { return _devices; }
+std::string Alert::ruleName() { return _name + "@" + _devices; }
 std::string Alert::description()
 {
     //FIXME: do this
     return "";
 }
 
-alert_severity_t Alert::severity() { return _severity; }
-void Alert::severity(alert_severity_t severity) { _severity = severity; }
+alert_priority_t Alert::priority() { return _priority; }
+void Alert::priority(alert_priority_t priority) { _priority = priority; }
 
 bool Alert::timeToPublish() const
 {
-    if( _severity == ALERT_SEVERITY_UNKNOWN ) return false;
+    if( _priority == ALERT_PRIORITY_UNKNOWN ) return false;
     switch( _state ) {
     case ALERT_STATE_UNKNOWN:
         return false;

@@ -36,6 +36,8 @@ class AlertModel {
     void newMeasurement( const Measurement &Measurement );
     void addAlert( const Alert alert );
     void print();
+    Alert *alertByRule(std::string ruleName);
+    //std::vector<Alert>::iterator & alertByRule(std::string ruleName);
     std::vector<Alert> &alerts();
  protected:
     std::map< std::string, Measurement > _last_measurements;

@@ -37,13 +37,13 @@ typedef enum {
 } alert_state_t;
 
 typedef enum {
-    ALERT_SEVERITY_UNKNOWN = 0,
-    ALERT_SEVERITY_P1,
-    ALERT_SEVERITY_P2,
-    ALERT_SEVERITY_P3,
-    ALERT_SEVERITY_P4,
-    ALERT_SEVERITY_P5
-} alert_severity_t;
+    ALERT_PRIORITY_UNKNOWN = 0,
+    ALERT_PRIORITY_P1,
+    ALERT_PRIORITY_P2,
+    ALERT_PRIORITY_P3,
+    ALERT_PRIORITY_P4,
+    ALERT_PRIORITY_P5
+} alert_priority_t;
 
 
 #define NO_ALERT_PUBLISH_INTERVAL 20
@@ -61,12 +61,13 @@ class Alert {
     std::string name();
     void name(const char *name);
     void name(const std::string &name);
+    std::string ruleName();
     bool persistenceInformed();
     void persistenceInformed(bool informed);
     std::string devices();
     std::string description();
-    alert_severity_t severity();
-    void severity(alert_severity_t severity);
+    alert_priority_t priority();
+    void priority(alert_priority_t priority);
     time_t since();
     bool timeToPublish() const;
     void published();
@@ -77,7 +78,7 @@ class Alert {
     alert_state_t evaluate( const std::map< std::string, Measurement > &measurementAvailable );
  protected:
     alert_state_t _state = ALERT_STATE_UNKNOWN;
-    alert_severity_t _severity = ALERT_SEVERITY_UNKNOWN;
+    alert_priority_t _priority = ALERT_PRIORITY_UNKNOWN;
     
     time_t _since = 0;
     time_t _published = 0;
