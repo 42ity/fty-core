@@ -15,7 +15,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Author(s): Tomas Halman <TomasHalman@eaton.com>
+# Author(s): Tomas Halman <TomasHalman@eaton.com>,
+#            Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # Description: checks files on VM, whether they are sync with local checkout.
 #              If they are not, files re copied to vitrual machine and compiled.
@@ -40,18 +41,20 @@ usage() {
 #
 # defaults
 #
-PORT=22
+SUT_SSH_PORT=22
 COMPILE=1
-VM="$BUILDMACHINE"
+SUT_HOST="$BUILDMACHINE"
+SUT_USER="root"
+SUT_IS_REMOTE=yes
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         -m|--machine)
-            VM="$2"
+            SUT_HOST="$2"
             shift 2
             ;;
         -p|--port)
-            PORT="$2"
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
         --dont-compile)
@@ -70,7 +73,7 @@ while [ $# -gt 0 ] ; do
     esac
 done
 
-if [ ! "$VM" ] ; then
+if [ ! "$SUT_HOST" ] ; then
     logmsg_error "Machine is not specified!"
     usage
     exit 1
@@ -78,13 +81,13 @@ fi
 
 remote_cleanup() {
     echo "-- VM cleanup"
-    ssh "root@$VM" -p "$PORT" "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  libexec  project  share"
+    sut_run "/bin/rm -rf  bin  core-build-deps_0.1_all.deb  extras  lib  libexec  project  share"
 }
 
 compare_revisions() {
     LOCALREVISION=$(cd $CHECKOUTDIR; git rev-parse HEAD)
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    REMOTEREVISION=$( ssh root@$VM -p $PORT "cd $BCHECKOUTDIR ; git rev-parse HEAD" )
+    REMOTEREVISION=$(sut_run "cd $BCHECKOUTDIR ; git rev-parse HEAD" )
     echo "L: $LOCALREVISION"
     echo "R: $REMOTEREVISION"
     if [ "$LOCALREVISION" = "$REMOTEREVISION" ] ; then
@@ -94,22 +97,22 @@ compare_revisions() {
 }
 
 copy_project() {
-    echo "-- copying files"
-    scp -r -P $PORT $CHECKOUTDIR "root@$VM:~/"
+    echo "-- copying files ($CHECKOUTDIR)"
+    scp -r -P "$SUT_SSH_PORT" "$CHECKOUTDIR" "${SUT_USER}@$SUT_HOST:~/"
 }
 
 remote_make() {
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
     BMAKELOG=$(basename $MAKELOG)
-    if ssh root@$VM -p $PORT "cd $BCHECKOUTDIR && [ -s ${BMAKELOG} ]" ; then
+    if sut_run "cd $BCHECKOUTDIR && [ -s ${BMAKELOG} ]" ; then
         # This branch was already configured and compiled on that VM, refresh only
         echo "-- compiling to refresh"
-        ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { ./autogen.sh --nodistclean ${AUTOGEN_ACTION_MAKE} install 2>&1 | tee -a ${BMAKELOG}; }'"
+        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { ./autogen.sh --nodistclean ${AUTOGEN_ACTION_MAKE} install 2>&1 | tee -a ${BMAKELOG}; }'"
         return $?
     else
         # Newly fetched branch - clean up, configure and make it fully
         echo "-- compiling to rebuild"
-        ssh root@$VM -t -p $PORT "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_BUILD} install 2>&1 | tee ${BMAKELOG}; }'"
+        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_BUILD} install 2>&1 | tee ${BMAKELOG}; }'"
         return $?
     fi
 }
@@ -117,13 +120,13 @@ remote_make() {
 remote_log_cleanup() {
     echo "-- deleting old log files"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    FLIST=$(ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -ls")
+    FLIST=$(sut_run "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -ls")
     if [ $? = 0 -a -n "$FLIST" ]; then
         echo "$FLIST"
-        ssh root@$VM -p $PORT "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm -f {} \; "
+        sut_run "find $BCHECKOUTDIR -name '*.log' -o -name cppcheck.xml -exec /bin/rm -f {} \; "
         return $?
     else
-        echo "-- > no old log files detected on the remote system (root@$VM:$BCHECKOUTDIR/), nothing to delete"
+        echo "-- > no old log files detected on the remote system (${SUT_USER}@$SUT_HOST:$BCHECKOUTDIR/), nothing to delete"
         return 0
     fi
 }
@@ -139,7 +142,7 @@ echo "PLATFORM: $BUILDMACHINE"
 echo "======================== BUILD PARAMETERS ==============================="
 
 if ! compare_revisions ; then
-    echo "-------------- project on $VM:$PORT need synchronization ----------------"
+    echo "-------------- project on $SUT_HOST:$SUT_SSH_PORT needs synchronization ---------------"
     remote_cleanup
     copy_project
     [ "$COMPILE" = "1" ] && remote_make
