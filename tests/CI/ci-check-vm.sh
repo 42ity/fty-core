@@ -34,6 +34,7 @@ usage() {
     echo "options:"
     echo "    -m|--machine name    virtual machine name"
     echo "    -p|--port PORT       virtual machine ssh port [22]"
+    echo "    -u|--user USER       virtual machine ssh username"
     echo "    --dont-compile       don't compile make on target virtual machine"
     echo "    -h|--help            print this help"
 }
@@ -49,12 +50,16 @@ SUT_IS_REMOTE=yes
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -m|--machine)
+        -m|-sh|--machine)
             SUT_HOST="$2"
             shift 2
             ;;
-        -p|--port)
+        -p|-sp|--port)
             SUT_SSH_PORT="$2"
+            shift 2
+            ;;
+        -u|-su|--user)
+            SUT_SSH_USER="$2"
             shift 2
             ;;
         --dont-compile)
