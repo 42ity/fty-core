@@ -200,7 +200,7 @@ sut_run() {
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" \
-            "sh -x -c '"$@"'"
+            "sh -c '"$@"'"
         return $?
     else
         # logmsg_info "sut_run()::local: $@" >&2
@@ -230,7 +230,7 @@ loaddb_file() {
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
         ( eval ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" \
-            "sh -x -c 'systemctl start mysql && mysql -u ${DBUSER}'" \
+            "sh -c 'systemctl start mysql && mysql -u ${DBUSER}'" \
                 "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
