@@ -14,7 +14,7 @@ curlfail_pop
 
 
 
-curlfail_expect_noerrors
+curlfail_push_expect_noerrors
 do_test_match "admin_network_post_excl1" api_auth_post /admin/network \
     '{"net" : "10.20.30.40/24", "status" : "E"}' \
     '{ "id" : "5" }'
