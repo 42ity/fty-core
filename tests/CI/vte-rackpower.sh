@@ -111,7 +111,8 @@ trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
-(cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 30 ; echo "DB updated.") 2>&1| tee /tmp/tmp
+{ cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | \
+ loaddb_file; } 2>&1 | tee /tmp/tmp
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
@@ -125,8 +126,7 @@ COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE"
     # *** rem_cmd()
 #Send remote command from MS to be performed in SUT
 rem_cmd() {
-    REM_CMD=$1
-    (ssh -p $SUT_PORT $SUT_NAME "$REM_CMD" & ) | tee /tmp/ci-rackpower.log
+    sut_run "$@" | tee /tmp/ci-rackpower.log
 }
     # *** set_values_in_ups()
 set_values_in_ups() {

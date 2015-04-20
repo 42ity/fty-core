@@ -145,14 +145,6 @@ test_web() {
     echo "==== RESULT: ($RESULT) ==========================================="
     return $RESULT
 }
-    # *** load db file specified in parameter
-loaddb_file() {
-    DB=$1
-    (cat $DB | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql" || \
-        CODE=$? die "Failed to load $DB to remote system"
-     sleep 20 ; echo "DB updated.") || return $?
-    return 0
-}
 
     # *** load default db setting
 loaddb_default() {
@@ -200,7 +192,7 @@ test_web_topo_l topology_location || RESULT_OVERALL=$?
 if [ "$RESULT_OVERALL" = 0 ]; then
     logmsg_info "Overall result: SUCCESS"
 else
-    logmsg_error "Overall result: FAILED ($RESULT_OVERALL) seek details above" >&2
+    logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
 fi
 
 exit $RESULT_OVERALL

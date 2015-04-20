@@ -25,17 +25,18 @@
 #   Must run as root (nut configuration)
 #
 
-# Include our standard routines for CI scripts
-. "`dirname $0`"/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
+### Fixed settings for the test
 CFGDIR=""
 NUTUSER=nut
 NUTPASSWORD=secret
 DBUSER=root
 DATABASE=box_utf8
+
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 nut_cfg_dir() {
     for cfgd in "/etc/ups" "/etc/nut"; do
@@ -62,10 +63,6 @@ get_value_from_ups() {
     local UPS=$(basename $1 .dev)
     local PARAM=$2
     upsc $UPS $PARAM
-}
-
-do_select(){
-    echo "$1;" | mysql -u $DBUSER $DATABASE | tail -n +2
 }
 
 create_epdu_dev_file() {
@@ -234,7 +231,7 @@ create_random_samples() {
 }
 
 produce_events(){
-    MEASUREMENTS=$(do_select "select count(*) from t_bios_measurement")
+    MEASUREMENTS="1do_select 'select count(*) from t_bios_measurement'`"
     LASTCHECK=$(date +%s)
     while read sample
     do
@@ -253,7 +250,7 @@ produce_events(){
         if expr $(date +%s) \> $LASTCHECK + 300 >/dev/null 2>&1 ; then
             # 5 min since last check
             # check measurement flow
-            NEWCNT=$(do_select "select count(*) from t_bios_measurement")
+            NEWCNT="`do_select 'select count(*) from t_bios_measurement'`"
             if [ $NEWCNT = $MEASUREMENTS ] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table since last check ($NEWCNT lines in table)"
@@ -262,7 +259,7 @@ produce_events(){
             fi
             MEASUREMENTS=$NEWCNT
             # check last 5 min data
-            CNT6MIN=$(do_select "select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $(date +%s --date '6 minutes ago') )")
+            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $(date +%s --date "6 minutes ago") )'`"
             if [ "$CNT6MIN" = "0" ] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table in last 6 minutes"
@@ -329,7 +326,7 @@ case "$ACTION" in
         $SCRIPTDIR/ci-rc-bios.sh --stop
         create_nut_config
         $SCRIPTDIR/ci-empty-db.sh
-        mysql -u root box_utf8 < $CHECKOUTDIR/tools/rack_power.sql
+        loaddb_file "$CHECKOUTDIR/tools/rack_power.sql"
         $SCRIPTDIR/ci-rc-bios.sh --start
         produce_events
         $SCRIPTDIR/ci-rc-bios.sh --stop

@@ -133,10 +133,6 @@ create_nut_config() {
     sleep 15
 }
 
-do_select(){
-    echo "$1;" | mysql -u root box_utf8 | tail -n +2
-}
-
 expected_db_value() {
     PARAM="$1"
     SAMPLE="$2"

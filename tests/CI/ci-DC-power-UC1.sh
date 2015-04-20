@@ -98,15 +98,13 @@ create_ups_device $UPS3 1200
 
 # drop and fill the database
 fill_database(){
-    if [ -f $CHECKOUTDIR/tools/$SQL_INIT ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_INIT || \
-        die "Failure loading $SQL_INIT"
+    if [ -f "$CHECKOUTDIR/tools/$SQL_INIT" ] ; then
+        loaddb_file "$CHECKOUTDIR/tools/$SQL_INIT"
     else
         die "$SQL_INIT not found"
     fi
-    if [ -f $CHECKOUTDIR/tools/$SQL_LOAD ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_LOAD || \
-        die "Failure loading $SQL_LOAD"
+    if [ -f "$CHECKOUTDIR/tools/$SQL_LOAD" ] ; then
+        loaddb_file "$CHECKOUTDIR/tools/$SQL_LOAD"
     else
         die "$SQL_LOAD not found"
     fi
