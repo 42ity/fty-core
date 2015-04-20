@@ -38,17 +38,19 @@ usage() {
 #
 # defaults
 #
-PORT=22
-VM="$BUILDMACHINE"
+SUT_SSH_PORT=22
+SUT_USER="root"
+SUT_HOST="$BUILDMACHINE"
+SUT_IS_REMOTE=yes
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         -m|--machine)
-            VM="$2"
+            SUT_HOST="$2"
             shift 2
             ;;
         -p|--port)
-            PORT="$2"
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
         -h|--help)
@@ -63,18 +65,18 @@ while [ $# -gt 0 ] ; do
     esac
 done
 
-if [ ! "$VM" ] ; then
+if [ ! "$SUT_HOST" ] ; then
     echo "Machine is not specified!"
     usage
     exit 1
 fi
 
 log_list() {
-    ssh -p $PORT root@$VM "find . -type f -name '*.log'"
+    sut_run "find . -type f -name '*.log'"
 }
 
 cppcheck_list() {
-    ssh -p $PORT root@$VM "find . -type f -name cppcheck.xml"
+    sut_run "find . -type f -name cppcheck.xml"
 }
 
 echo -e "\n\n\n\n======================== collecting log files ========================"
@@ -84,15 +86,15 @@ if [ $LOGS = 0 ] ; then
 else
     log_list | while read file ; do
         echo "$file"
-        scp -P $PORT root@$VM:$file ./ 
+        scp -P "$SUT_SSH_PORT" "${SUT_USER}@$SUT_HOST:$file" ./ 
     done
 fi
 
 LOGS=$(cppcheck_list | wc -l)
 if [ $LOGS == 1 ] ; then
     cppcheck_list | while read file ; do
-        scp -P $PORT root@$VM:$file ./
-        ssh -p $PORT root@$VM "/bin/rm -f \"$file\""
+        scp -P "$SUT_SSH_PORT" "${SUT_USER}@$SUT_HOST:$file" ./
+        sut_run "/bin/rm -f \"$file\""
 	echo $file
     done
 fi
