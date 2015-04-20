@@ -199,12 +199,12 @@ sut_run() {
     ### not one token aka "$1"
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
-        ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" \
-            "sh -c '$@'"
+        REMCMD="sh -x -c '$@'"
+        ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$REMCMD"
         return $?
     else
-        # logmsg_info "sut_run()::local: $@" >&2
-        sh -c "$@"
+        logmsg_info "sut_run()::local: $@" >&2
+        sh -x -c "$@"
         return $?
     fi
 }
@@ -229,9 +229,9 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        ( REMCMD="sh -c 'systemctl start mysql && mysql -u ${DBUSER}'"
-          eval ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" \
-            "$REMCMD" "<$DBFILE" && \
+        ( REMCMD="mysql -u ${DBUSER}"
+          sut_run "systemctl start mysql"
+          eval sut_run "${REMCMD}" "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
