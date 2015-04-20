@@ -51,10 +51,10 @@ export BIOS_USER BIOS_PASSWD
 ### Variables for remote testing - avoid "variable not defined" errors
 [ -z "$SUT_IS_REMOTE" ] && SUT_IS_REMOTE="auto" # auto|yes|no
 [ -z "$SUT_USER" ] && SUT_USER="root"   # Username on remote SUT
-[ -z "$SUT_NAME" ] && SUT_NAME=""       # Hostname or IP address
-[ -z "$SUT_PORT" ] && SUT_PORT=""       # SSH (maybe via NAT)
+[ -z "$SUT_HOST" ] && SUT_HOST=""       # Hostname or IP address
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
 [ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
-export SUT_IS_REMOTE SUT_NAME SUT_PORT SUT_WEB_PORT
+export SUT_IS_REMOTE SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
 
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "$LANG" ] && LANG=C
@@ -181,8 +181,8 @@ isRemoteSUT() {
     fi
 
     if  [ -z "$SUT_IS_REMOTE" -o x"$SUT_IS_REMOTE" = xauto ] && \
-        [ -n "$SUT_NAME" -a -n "$SUT_PORT" ] && \
-        [ x"$SUT_NAME" != xlocalhost -a x"$SUT_NAME" != x127.0.0.1 ] \
+        [ -n "$SUT_HOST" -a -n "$SUT_SSH_PORT" ] && \
+        [ x"$SUT_HOST" != xlocalhost -a x"$SUT_HOST" != x127.0.0.1 ] \
     ; then
         ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
         SUT_IS_REMOTE=yes
@@ -196,8 +196,8 @@ sut_run() {
     ### This tries to run a command either locally or externally via SSH
     ### depending on what we are testing (local or remote System Under Test)
     if isRemoteSUT ; then
-        logmsg_info "sut_run()::ssh(${SUT_NAME}:${SUT_PORT}): $@"
-        eval ssh -p "${SUT_PORT}" -l "${SUT_USER}" "${SUT_NAME}" "$@"
+        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@"
+        eval ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         # logmsg_info "sut_run()::local: $@"
@@ -218,10 +218,10 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        ( eval ssh -p "${SUT_PORT}" -l "${SUT_USER}" "${SUT_NAME}" \
+        ( eval ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" \
             "systemctl start mysql && mysql -u ${DBUSER}" "<$DBFILE" && \
-          sleep 20 && echo "Updated DB on remote system $SUT_NAME:$SUT_PORT: $DBFILE" ) || \
-          CODE=$? die "Could not load database file to remote system $SUT_NAME:$SUT_PORT: $DBFILE"
+          sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
+          CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"

@@ -31,7 +31,7 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$SUT_NAME" ] && SUT_NAME="127.0.0.1"
+[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 [ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
 DB_LOADDIR="$CHECKOUTDIR/tools"

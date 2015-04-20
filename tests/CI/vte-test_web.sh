@@ -53,7 +53,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 PASS=0
 TOTAL=0
 
-    # *** Set BIOS_USER,BIOS PASSWD,SUT_NAME and SUT_PORT from parameters
+    # *** Set BIOS_USER,BIOS PASSWD,SUT_HOST and SUT_SSH_PORT from parameters
 while [ $# -gt 0 ]; do
     case "$1" in
     -u|--user)
@@ -65,11 +65,15 @@ while [ $# -gt 0 ]; do
         shift 2
         ;;
     -s|--sut)
-        SUT_NAME="$2"
+        SUT_HOST="$2"
         shift 2
         ;;
-    -o|--port)
-        SUT_PORT="$2"
+    -su|--sut-user)
+        SUT_USER="$2"
+        shift 2
+        ;;
+    -o|-sp|--port)
+        SUT_SSH_PORT="$2"
         shift 2
         ;;
     *)
@@ -79,16 +83,16 @@ while [ $# -gt 0 ]; do
 done
 
 SUT_IS_REMOTE=yes
-SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
 echo '*************************************************************************************************************'
 echo $BIOS_USER
 echo $BIOS_PASSWD
-echo $SUT_NAME
-echo $SUT_PORT
+echo $SUT_HOST
+echo $SUT_SSH_PORT
 echo $SUT_WEB_PORT
 
 
-BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
@@ -105,7 +109,7 @@ fi
 LINE="$(sut_run "getent passwd '$BIOS_USER'")"
 if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database at $SUT_NAME:$SUT_PORT"
+    echo "User $BIOS_USER is not known to system administrative database at $SUT_HOST:$SUT_SSH_PORT"
     echo "To add it locally, run: "
     echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
