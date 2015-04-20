@@ -790,7 +790,7 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
 
 /* Example averages */
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
-    SELECT r.id_discovered_device,'C','temperature.thermal_zone0.arithmetic_mean_8h@srv1.lab.mbt.etn.com' 
+    SELECT r.id_discovered_device,'C','temperature.thermal_zone0@srv1.lab.mbt.etn.com' 
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'SRV1-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id = LAST_INSERT_ID();
