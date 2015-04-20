@@ -592,3 +592,52 @@ api_post_json_cmp() {
         return 0
     fi
 }
+
+# common testing function which compares outputs to a pattern
+# Usage:
+# do_test $test_name $api_call $url $regexp
+# do_test $test_name $api_call $url $url_args $regexp
+do_test_match() {
+    local test_name api_call url api_args regexp out err
+
+    case $# in
+        0|1|2|3)
+            echo "CI-WEBLIB-ERROR: do_test_match(): insuficient number of arguments" >&2
+            return 1
+            ;;
+        4)
+            test_name=${1}
+            api_call=${2}
+            url=${3}
+            api_args=""
+            regexp=${4}
+            ;;
+        5)
+            test_name=${1}
+            api_call=${2}
+            url=${3}
+            api_args=${4}
+            regexp=${5}
+            ;;
+        *)
+            echo "CI-WEBLIB-ERROR: do_test_match(): too many arguments: $#" >&2
+            return 1
+            ;;
+    esac
+
+    out="../log/${test_name}.stdout.$$.log"
+    err="../log/${test_name}.stderr.$$.log"
+
+    test_it "${test_name}"
+    ${api_call} ${url} "${api_args}" > "${out}"  2> "${err}"
+    if ! egrep -q "${regexp}" "${out}"; then
+        echo "    >>>>> DEBUG: ${out} <<<<"
+        cat "${out}"
+        echo "    >>>>> DEBUG: ${err} <<<<"
+        cat "${err}"
+        echo "    >>>>> \\DEBUG: ${test_name} <<<<"
+        return 1
+    fi
+    rm -f "${err}" "${out}"
+    return 0
+}
