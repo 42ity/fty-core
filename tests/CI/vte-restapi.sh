@@ -52,7 +52,7 @@ else
         esac
     done
 fi
-BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
 
 # ***** SET CHECKOUTDIR *****
 # Include our standard routines for CI scripts
@@ -65,7 +65,7 @@ RESULT=0
 # ***** SET (MANUALY) SUT_NAME - MANDATORY *****
 #SUT_PORT="2206"
 SUT_NAME="root@debian.roz.lab.etn.com"
-#[ -z "$BIOS_PORT" ] && BIOS_PORT="8006"
+#[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8006"
     # *** if used set BIOS_USER and BIOS_PASSWD
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
@@ -123,7 +123,7 @@ if [ 1 = 2 ]; then
 # NETSTAT ZAVOLAT PRES SSH
 # KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
 test_web_port() {
-    netstat -tan | grep -w "${BIOS_PORT}" | egrep 'LISTEN' >/dev/null
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
 }
 fi
 # konec vynechavky **********************************

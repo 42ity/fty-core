@@ -79,16 +79,16 @@ while [ $# -gt 0 ]; do
 done
 
 
-SUT_HTTP_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
 echo '*************************************************************************************************************'
 echo $BIOS_USER
 echo $BIOS_PASSWD
 echo $SUT_NAME
 echo $SUT_PORT
-echo $SUT_HTTP_PORT
+echo $SUT_WEB_PORT
 
 
-BASE_URL="http://$SUT_NAME:$SUT_HTTP_PORT/api/v1"
+BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
