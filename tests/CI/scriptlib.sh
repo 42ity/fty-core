@@ -43,7 +43,7 @@ esac
 [ -z "$DATABASE" ] && DATABASE=box_utf8
 export DBUSER DATABASE
 
-### REST API and non-privileged SSH credentials
+### REST API (and possibly non-privileged SSH) user credentials
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 export BIOS_USER BIOS_PASSWD
@@ -205,6 +205,10 @@ sut_run() {
         return $?
     fi
 }
+
+### TODO: a routine (or two?) to wrap local "cp" or remote "scp"
+### and/or "ssh|tar", to transfer files in a uniform manner for
+### the local and remote tests alike.
 
 do_select() {
     echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}" | tail -n +2
