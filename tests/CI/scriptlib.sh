@@ -201,8 +201,7 @@ sut_run() {
         return $?
     else
         # logmsg_info "sut_run()::local: $@"
-        CMD="$1"; shift 1
-        "$CMD" "$@"
+        sh -c "$@"
         return $?
     fi
 }
