@@ -111,10 +111,13 @@ sort_warnings() {
     echo $LOW $HIGH )
 }
 
-echo "=================== good GitIgnores ========================="
+echo "================ Are GitIgnores good? ======================="
+RES_GITIGNORE=0
 cat "$BUILDSUBDIR/.git_details" | grep PACKAGE_GIT_STATUS_ESCAPED | \
     grep -v 'PACKAGE_GIT_STATUS_ESCAPED=""'
-[ $? = 0 ] && RESULT=1 && logmsg_warn "Some build products are not in .gitignore"
+[ $? = 0 ] && RESULT=1 && RES_GITIGNORE=1 && \
+    logmsg_warn "Some build products (above) are not in a .gitignore" && \
+    echo "" && sleep 1  # Sleep to not mix stderr and stdout in Jenkins
 
 echo "==================== sort_warnings =========================="
 ls -la ${MAKELOG}
@@ -125,8 +128,11 @@ LOW=$(echo $WARNINGS | cut -d " " -f 1 )
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
 #/bin/rm -f ${MAKELOG}
 
+echo "================ Result ===================="
+[[ "$RES_GITIGNORE" != 0 ]] && \
+    echo "error: some build products are not gitignored, see details above"
+
 if [[ "$HIGH" != "0" ]] ; then
-    echo "================ Result ===================="
     echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
     [[ "$NEWBUILD" = no ]] && \
@@ -134,13 +140,12 @@ if [[ "$HIGH" != "0" ]] ; then
     echo "============================================"
     exit 1
 else
-    echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
         [[ "$NEWBUILD" = no ]] && \
             echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     else
-        echo "OK, no warnings detected"
+        echo "OK, no compilation warnings detected"
     fi
     echo "============================================"
     exit $RESULT
