@@ -37,8 +37,8 @@
 # ***** READ PARAMETERS IF PRESENT *****
 if [ $# -eq 0 ];then   # parameters missing
     SUT_PORT="2206"
-    BIOS_PORT="8006"
-    BASE_URL="http://$SUT_NAME:8006/api/v1"
+    SUT_WEB_PORT="8006"
+    BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
 else
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -53,6 +53,7 @@ else
     done
 fi
 SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_IS_REMOTE=yes
 
 # ***** SET CHECKOUTDIR *****
 # Include our standard routines for CI scripts
@@ -64,7 +65,8 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 RESULT=0
 # ***** SET (MANUALY) SUT_NAME - MANDATORY *****
 #SUT_PORT="2206"
-SUT_NAME="root@debian.roz.lab.etn.com"
+SUT_USER="root"
+SUT_NAME="debian.roz.lab.etn.com"
 #[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8006"
     # *** if used set BIOS_USER and BIOS_PASSWD
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
@@ -131,7 +133,7 @@ fi
 # ***** AUTHENTICATION ISSUES *****
 # check SASL is working
 logmsg_info "Checking remote SASL Auth Daemon"
-ssh -p $SUT_PORT $SUT_NAME "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
+sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
   logmsg_info "saslauthd is responsive and configured well!" || \
   logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
