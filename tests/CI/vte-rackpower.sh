@@ -32,7 +32,7 @@
     # *** this way it contains also smoke test of the chain nut->DB->restAPI
 
 # ***** PREREQUISITES *****
-    # *** SUT_PORT should be passed as parameter --port <value>
+    # *** SUT_SSH_PORT should be passed as parameter --port <value>
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
@@ -52,16 +52,16 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
     # *** read parameters if present
 if [ $# -eq 0 ];then   # default if parameters missing
-    SUT_PORT="2206"    # port used for ssh requests
+    SUT_SSH_PORT="2206"    # port used for ssh requests
     SUT_WEB_PORT="8006"
     SUT_USER="root"
-    SUT_NAME="debian.roz.lab.etn.com"
-    BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+    SUT_HOST="debian.roz.lab.etn.com"
+    BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 else                   # read parameter --port|-o
     while [ $# -gt 0 ]; do
         case "$1" in
             -o|--port)
-            SUT_PORT="$2"
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
         *)
@@ -71,7 +71,7 @@ else                   # read parameter --port|-o
     done
 fi
                        # port used for http requests
-SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
 SUT_IS_REMOTE=yes
 
 # ***** GLOBAL VARIABLES *****
@@ -79,8 +79,8 @@ TIME_START=$(date +%s)
 
     # *** set SUT base URL and SUT name
 SUT_USER="root"
-SUT_NAME="debian.roz.lab.etn.com"
-BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+SUT_HOST="debian.roz.lab.etn.com"
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
