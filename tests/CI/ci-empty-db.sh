@@ -32,6 +32,5 @@ set -x
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 
-
-mysql -u root < "$DB1" || CODE=$? die "Failed to load $DB1"
-echo "select * from t_bios_asset_element_type;" | mysql -u root box_utf8
+loaddb_file "$DB1"
+do_select "select * from t_bios_asset_element_type"

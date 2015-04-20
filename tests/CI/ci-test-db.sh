@@ -36,11 +36,6 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
-loaddb_file() {
-    mysql -u root < "$1" > /dev/null || \
-        CODE=$? die "Could not load $1"
-}
-
 set -u
 set -e
 
