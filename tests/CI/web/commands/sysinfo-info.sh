@@ -4,8 +4,10 @@
 # Check getting server system info as unprivileged user
 # As of now, this should work, just in a limited manner
 test_it "sysinfo_get_auth=0_raw"
+curlfail_push "warn" ""
 SYSINFOURAW="`api_get '/admin/sysinfo'`"
 RES=$?
+curlfail_pop
 echo "=== SYSINFOURAW ($RES):" >&2
 echo "$SYSINFOURAW" >&2
 if [ $RES = 0 ]; then
@@ -100,8 +102,10 @@ print_result $?
 ###############################################################
 # Check getting server system info (authorized only?)
 test_it "sysinfo_get_auth=2_raw"
+curlfail_push "warn" ""
 SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
 RES=$?
+curlfail_pop
 echo "=== SYSINFOARAW ($RES):" >&2
 echo "$SYSINFOARAW" >&2
 if [ $RES = 0 ]; then
@@ -257,8 +261,10 @@ fi
 ###############################################################
 # Compare different request methods
 test_it "sysinfo_get_wToken_auth=2_raw"
+curlfail_push "warn" ""
 SYSINFOARAW_WT_G="`api_auth_get_wToken '/admin/sysinfo'`"
 RES=$?
+curlfail_pop
 echo "=== SYSINFOARAW_WT_G ($RES):" >&2
 echo "$SYSINFOARAW_WT_G" >&2
 if [ $RES = 0 ]; then
@@ -297,8 +303,10 @@ print_result $?
 
 
 test_it "sysinfo_post_wToken_auth=2_raw"
+curlfail_push "warn" ""
 SYSINFOARAW_WT_P="`api_auth_post_wToken '/admin/sysinfo'`"
 RES=$?
+curlfail_pop
 echo "=== SYSINFOARAW_WT_P ($RES):" >&2
 echo "$SYSINFOARAW_WT_P" >&2
 if [ $RES = 0 ]; then
