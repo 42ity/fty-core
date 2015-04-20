@@ -97,10 +97,9 @@ PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
 if [ "$(sut_run 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
-    echo "saslauthd is running"
+    logmsg_info "saslauthd is running"
 else
-    echo "saslauthd is not running, please start it first!" >&2
-    exit 1
+    CODE=1 die "saslauthd is not running, please start it first!"
 fi
 
 # is bios user present?
@@ -109,26 +108,29 @@ fi
 LINE="$(sut_run "getent passwd '$BIOS_USER'")"
 if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database at $SUT_HOST:$SUT_SSH_PORT"
-    echo "To add it locally, run: "
+    logmsg_error "User $BIOS_USER is not known to system administrative" \
+        "database at $SUT_HOST:$SUT_SSH_PORT." \
+    logmsg_info "To add it locally, run: "
     echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
-    exit 2
-fi
+    CODE=2 die "BIOS_USER absent on remote system"
+fi >&2
 
 # is bios access to sasl right?
 SASLTEST=$(sut_run "which testsaslauthd")
 LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
 if [ $? != 0 -o -z "$LINE" ]; then
-    echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-    exit 3
+    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+        "Please check the existence of /etc/pam.d/bios (and maybe" \
+        "/etc/sasl2/bios.conf for some OS distributions)"
 fi
 
 # is web server running?
-if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
-    echo "Webserver is not running, please start it first!"
-    exit 4
+curlfail_push_expect_404
+if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+    CODE=4 die "Webserver is not running or has errors, please start it first!"
 fi
+curlfail_pop
 
 # log dir contents the real responses
 cd "`dirname "$0"`"
@@ -163,6 +165,9 @@ done
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
 set -o pipefail 2>/dev/null || true
+
+# TODO: Port recent changes from main test_web.sh
+# ... or merge these two via sut_run() commands etc.
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
