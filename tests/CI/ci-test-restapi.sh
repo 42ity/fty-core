@@ -210,11 +210,6 @@ test_web() {
     return $RESULT
 }
 
-loaddb_file() {
-    mysql -u root < "$1" > /dev/null || \
-        CODE=$? die "Could not load $1"
-}
-
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \

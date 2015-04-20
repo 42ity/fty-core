@@ -38,6 +38,11 @@ _SCRIPT_ARGC="$#"
     *) _SCRIPT_TYPE="Program" ;;
 esac
 
+### Database credentials
+[ -z "$DBUSER" ] && DBUSER=root
+[ -z "$DATABASE" ] && DATABASE=box_utf8
+export DBUSER DATABASE
+
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
@@ -152,3 +157,53 @@ determineDirs_default() {
     return $RES
 }
 
+isRemoteSUT() {
+    if  [ -n "$SUT_NAME" -a -n "$SUT_PORT" ] && \
+        [ x"$SUT_NAME" != xlocalhost -a x"$SUT_NAME" != x127.0.0.1 ] \
+    ; then
+        ### Yes, we test a remote box
+        ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
+        ### and/or an explicit envvar-flag setting for local vs. remote?
+        return 0
+    else
+        ### No, test is local
+        return 1
+    fi
+}
+
+sut_run() {
+    ### This tries to run a command either locally or externally via SSH
+    ### depending on what we are testing (local or remote System Under Test)
+    if isRemoteSUT ; then
+        logmsg_info "sut_run()::ssh(${SUT_NAME}:${SUT_PORT}): $@"
+        eval ssh -p "${SUT_PORT}" "${SUT_NAME}" "$@"
+        return $?
+    else
+        # logmsg_info "sut_run()::local: $@"
+        eval "$@"
+        return $?
+    fi
+}
+
+do_select() {
+    echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}" | tail -n +2
+}
+
+loaddb_file() {
+    DBFILE="$1"
+    [ -z "$DBFILE" ] && DBFILE='&0'
+    ### Note: syntax below 'eval ... "<$DBFILE"' is sensitive to THIS spelling
+
+    ### Due to comments currently don't converge to sut_run(), maybe TODO later
+    if isRemoteSUT ; then
+        ### Push local SQL file contents to remote system and sleep a bit
+        ( eval ssh -p "${SUT_PORT}" "${SUT_NAME}" \
+            "systemctl start mysql && mysql -u ${DBUSER}" "<$DBFILE" && \
+          sleep 20 && echo "Updated DB on remote system $SUT_NAME:$SUT_PORT: $DBFILE" ) || \
+          CODE=$? die "Could not load database file to remote system $SUT_NAME:$SUT_PORT: $DBFILE"
+    else
+        eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
+            CODE=$? die "Could not load database file: $DBFILE"
+    fi
+    return 0
+}
