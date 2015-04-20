@@ -202,28 +202,32 @@ void get_measurements(ymsg_t* out, char** out_subj,
     std::string json;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
+        // NOTE: We must distinguish between requesting immediate data: then the interval is <)
+        //       and between requesting averages: then the interval is <> (i.e.: anything that falls within these...)
         tntdb::Statement st = conn.prepareCached(
-            "SELECT topic,value,scale,UNIX_TIMESTAMP(timestamp),units "
-            "FROM v_bios_measurement "
-            "WHERE "
-            "topic_id IN "
+            " SELECT topic, value, scale, UNIX_TIMESTAMP(timestamp), units "
+            " FROM v_bios_measurement"
+            " WHERE "
+            " topic_id IN "
             "   (SELECT t.id FROM t_bios_measurement_topic AS t, "
             "                     t_bios_monitor_asset_relation AS rel "
             "    WHERE rel.id_asset_element = :id AND "
             "          t.device_id = id_discovered_device AND "
             "          t.topic LIKE :topic) AND "
-            "timestamp >= FROM_UNIXTIME(:time_st) AND "
-            "timestamp <  FROM_UNIXTIME(:time_end) "
-            "ORDER BY timestamp ASC "
+            " timestamp >= FROM_UNIXTIME(:time_st) AND "
+            " timestamp <  FROM_UNIXTIME(:time_end) "
+            " ORDER BY timestamp ASC"
         );
         std::string topic = ymsg_get_string(in,"source");
         topic += "@%";
         errno = 0;
+
         st.set("id", ymsg_get_int64(in,"element_id"))
           .set("topic", topic)
           .set("time_st", ymsg_get_int64(in,"start_ts"))
           .set("time_end", ymsg_get_int64(in,"end_ts"));
-        log_debug("Got request regarding %s from %" PRId64 " till %" PRId64
+
+        log_debug("Got request regarding '%s' from %" PRId64 " till %" PRId64
                   " for %" PRId64,
             topic.c_str(), ymsg_get_int64(in,"start_ts"),
             ymsg_get_int64(in,"end_ts"),ymsg_get_int64(in,"element_id")
@@ -237,16 +241,21 @@ void get_measurements(ymsg_t* out, char** out_subj,
                 json += ",\n";
             }
             if(units.empty())
-                units = row[4].getString();
+            {
+                bool isNull =  row[4].get(units);
+                log_debug ("isNull %d", isNull);
+                
+            }
+            log_debug ("units == %s\n", units.c_str ());
             json += " {";
             json += "   \"value\": " + std::to_string(row[1].getInt32()) +  ",";
             json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
             json += "   \"timestamp\": " + std::to_string(row[3].getInt64());
             json += " }";
         }
-        json = "{ \"units\": \"" + units + "\",\n" +
+        json = "{ \"unit\": \"" + units + "\",\n" +
         // TODO: Remove ugly fake data hack
-#define UGLY_FAKE_DATA_HACK
+#undef UGLY_FAKE_DATA_HACK
 #ifdef UGLY_FAKE_DATA_HACK
                "  \"source\": \"temperature.thermal_zone\",\n" +
                "  \"step\": \"8h\",\n" +
@@ -266,6 +275,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
     if(ch != NULL) {
         ymsg_set_response(out, &ch);
         (*out_subj) = strdup("return_measurements");
+        ymsg_set_status (out, true);
     }
 }
 

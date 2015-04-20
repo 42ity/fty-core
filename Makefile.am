@@ -223,7 +223,8 @@ noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h \
-				src/include/str_defs.h
+				src/include/str_defs.h \
+				src/include/defs.h
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -397,7 +398,8 @@ test_utils_SOURCES = 	src/shared/utils.h \
 			tests/shared/test-utils.cc
 
 test_utils_LDADD = 	libpriv-utils.la \
-			libpriv-test-run.la
+			libpriv-test-run.la \
+			libpriv-defs.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
@@ -836,20 +838,23 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
 # WIP (KHR)
-client_PROGRAMS +=	cm-agent
+client_PROGRAMS +=	agent-cm
 
-cm_agent_SOURCES = \
+agent_cm_SOURCES = \
 			src/agents/computation/cm-agent.cc \
-			src/shared/utils_ymsg.c
+			src/shared/utils_ymsg.c \
+			src/shared/utils_ymsg.h \
+			src/shared/utils_ymsg++.cc \
+			src/shared/utils_ymsg++.h
 
-cm_agent_LDADD = \
+agent_cm_LDADD = \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-defs.la
 
-cm_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-cm_agent_CPPFLAGS =	$(AM_CPPFLAGS)					
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
 
 #
 
