@@ -26,7 +26,7 @@
     # *** abbreviation MS - Management Station - local server with this script ***
 
 # ***** PREREQUISITES *****
-    # *** SUT_PORT and BASE_URL should be set to values corresponded to chosen server ***
+    # *** SUT_SSH_PORT and BASE_URL should be set to values corresponded to chosen server ***
     # *** Must run as root without using password ***
     # *** BIOS image must be installed and running on SUT ***
     # *** SUT port and SUT name should be set properly (see below) ***
@@ -36,14 +36,14 @@
 
 # ***** READ PARAMETERS IF PRESENT *****
 if [ $# -eq 0 ];then   # parameters missing
-    SUT_PORT="2206"
+    SUT_SSH_PORT="2206"
     SUT_WEB_PORT="8006"
-    BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
+    BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 else
     while [ $# -gt 0 ]; do
         case "$1" in
             -o|--port)
-            SUT_PORT="$2"
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
         *)
@@ -52,7 +52,7 @@ else
         esac
     done
 fi
-SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
 SUT_IS_REMOTE=yes
 
 # ***** SET CHECKOUTDIR *****
@@ -63,10 +63,10 @@ determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 RESULT=0
-# ***** SET (MANUALY) SUT_NAME - MANDATORY *****
-#SUT_PORT="2206"
+# ***** SET (MANUALY) SUT_HOST - MANDATORY *****
+#SUT_SSH_PORT="2206"
 SUT_USER="root"
-SUT_NAME="debian.roz.lab.etn.com"
+SUT_HOST="debian.roz.lab.etn.com"
 #[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8006"
     # *** if used set BIOS_USER and BIOS_PASSWD
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
@@ -142,7 +142,7 @@ sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
 test_web() {
     echo "============================================================"
     /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s $SUT_NAME -o $SUT_PORT "$@"
+        -s $SUT_HOST -su $SUT_USER -sp $SUT_SSH_PORT "$@"
     RESULT=$?
     echo "==== RESULT: ($RESULT) ==========================================="
     return $RESULT

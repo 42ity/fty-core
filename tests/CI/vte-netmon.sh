@@ -47,9 +47,9 @@ fi
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
     # *** required SUT port and SUT name ***
-SUT_PORT="2206"
+SUT_SSH_PORT="2206"
 SUT_USER="root"
-SUT_NAME="debian.roz.lab.etn.com"
+SUT_HOST="debian.roz.lab.etn.com"
 SUT_IS_REMOTE=yes
     # *** temporary dsh file ***
 DSH_FILE=/tmp/temp
