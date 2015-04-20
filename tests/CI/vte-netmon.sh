@@ -62,6 +62,13 @@ function cleanup {
     rm -f "$LOCKFILE" #"$DSH_FILE"
 }
 
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+
 # ***** LOCK THE RUNNING SCRIPT, SET trap FOR EXIT SIGNALS *****
     # *** lock the script with creating $LOCKFILE ***
 touch "$LOCKFILE"
