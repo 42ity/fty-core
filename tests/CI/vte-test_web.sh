@@ -118,7 +118,7 @@ fi >&2
 
 # is bios access to sasl right?
 SASLTEST=$(sut_run "which testsaslauthd")
-LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
+LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios")"
 if [ $? != 0 -o -z "$LINE" ]; then
     CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
         "Please check the existence of /etc/pam.d/bios (and maybe" \
