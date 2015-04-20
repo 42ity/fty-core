@@ -28,6 +28,14 @@
 #   db must be filled
 #
 
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+set -o pipefail || true
+
 #
 # list of values in samples
 #
