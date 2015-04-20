@@ -31,7 +31,8 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$BIOS_PORT" ] && BIOS_PORT="8000"
+[ -z "$SUT_NAME" ] && SUT_NAME="127.0.0.1"
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
@@ -80,7 +81,7 @@ set -u
 set -e
 
 test_web_port() {
-    netstat -tan | grep -w "${BIOS_PORT}" | egrep 'LISTEN' >/dev/null
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
 }
 
 test_web_process() {
@@ -104,7 +105,7 @@ wait_for_web() {
             return 0
         fi
     done
-    logmsg_error "Port ${BIOS_PORT} still not in LISTEN state" >&2
+    logmsg_error "Port ${SUT_WEB_PORT} still not in LISTEN state" >&2
     return 1
 }
 
@@ -138,7 +139,7 @@ kill_daemons() {
   killall -9 tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
   test_web_port && \
-    die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
+    die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
