@@ -53,8 +53,10 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
     # *** read parameters if present
 if [ $# -eq 0 ];then   # default if parameters missing
     SUT_PORT="2206"    # port used for ssh requests
-    SUT_NAME="root@debian.roz.lab.etn.com"
-    BASE_URL="http://$SUT_NAME:8006/api/v1"
+    SUT_WEB_PORT="8006"
+    SUT_USER="root"
+    SUT_NAME="debian.roz.lab.etn.com"
+    BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
 else                   # read parameter --port|-o
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -70,12 +72,14 @@ else                   # read parameter --port|-o
 fi
                        # port used for http requests
 SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+SUT_IS_REMOTE=yes
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
 
     # *** set SUT base URL and SUT name
-SUT_NAME="root@debian.roz.lab.etn.com"
+SUT_USER="root"
+SUT_NAME="debian.roz.lab.etn.com"
 BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
 
     # *** config dir for the nut dummy driver parameters allocated in config files
@@ -120,7 +124,7 @@ rem_copy_file() {
 SRC_FILE=$1
 DST_FILE=$2
 COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE"
-(cd /;tar -cf - tmp/$SRC_FILE | ssh -p $SUT_PORT $SUT_NAME "$COPY_CMD" & )
+(cd /;tar -cf - tmp/$SRC_FILE | sut_run "$COPY_CMD" & )
 }
 
     # *** rem_cmd()
