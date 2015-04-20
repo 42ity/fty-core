@@ -198,11 +198,11 @@ sut_run() {
     ### NOTE: By current construction this may fail for parameters that are
     ### not one token aka "$1"
     if isRemoteSUT ; then
-        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@"
+        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
-        # logmsg_info "sut_run()::local: $@"
+        # logmsg_info "sut_run()::local: $@" >&2
         sh -c "$@"
         return $?
     fi
