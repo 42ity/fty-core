@@ -229,8 +229,8 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        ( REMCMD="mysql -u ${DBUSER}"
-          sut_run "systemctl start mysql"
+        ( sut_run "systemctl start mysql"
+          REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
