@@ -34,6 +34,17 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 [ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
+# Set up weblib test engine preference defaults for automated CI tests
+[ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
+    WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
+[ -z "$WEBLIB_QUICKFAIL" ] && \
+    WEBLIB_QUICKFAIL=no
+[ -z "$WEBLIB_CURLFAIL" ] && \
+    WEBLIB_CURLFAIL=no
+[ -z "$SKIP_NONSH_TESTS" ] && \
+    SKIP_NONSH_TESTS=yes
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"

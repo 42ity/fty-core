@@ -1,3 +1,5 @@
+curlfail_push_expect_400
+
 test_it "topology/power__bad_input__1"
 [ "`api_get '/topology/power?from=x' | \
             grep 'HTTP/1.1 400 Bad Request'`" ]
@@ -105,7 +107,10 @@ test_it "topology/power__bad_input__20"
             grep 'HTTP/1.1 400 Bad Request'`" ]
 print_result $?
 
+curlfail_pop
 
+
+curlfail_push_expect_404
 test_it "topology/power__bad_input__21"
 [ "`api_get '/topology/power?from=5019' | \
                     grep 'HTTP/1.1 404 Not Found'`" ]
@@ -126,3 +131,4 @@ test_it "topology/power__bad_input__24"
                     grep 'HTTP/1.1 400 Bad Request'`" ]
 print_result $?
 
+curlfail_pop

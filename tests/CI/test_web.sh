@@ -101,6 +101,7 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
 fi
 
 logmsg_info "Testing webserver ability to serve the REST API"
+curlfail_push_expect_404
 if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
     logmsg_error "api_get() returned an error:"
     api_get "" >&2
@@ -113,13 +114,16 @@ if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
     api_get "" >&2
     CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
 fi
+curlfail_pop
 
+curlfail_push_expect_noerrors
 if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
     # We expect that the login service responds
     logmsg_error "api_get() returned an error:"
     api_get "/oauth2/token" >&2
     CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
 fi
+curlfail_pop
 logmsg_info "Webserver seems basically able to serve the REST API"
 
 cd "`dirname "$0"`"
