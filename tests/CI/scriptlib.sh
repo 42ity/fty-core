@@ -43,6 +43,18 @@ esac
 [ -z "$DATABASE" ] && DATABASE=box_utf8
 export DBUSER DATABASE
 
+### REST API and non-privileged SSH credentials
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+export BIOS_USER BIOS_PASSWD
+
+### Variables for remote testing - avoid "variable not defined" errors
+[ -z "$SUT_IS_REMOTE" ] && SUT_IS_REMOTE="auto" # auto|yes|no
+[ -z "$SUT_NAME" ] && SUT_NAME=""       # Hostname or IP address
+[ -z "$SUT_PORT" ] && SUT_PORT=""       # SSH (maybe via NAT)
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
+export SUT_IS_REMOTE SUT_NAME SUT_PORT SUT_WEB_PORT
+
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
@@ -158,16 +170,24 @@ determineDirs_default() {
 }
 
 isRemoteSUT() {
-    if  [ -n "$SUT_NAME" -a -n "$SUT_PORT" ] && \
-        [ x"$SUT_NAME" != xlocalhost -a x"$SUT_NAME" != x127.0.0.1 ] \
-    ; then
-        ### Yes, we test a remote box
-        ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
-        ### and/or an explicit envvar-flag setting for local vs. remote?
+    if [ "$SUT_IS_REMOTE" = yes ]; then
+        ### Yes, we are testing a remote box or a VTE,
+        ### and have a cached decision or explicit setting
         return 0
     else
         ### No, test is local
         return 1
+    fi
+
+    if  [ -z "$SUT_IS_REMOTE" -o x"$SUT_IS_REMOTE" = xauto ] && \
+        [ -n "$SUT_NAME" -a -n "$SUT_PORT" ] && \
+        [ x"$SUT_NAME" != xlocalhost -a x"$SUT_NAME" != x127.0.0.1 ] \
+    ; then
+        ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
+        SUT_IS_REMOTE=yes
+        return 0
+        ### NOTE: No automatic decision for "no" since the needed variables
+        ### may become defined later.
     fi
 }
 
