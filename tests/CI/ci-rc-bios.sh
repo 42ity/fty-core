@@ -30,10 +30,10 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, using system binaries..."
+    echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
     export PATH="/usr/bin:/usr/lib:/usr/libexec:/usr/lib/bios:/usr/libexec/bios:$PATH"
 else
-    echo "Found $BUILDSUBDIR/config.status, using built binaries..."
+    echo "Found $BUILDSUBDIR/config.status, using custom-built binaries..."
     echo "Search path: $CHECKOUTDIR, $PWD"
     export PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
 fi
@@ -172,6 +172,22 @@ status() {
     return $RESULT
 }
 
+update_compiled() {
+    if  [ -z "$BUILDSUBDIR" ] || \
+        [ ! -d "$BUILDSUBDIR" -o ! -x "$BUILDSUBDIR/config.status" ]\
+    ; then
+        # Use system bins, nothing to compile
+        return 0
+    fi
+
+    logmsg_info "Ensuring that the tested programs have been built and up-to-date"
+    if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
+        ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
+    fi
+    ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
+        web-test-deps db-ng agent-nut driver-nmap netmon
+}
+
 start() {
     for d in $DAEMONS ; do
         start_daemon $d
@@ -184,6 +200,9 @@ Options:
     --stop       stop BIOS processes
     --start      start BIOS processes (does restart if BIOS is running)
     --status     check whether all processes are running
+    --update-compiled   when using custom compiled code (rather than packaged)
+                 use this option to ensure needed programs are up-to-date
+                 (invoked automatically before a start)
     --help|-h    print this help"
 }
 
@@ -203,6 +222,9 @@ while [ $# -gt 0 ] ; do
         --status)
             OPERATION=status
             ;;
+        --update-compiled)
+            OPERATION=update_compiled
+            ;;
         *)
             echo "Invalid option $1" 1>&2
             usage
@@ -215,6 +237,7 @@ done
 case "$OPERATION" in
     start)
         stop
+        update_compiled
         start_malamute && \
         start
         exit
@@ -227,6 +250,10 @@ case "$OPERATION" in
         ;;
     status)
         status
+        exit
+        ;;
+    update_compiled)
+        update_compiled
         exit
         ;;
     help)

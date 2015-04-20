@@ -157,6 +157,13 @@
       <url>^/api/v1/metric/computed/average.*$</url>
     </mapping>
 
+    <!-- Alerts -->
+    <mapping>
+      <target>alerts@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/alerts.*$</url>
+    </mapping>
+
 
  </mappings>
 

@@ -7,7 +7,7 @@ battery.charge.restart: 10
 battery.current: 0
 battery.energysave: no
 battery.protection: yes
-battery.runtime: 0
+battery.runtime: 3608
 battery.runtime.low: 180
 battery.type: PbAc
 battery.voltage: 6

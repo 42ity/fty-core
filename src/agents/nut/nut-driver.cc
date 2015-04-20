@@ -56,10 +56,11 @@ static const std::vector<std::string> physicsNUT {
     "output.L3.realpower",
     "output.L3.current",
     "battery.charge",
+    "battery.runtime",
     "outlet.realpower",
     "outlet.#.current",
     "outlet.#.voltage",
-    "outlet.#.realpower"
+    "outlet.#.realpower"   
 };
 
 static const std::vector<std::string> physicsBIOS {
@@ -101,6 +102,7 @@ static const std::vector<std::string> physicsBIOS {
     "realpower.output.L3",
     "current.output.L3",
     "charge.battery",
+    "runtime.battery",
     "realpower.default",
     "current.outlet.#",
     "voltage.outlet.#",
@@ -127,7 +129,7 @@ static const std::vector<std::string> inventoryNUT {
 static const std::vector<std::string> inventoryBIOS {
     "model",
     "manufacturer",
-    "serial",
+    "serial_no",
     "type",
     "device.description",
     "device.contact",

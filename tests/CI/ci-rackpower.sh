@@ -57,10 +57,11 @@ kill_daemons() {
     return 0
 }
 
+logmsg_info "Ensuring that the tested programs have been built and up-to-date"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
     ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng agent-nut driver-nmap netmon
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >/tmp/web-test.log 2>&1 &
 WEBTESTPID=$!
@@ -71,7 +72,8 @@ ${BUILDSUBDIR}/db-ng &
 DBNGPID=$!
 
 # Ensure that no processes remain dangling when test completes
-trap 'kill_daemons' 0 1 2 3 15
+trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' 0
+trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 15
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
