@@ -201,7 +201,8 @@ sut_run() {
         return $?
     else
         # logmsg_info "sut_run()::local: $@"
-        "$@"
+        CMD="$1"; shift 1
+        "$CMD" "$@"
         return $?
     fi
 }
@@ -211,7 +212,11 @@ sut_run() {
 ### the local and remote tests alike.
 
 do_select() {
-    echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}" | tail -n +2
+    DB_OUT="$(echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+    DB_RES=$?
+    echo "$DB_OUT" | tail -n +2
+    [ $? = 0 -a "$DB_RES" = 0 ]
+    return $?
 }
 
 loaddb_file() {
