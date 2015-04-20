@@ -195,6 +195,8 @@ isRemoteSUT() {
 sut_run() {
     ### This tries to run a command either locally or externally via SSH
     ### depending on what we are testing (local or remote System Under Test)
+    ### NOTE: By current construction this may fail for parameters that are
+    ### not one token aka "$1"
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@"
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
