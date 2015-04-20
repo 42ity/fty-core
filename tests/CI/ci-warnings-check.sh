@@ -113,11 +113,13 @@ sort_warnings() {
 
 echo "================ Are GitIgnores good? ======================="
 RES_GITIGNORE=0
+set +e
 cat "$BUILDSUBDIR/.git_details" | grep PACKAGE_GIT_STATUS_ESCAPED | \
     grep -v 'PACKAGE_GIT_STATUS_ESCAPED=""'
 [ $? = 0 ] && RESULT=1 && RES_GITIGNORE=1 && \
     logmsg_warn "Some build products (above) are not in a .gitignore" && \
     echo "" && sleep 1  # Sleep to not mix stderr and stdout in Jenkins
+set -e
 
 echo "==================== sort_warnings =========================="
 ls -la ${MAKELOG}
