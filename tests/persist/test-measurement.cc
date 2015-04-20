@@ -17,7 +17,6 @@ using namespace persist;
 
 TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][select][t_bios_measurement][t_bios_measurement_topic]")
 {
-    log_open();
 
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
@@ -86,30 +85,40 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
         REQUIRE(ret2.affected_rows == 1);
     }
 
-    log_close();
 }
 
 TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measurement_topic][measurement_getter]")
 {
-    log_open();
+    
+    INFO ("measurement_getter start\n");
+
     ymsg_t *in = ymsg_new(YMSG_SEND);
     ymsg_t *out = ymsg_new(YMSG_REPLY);
     char *out_s = NULL;
+    REQUIRE ( in != NULL);
+    REQUIRE ( out != NULL);
 
     errno = 0;
     ymsg_set_int64(in, "element_id", 26);
     ymsg_set_int64(in, "start_ts", 0);
     ymsg_set_int64(in, "end_ts", time(NULL));
-    ymsg_set_string(in, "source", "temperature.thermal_zone0.arithmetic_mean_8h");
+    ymsg_set_string(in, "source", "temperature.thermal_zone0");
+    ymsg_set_string(in, "step", "8h");
+    ymsg_set_string(in, "type", "arithmetic_mean");
     REQUIRE(errno == 0);
 
     persist::process_ymsg(out, &out_s, in, "get_measurements");
 
-    REQUIRE(streq(out_s, "return_measurements"));
+    REQUIRE ( out_s != NULL );
+    REQUIRE ( strcmp (out_s, "return_measurements") == 0 );
+
 
     zchunk_t *ch = ymsg_get_response(out);
-    std::stringstream str;
-    str << ((char*)zchunk_data(ch));
+    REQUIRE ( ch != NULL);
+
+    std::string json ((char *) zchunk_data (ch), zchunk_size (ch));
+    std::stringstream str (json, std::ios_base::in);
+
     cxxtools::SerializationInfo si;
     cxxtools::JsonDeserializer ds(str);
     ds.deserialize(si);
@@ -119,5 +128,5 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     REQUIRE(test == "C");
     REQUIRE(si.getMember("data").memberCount() > 2);
 
-    log_close();
+    
 }
