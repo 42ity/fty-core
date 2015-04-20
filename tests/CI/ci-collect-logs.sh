@@ -77,7 +77,8 @@ if [ ! "$SUT_HOST" ] ; then
 fi
 
 log_list() {
-    sut_run "find . -type f -name '*.log'"
+    REMCMD='find . -type f -name '"'"'*.log'"'"
+    sut_run "$REMCMD"
 }
 
 cppcheck_list() {
