@@ -1,4 +1,5 @@
 test_it "topology/location__bad_input__1"
+curlfail_push_expect_400
 [ "`api_get '/topology/location?from=x' | \
             grep 'HTTP/1.1 400 Bad Request'`" ]
 print_result $?
@@ -142,9 +143,13 @@ test_it "topology/location__bad_input__29"
 [ "`api_get '/topology/location?from=1234&filter=d&recursive=no' | \
             grep 'HTTP/1.1 400 Bad Request'`" ]
 print_result $?
+curlfail_pop
 
+
+curlfail_push_expect_404
 test_it "topology/location__bad_input__30"
 [ "`api_get '/topology/location?from=5019' | \
             grep 'HTTP/1.1 404 Not Found'`" ]
 print_result $?
+curlfail_pop
 
