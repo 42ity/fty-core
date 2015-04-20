@@ -948,7 +948,7 @@ if ENABLE_DEBUG_ASAN
 	export LD_PRELOAD; \
 	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 else
-	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+	ZSYS_SIGHANDLER=false LC_ALL=C LANG=C ${TNTNET} tntnet.xml
 endif
 
 #----------------------------------------------------------------------
