@@ -42,7 +42,7 @@ if [ $# -eq 0 ];then   # parameters missing
 else
     while [ $# -gt 0 ]; do
         case "$1" in
-            -o|--port)
+            -o|-sp|--port)
             SUT_SSH_PORT="$2"
             shift 2
             ;;

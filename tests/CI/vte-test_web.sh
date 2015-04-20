@@ -64,7 +64,7 @@ while [ $# -gt 0 ]; do
         BIOS_PASSWD="$2"
         shift 2
         ;;
-    -s|--sut)
+    -s|-sh|--sut|--sut-host)
         SUT_HOST="$2"
         shift 2
         ;;
@@ -72,7 +72,7 @@ while [ $# -gt 0 ]; do
         SUT_USER="$2"
         shift 2
         ;;
-    -o|-sp|--port)
+    -o|-sp|--port|--sut-port)
         SUT_SSH_PORT="$2"
         shift 2
         ;;
