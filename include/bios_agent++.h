@@ -73,15 +73,18 @@ class BIOSAgent {
             if( zsys_interrupted ) break;
             if(which) {
                 ymsg_t *message = recv( );
-                switch( ymsg_id(message) ) {
-                case YMSG_REPLY:
-                    onReply( &message );
-                case YMSG_SEND:
-                    onSend( &message );
+                if( message ){
+                    switch( ymsg_id(message) ) {
+                    case YMSG_REPLY:
+                        onReply( &message );
+                    case YMSG_SEND:
+                        onSend( &message );
+                    }
+                    ymsg_destroy( &message );
                 }
-                ymsg_destroy( &message );
+            } else {
+                onPoll();
             }
-            onPoll();
         }
         zpoller_destroy( &poller );
     };
