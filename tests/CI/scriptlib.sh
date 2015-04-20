@@ -197,11 +197,11 @@ sut_run() {
     ### depending on what we are testing (local or remote System Under Test)
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@"
-        eval ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
+        ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         # logmsg_info "sut_run()::local: $@"
-        eval "$@"
+        "$@"
         return $?
     fi
 }
