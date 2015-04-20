@@ -14,8 +14,7 @@ print_result $?
 # Check setting time as unprivileged user
 test_it "unauth_time_set"
 curlfail_push_expect_401
-[ "`api_post '/admin/time' "$ZEROEPOCH" | \
-    grep 'HTTP/1.1 401 Unauthorized'`" ]
+api_post '/admin/time' "$ZEROEPOCH" >/dev/null
 print_result $?
 curlfail_pop
 
@@ -45,7 +44,6 @@ fi
 # Check setting nonsense
 test_it "wrong_time"
 curlfail_push_expect_400
-[ "`api_auth_post '/admin/time' 'stardate 48960.9' | \
-    grep 'HTTP/1.1 400 Bad Request'`" ]
+api_auth_post '/admin/time' 'stardate 48960.9' >/dev/null
 print_result $?
 curlfail_pop

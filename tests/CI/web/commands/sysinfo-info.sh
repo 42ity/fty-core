@@ -11,11 +11,11 @@ curlfail_pop
 echo "=== SYSINFOURAW ($RES):" >&2
 echo "$SYSINFOURAW" >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOURAW" | grep 'HTTP/1\.. 401' && \
+    echo "$SYSINFOURAW" | egrep 'HTTP/1\.. 401' && \
     echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
 fi >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOURAW" | grep 'HTTP/1\.. 4' && \
+    echo "$SYSINFOURAW" | egrep 'HTTP/1\.. 4' && \
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
@@ -109,11 +109,11 @@ curlfail_pop
 echo "=== SYSINFOARAW ($RES):" >&2
 echo "$SYSINFOARAW" >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW" | grep 'HTTP/1\.. 401' && \
+    echo "$SYSINFOARAW" | egrep 'HTTP/1\.. 401' && \
     echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
 fi >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW" | grep 'HTTP/1\.. 4' && \
+    echo "$SYSINFOARAW" | egrep 'HTTP/1\.. 4' && \
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
@@ -268,11 +268,11 @@ curlfail_pop
 echo "=== SYSINFOARAW_WT_G ($RES):" >&2
 echo "$SYSINFOARAW_WT_G" >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW_WT_G" | grep 'HTTP/1\.. 401' && \
+    echo "$SYSINFOARAW_WT_G" | egrep 'HTTP/1\.. 401' && \
     echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
 fi >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW_WT_G" | grep 'HTTP/1\.. 4' && \
+    echo "$SYSINFOARAW_WT_G" | egrep 'HTTP/1\.. 4' && \
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
@@ -310,11 +310,11 @@ curlfail_pop
 echo "=== SYSINFOARAW_WT_P ($RES):" >&2
 echo "$SYSINFOARAW_WT_P" >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW_WT_P" | grep 'HTTP/1\.. 401' && \
+    echo "$SYSINFOARAW_WT_P" | egrep 'HTTP/1\.. 401' && \
     echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
 fi >&2
 if [ $RES = 0 ]; then
-    echo "$SYSINFOARAW_WT_P" | grep 'HTTP/1\.. 4' && \
+    echo "$SYSINFOARAW_WT_P" | egrep 'HTTP/1\.. 4' && \
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
