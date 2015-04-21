@@ -157,12 +157,14 @@ determineDirs_default() {
     if [ -n "$BUILDSUBDIR" -a -d "$BUILDSUBDIR" -a -x "$BUILDSUBDIR/config.status" ]; then
         logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR'"
     else
-        logmsg_error "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
-        logmsg_error "Search path checked: $CHECKOUTDIR, $PWD"
-        ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
-            "$PWD/config.status" >&2
+        [ "$NEED_BUILDSUBDIR" = yes ] && _LM=logmsg_error || _LM=logmsg_warn
+        ${_LM} "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
+        ${_LM} "Search path checked: '$CHECKOUTDIR', '$PWD'"
+        unset _LM
         RES=1
         if [ "$NEED_BUILDSUBDIR" = yes ]; then
+            ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
+                "$PWD/config.status" >&2
             exit $RES
         fi
     fi
