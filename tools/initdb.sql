@@ -18,6 +18,8 @@ drop table if exists t_bios_client_info;
 drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
+drop table if exists t_bios_alert_device;
+drop table if exists t_bios_alert;
 
 CREATE TABLE t_bios_measurement_topic(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
@@ -69,6 +71,42 @@ CREATE TABLE t_bios_discovered_device(
     
     FOREIGN KEY(id_device_type)
 	REFERENCES t_bios_device_type(id_device_type)
+        ON DELETE RESTRICT
+);
+
+CREATE TABLE t_bios_alert(
+    id          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    rule_name   VARCHAR(50)      NOT NULL,
+    date_from   DATETIME         NOT NULL,
+    priority    TINYINT UNSIGNED NOT NULL,
+    state       TINYINT UNSIGNED NOT NULL,
+    descriprion VARCHAR(255),
+    date_till    DATETIME,
+    notification TINYINT         NOT NULL DEFAULT 0,
+
+    PRIMARY KEY(id),
+
+    INDEX(id),
+
+    INDEX(rule_name)
+);
+
+CREATE TABLE t_bios_alert_device(
+    id          INT UNSIGNED        NOT NULL AUTO_INCREMENT,
+    alert_id    INT UNSIGNED        NOT NULL,
+    device_id   SMALLINT UNSIGNED   NOT NULL,
+
+    PRIMARY KEY(id),
+
+    INDEX(alert_id),
+    INDEX(device_id),
+
+    FOREIGN KEY(alert_id)
+        REFERENCES t_bios_alert(id)
+        ON DELETE RESTRICT,
+
+    FOREIGN KEY(device_id)
+        REFERENCES t_bios_discovered_device(id_discovered_device)
         ON DELETE RESTRICT
 );
 
@@ -355,6 +393,32 @@ DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
+
+
+DROP VIEW IF EXISTS v_bios_alert_device;
+CREATE VIEW v_bios_alert_device AS
+    SELECT
+        id,
+        alert_id,
+        device_id
+    FROM
+        t_bios_alert_device;
+
+
+DROP VIEW IF EXISTS v_bios_alert;
+CREATE VIEW v_bios_alert AS
+    SELECT
+        id,
+        rule_name,
+        date_from,
+        priority,
+        state,
+        descriprion,
+        date_till,
+        notification
+    FROM
+        t_bios_alert;
+
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
