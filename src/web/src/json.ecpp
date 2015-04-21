@@ -1,14 +1,19 @@
 <%pre>
 #include <locale.h>
+#include <stdlib.h>
 </%pre>
 <%cpp>
 	// Get rid of locales
+	setenv("LANG", "C", 1);
 	setlocale(LC_ALL, "C");
 	std::setlocale(LC_ALL, "C");
 	std::locale default_locale("C");
 	reply.out().imbue(default_locale);
 	reply.sout().imbue(default_locale);
 	reply.uout().imbue(default_locale);
+
+	// Do not let zeromq took away our signals
+	setenv("ZSYS_SIGHANDLER", "false", 1);
 
 	// Silence the warning about unused "request" variable
 	request.keepAlive();
