@@ -32,7 +32,7 @@ namespace shared {
 
 // forward declaration of helper functions
 // TODO: move somewhere else
-char * const * _mk_argv(Argv vec);
+char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
         
@@ -377,7 +377,7 @@ int output(const Argv& args, std::string& o, std::string& e) {
 }
 
 // ### helper functions ###
-char * const * _mk_argv(Argv vec) {
+char * const * _mk_argv(const Argv& vec) {
 
     char ** argv = (char **) malloc(sizeof(char*) * (vec.size()+1));
     assert(argv);
@@ -385,7 +385,7 @@ char * const * _mk_argv(Argv vec) {
     for (auto i=0u; i != vec.size(); i++) {
 
         auto str = vec[i];
-        char* dest = (char*) malloc(sizeof(char) + (str.size() + 1));
+        char* dest = (char*) malloc(sizeof(char) * (str.size() + 1));
         memcpy(dest, str.c_str(), str.size());
         dest[str.size()] = '\0';
 

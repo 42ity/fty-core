@@ -4,6 +4,7 @@
 #include "dbpath.h"
 #include "log.h"
 #include "agents.h"
+#include "utils.h"
 
 TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventory]")
 {
@@ -17,7 +18,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     zhash_insert (ext_attributes, "key3", (char*)"value3");
     const char *module_name = "inventory";
 
-    auto ymsg_encoded = bios_inventory_encode (device_name, &ext_attributes, module_name);
+    ymsg_t * ymsg_encoded = bios_inventory_encode (device_name, &ext_attributes, module_name);
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( ext_attributes == NULL );
     ymsg_print (ymsg_encoded);
@@ -43,6 +44,10 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
     REQUIRE ( strcmp (value3, "value3") == 0 );
 
+    free(device_name_new);
+    free(module_name_new);
+    zhash_destroy(&ext_attributes_new);
+
     log_close ();
 }
 
@@ -61,30 +66,37 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 
     SECTION ("bios_web_average_request_decode") {
         int64_t start_ts = -1, end_ts = -1;
-        char *type, *step, *source;
-        uint64_t element_id;
+        char *type = NULL, *step = NULL, *source = NULL;
+        uint64_t element_id = 0;
         ymsg_t *msg = ymsg_new (YMSG_SEND);
         REQUIRE (msg);
         
         CHECK ( bios_web_average_request_decode (NULL, &start_ts, &end_ts, &type, &step, &element_id, &source) == -1 );
+        CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
 
         CHECK ( bios_web_average_request_decode (msg, NULL,      &end_ts, &type, &step, &element_id, &source) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         CHECK ( bios_web_average_request_decode (msg, &start_ts, NULL,    &type, &step, &element_id, &source) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         CHECK ( bios_web_average_request_decode (msg, &start_ts, &end_ts, NULL,  &step, &element_id, &source) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         CHECK ( bios_web_average_request_decode (msg, &start_ts, &end_ts, &type, NULL,  &element_id, &source) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         CHECK ( bios_web_average_request_decode (msg, &start_ts, &end_ts, &type, &step, NULL,        &source) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         CHECK ( bios_web_average_request_decode (msg, &start_ts, &end_ts, &type, &step, &element_id, NULL) == -1 );
-        CHECK ( msg );
+        CHECK ( msg ); CHECK ( type == NULL); CHECK ( step == NULL); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
         ymsg_destroy (&msg);
     }
 
     SECTION ("bios_web_average_reply_encode") {
-        CHECK ( bios_web_average_reply_encode (NULL) == -1 );
+        CHECK ( bios_web_average_reply_encode (NULL) == NULL );
     }
 
     SECTION ("bios_web_average_reply_decode") {
@@ -92,18 +104,53 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
         ymsg_t *msg = ymsg_new (YMSG_SEND);
         REQUIRE (msg);
         CHECK ( bios_web_average_reply_decode (NULL, &json) == -1 );
+        CHECK ( json == NULL );
+
         CHECK ( bios_web_average_reply_decode (msg, NULL) == -1 );
         CHECK ( msg );
         ymsg_destroy (&msg);
     }
 
-    // ymsg_t *bios_db_measurements_read_request_encode (int64_t , int64_t , uint64_t , const char *, char **);
-    //SECTION ("bios_db_measurements_read_request_encode") {
-    //}
+    SECTION ("bios_db_measurements_read_request_encode") {
+        char *subject = NULL;
+        CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, NULL, &subject) == NULL );
+        CHECK ( subject == NULL );
+        CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, "", NULL) == NULL );
+        CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, NULL, NULL) == NULL );
+    }
 
-    // int bios_db_measurements_read_request_decode (ymsg_t **self_p, char **, char **, uint64_t *, char **);
-    //SECTION ("bios_db_measurements_read_request_decode") {
-    //}
+    // bios_db_measurements_read_request_decode (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, uint64_t *element_id, char **source)
+    SECTION ("bios_db_measurements_read_request_decode") {
+        int64_t start_ts = -1, end_ts = -1;
+        char *source = NULL;
+        uint64_t element_id = 0;
+        ymsg_t *msg = ymsg_new (YMSG_SEND);
+        REQUIRE (msg);
+       
+        ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
+        REQUIRE (msg_reply);
+
+        CHECK ( bios_db_measurements_read_request_decode (NULL, &start_ts, &end_ts, &element_id, &source) == -1 );
+        CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
+        CHECK ( bios_db_measurements_read_request_decode (msg_reply, &start_ts, &end_ts, &element_id, &source) == -1 );
+        CHECK ( msg_reply ); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
+        CHECK ( bios_db_measurements_read_request_decode (msg, NULL, &end_ts, &element_id, &source) == -1 );
+        CHECK ( msg ); CHECK ( source == NULL); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
+        CHECK ( bios_db_measurements_read_request_decode (msg, &start_ts, NULL, &element_id, &source) == -1 );
+        CHECK ( msg ); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( element_id == 0 );
+
+        CHECK ( bios_db_measurements_read_request_decode (msg, &start_ts, &end_ts, NULL, &source) == -1 );
+        CHECK ( msg ); CHECK ( source == NULL); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1);
+
+        CHECK ( bios_db_measurements_read_request_decode (msg, &start_ts, &end_ts, &element_id, NULL) == -1 );
+        CHECK ( msg ); CHECK ( start_ts == -1 ); CHECK ( end_ts == -1); CHECK ( element_id == 0 );
+
+        ymsg_destroy (&msg);
+        ymsg_destroy (&msg_reply);
+    }
 
     // ymsg_t * bios_db_measurements_read_reply_encode (const char *);
     // SECTION ("bios_db_measurements_read_reply_encode") {
@@ -135,24 +182,28 @@ TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]")
     uint64_t element_id_r = 0;
     char *source_r = NULL;
    
-    int rv = bios_web_average_request_decode (&msg, &start_ts_r, &end_ts_r, &type_r, &step_r, &element_id_r, &source_r);
-    REQUIRE (rv != -1);
+    int rv = bios_web_average_request_decode (msg, &start_ts_r, &end_ts_r, &type_r, &step_r, &element_id_r, &source_r);
+    CHECK ( msg );
+    ymsg_destroy (&msg);
+    CHECK ( rv == 0 );
 
-    REQUIRE ( type_r );
-    REQUIRE ( step_r );
-    REQUIRE ( source_r );
+    CHECK ( type_r );
+    CHECK ( step_r );
+    CHECK ( source_r );
 
     CHECK ( start_ts == start_ts_r );
     CHECK ( end_ts == end_ts_r );
-    CHECK ( strcmp (type, type_r) == 0 );
-    CHECK ( strcmp (step, step_r) == 0 );
+    CHECK ( str_eq (type, type_r) );
+    CHECK ( str_eq (step, step_r) );
     CHECK ( element_id == element_id_r );
-    CHECK ( strcmp (source, source_r) == 0 );
+    CHECK ( str_eq (source, source_r) );
 
-    free (type_r);
-    free (step_r);
-    free (source_r);
-    REQUIRE (msg == NULL);
+    if (type_r)
+        free (type_r);
+    if (step_r)
+        free (step_r);
+    if (source_r)
+        free (source_r);
 }
 
 TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
@@ -161,12 +212,15 @@ TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
     REQUIRE ( msg );
 
     char *json_r = NULL;
-    int rv = bios_web_average_reply_decode (&msg, &json_r);
-    REQUIRE ( rv != -1 );
-    REQUIRE ( json_r );
-    CHECK ( strcmp (json, json_r) == 0 );
-    free (json_r);
-    REQUIRE ( msg == NULL );
+    int rv = bios_web_average_reply_decode (msg, &json_r);
+    CHECK ( msg );
+    ymsg_destroy (&msg);
+    CHECK ( rv == 0 );
+
+    CHECK ( json_r );
+    CHECK ( str_eq (json, json_r) );
+    if (json_r)
+        free (json_r);
 }
 
 TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][public_api]") {
@@ -177,41 +231,45 @@ TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][publi
     char *subject = NULL;
    
     ymsg_t *msg = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &subject);
-    REQUIRE ( msg );
-    REQUIRE ( subject );
-    CHECK ( strcmp (subject, "get_measurements") == 0 );
-    free (subject);
+    CHECK ( msg );
+    CHECK ( subject );
+    CHECK ( str_eq (subject, "get_measurements") );
+    if (subject)
+        free (subject);
 
     int64_t start_ts_r = -1;
     int64_t end_ts_r = -1;
     uint64_t element_id_r = 0;
     char *source_r = NULL;
 
-    int rv = bios_db_measurements_read_request_decode (&msg, &start_ts_r, &end_ts_r, &element_id_r, &source_r);
-    REQUIRE (rv != -1);
+    int rv = bios_db_measurements_read_request_decode (msg, &start_ts_r, &end_ts_r, &element_id_r, &source_r);
+    CHECK ( msg );
+    ymsg_destroy (&msg);
+    CHECK (rv == 0);
     
-    REQUIRE ( source_r );
+    CHECK ( source_r );
 
     CHECK ( start_ts == start_ts_r );
     CHECK ( end_ts == end_ts_r );
     CHECK ( element_id == element_id_r );
-    CHECK ( strcmp (source, source_r) == 0 );
-
-    free (source_r);
-    REQUIRE (msg == NULL);
+    CHECK ( str_eq (source, source_r) );
+    if (source_r)
+        free (source_r);
 }
 
 TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_api]") {
     const char *json = "{ \"key\" : \"value\", \"key2\" : [1, 2, 3, 4]}";
     ymsg_t *msg = bios_db_measurements_read_reply_encode (json);
-    REQUIRE ( msg );
+    CHECK ( msg );
 
     char *json_r = NULL;
-    int rv = bios_db_measurements_read_reply_decode (&msg, &json_r);
-    REQUIRE ( rv != -1 );
-    REQUIRE ( json_r );
-    CHECK ( strcmp (json, json_r) == 0 );
-    free (json_r);
-    REQUIRE ( msg == NULL );
+    int rv = bios_db_measurements_read_reply_decode (msg, &json_r);
+    CHECK ( msg );
+    ymsg_destroy (&msg);
+    CHECK ( rv == 0 );
+    CHECK ( json_r );
+    CHECK ( str_eq (json, json_r) );
+    if (json_r)
+        free (json_r);
    
 }

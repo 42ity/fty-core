@@ -166,8 +166,10 @@ ymsg_t *
     zmsg_t *request_encoded = app_encode (&request);
     byte *buffer;
     size_t sz = zmsg_encode (request_encoded, &buffer);
+    zmsg_destroy(&request_encoded);
 
     zchunk_t *request_chunk = zchunk_new (buffer, sz);
+    free(buffer);
 
     ymsg_set_request (message, &request_chunk);
     return message; 
@@ -209,6 +211,7 @@ int
         
         zlist_destroy (&param);
         ymsg_destroy (self_p);
+        app_destroy (&app_msg);
         return 0;
     }
     return -5; 
@@ -352,6 +355,8 @@ bios_web_average_reply_decode (ymsg_t *self, char **json) {
         return -1;
 
     *json = strndup ((char *) zchunk_data (chunk), zchunk_size (chunk));
+    if (*json == NULL)
+        return -1;
     return 0;
 }
 
