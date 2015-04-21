@@ -79,7 +79,11 @@ while [ $# -gt 0 ]; do
 done
 
 
-SUT_HTTP_PORT=$(expr $SUT_PORT - 2200 + 8000)
+if [ "$BIOS_PORT" ]; then
+    SUT_HTTP_PORT=$BIOS_PORT
+else
+    SUT_HTTP_PORT=$(expr $SUT_PORT - 2200 + 8000)
+fi
 echo '*************************************************************************************************************'
 echo $BIOS_USER
 echo $BIOS_PASSWD
@@ -92,7 +96,7 @@ BASE_URL="http://$SUT_NAME:$SUT_HTTP_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
-if [ "$(ssh -p $SUT_PORT $SUT_NAME 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
+if [ "$(ssh -p $SUT_PORT root@$SUT_NAME 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
     echo "saslauthd is running"
 else
     echo "saslauthd is not running, please start it first!" >&2
@@ -102,7 +106,7 @@ fi
 # is bios user present?
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-LINE="$(ssh -p $SUT_PORT $SUT_NAME "getent passwd '$BIOS_USER'")"
+LINE="$(ssh -p $SUT_PORT root@$SUT_NAME "getent passwd '$BIOS_USER'")"
 if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
     echo "User $BIOS_USER is not known to system administrative database at $SUT_NAME:$SUT_PORT"
@@ -113,8 +117,8 @@ if [ $? != 0 -o -z "$LINE" ]; then
 fi
 
 # is bios access to sasl right?
-SASLTEST=$(ssh -p $SUT_PORT $SUT_NAME "which testsaslauthd")
-LINE="$(ssh -p $SUT_PORT $SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
+SASLTEST=$(ssh -p $SUT_PORT root@$SUT_NAME "which testsaslauthd")
+LINE="$(ssh -p $SUT_PORT root@$SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
 if [ $? != 0 -o -z "$LINE" ]; then
     echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
     exit 3
