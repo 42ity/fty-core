@@ -54,10 +54,10 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS="$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT"
 
-# Flag (yes|no) to print CURL trace on any HTTP error mismatch
+# Flag (yes|no|onerror) to print CURL trace on any HTTP error mismatch
 # This prints STDERR and STDOUT for the request upon regex hits
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" ] && \
-    WEBLIB_CURLFAIL_HTTPERRORS_DEBUG="yes"
+    WEBLIB_CURLFAIL_HTTPERRORS_DEBUG="onerror"
 
 # Regexp of HTTP header contents that is considered an error;
 # one may test for specific codes with custom regexps for example
@@ -317,6 +317,8 @@ CURL() {
                 if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xfatal ]; then
                     echo "CI-WEBLIB-ERROR-CURL: WEBLIB_CURLFAIL_HTTPERRORS=fatal" \
                         "is set, so marking the request as failed now" >&3
+                    [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
+                        _PRINT_CURL_TRACE=yes
                     RES_CURL=123
                 fi
             fi
@@ -327,7 +329,9 @@ CURL() {
                     "an expected HTTP result pattern '$WEBLIB_HTTPERRORS_REGEX';" \
                     "while WEBLIB_CURLFAIL_HTTPERRORS=expect is set," \
                     "so marking the request as failed now" >&3
-                [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
+                [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes -o \
+                  x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xonerror ] && \
+                        _PRINT_CURL_TRACE=yes
                     _PRINT_CURL_TRACE=yes
                 RES_CURL=124
             fi
