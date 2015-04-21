@@ -49,38 +49,59 @@ LOCKFILE=/tmp/ci-test-trp.lock
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-
     # *** read parameters if present
-if [ $# -eq 0 ];then   # default if parameters missing
-    SUT_SSH_PORT="2206"    # port used for ssh requests
-    SUT_WEB_PORT="8006"
-    SUT_USER="root"
-    SUT_HOST="debian.roz.lab.etn.com"
-    BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-else                   # read parameter --port|-o
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -o|-sp|--port)
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
             SUT_SSH_PORT="$2"
             shift 2
             ;;
-        *)
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        *)  echo "$0: Unknown param and all after it are ignored: $@"
             break
             ;;
-        esac
-    done
-fi
-                       # port used for http requests
-SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
+
+    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
 
     # *** set SUT base URL and SUT name
-SUT_USER="root"
-SUT_HOST="debian.roz.lab.etn.com"
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
