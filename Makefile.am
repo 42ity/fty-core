@@ -58,6 +58,9 @@ myDEVDOCDIR =	docs/develop
 # Locations of child Makefiles
 SUBDIRS =	$(myMANDIR) docs/examples tools
 
+# run tntnet from Makefile
+RUN_TNTNET = ${TNTNET} tntnet.xml
+
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
 # Note that docker/README is processed by this root Makefile, below...
@@ -946,9 +949,9 @@ if ENABLE_DEBUG_ASAN
 	LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libtsan | awk '{print $$3}'`" || true; \
 	echo "===== Using LD_PRELOAD='$$LD_PRELOAD' for Address Sanitizer"; \
 	export LD_PRELOAD; \
-	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+	$(RUN_TNTNET)
 else
-	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+	$(RUN_TNTNET)
 endif
 
 #----------------------------------------------------------------------
