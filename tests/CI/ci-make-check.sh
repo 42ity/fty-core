@@ -29,7 +29,7 @@ set -o pipefail || true
 set -e
 
 apt-get update
-mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
+#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
 if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
