@@ -67,7 +67,7 @@ while [ $# -gt 0 ]; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
-        *)  echo "$0: Unknown param and all after it are ignored: $@"
+        *)  # fall through
             break
             ;;
     esac
