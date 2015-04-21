@@ -40,6 +40,54 @@ if [ $# -eq 0 ]; then
 fi
     # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
 
+    # *** read parameters if present
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
+            SUT_SSH_PORT="$2"
+            shift 2
+            ;;
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        *)  echo "$0: Unknown param and all after it are ignored: $@"
+            break
+            ;;
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+SUT_IS_REMOTE=yes
+
+    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -53,37 +101,6 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 PASS=0
 TOTAL=0
 
-    # *** Set BIOS_USER,BIOS PASSWD,SUT_HOST and SUT_SSH_PORT from parameters
-while [ $# -gt 0 ]; do
-    case "$1" in
-    -u|--user)
-        BIOS_USER="$2"
-        shift 2
-        ;;
-    -p|--passwd)
-        BIOS_PASSWD="$2"
-        shift 2
-        ;;
-    -s|-sh|--sut|--sut-host)
-        SUT_HOST="$2"
-        shift 2
-        ;;
-    -su|--sut-user)
-        SUT_USER="$2"
-        shift 2
-        ;;
-    -o|-sp|--port|--sut-port)
-        SUT_SSH_PORT="$2"
-        shift 2
-        ;;
-    *)
-        break
-        ;;
-    esac
-done
-
-SUT_IS_REMOTE=yes
-SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
 echo '*************************************************************************************************************'
 echo $BIOS_USER
 echo $BIOS_PASSWD
@@ -92,7 +109,6 @@ echo $SUT_SSH_PORT
 echo $SUT_WEB_PORT
 
 
-BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?

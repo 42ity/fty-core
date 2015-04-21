@@ -34,26 +34,66 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
     # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
 
-# ***** READ PARAMETERS IF PRESENT *****
-if [ $# -eq 0 ];then   # parameters missing
-    SUT_SSH_PORT="2206"
-    SUT_WEB_PORT="8006"
-    BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-else
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -o|-sp|--port)
+# ***** USE BIOS_USER AND BIOS_PASSWD *****
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+
+usage(){
+    echo "Usage: $(basename $0) [options...] [test_name...]"
+    echo "options:"
+    echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
+    echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+}
+
+    # *** read parameters if present
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
             SUT_SSH_PORT="$2"
             shift 2
             ;;
-        *)
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+	--help|-h)
+            usage
+            exit 1
+            ;;
+        *)  # fall through
             break
             ;;
-        esac
-    done
-fi
-SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
+
+
 
 # ***** SET CHECKOUTDIR *****
 # Include our standard routines for CI scripts
@@ -62,17 +102,9 @@ SUT_IS_REMOTE=yes
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-RESULT=0
-# ***** SET (MANUALY) SUT_HOST - MANDATORY *****
-#SUT_SSH_PORT="2206"
-SUT_USER="root"
-SUT_HOST="debian.roz.lab.etn.com"
-#[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8006"
-    # *** if used set BIOS_USER and BIOS_PASSWD
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 
 # ***** GLOBAL VARIABLES *****
+RESULT=0
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
@@ -95,37 +127,6 @@ export PATH
 RUNAS=""
 CURID="`id -u`" || CURID=""
 [ "$CURID" = 0 ] || RUNAS="sudo"
-
-# ***** USE BIOS_USER AND BIOS_PASSWD *****
-usage(){
-    echo "Usage: $(basename $0) [options...] [test_name...]"
-    echo "options:"
-    echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
-    echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
-}
-
-    # *** Use user and passwd given in call parameters
-while [ $# -gt 0 ] ; do
-    case "$1" in
-        --user|-u)
-            BIOS_USER="$2"
-            shift
-            ;;
-        --passwd|-p)
-            BIOS_PASSWD="$2"
-            shift
-            ;;
-	--help|-h)
-            usage
-            exit 1
-            ;;
-        *)  # Assume that list of test names follows
-    	    # (positive or negative, see test_web.sh)
-            break
-    	    ;;
-    esac
-    shift
-done
 
 set -u
 set -e
