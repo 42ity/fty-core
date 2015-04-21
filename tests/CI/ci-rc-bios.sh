@@ -154,7 +154,7 @@ stop() {
         pidof $d lt-$d >/dev/null 2>&1 && \
             echo "ERROR: $d still running (`pidof $d lt-$d`)" && return 1
     done
-    echo "INFO: none of the DAEMONS ($DAEMONS) are running"
+    echo "INFO: stop(): none of the DAEMONS ($DAEMONS) are running (OK)"
     return 0
 }
 
@@ -163,9 +163,9 @@ status() {
     for d in malamute $DAEMONS ; do
        echo -n "$d "
        if pidof $d lt-$d >/dev/null 2>&1 ; then
-           echo "running (`pidof $d lt-$d `)"
+           echo "OK: $d is running (`pidof $d lt-$d `)"
        else
-           echo "stopped"
+           echo "ERROR: $d is stopped"
            RESULT=1
        fi
     done
