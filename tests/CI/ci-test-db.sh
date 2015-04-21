@@ -63,12 +63,21 @@ if [ "$?" != 0 ] ; then
     RESULT=1
 fi
 echo "-------------------- test-db2 --------------------"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db2 && "$BUILDSUBDIR"/test-db2
+./autogen.sh ${autogen_action_make} test-db2 && "$buildsubdir"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
-    echo "ERROR: test-db2 failed"
+    echo "error: test-db2 failed"
     echo "----------------------------------------"
-    RESULT=1
+    result=1
+fi
+
+echo "-------------------- test-db-alert --------------------"
+./autogen.sh ${autogen_action_make} test-db-alert && "$buildsubdir"/test-db-alert
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "error: test-db-alert failed"
+    echo "----------------------------------------"
+    result=1
 fi
 
 echo "-------------------- test-db-asset-crud-----"
