@@ -16,7 +16,7 @@ TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][cru
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
     
-    const char         *rule_name = "this is the GREAT rule name";
+    const char         *rule_name = "this is the GREAT rule name1";
     a_elmnt_pr_t        priority  = 1;
     m_alrt_state_t      alert_state = 1;
     const char         *description = "very small description";
@@ -74,7 +74,7 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
     
-    const char         *rule_name = "this is the GREAT rule name";
+    const char         *rule_name = "this is the GREAT rule name2";
     a_elmnt_pr_t        priority  = 1;
     m_alrt_state_t      alert_state = 1;
     const char         *description = "very small description";
@@ -118,7 +118,7 @@ TEST_CASE("t_bios_alert UPDATE notification #3","[db][CRUD][update][alert][crud_
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
     
-    const char         *rule_name = "this is the GREAT rule name";
+    const char         *rule_name = "this is the GREAT rule name3";
     a_elmnt_pr_t        priority  = 1;
     m_alrt_state_t      alert_state = 1;
     const char         *description = "very small description";
@@ -164,7 +164,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
     
     // insert alert
-    const char         *rule_name = "this is the GREAT rule name";
+    const char         *rule_name = "this is the GREAT rule name4";
     a_elmnt_pr_t        priority  = 1;
     m_alrt_state_t      alert_state = 1;
     const char         *description = "very small description";
@@ -175,7 +175,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     CAPTURE ( rowid_alert );
 
     //insert element
-    const char *element_name = "test_element_name";
+    const char *element_name = "test_element_name4";
     a_elmnt_tp_id_t  element_type_id = 6;
     a_elmnt_id_t     parent_id = 0;
     const char      *status = "active";
@@ -210,7 +210,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     REQUIRE ( reply_select.item.at(0) == rowid_device );
 
     // must handle duplicate insert without insert
-    reply_insert1 = insert_into_alert_device (conn, rowid_alert, "test_device");
+    reply_insert1 = insert_into_alert_device (conn, rowid_alert, element_name);
     REQUIRE ( reply_insert1.status == 1 );
     REQUIRE ( reply_insert1.affected_rows == 0 );
 
@@ -237,6 +237,107 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     delete_disc_device (url.c_str(), rowid_device);
     //delete element
     delete_asset_element (conn, rowid_element);
+
+    log_close();
+}
+
+
+TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][delete][alert_device][crud_test.sql][5]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT DEVICE: ALERT DEVICE INSERT_deviceS #5 ==================");
+    
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+    
+    // insert alert
+    const char         *rule_name = "this is the GREAT rule name5";
+    a_elmnt_pr_t        priority  = 1;
+    m_alrt_state_t      alert_state = 1;
+    const char         *description = "very small description";
+    m_alrt_ntfctn_t     notification = 12;
+    int64_t             date_from = 2049829;
+    auto reply_insert_alert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
+    uint64_t rowid_alert = reply_insert_alert.rowid;
+    CAPTURE ( rowid_alert );
+
+    //insert element
+    const char *element_name1 = "test_element_name5.1";
+    a_elmnt_tp_id_t  element_type_id = 6;
+    a_elmnt_id_t     parent_id = 0;
+    const char      *status = "active";
+    a_elmnt_pr_t     priority_el = 4;
+    a_elmnt_bc_t     bc = 3;
+    auto reply_insert_element1 = insert_into_asset_element (conn, element_name1, element_type_id, parent_id, status, priority_el, bc);
+    uint64_t rowid_element1 = reply_insert_element1.rowid;
+    CAPTURE ( rowid_element1 );
+
+    //insert device discovered
+    m_dvc_tp_id_t device_type_id = 1;
+    //common_msg_t* 
+    auto o_reply_insert_device1 = insert_disc_device(url.c_str(), device_type_id, element_name1);
+    uint64_t rowid_device1 = common_msg_rowid (o_reply_insert_device1);
+    CAPTURE ( rowid_device1 );
+
+    //insert monitor_asset relation
+    auto reply_insert_ma1 = insert_into_monitor_asset_relation (conn, rowid_device1, rowid_element1);
+    uint64_t rowid_ma1 = reply_insert_ma1.rowid;
+
+    //insert element
+    const char *element_name2 = "test_element_name5.2";
+    auto reply_insert_element2 = insert_into_asset_element (conn, element_name2, element_type_id, parent_id, status, priority_el, bc);
+    uint64_t rowid_element2 = reply_insert_element2.rowid;
+    CAPTURE ( rowid_element2 );
+
+    //insert device discovered
+    auto o_reply_insert_device2 = insert_disc_device(url.c_str(), device_type_id, element_name2);
+    uint64_t rowid_device2 = common_msg_rowid (o_reply_insert_device2);
+    CAPTURE ( rowid_device2 );
+
+    //insert monitor_asset relation
+    auto reply_insert_ma2 = insert_into_monitor_asset_relation (conn, rowid_device2, rowid_element2);
+    uint64_t rowid_ma2 = reply_insert_ma2.rowid;
+
+    // first insert
+    std::vector<std::string> names;
+    names.push_back(std::string(element_name1));
+    names.push_back(std::string(element_name2));
+
+    auto reply_insert1 = insert_into_alert_devices (conn, rowid_alert, names);
+    REQUIRE ( reply_insert1.status == 1 );
+    REQUIRE ( reply_insert1.affected_rows == 2 );
+
+    // check select
+    auto reply_select = select_alert_devices (conn, rowid_alert);
+    REQUIRE ( reply_select.status == 1 );
+    REQUIRE ( reply_select.item.size() == 2 );
+    bool first  = ( reply_select.item.at(0) == rowid_device1 ) && ( reply_select.item.at(1) == rowid_device2 );
+    bool second = ( reply_select.item.at(0) == rowid_device2 ) && ( reply_select.item.at(1) == rowid_device1 );
+
+    REQUIRE ( (first || second) );
+
+    // must handle duplicate insert without insert
+    reply_insert1 = insert_into_alert_devices (conn, rowid_alert, names);
+    REQUIRE ( reply_insert1.status == 1 );
+    REQUIRE ( reply_insert1.affected_rows == 0 );
+
+    // delete
+    auto reply_delete = delete_from_alert_device_byalert (conn, rowid_alert);
+    REQUIRE ( reply_delete.affected_rows == 2 );
+    REQUIRE ( reply_delete.status == 1 );
+    
+    //delete alert
+    delete_from_alert (conn, rowid_alert);
+    //delete ma
+    delete_monitor_asset_relation (conn, rowid_ma1);
+    delete_monitor_asset_relation (conn, rowid_ma2);
+    //delete device
+    delete_disc_device (url.c_str(), rowid_device1);
+    delete_disc_device (url.c_str(), rowid_device2);
+    //delete element
+    delete_asset_element (conn, rowid_element1);
+    delete_asset_element (conn, rowid_element2);
 
     log_close();
 }

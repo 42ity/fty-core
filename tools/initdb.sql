@@ -97,6 +97,7 @@ CREATE TABLE t_bios_alert_device(
     device_id   SMALLINT UNSIGNED   NOT NULL,
 
     PRIMARY KEY(id),
+    UNIQUE INDEX `UI_t_bios_alert_device` (`alert_id`, device_id ASC),
 
     INDEX(alert_id),
     INDEX(device_id),
