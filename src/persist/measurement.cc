@@ -239,9 +239,10 @@ void get_measurements(ymsg_t* out, char** out_subj,
             }
             if(units.empty())
                 units = row[4].getString();
+            int64_t comp_value = row[1].getInt32 () * std::pow (10, row[2].getInt32 ());
             json += " {";
-            json += "   \"value\": " + std::to_string(row[1].getInt32()) +  ",";
-            json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
+            json += "   \"value\": " + std::to_string(comp_value) +  ",";
+//            json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
             json += "   \"timestamp\": " + std::to_string(row[3].getInt64());
             json += " }";
         }

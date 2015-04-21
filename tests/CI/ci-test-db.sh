@@ -36,6 +36,11 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
+loaddb_file() {
+    mysql -u root < "$1" > /dev/null || \
+        CODE=$? die "Could not load $1"
+}
+
 set -u
 set -e
 
@@ -49,55 +54,65 @@ DB_RACK_POWER="rack_power.sql"
 DB_CRUD="crud_test.sql"
 
 RESULT=0
+FAILED=""
+
+echo "--------------- ensure bins to test --------------"
+./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
+    test-db test-db2 \
+    test-db-asset-crud test-dbtopology test-totalpower \
+    || FAILED="compilation"
 
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_DATA" || CODE=$? die "Failed to load $DB_DATA"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_DATA"
 echo "-------------------- test-db --------------------"
 set +e
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db && "$BUILDSUBDIR"/test-db
+"$BUILDSUBDIR"/test-db
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-db"
 fi
+
 echo "-------------------- test-db2 --------------------"
-./autogen.sh ${autogen_action_make} test-db2 && "$buildsubdir"/test-db2
+"$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "error: test-db2 failed"
     echo "----------------------------------------"
     result=1
+    FAILED="$FAILED test-db2"
 fi
 
 echo "-------------------- test-db-alert --------------------"
-./autogen.sh ${autogen_action_make} test-db-alert && "$buildsubdir"/test-db-alert
+"$BUILDSUBDIR"/test-db-alert
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "error: test-db-alert failed"
     echo "----------------------------------------"
     result=1
+    FAILED="$FAILED test-db-alert"
 fi
 
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_CRUD" || CODE=$? die "Failed to load $DB_DATA"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-db-asset-crud && \
-    "$BUILDSUBDIR"/test-db-asset-crud
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_CRUD"
+"$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-db-asset-crud failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-db-asset-crud"
 fi
 
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-dbtopology
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
-    mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-    mysql -u root < "$DB_LOADDIR/$P" || CODE=$? die "Failed to load $P"
+    loaddb_file "$DB_LOADDIR/$DB_BASE"
+    loaddb_file "$DB_LOADDIR/$P"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
     "$BUILDSUBDIR"/test-dbtopology "[$P]"
@@ -106,26 +121,26 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         echo "ERROR: test-dbtopology $P failed"
         echo "----------------------------------------"
         RESULT=1
+        FAILED="$FAILED test-dbtopology::$P"
     fi
 done
-if [ "$?" != 0 ] ; then
-    echo "----------------------------------------"
-    echo "ERROR: test-dbtopology failed"
-    echo "----------------------------------------"
-    RESULT=1
-fi
 
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
-./autogen.sh ${AUTOGEN_ACTION_MAKE} test-totalpower 
-mysql -u root < "$DB_LOADDIR/$DB_BASE" || CODE=$? die "Failed to load $DB_BASE"
-mysql -u root < "$DB_LOADDIR/$DB_RACK_POWER" || CODE=$? die "Failed to load $DB_RACK_POWER"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "ERROR: test-totalpower failed"
     echo "----------------------------------------"
     RESULT=1
+    FAILED="$FAILED test-totalpower"
+fi
+
+if [ -n "$FAILED" ]; then
+    logmsg_error "The following tests have failed:"
+    for F in $FAILED; do echo " * $F" >&2; done
 fi
 
 cd -
