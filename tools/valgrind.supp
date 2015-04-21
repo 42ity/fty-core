@@ -1,0 +1,35 @@
+# valgrind suppression file for BIOS
+
+# actually the bug in libcidr, let's hide it from our results
+{
+   BIOS-CIDR-Value8
+   Memcheck:Value8
+   fun:tolower
+   fun:strcasecmp
+   fun:cidr_from_str
+}
+
+{
+   BIOS-CIDR-Cond
+   Memcheck:Cond
+   fun:tolower
+   fun:strcasecmp
+   fun:cidr_from_str
+}
+
+# This is result of REQUIRE ( ymsg_encoded != NULL ); - seems like bug in catch actually
+{
+   BIOS-CATCH-1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   fun:_ZNSt16__numpunct_cacheIcE8_M_cacheERKSt6locale
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE13_M_insert_intIlEES3_S3_RSt8ios_basecT_
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl
+   fun:_ZNSo9_M_insertIlEERSoT_
+   fun:operator<<
+   fun:convert<long int>
+   fun:toString<long int>
+   fun:captureExpression<(Catch::Internal::Operator)1u, long int>
+   fun:operator!=<long int>
+}
