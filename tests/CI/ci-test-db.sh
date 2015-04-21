@@ -82,7 +82,7 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "error: test-db2 failed"
     echo "----------------------------------------"
-    result=1
+    RESULT=1
     FAILED="$FAILED test-db2"
 fi
 
@@ -92,7 +92,7 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     echo "error: test-db-alert failed"
     echo "----------------------------------------"
-    result=1
+    RESULT=1
     FAILED="$FAILED test-db-alert"
 fi
 
