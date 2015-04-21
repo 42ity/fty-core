@@ -48,7 +48,7 @@ stop_malamute(){
     $RUNAS systemctl stop malamute || true
     sleep 2
     pidof malamute >/dev/null 2>&1 && return 1
-    echo "INFO: malamute is not running"
+    echo "INFO: stop(): malamute is not running (OK)"
     return 0
 }
 
@@ -131,11 +131,11 @@ start_daemon(){
         pidof ${1} lt-${1}
         RESULT=$?
         if [ "$RESULT" != "0" ] ; then
-            echo "ERROR: failed to start $1" >&2
+            echo "ERROR: start(): failed to start $1" >&2
             exit 1
         fi
     else
-        echo "ERROR: $1 is missing" >&2
+        echo "ERROR: start(): $1 is missing" >&2
         exit 1
     fi
 }
@@ -152,7 +152,7 @@ stop() {
     # Test successful kills
     for d in $DAEMONS ; do
         pidof $d lt-$d >/dev/null 2>&1 && \
-            echo "ERROR: $d still running (`pidof $d lt-$d`)" && return 1
+            echo "ERROR: stop(): $d still running (`pidof $d lt-$d`)" && return 1
     done
     echo "INFO: stop(): none of the DAEMONS ($DAEMONS) are running (OK)"
     return 0
