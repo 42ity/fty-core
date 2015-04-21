@@ -24,8 +24,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SRC_PERSIST_DBHELPERS_H_
 
 #include <czmq.h>
+#include <vector>
 #include "dbtypes.h"
 
+#include "preproc.h"
 // all fields called name
 #define MAX_NAME_LENGTH         50
 // t_bios_asset_ext_attributes.keytag
@@ -106,6 +108,21 @@ struct db_a_elmnt_t {
     a_elmnt_pr_t     priority;
     a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
+};
+
+/** 
+ * \brief helper structure for results of v_bios_alert + v_bios_alert_devices
+ */
+struct db_alert_t {
+    m_alrt_id_t         id;
+    std::string         rule_name;
+    a_elmnt_pr_t        priority;
+    m_alrt_state_t      alert_state;
+    std::string         description;
+    m_alrt_ntfctn_t     notification;
+    int64_t             date_from;
+    int64_t             date_till;
+    std::vector<m_dvc_id_t> device_ids;
 };
 
 
@@ -272,5 +289,38 @@ bool is_ok_mac (const char *mac);
  *         false - link type is not correct
  */
 bool is_ok_link_type (a_lnk_tp_id_t link_type_id);
+
+
+/**
+ * \brief Checks if the rule_name is correct
+ *
+ * \param rule_name - rule name to check
+ *
+ * \return true  - ok
+ *         false - rule_name is not correct
+ */
+bool is_ok_rule_name (const char *rule_name);
+
+
+/**
+ * \brief Checks if priority is correct
+ *
+ * \param priority - priority type to check
+ *
+ * \return true  - ok
+ *         false - priority is not correct
+ */
+bool is_ok_priority (a_elmnt_pr_t priority);
+
+
+/**
+ * \brief Checks if state of alert is correct
+ *
+ * \param state - state to check
+ *
+ * \return true  - ok
+ *         false - state is not correct
+ */
+bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
 #endif // SRC_PERSIST_DBHELPERS_H_

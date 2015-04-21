@@ -70,14 +70,25 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-db"
 fi
+
 echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
-    echo "ERROR: test-db2 failed"
+    echo "error: test-db2 failed"
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-db2"
+fi
+
+echo "-------------------- test-db-alert --------------------"
+"$BUILDSUBDIR"/test-db-alert
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "error: test-db-alert failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-db-alert"
 fi
 
 echo "-------------------- test-db-asset-crud-----"
