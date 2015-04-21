@@ -801,7 +801,12 @@ INSERT INTO t_bios_measurement_topic (device_id, units,topic)
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'SRV1-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id = LAST_INSERT_ID();
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:00:00", 560, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:02:41", 12, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:42:13", 560, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:51:28", 580, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:00:13", 500, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:01:22", 420, -1, @topic_id);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:08:00", 480, -1, @topic_id);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:16:00", 510, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-14 00:00:00", 650, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:55:00", 100, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 01:20:00", 200, -1, @topic_id);
