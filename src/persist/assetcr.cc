@@ -886,7 +886,7 @@ db_reply_t
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
-            "   t_bios_monitor_aset_relation"
+            "   t_bios_monitor_asset_relation"
             "   (id_discovered_device, id_asset_element)"
             " VALUES"
             "   (:monitor, :asset)"
