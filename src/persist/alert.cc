@@ -192,7 +192,7 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " UPDATE"
             "   t_bios_alert"
-            " SET till = FROM_UNIXTIME(:till)"
+            " SET date_till = FROM_UNIXTIME(:till)"
             " WHERE  id = :id"
         );
    
@@ -463,24 +463,35 @@ db_reply_t
 
 
 //=============================================================================
-db_reply <std::vector<db_alert_t>>
-    select_alert_all_opened
-        (tntdb::Connection  &conn)
+static const std::string  sel_alarm_opened_QUERY =
+    " SELECT"
+    "    v.id, v.rule_name, v.priority, v.state,"
+    "    v.descriprion, v.notification,"
+    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+    " FROM"
+    "   v_bios_alert v"
+    " WHERE v.date_till is NULL";
+
+static const std::string  sel_alarm_closed_QUERY =
+    " SELECT"
+    "    v.id, v.rule_name, v.priority, v.state,"
+    "    v.descriprion, v.notification,"
+    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+    " FROM"
+    "   v_bios_alert v"
+    " WHERE v.date_till is not NULL";
+
+static db_reply <std::vector<db_alert_t>>
+    select_alert_all_template
+        (tntdb::Connection  &conn,
+         const std::string  &query)
 {   
     LOG_START;
     std::vector<db_alert_t> item{};
     db_reply<std::vector<db_alert_t>> ret = db_reply_new(item);
 
     try {
-        tntdb::Statement st = conn.prepareCached(
-                " SELECT"
-                "    v.id, v.rule_name, v.priority, v.state,"
-                "    v.descriprion, v.notification,"
-                "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
-                " FROM"
-                "   v_bios_alert v"
-                " WHERE v.date_till is NULL"
-        );
+        tntdb::Statement st = conn.prepareCached(query);
         tntdb::Result res = st.select();
         
         log_debug ("[t_bios_alert]: was %u rows selected", res.size());
@@ -506,7 +517,7 @@ db_reply <std::vector<db_alert_t>>
                 ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
                 ret.msg        = "error in device selecting";
                 ret.item.clear();
-                log_error ("end: %s, %s", "ignore insert", ret.msg);
+                log_error ("end: %s, %s", "ignore select", ret.msg);
                 return ret;
             }
             ret.item.push_back(m);
@@ -524,6 +535,25 @@ db_reply <std::vector<db_alert_t>>
     LOG_END;
     return ret;
 }
+
+
+//=============================================================================
+db_reply <std::vector<db_alert_t>>
+    select_alert_all_opened
+        (tntdb::Connection  &conn)
+{
+    return select_alert_all_template(conn, sel_alarm_opened_QUERY);
+}
+
+
+//=============================================================================
+db_reply <std::vector<db_alert_t>>
+    select_alert_all_closed
+        (tntdb::Connection  &conn)
+{
+    return select_alert_all_template(conn, sel_alarm_closed_QUERY);
+}
+
 
 //=============================================================================
 db_reply <std::vector<m_dvc_id_t>>

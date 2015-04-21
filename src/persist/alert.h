@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbtypes.h"
 #include "dbhelpers.h"
 
+//+
 db_reply_t
     insert_into_alert 
         (tntdb::Connection  &conn,
@@ -38,41 +39,21 @@ db_reply_t
          m_alrt_ntfctn_t     notification,
          int64_t             date_from);
 
-
+//+
 db_reply_t
     update_alert_notification 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
          m_alrt_id_t         id);
 
-
+//+
 db_reply_t
     update_alert_tilldate 
         (tntdb::Connection  &conn,
          int64_t             date_till,
          m_alrt_id_t         id);
 
-
-db_reply_t
-    delete_alert
-        (tntdb::Connection &conn,
-         m_alrt_id_t id);
-
-
-db_reply_t
-    insert_into_alert_devices 
-        (tntdb::Connection  &conn,
-         m_alrt_id_t               alert_id,
-         std::vector <std::string> device_names);
-
-
-db_reply_t
-    insert_into_alert_device
-        (tntdb::Connection &conn,
-         m_alrt_id_t        alert_id,
-         const char        *device_name);
-
-
+//+
 db_reply_t
     delete_from_alert
         (tntdb::Connection &conn,
@@ -110,9 +91,14 @@ db_reply_t
          int64_t             date_from,
          std::vector<std::string> device_names);
 
-
+//+
 db_reply <std::vector<db_alert_t>>
     select_alert_all_opened
+        (tntdb::Connection  &conn);
+
+//+
+db_reply <std::vector<db_alert_t>>
+    select_alert_all_closed
         (tntdb::Connection  &conn);
 
 
