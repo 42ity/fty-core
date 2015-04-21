@@ -79,6 +79,7 @@ test-cidr
 test-csv
 test-loadcsv
 test-database
+test-db-alert
 test-db
 test-db2
 test-log
@@ -152,6 +153,7 @@ src/web/src/power.cpp
 src/web/src/rack_total.cpp
 src/web/src/sysinfo.cpp
 src/web/src/ui_properties.cpp
+src/web/src/alerts.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
