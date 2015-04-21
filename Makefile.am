@@ -607,12 +607,13 @@ check_PROGRAMS += 	test-agents
 test_agents_SOURCES = \
 			tests/api/test-agents.cc
 
-
 test_agents_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la
 
 
 test_agents_CPPFLAGS = \
