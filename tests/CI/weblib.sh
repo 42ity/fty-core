@@ -50,9 +50,15 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 #       ignore  Don't care, and don't test
 #       warn    Anything else (*) gives a warning if error was matched and goes on
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
-    WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT=warn
+    WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="warn"
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS="$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT"
+
+# If set to "protected", then _api_get_token will automatically expect
+# success headers and fail the test otherwise; set it to anything else
+# only to test failures in the token-work routines
+[ -z "$WEBLIB_CURLFAIL_GETTOKEN" ] && \
+    WEBLIB_CURLFAIL_GETTOKEN="protected"
 
 # Flag (yes|no|onerror) to print CURL trace on any HTTP error mismatch
 # This prints STDERR and STDOUT for the request upon regex hits
@@ -401,7 +407,11 @@ _api_get_token() {
     if [ -z "$_TOKEN_" -o x"$LOGIN_RESET" = xyes ]; then
 	AUTH_URL="/oauth2/token?username=${BIOS_USER}&password=${BIOS_PASSWD}&grant_type=password"
 	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
+        [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
+            curlfail_push_expect_noerrors
 	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
+        [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
+            curlfail_pop
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
 	echo "CI-WEBLIB-DEBUG: _api_get_token(): got ($_RES_) new token '$_TOKEN_'" >&2
     fi
