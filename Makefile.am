@@ -59,7 +59,7 @@ myDEVDOCDIR =	docs/develop
 SUBDIRS =	$(myMANDIR) docs/examples tools
 
 # run tntnet from Makefile
-RUN_TNTNET = ZSYS_SIGHANDLER=false LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+RUN_TNTNET = ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
