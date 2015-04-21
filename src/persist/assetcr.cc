@@ -848,3 +848,66 @@ db_reply_t
     LOG_END;
     return reply_insert1;
 }
+
+
+db_reply_t
+    insert_into_monitor_asset_relation
+        (tntdb::Connection &conn,
+         m_dvc_id_t   monitor_id,
+         a_elmnt_id_t element_id)
+{
+    LOG_START;
+    log_debug ("  monitor_id = %" PRIu32, monitor_id);
+    log_debug ("  element_id = %" PRIu32, element_id);
+
+    db_reply_t ret = db_reply_new();
+
+    // input parameters control 
+    if ( element_id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of element_id is not allowed";
+        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        return ret;
+    }
+    if ( monitor_id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of monitor_id is not allowed";
+        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        return ret;
+    }
+    log_debug ("input parameters are correct");
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " INSERT INTO"
+            "   t_bios_monitor_aset_relation"
+            "   (id_discovered_device, id_asset_element)"
+            " VALUES"
+            "   (:monitor, :asset)"
+        );
+   
+        ret.affected_rows = st.set("monitor", monitor_id).
+                               set("asset"  , element_id).
+                               execute();
+        ret.rowid = conn.lastInsertId();
+        log_debug ("[t_bios_monitor_asset_relation]: was inserted %" 
+                                        PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
