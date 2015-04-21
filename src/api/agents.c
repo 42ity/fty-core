@@ -288,13 +288,10 @@ bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp,
 
 int
 bios_web_average_request_decode (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source) {   
-    if (!self || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source)
+    if (!self || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source || ymsg_id (self) != YMSG_SEND)
         return -1;
 
     int rc = -1;
-
-    if (ymsg_id (self) != YMSG_SEND) 
-        return -1;
 
     rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
     if (rc != 0)

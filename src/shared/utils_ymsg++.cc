@@ -22,7 +22,7 @@ ymsg_format (ymsg_t *self, std::string& str) {
         str.assign ("(NULL)");
         return;
     }
-
+    str.clear ();
     str.append ("id=").append (ymsg_command (self)).append ("\n");
     str.append ("version=").append (std::to_string (ymsg_version (self))).append ("\n");
     str.append ("seq=").append (std::to_string (ymsg_seq (self))).append ("\n");

@@ -332,10 +332,11 @@ set_hash(ymsg_t *msg, const void *key, void *value) {
 
 const char *
 ymsg_get_string(ymsg_t* msg, const char *key) {
+    static char nullchar[1] = { '\0' };
     char *val = zhash_lookup(ymsg_aux(msg), key);
     if(val == NULL) {
         errno = EKEYREJECTED;
-        return 0;
+        return nullchar;
     }
     return val;
 }

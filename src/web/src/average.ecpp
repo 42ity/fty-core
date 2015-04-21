@@ -55,18 +55,14 @@
     std::string strmsg;
     try {
         // check both start_ts and end_ts
-        if (start_ts.size() != 15 || end_ts.size() != 15) {
-            throw std::invalid_argument ("Format for start_ts and end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
-        }
-        struct tm tm;
-        if (strptime (start_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
+        st = datetime_to_calendar (start_ts.c_str ());
+        if (st == -1) {
             throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
-        st = mktime(&tm);
-        if (strptime (end_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
+        end = datetime_to_calendar (end_ts.c_str ());
+        if (end == -1) {
             throw std::invalid_argument ("Format for end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
-        end = mktime(&tm);
         // check that start_ts < end_ts
         if (end <= st) {
             throw std::invalid_argument ("start_ts must be <= end_ts");

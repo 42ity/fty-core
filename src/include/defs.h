@@ -71,9 +71,11 @@ enum ipaddr_version {
     IP_VERSION_6
 };
 
-//! Time interval in which measurement will be send regardless of difference
-//TODO: Make it configurable
-#define WORST_SAMPLING_INTERVAL 300
+//TODO: Make AGENT_NUT_ values configurable
+//! Measurement is sent each AGENT_NUT_REPEAT_INTERVAL_SEC seconds even when there is no change in value. This is done to conserve space and bandwidth.
+#define AGENT_NUT_REPEAT_INTERVAL_SEC 300
+//! Approximate sampling rate of NUT  
+#define AGENT_NUT_SAMPLING_INTERVAL_SEC 5
 
 #define KEY_REPEAT "repeat"
 #define KEY_STATUS "status"

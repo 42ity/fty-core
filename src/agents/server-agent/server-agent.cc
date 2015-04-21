@@ -60,7 +60,7 @@ int main (int argc, char *argv []) {
                     // Did it changed singificantly since the last time?
                     if((cit == cache.end()) ||
                        (abs(cit->second.first - temp) > 1000) ||
-                       (time(NULL) - cit->second.second > WORST_SAMPLING_INTERVAL)) {
+                       (time(NULL) - cit->second.second > AGENT_NUT_REPEAT_INTERVAL_SEC)) {
                         if(cit == cache.end()) {
                             cache.insert(std::make_pair(*it,
                                 std::make_pair(temp, time(NULL))));
