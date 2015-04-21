@@ -85,6 +85,7 @@ db_reply_t
         (tntdb::Connection &conn,
          m_alrt_id_t         id);
 
+//+
 db_reply_t
     insert_new_alert 
         (tntdb::Connection  &conn,
