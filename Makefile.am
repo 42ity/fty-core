@@ -296,6 +296,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/alert.cc \
+			src/persist/alert.h \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
 			tools/dbpath.cc
@@ -575,6 +577,29 @@ test_db_asset_crud_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_db_asset_crud_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+bin_PROGRAMS += 	test-db-alert
+
+test_db_alert_SOURCES = \
+			tests/persist/test-alert.cc
+
+
+test_db_alert_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_db_alert_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_alert_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 check_PROGRAMS += 	test-agents
