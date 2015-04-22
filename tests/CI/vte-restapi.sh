@@ -130,9 +130,6 @@ export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
-RUNAS=""
-CURID="`id -u`" || CURID=""
-[ "$CURID" = 0 ] || RUNAS="sudo"
 
 set -u
 set -e
@@ -147,6 +144,9 @@ test_web_port() {
 }
 fi
 # konec vynechavky **********************************
+
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 
 # ***** AUTHENTICATION ISSUES *****
 # check SASL is working
