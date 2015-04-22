@@ -77,19 +77,21 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 [ -z "$WEBLIB_TRACE_CURL" ] && WEBLIB_TRACE_CURL=no
 
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
-        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
-        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
-        SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+        SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname "$0"`" || \
+        SCRIPTDIR="`dirname "$0"`"
 
 if [ -z "$CHECKOUTDIR" ]; then
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
-           CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
+            CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
+            CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
+            CHECKOUTDIR="$( cd "$SCRIPTDIR"/../.. && pwd )" || \
+            CHECKOUTDIR="" ;;
         */tools|tools)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
-           CHECKOUTDIR="" ;;
+            CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
+            CHECKOUTDIR="$( cd "$SCRIPTDIR"/.. && pwd )" || \
+            CHECKOUTDIR="" ;;
     esac
 fi
 
@@ -114,7 +116,7 @@ print_result() {
             LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
 	else
             LASTFAILED="`echo "$NAME::$TNAME" | sed 's, ,__,g'`"
-G	fi
+	fi
         FAILED="$FAILED $LASTFAILED"
 
 	# This optional envvar can be set by the caller
