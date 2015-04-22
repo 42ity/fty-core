@@ -88,7 +88,13 @@ done
 # port used for ssh requests:
 [ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+if [ -z "$SUT_WEB_PORT" ]; then
+    if [ -n "$BIOS_PORT" ]; then
+        SUT_WEB_PORT="$BIOS_PORT"
+    else
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+    fi
+fi
 # unconditionally calculated values
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
