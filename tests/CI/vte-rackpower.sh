@@ -49,6 +49,10 @@ LOCKFILE=/tmp/ci-test-trp.lock
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+echo "SCRIPTDIR =	$SCRIPTDIR"
+echo "CHECKOUTDIR =	$CHECKOUTDIR"
+echo "BUILDSUBDIR =	$BUILDSUBDIR"
+
     # *** read parameters if present
 while [ $# -gt 0 ]; do
     case "$1" in
