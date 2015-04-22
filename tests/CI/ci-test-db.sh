@@ -53,9 +53,21 @@ FAILED=""
 
 echo "--------------- ensure bins to test --------------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db test-db2 \
+    test-db test-db2 test-database \
     test-db-asset-crud test-dbtopology test-totalpower \
     || FAILED="compilation"
+
+echo "-------------------- empty db --------------------"
+./tests/CI/ci-empty-db.sh
+echo "-------------------- test-database ---------------"
+"$BUILDSUBDIR"/test-database
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "error: test-database failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-database"
+fi
 
 echo "-------------------- reset db --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
