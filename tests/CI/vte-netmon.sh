@@ -130,7 +130,7 @@ logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 
     # ***  start dshell on SUT ***
-sut_run '/usr/bin/dshell ipc://@/malamute 1000 mshell networks \\.\\* > '"$DSH_FILE" &
+sut_run '/usr/bin/dshell ipc://@/malamute 1000 mshell networks \.\* > '"$DSH_FILE" &
 # start was successfull?
 if [[ $? -ne 0 ]]; then
     echo "ERROR: dshell didn't start properly" >&2
