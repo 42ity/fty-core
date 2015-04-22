@@ -27,6 +27,10 @@
 ### Some variables might not be initialized
 set +u
 
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+set -o pipefail 2>/dev/null || true
+
 ### Store some important CLI values
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"

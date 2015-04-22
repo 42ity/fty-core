@@ -44,14 +44,15 @@ LOCKFILE=/tmp/ci-test-trp.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** weblib include
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 echo "SCRIPTDIR =	$SCRIPTDIR"
 echo "CHECKOUTDIR =	$CHECKOUTDIR"
 echo "BUILDSUBDIR =	$BUILDSUBDIR"
+
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -248,8 +249,9 @@ testcase() {
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
             PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
-            RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" || \
-                logmsg_error "FAILED ($?): api_get_content '$PAR'"
+            RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" && \
+                logmsg_info "SUCCESS: api_get_content '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
+                logmsg_error "FAILED ($?): api_get_content '$PAR'" 
             POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
             STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
