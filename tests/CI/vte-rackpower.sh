@@ -161,10 +161,10 @@ set +e
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
 rem_copy_file() {
-SRC_FILE=$1
-DST_FILE=$2
-COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE"
-(cd /;tar -cf - tmp/$SRC_FILE | sut_run "$COPY_CMD" & )
+    SRC_FILE=$1
+    DST_FILE=$2
+    COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE; chown nut:root $CFGDIR/$DST_FILE"
+    ( cd /;tar -cf - tmp/$SRC_FILE | sut_run "$COPY_CMD" )
 }
 
     # *** rem_cmd()
@@ -174,98 +174,97 @@ rem_cmd() {
 }
     # *** set_values_in_ups()
 set_values_in_ups() {
-UPS="$1"
-TYPE="$2"
-VALUE="$3"
+    UPS="$1"
+    TYPE="$2"
+    VALUE="$3"
 
-echo "set values in <upsX>.dev"
-if [ "$TYPE" = epdu ]; then
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-epdu.dev >/tmp/$UPS.new
-    PARAM=$PARAM2
-elif [ "$TYPE" = pdu ]; then
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: 0/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
-else
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
-    PARAM=$PARAM2
-fi
+    echo "set values in <upsX>.dev"
+    if [ "$TYPE" = epdu ]; then
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-epdu.dev >/tmp/$UPS.new
+        PARAM=$PARAM2
+    elif [ "$TYPE" = pdu ]; then
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: 0/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
+    else
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
+        PARAM=$PARAM2
+    fi
 
-echo "set values in ups.conf"
-sed -r -e "s/UPS1/$UPS1/g" </tmp/pattern.conf >/tmp/pattern.tmp
-sed -r -e "s/UPS2/$UPS2/g" </tmp/pattern.tmp >/tmp/ups.new
+    echo "set values in ups.conf"
+    sed -r -e "s/UPS1/$UPS1/g" -e "s/UPS2/$UPS2/g" </tmp/pattern.conf >/tmp/ups.new
 
     # *** Copy the .dev .conf files to SUT
-if [ $UPS = $UPS1 ]; then
-    if [ "$TYPE2" = epdu ]; then
-        rem_copy_file pattern-epdu.dev $UPS2.dev
-    else
-        rem_copy_file pattern-ups.dev $UPS2.dev
+    if [ $UPS = $UPS1 ]; then
+        if [ "$TYPE2" = epdu ]; then
+            rem_copy_file pattern-epdu.dev $UPS2.dev
+        else
+            rem_copy_file pattern-ups.dev $UPS2.dev
+        fi
     fi
-fi
-rem_copy_file $UPS.new $UPS.dev
-rem_copy_file ups.new ups.conf
-sleep 10
+    rem_copy_file $UPS.new $UPS.dev
+    rem_copy_file ups.new ups.conf
+    sleep 10
 
     # *** start upsrw
-echo "start upsrw"
-#rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
-sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
+    echo "start upsrw"
+    #rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
+    sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
+
     # *** restart NUT server
-echo 'restart NUT server'
-rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
-echo 'Wait 20s ...' 
-sleep 20
+    echo 'restart NUT server'
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
+    echo 'Wait 20s ...' 
+    sleep 20
 }
 
     # *** testcase()
 testcase() {
+    echo "starting the test"
 
-echo "starting the test"
-
-SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
-ERRORS=0
-SUCCESSES=0
-LASTPOW=(0 0)
-for UPS in $UPS1 $UPS2 ; do
+    SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
+    ERRORS=0
+    SUCCESSES=0
+    LASTPOW=(0 0)
+    for UPS in $UPS1 $UPS2 ; do
                        # count expected value of total power
-    for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
-        # set values
-        NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
-        if [ $UPS = $UPS1 ]; then
-            set_values_in_ups "$UPS" "$TYPE1" "$NEWVALUE"
-            if [ $TYPE1 = "pdu" ]; then
-                LASTPOW[0]=0
+        for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
+            # set values
+            NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
+            if [ $UPS = $UPS1 ]; then
+                set_values_in_ups "$UPS" "$TYPE1" "$NEWVALUE"
+                if [ $TYPE1 = "pdu" ]; then
+                    LASTPOW[0]=0
+                else
+                    LASTPOW[0]=$NEWVALUE
+                fi
             else
-                LASTPOW[0]=$NEWVALUE
+                set_values_in_ups $UPS $TYPE2 $NEWVALUE
+                if [ $TYPE2 = "pdu" ]; then
+                    LASTPOW[1]=0
+                else
+                    LASTPOW[1]=$NEWVALUE
+                fi
             fi
-        else
-            set_values_in_ups $UPS $TYPE2 $NEWVALUE
-            if [ $TYPE2 = "pdu" ]; then
-                LASTPOW[1]=0
-            else
-                LASTPOW[1]=$NEWVALUE
-            fi
-        fi
-        TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
+            TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
-        PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
-        RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" || \
-            logmsg_error "FAILED ($?): api_get_content '$PAR'"
-        POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
+            PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
+            RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" || \
+                logmsg_error "FAILED ($?): api_get_content '$PAR'"
+            POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
-        STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
-        STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
+            STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
+            STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
                        # round both numbers and compare them
                        # decide the test is successfull or failed
-        DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
-        if [ $DEL = 0 ]; then
-            echo "The total power has an expected value: '$TP' = '$POWER'. Test PASSED."
-            SUCCESSES=$(expr $SUCCESSES + 1)
-        else
-            echo "The total power does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
-            ERRORS=$(expr $ERRORS + 1)
-        fi
+            DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
+            if [ $DEL = 0 ]; then
+                echo "The total power has an expected value: '$TP' = '$POWER'. Test PASSED."
+                SUCCESSES=$(expr $SUCCESSES + 1)
+            else
+                echo "The total power does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
+                ERRORS=$(expr $ERRORS + 1)
+            fi
+        done
     done
-done
 }
 
     # *** results()
