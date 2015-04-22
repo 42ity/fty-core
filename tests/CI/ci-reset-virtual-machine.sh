@@ -56,6 +56,12 @@ VM="latest"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
 while [ $# -gt 0 ] ; do
     case "$1" in
         -m|--machine)
