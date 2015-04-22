@@ -33,12 +33,12 @@ export LANG LC_ALL TZ
 ### a single-line token for C macros or Makefiles; our JSON.sh can do that.
 [ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="`dirname $0`/JSON.sh"
 [ ! -x "$JSONSH" ] && \
-    echo "FAILED to use JSON.sh from '$JSONSH'" >&2 && exit 3
+    echo "GIT_DETAILS-FATAL: FAILED to use JSON.sh from '$JSONSH'" >&2 && exit 3
 
 [ -z "$GIT" -o ! -x "$GIT" ] && GIT="$(which git 2>/dev/null | head -1)"
 if [ -n "$GIT" -a -x "$GIT" ] && $GIT --help >/dev/null 2>&1; then :
 else
-    echo "FAILED to execute 'git' program (tried '$GIT')" >&2
+    echo "GIT_DETAILS-WARN: FAILED to execute 'git' program (tried '$GIT')" >&2
     GIT="git"
 fi
 
@@ -67,7 +67,7 @@ reportVar() {
 }
 
 reportBuildTimestamp() {
-    echo "INFO: Recording the build timestamp..." >&2
+    echo "GIT_DETAILS-INFO: Recording the build timestamp..." >&2
     # Packaging metadata: Current timestamp at the build host
     # (as of compilation)
 
@@ -84,7 +84,7 @@ reportBuildTimestamp() {
 }
 
 reportBuildHost() {
-    echo "INFO: Getting buildhost attributes..." >&2
+    echo "GIT_DETAILS-INFO: Getting buildhost attributes..." >&2
 
     # Packaging metadata: Full 'uname -a' of the building host
     PACKAGE_BUILD_HOST_UNAME="`uname -a`"
@@ -124,7 +124,7 @@ reportGitInfo() {
         # (parent of the build workspace)
         PACKAGE_GIT_ORIGIN="$($GIT config --get remote.origin.url)"
         if [ $? != 0 ]; then
-            echo "SKIPPED: can not get Git metadata in '`pwd`'" >&2
+            echo "GIT_DETAILS-INFO: SKIPPED: can not get Git metadata in '`pwd`'" >&2
             PACKAGE_GIT_ORIGIN=""
             GIT_ERRORED=yes
             GITRES=2
@@ -132,7 +132,7 @@ reportGitInfo() {
     fi
 
     if [ "$GIT_ERRORED" = no ]; then
-        echo "INFO: Getting Git workspace attributes..." >&2
+        echo "GIT_DETAILS-INFO: Getting Git workspace attributes..." >&2
 
         # Packaging metadata: Git branch in the build workspace repository
         PACKAGE_GIT_BRANCH="$($GIT rev-parse --abbrev-ref HEAD)"
@@ -149,11 +149,11 @@ reportGitInfo() {
         _B=''
         _B_RES=-1
         if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
-            echo "INFO: This workspace is a 'detached HEAD'," \
+            echo "GIT_DETAILS-INFO: This workspace is a 'detached HEAD'," \
                 "trying to detect the real source branch name..." >&2
 
             if [ -n "$BRANCH" -a -n "$BUILDMACHINE" ]; then
-                echo "INFO: envvars set by Jenkins are detected;" \
+                echo "GIT_DETAILS-INFO: envvars set by Jenkins are detected;" \
                     "will rely on them (using '$BRANCH')" >&2
                 _B="$BRANCH"
                 [ -n "$BRANCH" -a x"$BRANCH" != xHEAD ]
@@ -163,35 +163,36 @@ reportGitInfo() {
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -d ".git" -a -f ".git/FETCH_HEAD" -a\
                  -n "$PACKAGE_GIT_HASH_L" ]; then
-                echo "INFO: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD..." >&2
+                echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH in .git/FETCH_HEAD..." >&2
                 _B="`grep "$PACKAGE_GIT_HASH_L" .git/FETCH_HEAD | sed 's,^[^ ]* *branch '"'"'\(.*\)'"'"' of .*$,\1,'`"
                 _B_RES=$?
             fi
 
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -n "$PACKAGE_GIT_HASH_S" ]; then
-                echo "INFO: Looking for PACKAGE_GIT_BRANCH in 'git branch' info..." >&2
+                echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH in 'git branch' info..." >&2
                 _B="`git branch -a -v | grep -w "$PACKAGE_GIT_HASH_S" | egrep -v "^\* \(detached from $PACKAGE_GIT_HASH_S\)" | awk '{print $1}' | sed 's,^remotes/,,'`"
                 _B_RES=$?
             fi
 
             [ $_B_RES != 0 -o -z "$_B" ] && \
             if [ -s ".git_details" -a -r ".git_details" ]; then
-                echo "INFO: Looking for PACKAGE_GIT_BRANCH in older .git_details..." >&2
+                echo "GIT_DETAILS-INFO: Looking for PACKAGE_GIT_BRANCH" \
+                    "in older .git_details..." >&2
                 _B="`source .git_details && echo "$PACKAGE_GIT_BRANCH"`"
                 _B_RES=$?
             fi
 
             [ $_B_RES = 0 -a -n "$_B" ] && \
-                echo "INFO: This workspace is a 'detached HEAD', but its" \
-                    "commit-id matches the head of known branch '$_B'" && \
+                echo "GIT_DETAILS-INFO: This workspace is a 'detached HEAD'," \
+                    "but its commit-id matches the head of known branch '$_B'" && \
                 PACKAGE_GIT_BRANCH="$_B"
 
             unset _B
         fi
 
         if [ "$PACKAGE_GIT_BRANCH" = "HEAD" ]; then
-            echo "WARNING: This workspace is a 'detached HEAD', and" \
+            echo "GIT_DETAILS-WARN: This workspace is a 'detached HEAD', and" \
                 "we could not reliably detect any predecessor branch" >&2
         fi
 
