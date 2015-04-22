@@ -15,8 +15,7 @@
 #include "agents.h"
 #include "ymsg.h"
 #include "str_defs.h"
-
-#define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
+#include "utils_ymsg.h"
 
 </%pre>
 <%args>
@@ -115,14 +114,25 @@
     ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
     assert (msg);
 
-    //agent.sendto ("persistence.measurement", "get_measurements", &msg);    
-    agent.sendto ("agent-cm", "metric/computed/average", &msg);    
+    agent.sendto (BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);    
     msg = agent.recv_wait (1000);
     char *json = NULL;
     if(msg == NULL) {
 </%cpp>
         {
             "msg" : "Computation module didn't reply."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    if (!ymsg_is_ok (msg)) {
+        if (ymsg_errmsg (msg))
+            strmsg.assign (ymsg_errmsg (msg));
+        else    
+            strmsg.assign ("Error requesting average data.");
+</%cpp>
+        {
+            "msg" : "<$ strmsg $>"
         }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
