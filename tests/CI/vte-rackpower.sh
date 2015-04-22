@@ -148,8 +148,11 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-serve
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
-{ cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | \
+set -o pipefail 2>/dev/null || true
+set -e
+{ cat ./tools/initdb.sql ./tools/rack_power.sql | \
  loaddb_file; } 2>&1 | tee /tmp/tmp
+set +e
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
