@@ -95,6 +95,7 @@ agent-inventory
 db-ng
 agent-nut
 server-agent
+agent-cm
 
 tests/junit/
 tests/CI/web/log/
