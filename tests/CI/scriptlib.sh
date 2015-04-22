@@ -79,12 +79,14 @@ determineDirs() {
     if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
             */tests/CI|tests/CI)
-               CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
-               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-               CHECKOUTDIR="" ;;
+                CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
+                CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
+                CHECKOUTDIR="$( cd "$SCRIPTDIR"/../.. && pwd )" || \
+                CHECKOUTDIR="" ;;
             */tools|tools)
-               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
-               CHECKOUTDIR="" ;;
+                CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
+                CHECKOUTDIR="$( cd "$SCRIPTDIR"/.. && pwd )" || \
+                CHECKOUTDIR="" ;;
         esac
     fi
     [ -z "$CHECKOUTDIR" -a -d ~/project ] && CHECKOUTDIR=~/project
