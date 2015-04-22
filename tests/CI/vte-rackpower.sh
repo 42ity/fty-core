@@ -202,18 +202,19 @@ set_values_in_ups() {
     fi
     rem_copy_file $UPS.new $UPS.dev
     rem_copy_file ups.new ups.conf
-    sleep 10
-
-    # *** start upsrw
-    echo "start upsrw"
-    #rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
-    sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
 
     # *** restart NUT server
     echo 'restart NUT server'
     rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
     echo 'Wait 20s ...' 
     sleep 20
+
+    # *** start upsrw
+    echo "start upsrw"
+    #rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
+    sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
+    sleep 10
+
 }
 
     # *** testcase()
