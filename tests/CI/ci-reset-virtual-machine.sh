@@ -114,7 +114,7 @@ modprobe loop # TODO: die on failure?
 # Do we have overlayfs in kernel?
 if \
         [ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
-        [ "`cat "/boot/config-`uname -r`" 2>/dev/null | grep OVERLAY`" ] \
+        grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
 ; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
