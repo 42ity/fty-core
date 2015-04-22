@@ -24,12 +24,14 @@
 #       The variable values may be set by caller or an earlier stage
 #       in script interpretation, otherwise they get defaulted here.
 
-### Some variables might not be initialized
-set +u
-
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
-set -o pipefail 2>/dev/null || true
+if [ "$BASH" ]; then
+    set -o pipefail 2>/dev/null || true
+fi
+
+### Some variables might not be initialized
+set +u
 
 ### Store some important CLI values
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
