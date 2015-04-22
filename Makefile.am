@@ -1673,8 +1673,9 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
-	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
-	      echo "INFO: Replacing '$@' with newly generated data" && \
+	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' >/dev/null; then \
+	      echo "INFO: Replacing '$@' with newly generated data:" && \
+	      diff -bu "$@" "$@.tmp"; \
 	      mv -f "$@.tmp" "$@"; touch "$@"; \
 	    else echo "INFO: No substantial changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; \
 	    fi; \
@@ -1701,16 +1702,26 @@ src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_
 
 $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
 	@echo "INFO: Checking that '$@' is up-to-date..."
+	@/bin/rm -f "$@.tmp" || true
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
 	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
-	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
-	    echo "INFO: No changes in contents of '$@'" || \
-	    { echo "INFO: Replacing '$@' with newly generated data"; \
-	      mv -f "$@.tmp" "$@"; touch "$@"; } } } || { \
-	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
-	  true
+	@if [ -s "$@.tmp" ]; then \
+	    if [ ! -s "$@" ]; then \
+	        echo "INFO: '$@' is missing, so using the newly generated file"; \
+	        mv -f "$@.tmp" "$@"; touch "$@"; \
+	    else \
+	        if  diff -bu "$@" "$@.tmp" | \
+	            egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]char . PACKAGE_BUILD_TSTAMP)' \
+	        >/dev/null ; then \
+	            echo "INFO: Replacing '$@' with newly generated data:"; \
+	            diff -bu "$@" "$@.tmp"; \
+	            mv -f "$@.tmp" "$@"; touch "$@"; \
+	        else echo "INFO: No changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; fi; \
+	    fi; \
+	 else [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; \
+	 fi
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
