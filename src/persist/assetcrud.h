@@ -371,6 +371,18 @@ db_reply_t
     delete_device
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
+
+db_reply_t
+    delete_monitor_asset_relation
+        (tntdb::Connection &conn, 
+         ma_rltn_id_t id);
+
+db_reply_t
+    insert_into_monitor_asset_relation
+        (tntdb::Connection &conn,
+         m_dvc_id_t   monitor_id,
+         a_elmnt_id_t element_id);
+
 // dictionaries
 
 /**

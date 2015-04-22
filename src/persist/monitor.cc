@@ -967,7 +967,7 @@ common_msg_t* generate_return_device(m_dvc_id_t device_id,
     return resultmsg;
 }
 
-common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id, 
+common_msg_t* insert_disc_device(const char* url, m_dvc_tp_id_t device_type_id, 
                             const char* device_name)
 {
     log_info ("start");
@@ -1018,7 +1018,7 @@ common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id,
     }
 }
 
-common_msg_t* delete_device (const char* url, m_dvc_id_t device_id)
+common_msg_t* delete_disc_device (const char* url, m_dvc_id_t device_id)
 {
     log_info ("start");
     m_dvc_id_t n = 0;
@@ -1231,7 +1231,7 @@ db_reply_t
     }
 }
 
-common_msg_t* insert_device(const char* url, const char* device_type_name, 
+common_msg_t* insert_disc_device(const char* url, const char* device_type_name, 
                             const char* device_name)
 {
     log_info ("start");
@@ -1264,7 +1264,7 @@ common_msg_t* insert_device(const char* url, const char* device_type_name,
         case COMMON_MSG_RETURN_DEVTYPE:
         {   
             m_dvc_tp_id_t rowid = common_msg_rowid (device_type);
-            common_msg_t *result = insert_device(url, rowid, device_name);
+            common_msg_t *result = insert_disc_device(url, rowid, device_name);
             common_msg_destroy (&device_type);
             log_info ("end: normal");
             return result;

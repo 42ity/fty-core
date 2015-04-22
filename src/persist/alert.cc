@@ -287,30 +287,23 @@ db_reply_t
     // actually, if there is nothing to insert, then insert was ok :)
     log_debug ("input parameters are correct");
 
+    ret.status = 1;
     for (auto &device_name : device_names )
     {
         auto reply_internal = insert_into_alert_device
                                 (conn, alert_id, device_name.c_str());
-        if ( reply_internal.status == 1 )
+        if ( ( reply_internal.status == 1 ) && ( reply_internal.affected_rows == 1 ) )
             ret.affected_rows++;
+        ret.status = ret.status && reply_internal.status;
+        if ( ret.errtype == 0 )
+            ret.errtype = reply_internal.errtype;
+        if ( ret.errsubtype == 0 )
+            ret.errsubtype = reply_internal.errsubtype;
+        if ( ret.msg == NULL )
+            ret.msg = reply_internal.msg;
     }
-
-    if ( ret.affected_rows == device_names.size() )
-    {
-        ret.status = 1;
-        log_debug ("all ext attributes were inserted successfully");
-        LOG_END;
-        return ret;
-    }
-    else
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "not all attributes were inserted";
-        log_error ("end: %s", ret.msg);
-        return ret;
-    }
+    LOG_END;
+    return ret;
 }
 
 db_reply_t
@@ -358,7 +351,17 @@ db_reply_t
             "   t_bios_asset_element v1"
             " WHERE"
             "   v.id_asset_element = v1.id_asset_element AND"
-            "   v1.name = :name"
+            "   v1.name = :name AND"
+            "   NOT EXISTS"
+            "   ("
+            "       SELECT"
+            "           1"
+            "       FROM"
+            "           t_bios_alert_device v2"
+            "       WHERE"
+            "           v2.alert_id = :alert AND"
+            "           v2.device_id = v.id_discovered_device"
+            "   )"
         );
    
         ret.affected_rows = st.set("alert", alert_id).
@@ -402,7 +405,6 @@ db_reply_t
    
         ret.affected_rows = st.set("id", id).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert_device]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
@@ -419,6 +421,42 @@ db_reply_t
     }
 }
 
+//=============================================================================
+db_reply_t
+    delete_from_alert_device_byalert
+        (tntdb::Connection &conn,
+         m_alrt_id_t         id)
+{
+    LOG_START;
+    log_debug ("  id = %" PRIu32, id);
+
+    db_reply_t ret = db_reply_new();
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_alert_device"
+            " WHERE"
+            "   alert_id = :id"
+        );
+   
+        ret.affected_rows = st.set("id", id).
+                               execute();
+        log_debug ("[t_bios_alert_device]: was deleted %" 
+                                        PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
 
 //=============================================================================
 db_reply_t

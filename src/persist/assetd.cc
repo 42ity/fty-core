@@ -818,3 +818,52 @@ db_reply_t
     LOG_END;
     return reply_delete5;
 }
+
+//=============================================================================
+db_reply_t
+    delete_monitor_asset_relation
+        (tntdb::Connection &conn, 
+         ma_rltn_id_t id)
+{
+    LOG_START;
+    log_debug ("  id = %" PRIu32, id);
+   
+    db_reply_t ret = db_reply_new();
+
+    // input parameters control
+    if ( id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of id is not allowed";
+        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        return ret;
+    }
+    log_debug ("input parameters are correct");
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_monitor_asset_relation"
+            " WHERE"
+            "   id_ma_relation = :id"
+        );
+    
+        ret.affected_rows = st.set("id", id).
+                               execute();
+        log_debug("[t_bios_monitor_asset_relation]: was deleted %"
+                                PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
