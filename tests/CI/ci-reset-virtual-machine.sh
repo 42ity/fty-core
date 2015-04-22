@@ -111,13 +111,20 @@ fi
 # Make sure we have a loop
 modprobe loop # TODO: die on failure?
 
-# Do we have overlayfs?
-if [ "`gzip -cd /proc/config.gz 2> /dev/null | grep OVERLAY`" ]; then
+# Do we have overlayfs in kernel?
+if \
+        [ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
+        [ "`cat "/boot/config-`uname -r`" 2>/dev/null | grep OVERLAY`" ] \
+; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
+        echo "Detected support of OVERLAYFS on the `hostname` host," \
+            "will mount a .$EXT file as an RO base and overlay the RW changes"
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
+        echo "Detected no support of OVERLAYFS on the `hostname` host," \
+            "will unpack a .$EXT file into a dedicated full RW directory"
 fi
 
 # Get latest image for us
@@ -140,7 +147,7 @@ rm -rf "../overlays/$IMAGE"
 
 # Mount squashfs
 mkdir -p "../overlays/$IMAGE"
-if [ "$OVERLAYFS" ]; then
+if [ "$OVERLAYFS" = yes ]; then
 	mkdir -p "../rootfs/$IMAGE-ro"
 	umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
 	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || die "Can't mount squashfs"
@@ -155,7 +162,7 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 /bin/rm -rf "../rootfs/$VM"
 mkdir -p "../rootfs/$VM"
 # Mount rw image
-if [ "$OVERLAYFS" ]; then
+if [ "$OVERLAYFS" = yes ]; then
 	mount -t overlayfs \
 	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" \
 	    overlayfs "../rootfs/$VM" 2> /dev/null \
