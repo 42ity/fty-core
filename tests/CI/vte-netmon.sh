@@ -126,6 +126,9 @@ touch "$LOCKFILE"
     # *** call cleanup() when some of te signal appears *** 
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+
     # ***  start dshell on SUT ***
 sut_run '/usr/bin/dshell ipc://@/malamute 1000 mshell networks \\.\\* > '"$DSH_FILE" &
 # start was successfull?
