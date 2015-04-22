@@ -134,7 +134,7 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios
 
     # ***  start dshell on SUT ***
 logmsg_info "Starting dshell on the VTE..."
-sut_run "/usr/bin/dshell ipc://@/malamute 1000 mshell networks '\.\*' > '$DSH_FILE'" &
+sut_run "/usr/bin/dshell ipc://@/malamute 1000 mshell networks '.*' > '$DSH_FILE'" &
 # start was successfull?
 if [[ $? -ne 0 ]]; then
     echo "ERROR: dshell didn't start properly" >&2
@@ -145,12 +145,12 @@ sleep 2
 
 # ***** CREATE SOME CHANGES IN THE NETWORK TOPOLOGY *****
     # *** These actions have to be reflected in DSH_FILE for this test to succeed." ***
-sut_run "sudo ip addr add 101.25.138.2 dev lo 2>/dev/null"
+sut_run "sudo ip addr add 101.25.138.2 dev lo"
 sut_run "sudo ip addr add 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr add 20.13.5.4/32 dev lo"
 
 # Reverting back
-sut_run "sudo ip addr del 101.25.138.2 dev lo 2>/dev/null"
+sut_run "sudo ip addr del 101.25.138.2 dev lo"
 sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
