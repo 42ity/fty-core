@@ -523,7 +523,7 @@ common_msg_t* generate_return_device(m_dvc_id_t device_id,
  *
  * \return - a COMMON_MSG_FAIL or COMMON_MSG_OK message.
  */
-common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id, 
+common_msg_t* insert_disc_device(const char* url, m_dvc_tp_id_t device_type_id, 
                             const char* device_name);
 
 
@@ -538,7 +538,7 @@ common_msg_t* insert_device(const char* url, m_dvc_tp_id_t device_type_id,
  *
  * \return - a COMMON_MSG_FAIL or COMMON_MSG_OK message.
  */
-common_msg_t* delete_device (const char* url, m_dvc_id_t device_id);
+common_msg_t* delete_disc_device (const char* url, m_dvc_id_t device_id);
 
 
 /**
@@ -602,7 +602,7 @@ common_msg_t* select_device (const char* url, const char* device_type_name,
  *
  * \return - a COMMON_MSG_FAIL or COMMON_MSG_OK message.
  */
-common_msg_t* insert_device(const char* url, const char* device_type_name, 
+common_msg_t* insert_disc_device(const char* url, const char* device_type_name, 
                             const char* device_name);
 
 

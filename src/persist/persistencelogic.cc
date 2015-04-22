@@ -595,7 +595,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                 if ( msgid == COMMON_MSG_FAIL )
                 {
                     // the device was not found, then insert new device
-                    common_msg_t* newDevice = insert_device(url.c_str(), devicetype, devicename);
+                    common_msg_t* newDevice = insert_disc_device(url.c_str(), devicetype, devicename);
 
                     int newmsgid = common_msg_id (newDevice);
 
@@ -703,7 +703,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
         if(tmpz != NULL) {
         common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {
-        common_msg_t *retc = insert_device(url.c_str(),
+        common_msg_t *retc = insert_disc_device(url.c_str(),
                            common_msg_devicetype_id(tmpc),
                            common_msg_name(tmpc));
         common_msg_destroy(&tmpc);
