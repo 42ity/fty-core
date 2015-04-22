@@ -124,7 +124,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     ds.deserialize(si);
 
     std::string test;
-    REQUIRE(si.getMember("units", test));
+    REQUIRE(si.getMember("unit", test));
     REQUIRE(test == "C");
     REQUIRE(si.getMember("data").memberCount() > 2);
 
