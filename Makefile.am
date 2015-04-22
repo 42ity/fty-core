@@ -1029,15 +1029,11 @@ bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
 bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
 
 
-systemdsystemunit_DATA = \
-			$(top_builddir)/bios-agent-nut.service \
-			$(top_builddir)/bios-driver-netmon.service \
-			$(top_builddir)/bios-db.service \
-			$(top_builddir)/bios-server-agent.service \
-			$(top_builddir)/bios-agent-inventory.service
+systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
 
-CLEANFILES += $(top_builddir)/bios-*.service
+CLEANFILES += $(systemdsystemunit_DATA)
 endif
+
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
 # Note that the basic filenames in these variables are relative to the
