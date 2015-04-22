@@ -296,6 +296,7 @@ echo "MODE=standalone" > /tmp/nut.conf
 password=$PSW
 actions=SET
 instcmds=ALL" > /tmp/upsd.users
+chmod 640 /tmp/upsd.users
 
         # * Copy the cfgfiles to SUT
 rem_copy_file nut.conf nut.conf
