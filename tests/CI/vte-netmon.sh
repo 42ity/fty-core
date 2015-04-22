@@ -127,7 +127,7 @@ touch "$LOCKFILE"
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
     # ***  start dshell on SUT ***
-sut_run '/usr/bin/dshell ipc://@/malamute 1000 mshell networks .* > '"$DSH_FILE" &
+sut_run '/usr/bin/dshell ipc://@/malamute 1000 mshell networks \\.\\* > '"$DSH_FILE" &
 # start was successfull?
 if [[ $? -ne 0 ]]; then
     echo "ERROR: dshell didn't start properly" >&2
@@ -169,6 +169,10 @@ FILE_DATA=$(sut_run "cat $DSH_FILE")
 # +++++++++++++++++++++++++++++++++++
     # *** Test 1 ***
 # +++++++++++++++++++++++++++++++++++
+
+logmsg_info "Beginning regexp tests on remotely collected FILE_DATA contents:
+$FILE_DATA
+"
 
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='101.25.138.2'.*?prefixlen=32"
 if [[ ! "$FILE_DATA" =~ $re ]]; then
