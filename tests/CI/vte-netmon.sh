@@ -128,8 +128,12 @@ trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sleep 5
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+    die "Some required services are not running on the VTE"
 
     # ***  start dshell on SUT ***
+logmsg_info "Starting dshell on the VTE..."
 sut_run "/usr/bin/dshell ipc://@/malamute 1000 mshell networks '\.\*' > '$DSH_FILE'" &
 # start was successfull?
 if [[ $? -ne 0 ]]; then
