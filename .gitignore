@@ -71,6 +71,7 @@ test-*.trs
 make.log
 make.output
 cppcheck.supp
+cppcheck.xml
 
 test-agents
 test-api
