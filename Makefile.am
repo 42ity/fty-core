@@ -918,7 +918,9 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/mock.cc   src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc
+                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
+					  src/shared/utils_ymsg.c src/shared/utils_ymsg.h
+
 
 EXTRA_DIST +=		src/web/include/enc.h
 
