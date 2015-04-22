@@ -119,7 +119,6 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
         CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, NULL, NULL) == NULL );
     }
 
-    // bios_db_measurements_read_request_decode (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, uint64_t *element_id, char **source)
     SECTION ("bios_db_measurements_read_request_decode") {
         int64_t start_ts = -1, end_ts = -1;
         char *source = NULL;
@@ -152,15 +151,16 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
         ymsg_destroy (&msg_reply);
     }
 
+    // TODO: finish
     // ymsg_t * bios_db_measurements_read_reply_encode (const char *);
     // SECTION ("bios_db_measurements_read_reply_encode") {
     // }
 
+    // TODO: finish
     // int bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json);
     // SECTION ("bios_db_measurements_read_reply_decode") {
     // }
 
-    // TODO: finish for the rest
 
 }
 
@@ -271,5 +271,4 @@ TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_
     CHECK ( str_eq (json, json_r) );
     if (json_r)
         free (json_r);
-   
 }
