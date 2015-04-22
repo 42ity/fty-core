@@ -155,8 +155,9 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-serve
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-{ cat ./tools/initdb.sql ./tools/rack_power.sql | \
- loaddb_file; } 2>&1 | tee /tmp/tmp
+{ loaddb_file ./tools/initdb.sql && \
+  loaddb_file ./tools/rack_power.sql \
+; } 2>&1 | tee /tmp/ci-rackpower-vte.log
 set +e
 
 # ***** COMMON FUNCTIONS ***
@@ -171,7 +172,7 @@ rem_copy_file() {
     # *** rem_cmd()
 #Send remote command from MS to be performed in SUT
 rem_cmd() {
-    sut_run "$@" | tee /tmp/ci-rackpower.log
+    sut_run "$@" | tee -a /tmp/ci-rackpower-vte.log
 }
     # *** set_values_in_ups()
 set_values_in_ups() {
@@ -203,19 +204,18 @@ set_values_in_ups() {
     fi
     rem_copy_file $UPS.new $UPS.dev
     rem_copy_file ups.new ups.conf
+    sleep 3
 
     # *** restart NUT server
-    echo 'restart NUT server'
+    echo 'Restart NUT server with updated config'
     rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
     echo 'Wait 20s ...' 
     sleep 20
 
-    # *** start upsrw
-    echo "start upsrw"
-    #rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
-    sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
-    sleep 10
-
+    # *** start upsrw (output hidden because this can fail for some target variables)
+    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
+    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1" && \
+        sleep 3
 }
 
     # *** testcase()
