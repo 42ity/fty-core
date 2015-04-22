@@ -1682,8 +1682,9 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	  echo '#include <src/include/git_details_override.h>'; \
 	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
-	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
-	    echo "INFO: No changes in contents of '$@'" || \
+	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" | \
+	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]char . PACKAGE_BUILD_TSTAMP)' && \
+	    echo "INFO: No changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)" || \
 	    { echo "INFO: Replacing '$@' with newly generated data"; \
 	      mv -f "$@.tmp" "$@"; touch "$@"; } } } || { \
 	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
