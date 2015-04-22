@@ -207,13 +207,12 @@ sleep 10
 
     # *** start upsrw
 echo "start upsrw"
-rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
+#rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
+sut_run "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
     # *** restart NUT server
 echo 'restart NUT server'
-rem_cmd "systemctl stop nut-server"
-rem_cmd "systemctl stop nut-driver"
-rem_cmd "systemctl start nut-server"
-echo 'Wait ...' 
+rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
+echo 'Wait 20s ...' 
 sleep 20
 }
 
@@ -246,22 +245,23 @@ for UPS in $UPS1 $UPS2 ; do
                 LASTPOW[1]=$NEWVALUE
             fi
         fi
-        TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
+        TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
-        PAR=/metric/computed/rack_total?arg1="$RACK"'&'arg2=total_power
-        RACK_TOTAL_POWER1_CONTENT=`api_get_content $PAR`
-        POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)"
+        PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
+        RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" || \
+            logmsg_error "FAILED ($?): api_get_content '$PAR'"
+        POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
                        # round both numbers and compare them
                        # decide the test is successfull or failed
-        DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
+        DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
         if [ $DEL = 0 ]; then
-           echo "The total power has an expected value $TP = $POWER. Test PASSED."
-           SUCCESSES=$(expr $SUCCESSES + 1)
+            echo "The total power has an expected value: '$TP' = '$POWER'. Test PASSED."
+            SUCCESSES=$(expr $SUCCESSES + 1)
         else
-            echo "$TP does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
+            echo "The total power does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
             ERRORS=$(expr $ERRORS + 1)
         fi
     done
