@@ -23,7 +23,7 @@ drop table if exists t_bios_alert;
 
 CREATE TABLE t_bios_measurement_topic(
     id               INTEGER UNSIGNED  NOT NULL AUTO_INCREMENT,
-    device_id        INTEGER           NOT NULL DEFAULT '0',
+    device_id        INTEGER UNSIGNED  NOT NULL DEFAULT '0',
     units            VARCHAR(10)       NOT NULL,
     topic            VARCHAR(255)      NOT NULL,
     PRIMARY KEY(id),
@@ -97,6 +97,7 @@ CREATE TABLE t_bios_alert_device(
     device_id   SMALLINT UNSIGNED   NOT NULL,
 
     PRIMARY KEY(id),
+    UNIQUE INDEX `UI_t_bios_alert_device` (`alert_id`, device_id ASC),
 
     INDEX(alert_id),
     INDEX(device_id),
