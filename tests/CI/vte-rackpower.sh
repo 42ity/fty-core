@@ -209,12 +209,18 @@ set_values_in_ups() {
     # *** restart NUT server
     echo 'Restart NUT server with updated config'
     rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
-    echo 'Wait 20s ...' 
-    sleep 20
+    echo 'Wait for NUT to start responding...' 
+    sleep 6
+    N=0
+    while [ "$N" -lt 20 ]; do
+        OUT="$(sut_run 'upsrw -u $USR -p $PSW $UPS@localhost 2>/dev/null')"
+        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=100; break; fi
+        sleep 1
+    done
 
     # *** start upsrw (output hidden because this can fail for some target variables)
     echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
-    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1" && \
+    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost" && \
         sleep 3
 }
 
