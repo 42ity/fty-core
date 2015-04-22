@@ -76,7 +76,23 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 # Print out the CURL stdout and stderr (via FD#3)?
 [ -z "$WEBLIB_TRACE_CURL" ] && WEBLIB_TRACE_CURL=no
 
-[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR="`dirname $0`/../.."
+[ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
+        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
+        SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+
+if [ -z "$CHECKOUTDIR" ]; then
+    case "$SCRIPTDIR" in
+        */tests/CI|tests/CI)
+           CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
+           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
+           CHECKOUTDIR="" ;;
+        */tools|tools)
+           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
+           CHECKOUTDIR="" ;;
+    esac
+fi
+
 [ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 
 _TOKEN_=""
@@ -98,7 +114,7 @@ print_result() {
             LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
 	else
             LASTFAILED="`echo "$NAME::$TNAME" | sed 's, ,__,g'`"
-	fi
+G	fi
         FAILED="$FAILED $LASTFAILED"
 
 	# This optional envvar can be set by the caller

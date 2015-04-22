@@ -40,13 +40,9 @@ SKIPPED_NONSH_TESTS=0
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 NEED_BUILDSUBDIR=no determineDirs_default || true
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
-set -o pipefail 2>/dev/null || true
 
 while [ $# -gt 0 ]; do
     case "$1" in
