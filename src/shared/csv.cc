@@ -62,6 +62,10 @@ CsvMap::CsvMap(const CsvMap::CxxData& data) :
 
 void CsvMap::deserialize() {
 
+    if (_data.size() == 0) {
+        throw std::invalid_argument("Can't process empty data set");
+    }
+
     size_t i = 0;
     for (const std::string& title_name : _data[0]) {
 
