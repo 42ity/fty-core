@@ -38,11 +38,7 @@
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Start time is "$TIME.
     # *** is system running? ***
-LOCKFILE=/tmp/ci-test-netmon.lock
-if [ -f $LOCKFILE ]; then
-    echo -e "Script already running. Stopping."
-    exit 1 
-fi
+LOCKFILE=/tmp/ci-test-netmon-vte.lock
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
@@ -101,15 +97,16 @@ SUT_IS_REMOTE=yes
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 
-    # *** temporary dsh file ***
-DSH_FILE=/tmp/temp
 ERRORS=0
 SUCCESSES=0
 
 # ***** FUNCTIONS *****
     # *** stop  dshell process and delete LOCKFILE ***
 function cleanup {
-    sut_run "killall dshell"
+    sut_run "killall dshell lt-dshell"
+    sut_run "rm -f '$DSH_FILE_REMOTE'"
+    ### TODO: Should systemd-managed BIOS and other services be stopped?
+    #sut_run "killall -9 netmon lt-netmon"
     rm -f "$LOCKFILE" #"$DSH_FILE"
 }
 
@@ -121,10 +118,24 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
 # ***** LOCK THE RUNNING SCRIPT, SET trap FOR EXIT SIGNALS *****
+if [ -f $LOCKFILE ]; then
+    ls -la "$LOCKFILE" >&2
+    die "Script already running. Stopping."
+fi
+
     # *** lock the script with creating $LOCKFILE ***
-touch "$LOCKFILE"
+echo $$ > "$LOCKFILE"
     # *** call cleanup() when some of te signal appears *** 
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
+    # *** temporary dsh file ***
+DSH_FILE_REMOTE="/tmp/temp-ci-netmon-vte-dshell-$$.log"
+
+mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
+DSH_FILE=$(mktemp -p "$BUILDSUBDIR/tests/CI/")
+if [ -n "$DEBUG" ]; then
+    echo "DEBUG: local DSH_FILE='$DSH_FILE'" >&2
+fi
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
@@ -134,7 +145,7 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios
 
     # ***  start dshell on SUT ***
 logmsg_info "Starting dshell on the VTE..."
-sut_run "/usr/bin/dshell ipc://@/malamute 1000 mshell networks '.*' > '$DSH_FILE'" &
+sut_run "/usr/bin/dshell ipc://@/malamute 1000 mshell networks '.*' > '$DSH_FILE_REMOTE'" &
 # start was successfull?
 if [[ $? -ne 0 ]]; then
     echo "ERROR: dshell didn't start properly" >&2
@@ -144,7 +155,7 @@ fi
 sleep 2
 
 # ***** CREATE SOME CHANGES IN THE NETWORK TOPOLOGY *****
-    # *** These actions have to be reflected in DSH_FILE for this test to succeed." ***
+    # *** These actions have to be reflected in DSH_FILE_REMOTE for this test to succeed." ***
 sut_run "sudo ip addr add 101.25.138.2 dev lo"
 sut_run "sudo ip addr add 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr add 20.13.5.4/32 dev lo"
@@ -156,7 +167,8 @@ sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
 # ***** GET THE DATA SNIFFERED WITH dshell FROM SUT TO MS. *****
     # *** read the data to variable FILE_DATA ***
-FILE_DATA=$(sut_run "cat $DSH_FILE")
+sut_run "cat $DSH_FILE_REMOTE" > "$DSH_FILE"
+FILE_DATA=$(cat "$DSH_FILE")
 
 # See at the dshell output format:
 #sender=NETMON subject=add content=
