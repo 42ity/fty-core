@@ -45,6 +45,8 @@ if (it == mp.end()) {
 }
 
 char path[22] = "/tmp/import-csvXXXXXX";
+char new_path[22] = "/tmp/import-csvXXXXXX";
+char* path_p = path;
 
 try {
     int r = ::mkstemp(path);
@@ -72,7 +74,6 @@ try {
 
     if (encoding == "utf-16le") {
         // convert utf-16le using iconv
-        char new_path[22] = "/tmp/import-csvXXXXXX";
         int r2 = ::mkstemp(new_path);
         if (r2 == -1) {
             throw std::runtime_error{::strerror(errno)};
@@ -87,16 +88,18 @@ try {
             throw std::runtime_error("Can't convert input file to utf-8");
         }
         ::unlink(path);
-        *path = *new_path;
+        path_p = new_path;
     }
 
     //load the file and make the import
-    std::ifstream inp(path);
+    std::ifstream inp(path_p);
     load_asset_csv(inp);
     inp.close();
+    ::unlink(path_p);
 }
 catch (const std::logic_error &e) {
     ::unlink(path);
+    ::unlink(new_path);
 </%cpp>
 {
     "error" : "<$$ e.what() $>"
