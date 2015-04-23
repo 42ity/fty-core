@@ -13,6 +13,29 @@ void process_alert(ymsg_t* out, char** out_subj,
     if( in_subj ) {
         *out_subj = strdup(in_subj);
     }
+    /*
+      log_debug()
+
+      // decode message
+      //open db
+      tntdb::Connection conn;
+      try{
+          conn = tntdb::connect(url);
+          if(ongoing)
+            // alert started
+            auto ret = insert_new_alert(
+        else
+            //alarm end
+            update_alert_tilldate_by_rulename
+
+        }
+                ret.status == 1 => OK
+                // put ok do ymsg
+                catch(...) {
+
+                    // put failed into ymsg
+                }
+        */
 }
 
 /*
