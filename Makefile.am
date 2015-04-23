@@ -449,10 +449,8 @@ test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
 test_csv_LDADD = 		libpriv-log.la \
-						libpriv-db.la \
 						libpriv-csv.la \
-					    libpriv-test-run.la \
-					    libpriv-proto.la
+					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
