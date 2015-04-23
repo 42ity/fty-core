@@ -104,18 +104,22 @@ _weblib_result_printed=notest
 print_result() {
     [ "$_weblib_result_printed" = yes ] && return 0
     _weblib_result_printed=yes
-    _ret=0
+    _ret="$1"
+    ### Is this a valid number? if not - it may be some comment about the error
+    [ "$_ret" -ge 0 ] 2>/dev/null || \
+        _ret=255
     TOTAL="`expr $TOTAL + 1`"
-    if [ "$1" -eq 0 ]; then
+    if [ "$_ret" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
-        echo " * FAILED"
-        _ret=1
+        [ x"$_ret" = x"$1" ] && \
+            echo " * FAILED ($_ret)" || \
+            echo " * FAILED ($_ret, $1)"
 	if [ "$TNAME" = "$NAME" ]; then
-            LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
 	else
-            LASTFAILED="`echo "$NAME::$TNAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
 	fi
         FAILED="$FAILED $LASTFAILED"
 
@@ -296,12 +300,16 @@ curlfail_push_expect_500() {
 
 CURL() {
     _TMP_CURL="/tmp/.bios_weblib_curl.$$"
-    /bin/rm -f "$_TMP_CURL" 2>/dev/null
-    if touch "$_TMP_CURL" && chmod 600 "$_TMP_CURL" ; then
-        OUT_CURL="`curl --stderr "$_TMP_CURL" "$@"`"
+    /bin/rm -f "$_TMP_CURL" >/dev/null 2>&1
+    if  touch "$_TMP_CURL" >/dev/null 2>&1 && \
+        chmod 600 "$_TMP_CURL" >/dev/null 2>&1 \
+    ; then
+        ### Ensure "-v" to print out headers; it does not hurt if the caller
+        ### also ask for that mode (via "$@")
+        OUT_CURL="`curl -v --stderr "$_TMP_CURL" "$@"`" 2>&3
         RES_CURL=$?
-        ERR_CURL="`cat "$_TMP_CURL"`"
-        /bin/rm -f "$_TMP_CURL" 2>/dev/null
+        ERR_CURL="`cat "$_TMP_CURL"`" 2>&3
+        /bin/rm -f "$_TMP_CURL" >/dev/null 2>&1
         echo "$ERR_CURL" >&2
         echo "$OUT_CURL"
     else
@@ -323,7 +331,7 @@ CURL() {
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`"
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
