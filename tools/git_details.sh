@@ -56,9 +56,9 @@ reportVar() {
         echo "$V=\"\";"
         echo "$VE=\"\";"
     else
-        eval echo $V=\\\"'$'$V\\\""\\;"
-        eval $VE=\"$(eval echo -E \"\$\{$V\}\" | $JSONSH -Q)\"
-        eval echo $VE=\\\"'$'$VE\\\""\\;"
+        eval echo -E $V=\\\"\"'$'$V\"\\\""\\;"
+        eval $VE=\"$(eval echo -E \"'$'\{$V\}\" | $JSONSH -Q)\"
+        eval echo -E $VE=\\\"'$'$VE\\\""\\;"
     fi
     unset $VE
     unset VE
