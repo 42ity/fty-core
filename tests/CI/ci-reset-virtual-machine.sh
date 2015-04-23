@@ -56,6 +56,12 @@ VM="latest"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
 
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
+
 while [ $# -gt 0 ] ; do
     case "$1" in
         -m|--machine)
@@ -111,13 +117,20 @@ fi
 # Make sure we have a loop
 modprobe loop # TODO: die on failure?
 
-# Do we have overlayfs?
-if [ "`gzip -cd /proc/config.gz 2> /dev/null | grep OVERLAY`" ]; then
+# Do we have overlayfs in kernel?
+if \
+        [ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
+        grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
+; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
+        echo "Detected support of OVERLAYFS on the `hostname` host," \
+            "will mount a .$EXT file as an RO base and overlay the RW changes"
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
+        echo "Detected no support of OVERLAYFS on the `hostname` host," \
+            "will unpack a .$EXT file into a dedicated full RW directory"
 fi
 
 # Get latest image for us
@@ -140,7 +153,7 @@ rm -rf "../overlays/$IMAGE"
 
 # Mount squashfs
 mkdir -p "../overlays/$IMAGE"
-if [ "$OVERLAYFS" ]; then
+if [ "$OVERLAYFS" = yes ]; then
 	mkdir -p "../rootfs/$IMAGE-ro"
 	umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
 	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || die "Can't mount squashfs"
@@ -155,7 +168,7 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 /bin/rm -rf "../rootfs/$VM"
 mkdir -p "../rootfs/$VM"
 # Mount rw image
-if [ "$OVERLAYFS" ]; then
+if [ "$OVERLAYFS" = yes ]; then
 	mount -t overlayfs \
 	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" \
 	    overlayfs "../rootfs/$VM" 2> /dev/null \
@@ -167,8 +180,8 @@ fi
 
 # Bind mount modules
 mkdir -p "../rootfs/$VM/lib/modules"
-mount -o bind "/lib/modules" "../rootfs/$VM/lib/modules"
-mount -o remount,ro "../rootfs/$VM/lib/modules"
+mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
+mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 # copy root's ~/.ssh
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
