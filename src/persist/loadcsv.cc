@@ -104,7 +104,7 @@ static bool
     check_location_u_pos
         (const std::string &s)
 {
-    cxxtools::Regex regex("^[0-9]+([uU]|[uU][rR])?");
+    cxxtools::Regex regex("^[0-9]+[uU][rR]?$");
     if ( !regex.match(s) )
         return false;
     else
@@ -408,7 +408,11 @@ static bool
     auto all_fields = cm.getTitles();
     if ( (all_fields.count("name") == 0 ) ||
          (all_fields.count("type") == 0 ) ||
-         (all_fields.count("location") == 0) )
+         (all_fields.count("sub_type") == 0) ||
+         (all_fields.count("location") == 0) ||
+         (all_fields.count("status") == 0) ||
+         (all_fields.count("business_critical") == 0) ||
+         (all_fields.count("priority") == 0) )
         return false;
     else
         return true;
