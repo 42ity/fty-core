@@ -304,7 +304,9 @@ CURL() {
     if  touch "$_TMP_CURL" >/dev/null 2>&1 && \
         chmod 600 "$_TMP_CURL" >/dev/null 2>&1 \
     ; then
-        OUT_CURL="`curl --stderr "$_TMP_CURL" "$@"`" 2>&3
+        ### Ensure "-v" to print out headers; it does not hurt if the caller
+        ### also ask for that mode (via "$@")
+        OUT_CURL="`curl -v --stderr "$_TMP_CURL" "$@"`" 2>&3
         RES_CURL=$?
         ERR_CURL="`cat "$_TMP_CURL"`" 2>&3
         /bin/rm -f "$_TMP_CURL" >/dev/null 2>&1
