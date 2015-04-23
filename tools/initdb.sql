@@ -193,7 +193,7 @@ CREATE TABLE t_bios_asset_element (
   name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
   id_parent         INT UNSIGNED,
-  status            char(9)             NOT NULL DEFAULT "inactive",
+  status            char(9)             NOT NULL DEFAULT "noactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
   business_crit     TINYINT             NOT NULL DEFAULT 0,
 

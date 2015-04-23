@@ -61,8 +61,9 @@ static int
     get_priority
         (const std::string& s)
 {
+    log_debug ("priority string = %s", s.c_str());
     for (int i = 0; i != 2; i++) {
-        if (s[i] <= 49 && s[i] >= 57) {
+        if (s[i] >= 49 && s[i] <= 57) {
             return s[i] - 48;
         }
     }
@@ -138,7 +139,7 @@ static void
     log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
-        {"active", "inactive", "spare", "retired"};
+        {"active", "noactive", "spare", "retired"};
 
     static auto TYPES = read_element_types (conn);
 
@@ -169,7 +170,7 @@ static void
         // TODO LOG
         log_warning ("Status '%s' is not allowed, use default",
                                                             status.c_str());
-        status = "inactive";    // default
+        status = "noactive";    // default
     }
     unused_columns.erase("status");
 
@@ -459,7 +460,7 @@ void
         }
         catch ( const std::invalid_argument &e)
         {
-            log_warning ("row %zu not imported: %s", row_i, e.what());
+            log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }
     LOG_END;

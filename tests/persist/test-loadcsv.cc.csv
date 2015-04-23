@@ -1,13 +1,13 @@
-name	type	sub_type	description	location	group.1	group.2	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	business_critical	priority	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer	model	asset_tag	serial_no	runtime	phase	installation_date	maintenance_date	maintenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_maintenance_date	IP.1	hostname.1	http_link.1
-DC-LAB	datacenter		Lab DC(тест)										active	yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare, 1345 Le Lieu	John Smith	john.smith@company.com	476010203																										
-DC-LAB	datacenter		Lab DC(тест)										active	yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare, 1345 Le Lieu	John Smith	john.smith@company.com	476010203																										
-ROOM-01	room		main room	DC-LAB									active	no	P1																																		
-ANNEX-01	room		Annex	DC-LAB									active	yes	P1																																		
+n a Me	type	sub_type	description	location	group.1	group.2	power_source.1	power_plug_src.1	power_input.1	power_source.2	power_plug_src.2	power_input.2	status	business_critical	priority	company	site_name	region	country	address	contact_name	contact_email	contact_phone	maximum_number_racks	u_size	manufacturer	model	asset_tag	serial_no	runtime	phase	installation_date	maintenance_date	maintenance_due	service_contact_name	service_contact_mail	service_contact_phone	location_front_pos	location_rear_pos	location_u_pos	location_w_pos	location_d_pos	end_warranty_date	battery_type	battery_installation_date	battery_maintenance_date	IP.1	hostname.1	http_link.1
+DC-LAB	datacenter		Lab DC(тест)											yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare, 1345 Le Lieu	John Smith	john.smith@company.com	476010203																										
+DC-LAB	datacenter		Lab DC(тест)										noactive	yes	P1	EATON	Eaton DC 1	EMEA	Switzerland	Place de la Gare, 1345 Le Lieu	John Smith	john.smith@company.com	476010203																										
+ROOM-01	room		main room	DC-LAB									spare	no	P1																																		
+ANNEX-01	room		Annex	DC-LAB									retired	yes	P2																																		
 CAGE-01	group	cage	cage 01	ROOM-01									active	yes	P1																																		
-ROW-01	row		row in a cage	ROOM-01	CAGE-01	CUSTOMER_01							active	yes	P1									10																									
-ROW-02	row		row in a room	ROOM-01									active	yes	P1									10																									
+ROW-01	row		row in a cage	ROOM-01	CAGE-01	CUSTOMER_01							active	yes	P4									10																									
+ROW-02	row		row in a room	ROOM-01									active	yes	P3									10																									
 RACK-01	rack		rack 01	ROW-01									active	yes	P1										42U	Cooper	RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON123455	21545212HGFV2																				
-RACK1-LAB	rack		rack Lab	ROW-01									active	no	P1										42U	Cooper	RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON123456	21545212HGFV2																				
+RACK1-LAB	rack		rack Lab	ROW-01									active	no	P5										42U	Cooper	RESSPU4210KB 600mm x 1000mm - 42U Rack	EATON123456	21545212HGFV2																				
 GROUP1-LAB	group	input_power	input_power chain	DC-LAB										yes	P1																																		
 CUSTOMER_01	group	customer	customer X (IT)	DC-LAB										yes	P1																																		
 MAIN_LAB	device	main	MAIN 240V	DC-LAB	GROUP1-LAB								active	yes	P1																1																		
