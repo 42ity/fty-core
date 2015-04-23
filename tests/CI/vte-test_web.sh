@@ -83,7 +83,9 @@ if [ -z "$SUT_WEB_PORT" ]; then
     if [ -n "$BIOS_PORT" ]; then
         SUT_WEB_PORT="$BIOS_PORT"
     else
-        SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
 
@@ -109,6 +111,7 @@ PASS=0
 TOTAL=0
 
 echo '*************************************************************************************************************'
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
 echo $BIOS_USER
 echo $BIOS_PASSWD
 echo $SUT_HOST

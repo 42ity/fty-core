@@ -97,7 +97,9 @@ if [ -z "$SUT_WEB_PORT" ]; then
     if [ -n "$BIOS_PORT" ]; then
         SUT_WEB_PORT="$BIOS_PORT"
     else
-        SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
 # unconditionally calculated values
@@ -144,6 +146,8 @@ echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
