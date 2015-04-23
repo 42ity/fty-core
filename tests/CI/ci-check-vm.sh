@@ -28,17 +28,6 @@ NEED_BUILDSUBDIR=no determineDirs || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -e
-
-usage() {
-    echo "Usage: $(basename $0) [options]"
-    echo "options:"
-    echo "    -m|--machine name    virtual machine name"
-    echo "    -p|--port PORT       virtual machine ssh port [22]"
-    echo "    -u|--user USER       virtual machine ssh username"
-    echo "    --dont-compile       don't compile make on target virtual machine"
-    echo "    -h|--help            print this help"
-}
-
 #
 # defaults
 #
@@ -48,17 +37,27 @@ SUT_HOST="$BUILDMACHINE"
 SUT_USER="root"
 SUT_IS_REMOTE=yes
 
+usage() {
+    echo "Usage: $(basename $0) [options]"
+    echo "options:"
+    echo "    -m|--machine|--sut-host|-sh NAME    virtual machine host name [$SUT_HOST]"
+    echo "    -p|--port|--sut-port-ssh|-sp PORT   virtual machine ssh port [$SUT_SSH_PORT]"
+    echo "    -u|--user|--sut-user|-su USER       virtual machine ssh username [$SUT_USER]"
+    echo "    --dont-compile       don't compile make on target virtual machine"
+    echo "    -h|--help            print this help"
+}
+
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -m|-sh|--machine)
+        -m|-sh|--machine|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
-        -p|-sp|--port)
+        -p|-sp|--port|--sut-port|--sut-port-ssh)
             SUT_SSH_PORT="$2"
             shift 2
             ;;
-        -u|-su|--user)
+        -u|-su|--user|--sut-user)
             SUT_SSH_USER="$2"
             shift 2
             ;;
@@ -78,7 +77,7 @@ while [ $# -gt 0 ] ; do
     esac
 done
 
-if [ ! "$SUT_HOST" ] ; then
+if [ -z "$SUT_HOST" ] ; then
     logmsg_error "Machine is not specified!"
     usage
     exit 1

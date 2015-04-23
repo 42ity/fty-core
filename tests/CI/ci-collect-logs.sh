@@ -27,15 +27,6 @@
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-usage() {
-    echo "Usage: $(basename $0) [options]"
-    echo "options:"
-    echo "    -m|--machine name    virtual machine name"
-    echo "    -p|--port PORT       virtual machine ssh port [22]"
-    echo "    -u|--user SUER       virtual machine ssh username"
-    echo "    -h|--help            print this help"
-}
-
 #
 # defaults
 #
@@ -44,17 +35,26 @@ SUT_USER="root"
 SUT_HOST="$BUILDMACHINE"
 SUT_IS_REMOTE=yes
 
+usage() {
+    echo "Usage: $(basename $0) [options]"
+    echo "options:"
+    echo "    -m|--machine|--sut-host|-sh NAME    virtual machine host name [$SUT_HOST]"
+    echo "    -p|--port|--sut-port-ssh|-sp PORT   virtual machine ssh port [$SUT_SSH_PORT]"
+    echo "    -u|--user|--sut-user|-su USER       virtual machine ssh username [$SUT_USER]"
+    echo "    -h|--help                           print this help"
+}
+
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -m|-sh|--machine)
+        -m|-sh|--machine|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
-        -p|-sp|--port)
+        -p|-sp|--port|--sut-port|--sut-port-ssh)
             SUT_SSH_PORT="$2"
             shift 2
             ;;
-        -u|-su|--user)
+        -u|-su|--user|--sut-user)
             SUT_SSH_USER="$2"
             shift 2
             ;;
