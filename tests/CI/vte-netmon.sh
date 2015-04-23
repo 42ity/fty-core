@@ -86,7 +86,9 @@ if [ -z "$SUT_WEB_PORT" ]; then
     if [ -n "$BIOS_PORT" ]; then
         SUT_WEB_PORT="$BIOS_PORT"
     else
-        SUT_WEB_PORT=$(expr $SUT_SSH_PORT - 2200 + 8000)
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
 # unconditionally calculated values
@@ -127,6 +129,8 @@ fi
 echo $$ > "$LOCKFILE"
     # *** call cleanup() when some of te signal appears *** 
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
     # *** temporary dsh file ***
 DSH_FILE_REMOTE="/tmp/temp-ci-netmon-vte-dshell-$$.log"
