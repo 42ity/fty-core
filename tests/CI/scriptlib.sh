@@ -74,18 +74,20 @@ determineDirs() {
     [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
+        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_NAME}`")" || \
         SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
 
     if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
             */tests/CI|tests/CI)
                 CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
-                CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-                CHECKOUTDIR="$( cd "$SCRIPTDIR"/../.. && pwd )" || \
+                CHECKOUTDIR="$(echo "$SCRIPTDIR" | sed 's|/tests/CI$||')" || \
+                CHECKOUTDIR="$(cd "$SCRIPTDIR"/../.. && pwd)" || \
                 CHECKOUTDIR="" ;;
             */tools|tools)
-                CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
-                CHECKOUTDIR="$( cd "$SCRIPTDIR"/.. && pwd )" || \
+                CHECKOUTDIR="$(realpath $SCRIPTDIR/..)" || \
+                CHECKOUTDIR="$(echo "$SCRIPTDIR" | sed 's|/tools$||')" || \
+                CHECKOUTDIR="$(cd "$SCRIPTDIR"/.. && pwd)" || \
                 CHECKOUTDIR="" ;;
         esac
     fi
