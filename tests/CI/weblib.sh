@@ -110,7 +110,7 @@ print_result() {
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
-        echo " * FAILED"
+        echo " * FAILED ($1)"
         _ret=1
 	if [ "$TNAME" = "$NAME" ]; then
             LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
