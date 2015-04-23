@@ -104,18 +104,22 @@ _weblib_result_printed=notest
 print_result() {
     [ "$_weblib_result_printed" = yes ] && return 0
     _weblib_result_printed=yes
-    _ret=0
+    _ret="$1"
+    ### Is this a valid number? if not - it may be some comment about the error
+    [ "$_ret" -ge 0 ] 2>/dev/null || \
+        _ret=255
     TOTAL="`expr $TOTAL + 1`"
-    if [ "$1" -eq 0 ]; then
+    if [ "$_ret" -eq 0 ]; then
         echo " * PASSED"
         PASS="`expr $PASS + 1`"
     else
-        echo " * FAILED ($1)"
-        _ret=1
+        [ x"$_ret" = x"$1" ] && \
+            echo " * FAILED ($_ret)" || \
+            echo " * FAILED ($_ret, $1)"
 	if [ "$TNAME" = "$NAME" ]; then
-            LASTFAILED="`echo "$NAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
 	else
-            LASTFAILED="`echo "$NAME::$TNAME" | sed 's, ,__,g'`"
+            LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
 	fi
         FAILED="$FAILED $LASTFAILED"
 
