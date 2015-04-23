@@ -228,6 +228,7 @@ set_values_in_ups() {
         OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
         if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=100; break; fi
         sleep 1
+        N="`expr $N + 1`"
     done
 
     # *** start upsrw (output hidden because this can fail for some target variables)
