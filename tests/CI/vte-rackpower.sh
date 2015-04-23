@@ -181,6 +181,9 @@ rem_cmd() {
 }
     # *** set_values_in_ups()
 set_values_in_ups() {
+    ### TODO: Rewrite so that regular dev-file changes and upsrw are separate
+    ### from new dev-file definitions and NUT restart (that's once per testcase
+    ### or even once at all if we pre-define all devices at once).
     UPS="$1"
     TYPE="$2"
     VALUE="$3"
@@ -218,7 +221,7 @@ set_values_in_ups() {
     sleep 6
     N=0
     while [ "$N" -lt 20 ]; do
-        OUT="$(sut_run 'upsrw -u $USR -p $PSW $UPS@localhost 2>/dev/null')"
+        OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
         if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=100; break; fi
         sleep 1
     done
