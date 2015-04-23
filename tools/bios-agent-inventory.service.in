@@ -5,7 +5,7 @@ Requires=malamute.service mysql.service
 
 [Service]
 Type=simple
-ExecStart=@libdir@/bios/agent-inventory
+ExecStart=@libexecdir@/bios/agent-inventory
 
 [Install]
 WantedBy=multi-user.target
