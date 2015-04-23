@@ -50,6 +50,7 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     REQUIRE(cm.get(1, "description") == "just,my,dc");
     REQUIRE(cm.get(2, "description") == "just\tmy\nrack");
 
+    auto titles = cm.getTitles();
     REQUIRE(titles.size() == 5);
     REQUIRE(titles.count("name") == 1);
     REQUIRE(titles.count("type") == 1);
