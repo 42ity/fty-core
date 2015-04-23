@@ -72,6 +72,7 @@ void CsvMap::deserialize() {
             buf << "duplicate title name '" << title << "'";
             throw std::invalid_argument(buf.str());
         }
+
         _title_to_index.emplace(title, i);
         i++;
     }
@@ -108,8 +109,10 @@ bool CsvMap::hasTitle(const std::string& title_name) const {
 }
 
 std::set<std::string> CsvMap::getTitles() const {
-    std::set<std::string> ret;
-    ret.insert(_data[0].cbegin(), _data[0].cend());
+    std::set<std::string> ret{};
+    for (auto i : _title_to_index) {
+        ret.emplace(i.first);
+    }
     return ret;
 }
 

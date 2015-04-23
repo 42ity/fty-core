@@ -49,6 +49,14 @@ TEST_CASE("CSV map basic get test", "[csv]") {
     // test values with commas
     REQUIRE(cm.get(1, "description") == "just,my,dc");
     REQUIRE(cm.get(2, "description") == "just\tmy\nrack");
+
+    REQUIRE(titles.size() == 5);
+    REQUIRE(titles.count("name") == 1);
+    REQUIRE(titles.count("type") == 1);
+    REQUIRE(titles.count("group.1") == 1);
+    REQUIRE(titles.count("group.2") == 1);
+    REQUIRE(titles.count("description") == 1);
+
 }
 
 TEST_CASE("CSV multiple field names", "[csv]") {
