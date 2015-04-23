@@ -37,8 +37,6 @@
 # ***** INIT *****
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
 echo "Start time is "$TIME.
-    # *** is system running? ***
-LOCKFILE=/tmp/ci-test-netmon-vte.lock
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
@@ -101,6 +99,10 @@ SUT_IS_REMOTE=yes
 
 ERRORS=0
 SUCCESSES=0
+
+    # *** is system running? ***
+LOCKFILE="`echo "/tmp/ci-test-netmon-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+
 
 # ***** FUNCTIONS *****
     # *** stop  dshell process and delete LOCKFILE ***

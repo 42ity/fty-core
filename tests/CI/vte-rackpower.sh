@@ -40,7 +40,6 @@
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-LOCKFILE=/tmp/ci-test-trp-vte.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -130,6 +129,10 @@ PSW=user1
     # *** numbers of passed/failed subtest
 SUM_PASS=0
 SUM_ERR=0
+
+    # *** is system running? ***
+LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+
 
 # ***** INIT *****
 function cleanup {
