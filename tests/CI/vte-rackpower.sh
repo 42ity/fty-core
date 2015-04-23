@@ -40,7 +40,7 @@
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-LOCKFILE=/tmp/ci-test-trp.lock
+LOCKFILE=/tmp/ci-test-trp-vte.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -135,11 +135,12 @@ function cleanup {
 }
     # *** is system running?
 if [ -f "$LOCKFILE" ]; then
+    ls -la "$LOCKFILE" >&2
     die "Script already running. Aborting."
 fi
 
     # *** lock the script with creating $LOCKFILE
-touch "$LOCKFILE"
+echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
