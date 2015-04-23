@@ -27,24 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 #include <vector>
 #include "ymsg.h"
+#include "agents.h"
 
 #include "alert-measurement.h"
-
-typedef enum {
-    ALERT_STATE_UNKNOWN = -1,
-    ALERT_STATE_NO_ALERT,
-    ALERT_STATE_ONGOING_ALERT
-} alert_state_t;
-
-typedef enum {
-    ALERT_PRIORITY_UNKNOWN = 0,
-    ALERT_PRIORITY_P1,
-    ALERT_PRIORITY_P2,
-    ALERT_PRIORITY_P3,
-    ALERT_PRIORITY_P4,
-    ALERT_PRIORITY_P5
-} alert_priority_t;
-
 
 #define NO_ALERT_PUBLISH_INTERVAL 20
 #define ONGOING_ALERT_PUBLISH_INTERVAL 5

@@ -118,6 +118,40 @@ BIOS_EXPORT ymsg_t *
 BIOS_EXPORT int
     bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json);
 
+typedef enum {
+    ALERT_STATE_UNKNOWN = -1,
+    ALERT_STATE_NO_ALERT = 0,
+    ALERT_STATE_ONGOING_ALERT = 1
+} alert_state_t;
+
+typedef enum {
+    ALERT_PRIORITY_UNKNOWN = 0,
+    ALERT_PRIORITY_P1,
+    ALERT_PRIORITY_P2,
+    ALERT_PRIORITY_P3,
+    ALERT_PRIORITY_P4,
+    ALERT_PRIORITY_P5
+} alert_priority_t;
+
+BIOS_EXPORT ymsg_t *
+bios_alert_encode (const char *rule_name,
+                   alert_priority_t priority,
+                   alert_state_t state,
+                   const char *devices,
+                   const char *alert_description,
+                   time_t since);
+
+BIOS_EXPORT int
+bios_alert_decode (ymsg_t *self_p,
+                   char **alert_name,
+                   alert_priority_t *priority,
+                   alert_state_t *state,
+                   char **devices,
+                   char **description,
+                   time_t *since);
+
+
+
 #ifdef __cplusplus
 }
 #endif

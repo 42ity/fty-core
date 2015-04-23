@@ -36,6 +36,10 @@ namespace persist {
 void process_alert(ymsg_t* out, char** out_subj,
                    ymsg_t* in, const char* in_subj);
 
+ //! Process alert message and creates an answer
+void process_get_asset(ymsg_t* out, char** out_subj,
+                       ymsg_t* in, const char* in_subj);
+
 } //namespace persist
 
 #endif // SRC_PERSIST_MEASUREMENT_H_
