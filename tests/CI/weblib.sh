@@ -300,12 +300,14 @@ curlfail_push_expect_500() {
 
 CURL() {
     _TMP_CURL="/tmp/.bios_weblib_curl.$$"
-    /bin/rm -f "$_TMP_CURL" 2>/dev/null
-    if touch "$_TMP_CURL" && chmod 600 "$_TMP_CURL" ; then
-        OUT_CURL="`curl --stderr "$_TMP_CURL" "$@"`"
+    /bin/rm -f "$_TMP_CURL" >/dev/null 2>&1
+    if  touch "$_TMP_CURL" >/dev/null 2>&1 && \
+        chmod 600 "$_TMP_CURL" >/dev/null 2>&1 \
+    ; then
+        OUT_CURL="`curl --stderr "$_TMP_CURL" "$@"`" 2>&3
         RES_CURL=$?
-        ERR_CURL="`cat "$_TMP_CURL"`"
-        /bin/rm -f "$_TMP_CURL" 2>/dev/null
+        ERR_CURL="`cat "$_TMP_CURL"`" 2>&3
+        /bin/rm -f "$_TMP_CURL" >/dev/null 2>&1
         echo "$ERR_CURL" >&2
         echo "$OUT_CURL"
     else
@@ -327,7 +329,7 @@ CURL() {
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`"
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
