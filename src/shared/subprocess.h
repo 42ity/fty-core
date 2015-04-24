@@ -112,7 +112,7 @@ class SubProcess {
         pid_t getPid() const { return _fork.getPid(); }
         
         //! \brief get the pipe ends connected to stdin of started program, or -1 if not started
-        int getStdin() const { return _inpair[0]; }
+        int getStdin() const { return _inpair[1]; }
 
         //! \brief get the pipe ends connected to stdout of started program, or -1 if not started
         int getStdout() const { return _outpair[0]; }
@@ -165,6 +165,8 @@ class SubProcess {
         //
         //  @return \see kill
         int terminate();
+
+        const char* state() const;
     
     protected:
 
@@ -173,7 +175,6 @@ class SubProcess {
             RUNNING,
             FINISHED
         };
-        const char* str_state(SubProcessState state);
 
         cxxtools::posix::Fork _fork;
         SubProcessState _state;
@@ -201,9 +202,11 @@ class ProcessQue {
         // \brief construct instance
         //
         // @param argv - maximum number of processes to run in parallel
+        // @param flags - flags passed to the SubProcess constructor
         //
-        explicit ProcessQue(std::size_t limit = 4) :
+        explicit ProcessQue(std::size_t limit = 4, int flags = 0) :
             _running_limit(limit),
+            _flags{flags},
             _incomming(),
             _running(),
             _done()
@@ -239,6 +242,7 @@ class ProcessQue {
 
     protected:
         std::size_t _running_limit;
+        int _flags;
         std::deque<Argv> _incomming;
         std::deque<SubProcess*> _running;
         std::deque<SubProcess*> _done;

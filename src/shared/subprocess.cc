@@ -44,17 +44,17 @@ SubProcess::SubProcess(Argv cxx_argv, int flags) :
     _core_dumped(false)
 {
     // made more verbose to increase readability of the code
-    bool stdin_flag = PIPE_DISABLED;
-    bool stdout_flag = PIPE_DISABLED;
-    bool stderr_flag = PIPE_DISABLED;
+    int stdin_flag = PIPE_DISABLED;
+    int stdout_flag = PIPE_DISABLED;
+    int stderr_flag = PIPE_DISABLED;
 
-    if ((flags & SubProcess::STDIN_PIPE) == 0) {
+    if ((flags & SubProcess::STDIN_PIPE) != 0) {
         stdin_flag = PIPE_DEFAULT;
     }
-    if ((flags & SubProcess::STDOUT_PIPE) == 0) {
+    if ((flags & SubProcess::STDOUT_PIPE) != 0) {
         stdout_flag = PIPE_DEFAULT;
     }
-    if ((flags & SubProcess::STDERR_PIPE) == 0) {
+    if ((flags & SubProcess::STDERR_PIPE) != 0) {
         stderr_flag = PIPE_DEFAULT;
     }
 
@@ -116,8 +116,8 @@ bool SubProcess::run() {
     if (_fork.child()) {
 
         if (_inpair[0] != PIPE_DISABLED) {
-            ::close(_inpair[0]);
-            ::dup2(_inpair[1], STDIN_FILENO);
+            ::dup2(_inpair[0], STDIN_FILENO);
+            ::close(_inpair[1]);
         }
         if (_outpair[0] != PIPE_DISABLED) {
             ::close(_outpair[0]);
@@ -139,7 +139,7 @@ bool SubProcess::run() {
     }
     // we are in parent
     _state = SubProcessState::RUNNING;
-    ::close(_inpair[1]);
+    ::close(_inpair[0]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
     // set the returnCode
@@ -149,10 +149,8 @@ bool SubProcess::run() {
 
 int SubProcess::wait(bool no_hangup)
 {
-    int status;
-    
     //thanks tomas for the fix!
-    status=-1;
+    int status = -1;
 
     int options = no_hangup ? WNOHANG : 0;
 
@@ -188,6 +186,20 @@ int SubProcess::terminate() {
     auto ret = kill(SIGKILL);
     wait();
     return ret;
+}
+
+const char* SubProcess::state() const {
+    if (_state == SubProcess::SubProcessState::NOT_STARTED) {
+        return "not-started";
+    }
+    else if (_state == SubProcess::SubProcessState::RUNNING) {
+        return "running";
+    }
+    else if (_state == SubProcess::SubProcessState::FINISHED) {
+        return "finished";
+    }
+
+    return "unimplemented state";
 }
 
 ProcessQue::~ProcessQue() {
@@ -239,7 +251,7 @@ void ProcessQue::schedule(bool schedule_new) {
         auto args = _incomming[0];
         _incomming.pop_front();
 
-        auto proc = new SubProcess(args);
+        auto proc = new SubProcess(args, _flags);
         proc->run();
         _running.push_front(proc);
     }
@@ -391,7 +403,7 @@ int call(const Argv& args) {
 }
 
 int output(const Argv& args, std::string& o, std::string& e) {
-    SubProcess p(args);
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
     p.run();
     int ret = p.wait();
 
