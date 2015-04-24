@@ -107,6 +107,7 @@ LOCKFILE="`echo "/tmp/ci-test-netmon-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT
 # ***** FUNCTIONS *****
     # *** stop  dshell process and delete LOCKFILE ***
 function cleanup {
+    set +e
     sut_run "killall dshell lt-dshell"
     sut_run "rm -f '$DSH_FILE_REMOTE'"
     ### TODO: Should systemd-managed BIOS and other services be stopped?

@@ -110,17 +110,17 @@ fill_database(){
     fi
 }
 
-# start simple as a subprocess
-start_simple(){
+# start db-ng as a subprocess
+start_db_ng(){
     # Kill existing process
-    for d in simple netmon driver-nmap ; do
-        killall -9 $d lt-$d 
+    for d in db-ng netmon driver-nmap ; do
+        killall -9 $d lt-$d || true
     done
-    # start simple
-    if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
-        $INSTALLDIR/usr/local/bin/simple &
+    # start db-ng
+    if [ -f $INSTALLDIR/usr/local/bin/db-ng ] ; then
+        $INSTALLDIR/usr/local/bin/db-ng &
     else
-        die "Can't find simple"
+        die "Can't find db-ng"
     fi
     # wait a bit
     sleep 15
@@ -129,15 +129,15 @@ start_simple(){
 # start tntnet in order to make REST API request
 start_tntnet(){
     # Kill existing process
-    killall -9 tntnet
+    killall -9 tntnet || true
     # Mod xml file and start tntnet
-    if [ -f $CHECKOUTDIR/src/web/$XML_TNTNET ] ; then
-        cp $CHECKOUTDIR/src/web/$XML_TNTNET $SCRIPTDIR/$XML_TNTNET
-        sed -i '$ d' $SCRIPTDIR/$XML_TNTNET
-        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> $SCRIPTDIR/$XML_TNTNET
-        echo "<compPath><entry>$CHECKOUTDIR/.libs</entry></compPath>" >> $SCRIPTDIR/$XML_TNTNET
-        echo "</tntnet>" >> $SCRIPTDIR/$XML_TNTNET
-        tntnet -c $SCRIPTDIR/$XML_TNTNET &
+    if [ -f "$CHECKOUTDIR/src/web/$XML_TNTNET" ] ; then
+        cp "$CHECKOUTDIR/src/web/$XML_TNTNET" "$SCRIPTDIR/$XML_TNTNET"
+        sed -i '$ d' "$SCRIPTDIR/$XML_TNTNET"
+        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> "$SCRIPTDIR/$XML_TNTNET"
+        echo "<compPath><entry>$CHECKOUTDIR/.libs</entry></compPath>" >> "$SCRIPTDIR/$XML_TNTNET"
+        echo "</tntnet>" >> "$SCRIPTDIR/$XML_TNTNET"
+        tntnet -c "$SCRIPTDIR/$XML_TNTNET" &
     else
         logmsg_error "$XML_TNTNET not found"
         stop_processes
@@ -147,15 +147,15 @@ start_tntnet(){
 
 # stop all processes launched in the script
 stop_processes(){
-    for d in simple netmon driver-nmap ; do
-        killall -9 $d lt-$d 
+    for d in db-ng netmon driver-nmap ; do
+        killall -9 $d lt-$d || true
     done
-    killall -9 tntnet
+    killall -9 tntnet || true
 }
 
 create_nut_config
 fill_database
-start_simple
+start_db_ng
 start_tntnet
 
 logmsg_info "starting the test"
