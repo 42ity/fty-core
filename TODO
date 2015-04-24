@@ -121,10 +121,6 @@ if anything is needed to be done here.
 -> rename utils to shared, to reflect the change
 -> do not drop the cli
 
-==== src/simple ====
--> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with
-   another file
-
 ==== src/include/defs.h ====
 -> should become a file with only declarations; move all definitions to some
    .c file and link consumers with that, so there are no conflicts if several

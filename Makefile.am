@@ -258,7 +258,6 @@ libpriv_csv_la_SOURCES =	src/shared/csv.h \
 
 libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_src_dir)/src/msg
@@ -455,7 +454,6 @@ test_csv_LDADD = 		libpriv-log.la \
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/shared \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src/msg \
