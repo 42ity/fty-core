@@ -18,7 +18,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
            Karol Hrdina <karolhrdina@eaton.com>
-           Tomas Halman <tomashalman@eaton.com>
  
 Description: various random C and project wide helpers
 */
@@ -27,8 +26,6 @@ Description: various random C and project wide helpers
 
 #include <stdbool.h>
 #include <string.h>
-#include <stdint.h>
-
 
 #ifdef __cplusplus
 extern "C"
@@ -56,7 +53,6 @@ bool is_average_type_supported (const char *type);
 
 // Macros
 #define STR (X) #X
-
 
 #ifdef __cplusplus
 }

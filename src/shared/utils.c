@@ -18,17 +18,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*
 Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
            Karol Hrdina <karolhrdina@eaton.com>
-           Tomas Halman <tomashalman@eaton.com>
  
 Description: various random C and project wide helpers
 */
 
 #include "utils.h"
 #include "str_defs.h"
-
-#include<limits.h>
-#include<errno.h>
-#include<stdlib.h>
 
 const char *str_bool(const bool b) {
     return b ? "true" : "false";
