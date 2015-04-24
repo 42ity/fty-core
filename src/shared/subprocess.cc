@@ -36,17 +36,31 @@ char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
         
-SubProcess::SubProcess(Argv cxx_argv, bool stdout_pipe, bool stderr_pipe) :
+SubProcess::SubProcess(Argv cxx_argv, int flags) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
     _cxx_argv(cxx_argv),
     _return_code(-1),
     _core_dumped(false)
 {
-    _outpair[0] = stdout_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
-    _outpair[1] = stdout_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
-    _errpair[0] = stderr_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
-    _errpair[1] = stderr_pipe ? PIPE_DEFAULT : PIPE_DISABLED;
+    // made more verbose to increase readability of the code
+    bool stdin_flag = PIPE_DISABLED;
+    bool stdout_flag = PIPE_DISABLED;
+    bool stderr_flag = PIPE_DISABLED;
+
+    if ((flags & SubProcess::STDIN_PIPE) == 0) {
+        stdin_flag = PIPE_DEFAULT;
+    }
+    if ((flags & SubProcess::STDOUT_PIPE) == 0) {
+        stdout_flag = PIPE_DEFAULT;
+    }
+    if ((flags & SubProcess::STDERR_PIPE) == 0) {
+        stderr_flag = PIPE_DEFAULT;
+    }
+
+    _inpair[0]  = stdin_flag,  _inpair[1]  = stdin_flag;
+    _outpair[0] = stdout_flag, _outpair[1] = stdout_flag;
+    _errpair[0] = stderr_flag, _errpair[1] = stderr_flag;
 }
 
 SubProcess::~SubProcess() {
@@ -58,8 +72,10 @@ SubProcess::~SubProcess() {
     }
 
     // close pipes
+    ::close(_inpair[0]);
     ::close(_outpair[0]);
     ::close(_errpair[0]);
+    ::close(_inpair[1]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
 
@@ -86,6 +102,9 @@ bool SubProcess::run() {
         return true;
     }
 
+    if (_inpair[0] != PIPE_DISABLED && ::pipe(_inpair) == -1) {
+        return false;
+    }
     if (_outpair[0] != PIPE_DISABLED && ::pipe(_outpair) == -1) {
         return false;
     }
@@ -96,6 +115,10 @@ bool SubProcess::run() {
     _fork.fork();
     if (_fork.child()) {
 
+        if (_inpair[0] != PIPE_DISABLED) {
+            ::close(_inpair[0]);
+            ::dup2(_inpair[1], STDIN_FILENO);
+        }
         if (_outpair[0] != PIPE_DISABLED) {
             ::close(_outpair[0]);
             ::dup2(_outpair[1], STDOUT_FILENO);
@@ -116,6 +139,7 @@ bool SubProcess::run() {
     }
     // we are in parent
     _state = SubProcessState::RUNNING;
+    ::close(_inpair[1]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
     // set the returnCode
@@ -361,7 +385,7 @@ std::string read_all(int fd) {
 }
 
 int call(const Argv& args) {
-    SubProcess p(args, false, false);
+    SubProcess p(args);
     p.run();
     return p.wait();
 }

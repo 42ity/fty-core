@@ -78,6 +78,10 @@ typedef std::vector<std::string> Argv;
 
 class SubProcess {
     public:
+
+        static const int STDIN_PIPE=0x01;
+        static const int STDOUT_PIPE=0x02;
+        static const int STDERR_PIPE=0x04;
        
         static const int codeRunning = INT_MIN;
         static const int PIPE_DEFAULT = -1;
@@ -86,11 +90,10 @@ class SubProcess {
         // \brief construct instance
         //
         // @param argv - C-like string of argument, see execvpe(2) for details
-        // @param stdout_pipe - create a pipe for stdout (default yes)
-        // @param stderr_pipe - create a pipe for stderr (default yes)
+        // @param flags - controll the creation of stdin/stderr/stdout pipes, default no
         //
         // \todo does not deal with a command line limit
-        explicit SubProcess(Argv cxx_argv, bool stdout_pipe = true, bool stderr_pipe = true);
+        explicit SubProcess(Argv cxx_argv, int flags=0);
 
         // \brief close all pipes, waits on process termination
         //
@@ -108,6 +111,9 @@ class SubProcess {
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
         
+        //! \brief get the pipe ends connected to stdin of started program, or -1 if not started
+        int getStdin() const { return _inpair[0]; }
+
         //! \brief get the pipe ends connected to stdout of started program, or -1 if not started
         int getStdout() const { return _outpair[0]; }
         
@@ -174,6 +180,7 @@ class SubProcess {
         Argv _cxx_argv;
         int _return_code;
         bool _core_dumped;
+        int _inpair[2];
         int _outpair[2];
         int _errpair[2];
 
