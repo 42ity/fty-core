@@ -28,6 +28,14 @@
 #   db must be filled
 #
 
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+set -o pipefail || true
+
 #
 # list of values in samples
 #
@@ -131,10 +139,6 @@ create_nut_config() {
     systemctl start nut-server
     echo "waiting for a while"
     sleep 15
-}
-
-do_select(){
-    echo "$1;" | mysql -u root box_utf8 | tail -n +2
 }
 
 expected_db_value() {
