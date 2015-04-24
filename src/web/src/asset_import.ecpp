@@ -109,6 +109,7 @@ catch (const std::logic_error &e) {
 }
 catch (const std::runtime_error &e) {
     ::unlink(path);
+    ::unlink(new_path);
 </%cpp>
 {
     "error" : "<$$ e.what() $>"
