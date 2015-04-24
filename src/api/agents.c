@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <czmq.h>
 #include <string.h>
 #include "utils_ymsg.h"
+#include "utils_app.h"
 #include "bios_agent.h"
 #include "agents.h"
 #include "defs.h"
@@ -471,22 +472,22 @@ bios_alert_encode (const char *rule_name,
 }
 
 
-int bios_alert_decode (ymsg_t *self_p,
-                       char **alert_name,
-                       alert_priority_t *priority,
-                       alert_state_t *state,
-                       char **devices,
-                       char **description,
-                       time_t *since)
+int
+bios_alert_decode (ymsg_t **self_p,
+                   char **alert_name,
+                   alert_priority_t *priority,
+                   alert_state_t *state,
+                   char **devices,
+                   char **description,
+                   time_t *since)
 {
-   if( ! self_p || ! alert_name || ! priority || ! state || ! devices ) return -1;
-   if ( self_p == NULL ) return -2;
+   if( ! self_p || ! *self_p || ! alert_name || ! priority || ! state || ! devices ) return -1;
 
    const char *nam, *dev, *pri, *sta, *sin, *des;
    int32_t tmp;
 
-   app_t *app = ymsg_request_app(self_p);
-   if( ! app ) return -2;
+   app_t *app = ymsg_request_app(*self_p);
+   if( ! app ) return -3;
        
    nam = app_args_string( app, "alert", NULL );
    pri = app_args_string( app, "priority", NULL );
@@ -516,7 +517,9 @@ int bios_alert_decode (ymsg_t *self_p,
        }
    }
    if( since ) {
-       *since = ymsg_get_int32( self_p, "since" );
+       *since = string_to_int64( sin );
+       if( errno ) return -6;
    }
+   ymsg_destroy(self_p);
    return 0;
 }

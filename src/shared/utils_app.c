@@ -1,5 +1,54 @@
 #include "utils_app.h"
-#include "utils.h"
+
+// TODO: modify
+int64_t string_to_int64( const char *value )
+{
+    char *end;
+    int64_t result;
+    errno = 0;
+    if( ! value ) { errno = EINVAL; return INT64_MAX; }
+    result = strtoll( value, &end, 10 );
+    if( *end ) errno = EINVAL;
+    if( errno ) return INT64_MAX;
+    return result;
+}
+
+int32_t string_to_int32( const char *value )
+{
+    char *end;
+    int32_t result;
+    errno = 0;
+    if( ! value ) { errno = EINVAL; return INT32_MAX; }
+    result = strtol( value, &end, 10 );
+    if( *end ) errno = EINVAL;
+    if( errno ) return INT32_MAX;
+    return result;
+}
+    
+uint64_t string_to_uint64( const char *value )
+{
+    char *end;
+    uint64_t result;
+    errno = 0;
+    if( ! value ) { errno = EINVAL; return UINT64_MAX; }
+    result = strtoull( value, &end, 10 );
+    if( *end ) errno = EINVAL;
+    if( errno ) return UINT64_MAX;
+    return result;
+}
+
+uint32_t string_to_uint32( const char *value )
+{
+    char *end;
+    uint32_t result;
+    errno = 0;
+    if( ! value ) { errno = EINVAL; return UINT32_MAX; }
+    result = strtoul( value, &end, 10);
+    if( *end ) errno = EINVAL;
+    if( errno ) { return UINT32_MAX; }
+    return result;
+}
+
 
 
 /* ---------- params ------------ */
@@ -150,6 +199,10 @@ app_args_set_uint64(app_t* msg, const char *key, uint64_t value ) {
     app_args_set_string( msg, key, buff );
 }
 
+
+#define app_args_set_int32 app_args_set_int64
+#define app_args_set_uint32 app_args_set_uint64
+/*
 void
 app_args_set_int32(app_t* msg, const char *key, int32_t value ) {
     app_args_set_int64( msg, key, value );
@@ -159,7 +212,7 @@ void
 app_args_set_uint32(app_t* msg, const char *key, uint32_t value ) {
     app_args_set_uint64( msg, key, value );
 }
-
+*/
 
 int32_t
 app_args_int32(app_t* msg, const char *key) {

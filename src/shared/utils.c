@@ -38,7 +38,7 @@ const char *safe_str(const char *s) {
     return s == NULL ? "(null)" : s;
 }
 
-bool str_eq(const char *a, const char *b) {
+bool streq(const char *a, const char *b) {
 	if (!a || !b) {
 		return (!a && !b);
 	}
@@ -67,53 +67,5 @@ bool is_average_type_supported (const char *type) {
         }
     }
     return false;
-}
-
-int64_t string_to_int64( const char *value )
-{
-    char *end;
-    int64_t result;
-    errno = 0;
-    if( ! value ) { errno = EINVAL; return INT64_MAX; }
-    result = strtoll( value, &end, 10 );
-    if( *end ) errno = EINVAL;
-    if( errno ) return INT64_MAX;
-    return result;
-}
-
-int32_t string_to_int32( const char *value )
-{
-    char *end;
-    int32_t result;
-    errno = 0;
-    if( ! value ) { errno = EINVAL; return INT32_MAX; }
-    result = strtol( value, &end, 10 );
-    if( *end ) errno = EINVAL;
-    if( errno ) return INT32_MAX;
-    return result;
-}
-    
-uint64_t string_to_uint64( const char *value )
-{
-    char *end;
-    uint64_t result;
-    errno = 0;
-    if( ! value ) { errno = EINVAL; return UINT64_MAX; }
-    result = strtoull( value, &end, 10 );
-    if( *end ) errno = EINVAL;
-    if( errno ) return UINT64_MAX;
-    return result;
-}
-
-uint32_t string_to_uint32( const char *value )
-{
-    char *end;
-    uint32_t result;
-    errno = 0;
-    if( ! value ) { errno = EINVAL; return UINT32_MAX; }
-    result = strtoul( value, &end, 10);
-    if( *end ) errno = EINVAL;
-    if( errno ) { return UINT32_MAX; }
-    return result;
 }
 

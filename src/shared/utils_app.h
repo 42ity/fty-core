@@ -31,8 +31,53 @@ extern "C"
 {
 #endif
 
-/* ---------- params ------------ */
 
+// TODO: move string_to_X functioncs into utils.[hc] as soon as streq conflict is solved
+
+/**
+ * \brief converts char* to int64_t
+ * \param value string (char *), containing the number
+ * \return text value converted to int32_t
+ *
+ * Function converts text representation of number to int32_t
+ * In case of error, INT32_MAX is returned and errno is set.
+ *
+ * The input value must be whole used. Strings like "42aaa" is
+ * not converted to 42 but error is produced.
+ */
+int64_t string_to_int64( const char *value );
+
+/**
+ * \brief converts char* to int32_t
+ * \param value string (char *), containing the number
+ * \return text value converted to int32_t
+ * \see string_to_int64
+ *
+ * In case of error INT32_MAX is returned and errno is set.
+ */
+int32_t string_to_int32( const char *value );
+
+/**
+ * \brief converts char* to uint64_t
+ * \param value string (char *), containing the number
+ * \return text value converted to uint64_t
+ * \see string_to_int64
+ *
+ * In case of error UINT64_MAX is returned and errno is set.
+ */
+uint64_t string_to_uint64( const char *value );
+
+/**
+ * \brief converts char* to uint32_t
+ * \param value string (char *), containing the number
+ * \return text value converted to uint32_t
+ * \see string_to_int64
+ *
+ * In case of error UINT32_MAX is returned and errno is set.
+ */
+uint32_t string_to_uint32( const char *value );
+
+// TODO: Tomas Halman should write documentation
 int32_t
 app_params_first_int32(app_t* msg);
 
@@ -63,7 +108,6 @@ app_params_append_int32(app_t* msg, int32_t value );
 void
 app_params_append_int64(app_t* msg, int64_t value );
 
-/* -------- args ------------ */
 void
 app_args_set_string(app_t* msg, const char *key, const char *value);
 
@@ -97,4 +141,3 @@ app_args_uint64(app_t* msg, const char *key);
 #endif
 
 #endif // SRC_SHARED_UTILS_APP_H__  
-
