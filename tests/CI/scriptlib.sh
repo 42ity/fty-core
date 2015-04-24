@@ -24,6 +24,12 @@
 #       The variable values may be set by caller or an earlier stage
 #       in script interpretation, otherwise they get defaulted here.
 
+# A bash-ism, should set the exitcode of the rightmost failed command
+# in a pipeline, otherwise e.g. exitcode("false | true") == 0
+if [ "$BASH" ]; then
+    set -o pipefail 2>/dev/null || true
+fi
+
 ### Some variables might not be initialized
 set +u
 
@@ -38,6 +44,24 @@ _SCRIPT_ARGC="$#"
     *) _SCRIPT_TYPE="Program" ;;
 esac
 
+### Database credentials
+[ -z "$DBUSER" ] && DBUSER=root
+[ -z "$DATABASE" ] && DATABASE=box_utf8
+export DBUSER DATABASE
+
+### REST API (and possibly non-privileged SSH) user credentials
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+export BIOS_USER BIOS_PASSWD
+
+### Variables for remote testing - avoid "variable not defined" errors
+[ -z "$SUT_IS_REMOTE" ] && SUT_IS_REMOTE="auto" # auto|yes|no
+[ -z "$SUT_USER" ] && SUT_USER="root"   # Username on remote SUT
+[ -z "$SUT_HOST" ] && SUT_HOST=""       # Hostname or IP address
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
+export SUT_IS_REMOTE SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
+
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
@@ -50,17 +74,21 @@ determineDirs() {
     [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
+        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_NAME}`")" || \
         SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
 
     if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
             */tests/CI|tests/CI)
-               CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
-               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-               CHECKOUTDIR="" ;;
+                CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
+                CHECKOUTDIR="$(echo "$SCRIPTDIR" | sed 's|/tests/CI$||')" || \
+                CHECKOUTDIR="$(cd "$SCRIPTDIR"/../.. && pwd)" || \
+                CHECKOUTDIR="" ;;
             */tools|tools)
-               CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
-               CHECKOUTDIR="" ;;
+                CHECKOUTDIR="$(realpath $SCRIPTDIR/..)" || \
+                CHECKOUTDIR="$(echo "$SCRIPTDIR" | sed 's|/tools$||')" || \
+                CHECKOUTDIR="$(cd "$SCRIPTDIR"/.. && pwd)" || \
+                CHECKOUTDIR="" ;;
         esac
     fi
     [ -z "$CHECKOUTDIR" -a -d ~/project ] && CHECKOUTDIR=~/project
@@ -139,12 +167,14 @@ determineDirs_default() {
     if [ -n "$BUILDSUBDIR" -a -d "$BUILDSUBDIR" -a -x "$BUILDSUBDIR/config.status" ]; then
         logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR'"
     else
-        logmsg_error "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
-        logmsg_error "Search path checked: $CHECKOUTDIR, $PWD"
-        ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
-            "$PWD/config.status" >&2
+        [ "$NEED_BUILDSUBDIR" = yes ] && _LM=logmsg_error || _LM=logmsg_warn
+        ${_LM} "Cannot find '$BUILDSUBDIR/config.status', did you run configure?"
+        ${_LM} "Search path checked: '$CHECKOUTDIR', '$PWD'"
+        unset _LM
         RES=1
         if [ "$NEED_BUILDSUBDIR" = yes ]; then
+            ls -lad "$BUILDSUBDIR/config.status" "$CHECKOUTDIR/config.status" \
+                "$PWD/config.status" >&2
             exit $RES
         fi
     fi
@@ -152,3 +182,73 @@ determineDirs_default() {
     return $RES
 }
 
+isRemoteSUT() {
+    if [ "$SUT_IS_REMOTE" = yes ]; then
+        ### Yes, we are testing a remote box or a VTE,
+        ### and have a cached decision or explicit setting
+        return 0
+    else
+        ### No, test is local
+        return 1
+    fi
+
+    if  [ -z "$SUT_IS_REMOTE" -o x"$SUT_IS_REMOTE" = xauto ] && \
+        [ -n "$SUT_HOST" -a -n "$SUT_SSH_PORT" ] && \
+        [ x"$SUT_HOST" != xlocalhost -a x"$SUT_HOST" != x127.0.0.1 ] \
+    ; then
+        ### TODO: Maybe a better test is needed e.g. "localhost and port==22"
+        SUT_IS_REMOTE=yes
+        return 0
+        ### NOTE: No automatic decision for "no" since the needed variables
+        ### may become defined later.
+    fi
+}
+
+sut_run() {
+    ### This tries to run a command either locally or externally via SSH
+    ### depending on what we are testing (local or remote System Under Test)
+    ### NOTE: By current construction this may fail for parameters that are
+    ### not one token aka "$1"
+    if isRemoteSUT ; then
+        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
+        REMCMD="sh -x -c \"$@\""
+        ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
+        return $?
+    else
+        logmsg_info "sut_run()::local: $@" >&2
+        sh -x -c "$@"
+        return $?
+    fi
+}
+
+### TODO: a routine (or two?) to wrap local "cp" or remote "scp"
+### and/or "ssh|tar", to transfer files in a uniform manner for
+### the local and remote tests alike.
+
+do_select() {
+    DB_OUT="$(echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+    DB_RES=$?
+    echo "$DB_OUT" | tail -n +2
+    [ $? = 0 -a "$DB_RES" = 0 ]
+    return $?
+}
+
+loaddb_file() {
+    DBFILE="$1"
+    [ -z "$DBFILE" ] && DBFILE='&0'
+    ### Note: syntax below 'eval ... "<$DBFILE"' is sensitive to THIS spelling
+
+    ### Due to comments currently don't converge to sut_run(), maybe TODO later
+    if isRemoteSUT ; then
+        ### Push local SQL file contents to remote system and sleep a bit
+        ( sut_run "systemctl start mysql"
+          REMCMD="mysql -u ${DBUSER}"
+          eval sut_run "${REMCMD}" "<$DBFILE" && \
+          sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
+          CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
+    else
+        eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
+            CODE=$? die "Could not load database file: $DBFILE"
+    fi
+    return 0
+}
