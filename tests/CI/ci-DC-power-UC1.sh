@@ -45,11 +45,16 @@ UPS3="UPS3-US477"
 # arg1 : UPS name (for .dev file)
 # arg2 : Realpower value
 create_ups_device(){
+    DEVNAME="$1"
+    WATTS="$2"
+    VOLTS="230"
+    AMPS="`expr 14 \* $WATTS / $VOLTS / 10`"
+
     echo "battery.charge: 90
 device.type: ups
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: $2
+output.current: $AMPS
+output.voltage: ${VOLTS}.0
+ups.realpower: $WATTS
 ups.temperature: 25
 outlet.realpower: 20
 ups.load: 10
@@ -57,10 +62,10 @@ ups.mfr: MGE UPS SYSTEMS
 ups.model: Pulsar Evolution 500
 ups.serial: AV2G3300L
 ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$1.dev
+outlet.1.voltage: 230
+outlet.2.voltage: 230
+outlet.3.voltage: 230
+" > $CFGDIR/${DEVNAME}.dev
 }
 
 # Create a NUT config for 3 dummy UPS
