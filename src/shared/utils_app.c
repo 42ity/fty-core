@@ -169,7 +169,8 @@ app_params_append_uint32(app_t* msg, uint32_t value )
 /* -------- args ------------ */
 void
 app_args_set_string(app_t* msg, const char *key, const char *value) {
-    if(!msg) { errno = EINVAL; };
+    errno = 0;
+    if(!msg) { errno = EINVAL; return ; };
 
     zhash_t *hash = app_get_args(msg);
     if(hash == NULL) {
@@ -182,6 +183,7 @@ app_args_set_string(app_t* msg, const char *key, const char *value) {
 
 void
 app_args_set_int64(app_t* msg, const char *key, int64_t value ) {
+    errno = 0;
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
@@ -192,6 +194,7 @@ app_args_set_int64(app_t* msg, const char *key, int64_t value ) {
 
 void
 app_args_set_uint64(app_t* msg, const char *key, uint64_t value ) {
+    errno = 0;
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
