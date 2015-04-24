@@ -37,6 +37,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 WEBTESTPID=""
 DBNGPID=""
 kill_daemons() {
+    set +e
     if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
         kill -2 "$WEBTESTPID"
@@ -333,11 +334,10 @@ echo ""
 echo "*** Summary ***"
 echo "Passed: $SUM_PASS / Failed: $SUM_ERR"
 
-kill $WEBTESTPID >/dev/null 2>&1
+kill $WEBTESTPID >/dev/null 2>&1 || true
 
 if [ $SUM_ERR = 0 ] ; then
     exit 0
 fi
-
 
 exit 1

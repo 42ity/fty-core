@@ -136,6 +136,7 @@ LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_P
 
 # ***** INIT *****
 function cleanup {
+    set +e
     rm -f "$LOCKFILE"
 }
     # *** is system running?
