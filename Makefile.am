@@ -175,7 +175,6 @@ libbiosapi_la_SOURCES = \
 				src/shared/utils_ymsg.h \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h \
-				src/shared/utils.c \
 				src/include/defs.h \
 				$(libbiosapi_la_HEADERS_noinst)
 
