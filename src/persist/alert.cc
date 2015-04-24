@@ -174,6 +174,48 @@ db_reply_t
     }
 }
 
+//=============================================================================
+db_reply_t
+    update_alert_tilldate_by_rulename
+        (tntdb::Connection  &conn,
+         int64_t             date_till,
+         const char         *rule_name)
+{
+    LOG_START;
+    log_debug ("  tilldate = %" PRIi64, date_till);
+    log_debug ("  rule_name = %s", rule_name);
+
+    db_reply_t ret = db_reply_new();
+    
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " UPDATE"
+            "   t_bios_alert"
+            " SET date_till = FROM_UNIXTIME(:till)"
+            " WHERE rule_name = :rule AND"
+            "   date_till is NULL"
+        );
+   
+        ret.affected_rows = st.set("rule", rule_name).
+                               set("till", date_till).
+                               execute();
+        ret.rowid = conn.lastInsertId();
+        log_debug ("[t_bios_alert]: was updated %" 
+                                    PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
 
 //=============================================================================
 db_reply_t
