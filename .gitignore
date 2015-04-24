@@ -42,6 +42,11 @@ dshell
 *.o
 *.lo
 
+check-builddeps.py
+bios-qa
+Installation
+ut_result.log
+
 db_dump
 
 .dirstamp
