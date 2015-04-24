@@ -53,6 +53,13 @@ db_reply_t
          int64_t             date_till,
          m_alrt_id_t         id);
 
+
+db_reply_t
+    update_alert_tilldate_by_rulename
+        (tntdb::Connection  &conn,
+         int64_t             date_till,
+         const char         *rule_name);
+
 //+
 db_reply_t
     delete_from_alert
