@@ -111,7 +111,8 @@ starting eaton/bios ..
 root@8cb594194537:/#
 ----
 
- * To run the full suite of BIOS applications (`simple`, `tntnet`, `nut`)
+ * To run the full suite of BIOS applications (`db-ng`, `agent-inventory`,
+`agent-nut` as well as `tntnet`, `nut`, `malamute`, `saslauthd`)
 doing a cold start:
 ----
 :; sudo docker run -d --name mysql dockerfile/mariadb
@@ -131,7 +132,8 @@ initializing db ..
 Starting SASL auth ..
 Starting web srv ..
 starting nut ..
-starting simple ..
+starting Broker ..
+starting BIOS ..
 ----
 
  * To stop our Docker containers use the `docker_stop.sh [container_name|all]`

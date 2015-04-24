@@ -167,6 +167,7 @@ _PID_TESTER=$$
 RES_CURL=0
 trap_break() {
     ### This SIGUSR1 handler is reserved for CURL failures
+#    set +e
     [ "$RES_CURL" = 0 ] && \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2 || \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed ($RES_CURL), aborting test suite" >&2
