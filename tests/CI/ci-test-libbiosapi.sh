@@ -46,9 +46,10 @@ if [ ! -d "${LIBDIR}" ]; then
 fi
 
 trap_stop_malamute() {
+    set +e
     if [ x"$MALAMUTE_STARTED" = xyes -a -s ${BUILDSUBDIR}/malamute.pid ]; then
-        kill -9 $(cat ${BUILDSUBDIR}/malamute.pid)
-        rm -f ${BUILDSUBDIR}/malamute.pid
+        kill -9 $(cat ${BUILDSUBDIR}/malamute.pid) || true
+        rm -f ${BUILDSUBDIR}/malamute.pid || true
     fi
 }
 

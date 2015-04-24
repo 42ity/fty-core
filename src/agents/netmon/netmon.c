@@ -495,6 +495,8 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
+    // TODO: Is this message for users still valid?
+    // Did anything take place of "simple" here (e.g. "db-ng")?
     if (isatty(STDERR_FILENO)) {
         fprintf(stderr, "%s", "WARNING: netmon does communicate through malamute server, so it does not print\n");
         fprintf(stderr, "%s", "         anything to stdout. Please start simple, which will autospawn netmon\n");
