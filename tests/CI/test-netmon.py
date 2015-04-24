@@ -90,7 +90,7 @@ def compare_results(ipres, dbres):
 #### fixture ini ####
 
 # check all deamons running
-for daemon in ("simple", "netmon", "mysqld"):
+for daemon in ("db-ng", "netmon", "mysqld"):
     ret = subprocess.call(["/bin/pidof", daemon, "lt-%s" % (daemon, )])
     assert (ret == 0), "%s does not running!" % (daemon, )
 

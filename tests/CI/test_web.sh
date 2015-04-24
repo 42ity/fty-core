@@ -134,6 +134,7 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
+    set +e
     logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
     logmsg_info "  POSITIVE = $POSITIVE"
     logmsg_info "  NEGATIVE = $NEGATIVE"
