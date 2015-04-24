@@ -77,8 +77,8 @@ trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
-mysql -u root < "$DB1"
-mysql -u root < "$DB2"
+loaddb_file "$DB1"
+loaddb_file "$DB2"
 #
 # only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #
@@ -155,10 +155,6 @@ instcmds=ALL" > $CFGDIR/upsd.users
     systemctl start nut-server
     logmsg_info "waiting for a while..."
     sleep 15
-}
-
-do_select(){
-    echo "$1;" | mysql -u root box_utf8 | tail -n +2
 }
 
 testcase() {

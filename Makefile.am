@@ -449,10 +449,8 @@ test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
 test_csv_LDADD = 		libpriv-log.la \
-						libpriv-db.la \
 						libpriv-csv.la \
-					    libpriv-test-run.la \
-					    libpriv-proto.la
+					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -609,7 +607,6 @@ test_agents_SOURCES = \
 
 
 test_agents_LDADD = \
-			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -623,7 +620,7 @@ test_agents_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_agents_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS} -lbiosapi
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
@@ -1678,7 +1675,7 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp" || true
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
-	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
+	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@if [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ]; then \
@@ -1724,7 +1721,7 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	      echo '#endif'; \
 	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
 	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
-	    grep '=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
 	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
