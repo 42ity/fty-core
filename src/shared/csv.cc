@@ -62,6 +62,10 @@ CsvMap::CsvMap(const CsvMap::CxxData& data) :
 
 void CsvMap::deserialize() {
 
+    if (_data.size() == 0) {
+        throw std::invalid_argument("Can't process empty data set");
+    }
+
     size_t i = 0;
     for (const std::string& title_name : _data[0]) {
 
@@ -72,6 +76,7 @@ void CsvMap::deserialize() {
             buf << "duplicate title name '" << title << "'";
             throw std::invalid_argument(buf.str());
         }
+
         _title_to_index.emplace(title, i);
         i++;
     }
@@ -108,8 +113,10 @@ bool CsvMap::hasTitle(const std::string& title_name) const {
 }
 
 std::set<std::string> CsvMap::getTitles() const {
-    std::set<std::string> ret;
-    ret.insert(_data[0].cbegin(), _data[0].cend());
+    std::set<std::string> ret{};
+    for (auto i : _title_to_index) {
+        ret.emplace(i.first);
+    }
     return ret;
 }
 
