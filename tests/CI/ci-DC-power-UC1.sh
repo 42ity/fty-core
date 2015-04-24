@@ -117,10 +117,14 @@ start_db_ng(){
         killall -9 $d lt-$d || true
     done
     # start db-ng
-    if [ -f $INSTALLDIR/usr/local/bin/db-ng ] ; then
+    if [ -x $INSTALLDIR/usr/local/bin/db-ng ] ; then
         $INSTALLDIR/usr/local/bin/db-ng &
     else
-        die "Can't find db-ng"
+        if [ -x ${BUILDSUBDIR}/db-ng ] ; then
+            ${BUILDSUBDIR}/db-ng &
+        else
+            die "Can't find db-ng"
+        fi
     fi
     # wait a bit
     sleep 15
@@ -135,7 +139,7 @@ start_tntnet(){
         cp "$CHECKOUTDIR/src/web/$XML_TNTNET" "$SCRIPTDIR/$XML_TNTNET"
         sed -i '$ d' "$SCRIPTDIR/$XML_TNTNET"
         echo "<dir>$CHECKOUTDIR/src/web</dir>" >> "$SCRIPTDIR/$XML_TNTNET"
-        echo "<compPath><entry>$CHECKOUTDIR/.libs</entry></compPath>" >> "$SCRIPTDIR/$XML_TNTNET"
+        echo "<compPath><entry>$BUILDSUBDIR/.libs</entry></compPath>" >> "$SCRIPTDIR/$XML_TNTNET"
         echo "</tntnet>" >> "$SCRIPTDIR/$XML_TNTNET"
         tntnet -c "$SCRIPTDIR/$XML_TNTNET" &
     else
