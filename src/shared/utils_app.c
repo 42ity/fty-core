@@ -1,6 +1,7 @@
 #include "utils_app.h"
 
-// TODO: modify
+// TODO: move string_to_X functioncs into utils.[hc] as soon as streq conflict is solved
+
 int64_t string_to_int64( const char *value )
 {
     char *end;
