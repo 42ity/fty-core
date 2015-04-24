@@ -294,9 +294,9 @@ fi
 loaddb_default
 
 # cleanup
-kill $MAKEPID >/dev/null 2>&1
+kill $MAKEPID >/dev/null 2>&1 || true
 sleep 2
-killall tntnet >/dev/null 2>&1
+killall tntnet >/dev/null 2>&1 || true
 sleep 2
 
 if [ "$RESULT" = 0 ]; then

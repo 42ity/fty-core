@@ -44,6 +44,7 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
 ### Section: actual steps being performed
 function cleanup {
+    set +e
     killall malamute
     killall dshell lt-dshell
     killall -9 netmon lt-netmon
