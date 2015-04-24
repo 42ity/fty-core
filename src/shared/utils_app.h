@@ -114,15 +114,13 @@ app_args_set_string(app_t* msg, const char *key, const char *value);
 void
 app_args_set_int64(app_t* msg, const char *key, int64_t value );
 
-void
-app_args_set_int32(app_t* msg, const char *key, int32_t value );
-    
+#define app_args_set_int32 app_args_set_int64
+
 void
 app_args_set_uint64(app_t* msg, const char *key, uint64_t value );
 
-void
-app_args_set_uint32(app_t* msg, const char *key, uint32_t value );
-    
+#define app_args_set_uint32 app_args_set_uint64
+
 int32_t
 app_args_int32(app_t* msg, const char *key);
 
