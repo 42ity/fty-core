@@ -166,6 +166,10 @@ stop_processes(){
     killall -9 tntnet || true
 }
 
+for d in mysql saslauthd malamute ; do
+    systemctl start $d
+done
+
 create_nut_config
 fill_database
 start_bios_daemons
