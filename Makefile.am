@@ -449,10 +449,8 @@ test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
 test_csv_LDADD = 		libpriv-log.la \
-						libpriv-db.la \
 						libpriv-csv.la \
-					    libpriv-test-run.la \
-					    libpriv-proto.la
+					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -609,7 +607,6 @@ test_agents_SOURCES = \
 
 
 test_agents_LDADD = \
-			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -623,7 +620,7 @@ test_agents_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_agents_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS} -lbiosapi
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
