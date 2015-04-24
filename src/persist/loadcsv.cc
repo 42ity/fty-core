@@ -61,8 +61,9 @@ static int
     get_priority
         (const std::string& s)
 {
+    log_debug ("priority string = %s", s.c_str());
     for (int i = 0; i != 2; i++) {
-        if (s[i] <= 49 && s[i] >= 57) {
+        if (s[i] >= 49 && s[i] <= 57) {
             return s[i] - 48;
         }
     }
@@ -103,7 +104,7 @@ static bool
     check_location_u_pos
         (const std::string &s)
 {
-    cxxtools::Regex regex("^[0-9]+([uU]|[uU][rR])?");
+    cxxtools::Regex regex("^[0-9]+[uU][rR]?$");
     if ( !regex.match(s) )
         return false;
     else
@@ -138,7 +139,7 @@ static void
     log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
-        {"active", "inactive", "spare", "retired"};
+        {"active", "noactive", "spare", "retired"};
 
     static auto TYPES = read_element_types (conn);
 
@@ -169,7 +170,7 @@ static void
         // TODO LOG
         log_warning ("Status '%s' is not allowed, use default",
                                                             status.c_str());
-        status = "inactive";    // default
+        status = "noactive";    // default
     }
     unused_columns.erase("status");
 
@@ -407,7 +408,11 @@ static bool
     auto all_fields = cm.getTitles();
     if ( (all_fields.count("name") == 0 ) ||
          (all_fields.count("type") == 0 ) ||
-         (all_fields.count("location") == 0) )
+         (all_fields.count("sub_type") == 0) ||
+         (all_fields.count("location") == 0) ||
+         (all_fields.count("status") == 0) ||
+         (all_fields.count("business_critical") == 0) ||
+         (all_fields.count("priority") == 0) )
         return false;
     else
         return true;
@@ -459,7 +464,7 @@ void
         }
         catch ( const std::invalid_argument &e)
         {
-            log_warning ("row %zu not imported: %s", row_i, e.what());
+            log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }
     LOG_END;
