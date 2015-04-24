@@ -115,23 +115,27 @@ fill_database(){
     fi
 }
 
-# start db-ng as a subprocess
-start_db_ng(){
+# start built daemons as a subprocess
+start_bios_daemons(){
     # Kill existing process
-    for d in db-ng netmon driver-nmap ; do
+    for d in db-ng agent-nut netmon driver-nmap ; do
         killall -9 $d lt-$d || true
     done
     # start db-ng
-    if [ -x $INSTALLDIR/usr/local/bin/db-ng ] ; then
-        $INSTALLDIR/usr/local/bin/db-ng &
+    for d in db-ng agent-nut netmon driver-nmap ; do
+    if [ -x $INSTALLDIR/usr/local/bin/$d ] ; then
+        $INSTALLDIR/usr/local/bin/$d &
     else
-        if [ -x ${BUILDSUBDIR}/db-ng ] ; then
-            ${BUILDSUBDIR}/db-ng &
+        if [ -x ${BUILDSUBDIR}/$d ] ; then
+            ${BUILDSUBDIR}/$d &
         else
-            die "Can't find db-ng"
+            die "Can't find $d"
         fi
     fi
+    done
+
     # wait a bit
+    echo "Sleeping after daemon startup..."
     sleep 15
 }
 
@@ -156,7 +160,7 @@ start_tntnet(){
 
 # stop all processes launched in the script
 stop_processes(){
-    for d in db-ng netmon driver-nmap ; do
+    for d in db-ng agent-nut netmon driver-nmap ; do
         killall -9 $d lt-$d || true
     done
     killall -9 tntnet || true
@@ -164,7 +168,7 @@ stop_processes(){
 
 create_nut_config
 fill_database
-start_db_ng
+start_bios_daemons
 start_tntnet
 
 logmsg_info "starting the test"
