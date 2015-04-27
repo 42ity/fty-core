@@ -121,10 +121,6 @@ if anything is needed to be done here.
 -> rename utils to shared, to reflect the change
 -> do not drop the cli
 
-==== src/simple ====
--> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with
-   another file
-
 ==== src/include/defs.h ====
 -> should become a file with only declarations; move all definitions to some
    .c file and link consumers with that, so there are no conflicts if several
@@ -155,13 +151,6 @@ if anything is needed to be done here.
    needed system services (malamute, tntnet, mysql) across different scripts
    for CI and end-user runtime environments. Converge these so only one is
    actually developed (e.g. `tools/rc-bios`) and others call it.
--> there is some duplication of CI scaffolding to configure and build a copy
-   of the project, to initialize the database with sample data, and run the
-   REST-based tests for example. Revise and converge the numerous scripts
-   in this area.
--> move repetitive logic (e.g. detection of CHECKOUTDIR and BUILDSUBDIR)
-   into an include-file that is always expected in some fixed location like
-   `dirname $0` at least relative to CI scripts.
 -> experiment: verify whether our component programs need to start with an
    `LD_PRELOAD` when built with ASan support, like is currently done for the
    `bios_web.so` as part of `tntnet` during `make web-test` to support the

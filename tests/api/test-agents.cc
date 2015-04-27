@@ -17,7 +17,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     zhash_insert (ext_attributes, "key3", (char*)"value3");
     const char *module_name = "inventory";
 
-    auto ymsg_encoded = bios_inventory_encode (device_name, &ext_attributes, module_name);
+    ymsg_t * ymsg_encoded = bios_inventory_encode (device_name, &ext_attributes, module_name);
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( ext_attributes == NULL );
     ymsg_print (ymsg_encoded);
@@ -42,6 +42,10 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
 
     const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
     REQUIRE ( strcmp (value3, "value3") == 0 );
+
+    free(device_name_new);
+    free(module_name_new);
+    zhash_destroy(&ext_attributes_new);
 
     log_close ();
 }
@@ -71,8 +75,10 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
         CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, NULL, &element_id, &source) == -1 );
         CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, &step, NULL, &source) == -1 );
         CHECK ( bios_web_average_request_decode (&msg, &start_ts, &end_ts, &type, &step, &element_id, NULL) == -1 );
+
+        ymsg_destroy(&msg_null);
+        ymsg_destroy(&msg);
     }
-    // TODO: finish for the rest
 
 }
 

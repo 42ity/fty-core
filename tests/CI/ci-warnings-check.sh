@@ -36,12 +36,13 @@ LOW_IMPORTANCE_WARNINGS=(
 NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
+RESULT=0
 set -o pipefail || true
 set -e
 
 echo "======================== update ============================="
 apt-get update >/dev/null 2>&1
-mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
+#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
 
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
@@ -59,8 +60,8 @@ fi
 
 # This branch was already configured and compiled here, only refresh it now
 echo "======== auto-make (refresh all-buildproducts) =============="
-./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} all-buildproducts 2>&1 | \
-    tee -a ${MAKELOG}
+./autogen.sh --no-distclean --optseqmake ${AUTOGEN_ACTION_MAKE} \
+    all-buildproducts 2>&1 | tee -a ${MAKELOG}
 
 echo "======================= cppcheck ============================"
 CPPCHECK=$(which cppcheck || true)
@@ -110,6 +111,20 @@ sort_warnings() {
     echo $LOW $HIGH )
 }
 
+echo "================ Are GitIgnores good? ======================="
+RES_GITIGNORE=0
+set +e
+cat "$BUILDSUBDIR/.git_details" | grep PACKAGE_GIT_STATUS_ESCAPED | \
+    grep -v 'PACKAGE_GIT_STATUS_ESCAPED=""'
+if [ $? = 0 ]; then
+    RESULT=1 && RES_GITIGNORE=1 && \
+    logmsg_warn "Some build products (above) are not in a .gitignore" && \
+    echo "" && sleep 1  # Sleep to not mix stderr and stdout in Jenkins
+else
+    echo "The .gitignores files are OK (build products and test logs are well ignored)"
+fi
+set -e
+
 echo "==================== sort_warnings =========================="
 ls -la ${MAKELOG}
 [ -s "${MAKELOG}" ] || \
@@ -119,8 +134,11 @@ LOW=$(echo $WARNINGS | cut -d " " -f 1 )
 HIGH=$(echo $WARNINGS | cut -d " " -f 2 ) 
 #/bin/rm -f ${MAKELOG}
 
+echo "================ Result ===================="
+[[ "$RES_GITIGNORE" != 0 ]] && \
+    echo "error: some build products are not gitignored, see details above"
+
 if [[ "$HIGH" != "0" ]] ; then
-    echo "================ Result ===================="
     echo "error: $HIGH unknown warnings (not among LOW_IMPORTANCE_WARNINGS)"
     echo "warning: $LOW acceptable warnings"
     [[ "$NEWBUILD" = no ]] && \
@@ -128,14 +146,13 @@ if [[ "$HIGH" != "0" ]] ; then
     echo "============================================"
     exit 1
 else
-    echo "================ Result ===================="
     if [[ "$LOW" != "0" ]] ; then
         echo "warning: $LOW acceptable warnings"
         [[ "$NEWBUILD" = no ]] && \
             echo "NOTE: These may be old logged hits if you build in an uncleaned workspace"
     else
-        echo "OK, no warnings detected"
+        echo "OK, no compilation warnings detected"
     fi
     echo "============================================"
-    exit 0
+    exit $RESULT
 fi >&2

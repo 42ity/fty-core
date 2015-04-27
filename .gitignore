@@ -35,14 +35,17 @@ Makefile
 !Makefile.am
 driver-nmap
 netmon
-simple
-!src/simple
 bios_web.la
 dshell
 !tools/dshell
 
 *.o
 *.lo
+
+check-builddeps.py
+bios-qa
+Installation
+ut_result.log
 
 db_dump
 
@@ -71,6 +74,7 @@ test-*.trs
 make.log
 make.output
 cppcheck.supp
+cppcheck.xml
 
 test-agents
 test-api
@@ -78,6 +82,7 @@ test-cidr
 test-csv
 test-loadcsv
 test-database
+test-db-alert
 test-db
 test-db2
 test-log
@@ -91,7 +96,7 @@ test-libbiosapiut
 test-db-asset-crud
 agent-inventory
 db-ng
-driver-nut
+agent-nut
 server-agent
 
 tests/junit/
@@ -125,7 +130,7 @@ tools/db-init
 !tools/bios-agent-inventory.service.in
 !tools/bios-server-agent.service.in
 bios-driver-netmon.service
-bios-driver-nut.service
+bios-agent-nut.service
 bios-db.service
 bios-agent-inventory.service
 bios-server-agent.service
@@ -136,6 +141,7 @@ src/web/src/auth-require.cpp
 src/web/src/auth.cpp
 src/web/src/asset_import.cpp
 src/web/src/agent.cpp
+src/web/src/alerts.cpp
 src/web/src/average.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp
@@ -150,6 +156,7 @@ src/web/src/power.cpp
 src/web/src/rack_total.cpp
 src/web/src/sysinfo.cpp
 src/web/src/ui_properties.cpp
+src/web/src/alerts.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml

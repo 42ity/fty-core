@@ -2,7 +2,7 @@
   [
     {
         "id":3,
-        "source_ts":"20150327163012z",
+        "source_ts":"20150327163012Z",
         "application_name":"ALERT", 
         "rule_name":"upsonbattery@UPS1-LAB",
         "element_id":"22",
@@ -15,7 +15,7 @@
     },
     {
         "id":2,
-        "source_ts":"20150328064110z",
+        "source_ts":"20150328064110Z",
         "application_name":"ALERT", 
         "rule_name":"upsonbypass@UPS2-LAB",
         "element_id":"23",
@@ -28,7 +28,7 @@
     },
     {
         "id":2423,
-        "source_ts":"20150423233411z",
+        "source_ts":"20150423233411Z",
         "application_name":"ALERT", 
         "rule_name":"upslowbattery@UPS1-LAB",
         "element_id":"22",

@@ -216,7 +216,8 @@ void get_measurements(ymsg_t* out, char** out_subj,
             "timestamp <  FROM_UNIXTIME(:time_end) "
             "ORDER BY timestamp ASC "
         );
-        std::string topic = ymsg_get_string(in,"source");
+        std::string topic;
+        topic.assign (ymsg_get_string(in,"source")).append (".").append (ymsg_get_string(in,"type")).append ("_").append (ymsg_get_string(in,"step"));
         topic += "@%";
         errno = 0;
         st.set("id", ymsg_get_int64(in,"element_id"))
@@ -238,9 +239,10 @@ void get_measurements(ymsg_t* out, char** out_subj,
             }
             if(units.empty())
                 units = row[4].getString();
+            int64_t comp_value = row[1].getInt32 () * std::pow (10, row[2].getInt32 ());
             json += " {";
-            json += "   \"value\": " + std::to_string(row[1].getInt32()) +  ",";
-            json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
+            json += "   \"value\": " + std::to_string(comp_value) +  ",";
+//            json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
             json += "   \"timestamp\": " + std::to_string(row[3].getInt64());
             json += " }";
         }
@@ -248,9 +250,9 @@ void get_measurements(ymsg_t* out, char** out_subj,
         // TODO: Remove ugly fake data hack
 #define UGLY_FAKE_DATA_HACK
 #ifdef UGLY_FAKE_DATA_HACK
-               "  \"source\": \"temperature.thermal_zone\",\n" +
-               "  \"step\": \"8h\",\n" +
-               "  \"type\": \"arithmetic_mean\",\n" +
+               "  \"source\":\"" + ymsg_get_string (in, "source")   + "\",\n" +
+               "  \"step\": \"" + ymsg_get_string (in, "step") + "\",\n" +
+               "  \"type\": \"" + ymsg_get_string (in, "type") + "\",\n" +
 #else
                "  \"source\": \"" + ymsg_get_string(in,"source") + "\",\n" +
 #endif

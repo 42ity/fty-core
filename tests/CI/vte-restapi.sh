@@ -26,7 +26,7 @@
     # *** abbreviation MS - Management Station - local server with this script ***
 
 # ***** PREREQUISITES *****
-    # *** SUT_PORT and BASE_URL should be set to values corresponded to chosen server ***
+    # *** SUT_SSH_PORT and BASE_URL should be set to values corresponded to chosen server ***
     # *** Must run as root without using password ***
     # *** BIOS image must be installed and running on SUT ***
     # *** SUT port and SUT name should be set properly (see below) ***
@@ -34,25 +34,74 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) ***
     # *** tests/CI/web directory containing results, commands and log subdirectories with the proper content 
 
-# ***** READ PARAMETERS IF PRESENT *****
-if [ $# -eq 0 ];then   # parameters missing
-    SUT_PORT="2206"
-    BIOS_PORT="8006"
-    BASE_URL="http://$SUT_NAME:8006/api/v1"
-else
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -o|--port)
-            SUT_PORT="$2"
+# ***** USE BIOS_USER AND BIOS_PASSWD *****
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+
+usage(){
+    echo "Usage: $(basename $0) [options...] [test_name...]"
+    echo "options:"
+    echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
+    echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+}
+
+    # *** read parameters if present
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
-        *)
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+	--help|-h)
+            usage
+            exit 1
+            ;;
+        *)  # fall through
             break
             ;;
-        esac
-    done
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+if [ -z "$SUT_WEB_PORT" ]; then
+    if [ -n "$BIOS_PORT" ]; then
+        SUT_WEB_PORT="$BIOS_PORT"
+    else
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+    fi
 fi
-BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+SUT_IS_REMOTE=yes
+
+
 
 # ***** SET CHECKOUTDIR *****
 # Include our standard routines for CI scripts
@@ -61,58 +110,30 @@ BIOS_PORT=$(expr $SUT_PORT - 2200 + 8000)
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-RESULT=0
-# ***** SET (MANUALY) SUT_NAME - MANDATORY *****
-#SUT_PORT="2206"
-SUT_NAME="root@debian.roz.lab.etn.com"
-#[ -z "$BIOS_PORT" ] && BIOS_PORT="8006"
-    # *** if used set BIOS_USER and BIOS_PASSWD
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 
 # ***** GLOBAL VARIABLES *****
+RESULT=0
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 
+# Set up weblib test engine preference defaults for automated CI tests
+[ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
+    WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
+[ -z "$WEBLIB_QUICKFAIL" ] && \
+    WEBLIB_QUICKFAIL=no
+[ -z "$WEBLIB_CURLFAIL" ] && \
+    WEBLIB_CURLFAIL=no
+[ -z "$SKIP_NONSH_TESTS" ] && \
+    SKIP_NONSH_TESTS=yes
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
+
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
-RUNAS=""
-CURID="`id -u`" || CURID=""
-[ "$CURID" = 0 ] || RUNAS="sudo"
 
-# ***** USE BIOS_USER AND BIOS_PASSWD *****
-usage(){
-    echo "Usage: $(basename $0) [options...] [test_name...]"
-    echo "options:"
-    echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
-    echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
-}
-
-    # *** Use user and passwd given in call parameters
-while [ $# -gt 0 ] ; do
-    case "$1" in
-        --user|-u)
-            BIOS_USER="$2"
-            shift
-            ;;
-        --passwd|-p)
-            BIOS_PASSWD="$2"
-            shift
-            ;;
-	--help|-h)
-            usage
-            exit 1
-            ;;
-        *)  # Assume that list of test names follows
-    	    # (positive or negative, see test_web.sh)
-            break
-    	    ;;
-    esac
-    shift
-done
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 set -u
 set -e
@@ -123,15 +144,21 @@ if [ 1 = 2 ]; then
 # NETSTAT ZAVOLAT PRES SSH
 # KONTROLOVAT PORT 80 PROCESS TNTNET A STAV LISTEN
 test_web_port() {
-    netstat -tan | grep -w "${BIOS_PORT}" | egrep 'LISTEN' >/dev/null
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
 }
 fi
 # konec vynechavky **********************************
 
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sleep 5
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+    die "Some required services are not running on the VTE"
+
 # ***** AUTHENTICATION ISSUES *****
 # check SASL is working
 logmsg_info "Checking remote SASL Auth Daemon"
-ssh -p $SUT_PORT $SUT_NAME "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
+sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
   logmsg_info "saslauthd is responsive and configured well!" || \
   logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
@@ -140,18 +167,10 @@ ssh -p $SUT_PORT $SUT_NAME "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s b
 test_web() {
     echo "============================================================"
     /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s $SUT_NAME -o $SUT_PORT "$@"
+        -s $SUT_HOST -su $SUT_USER -sp $SUT_SSH_PORT "$@"
     RESULT=$?
     echo "==== RESULT: ($RESULT) ==========================================="
     return $RESULT
-}
-    # *** load db file specified in parameter
-loaddb_file() {
-    DB=$1
-    (cat $DB | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql" || \
-        CODE=$? die "Failed to load $DB to remote system"
-     sleep 20 ; echo "DB updated.") || return $?
-    return 0
 }
 
     # *** load default db setting
@@ -200,7 +219,7 @@ test_web_topo_l topology_location || RESULT_OVERALL=$?
 if [ "$RESULT_OVERALL" = 0 ]; then
     logmsg_info "Overall result: SUCCESS"
 else
-    logmsg_error "Overall result: FAILED ($RESULT_OVERALL) seek details above" >&2
+    logmsg_error "Overall result: FAILED ($RESULT_OVERALL), seek details above"
 fi
 
 exit $RESULT_OVERALL

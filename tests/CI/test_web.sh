@@ -40,13 +40,9 @@ SKIPPED_NONSH_TESTS=0
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 NEED_BUILDSUBDIR=no determineDirs_default || true
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
-# A bash-ism, should set the exitcode of the rightmost failed command
-# in a pipeline, otherwise e.g. exitcode("false | true") == 0
-set -o pipefail 2>/dev/null || true
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -101,6 +97,7 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
 fi
 
 logmsg_info "Testing webserver ability to serve the REST API"
+curlfail_push_expect_404
 if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
     logmsg_error "api_get() returned an error:"
     api_get "" >&2
@@ -113,13 +110,16 @@ if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
     api_get "" >&2
     CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
 fi
+curlfail_pop
 
+curlfail_push_expect_noerrors
 if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
     # We expect that the login service responds
     logmsg_error "api_get() returned an error:"
     api_get "/oauth2/token" >&2
     CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
 fi
+curlfail_pop
 logmsg_info "Webserver seems basically able to serve the REST API"
 
 cd "`dirname "$0"`"
@@ -134,6 +134,7 @@ CMPJSON_PY="`pwd`/cmpjson.py"
 cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 summarizeResults() {
+    set +e
     logmsg_info "Testing completed, $PASS/$TOTAL tests passed for groups:"
     logmsg_info "  POSITIVE = $POSITIVE"
     logmsg_info "  NEGATIVE = $NEGATIVE"
