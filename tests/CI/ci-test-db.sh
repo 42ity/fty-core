@@ -53,12 +53,18 @@ FAILED=""
 
 echo "--------------- ensure bins to test --------------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db test-db2 test-database \
+    test-db test-db2 test-database test-db-alert \
     test-db-asset-crud test-dbtopology test-totalpower \
     || FAILED="compilation"
+sleep 1
 
 echo "-------------------- empty db --------------------"
-./tests/CI/ci-empty-db.sh
+${CHECKOUTDIR}/tests/CI/ci-empty-db.sh
+sleep 1
+
+# From here on we use the build directory since libtool-generated
+# scripts which wrap our build products may want that
+cd "$BUILDSUBDIR"
 echo "-------------------- test-database ---------------"
 "$BUILDSUBDIR"/test-database
 if [ "$?" != 0 ] ; then
@@ -68,6 +74,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-database"
 fi
+sleep 1
 
 echo "-------------------- reset db --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
@@ -82,6 +89,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-db"
 fi
+sleep 1
 
 echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
@@ -92,6 +100,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-db2"
 fi
+sleep 1
 
 echo "-------------------- test-db-alert --------------------"
 "$BUILDSUBDIR"/test-db-alert
@@ -102,6 +111,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-db-alert"
 fi
+sleep 1
 
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
@@ -115,6 +125,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-db-asset-crud"
 fi
+sleep 1
 
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
@@ -130,6 +141,7 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         RESULT=1
         FAILED="$FAILED test-dbtopology::$P"
     fi
+    sleep 1
 done
 
 echo "-------------------- test-total-power --------------------"
@@ -144,6 +156,7 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED test-totalpower"
 fi
+sleep 1
 
 if [ -n "$FAILED" ]; then
     logmsg_error "The following tests have failed:"

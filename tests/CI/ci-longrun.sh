@@ -231,7 +231,7 @@ create_random_samples() {
 }
 
 produce_events(){
-    MEASUREMENTS="1do_select 'select count(*) from t_bios_measurement'`"
+    MEASUREMENTS="`do_select 'select count(*) from t_bios_measurement'`"
     LASTCHECK=$(date +%s)
     while read sample
     do
@@ -259,7 +259,8 @@ produce_events(){
             fi
             MEASUREMENTS=$NEWCNT
             # check last 5 min data
-            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $(date +%s --date "6 minutes ago") )'`"
+            TS6MINAGO="`date '+%s' --date '6 minutes ago'`"
+            CNT6MIN="`do_select 'select count(*) from t_bios_measurement where timestamp > FROM_UNIXTIME( $TS6MINAGO )'`"
             if [ "$CNT6MIN" = "0" ] ; then
                 # no data flow
                 logmsg_error "nothing appeared in measurement table in last 6 minutes"
