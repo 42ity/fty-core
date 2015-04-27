@@ -136,7 +136,7 @@ app_params_append_int64(app_t* msg, int64_t value )
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
-    memset( buff, sizeof(buff), 0 );
+    memset( buff, '\0', sizeof(buff) );
     snprintf( buff, sizeof(buff)-1, "%" PRIi64, value );
     app_params_append_string( msg, buff );
 }
@@ -147,7 +147,7 @@ app_params_append_uint64(app_t* msg, uint64_t value )
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
-    memset( buff, sizeof(buff), 0 );
+    memset( buff, '\0', sizeof(buff) );
     snprintf( buff, sizeof(buff)-1, "%" PRIu64, value );
     app_params_append_string( msg, buff );
 }
@@ -187,7 +187,7 @@ app_args_set_int64(app_t* msg, const char *key, int64_t value ) {
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
-    memset( buff, sizeof(buff), 0 );
+    memset( buff, '\0', sizeof(buff) );
     snprintf( buff, sizeof(buff)-1, "%" PRIi64, value );
     app_args_set_string( msg, key, buff );
 }
@@ -198,7 +198,7 @@ app_args_set_uint64(app_t* msg, const char *key, uint64_t value ) {
     if(!msg) { errno = EINVAL; return; };
 
     char buff[24];
-    memset( buff, sizeof(buff), 0 );
+    memset( buff, '\0', sizeof(buff) );
     snprintf( buff, sizeof(buff)-1, "%" PRIu64, value );
     app_args_set_string( msg, key, buff );
 }
