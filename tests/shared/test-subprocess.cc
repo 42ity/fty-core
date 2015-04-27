@@ -7,7 +7,6 @@
 #include <signal.h>
 
 #include "subprocess.h"
-#include <iostream>
 
 using namespace shared;
 
@@ -125,7 +124,8 @@ TEST_CASE("subprocess-write-stdin", "[subprocess][fd]") {
     SubProcess proc(argv, SubProcess::STDIN_PIPE | SubProcess::STDOUT_PIPE);
     bret = proc.run();
     CHECK(bret);
-    CHECK(proc.getStdin() == 4);
+    // as we don't close stdin/stdout/stderr, new fd must be at least > 2
+    CHECK(proc.getStdin() > STDERR_FILENO);
 
     ret = ::write(proc.getStdin(), (const void*) ibuf, strlen(ibuf));
     CHECK(ret == strlen(ibuf));
