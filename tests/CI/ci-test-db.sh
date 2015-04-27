@@ -53,15 +53,18 @@ FAILED=""
 
 echo "--------------- ensure bins to test --------------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db test-db2 test-database \
+    test-db test-db2 test-database test-db-alert \
     test-db-asset-crud test-dbtopology test-totalpower \
     || FAILED="compilation"
 sleep 1
 
 echo "-------------------- empty db --------------------"
-./tests/CI/ci-empty-db.sh
+${CHECKOUTDIR}/tests/CI/ci-empty-db.sh
 sleep 1
 
+# From here on we use the build directory since libtool-generated
+# scripts which wrap our build products may want that
+cd "$BUILDSUBDIR"
 echo "-------------------- test-database ---------------"
 "$BUILDSUBDIR"/test-database
 if [ "$?" != 0 ] ; then
