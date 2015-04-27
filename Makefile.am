@@ -334,11 +334,15 @@ libpriv_proto_la_SOURCES = \
 
 libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
 
-
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
 			src/agents/nmap/nmap-parse.cc
+
+noinst_LTLIBRARIES +=	libpriv-sendmail.la
+libpriv_sendmail_la_SOURCES = \
+			src/shared/sendmail.h \
+			src/shared/sendmail.cc
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -723,6 +727,16 @@ test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
 EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 ###
+
+bin_PROGRAMS += bios-email
+bios_email_SOURCES = \
+			src/shared/sendmail.h \
+			tests/shared/bios-email.cc
+bios_email_LDADD = \
+			libpriv-log.la \
+			libpriv-sendmail.la \
+			libpriv-subprocess.la 
+bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
