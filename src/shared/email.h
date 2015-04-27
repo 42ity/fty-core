@@ -21,6 +21,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 Example:
 
+    shared::Smtp smtp{"mail.example.com", "joe.doe@example.com"};
+
+    try {
+        smtp.sendmail(
+            "agent.smith@matrix.gov",
+            "The pill taken by Neo",
+            "Dear Mr. Smith,\n......");
+    }
+    catch (const std::runtime_error& e) {
+       // here we'll handle the error
+    }
+
 */
 #include "subprocess.h"
 #include <string>
@@ -28,20 +40,53 @@ Example:
 #ifndef _SRC_SHARED_EMAIL_H
 #define _SRC_SHARED_EMAIL_H
 namespace shared {
+    /**
+     * \class Smtp
+     *
+     * \brief Simple wrapper on top of msmtp
+     *
+     * This class contain some basic configuration for msmtp (host/from) + provide sendmail methods. It *DOES NOT* perform any additional transofmation like uuencode or mime. IOW garbage-in, garbage-out.
+     *
+     */
     class Smtp
     {
         public:
+            /**
+             * \brief Creates SMTP instance
+             *
+             * \param host   hostname of remote smtp server
+             * \param from   envelope from
+             */
             explicit Smtp(
                     const std::string& host,
                     const std::string& from
                     );
-     
 
+            /**
+             * \brief send the email
+             *
+             * Technically this put email to msmtp's outgoing queue
+             * \param to        email header To:
+             * \param subject   email header Subject:
+             * \param body      email body
+             *
+             * \throws std::runtime_error for msmtp invocation errors
+             */
             void sendmail(
                     const std::string& to,
                     const std::string& subject,
                     const std::string& body);
 
+            /**
+             * \brief send the email
+             *
+             * Technically this put email to msmtp's outgoing queue
+             * \param body  email body (To/Subject are deduced
+             *              from the fields in body, so body must be properly
+             *              formatted email message).
+             *
+             * \throws std::runtime_error for msmtp invocation errors
+             */
             void sendmail(
                     const std::string& body);
 
