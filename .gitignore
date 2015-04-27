@@ -97,6 +97,7 @@ test-db-asset-crud
 agent-inventory
 db-ng
 agent-nut
+agent-alert
 server-agent
 
 tests/junit/
