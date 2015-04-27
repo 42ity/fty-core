@@ -72,7 +72,7 @@ if [ -n "$DEBUG" ]; then
     echo "DEBUG: dsh_file='$dsh_file'" >&2
 fi
 
-killall malamute
+killall malamute || true
 
 malamute "$CHECKOUTDIR/tools/malamute.cfg" &
 if [[ $? -ne 0 ]]; then
@@ -102,6 +102,10 @@ sudo ip addr del 103.15.3.0/24 dev lo
 sudo ip addr del 20.13.5.4/32 dev lo
 
 file=$(<$dsh_file) # `cat file` for non-bash shell
+if [ -n "$DEBUG" ]; then
+    echo "=== The dshell capture file contents are:"
+    echo "$file"
+fi >&2
 
 # Actual dshell output format:
 #sender=NETMON subject=add content=
@@ -120,36 +124,36 @@ file=$(<$dsh_file) # `cat file` for non-bash shell
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='101.25.138.2'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 201
 fi
 re=".*sender=NETMON subject=del content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='101.25.138.2'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 202
 fi
 
 # 103.15.3.0/24 dev lo
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='103.15.3.0'.*?prefixlen=24"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 203
 fi
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='103.15.3.0'.*?prefixlen=24"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 204
 fi
 
 # 20.13.5.4/32 dev lo
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_ADD.*?name='lo'.*?ipver=0.*?ipaddr='20.13.5.4'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 205
 fi
 re=".*sender=NETMON subject=add content=.*?NETDISC_MSG_AUTO_DEL.*?name='lo'.*?ipver=0.*?ipaddr='20.13.5.4'.*?prefixlen=32"
 if [[ ! "$file" =~ $re ]]; then
     [ -n "$DEBUG" ] && echo -e "Following regexp:\n$re\n did NOT match in the following text:\n$file"
-    exit 1
+    exit 206
 fi
 
 exit 0
