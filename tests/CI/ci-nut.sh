@@ -95,12 +95,11 @@ create_ups_dev_file() {
         "\nbattery.charge: 90" \
         "\noutput.current: 1.20" \
         "\noutput.voltage: 230.0" \
-        "\nups.realpower: 20" \
+        "\nups.realpower: 25" \
         "\nups.temperature: 25" \
         "\noutlet.count: 2" \
         "\noutlet.1.voltage: 220" \
         "\noutlet.2.voltage: 220" \
-        "\noutlet.3.voltage: 220" \
         "\nups.load: 10" \
         "\nups.status: OL" \
         > $FILE
