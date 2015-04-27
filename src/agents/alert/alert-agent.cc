@@ -1,12 +1,12 @@
 #include "alert-agent.h"
-#include "agents.h"
-#include "log.h"
-#include "utils_ymsg.h"
-#include "utils-app.h"
 
 #include <errno.h>
 #include <iostream>
 
+#include "agents.h"
+#include "log.h"
+#include "utils_ymsg.h"
+#include "utils_app.h"
 
 #define ALERT_POLLING_INTERVAL  5000
 
@@ -18,47 +18,40 @@ void AlertAgent::onStart( )
 void AlertAgent::onSend( ymsg_t **message )
 {
     // hope we get some measurement
-    std::cout << "onSend\n";
     _model.newMeasurement( *message );
     ymsg_destroy( message );
-    std::cout << "onSend end\n";
 }
 
 void AlertAgent::onReply( ymsg_t **message )
 {
     if( ! message || ! *message ) return;
-    std::cout << "onReply\n";
+    if( ! ymsg_is_ok( *message ) ) return;
+
     app_t *app = ymsg_request_app( *message );
-    if(app) {
-        // is this an alarm confirmation ?
+    if( app ) {
+        // is this an alert confirmation?
         const char *name = app_name(app);
-        if( name && strcmp(name, "ALERT") == 0 ) {
-            // name is alert, let's check rule and state 
-            std::cout << "ALERT CONFIRMATION...\n";
-            app_print(app);
-            zhash_t *args = app_args(app);
-            char *rule = (char *)zhash_lookup(args, "rule");
-            char *charstate =  (char *)zhash_lookup(args, "state");
-            if( rule && charstate ) {
+        const char *from = sender();
+        if( name && strcmp(name, "ALERT") == 0 && from && strcmp(from, "persistence.measurement") == 0 ) {
+            // name is alert, and was written into db
+            // let's check rule and state 
+            const char *rule = app_args_string(app,"rule", NULL);
+            int32_t state = app_args_int32(app,"state");
+            if( rule && ( state != INT32_MAX ) ) {
                 // rule and state supplied
-                alert_state_t state = (alert_state_t)atoi(charstate);
                 Alert *A = _model.alertByRule(rule);
                 if( A && ( A->state() == state ) ) {
                     // such alarm exists and it is in the same state
-                    std::cout << "informed\n";
                     A->persistenceInformed(true);
                 }
             }
-            //zhash_destroy(&args);
-        } // name == "ALERT"
+        }
         app_destroy(&app);
-    } // if(app)
+    }
     ymsg_destroy( message );
-    std::cout << "onReply end\n";
 }
 
 void AlertAgent::onPoll() {
-    std::cout << "onPoll\n";
     for( auto &al : _model.alerts() ) {
         if( al.timeToPublish() ) {
             ymsg_t * msg = bios_alert_encode (
@@ -66,9 +59,9 @@ void AlertAgent::onPoll() {
                 al.priority(),
                 al.state(),
                 al.devices().c_str(),
-                NULL, // TODO get description into alert
+                NULL, // TODO get description into alert?
                 al.since());
-            std::string topic = "alert." + al.name() + "@" + al.devices();
+            std::string topic = "alert." + al.ruleName();
             if( ! al.persistenceInformed() ) {
                 ymsg_t *pmsg = ymsg_dup(msg);
                 if( pmsg ) {
@@ -83,7 +76,6 @@ void AlertAgent::onPoll() {
             zclock_sleep(100);
         }
     }
-    std::cout << "onPoll end\n";
 }
 
 

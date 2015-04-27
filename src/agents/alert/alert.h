@@ -44,13 +44,15 @@ class Alert {
     alert_state_t state() const;
     void state(alert_state_t newState);
     std::string name();
-    void name(const char *name);
-    void name(const std::string &name);
+    void name(const char *text);
+    void name(const std::string &text);
     std::string ruleName();
     bool persistenceInformed();
     void persistenceInformed(bool informed);
     std::string devices();
     std::string description();
+    void description(const char* name);
+    void description(const std::string &name);
     alert_priority_t priority();
     void priority(alert_priority_t priority);
     time_t since();
@@ -70,6 +72,7 @@ class Alert {
     bool _persistenceInformed = false;
     std::string _name;
     std::string _devices;
+    std::string _description;
     
     alert_evaluate_function_t _evaluate = NULL;
     std::map<std::string,std::string> _evaluateParameters;

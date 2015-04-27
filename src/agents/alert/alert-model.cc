@@ -2,6 +2,7 @@
 
 #include <ctime>
 #include <iostream>
+
 #include "upsstatus.h"
 #include "alert.h"
 
@@ -76,6 +77,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 A.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 A.addTopic( measurement.topic() );
                 A.setEvaluateFunction( evaluate_on_battery_alert );
+                A.description("UPS is running on battery!");
                 _alerts.push_back(A);
                 
                 Alert B;
@@ -83,6 +85,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 B.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 B.addTopic( measurement.topic() );
                 B.setEvaluateFunction( evaluate_low_battery_alert );
+                B.description("Low battery!");
                 _alerts.push_back(B);
 
                 Alert C;
@@ -90,11 +93,11 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 C.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 C.addTopic( measurement.topic() );
                 C.setEvaluateFunction( evaluate_on_bypass_alert );
+                C.description("UPS is on bypass!");
                 _alerts.push_back(C);
             }
         }
         _last_measurements[ measurement.topic() ] = measurement;
-        // FIXME: do the following only on measurement change?
         for( auto &it: _alerts ) {
             it.evaluate( _last_measurements );
         }

@@ -2,6 +2,8 @@
 
 #include <ctime>
 
+#include "log.h"
+
 alert_state_t Alert::state() const
 {
     return _state;
@@ -10,6 +12,12 @@ alert_state_t Alert::state() const
 void Alert::state(alert_state_t newState)
 {
     if( _state != newState ) {
+        if( newState != ALERT_STATE_UNKNOWN ) {
+            log_info("alert: %s (%s) %s",
+                     ruleName().c_str(),
+                     description().c_str(),
+                     ( newState == ALERT_STATE_ONGOING_ALERT ? "active!" : "OK (not active)." ) );
+        }
         _state = newState;
         _published = 0;
         _persistenceInformed = false;
@@ -32,11 +40,10 @@ void Alert::persistenceInformed(bool informed) { _persistenceInformed = informed
 
 std::string Alert::devices() { return _devices; }
 std::string Alert::ruleName() { return _name + "@" + _devices; }
-std::string Alert::description()
-{
-    //FIXME: do this
-    return "";
-}
+
+std::string Alert::description() { return _description; }
+void Alert::description(const char* text) { _description = text; }
+void Alert::description(const std::string &text) { _description = text; }
 
 alert_priority_t Alert::priority() { return _priority; }
 void Alert::priority(alert_priority_t priority) { _priority = priority; }
