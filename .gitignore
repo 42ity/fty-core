@@ -99,6 +99,7 @@ agent-inventory
 db-ng
 agent-nut
 server-agent
+bios-email
 
 tests/junit/
 tests/CI/web/log/
