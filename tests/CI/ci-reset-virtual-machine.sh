@@ -38,7 +38,7 @@ die() {
 usage() {
     echo "Usage: $(basename $0) [options...]"
     echo "options:"
-    echo "    -m|--machine name    virtual machine name (Default: '$VM')"
+    echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
     echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
     echo "                         see OBS repository for supported types (deploy, devel)"
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"

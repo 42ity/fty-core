@@ -37,6 +37,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 WEBTESTPID=""
 DBNGPID=""
 kill_daemons() {
+    set +e
     if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
         kill -2 "$WEBTESTPID"
@@ -77,8 +78,8 @@ trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
-mysql -u root < "$DB1"
-mysql -u root < "$DB2"
+loaddb_file "$DB1"
+loaddb_file "$DB2"
 #
 # only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #
@@ -155,10 +156,6 @@ instcmds=ALL" > $CFGDIR/upsd.users
     systemctl start nut-server
     logmsg_info "waiting for a while..."
     sleep 15
-}
-
-do_select(){
-    echo "$1;" | mysql -u root box_utf8 | tail -n +2
 }
 
 testcase() {
@@ -337,11 +334,10 @@ echo ""
 echo "*** Summary ***"
 echo "Passed: $SUM_PASS / Failed: $SUM_ERR"
 
-kill $WEBTESTPID >/dev/null 2>&1
+kill $WEBTESTPID >/dev/null 2>&1 || true
 
 if [ $SUM_ERR = 0 ] ; then
     exit 0
 fi
-
 
 exit 1
