@@ -297,6 +297,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
+			src/persist/alert.h \
 			src/persist/alert.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
