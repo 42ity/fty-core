@@ -81,14 +81,14 @@ namespace shared {
              * \brief send the email
              *
              * Technically this put email to msmtp's outgoing queue
-             * \param body  email body (To/Subject are deduced
+             * \param data  email DATA (To/Subject are deduced
              *              from the fields in body, so body must be properly
              *              formatted email message).
              *
              * \throws std::runtime_error for msmtp invocation errors
              */
             void sendmail(
-                    const std::string& body);
+                    const std::string& data);
 
         protected:
 

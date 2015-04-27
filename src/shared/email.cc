@@ -76,7 +76,7 @@ void Smtp::sendmail(
 }
 
 void Smtp::sendmail(
-        const std::string& body)
+        const std::string& data)
 {
     SubProcess proc{_argv, SubProcess::STDIN_PIPE | SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE};
 
@@ -88,9 +88,9 @@ void Smtp::sendmail(
                 read_all(proc.getStderr()));
     }
 
-    ssize_t wr = ::write(proc.getStdin(), body.c_str(), body.size());
+    ssize_t wr = ::write(proc.getStdin(), data.c_str(), data.size());
     if (wr != static_cast<ssize_t>(body.size())) {
-        log_warning("Email truncated, exp '%zu', piped '%zd'", body.size(), wr);
+        log_warning("Email truncated, exp '%zu', piped '%zd'", data.size(), wr);
     }
     ::close(proc.getStdin()); //EOF
 
