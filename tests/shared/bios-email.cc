@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "log.h"
 #include "subprocess.h"
-#include "sendmail.h"
+#include "email.h"
 
 int main(int argc, char** argv) {
 
