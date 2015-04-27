@@ -3,6 +3,7 @@
 *.bnf
 .#*
 *~
+*.pid
 
 aclocal.m4
 autom4te.cache
@@ -99,11 +100,13 @@ db-ng
 agent-nut
 server-agent
 agent-cm
+bios-email
 
 tests/junit/
 tests/CI/web/log/
 tests/CI/tmp.*
 tests/CI/web/commands/tmp.*
+tests/CI/*.pyc
 
 build/
 build-*/
