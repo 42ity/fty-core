@@ -30,6 +30,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "alert.h"
 
+namespace persist {
+
 //=============================================================================
 // end date of the alert can't be specified during the insert statement
 db_reply_t
@@ -676,3 +678,5 @@ db_reply <std::vector<m_dvc_id_t>>
     LOG_END;
     return ret;
 }
+
+} // namespace persist

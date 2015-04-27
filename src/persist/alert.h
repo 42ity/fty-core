@@ -28,6 +28,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbtypes.h"
 #include "dbhelpers.h"
 
+namespace persist {
+
 //+
 db_reply_t
     insert_into_alert 
@@ -119,5 +121,7 @@ db_reply <std::vector<m_dvc_id_t>>
     select_alert_devices
         (tntdb::Connection &conn,
          m_alrt_id_t        alert_id);
+
+} //namespace persist
 
 #endif //SRC_PERSIST_ALERT
