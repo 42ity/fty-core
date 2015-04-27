@@ -89,7 +89,7 @@ void Smtp::sendmail(
     }
 
     ssize_t wr = ::write(proc.getStdin(), data.c_str(), data.size());
-    if (wr != static_cast<ssize_t>(body.size())) {
+    if (wr != static_cast<ssize_t>(data.size())) {
         log_warning("Email truncated, exp '%zu', piped '%zd'", data.size(), wr);
     }
     ::close(proc.getStdin()); //EOF
