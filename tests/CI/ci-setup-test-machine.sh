@@ -36,7 +36,7 @@ update_system() {
     apt-get clean all
     apt-get update
     apt-get -f -y --force-yes --fix-missing install
-    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck
+    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck msmtp
     mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 }
 
