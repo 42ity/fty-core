@@ -30,7 +30,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -o pipefail || true
 set -e
 ( which apt-get >/dev/null &&  apt-get update ) || true
-( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
+#( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
 # NOTE: with this job we want everything wiped and rebuilt in the workspace
 echo "============= auto-configure and rebuild ===================="

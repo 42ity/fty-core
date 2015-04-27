@@ -34,18 +34,75 @@
         # * "<substring for the testcase filtering>"
    # *** no parameters? ERROR!
 if [ $# -eq 0 ]; then
-    echo "ERROR: test_web.sh is no longer suitable to run all REST API tests"
+    echo "ERROR: vte_test_web.sh is no longer suitable to run all REST API tests"
     echo "       either use ci-test-restapi.sh or specify test on a commandline"
     exit 1
 fi
     # *** find the SCRIPTDIR (... test/CI dir) and CHECKOUTDIR
 
+    # *** read parameters if present
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
+            SUT_SSH_PORT="$2"
+            shift 2
+            ;;
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        *)  # fall through
+            break
+            ;;
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+if [ -z "$SUT_WEB_PORT" ]; then
+    if [ -n "$BIOS_PORT" ]; then
+        SUT_WEB_PORT="$BIOS_PORT"
+    else
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+    fi
+fi
+
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+SUT_IS_REMOTE=yes
+
+    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** include weblib.sh
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
@@ -53,82 +110,53 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 PASS=0
 TOTAL=0
 
-    # *** Set BIOS_USER,BIOS PASSWD,SUT_NAME and SUT_PORT from parameters
-while [ $# -gt 0 ]; do
-    case "$1" in
-    -u|--user)
-        BIOS_USER="$2"
-        shift 2
-        ;;
-    -p|--passwd)
-        BIOS_PASSWD="$2"
-        shift 2
-        ;;
-    -s|--sut)
-        SUT_NAME="$2"
-        shift 2
-        ;;
-    -o|--port)
-        SUT_PORT="$2"
-        shift 2
-        ;;
-    *)
-        break
-        ;;
-    esac
-done
-
-
-if [ "$BIOS_PORT" ]; then
-    SUT_HTTP_PORT=$BIOS_PORT
-else
-    SUT_HTTP_PORT=$(expr $SUT_PORT - 2200 + 8000)
-fi
 echo '*************************************************************************************************************'
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
 echo $BIOS_USER
 echo $BIOS_PASSWD
-echo $SUT_NAME
-echo $SUT_PORT
-echo $SUT_HTTP_PORT
+echo $SUT_HOST
+echo $SUT_SSH_PORT
+echo $SUT_WEB_PORT
 
 
-BASE_URL="http://$SUT_NAME:$SUT_HTTP_PORT/api/v1"
 PATH="$PATH:/sbin:/usr/sbin"
 
     # *** is sasl running on SUT?
-if [ "$(ssh -p $SUT_PORT root@$SUT_NAME 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
-    echo "saslauthd is running"
+if [ "$(sut_run 'pidof saslauthd'|wc -l| sed 's, ,,g')" -gt 0 ];then
+    logmsg_info "saslauthd is running"
 else
-    echo "saslauthd is not running, please start it first!" >&2
-    exit 1
+    CODE=1 die "saslauthd is not running, please start it first!"
 fi
 
 # is bios user present?
 # Check the user account in system
 # We expect SASL uses Linux PAM, therefore getent will tell us all we need
-LINE="$(ssh -p $SUT_PORT root@$SUT_NAME "getent passwd '$BIOS_USER'")"
+LINE="$(sut_run "getent passwd '$BIOS_USER'")"
 if [ $? != 0 -o -z "$LINE" ]; then
 #if ! getent passwd "$BIOS_USER" > /dev/null; then
-    echo "User $BIOS_USER is not known to system administrative database at $SUT_NAME:$SUT_PORT"
-    echo "To add it locally, run: "
+    logmsg_error "User $BIOS_USER is not known to system administrative" \
+        "database at $SUT_HOST:$SUT_SSH_PORT." \
+    logmsg_info "To add it locally, run: "
     echo "    sudo /usr/sbin/useradd --comment 'BIOS REST API testing user' --groups nobody,sasl --no-create-home --no-user-group $BIOS_USER"
     echo "and don't forget the password '$BIOS_PASSWD'"
-    exit 2
-fi
+    CODE=2 die "BIOS_USER absent on remote system"
+fi >&2
 
 # is bios access to sasl right?
-SASLTEST=$(ssh -p $SUT_PORT root@$SUT_NAME "which testsaslauthd")
-LINE="$(ssh -p $SUT_PORT root@$SUT_NAME "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD'" -s bios)"
+SASLTEST=$(sut_run "which testsaslauthd")
+LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios")"
 if [ $? != 0 -o -z "$LINE" ]; then
-    echo "SASL autentication for user '$BIOS_USER' has failed. Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-    exit 3
+    CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
+        "Please check the existence of /etc/pam.d/bios (and maybe" \
+        "/etc/sasl2/bios.conf for some OS distributions)"
 fi
 
 # is web server running?
-if [ -z "`api_get "" | grep "< HTTP/.* 404 Not Found"`" ]; then
-    echo "Webserver is not running, please start it first!"
-    exit 4
+curlfail_push_expect_404
+if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+    CODE=4 die "Webserver is not running or has errors, please start it first!"
 fi
+curlfail_pop
 
 # log dir contents the real responses
 cd "`dirname "$0"`"
@@ -163,6 +191,9 @@ done
 # A bash-ism, should set the exitcode of the rightmost failed command
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
 set -o pipefail 2>/dev/null || true
+
+# TODO: Port recent changes from main test_web.sh
+# ... or merge these two via sut_run() commands etc.
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
