@@ -54,6 +54,8 @@ void Smtp::sendmail(
     sbuf << subject;
     sbuf << "\n";
 
+    sbuf << "\n";
+
     sbuf << body;
     sbuf << "\n";
 
