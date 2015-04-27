@@ -47,7 +47,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
-#include "alerts.h"
+#include "alert.h"
 #include "agents.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
@@ -766,16 +766,10 @@ void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj)
         persist::get_measurements(out, out_subj, in, in_subj);
         return;
     }
-    if(in_subj &&  ( strncmp(in_subj, "alert.", 6) == 0 ) ) {
+    if( in_subj &&  ( strncmp(in_subj, "alert.", 6) == 0 ) ) {
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
-    /*
-    if(streq(in_subj, "get_asset")) {
-        persist::get_asset(out, out_subj, in, in_subj);
-        return;
-    }
-    */
 }
 
 /**
