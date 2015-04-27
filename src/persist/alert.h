@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/connect.h>
 #include "dbtypes.h"
 #include "dbhelpers.h"
+#include "ymsg.h"
 
 namespace persist {
 
