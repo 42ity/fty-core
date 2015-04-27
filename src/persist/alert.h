@@ -122,6 +122,11 @@ db_reply <std::vector<m_dvc_id_t>>
         (tntdb::Connection &conn,
          m_alrt_id_t        alert_id);
 
+//! Processes alert message and creates an answer
+void process_alert(ymsg_t* out, char** out_subj,
+                   ymsg_t* in, const char* in_subj);
+
+ 
 } //namespace persist
 
 #endif //SRC_PERSIST_ALERT

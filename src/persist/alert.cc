@@ -679,4 +679,81 @@ db_reply <std::vector<m_dvc_id_t>>
     return ret;
 }
 
+//=============================================================================
+std::vector< std::string > split_string_to_vector( const char *s, char delim )
+{
+    std::vector< std::string > elems;
+    if( !s ) return elems;
+    std::stringstream ss(s);
+    std::string item;
+    while (std::getline(ss, item, delim)) {
+        elems.push_back(item);
+    }
+    return elems;
+}
+
+void process_alert(ymsg_t* out, char** out_subj,
+                   ymsg_t* in, const char* in_subj)
+{
+    if( ! in || ! out ) return;
+
+    LOG_START;
+    
+    if( in_subj ) { *out_subj = strdup(in_subj); }
+    else { *out_subj = NULL; }
+    
+    log_debug("processing alert"); // FIXME: some macro
+    ymsg_t *copy = ymsg_dup(in);
+    assert(copy);
+    
+    // decode message
+    char *rule = NULL, *devices = NULL, *desc = NULL;
+    alert_priority_t priority;
+    alert_state_t state;
+    time_t since;
+    if( bios_alert_decode( &copy, &rule, &priority, &state, &devices, &desc, &since) != 0 ) {
+        ymsg_destroy(&copy);
+        log_debug("can't decode message");
+        LOG_END;
+        return;
+    }
+    std::vector<std::string> devices_v = split_string_to_vector(devices,',');
+    tntdb::Connection conn;
+    try{        
+        conn = tntdb::connect(url);
+        db_reply_t ret;
+        
+        switch( (int)state ) {
+        case ALERT_STATE_ONGOING_ALERT:
+            // alert started
+            ret = insert_new_alert(
+                conn,
+                rule,
+                priority,
+                state,
+                ( desc ? desc : rule ),
+                0,
+                since,
+                devices_v);
+            ymsg_set_status( out, ret.status );
+            break;
+        case ALERT_STATE_NO_ALERT:
+            //alarm end
+            ret = update_alert_tilldate_by_rulename(
+                conn,
+                since,
+                rule);
+            ymsg_set_status( out, ret.status );
+            break;
+        }
+        if(!ret.status) { log_error("Writting alert into the database failed"); }
+    } catch(const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        ymsg_set_status( out, false );
+    }
+    if(rule) free(rule);
+    if(devices) free(devices);
+    LOG_END;
+}
+
 } // namespace persist
