@@ -13,8 +13,8 @@ XML_TNTNET="tntnet.xml"
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 NEED_BUILDSUBDIR=no determineDirs_default || true
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 
@@ -45,11 +45,16 @@ UPS3="UPS3-US477"
 # arg1 : UPS name (for .dev file)
 # arg2 : Realpower value
 create_ups_device(){
+    DEVNAME="$1"
+    WATTS="$2"
+    VOLTS="230"
+    AMPS="`expr 14 \* $WATTS / $VOLTS / 10`"
+
     echo "battery.charge: 90
 device.type: ups
-output.current: 0.00
-output.voltage: 230.0
-ups.realpower: $2
+output.current: $AMPS
+output.voltage: ${VOLTS}.0
+ups.realpower: $WATTS
 ups.temperature: 25
 outlet.realpower: 20
 ups.load: 10
@@ -57,10 +62,10 @@ ups.mfr: MGE UPS SYSTEMS
 ups.model: Pulsar Evolution 500
 ups.serial: AV2G3300L
 ups.status: OL
-outlet.1.voltage: 220
-outlet.2.voltage: 220
-outlet.3.voltage: 220
-" > $CFGDIR/$1.dev
+outlet.1.voltage: 230
+outlet.2.voltage: 230
+outlet.3.voltage: 230
+" > $CFGDIR/${DEVNAME}.dev
 }
 
 # Create a NUT config for 3 dummy UPS
@@ -98,48 +103,54 @@ create_ups_device $UPS3 1200
 
 # drop and fill the database
 fill_database(){
-    if [ -f $CHECKOUTDIR/tools/$SQL_INIT ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_INIT || \
-        die "Failure loading $SQL_INIT"
+    if [ -f "$CHECKOUTDIR/tools/$SQL_INIT" ] ; then
+        loaddb_file "$CHECKOUTDIR/tools/$SQL_INIT"
     else
         die "$SQL_INIT not found"
     fi
-    if [ -f $CHECKOUTDIR/tools/$SQL_LOAD ] ; then
-        mysql < $CHECKOUTDIR/tools/$SQL_LOAD || \
-        die "Failure loading $SQL_LOAD"
+    if [ -f "$CHECKOUTDIR/tools/$SQL_LOAD" ] ; then
+        loaddb_file "$CHECKOUTDIR/tools/$SQL_LOAD"
     else
         die "$SQL_LOAD not found"
     fi
 }
 
-# start simple as a subprocess
-start_simple(){
+# start built daemons as a subprocess
+start_bios_daemons(){
     # Kill existing process
-    for d in simple netmon driver-nmap ; do
-        killall -9 $d lt-$d 
+    for d in db-ng agent-nut netmon driver-nmap ; do
+        killall -9 $d lt-$d || true
     done
-    # start simple
-    if [ -f $INSTALLDIR/usr/local/bin/simple ] ; then
-        $INSTALLDIR/usr/local/bin/simple &
+    # start db-ng
+    for d in db-ng agent-nut netmon driver-nmap ; do
+    if [ -x $INSTALLDIR/usr/local/bin/$d ] ; then
+        $INSTALLDIR/usr/local/bin/$d &
     else
-        die "Can't find simple"
+        if [ -x ${BUILDSUBDIR}/$d ] ; then
+            ${BUILDSUBDIR}/$d &
+        else
+            die "Can't find $d"
+        fi
     fi
+    done
+
     # wait a bit
+    echo "Sleeping after daemon startup..."
     sleep 15
 }
 
 # start tntnet in order to make REST API request
 start_tntnet(){
     # Kill existing process
-    killall -9 tntnet
+    killall -9 tntnet || true
     # Mod xml file and start tntnet
-    if [ -f $CHECKOUTDIR/src/web/$XML_TNTNET ] ; then
-        cp $CHECKOUTDIR/src/web/$XML_TNTNET $SCRIPTDIR/$XML_TNTNET
-        sed -i '$ d' $SCRIPTDIR/$XML_TNTNET
-        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> $SCRIPTDIR/$XML_TNTNET
-        echo "<compPath><entry>$CHECKOUTDIR/.libs</entry></compPath>" >> $SCRIPTDIR/$XML_TNTNET
-        echo "</tntnet>" >> $SCRIPTDIR/$XML_TNTNET
-        tntnet -c $SCRIPTDIR/$XML_TNTNET &
+    if [ -f "$CHECKOUTDIR/src/web/$XML_TNTNET" ] ; then
+        cp "$CHECKOUTDIR/src/web/$XML_TNTNET" "$SCRIPTDIR/$XML_TNTNET"
+        sed -i '$ d' "$SCRIPTDIR/$XML_TNTNET"
+        echo "<dir>$CHECKOUTDIR/src/web</dir>" >> "$SCRIPTDIR/$XML_TNTNET"
+        echo "<compPath><entry>$BUILDSUBDIR/.libs</entry></compPath>" >> "$SCRIPTDIR/$XML_TNTNET"
+        echo "</tntnet>" >> "$SCRIPTDIR/$XML_TNTNET"
+        tntnet -c "$SCRIPTDIR/$XML_TNTNET" &
     else
         logmsg_error "$XML_TNTNET not found"
         stop_processes
@@ -149,15 +160,19 @@ start_tntnet(){
 
 # stop all processes launched in the script
 stop_processes(){
-    for d in simple netmon driver-nmap ; do
-        killall -9 $d lt-$d 
+    for d in db-ng agent-nut netmon driver-nmap ; do
+        killall -9 $d lt-$d || true
     done
-    killall -9 tntnet
+    killall -9 tntnet || true
 }
+
+for d in mysql saslauthd malamute ; do
+    systemctl start $d
+done
 
 create_nut_config
 fill_database
-start_simple
+start_bios_daemons
 start_tntnet
 
 logmsg_info "starting the test"

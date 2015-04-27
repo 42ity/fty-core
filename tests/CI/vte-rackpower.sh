@@ -32,7 +32,7 @@
     # *** this way it contains also smoke test of the chain nut->DB->restAPI
 
 # ***** PREREQUISITES *****
-    # *** SUT_PORT should be passed as parameter --port <value>
+    # *** SUT_SSH_PORT should be passed as parameter --port <value>
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
@@ -40,43 +40,80 @@
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-LOCKFILE=/tmp/ci-test-trp.lock
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** weblib include
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+echo "SCRIPTDIR =	$SCRIPTDIR"
+echo "CHECKOUTDIR =	$CHECKOUTDIR"
+echo "BUILDSUBDIR =	$BUILDSUBDIR"
 
 
     # *** read parameters if present
-if [ $# -eq 0 ];then   # default if parameters missing
-    SUT_PORT="2206"    # port used for ssh requests
-    SUT_NAME="root@debian.roz.lab.etn.com"
-    BASE_URL="http://$SUT_NAME:8006/api/v1"
-else                   # read parameter --port|-o
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            -o|--port)
-            SUT_PORT="$2"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-ssh|--sut-port-ssh|-sp|-o|--port)
+            SUT_SSH_PORT="$2"
             shift 2
             ;;
-        *)
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
+            ;;
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        --sut-user|-su)
+            SUT_USER="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        *)  echo "$0: Unknown param and all after it are ignored: $@"
             break
             ;;
-        esac
-    done
+    esac
+done
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+if [ -z "$SUT_WEB_PORT" ]; then
+    if [ -n "$BIOS_PORT" ]; then
+        SUT_WEB_PORT="$BIOS_PORT"
+    else
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+    fi
 fi
-                       # port used for http requests
-SUT_WEB_PORT=$(expr $SUT_PORT - 2200 + 8000)
+# unconditionally calculated values
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+SUT_IS_REMOTE=yes
+
+    # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
 
     # *** set SUT base URL and SUT name
-SUT_NAME="root@debian.roz.lab.etn.com"
-BASE_URL="http://$SUT_NAME:$SUT_WEB_PORT/api/v1"
 
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
@@ -93,135 +130,164 @@ PSW=user1
 SUM_PASS=0
 SUM_ERR=0
 
+    # *** is system running? ***
+LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+
+
 # ***** INIT *****
 function cleanup {
+    set +e
     rm -f "$LOCKFILE"
 }
     # *** is system running?
 if [ -f "$LOCKFILE" ]; then
+    ls -la "$LOCKFILE" >&2
     die "Script already running. Aborting."
 fi
 
     # *** lock the script with creating $LOCKFILE
-touch "$LOCKFILE"
+echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
+
+logmsg_info "Ensuring that needed remote daemons are running on VTE"
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sleep 5
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+    die "Some required services are not running on the VTE"
+
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
-(cat $CHECKOUTDIR/tools/initdb.sql $CHECKOUTDIR/tools/rack_power.sql | ssh -p $SUT_PORT $SUT_NAME "systemctl start mysql && mysql"; sleep 30 ; echo "DB updated.") 2>&1| tee /tmp/tmp
+set -o pipefail 2>/dev/null || true
+set -e
+{ loaddb_file ./tools/initdb.sql && \
+  loaddb_file ./tools/rack_power.sql \
+; } 2>&1 | tee /tmp/ci-rackpower-vte.log
+set +e
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
 rem_copy_file() {
-SRC_FILE=$1
-DST_FILE=$2
-COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE"
-(cd /;tar -cf - tmp/$SRC_FILE | ssh -p $SUT_PORT $SUT_NAME "$COPY_CMD" & )
+    SRC_FILE=$1
+    DST_FILE=$2
+    COPY_CMD="cd / ; tar -xf - ;mv -f /tmp/$SRC_FILE $CFGDIR/$DST_FILE; chown nut:root $CFGDIR/$DST_FILE"
+    ( cd /;tar -cf - tmp/$SRC_FILE | sut_run "$COPY_CMD" )
 }
 
     # *** rem_cmd()
 #Send remote command from MS to be performed in SUT
 rem_cmd() {
-    REM_CMD=$1
-    (ssh -p $SUT_PORT $SUT_NAME "$REM_CMD" & ) | tee /tmp/ci-rackpower.log
+    sut_run "$@" | tee -a /tmp/ci-rackpower-vte.log
 }
     # *** set_values_in_ups()
 set_values_in_ups() {
-UPS="$1"
-TYPE="$2"
-VALUE="$3"
+    ### TODO: Rewrite so that regular dev-file changes and upsrw are separate
+    ### from new dev-file definitions and NUT restart (that's once per testcase
+    ### or even once at all if we pre-define all devices at once).
+    UPS="$1"
+    TYPE="$2"
+    VALUE="$3"
 
-echo "set values in <upsX>.dev"
-if [ "$TYPE" = epdu ]; then
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-epdu.dev >/tmp/$UPS.new
-    PARAM=$PARAM2
-elif [ "$TYPE" = pdu ]; then
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: 0/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
-else
-    sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
-    PARAM=$PARAM2
-fi
+    echo "set values in <upsX>.dev"
+    if [ "$TYPE" = epdu ]; then
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-epdu.dev >/tmp/$UPS.new
+        PARAM=$PARAM2
+    elif [ "$TYPE" = pdu ]; then
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: 0/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
+    else
+        sed -r -e "s/^$PARAM2 *:.+$/$PARAM2: $VALUE/i" </tmp/pattern-ups.dev >/tmp/$UPS.new
+        PARAM=$PARAM2
+    fi
 
-echo "set values in ups.conf"
-sed -r -e "s/UPS1/$UPS1/g" </tmp/pattern.conf >/tmp/pattern.tmp
-sed -r -e "s/UPS2/$UPS2/g" </tmp/pattern.tmp >/tmp/ups.new
+    echo "set values in ups.conf"
+    sed -r -e "s/UPS1/$UPS1/g" -e "s/UPS2/$UPS2/g" </tmp/pattern.conf >/tmp/ups.new
 
     # *** Copy the .dev .conf files to SUT
-if [ $UPS = $UPS1 ]; then
-    if [ "$TYPE2" = epdu ]; then
-        rem_copy_file pattern-epdu.dev $UPS2.dev
-    else
-        rem_copy_file pattern-ups.dev $UPS2.dev
+    if [ $UPS = $UPS1 ]; then
+        if [ "$TYPE2" = epdu ]; then
+            rem_copy_file pattern-epdu.dev $UPS2.dev
+        else
+            rem_copy_file pattern-ups.dev $UPS2.dev
+        fi
     fi
-fi
-rem_copy_file $UPS.new $UPS.dev
-rem_copy_file ups.new ups.conf
-sleep 10
+    rem_copy_file $UPS.new $UPS.dev
+    rem_copy_file ups.new ups.conf
+    sleep 3
 
-    # *** start upsrw
-echo "start upsrw"
-rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost >/dev/null 2>&1"
     # *** restart NUT server
-echo 'restart NUT server'
-rem_cmd "systemctl stop nut-server"
-rem_cmd "systemctl stop nut-driver"
-rem_cmd "systemctl start nut-server"
-echo 'Wait ...' 
-sleep 20
+    echo 'Restart NUT server with updated config'
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; systemctl start nut-server"
+    echo 'Wait for NUT to start responding...' 
+    # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
+    sleep 7
+    N=0
+    while [ "$N" -lt 20 ]; do
+        OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
+        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=100; break; fi
+        sleep 1
+        N="`expr $N + 1`"
+    done
+
+    # *** start upsrw (output hidden because this can fail for some target variables)
+    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
+    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
+    sleep 6
 }
 
     # *** testcase()
 testcase() {
+    echo "starting the test"
 
-echo "starting the test"
-
-SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
-ERRORS=0
-SUCCESSES=0
-LASTPOW=(0 0)
-for UPS in $UPS1 $UPS2 ; do
+    SAMPLESCNT=$(expr ${#SAMPLES[*]} - 1) # sample counter begin from 0
+    ERRORS=0
+    SUCCESSES=0
+    LASTPOW=(0 0)
+    for UPS in $UPS1 $UPS2 ; do
                        # count expected value of total power
-    for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
-        # set values
-        NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
-        if [ $UPS = $UPS1 ]; then
-            set_values_in_ups "$UPS" "$TYPE1" "$NEWVALUE"
-            if [ $TYPE1 = "pdu" ]; then
-                LASTPOW[0]=0
+        for SAMPLECURSOR in $(seq 0 $SAMPLESCNT); do
+            # set values
+            NEWVALUE=${SAMPLES[$SAMPLECURSOR]}
+            if [ $UPS = $UPS1 ]; then
+                set_values_in_ups "$UPS" "$TYPE1" "$NEWVALUE"
+                if [ $TYPE1 = "pdu" ]; then
+                    LASTPOW[0]=0
+                else
+                    LASTPOW[0]=$NEWVALUE
+                fi
             else
-                LASTPOW[0]=$NEWVALUE
+                set_values_in_ups $UPS $TYPE2 $NEWVALUE
+                if [ $TYPE2 = "pdu" ]; then
+                    LASTPOW[1]=0
+                else
+                    LASTPOW[1]=$NEWVALUE
+                fi
             fi
-        else
-            set_values_in_ups $UPS $TYPE2 $NEWVALUE
-            if [ $TYPE2 = "pdu" ]; then
-                LASTPOW[1]=0
-            else
-                LASTPOW[1]=$NEWVALUE
-            fi
-        fi
-        TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
+            TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
-        PAR=/metric/computed/rack_total?arg1="$RACK"'&'arg2=total_power
-        RACK_TOTAL_POWER1_CONTENT=`api_get_content $PAR`
-        POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed "s/: /%/" | cut -d'%' -f2)"
+            PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
+            RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" && \
+                logmsg_info "SUCCESS: api_get_content '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
+                logmsg_error "FAILED ($?): api_get_content '$PAR'" 
+            POWER="$(echo "$RACK_TOTAL_POWER1_CONTENT" | grep total_power | sed 's/: /%/' | cut -d'%' -f2)"
                        # synchronize format of the expected and generated values of total power
-        STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
-        STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
+            STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
+            STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
                        # round both numbers and compare them
                        # decide the test is successfull or failed
-        DEL=$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')
-        if [ $DEL = 0 ]; then
-           echo "The total power has an expected value $TP = $POWER. Test PASSED."
-           SUCCESSES=$(expr $SUCCESSES + 1)
-        else
-            echo "$TP does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
-            ERRORS=$(expr $ERRORS + 1)
-        fi
+            DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
+            if [ $DEL = 0 ]; then
+                echo "The total power has an expected value: '$TP' = '$POWER'. Test PASSED."
+                SUCCESSES=$(expr $SUCCESSES + 1)
+            else
+                echo "The total power does not equal expected value: '$TP' <> '$POWER' - Test FAILED."
+                ERRORS=$(expr $ERRORS + 1)
+            fi
+        done
     done
-done
 }
 
     # *** results()
@@ -252,6 +318,7 @@ echo "MODE=standalone" > /tmp/nut.conf
 password=$PSW
 actions=SET
 instcmds=ALL" > /tmp/upsd.users
+chmod 640 /tmp/upsd.users
 
         # * Copy the cfgfiles to SUT
 rem_copy_file nut.conf nut.conf

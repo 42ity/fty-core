@@ -58,6 +58,9 @@ myDEVDOCDIR =	docs/develop
 # Locations of child Makefiles
 SUBDIRS =	$(myMANDIR) docs/examples tools
 
+# run tntnet from Makefile
+RUN_TNTNET = ${TNTNET} tntnet.xml
+
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
 # Note that docker/README is processed by this root Makefile, below...
@@ -256,7 +259,6 @@ libpriv_csv_la_SOURCES =	src/shared/csv.h \
 
 libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_src_dir)/src/msg
@@ -295,6 +297,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
 			src/persist/alerts.cc \
+			src/persist/alert.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
 			tools/dbpath.cc
@@ -446,15 +449,12 @@ test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
 test_csv_LDADD = 		libpriv-log.la \
-						libpriv-db.la \
 						libpriv-csv.la \
-					    libpriv-test-run.la \
-					    libpriv-proto.la
+					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/shared \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src/msg \
@@ -576,6 +576,29 @@ test_db_asset_crud_CPPFLAGS = \
 test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+bin_PROGRAMS += 	test-db-alert
+
+test_db_alert_SOURCES = \
+			tests/persist/test-alert.cc
+
+
+test_db_alert_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+
+test_db_alert_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_alert_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
 check_PROGRAMS += 	test-agents
 
 test_agents_SOURCES = \
@@ -583,7 +606,6 @@ test_agents_SOURCES = \
 
 
 test_agents_LDADD = \
-			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -597,7 +619,7 @@ test_agents_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_agents_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS} -lbiosapi
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
@@ -881,7 +903,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/average.cpp src/web/src/alerts.cpp
+                      src/web/src/alerts.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
@@ -966,9 +988,9 @@ if ENABLE_DEBUG_ASAN
 	LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libtsan | awk '{print $$3}'`" || true; \
 	echo "===== Using LD_PRELOAD='$$LD_PRELOAD' for Address Sanitizer"; \
 	export LD_PRELOAD; \
-	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+	$(RUN_TNTNET)
 else
-	LC_ALL=C LANG=C ${TNTNET} tntnet.xml
+	$(RUN_TNTNET)
 endif
 
 #----------------------------------------------------------------------
@@ -1021,15 +1043,11 @@ bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
 bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
 
 
-systemdsystemunit_DATA = \
-			$(top_builddir)/bios-agent-nut.service \
-			$(top_builddir)/bios-driver-netmon.service \
-			$(top_builddir)/bios-db.service \
-			$(top_builddir)/bios-server-agent.service \
-			$(top_builddir)/bios-agent-inventory.service
+systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
 
-CLEANFILES += $(top_builddir)/bios-*.service
+CLEANFILES += $(systemdsystemunit_DATA)
 endif
+
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
 # Note that the basic filenames in these variables are relative to the
@@ -1466,7 +1484,7 @@ clean-man:
 # Just in case we don't have all dependencies properly spelled out,
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
-            libbiosapi.la bios_web.la \
+            libbiosapi.la bios_web.la $(client_PROGRAMS) \
             all-docs sdk sdk-link-test web-link-test
 
 # Try to build everything buildable, e.g. for further warning counters
@@ -1642,8 +1660,9 @@ $(abs_top_builddir)/.git_details: .PHONY_GIT
 	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
 	    [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
-	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)'; then \
-	      echo "INFO: Replacing '$@' with newly generated data" && \
+	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' >/dev/null; then \
+	      echo "INFO: Replacing '$@' with newly generated data:" && \
+	      diff -bu "$@" "$@.tmp"; \
 	      mv -f "$@.tmp" "$@"; touch "$@"; \
 	    else echo "INFO: No substantial changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; \
 	    fi; \
@@ -1670,16 +1689,26 @@ src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_
 
 $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
 	@echo "INFO: Checking that '$@' is up-to-date..."
+	@/bin/rm -f "$@.tmp" || true
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
-	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
+	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
-	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
-	    echo "INFO: No changes in contents of '$@'" || \
-	    { echo "INFO: Replacing '$@' with newly generated data"; \
-	      mv -f "$@.tmp" "$@"; touch "$@"; } } } || { \
-	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
-	  true
+	@if [ -s "$@.tmp" ]; then \
+	    if [ ! -s "$@" ]; then \
+	        echo "INFO: '$@' is missing, so using the newly generated file"; \
+	        mv -f "$@.tmp" "$@"; touch "$@"; \
+	    else \
+	        if  diff -bu "$@" "$@.tmp" | \
+	            egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]char . PACKAGE_BUILD_TSTAMP)' \
+	        >/dev/null ; then \
+	            echo "INFO: Replacing '$@' with newly generated data:"; \
+	            diff -bu "$@" "$@.tmp"; \
+	            mv -f "$@.tmp" "$@"; touch "$@"; \
+	        else echo "INFO: No changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; fi; \
+	    fi; \
+	 else [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; \
+	 fi
 	@/bin/rm -f "$@.tmp"
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
@@ -1709,7 +1738,7 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	      echo '#endif'; \
 	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
 	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
-	    grep '=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
 	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
