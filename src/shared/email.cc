@@ -18,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "email.h"
 #include "log.h"
 #include <sstream>
+#include <ctime>
 
 namespace shared {
 
@@ -36,7 +37,7 @@ Smtp::Smtp(
         "--tls=off",
         "--auto-from=on",
         "--read-recipients",
-        "--from=" + _from};
+        "--read-envelope-from"};
 }
 
 void Smtp::sendmail(
@@ -46,9 +47,21 @@ void Smtp::sendmail(
 {
     std::ostringstream sbuf;
 
+    sbuf << "From: ";
+    sbuf << _from;
+    sbuf << "\n";
+
     sbuf << "To: ";
     sbuf << to;
     sbuf << "\n";
+
+    //NOTE: setLocale(LC_DATE, "C") should be called in outer scope
+    sbuf << "Date: ";
+    time_t t = ::time(NULL);
+    struct tm* tmp = ::localtime(&t);
+    char buf[256];
+    strftime(buf, sizeof(buf), "%a, %d %b %Y %T %z\n", tmp);
+    sbuf << buf;
 
     sbuf << "Subject: ";
     sbuf << subject;
