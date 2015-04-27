@@ -123,7 +123,7 @@ build-results repositories, including the following Linux OS releases:
  * http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
  * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
-These packages include such build and/or runtime dependencies as
+These packages include such build and/or run-time dependencies as
 libvariant, iproute2, mariadb, zeromq, nmap and so on.
 
 [NOTE]
@@ -566,7 +566,7 @@ by the OS.
 Other packages
 ~~~~~~~~~~~~~~
 ----
-:; apt-get install -y nmap
+:; apt-get install -y nmap msmtp
 ----
 
 
@@ -721,7 +721,7 @@ Testing the build
 Testing REST API
 ~~~~~~~~~~~~~~~~
 Before testing the REST API with `test_web.sh`, make sure to configure
-the OS properly (including the user accounts and runtime dependencies
+the OS properly (including the user accounts and run-time dependencies
 described above).
 
 See also:
