@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "utils.h" 
 #include "utils_ymsg.h"
+#include "utils_app.h"
 #include "bios_agent.h"
 
 #include "agents.h"
@@ -364,4 +365,94 @@ bios_db_measurements_read_reply_extract (ymsg_t *self, char **json) {
 bios_db_measurements_read_reply_extract_err:
     FREE0 (*json);
     return -1;
+}
+
+ymsg_t *
+bios_alert_encode (const char *rule_name,
+                   alert_priority_t priority,
+                   alert_state_t state,
+                   const char *devices,
+                   const char *alert_description,
+                   time_t since)
+{
+    if(
+        ! rule_name || ! devices ||
+        ( state < ALERT_STATE_NO_ALERT ) ||
+        ( state > ALERT_STATE_ONGOING_ALERT ) ||
+        ( priority < ALERT_PRIORITY_P1 ) ||
+        ( priority > ALERT_PRIORITY_P5 )
+    ) return NULL;
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    app_t *app = app_new(APP_MODULE);
+    app_set_name( app, "ALERT" );
+    app_args_set_string( app, "rule", rule_name );
+    app_args_set_int32( app, "priority", priority );
+    app_args_set_int32( app, "state", state );
+    app_args_set_string( app, "devices",  devices );
+    if(alert_description) app_args_set_string(app, "description",  alert_description );
+    app_args_set_int64( app, "since", since );
+    ymsg_request_set_app( msg, &app );
+    return msg;
+}
+
+
+int
+bios_alert_decode (ymsg_t **self_p,
+                   char **alert_name,
+                   alert_priority_t *priority,
+                   alert_state_t *state,
+                   char **devices,
+                   char **description,
+                   time_t *since)
+{
+   if( ! self_p || ! *self_p || ! alert_name || ! priority || ! state || ! devices ) return -1;
+
+   const char *nam, *dev, *pri, *sta, *sin, *des;
+   int32_t tmp;
+
+   app_t *app = ymsg_request_app(*self_p);
+   if( ! app ) return -3;
+       
+   nam = app_args_string( app, "rule", NULL );
+   pri = app_args_string( app, "priority", NULL );
+   sta = app_args_string( app, "state", NULL );
+   dev = app_args_string( app, "devices", NULL );
+   des = app_args_string( app, "description", NULL );
+   sin = app_args_string( app, "since", NULL );
+   
+   if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
+       app_destroy( &app );
+       return -3;
+   }
+   tmp = app_args_int32( app, "priority" );
+   if( tmp < ALERT_PRIORITY_P1 || tmp > ALERT_PRIORITY_P5 ) {
+       app_destroy( &app );
+       return -4;
+   }
+   *priority = (alert_priority_t)tmp;
+   tmp = app_args_int32( app, "state" );
+   if( tmp < ALERT_STATE_NO_ALERT || tmp > ALERT_STATE_ONGOING_ALERT ) {
+       app_destroy( &app );
+       return -5;
+   }
+   *state = (alert_state_t)tmp;
+   if( since ) {
+       *since = string_to_int64( sin );
+       if( errno ) {
+           app_destroy(&app);
+           return -6;
+       }
+   }
+   *alert_name = strdup(nam);
+   *devices = strdup(dev);
+   if( description ) {
+       if( des ) {
+           *description = strdup(des);
+       } else {
+           *description = NULL;
+       }
+   }
+   app_destroy(&app);
+   ymsg_destroy(self_p);
+   return 0;
 }

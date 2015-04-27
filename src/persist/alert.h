@@ -53,33 +53,46 @@ db_reply_t
          int64_t             date_till,
          m_alrt_id_t         id);
 
+
+db_reply_t
+    update_alert_tilldate_by_rulename
+        (tntdb::Connection  &conn,
+         int64_t             date_till,
+         const char         *rule_name);
+
 //+
 db_reply_t
     delete_from_alert
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 
-
+//+
 db_reply_t
     insert_into_alert_devices 
         (tntdb::Connection  &conn,
          m_alrt_id_t               alert_id,
          std::vector <std::string> device_names);
 
-
+//+
 db_reply_t
     insert_into_alert_device
         (tntdb::Connection &conn,
          m_alrt_id_t        alert_id,
          const char        *device_name);
 
-
+//+
 db_reply_t
     delete_from_alert_device
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 
+//+
+db_reply_t
+    delete_from_alert_device_byalert
+        (tntdb::Connection &conn,
+         m_alrt_id_t         id);
 
+//+
 db_reply_t
     insert_new_alert 
         (tntdb::Connection  &conn,
@@ -101,7 +114,7 @@ db_reply <std::vector<db_alert_t>>
     select_alert_all_closed
         (tntdb::Connection  &conn);
 
-
+//+
 db_reply <std::vector<m_dvc_id_t>>
     select_alert_devices
         (tntdb::Connection &conn,

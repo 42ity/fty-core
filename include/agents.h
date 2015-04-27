@@ -142,6 +142,69 @@ BIOS_EXPORT ymsg_t *
 BIOS_EXPORT int
     bios_db_measurements_read_reply_extract (ymsg_t *self, char **json);
 
+typedef enum {
+    ALERT_STATE_UNKNOWN = -1,
+    ALERT_STATE_NO_ALERT,
+    ALERT_STATE_ONGOING_ALERT
+} alert_state_t;
+
+typedef enum {
+    ALERT_PRIORITY_UNKOWN = 0,
+    ALERT_PRIORITY_P1,
+    ALERT_PRIORITY_P2,
+    ALERT_PRIORITY_P3,
+    ALERT_PRIORITY_P4,
+    ALERT_PRIORITY_P5
+} alert_priority_t;
+
+/**
+ * \brief encode measurement message
+ *
+ * \param rule_name - name of rule causing alarm (something like upsonbattery@ups1.example.com) 
+ * \param priority - alert priority P1 - P5
+ * \param state - alert state (NO_ALERT or ONGOING_ALERT).
+ * \param devices - list of devices causing alarm separated by ","
+ *                  (example smoke1.example.com,smoke2.example.com)
+ * \param alert_description - optional, user description
+ * \param since - time, when this alarm state has been discovered.
+ * \return ymsg_t * or NULL if failed
+ */
+BIOS_EXPORT ymsg_t *
+bios_alert_encode (const char *rule_name,
+                   alert_priority_t priority,
+                   alert_state_t state,
+                   const char *devices,
+                   const char *alert_description,
+                   time_t since);
+
+/**
+ * \brief decode alert message
+ *
+ * \param[in] ymsg - measurement message to decode
+ * \param[out] rule_name - alarm rule name.
+ * \param[out] priority - alarm priority P1 - P5.
+ * \param[out] alert_state - alarm is triggered in the system or it is not (end of alarm).
+ * \param[out] devices - devices, causing this alert (comma separated list).
+ * \param[out] description - optional, user alert description.
+ * \param[out] since - time, when this alarm state has been discovered.
+ * \return int 0 = success, -1 = invalid/unspecified parameter,
+ *             -3 = some or all information in message is missing.
+ *             -4 = invalid priority
+ *             -5 = invalid state
+ *             -6 = malformed timestamp
+ *
+ * In case of failure, message is not destroyed
+ */
+BIOS_EXPORT int
+bios_alert_decode (ymsg_t **self_p,
+                   char **rule_name,
+                   alert_priority_t *priority,
+                   alert_state_t *state,
+                   char **devices,
+                   char **description,
+                   time_t *since);
+
+
 #ifdef __cplusplus
 }
 #endif

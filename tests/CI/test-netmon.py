@@ -88,11 +88,10 @@ def compare_results(ipres, dbres):
 
 
 #### fixture ini ####
-
-# check all deamons running
-for daemon in ("simple", "netmon", "mysqld"):
+# check all daemons running
+for daemon in ("db-ng", "netmon", "mysqld"):
     ret = subprocess.call(["/bin/pidof", daemon, "lt-%s" % (daemon, )])
-    assert (ret == 0), "%s does not running!" % (daemon, )
+    assert (ret == 0), "%s is not running!" % (daemon, )
 
 #### MAIN ####
 ipout = subprocess.check_output(["/bin/ip", "a", "s"])
@@ -101,7 +100,9 @@ ipres = parse_ip_a_s(ipout)
 assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
 
 # to create some dummy interface?
-nic_name = ipres[0][0]
+#nic_name = ipres[0][0]
+nic_name = "lo0"
+print(nic_name)
 assert nic_name, "Name of network card is empty!"
 
 # reset the environment

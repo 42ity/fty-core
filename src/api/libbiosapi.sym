@@ -131,6 +131,9 @@ global:
         bios_db_measurements_read_reply_encode;
         bios_db_measurements_read_reply_extract;
 
+        bios_alert_encode;
+        bios_alert_decode;
+
         is_app;
         is_ymsg;
 local:

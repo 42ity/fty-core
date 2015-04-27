@@ -48,7 +48,7 @@ typedef shared::SubProcess SubProcess;
 typedef shared::Argv Argv;
 typedef shared::ProcCacheMap ProcCacheMap;
 
-static ProcessQue _que{4};
+static ProcessQue _que{4, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE};
 static ProcCacheMap _pcmap{};
 static std::set<int> _fd_set;
 static zsock_t *outgoing = NULL;

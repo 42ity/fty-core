@@ -58,10 +58,20 @@ namespace persist {
 void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
     log_debug("Processing measurement");
     ymsg_t *ymsg = ymsg_decode(msg);
+    
     if(ymsg == NULL) {
         log_error("Can't decode the ymsg");
         return;
     }
+    int64_t tme = 0;
+    char *device_name = NULL;
+    char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
+    char *units       = NULL;
+    m_msrmnt_value_t value = 0;
+    int32_t scale = -1;
+    int rv;
+    std::string db_topic;
+    time_t _time;
 
     tntdb::Connection conn;
     try {
@@ -69,32 +79,34 @@ void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
         conn.ping();
     } catch (const std::exception &e) {
         log_error("Can't connect to the database");
-        ymsg_destroy(&ymsg);
-        return;
+        goto free_mem_toto;
     }
 
-    int64_t tme = 0;
-    char *device_name = NULL;
-    char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
-    char *units       = NULL;
-    m_msrmnt_value_t value = 0;
-    int32_t scale = -1;
-
-    int rv = bios_measurement_decode (&ymsg, &device_name, &quantity, 
+    rv = bios_measurement_decode (&ymsg, &device_name, &quantity, 
                                       &units, &value, &scale, &tme);
     if ( rv != 0 ) {
         log_error("Can't decode the ymsg, ignore it");
-        return;
+        goto free_mem_toto;
     }
 
     // TODO: MVY, why this is here???
     if(tme < 1)
         tme = ::time(NULL);
 
-    std::string db_topic = std::string (quantity) + "@" + device_name; 
-    time_t _time = (time_t) tme;
+    db_topic = std::string (quantity) + "@" + device_name; 
+    _time = (time_t) tme;
     persist::insert_into_measurement(
             conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
+free_mem_toto:
+    //free resources
+    if(ymsg)
+        ymsg_destroy(&ymsg);
+    if(device_name)
+        free(device_name);
+    if(quantity)
+        free(quantity);
+    if(units)
+        free(units);
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
@@ -595,7 +607,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                 if ( msgid == COMMON_MSG_FAIL )
                 {
                     // the device was not found, then insert new device
-                    common_msg_t* newDevice = insert_device(url.c_str(), devicetype, devicename);
+                    common_msg_t* newDevice = insert_disc_device(url.c_str(), devicetype, devicename);
 
                     int newmsgid = common_msg_id (newDevice);
 
@@ -703,7 +715,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
         if(tmpz != NULL) {
         common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {
-        common_msg_t *retc = insert_device(url.c_str(),
+        common_msg_t *retc = insert_disc_device(url.c_str(),
                            common_msg_devicetype_id(tmpc),
                            common_msg_name(tmpc));
         common_msg_destroy(&tmpc);

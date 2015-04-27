@@ -273,3 +273,36 @@ TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_
         free (json_r);
 }
 
+TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
+
+    ymsg_t *msg = bios_alert_encode(
+        "testrule",
+        ALERT_PRIORITY_P2,
+        ALERT_STATE_ONGOING_ALERT,
+        "myDev",
+        "some text",
+        42);
+    REQUIRE ( msg );
+
+    char *rule = NULL, *devices = NULL, *description = NULL;
+    alert_priority_t priority = ALERT_PRIORITY_UNKOWN;
+    alert_state_t state = ALERT_STATE_UNKNOWN;
+    time_t time = 0;
+
+    bios_alert_decode( &msg, NULL, &priority, &state, &devices, &description, &time);
+    CHECK( msg );
+    
+    int x = bios_alert_decode( &msg, &rule, &priority, &state, &devices, &description, &time);
+    CHECK ( x == 0 );
+    CHECK ( msg == NULL );
+    CHECK ( strcmp (rule, "testrule") == 0 );
+    CHECK ( strcmp (devices, "myDev") == 0 );
+    CHECK ( strcmp (description, "some text") == 0 );
+    CHECK ( priority == ALERT_PRIORITY_P2 );
+    CHECK ( state == ALERT_STATE_ONGOING_ALERT );
+    CHECK ( time == 42 );
+    if(rule) free (rule);
+    if(devices) free (devices);
+    if(description) free (description);
+}
+

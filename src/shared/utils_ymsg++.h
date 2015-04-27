@@ -22,7 +22,7 @@ Description: ymsg_t helper functions for c++
 */
 
 #ifndef SRC_SHARED_UTILS_YMSG_PLUSPLUS_H__
-#define SRC_SHARED_UTILS_YMSG_PLUSPLUSH__
+#define SRC_SHARED_UTILS_YMSG_PLUSPLUS_H__
 
 #include <string>
 #include "ymsg.h"

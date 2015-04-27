@@ -220,7 +220,10 @@ libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_ymsg.c \
 				src/shared/utils_ymsg.h \	
 				src/shared/utils_ymsg++.cc \
-				src/shared/utils_ymsg++.h
+				src/shared/utils_ymsg++.h \ 
+				src/shared/utils_app.c \
+				src/shared/utils_app.h
+			
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -268,7 +271,6 @@ libpriv_csv_la_SOURCES =	src/shared/csv.h \
 
 libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_src_dir)/src/msg
@@ -460,15 +462,12 @@ test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
 test_csv_LDADD = 		libpriv-log.la \
-						libpriv-db.la \
 						libpriv-csv.la \
-					    libpriv-test-run.la \
-					    libpriv-proto.la
+					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/shared \
-			-I$(abs_top_srcdir)/src/simple \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src/msg \
@@ -622,7 +621,6 @@ test_agents_SOURCES = \
 			tests/api/test-agents.cc
 
 test_agents_LDADD = \
-			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la \
@@ -638,7 +636,7 @@ test_agents_CPPFLAGS = \
 			-I$(abs_top_builddir)/tools
 
 test_agents_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS} -lbiosapi
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
@@ -1073,15 +1071,11 @@ bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
 bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
 
 
-systemdsystemunit_DATA = \
-			$(top_builddir)/bios-agent-nut.service \
-			$(top_builddir)/bios-driver-netmon.service \
-			$(top_builddir)/bios-db.service \
-			$(top_builddir)/bios-server-agent.service \
-			$(top_builddir)/bios-agent-inventory.service
+systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
 
-CLEANFILES += $(top_builddir)/bios-*.service
+CLEANFILES += $(systemdsystemunit_DATA)
 endif
+
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
 # Note that the basic filenames in these variables are relative to the
@@ -1726,7 +1720,7 @@ $(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git
 	@/bin/rm -f "$@.tmp" || true
 	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
 	  echo '#include <src/include/git_details_override.h>'; \
-	  grep '=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
+	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@if [ -s "$@.tmp" ]; then \
 	    if [ ! -s "$@" ]; then \
@@ -1772,7 +1766,7 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	      echo '#endif'; \
 	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
 	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
-	    grep '=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
 	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
 	 /bin/rm -f "$@.tmp"
 	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
