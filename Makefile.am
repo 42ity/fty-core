@@ -339,10 +339,10 @@ libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
 			src/agents/nmap/nmap-parse.cc
 
-noinst_LTLIBRARIES +=	libpriv-sendmail.la
-libpriv_sendmail_la_SOURCES = \
-			src/shared/sendmail.h \
-			src/shared/sendmail.cc
+noinst_LTLIBRARIES +=	libpriv-email.la
+libpriv_email_la_SOURCES = \
+			src/shared/email.h \
+			src/shared/email.cc
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -730,11 +730,11 @@ EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 bin_PROGRAMS += bios-email
 bios_email_SOURCES = \
-			src/shared/sendmail.h \
+			src/shared/email.h \
 			tests/shared/bios-email.cc
 bios_email_LDADD = \
 			libpriv-log.la \
-			libpriv-sendmail.la \
+			libpriv-email.la \
 			libpriv-subprocess.la 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
