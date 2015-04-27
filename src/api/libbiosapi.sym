@@ -115,21 +115,21 @@ global:
 		ymsg_get_int32;
 		ymsg_get_int64;
 
-        bios_netmon_decode;
+        bios_netmon_encode;
+        bios_netmon_extract;
         bios_inventory_decode;
         bios_inventory_encode;
         bios_measurement_decode;
         bios_measurement_encode;
-        bios_netmon_encode;
-
+        
         bios_web_average_request_encode;
-        bios_web_average_request_decode;
+        bios_web_average_request_extract;
         bios_web_average_reply_encode;
-        bios_web_average_reply_decode;
+        bios_web_average_reply_extract;
         bios_db_measurements_read_request_encode;
-        bios_db_measurements_read_request_decode;
+        bios_db_measurements_read_request_extract;
         bios_db_measurements_read_reply_encode;
-        bios_db_measurements_read_reply_decode;
+        bios_db_measurements_read_reply_extract;
 
         is_app;
         is_ymsg;

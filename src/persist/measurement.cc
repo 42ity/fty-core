@@ -11,6 +11,8 @@
 #include "log.h"
 #include "dbpath.h"
 #include "bios_agent.h"
+#include "agents.h"
+#include "utils_ymsg.h"
 
 namespace persist {
 
@@ -202,8 +204,9 @@ void get_measurements(ymsg_t* out, char** out_subj,
     std::string json;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
-        // NOTE: We must distinguish between requesting immediate data: then the interval is <)
-        //       and between requesting averages: then the interval is <> (i.e.: anything that falls within these...)
+        // NOTE for miska: az se tady budou vybirat i skutecne prumery, tak
+        // pro okamzita data plati timestamp < time_end
+        // ale pro prumery bude platut timestamp <= time_end
         tntdb::Statement st = conn.prepareCached(
             " SELECT topic, value, scale, UNIX_TIMESTAMP(timestamp), units "
             " FROM v_bios_measurement"
@@ -218,24 +221,25 @@ void get_measurements(ymsg_t* out, char** out_subj,
             " timestamp <  FROM_UNIXTIME(:time_end) "
             " ORDER BY timestamp ASC"
         );
-        std::string topic;
-        topic.assign (ymsg_get_string(in,"source")); //.append (".").append (ymsg_get_string(in,"type")).append ("_").append (ymsg_get_string(in,"step"));
+
+        int64_t start_ts = -1, end_ts = -1;
+        uint64_t element_id = 0;
+        char *source = NULL;
+
+        int rv = bios_db_measurements_read_request_extract (in, &start_ts, &end_ts, &element_id, &source);
+        if (rv != 0) {
+            throw std::invalid_argument ("bios_db_measurements_read_request_extract failed.");
+        }
+
+        std::string topic (source);
+        free (source); source = NULL;
         topic += "@%";
-        errno = 0;
 
-        st.set("id", ymsg_get_int64(in,"element_id"))
-          .set("topic", topic)
-          .set("time_st", ymsg_get_int64(in,"start_ts"))
-          .set("time_end", ymsg_get_int64(in,"end_ts"));
+        st.setUnsigned64("id", element_id).set("topic", topic).setInt64("time_st", start_ts).setInt64("time_end", end_ts);
+        log_debug("Got request regarding '%s' from %" PRId64 " till %" PRId64" for %" PRId64, topic.c_str(), start_ts, end_ts, element_id);
 
-        log_debug("Got request regarding '%s' from %" PRId64 " till %" PRId64
-                  " for %" PRId64,
-            topic.c_str(), ymsg_get_int64(in,"start_ts"),
-            ymsg_get_int64(in,"end_ts"),ymsg_get_int64(in,"element_id")
-        );
-        if(errno != 0)
-            throw std::invalid_argument("Message decoding error");
         tntdb::Result result = st.select();
+
         std::string units;
         for(auto &row: result) {
             if(!json.empty()) {
@@ -243,36 +247,37 @@ void get_measurements(ymsg_t* out, char** out_subj,
             }
             if(units.empty())
                 units = row[4].getString();
-//            int64_t comp_value = row[1].getInt32 () * std::pow (10, row[2].getInt32 ());
             json += " {";
             json += "   \"value\": " + std::to_string(row[1].getInt32 ()) +  ",";
             json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
             json += "   \"timestamp\": " + std::to_string(row[3].getInt64());
             json += " }";
         }
+
         json = "{ \"unit\": \"" + units + "\",\n" +
-        // TODO: Remove ugly fake data hack
-#undef UGLY_FAKE_DATA_HACK
-#ifdef UGLY_FAKE_DATA_HACK
-               "  \"source\":\"" + ymsg_get_string (in, "source")   + "\",\n" +
-               "  \"step\": \"" + ymsg_get_string (in, "step") + "\",\n" +
-               "  \"type\": \"" + ymsg_get_string (in, "type") + "\",\n" +
-#else
                "  \"source\": \"" + ymsg_get_string(in,"source") + "\",\n" +
-#endif
                "  \"element_id\": " + ymsg_get_string(in,"element_id") + ",\n" +
                "  \"start_ts\": " + ymsg_get_string(in,"start_ts") + ",\n" +
                "  \"end_ts\": " + ymsg_get_string(in,"end_ts") + ",\n" +
                "\"data\": [\n" + json + "\n] }";
+
+        zchunk_t *ch = zchunk_new (json.c_str (), json.length ());
+        if (!ch) {
+            throw std::invalid_argument ("zchunk_new failed.");
+        }
+        (*out_subj) = strdup("return_measurements");
+        ymsg_set_response (out, &ch);
+        ymsg_set_status (out, true);
+       
     } catch(const std::exception &e) {
         log_error("Run into '%s' while getting measurements", e.what());
+        ymsg_set_status (out, false);
+        ymsg_set_errmsg (out, e.what());
         return;
-    }
-    zchunk_t *ch = zchunk_new(json.c_str(), json.length());
-    if(ch != NULL) {
-        ymsg_set_response(out, &ch);
-        (*out_subj) = strdup("return_measurements");
-        ymsg_set_status (out, true);
+    } catch (...) {
+        log_error("unknown exception caught");
+        ymsg_set_status (out, false);
+        return;
     }
 }
 

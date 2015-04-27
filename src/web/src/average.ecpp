@@ -112,7 +112,15 @@
 
     // TODO: Replace with a real computation module
     ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
-    assert (msg);
+    if (msg == NULL) {
+</%cpp>
+        {
+            "msg" : "bios_web_average_request_encode() failed."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+
+    }
 
     agent.sendto (BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);    
     msg = agent.recv_wait (1000);
@@ -137,7 +145,7 @@
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-    int rv = bios_web_average_reply_decode (msg, &json);
+    int rv = bios_web_average_reply_extract (msg, &json);
     ymsg_destroy (&msg);
     if (rv != 0) {
 </%cpp>

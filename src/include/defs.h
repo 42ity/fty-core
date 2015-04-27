@@ -57,12 +57,13 @@ enum internal_err {
 
 //! netmon (rtnetlink(7)) events 
 enum network_event {
-    AUTO_ADD,
-    AUTO_DEL,
-    MAN_ADD,
-    MAN_DEL,
-    EXCL_ADD,
-    EXCL_DEL
+    NETWORK_EVENT_AUTO_ADD,
+    NETWORK_EVENT_AUTO_DEL,
+    NETWORK_EVENT_MAN_ADD,
+    NETWORK_EVENT_MAN_DEL,
+    NETWORK_EVENT_EXCL_ADD,
+    NETWORK_EVENT_EXCL_DEL,
+    NETWORK_EVENT_TERMINATOR
 };
 
 //! ip address version

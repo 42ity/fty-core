@@ -79,6 +79,12 @@ int64_t my_timegm (struct tm *tm);
 // Macros
 #define STR(X) #X
 
+#define FREE0(X) \
+    if (X) { \
+        free (X); \
+        X = NULL; \
+    }
+
 #ifdef __cplusplus
 }
 #endif
