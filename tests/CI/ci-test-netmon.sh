@@ -42,19 +42,21 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
-if [ -f "$LOCKFILE" ]; then
-    die "Script already running. Aborting."
-fi
-
 ### Section: actual steps being performed
 function cleanup {
+    set +e
     killall malamute
     killall dshell lt-dshell
     killall -9 netmon lt-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
 }
 
-touch "$LOCKFILE"
+if [ -f "$LOCKFILE" ]; then
+    ls -la "$LOCKFILE" >&2
+    die "Script already running. Aborting."
+fi
+
+echo $$ > "$LOCKFILE"
 trap cleanup EXIT SIGINT SIGQUIT SIGTERM
 
 

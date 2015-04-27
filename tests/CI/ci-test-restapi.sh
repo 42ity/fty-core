@@ -31,7 +31,19 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$BIOS_PORT" ] && BIOS_PORT="8000"
+[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
+
+# Set up weblib test engine preference defaults for automated CI tests
+[ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
+    WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="fatal"
+[ -z "$WEBLIB_QUICKFAIL" ] && \
+    WEBLIB_QUICKFAIL=no
+[ -z "$WEBLIB_CURLFAIL" ] && \
+    WEBLIB_CURLFAIL=no
+[ -z "$SKIP_NONSH_TESTS" ] && \
+    SKIP_NONSH_TESTS=yes
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_NONSH_TESTS
 
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
@@ -80,7 +92,7 @@ set -u
 set -e
 
 test_web_port() {
-    netstat -tan | grep -w "${BIOS_PORT}" | egrep 'LISTEN' >/dev/null
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
 }
 
 test_web_process() {
@@ -104,7 +116,7 @@ wait_for_web() {
             return 0
         fi
     done
-    logmsg_error "Port ${BIOS_PORT} still not in LISTEN state" >&2
+    logmsg_error "Port ${SUT_WEB_PORT} still not in LISTEN state" >&2
     return 1
 }
 
@@ -138,7 +150,7 @@ kill_daemons() {
   killall -9 tntnet lt-db-ng db-ng 2>/dev/null || true
   sleep 1
   test_web_port && \
-    die "Port ${BIOS_PORT} is in LISTEN state when it should be free"
+    die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
 
   # make sure sasl is running
   if ! $RUNAS systemctl --quiet is-active saslauthd; then
@@ -178,7 +190,10 @@ kill_daemons() {
   export BIOS_USER BIOS_PASSWD LC_ALL LANG
   logmsg_info "Ensuring files for web-test exist and are up-to-date..."
 
-  [ -x "${BUILDSUBDIR}/configure.status" ] || ./autogen.sh ${AUTOGEN_ACTION_CONFIG} || exit
+  if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
+    logmsg_warn "Did not detect ${BUILDSUBDIR}/config.status, so will try to configure the project first, now..."
+    ./autogen.sh ${AUTOGEN_ACTION_CONFIG} || exit
+  fi
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
 
   logmsg_info "Spawning the web-server in the background..."
@@ -208,11 +223,6 @@ test_web() {
     RESULT=$?
     echo "============================================================"
     return $RESULT
-}
-
-loaddb_file() {
-    mysql -u root < "$1" > /dev/null || \
-        CODE=$? die "Could not load $1"
 }
 
 loaddb_default() {
@@ -284,9 +294,9 @@ fi
 loaddb_default
 
 # cleanup
-kill $MAKEPID >/dev/null 2>&1
+kill $MAKEPID >/dev/null 2>&1 || true
 sleep 2
-killall tntnet >/dev/null 2>&1
+killall tntnet >/dev/null 2>&1 || true
 sleep 2
 
 if [ "$RESULT" = 0 ]; then
