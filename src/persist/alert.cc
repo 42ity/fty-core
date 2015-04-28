@@ -135,7 +135,7 @@ db_reply_t
 //=============================================================================
 
 db_reply_t
-    update_alert_notification 
+    update_alert_notification_byId 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
          m_alrt_id_t         id)
@@ -673,6 +673,178 @@ db_reply <std::vector<m_dvc_id_t>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
+    LOG_END;
+    return ret;
+}
+
+//=============================================================================
+db_reply <db_alert_t>
+    select_alert_last_byRuleName
+        (tntdb::Connection &conn,
+         const char *rule_name)
+{   
+    LOG_START;
+    std::vector<m_dvc_id_t> dvc_ids{}; 
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+
+    db_reply<db_alert_t> ret = db_reply_new(m);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "   v.id, v.rule_name, v.priority, v.state,"
+                "   v.descriprion, v.notification,"
+                "   UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+                " FROM"
+                "   v_bios_alert v"
+                " INNER JOIN"
+                "       (SELECT"
+                "          rule_name, max(dateFrom) AS date_max"
+                "        FROM"
+                "          v_bios_alert v"
+                "        GROUP BY (rule_name)"
+                "       ) v1"
+                " WHERE v.rule_name = :rule AND"
+                "   v.rule_name = v1.rule_name AND"
+                "   v.date_from = v2.date_max"
+        );
+        tntdb::Row res = st.set("rule", rule_name).
+                            selectRow();
+        
+        log_debug ("[t_bios_alert]: was %u rows selected", 1);
+
+        res[0].get(m.id);
+        res[1].get(m.rule_name);
+        res[2].get(m.priority);
+        res[3].get(m.alert_state);
+        res[4].get(m.description);
+        res[5].get(m.notification);
+        res[6].get(m.date_from);
+        res[7].get(m.date_till);
+            
+        auto reply_internal = select_alert_devices (conn, m.id);
+        if ( reply_internal.status == 0 )
+        {
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
+            ret.msg        = "error in device selecting";
+            log_error ("end: %s, %s", "ignore select", ret.msg);
+            return ret;
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch(const tntdb::NotFound &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+db_reply <db_alert_t>
+    select_alert_byRuleNameDateFrom
+        (tntdb::Connection &conn,
+         const char *rule_name,
+         int64_t     date_from)
+{   
+    LOG_START;
+    std::vector<m_dvc_id_t> dvc_ids{}; 
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+
+    db_reply<db_alert_t> ret = db_reply_new(m);
+
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "   v.id, v.rule_name, v.priority, v.state,"
+                "   v.descriprion, v.notification,"
+                "   UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+                " FROM"
+                "   v_bios_alert v"
+                " WHERE v.rule_name = :rule AND"
+                "   v.date_from = FROM_UNIXTIME(:date)"
+        );
+        tntdb::Row res = st.set("rule", rule_name).
+                            set("date", date_from).
+                            selectRow();
+        
+        log_debug ("[t_bios_alert]: was %u rows selected", 1);
+
+        res[0].get(m.id);
+        res[1].get(m.rule_name);
+        res[2].get(m.priority);
+        res[3].get(m.alert_state);
+        res[4].get(m.description);
+        res[5].get(m.notification);
+        res[6].get(m.date_from);
+        res[7].get(m.date_till);
+            
+        auto reply_internal = select_alert_devices (conn, m.id);
+        if ( reply_internal.status == 0 )
+        {
+            ret.status     = 0;
+            ret.errtype    = DB_ERR;
+            ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
+            ret.msg        = "error in device selecting";
+            log_error ("end: %s, %s", "ignore select", ret.msg);
+            return ret;
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch(const tntdb::NotFound &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+db_reply_t
+    update_alert_notification 
+        (tntdb::Connection  &conn,
+         m_alrt_ntfctn_t     notification,
+         const char *rule_name,
+         int64_t     date_from)
+{
+    LOG_START;
+    db_reply_t ret = db_reply_new();
+    auto alert = select_alert_byRuleNameDateFrom
+        (conn, rule_name, date_from);
+    if ( alert.status == 0 )
+    {
+        ret.status     = alert.status;
+        ret.errtype    = alert.errtype;
+        ret.errsubtype = alert.errsubtype;
+        ret.msg        = alert.msg;
+        log_info ("end: can't find requested alert");
+        return ret;
+    }
+    auto ret = update_alert_notification(conn, alert.item.id);
     LOG_END;
     return ret;
 }
