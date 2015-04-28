@@ -44,6 +44,7 @@ usage() {
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+    echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
 }
 
@@ -61,6 +62,8 @@ VM="latest"
 [ -z "$LC_ALL" ] && LC_ALL=C
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
+
+[ -z "$STOPONLY" ] && STOPONLY=no
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -84,6 +87,10 @@ while [ $# -gt 0 ] ; do
 	-ap|--apt-proxy)
 	    [ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
 	    shift 2
+	    ;;
+	--stop-only)
+	    STOPONLY=yes
+	    shift
 	    ;;
 	-h|--help)
 	    usage
@@ -155,7 +162,10 @@ virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
 sleep 5
 
 # Destroy the overlay-rw half of the old running container, if any
-[ -d "../overlays/${IMAGE}__${VM}" ] && rm -rf "../overlays/${IMAGE}__${VM}"
+[ -d "../overlays/${IMAGE}__${VM}" ] && \
+	echo "INFO: Removing RW directory of the stopped VM:" \
+		"'../overlays/${IMAGE}__${VM}'" && \
+	rm -rf "../overlays/${IMAGE}__${VM}"
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
 for D in ../overlays/*__${VM}/ ; do
@@ -181,24 +191,31 @@ for D in ../rootfs/*-ro/ ; do
 	fi
 done
 
-# Mount squashfs
-if [ "$OVERLAYFS" = yes ]; then
-	mkdir -p "../overlays/${IMAGE}__${VM}"
-	mkdir -p "../rootfs/$IMAGE-ro"
-	umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
-	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || \
-		die "Can't mount squashfs"
-fi
-
 # Cleanup of the rootfs
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
+umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
+
 # clean up VM space
 /bin/rm -rf "../rootfs/$VM"
+
+if [ x"$STOPONLY" = xyes ]; then
+	echo "INFO: STOPONLY was requested, so ending '$0 $@' now" >&2
+	exit 0
+fi
+
 mkdir -p "../rootfs/$VM"
-# Mount rw image
+# Mount RO squashfs
+if [ "$OVERLAYFS" = yes ]; then
+	mkdir -p "../overlays/${IMAGE}__${VM}"
+	mkdir -p "../rootfs/$IMAGE-ro"
+	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || \
+		die "Can't mount squashfs"
+fi
+
+# Mount RW image
 if [ "$OVERLAYFS" = yes ]; then
 	mount -t overlayfs \
 	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/${IMAGE}__${VM}" \
