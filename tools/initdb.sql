@@ -80,7 +80,7 @@ CREATE TABLE t_bios_alert(
     date_from   DATETIME         NOT NULL,
     priority    TINYINT UNSIGNED NOT NULL,
     state       TINYINT UNSIGNED NOT NULL,
-    descriprion VARCHAR(255),
+    description VARCHAR(255),
     date_till    DATETIME,
     notification TINYINT         NOT NULL DEFAULT 0,
 
@@ -414,7 +414,7 @@ CREATE VIEW v_bios_alert AS
         date_from,
         priority,
         state,
-        descriprion,
+        description,
         date_till,
         notification
     FROM
