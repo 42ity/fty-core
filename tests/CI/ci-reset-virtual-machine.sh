@@ -158,10 +158,27 @@ sleep 5
 [ -d "../overlays/${IMAGE}__${VM}" ] && rm -rf "../overlays/${IMAGE}__${VM}"
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
-for D in ../overlays/*__${VM} ; do
+for D in ../overlays/*__${VM}/ ; do
 	[ -d "$D" ] && echo "WARN: Obsolete RW directory for this VM was found," \
-		"removing '`pwd`/../overlays/${IMAGE}__${VM}'..." >&2 && \
+		"removing '`pwd`/$D'..." >&2 && \
 		{ ls -lad "$D"; rm -rf "$D"; }
+done
+for D in ../rootfs/*-ro/ ; do
+	# Do not touch the current IMAGE mountpoint if we reuse it
+	[ x"$D" = x"../rootfs/$IMAGE-ro/" ] && continue
+	if [ -d "$D" ] && [ x"`cd $D && find .`" = x ]; then
+		# This is a directory, and it is empty
+		FD="`cd "$D" && pwd`" && \
+		    [ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+		    echo "INFO: Old RO mountpoint '$D' seems still used" >&2 && \
+		    continue
+
+		echo "WARN: Obsolete RO mountpoint for this IMAGE was found," \
+		    "removing '`pwd`/$D'..." >&2
+		ls -la "$D"
+		umount -fl "$D" 2> /dev/null > /dev/null
+		rm -rf "$D"
+	fi
 done
 
 # Mount squashfs
