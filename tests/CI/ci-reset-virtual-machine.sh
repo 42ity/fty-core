@@ -31,7 +31,7 @@
 
 # NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
 die() {
-	echo "$1"
+	echo "$1" >&2
 	exit 1
 }
 
@@ -64,10 +64,10 @@ export LANG LANGUAGE LC_ALL TZ
 
 while [ $# -gt 0 ] ; do
     case "$1" in
-        -m|--machine)
-            VM="$2"
-            shift 2
-            ;;
+	-m|--machine)
+	    VM="$2"
+	    shift 2
+	    ;;
 	-b|--baseline)
 	    IMGTYPE="$2"
 	    shift 2
@@ -85,15 +85,15 @@ while [ $# -gt 0 ] ; do
 	    [ -z "$2" ] && APT_PROXY="-" || APT_PROXY="$2"
 	    shift 2
 	    ;;
-        -h|--help)
-            usage
-            exit 1
-            ;;
-        *)
-            echo "Invalid switch $1"
-            usage
-            exit 1
-            ;;
+	-h|--help)
+	    usage
+	    exit 1
+	    ;;
+	*)
+	    echo "Invalid switch $1"
+	    usage
+	    exit 1
+	    ;;
     esac
 done
 
@@ -114,28 +114,32 @@ fi
 [ x"$APT_PROXY" = x- ] && APT_PROXY=""
 [ x"$http_proxy" = x- ] && http_proxy="" && export http_proxy
 
-# Make sure we have a loop
+# Make sure we have a loop device support
 modprobe loop # TODO: die on failure?
 
 # Do we have overlayfs in kernel?
 if \
-        [ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
-        grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
+	[ "`gzip -cd /proc/config.gz 2>/dev/null | grep OVERLAY`" ] || \
+	grep OVERLAY "/boot/config-`uname -r`" >/dev/null 2>/dev/null  \
 ; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
-        echo "Detected support of OVERLAYFS on the `hostname` host," \
-            "will mount a .$EXT file as an RO base and overlay the RW changes"
+	echo "Detected support of OVERLAYFS on the `hostname` host," \
+	    "will mount a .$EXT file as an RO base and overlay the RW changes"
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
-        echo "Detected no support of OVERLAYFS on the `hostname` host," \
-            "will unpack a .$EXT file into a dedicated full RW directory"
+	echo "Detected no support of OVERLAYFS on the `hostname` host," \
+	    "will unpack a .$EXT file into a dedicated full RW directory"
 fi
 
-# Get latest image for us
+# Note: several hardcoded paths are expected relative to this one,
+# so it is critical that we succeed changing into this directory.
 mkdir -p /srv/libvirt/snapshots
-cd /srv/libvirt/snapshots
+cd /srv/libvirt/snapshots || \
+	die "FATAL: Can not 'cd /srv/libvirt/snapshots' to download image files"
+
+# Get latest image for us
 ARCH="`uname -m`"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 wget -c "$IMAGE_URL"
@@ -149,14 +153,24 @@ fi
 virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
 # may be wait for slow box
 sleep 5
-rm -rf "../overlays/$IMAGE"
+
+# Destroy the overlay-rw half of the old running container, if any
+[ -d "../overlays/${IMAGE}__${VM}" ] && rm -rf "../overlays/${IMAGE}__${VM}"
+
+# When the host gets ungracefully rebooted, useless old dirs may remain...
+for D in ../overlays/*__${VM} ; do
+	[ -d "$D" ] && echo "WARN: Obsolete RW directory for this VM was found," \
+		"removing '`pwd`/../overlays/${IMAGE}__${VM}'..." >&2 && \
+		{ ls -lad "$D"; rm -rf "$D"; }
+done
 
 # Mount squashfs
-mkdir -p "../overlays/$IMAGE"
 if [ "$OVERLAYFS" = yes ]; then
+	mkdir -p "../overlays/${IMAGE}__${VM}"
 	mkdir -p "../rootfs/$IMAGE-ro"
 	umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
-	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || die "Can't mount squashfs"
+	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || \
+		die "Can't mount squashfs"
 fi
 
 # Cleanup of the rootfs
@@ -170,20 +184,20 @@ mkdir -p "../rootfs/$VM"
 # Mount rw image
 if [ "$OVERLAYFS" = yes ]; then
 	mount -t overlayfs \
-	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/$IMAGE" \
+	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/${IMAGE}__${VM}" \
 	    overlayfs "../rootfs/$VM" 2> /dev/null \
-	|| die "Can't mount rw directory"
+	|| die "Can't overlay-mount rw directory"
 else
-	mkdir -p "../rootfs/$VM"
-	tar -C "../rootfs/$VM" -xzf "$IMAGE"
+	tar -C "../rootfs/$VM" -xzf "$IMAGE" \
+	|| die "Can't un-tar the rw directory"
 fi
 
-# Bind mount modules
+# Bind-mount kernel modules from the host OS
 mkdir -p "../rootfs/$VM/lib/modules"
 mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
-# copy root's ~/.ssh
+# copy root's ~/.ssh from the host OS
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
@@ -195,11 +209,11 @@ cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
 
-# add xterm terminfo
+# add xterm terminfo from the host OS
 mkdir -p ../rootfs/$VM/lib/terminfo/x
 cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
 
-# copy enviroment settings
+# copy enviroment settings from the host OS
 cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
 
 # put hostname in resolv.conf
