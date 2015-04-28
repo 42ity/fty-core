@@ -20,19 +20,26 @@ std::string Measurement::topic() const
 
 void Measurement::set( const ymsg_t *message )
 {
+    clear();
+    
+    if( ! message ) return;
+    
+    char *device_name = NULL;
+    char *source = NULL;
+    char *units = NULL;
     ymsg_t *copy = ymsg_dup( (ymsg_t *)message );
-    char *device_name;
-    char *source;
-    char *units;
+    if( ! copy ) return;
 
+    // TODO: use extract, get rid of copy
     if( bios_measurement_decode(&copy, &device_name, &source, &units, &_value, &_scale, &_time ) == 0 ) {
         _device_name = device_name;
         _source = source;
         _units = units;
         if( _time <= 0 ) _time = std::time(NULL);
-    } else {
-        clear();
     }
+    if( device_name ) free( device_name );
+    if( source ) free( source );
+    if( units ) free( units );
     ymsg_destroy(&copy);
 }
 
@@ -47,7 +54,7 @@ void Measurement::clear()
     
 }
 
-void Measurement::print()
+void Measurement::print() const
 {
     std::cout <<
         "device: " << _device_name << "\n"

@@ -43,19 +43,26 @@ class Alert {
  public:
     alert_state_t state() const;
     void state(alert_state_t newState);
-    std::string name();
-    void name(const char *text);
-    void name(const std::string &text);
-    std::string ruleName();
-    bool persistenceInformed();
-    void persistenceInformed(bool informed);
-    std::string devices();
-    std::string description();
-    void description(const char* name);
-    void description(const std::string &name);
-    alert_priority_t priority();
-    void priority(alert_priority_t priority);
-    time_t since();
+
+    std::string name() const { return _name; };
+    void name(const char *text) { _name = text; };
+    void name(const std::string &text) { _name = text; };
+    
+    std::string ruleName() const  { return _name + "@" + _devices; };
+    
+    bool persistenceInformed() const { return _persistenceInformed; };
+    void persistenceInformed(bool informed) { _persistenceInformed = informed; };
+    
+    std::string devices() const { return _devices; }
+
+    std::string description() const { return _description; }
+    void description(const char* text) { _description = text; }
+    void description(const std::string &text) { _description = text; }
+
+    alert_priority_t priority() const { return _priority; }
+    void priority(alert_priority_t priority) { _priority = priority; }
+
+    time_t since() const;
     bool timeToPublish() const;
     void published();
     void setEvaluateFunction( alert_evaluate_function_t func );

@@ -874,7 +874,8 @@ agent_alert_SOURCES = \
                         src/agents/alert/alert-agent.cc \
                         src/agents/alert/alert-model.cc \
                         src/shared/utils_app.c \
-                        src/shared/utils_ymsg.c
+                        src/shared/utils_ymsg.c \
+                        src/include/str_defs.c
 
 agent_alert_LDADD = \
                         libpriv-log.la \

@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 #include <tntdb/error.h>
 #include <tntdb/transaction.h>
+#include <cxxtools/split.h>
 
 #include "log.h"
 #include "defs.h"
@@ -683,17 +684,6 @@ db_reply <std::vector<m_dvc_id_t>>
 }
 
 //=============================================================================
-std::vector< std::string > split_string_to_vector( const char *s, char delim )
-{
-    std::vector< std::string > elems;
-    if( !s ) return elems;
-    std::stringstream ss(s);
-    std::string item;
-    while (std::getline(ss, item, delim)) {
-        elems.push_back(item);
-    }
-    return elems;
-}
 
 void process_alert(ymsg_t* out, char** out_subj,
                    ymsg_t* in, const char* in_subj)
@@ -720,7 +710,8 @@ void process_alert(ymsg_t* out, char** out_subj,
         LOG_END;
         return;
     }
-    std::vector<std::string> devices_v = split_string_to_vector(devices,',');
+    std::vector<std::string> devices_v;
+    cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
     tntdb::Connection conn;
     try{        
         conn = tntdb::connect(url);

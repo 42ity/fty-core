@@ -25,28 +25,11 @@ void Alert::state(alert_state_t newState)
     }
 }
 
-time_t Alert::since()
+time_t Alert::since() const
 {
     if( _state == ALERT_STATE_UNKNOWN ) return time_t(0);
     return _since;
 }
-
-std::string Alert::name() { return _name; }
-void Alert::name(const char *name) { _name = name; }
-void Alert::name(const std::string &name) { _name = name; }
-
-bool Alert::persistenceInformed() { return _persistenceInformed; }
-void Alert::persistenceInformed(bool informed) { _persistenceInformed = informed; }
-
-std::string Alert::devices() { return _devices; }
-std::string Alert::ruleName() { return _name + "@" + _devices; }
-
-std::string Alert::description() { return _description; }
-void Alert::description(const char* text) { _description = text; }
-void Alert::description(const std::string &text) { _description = text; }
-
-alert_priority_t Alert::priority() { return _priority; }
-void Alert::priority(alert_priority_t priority) { _priority = priority; }
 
 bool Alert::timeToPublish() const
 {
@@ -89,8 +72,8 @@ void Alert::addTopic( const std::string topic )
     size_t pos = topic.find("@");
     if( pos != std::string::npos ) {
         std::string device = topic.substr( pos + 1 );
-        if( device.length() ) {
-            if( _devices.length() ) _devices += ",";
+        if( ! device.empty() ) {
+            if( ! _devices.empty() ) _devices += ",";
             _devices += device;
         }
     }

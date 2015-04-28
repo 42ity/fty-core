@@ -60,7 +60,7 @@ class Measurement {
     int32_t value() const { return _value; };
     int32_t scale() const { return _scale; };
     int64_t time() const { return _time; };
-    void print();
+    void print() const;
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
  protected:
     std::string _topic;

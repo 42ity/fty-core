@@ -31,17 +31,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 class AlertModel {
  public:
-    bool isMeasurementInteresting( const Measurement &measurement );
+    bool isMeasurementInteresting( const Measurement &measurement ) const;
     void newMeasurement( const ymsg_t *message );
     void newMeasurement( const Measurement &Measurement );
     void addAlert( const Alert alert );
-    void print();
-    Alert *alertByRule(std::string ruleName);
-    //std::vector<Alert>::iterator & alertByRule(std::string ruleName);
-    std::vector<Alert> &alerts();
+    void print() const;
+
+    std::map<std::string, Alert>::iterator alertByRule(std::string ruleName);
+    std::map<std::string, Alert>::iterator begin();
+    std::map<std::string, Alert>::iterator end();
  protected:
     std::map< std::string, Measurement > _last_measurements;
-    std::vector<Alert> _alerts;
+    std::map<std::string, Alert> _alerts;
 };
 
 #endif // SRC_AGENTS_ALERT_ALERT_MODEL_H__

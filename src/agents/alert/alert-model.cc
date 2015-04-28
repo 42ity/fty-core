@@ -55,7 +55,7 @@ alert_state_t evaluate_on_bypass_alert(
 
 /* --------------------------- AlertModel --------------------------- */
 
-bool  AlertModel::isMeasurementInteresting( const Measurement &measurement )
+bool  AlertModel::isMeasurementInteresting( const Measurement &measurement ) const
 {
     return ( measurement.source() == "status.ups" );
 }
@@ -78,7 +78,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 A.addTopic( measurement.topic() );
                 A.setEvaluateFunction( evaluate_on_battery_alert );
                 A.description("UPS is running on battery!");
-                _alerts.push_back(A);
+                _alerts[A.ruleName()] = A;
                 
                 Alert B;
                 B.name("upslowbattery");
@@ -86,7 +86,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 B.addTopic( measurement.topic() );
                 B.setEvaluateFunction( evaluate_low_battery_alert );
                 B.description("Low battery!");
-                _alerts.push_back(B);
+                _alerts[B.ruleName()] = B;
 
                 Alert C;
                 C.name("upsonbypass");
@@ -94,17 +94,17 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 C.addTopic( measurement.topic() );
                 C.setEvaluateFunction( evaluate_on_bypass_alert );
                 C.description("UPS is on bypass!");
-                _alerts.push_back(C);
+                _alerts[C.ruleName()] = C;
             }
         }
         _last_measurements[ measurement.topic() ] = measurement;
         for( auto &it: _alerts ) {
-            it.evaluate( _last_measurements );
+            it.second.evaluate( _last_measurements );
         }
     }
 }
 
-void AlertModel::print()
+void AlertModel::print() const
 {
     for( auto &it: _last_measurements ) {
         std::cout << "\n" << it.first << "\n";
@@ -112,16 +112,17 @@ void AlertModel::print()
     }
 }
 
-Alert *AlertModel::alertByRule(std::string ruleName)
+std::map<std::string, Alert>::iterator AlertModel::alertByRule(std::string ruleName)
 {
-    for( auto &it: _alerts ) {
-        if( it.ruleName() == ruleName ) {
-            return &(it);
-        }
-    }
-    return NULL;
+    return _alerts.find(ruleName);
 }
 
-std::vector<Alert> &AlertModel::alerts() {
-    return _alerts;
+std::map<std::string, Alert>::iterator AlertModel::end()
+{
+    return _alerts.end();
+}
+
+std::map<std::string, Alert>::iterator AlertModel::begin()
+{
+    return _alerts.begin();
 }
