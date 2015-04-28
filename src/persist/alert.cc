@@ -95,7 +95,7 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
             "   t_bios_alert"
-            "   (rule_name, priority, state, descriprion,"
+            "   (rule_name, priority, state, description,"
             "   notification, date_from)"
             " SELECT"
             "    :rule, :priority, :state, :desc, :note, FROM_UNIXTIME(:from)"
@@ -552,7 +552,7 @@ db_reply_t
 static const std::string  sel_alarm_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
-    "    v.descriprion, v.notification,"
+    "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
     " FROM"
     "   v_bios_alert v"
@@ -561,7 +561,7 @@ static const std::string  sel_alarm_opened_QUERY =
 static const std::string  sel_alarm_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
-    "    v.descriprion, v.notification,"
+    "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
     " FROM"
     "   v_bios_alert v"
