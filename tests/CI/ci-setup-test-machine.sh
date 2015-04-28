@@ -45,12 +45,16 @@ update_system() {
         texlive-latex-recommended-doc \
         texlive-pictures-doc \
         texlive-pstricks-doc \
-    ; do echo "$P  purge"; done | dpkg --set-selections
+    ; do
+        apt-mark hold "$P" >&2
+        echo "$P  purge"
+    done | dpkg --set-selections
     apt-get -f -y --force-yes --fix-missing install
     apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck msmtp
     mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
     # and just to be sure about these space-hungry beasts
     apt-get remove --purge \
+        docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc texlive-latex-base-doc texlive-latex-extra-doc \
         texlive-latex-recommended-doc texlive-pictures-doc texlive-pstricks-doc
 }
