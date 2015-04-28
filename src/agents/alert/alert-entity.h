@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Tomas Halman <tomashalman@eaton.com>
 */
  
-#ifndef SRC_AGENTS_ALERT_ALERT_H__
-#define SRC_AGENTS_ALERT_ALERT_H__
+#ifndef SRC_AGENTS_ALERT_ALERT_ENTITY_H__
+#define SRC_AGENTS_ALERT_ALERT_ENTITY_H__
 
 #include <string>
 #include <map>
@@ -86,4 +86,4 @@ class Alert {
     std::vector<std::string> _measurementTopics; // list of topics/inputs
 };
 
-#endif // SRC_AGENTS_ALERT_ALERT_H__
+#endif // SRC_AGENTS_ALERT_ALERT_ENTITY_H__

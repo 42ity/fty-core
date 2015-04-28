@@ -4,7 +4,6 @@
 #include <iostream>
 
 #include "upsstatus.h"
-#include "alert.h"
 
 /* --------------------------- evaluating functions --------------------------- */
 

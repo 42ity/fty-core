@@ -883,7 +883,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
-                        src/agents/alert/alert.cc \
+                        src/agents/alert/alert-entity.cc \
                         src/agents/alert/alert-measurement.cc \
                         src/agents/alert/alert-agent.cc \
                         src/agents/alert/alert-model.cc \
