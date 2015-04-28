@@ -201,10 +201,13 @@ mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
+mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
 [ -n "$APT_PROXY" ] && \
-    echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
-	"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
+		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+echo 'APT::Install-Recommends "false";' > \
+	"../rootfs/$VM/etc/apt/apt.conf.d/02no-recommends"
 
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
@@ -218,6 +221,23 @@ cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
 
 # put hostname in resolv.conf
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
+
+# try to influence dpkg
+# see also "dpkg --set-selections" in ci-setup-test-machine.sh
+mkdir -p ../rootfs/$VM/etc/dpkg/dpkg.cfg.d
+echo '# avoid installation of docs packages except ours
+path-exclude=/usr/share/doc/*
+path-include=/usr/share/doc/bios*
+path-include=/usr/share/doc/core*
+# we need to keep copyright files for legal reasons
+path-include=/usr/share/doc/*/copyright
+# manpages can stay, we install a few ourselves
+path-exclude=/usr/share/groff/*
+path-exclude=/usr/share/info/*
+# lintian stuff is small, but really unnecessary
+path-exclude=/usr/share/lintian/*
+path-exclude=/usr/share/linda/*
+' >> ../rootfs/$VM/etc/dpkg/dpkg.cfg.d/excludes
 
 # Start the virtual machine
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
