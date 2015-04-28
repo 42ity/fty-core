@@ -49,6 +49,10 @@ update_system() {
     apt-get -f -y --force-yes --fix-missing install
     apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck msmtp
     mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
+    # and just to be sure about these space-hungry beasts
+    apt-get remove --purge \
+        texlive-fonts-recommended-doc texlive-latex-base-doc texlive-latex-extra-doc \
+        texlive-latex-recommended-doc texlive-pictures-doc texlive-pstricks-doc
 }
 
 update_system
