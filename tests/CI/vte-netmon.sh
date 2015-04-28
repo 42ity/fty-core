@@ -163,12 +163,12 @@ sleep 2
 
 # ***** CREATE SOME CHANGES IN THE NETWORK TOPOLOGY *****
     # *** These actions have to be reflected in DSH_FILE_REMOTE for this test to succeed." ***
-sut_run "sudo ip addr add 101.25.138.2 dev lo"
+sut_run "sudo ip addr add 101.25.138.2 dev lo 2>/dev/null"
 sut_run "sudo ip addr add 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr add 20.13.5.4/32 dev lo"
 
 # Reverting back
-sut_run "sudo ip addr del 101.25.138.2 dev lo"
+sut_run "sudo ip addr del 101.25.138.2 dev lo 2>/dev/null"
 sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
