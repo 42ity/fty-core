@@ -54,6 +54,9 @@ tntdb::Connection conn = tntdb::connectCached(url);
         cnt ++;
         char t1[64];
         restapitime(i.date_from, t1, 64);
+        auto element_id = 0;
+        if (!i.device_ids.empty())
+            element_id = i.device_ids[0];
         auto element_name = i.rule_name;
         auto idx = element_name.find('@');
         if (idx != std::string::npos) {
@@ -66,7 +69,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
         "source_ts" : "<$ t1 $>",
         "application_name" : "ALERT",
         "rule_name" : "<$ i.rule_name $>",
-        "element_id" : "22",
+        "element_id" : "<$ element_id $>",
         "element_name" : "<$ element_name $>",
         "severity" : "critical",
         "priority" : "<$ sprio $>",
