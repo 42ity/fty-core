@@ -73,7 +73,7 @@ class BIOSAgent {
             if( zsys_interrupted ) break;
             if(which) {
                 ymsg_t *message = recv( );
-                if( message ){
+                if( message ) {
                     switch( ymsg_id(message) ) {
                     case YMSG_REPLY:
                         onReply( &message );
