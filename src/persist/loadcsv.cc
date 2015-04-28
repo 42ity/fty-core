@@ -362,8 +362,8 @@ static void
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
     
-    if ( type == group )
-        zhash_insert (extattributes, "type", (void*) subtype.c_str() );
+    if ( type == "group" )
+        zhash_insert (extattributes, "sub_type", (void*) subtype.c_str() );
 
     if ( type != "device" )
     {
