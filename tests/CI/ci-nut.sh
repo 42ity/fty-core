@@ -43,9 +43,9 @@ PARAMS=("output.current" "output.voltage" "ups.load" "ups.temperature" "outlet.1
 
 #
 # random samples
-# number of columns must be equal to number of $PARAMS
-# in lines values must be differ at leas of 5% otherways
-# the change is not propagetad.
+# number of columns must be equal to number of $PARAMS;
+# in lines the values must differ by at least 5% otherwise
+# the change is not propagated.
 #
 SAMPLES=(
   6 250 42 80  201 203 OB
