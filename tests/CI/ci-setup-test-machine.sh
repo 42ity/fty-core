@@ -50,7 +50,8 @@ update_system() {
         echo "$P  purge"
     done | dpkg --set-selections
     apt-get -f -y --force-yes --fix-missing install
-    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck msmtp
+    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb \
+        cppcheck msmtp libtool
     mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
     # and just to be sure about these space-hungry beasts
     apt-get remove --purge \
