@@ -35,6 +35,17 @@ update_system() {
     # curl http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
     apt-get clean all
     apt-get update
+    # try to deny installation of some hugely useless packages
+    # tex-docs for example are huge (850Mb) and useless on a test container
+    for P in \
+        docutils-doc libssl-doc python-docutils \
+        texlive-fonts-recommended-doc \
+        texlive-latex-base-doc \
+        texlive-latex-extra-doc \
+        texlive-latex-recommended-doc \
+        texlive-pictures-doc \
+        texlive-pstricks-doc \
+    ; do echo "$P  purge"; done | dpkg --set-selections
     apt-get -f -y --force-yes --fix-missing install
     apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb cppcheck msmtp
     mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
