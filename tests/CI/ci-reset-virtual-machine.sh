@@ -240,8 +240,8 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 [ -n "$APT_PROXY" ] && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
-echo 'APT::Install-Recommends "false";' > \
-	"../rootfs/$VM/etc/apt/apt.conf.d/02no-recommends"
+#echo 'APT::Install-Recommends "false";' > \
+#	"../rootfs/$VM/etc/apt/apt.conf.d/02no-recommends"
 
 # setup virtual hostname
 echo "$VM" > "../rootfs/$VM/etc/hostname"
