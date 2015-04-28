@@ -119,7 +119,7 @@ class SubProcess {
         
         //! \brief get the pipe ends connected to stderr of started program, or -1 if not started
         int getStderr() const { return _errpair[0]; }
-        
+
         //! \brief does program run or not
         //
         //  isRunning checks the status code, so wait/poll function calls are necessary
