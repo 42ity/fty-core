@@ -1156,6 +1156,6 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 23:53:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 23:58:52", 560, -1, @topic_id2);
 
-
-
-
+/* Example alerts */
+INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (2, "upsonbypass@UPS2-LAB", "2015-03-28 06:41:10", 2, 1, "UPS is on battery");
+INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (3, "upsonbattery@UPS1-LAB", "2015-03-27 16:30:12", 2, 1, "UPS is on battery");
