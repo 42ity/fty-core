@@ -181,7 +181,7 @@ sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
 logmsg_info "Done with IP addressing changes..."
-sleep 2
+sleep 7
 
 # ***** GET THE DATA SNIFFERED WITH dshell FROM SUT TO MS. *****
     # *** read the data to variable FILE_DATA ***
