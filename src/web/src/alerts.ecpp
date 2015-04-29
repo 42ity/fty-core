@@ -57,7 +57,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
         auto element_name = i.rule_name;
         auto idx = element_name.find('@');
         if (idx != std::string::npos) {
-            element_name = element_name.substr(idx+1);
+            element_name = '"' + element_name.substr(idx+1) + '"';
         }
         auto sprio = "P" + std::to_string(i.priority);
 </%cpp>
@@ -67,7 +67,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
         "application_name" : "ALERT",
         "rule_name" : "<$ i.rule_name $>",
         "element_id" : <$ i.device_ids.empty() ? "null" : std::to_string(i.device_ids[0]) $>,
-        "element_name" : "<$ element_name $>",
+        "element_name" : <$ i.device_ids.empty() ? "null" :element_name $>,
         "severity" : "critical",
         "priority" : "<$ sprio $>",
         "description" : "<$ i.description $>",
