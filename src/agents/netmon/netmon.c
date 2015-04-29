@@ -498,12 +498,15 @@ int main(int argc, char **argv) {
     // TODO: Is this message for users still valid?
     // Did anything take place of "simple" here (e.g. "db-ng")?
     if (isatty(STDERR_FILENO)) {
-        fprintf(stderr, "%s", "WARNING: netmon does communicate through malamute server, so it does not print\n");
-        fprintf(stderr, "%s", "         anything to stdout. Please start simple, which will autospawn netmon\n");
-        fprintf(stderr, "%s", "         internally.\n");
-        fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
-        fprintf(stderr, "%s", "         use kill -9 for now\n");
+        fprintf(stderr, "%s", "WARNING: netmon agent communicates through malamute server, so it does not print\n");
+        fprintf(stderr, "%s", "         anything to stdout. Please use dshell to monitor the passing messages.\n");
+        //fprintf(stderr, "%s", "         Old advice was to start simple, which will autospawn netmon internally.\n");
+        //fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
+        //fprintf(stderr, "%s", "         use kill -9 for now\n");
     }
+
+    // Do not let zeromq take away our signals
+    setenv("ZSYS_SIGHANDLER", "false", 1);
 
     unsigned groups = ~RTMGRP_TC;
 
