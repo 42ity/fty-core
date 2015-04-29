@@ -79,6 +79,7 @@ if [[ $? -ne 0 ]]; then
     echo "malamute didn't start properly" >&2
     exit 1
 fi
+sleep 5
 $CHECKOUTDIR/tools/dshell.sh networks ".*" > "$dsh_file" &
 if [[ $? -ne 0 ]]; then
     echo "dshell didn't start properly" >&2
@@ -91,7 +92,12 @@ if [[ $? -ne 0 ]]; then
 fi
 sleep 2
 
+[ -n "$DEBUG" ] && \
+    echo "DEBUG: Starting IP addressing changes..." >&2
+
 # These actions have to be reflected in dsh_file for this test to succeed.
+# Note we test different syntaxes here ("ip" currently complains that the
+# command syntax without a prefix part is obsolete and may be deprecated).
 sudo ip addr add 101.25.138.2 dev lo 2>/dev/null
 sudo ip addr add 103.15.3.0/24 dev lo
 sudo ip addr add 20.13.5.4/32 dev lo
@@ -101,9 +107,13 @@ sudo ip addr del 101.25.138.2 dev lo 2>/dev/null
 sudo ip addr del 103.15.3.0/24 dev lo
 sudo ip addr del 20.13.5.4/32 dev lo
 
+[ -n "$DEBUG" ] && \
+    echo "DEBUG: Done with IP addressing changes..." >&2
+sleep 2
+
 file=$(<$dsh_file) # `cat file` for non-bash shell
 if [ -n "$DEBUG" ]; then
-    echo "=== The dshell capture file contents are:"
+    echo "DEBUG: The dshell capture file contents are:"
     echo "$file"
 fi >&2
 
