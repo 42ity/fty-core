@@ -60,7 +60,7 @@ process_web_average
     // When user says, e.g.: "I want 8h averages starting from 23:15:.... " we need to request sampled data from an earlier period
     // in order to compute the first 8h average. This first average belongs to 24:00:00 and is computed from <16:00, 24:00).
     // Additional AGENT_NUT_REPEAT_INTERVAL_SEC seconds are deducted to complete possible leading values `missing`.
-    start_ts = computable_interval (start_ts, step); // shared/utils.c 
+    start_ts = average_extend_left_margin (start_ts, step); // shared/utils.c 
     // we are requesting sampled data from db, therefore no topic construction (i.e. <source>.<type>_<step>) is needed.
     ymsg_t *msg_send = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &send_subject);
     FREE0 (type);

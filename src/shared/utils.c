@@ -99,7 +99,7 @@ int64_t average_step_seconds (const char *step) {
     return (int64_t) (number * multiplier);
 }
 
-int64_t computable_interval (int64_t start_timestamp, const char *step) {
+int64_t average_extend_left_margin (int64_t start_timestamp, const char *step) {
     if (!is_average_step_supported (step))
         return -1;
     int64_t step_sec = average_step_seconds (step);
@@ -110,6 +110,16 @@ int64_t computable_interval (int64_t start_timestamp, const char *step) {
     else
         result =  (int64_t) start_timestamp - overlap - AGENT_NUT_REPEAT_INTERVAL_SEC;
     return result;
+}
+
+int64_t average_first_since (int64_t timestamp, const char *step) {
+    if (!is_average_step_supported (step) || timestamp < 0)
+        return -1;
+    int64_t step_sec = average_step_seconds (step);
+    int64_t mod = timestamp % step_sec;
+    if (mod == 0)
+        return timestamp;
+    return timestamp + (step_sec - mod);
 }
 
 int64_t datetime_to_calendar (const char *datetime) {

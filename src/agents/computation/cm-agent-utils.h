@@ -23,6 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_AGENTS_COMPUTATION_CM_AGENT_UTILS_H__
 #define SRC_AGENTS_COMPUTATION_CM_AGENT_UTILS_H__
 
+#include <map>
+#include <string>
+
 #include "ymsg.h"
 #include "bios_agent.h"
 
@@ -32,6 +35,21 @@ int
 replyto_err
 (bios_agent_t *agent, ymsg_t **original, const char *sender, const char *error_message, const char *subject);
 
+int
+process_db_measurement_json_to_map
+(const char *json, std::map <int64_t, double>& samples, int64_t& start_timestamp, int64_t& end_timestamp, uint64_t& element_id, std::string& source, std::string& unit);
+
+void
+process_db_measurement_solve_left_margin
+(std::map <int64_t, double>& samples, int64_t extended_start);
+
+int
+process_db_measurement_calculate 
+(std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result);
+
+int
+process_db_measurement_calculate_arithmetic_mean
+(std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result);
 
 #endif // SRC_AGENTS_COMPUTATION_CM_AGENT_UTILS_H__
 

@@ -235,7 +235,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
         free (source); source = NULL;
         topic += "@%";
 
-        st.setUnsigned64("id", element_id).set("topic", topic).setInt64("time_st", start_ts).setInt64("time_end", end_ts);
+        st.set("id", element_id).set("topic", topic).set("time_st", start_ts).set("time_end", end_ts);
         log_debug("Got request regarding '%s' from %" PRId64 " till %" PRId64" for %" PRId64, topic.c_str(), start_ts, end_ts, element_id);
 
         tntdb::Result result = st.select();

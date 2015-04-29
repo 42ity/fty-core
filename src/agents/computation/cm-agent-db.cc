@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
+#include <utility>
 #include <cmath>
 
 #include <cxxtools/jsondeserializer.h>
@@ -39,48 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cm-agent-db.h"
 
 
-static int calculate (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
-    if (!type || (start >= end) ) {
-        return -1;
-    }
-    auto it_start = samples.find (start);
-    auto it_end = samples.find (end);
-    if (it_start == samples.cend () || it_end == samples.cend())
-        return -1;
 
-    if (strcmp (type, "min") == 0) {
-        double minimum = it_start->second;
-        for (auto s = it_start; s != it_end; ++s) {
-            if (s->second < minimum)
-                minimum = s->second;
-        }
-        result = minimum;
-        return 0;
-    }
-    else if (strcmp (type, "max") == 0) {
-        double maximum = it_start->second;
-        for (auto s = it_start; s != it_end; ++s) {
-            if (s->second > maximum)
-                maximum = s->second;
-        }
-        result = maximum;
-        return 0;
-    }
-    else if (strcmp (type, "arithmetic_mean") == 0) {
-        double arithmetic_mean = 0;
-        uint64_t counter = 0;
-        // prevent overflow
-        for (auto s = it_start; s != it_end; ++s) {
-            ++counter;
-        }
-        for (auto s = it_start; s != it_end; ++s) {
-            arithmetic_mean += (s->second / counter);
-        }
-        result = arithmetic_mean;
-        return 0;
-    }
-    return -1;
-}
 
 int
 process_db_measurement
@@ -137,78 +97,20 @@ process_db_measurement
     log_debug ("bios_db_measurements_read_reply_extract successfull.");
     printf ("json:\n%s\n", json_in); // TODO: remove when done testing
   
-    // process the received json into a std::map
-    std::stringstream input (json_in, std::ios_base::in);
-    if (json_in) {
-        free (json_in);
-        json_in = NULL;
-    }
-    cxxtools::SerializationInfo si;
-    cxxtools::JsonDeserializer deserializer (input);
-
     std::string source, unit;
     int64_t start_ts = -1, end_ts = -1;
     uint64_t element_id;
     std::map <int64_t, double> samples;
+    // process the received json into a std::map
+    rv = process_db_measurement_json_to_map (json_in, samples, start_ts, end_ts, element_id, source, unit);
+    FREE0 (json_in);
+    if (rv == -1) {
+        ymsg_destroy (&msg_orig);
+        // TODO: return and ?
+    }
 
     ymsg_t *msg_reply = NULL;
     try {
-        std::string start_ts_str, end_ts_str, element_id_str;
-        deserializer.deserialize (si);
-        
-        if (si.category () != cxxtools::SerializationInfo::Category::Object) {
-            throw std::invalid_argument ("Root type is not object.");
-        }
-
-        si.getMember ("start_ts") >>= start_ts_str;
-        if (start_ts_str.empty ()) {
-            throw std::invalid_argument ("Field 'start_ts' is empty.");
-        }
-        si.getMember ("end_ts") >>= end_ts_str;
-        if (end_ts_str.empty ()) {
-            throw std::invalid_argument ("Field 'end_ts' is empty.");
-        }
-        si.getMember ("source") >>= source;
-        if (source.empty ()) {
-            throw std::invalid_argument ("Field 'source' is empty.");
-        }
-        si.getMember ("unit") >>= unit;
-        if (unit.empty ()) {
-            throw std::invalid_argument ("Field 'unit' is empty.");
-        }
-        si.getMember ("element_id") >>= element_id_str;
-        if (element_id_str.empty ()) {
-            throw std::invalid_argument ("Field 'element_id' is empty.");
-        }
-        // throws std::invalid_argument, std::out_of_range
-        element_id = std::stoull (element_id_str);
-        start_ts = std::stoll (start_ts_str);
-        end_ts = std::stoll (end_ts_str);
-
-        log_debug("start_ts: %ld\tend_ts: %ld\tsource: %s\tunit: %s\telement_id: %ld", start_ts, end_ts, source.c_str (), unit.c_str (), element_id);
-
-        auto data_array = si.getMember("data");
-        if (si.getMember("data").category () != cxxtools::SerializationInfo::Category::Array) {
-            throw std::invalid_argument ("Value of key 'data' is not an array.");
-        }
-        if (si.getMember("data").memberCount () <= 0) {
-            throw std::invalid_argument ("Value of key 'data' is an empty array.");
-        }
-
-        for (auto it = data_array.begin (), it_end = data_array.end (); it != it_end; ++it) {
-            if (it->category() != cxxtools::SerializationInfo::Category::Object) {
-                throw std::invalid_argument ("Item of array data is not an object.");
-            }
-            std::string value, scale, timestamp;                    
-            it->getMember ("value") >>= value;
-            it->getMember ("scale") >>= scale;
-            it->getMember ("timestamp") >>= timestamp;                    
-            double comp_value = std::stol (value)  * std::pow (10, std::stoi (scale));
-            // TODO: Remove when done testing
-            printf ("value: %s\tscale: %s\ttimestamp: %s\tcomputed_value: %f", value.c_str(), scale.c_str(), timestamp.c_str(), comp_value);
-            samples.emplace (std::make_pair ( std::stoll (timestamp), comp_value));
-
-        }
 
         log_debug ("samples map size before post-calculation: %ld\n", samples.size ());                            
 
@@ -241,61 +143,40 @@ process_db_measurement
             return 0;
         }
 
-
-        int64_t samples_first_ts = samples.cbegin()->first,
-                samples_last_ts = (--samples.cend())->first;
-        log_debug ("Timestamp of first sample = %ld\tTimestamp of last sample = %ld", samples_first_ts, samples_last_ts);
-
-        // align with sampling interval
-        int64_t postcalc_ts = samples_first_ts + (AGENT_NUT_SAMPLING_INTERVAL_SEC - (samples_first_ts % AGENT_NUT_SAMPLING_INTERVAL_SEC));
-        // Calculate/fill in the gaps
-        while (postcalc_ts  < end_ts) {
-            auto needle = samples.find (postcalc_ts);
-            if (needle != samples.end ()) {
-                postcalc_ts += AGENT_NUT_SAMPLING_INTERVAL_SEC;
-                continue;
-            }
-            std::map<int64_t, double>::iterator it, it2;
-            bool inserted;
-            std::tie (it, inserted) = samples.emplace (std::make_pair (postcalc_ts, (double) 0));
-            assert (inserted == true);
-            it2 = it; --it2;
-            it->second = (it2)->second;
-        }
-
-           
+        process_db_measurement_solve_left_margin (samples, start_ts);
         // TODO: remove when done testing
         for (const auto &p : samples) {
             std::cout << p.first << " => " << p.second << '\n';
         }
-        printf ("Now the intervals:\n");
-        int64_t step_sec = average_step_seconds (orig_step);
-        assert (step_sec != -1);           
-        int64_t cut_start = samples_first_ts;
-        int64_t cut_end = samples_first_ts - (samples_first_ts % step_sec) + step_sec;
+
+        int64_t first_ts = samples.cbegin()->first;
+        int64_t second_ts = average_first_since (first_ts, orig_step);
+        double comp_result;
 
         std::string data_str;
         int comma_counter = 0;
-        do {
+
+        while (second_ts <= end_ts) {
+
             std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-            double comp_result;
-            rv = calculate (samples, cut_start, cut_end, orig_type, comp_result);
-            assert (rv == 0);
+            rv = process_db_measurement_calculate
+                (samples, first_ts, second_ts, orig_type, comp_result);
+            if (rv == 0) {
+                printf ("%ld\t%f\n", second_ts, comp_result);
+                item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
+                item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
+                if (comma_counter == 0) 
+                    ++comma_counter;
+                else
+                    data_str += ",\n";
 
-            printf ("%ld\t%ld\t%f\n", cut_start, cut_end, comp_result);
-            item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
-            item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (cut_end));
-            cut_start = cut_end;
-            cut_end += step_sec;
-            if (comma_counter == 0) 
-                ++comma_counter;
-            else
-                data_str += ",\n";
+                data_str += item;
+            }
+            int64_t tmp = second_ts;
+            first_ts = second_ts;
+            second_ts += average_step_seconds (orig_step);
+        }
 
-            data_str += item;
-
-        } while (cut_end < end_ts);
-            
         // TODO
         std::string json_out(BIOS_WEB_AVERAGE_REPLY_JSON_TMPL);           
         json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);
@@ -305,19 +186,10 @@ process_db_measurement
         json_out.replace (json_out.find ("##ELEMENT_ID##"), strlen ("##ELEMENT_ID##"), std::to_string (element_id));
         json_out.replace (json_out.find ("##START_TS##"), strlen ("##START_TS##"), std::to_string (orig_start_ts));
         json_out.replace (json_out.find ("##END_TS##"), strlen ("##END_TS##"), std::to_string (orig_end_ts));
-        if (orig_type) {
-            free (orig_type);
-            orig_type = NULL;
-        }
-        if (orig_step) {
-            free (orig_step);
-            orig_step = NULL;
-        }
-        if (orig_source) {
-            free (orig_source);
-            orig_source = NULL;
-        }
-                       
+        FREE0 (orig_type)
+        FREE0 (orig_step)
+        FREE0 (orig_source)
+                      
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
         
         assert (msg_reply == NULL);

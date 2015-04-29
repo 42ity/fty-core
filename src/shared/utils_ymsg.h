@@ -16,9 +16,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*
-Author(s): Karol Hrdina <karolhrdina@eaton.com>
- 
-Description: TODO
+ \file utils_ymsg++.h
+ \brief Utility functions for ymsg_t that we don't want to expose as public API in libbiosapi
+ \author Karol Hrdina <karolhrdina@eaton.com>
 */
 
 #ifndef SRC_SHARED_UTILS_YMSG_H__

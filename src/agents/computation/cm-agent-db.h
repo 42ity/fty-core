@@ -33,7 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 int
 process_db_measurement
 (bios_agent_t *agent, ymsg_t *message_in, std::map <uint16_t, std::pair <std::string, ymsg_t *>>& requests, const char *sender, ymsg_t **message_out);
-// (bios_agent_t *agent, ymsg_t *message_in, std::map <uint16_t, std::pair <std::string, ymsg_t *>>& requests, const char *sender, ymsg_t **message_out)
 
 #endif // SRC_AGENTS_COMPUTATION_CM_AGENT_DB_H__
 

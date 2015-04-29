@@ -58,7 +58,11 @@ bool is_average_type_supported (const char *type);
 //! Supported average step expressed in seconds OR -1
 int64_t average_step_seconds (const char *step);
 
-int64_t computable_interval (int64_t start_timestamp, const char *step);
+//! Return timestamp of left margin of an interval (of sampled data) required to compute the first average of given 'step' since 'start_timestamp'
+int64_t average_extend_left_margin (int64_t start_timestamp, const char *step);
+
+//! Return timestamp of first possible computable average of given step since 'timestamp'
+int64_t average_first_since (int64_t timestamp, const char *step);
 
 /*!
  \brief transform rfc-11 defined datetime format to calendar time (unix timestamp).
