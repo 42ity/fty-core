@@ -649,6 +649,7 @@ test_computation_SOURCES = \
 			src/agents/computation/cm-agent-utils.h \
 			src/agents/computation/cm-agent-utils.cc
 
+
 test_computation_LDADD = \
 			libpriv-test-run.la \
 			libpriv-log.la \
