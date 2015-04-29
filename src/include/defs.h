@@ -57,12 +57,13 @@ enum internal_err {
 
 //! netmon (rtnetlink(7)) events 
 enum network_event {
-    AUTO_ADD,
-    AUTO_DEL,
-    MAN_ADD,
-    MAN_DEL,
-    EXCL_ADD,
-    EXCL_DEL
+    NETWORK_EVENT_AUTO_ADD,
+    NETWORK_EVENT_AUTO_DEL,
+    NETWORK_EVENT_MAN_ADD,
+    NETWORK_EVENT_MAN_DEL,
+    NETWORK_EVENT_EXCL_ADD,
+    NETWORK_EVENT_EXCL_DEL,
+    NETWORK_EVENT_TERMINATOR
 };
 
 //! ip address version
@@ -71,9 +72,11 @@ enum ipaddr_version {
     IP_VERSION_6
 };
 
-//! Time interval in which measurement will be send regardless of difference
-//TODO: Make it configurable
-#define WORST_SAMPLING_INTERVAL 300
+//TODO: Make AGENT_NUT_ values configurable
+//! Measurement is sent each AGENT_NUT_REPEAT_INTERVAL_SEC seconds even when there is no change in value. This is done to conserve space and bandwidth.
+#define AGENT_NUT_REPEAT_INTERVAL_SEC 300
+//! Approximate sampling rate of NUT  
+#define AGENT_NUT_SAMPLING_INTERVAL_SEC 5
 
 #define KEY_REPEAT "repeat"
 #define KEY_STATUS "status"

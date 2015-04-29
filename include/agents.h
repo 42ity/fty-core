@@ -33,13 +33,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
+//! encoded message or NULL on failure
 BIOS_EXPORT ymsg_t *
     bios_netmon_encode (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address);
 
-
-// on -1 (error) does not destroy *self_p
+//! 0 on success, -1 on failure
 BIOS_EXPORT int
-    bios_netmon_decode (ymsg_t **self_p, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address);
+    bios_netmon_extract (ymsg_t *self, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address);
 
 
 BIOS_EXPORT ymsg_t *
@@ -93,30 +93,54 @@ BIOS_EXPORT int
                              int32_t *value,
                              int32_t *scale,
                              int64_t *time);
-
+/*
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source);
 
+//!0 on success, -1 or failure
 BIOS_EXPORT int
-    bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
+    bios_web_average_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source);
 
+/*!
+ \brief Encode reply message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_web_average_reply_encode (const char *json);
 
+//! 0 on success, -1 or failure
 BIOS_EXPORT int
-    bios_web_average_reply_decode (ymsg_t **self_p, char **json);
+    bios_web_average_reply_extract (ymsg_t *self, char **json);
 
+/*!
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \note You are responsible for freeing `subject` on success
+ \return Encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
-    bios_db_measurements_read_request_encode (const char *start_timestamp, const char *end_timestamp, uint64_t element_id, const char *source, char **subject);
+    bios_db_measurements_read_request_encode (int64_t start_timestamp, int64_t end_timestamp, uint64_t element_id, const char *source, char **subject);
 
+//! 0 on success, -1 or failure
 BIOS_EXPORT int
-    bios_db_measurements_read_request_decode (ymsg_t **self_p, char **start_timestamp, char **end_timestamp, uint64_t *element_id, char **source);
-    
+    bios_db_measurements_read_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t  *end_timestamp, uint64_t *element_id, char **source);
+
+/*!
+ \brief Encode request message TODO
+ \note You are responsible for destroying the returned encoded message
+ \return Encoded message on success, NULL on failure
+*/
 BIOS_EXPORT ymsg_t *
     bios_db_measurements_read_reply_encode (const char *json);
 
+//! 0 on success, -1 or failure
 BIOS_EXPORT int
-    bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json);
+    bios_db_measurements_read_reply_extract (ymsg_t *self, char **json);
 
 typedef enum {
     ALERT_STATE_UNKNOWN = -1,

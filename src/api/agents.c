@@ -17,126 +17,62 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <czmq.h>
 #include <string.h>
+
+#include "defs.h"
+
+#include "utils.h" 
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "bios_agent.h"
+
 #include "agents.h"
-#include "defs.h"
 
 ymsg_t *
 bios_netmon_encode
 (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address) {
+    if (!interface_name || !ip_address || !mac_address ||
+        (event < NETWORK_EVENT_AUTO_ADD) || (event >= NETWORK_EVENT_TERMINATOR) ||
+        (ip_version != IP_VERSION_4 && ip_version != IP_VERSION_6))
+        return NULL;
     ymsg_t *message = ymsg_new (YMSG_SEND);
     if (!message)
         return NULL;
 
-    char *s = NULL;
-    switch (event) {
-        case AUTO_ADD:
-        {
-            s = NETMON_VAL_AUTO_ADD;
-            break;
-        }
-        case AUTO_DEL:
-        {
-            s = NETMON_VAL_AUTO_DEL;
-            break;
-        }
-        case MAN_ADD:
-        {
-            s = NETMON_VAL_MAN_ADD;
-            break;
-        }
-        case MAN_DEL:
-        {
-            s = NETMON_VAL_MAN_DEL;
-            break;
-        }
-        case EXCL_ADD:
-        {
-            s = NETMON_VAL_EXCL_ADD;
-            break;
-        }
-        case EXCL_DEL: 
-        {
-            s = NETMON_VAL_EXCL_DEL;
-            break;
-        }
-        default:
-            s = "";
-            break;
-    }
-    ymsg_aux_insert (message, NETMON_KEY_EVENT, "%s", s); 
-    ymsg_aux_insert (message, NETMON_KEY_IFNAME, "%s", interface_name == NULL ? "" : interface_name); 
-    if (ip_version == IP_VERSION_6) {
-        s = NETMON_VAL_IPV4;         
-    }
-    else if (ip_version == IP_VERSION_6) {
-        s = NETMON_VAL_IPV6; 
-    }
-    else {
-        s = ""; 
-    }
-    ymsg_aux_insert (message, NETMON_KEY_IPVER, "%s", s); 
-    ymsg_aux_insert (message, NETMON_KEY_IPADDR, "%s", ip_address == NULL ? "" : ip_address);
+    ymsg_aux_set_int32 (message, NETMON_KEY_EVENT, event);
+    ymsg_aux_insert (message, NETMON_KEY_IFNAME, "%s", interface_name);
+    ymsg_aux_set_int32 (message, NETMON_KEY_IPVER, ip_version);
+    ymsg_aux_insert (message, NETMON_KEY_IPADDR, "%s", ip_address);
     ymsg_aux_set_uint32 (message, NETMON_KEY_PREFIXLEN, prefix_length);
-    ymsg_aux_insert (message, NETMON_KEY_MACADDR, "%s", mac_address == NULL ? "" : mac_address);
+    ymsg_aux_insert (message, NETMON_KEY_MACADDR, "%s", mac_address);
     return message; 
 }
 
 int
-bios_netmon_decode
-(ymsg_t **self_p, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address) {
-    if (!self_p || !event || !interface_name || !ip_version || !ip_address || !prefix_length || !mac_address)
+bios_netmon_extract
+(ymsg_t *self, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address) {
+    if (!self || !event || !interface_name || !ip_version || !ip_address || !prefix_length || !mac_address || ymsg_id (self) != YMSG_SEND)
         return -1;
-    if (ymsg_id (*self_p) != YMSG_SEND) 
-        return -1;
-    
-    if (*self_p) {
-        ymsg_t *self = *self_p;
-        const char *s = ymsg_aux_string (self, NETMON_KEY_EVENT, "");
-        if (strcmp (s, NETMON_VAL_AUTO_ADD) == 0) {
-            *event = AUTO_ADD;
-        }
-        else if (strcmp (s, NETMON_VAL_AUTO_DEL) == 0) {
-            *event = AUTO_DEL;
-        }
-        else if (strcmp (s, NETMON_VAL_MAN_ADD) == 0) {
-            *event = MAN_ADD;
-        }
-        else if (strcmp (s, NETMON_VAL_MAN_DEL) == 0) {
-            *event = MAN_DEL;
-        }
-        else if (strcmp (s, NETMON_VAL_EXCL_ADD) == 0) {
-            *event = EXCL_ADD;
-        }
-        else if (strcmp (s, NETMON_VAL_EXCL_DEL) == 0) {
-            *event = EXCL_DEL;
-        } else {
-            return -1;
-        }
-        *interface_name = strdup (ymsg_aux_string (self, NETMON_KEY_IFNAME, ""));
-        s = ymsg_aux_string (self, NETMON_KEY_IPVER, "");
-        if (strcmp (s, NETMON_VAL_IPV4) == 0) {
-            *ip_version = IP_VERSION_4;
-        }
-        else if (strcmp (s, NETMON_VAL_IPV6) == 0) {
-            *ip_version = IP_VERSION_6;
-        }
-        else {
-            return -1;
-        }
-        *ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
-        uint32_t ui;
-        int rc = ymsg_aux_uint32 (self, NETMON_KEY_PREFIXLEN, &ui);
-        if (rc != 0 || ui > 255) {
-            return -1;
-        }
-        *prefix_length = (uint8_t) ui; 
-        *mac_address = strdup (ymsg_aux_string (self, NETMON_KEY_MACADDR, ""));
-        ymsg_destroy (self_p);
-        return 0;
-    }
+
+    int rv = ymsg_aux_int32 (self, NETMON_KEY_EVENT, event);
+    if (rv != 0)
+        goto bios_netmon_extract_err;
+    *interface_name = strdup (ymsg_aux_string (self, NETMON_KEY_IFNAME, ""));
+    rv = ymsg_aux_int32 (self, NETMON_KEY_IPVER, ip_version);
+    if (rv != 0)
+        goto bios_netmon_extract_err;
+    *ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
+    uint32_t ui;
+    rv = ymsg_aux_uint32 (self, NETMON_KEY_PREFIXLEN, &ui);
+    if (rv != 0 || ui > 255)
+        goto bios_netmon_extract_err;
+    *prefix_length = (uint8_t) ui; 
+    *mac_address = strdup (ymsg_aux_string (self, NETMON_KEY_MACADDR, ""));
+    return 0;
+        
+bios_netmon_extract_err:
+    FREE0 (interface_name);
+    FREE0 (ip_address);
+    FREE0 (mac_address);
     return -1; 
 }
 
@@ -177,8 +113,7 @@ ymsg_t *
 }
 
 int
-    bios_inventory_decode
-        (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name)
+bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attributes, char **module_name)
 {
     if ( !self_p || !device_name || !ext_attributes )
         return -1;
@@ -190,7 +125,10 @@ int
         ymsg_t *self = *self_p;
        
         zchunk_t *request = ymsg_get_request (self);
+        if ( !request )
+                return -2;  // no chunk to decode        
         zmsg_t *zmsg = zmsg_decode (zchunk_data (request), zchunk_size (request));
+        zchunk_destroy (&request);
         
         if ( !zmsg )
             return -2; // zmsg decode fail
@@ -274,7 +212,7 @@ int
 
 ymsg_t *
 bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp, const char *type, const char *step, uint64_t element_id, const char *source) {
-    if (!start_timestamp || !end_timestamp || !type || !step || !source)
+    if (!type || !step || !source)
         return NULL;
     
     ymsg_t *message = ymsg_new (YMSG_SEND);
@@ -291,16 +229,11 @@ bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp,
 }
 
 int
-bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source) {   
-    if (!self_p || !*self_p || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source)
+bios_web_average_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, char **type, char **step, uint64_t *element_id, char **source) {   
+    if (!self || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source || ymsg_id (self) != YMSG_SEND)
         return -1;
 
-    assert (*self_p);
-    ymsg_t *self = *self_p;
-    int rc = 0;
-
-    if (ymsg_id (self) != YMSG_SEND) 
-        return -1;
+    int rc = -1;
 
     rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
     if (rc != 0)
@@ -314,23 +247,19 @@ bios_web_average_request_decode (ymsg_t **self_p, int64_t *start_timestamp, int6
     if (rc != 0)
         goto bios_web_average_request_decode_err;
     *source = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_SOURCE, ""));
-
-    ymsg_destroy (self_p);
     return 0;
 
 bios_web_average_request_decode_err:
-    if(*type)
-        free(*type);
-    if(*step)
-        free(*step);
-    if(*source)
-        free(*source);
-    ymsg_destroy (self_p);
+    FREE0 (*type);
+    FREE0 (*step);
+    FREE0 (*source);
     return -1;
 }
 
 ymsg_t *
 bios_web_average_reply_encode (const char *json) {
+    if (!json)
+        return NULL;
     ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
@@ -344,74 +273,66 @@ bios_web_average_reply_encode (const char *json) {
 }
 
 int
-bios_web_average_reply_decode (ymsg_t **self_p, char **json) {
-    if (!self_p || !*self_p || !json)
+bios_web_average_reply_extract (ymsg_t *self, char **json) {
+    if (!self || !json)
         return -1;
     
-    assert (*self_p);
-    ymsg_t *self = *self_p;
-
-    if (ymsg_id (self) != YMSG_REPLY) {
-        ymsg_destroy (self_p);
+    if (ymsg_id (self) != YMSG_REPLY)
         return -1;
-    }
 
     zchunk_t *chunk = ymsg_response (self);
-    if (!chunk) {
-        ymsg_destroy (self_p);
+    if (!chunk)
         return -1;
-    }
 
     *json = strndup ((char *) zchunk_data (chunk), zchunk_size (chunk));
-    if(json == NULL) {
-        ymsg_destroy (self_p);
+    if (*json == NULL)
         return -1;
-    }
-    ymsg_destroy (self_p);
     return 0;
 }
 
 ymsg_t *
-bios_db_measurements_read_request_encode (const char *start_timestamp, const char *end_timestamp, uint64_t element_id, const char *source, char **subject) {
-    if (!start_timestamp || !end_timestamp || !source)
+bios_db_measurements_read_request_encode (int64_t start_timestamp, int64_t end_timestamp, uint64_t element_id, const char *source, char **subject) {
+    if (!source || !subject)
         return NULL;
 
     ymsg_t *message = ymsg_new (YMSG_SEND);
     if (!message) 
         return NULL;
     
-    ymsg_aux_insert (message, WEB_AVERAGE_KEY_START_TS, "%s", start_timestamp);
-    ymsg_aux_insert (message, WEB_AVERAGE_KEY_END_TS, "%s", end_timestamp);
+    ymsg_aux_set_int64 (message, WEB_AVERAGE_KEY_START_TS, start_timestamp);
+    ymsg_aux_set_int64 (message, WEB_AVERAGE_KEY_END_TS, end_timestamp);
     ymsg_aux_set_uint64 (message,  WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
     ymsg_aux_insert (message, WEB_AVERAGE_KEY_SOURCE, "%s", source);
 
-    if (subject)
-        *subject = strdup ("get_measurements");
+    *subject = strdup ("get_measurements");
     return message;
 }
 
 int
-bios_db_measurements_read_request_decode (ymsg_t **self_p, char **start_timestamp, char **end_timestamp, uint64_t *element_id, char **source) {
-    if (!self_p || !*self_p || !start_timestamp || !end_timestamp || !element_id || !source)
+bios_db_measurements_read_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_t *end_timestamp, uint64_t *element_id, char **source) {
+    if (!self || !start_timestamp || !end_timestamp || !element_id || !source)
         return -1;
 
-    assert (*self_p);
-    ymsg_t *self = *self_p;
+    if (ymsg_id (self) != YMSG_SEND)
+        goto bios_db_measurements_read_request_extract_err;
 
-    if (ymsg_id (self) != YMSG_SEND) 
-        return -1;
-
-    *start_timestamp = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_START_TS, ""));
-    *end_timestamp = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_END_TS, ""));
-    int rc = ymsg_aux_uint64 (self, WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    int rc = -1;
+    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
     if (rc != 0)
-        return -1;
+        goto bios_db_measurements_read_request_extract_err;
+    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_END_TS, end_timestamp);
+    if (rc != 0)
+        goto bios_db_measurements_read_request_extract_err;
+    rc = ymsg_aux_uint64 (self, WEB_AVERAGE_KEY_ELEMENT_ID, element_id);
+    if (rc != 0)
+        goto bios_db_measurements_read_request_extract_err;
     *source = strdup (ymsg_aux_string (self, WEB_AVERAGE_KEY_SOURCE, ""));
-
-    ymsg_destroy (self_p);
     return 0;
-}
 
+bios_db_measurements_read_request_extract_err:
+    FREE0 (*source);
+    return -1;
+}
 
 ymsg_t *
 bios_db_measurements_read_reply_encode (const char *json) {
@@ -428,22 +349,22 @@ bios_db_measurements_read_reply_encode (const char *json) {
 }
 
 int
-bios_db_measurements_read_reply_decode (ymsg_t **self_p, char **json) {
-    if (!self_p || !*self_p || !json)
-        return -1;
-    
-    assert (*self_p);
-    ymsg_t *self = *self_p;
-
-    if (ymsg_id (self) != YMSG_REPLY) 
+bios_db_measurements_read_reply_extract (ymsg_t *self, char **json) {
+    if (!self || !json)
         return -1;
 
-    zchunk_t *chunk = ymsg_get_response (self);
+    if (ymsg_id (self) != YMSG_REPLY)
+        goto bios_db_measurements_read_reply_extract_err;
+
+    zchunk_t *chunk = ymsg_response (self);
     if (!chunk)
-        return -1;
+        goto bios_db_measurements_read_reply_extract_err;
     *json = strndup ((char *) zchunk_data (chunk), zchunk_size (chunk));
-    ymsg_destroy (self_p);
     return 0;
+
+bios_db_measurements_read_reply_extract_err:
+    FREE0 (*json);
+    return -1;
 }
 
 ymsg_t *

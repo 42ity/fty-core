@@ -15,8 +15,7 @@
 #include "agents.h"
 #include "ymsg.h"
 #include "str_defs.h"
-
-#define DATETIME_FORMAT "%Y%m%d%H%M%SZ"
+#include "utils_ymsg.h"
 
 </%pre>
 <%args>
@@ -45,20 +44,17 @@
     int64_t st;
     int64_t end;
     uint64_t eid;
+    std::string strmsg;
     try {
         // check both start_ts and end_ts
-        if (start_ts.size() != 15 || end_ts.size() != 15) {
-            throw std::invalid_argument ("Format for start_ts and end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
-        }
-        struct tm tm;
-        if (strptime (start_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
+        st = datetime_to_calendar (start_ts.c_str ());
+        if (st == -1) {
             throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
-        st = mktime(&tm);
-        if (strptime (end_ts.c_str(), DATETIME_FORMAT, &tm) == NULL) {
+        end = datetime_to_calendar (end_ts.c_str ());
+        if (end == -1) {
             throw std::invalid_argument ("Format for end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
         }
-        end = mktime(&tm);
         // check that start_ts < end_ts
         if (end <= st) {
             throw std::invalid_argument ("start_ts must be <= end_ts");
@@ -69,14 +65,16 @@
             type.assign (AVG_TYPES[0]);
         }
         else if (!is_average_type_supported (type.c_str ())) {
-            throw std::invalid_argument ("Average type <$ type $> not recognized.");
+            strmsg.assign ("Average type ").append (type).append (" not recognized.");
+            throw std::invalid_argument (strmsg);
         }
 
         if (step.empty ()) {
             throw std::invalid_argument ("Field 'step' is empty.");
         }
         if (!is_average_step_supported (step.c_str ())) {
-            throw std::invalid_argument ("Average step <$ step $> not supported.");
+            strmsg.assign ("Average step ").append (step).append (" not supported.");
+            throw std::invalid_argument (strmsg);
         }
 
         if (source.empty()) {
@@ -85,7 +83,7 @@
         if (element_id.empty()) {
             throw std::invalid_argument ("Mandatory argument 'element_id' not specified.");
         }
-        eid = std::stoul(element_id);
+        eid = std::stoull (element_id);
     }
     catch (const std::logic_error& e) { // invalid_argument, length_error, out_of_range
 </%cpp>
@@ -113,11 +111,19 @@
     }
 
     // TODO: Replace with a real computation module
-    ymsg_t *msg = bios_web_average_request_encode(st, end, type.c_str(),
-                                            step.c_str(), eid,
-                                            source.c_str ());
-    agent.sendto("persistence.measurement", "get_measurements", &msg);
-    msg = agent.recv_wait(1000);
+    ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
+    if (msg == NULL) {
+</%cpp>
+        {
+            "msg" : "bios_web_average_request_encode() failed."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+
+    }
+
+    agent.sendto (BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);    
+    msg = agent.recv_wait (1000);
     char *json = NULL;
     if(msg == NULL) {
 </%cpp>
@@ -127,7 +133,21 @@
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
-    if(bios_web_average_reply_decode(&msg, &json)) {
+    if (!ymsg_is_ok (msg)) {
+        if (ymsg_errmsg (msg))
+            strmsg.assign (ymsg_errmsg (msg));
+        else    
+            strmsg.assign ("Error requesting average data.");
+</%cpp>
+        {
+            "msg" : "<$ strmsg $>"
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    int rv = bios_web_average_reply_extract (msg, &json);
+    ymsg_destroy (&msg);
+    if (rv != 0) {
 </%cpp>
         {
             "msg" : "Got incorect reply from computation module."

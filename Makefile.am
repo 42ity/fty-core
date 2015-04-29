@@ -174,12 +174,13 @@ libbiosapi_la_SOURCES = \
 				src/api/bios_agent.c \
 				src/api/agents.c \
 				src/api/ymsg.c \
-				src/shared/utils_ymsg.c \
-				src/shared/utils_ymsg.h \
-				src/shared/utils_app.c \
-				src/shared/utils_app.h \
+				src/shared/utils.c \
+				src/shared/utils.h \
 				src/include/defs.h \
 				$(libbiosapi_la_HEADERS_noinst)
+
+libbiosapi_la_LIBADD = \
+				libpriv-utils-ymsg.la
 
 libbiosapi_la_CPPFLAGS = \
 		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
@@ -198,7 +199,7 @@ libbiosapi_la_LDFLAGS += \
 		-export-symbols $(top_srcdir)/src/api/libbiosapi.sym
 endif
 
-libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym
+libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym libpriv-utils-ymsg.la
 EXTRA_DIST +=			src/api/libbiosapi.sym
 
 pkgconfig_DATA +=		src/api/libbiosapi.pc
@@ -212,6 +213,17 @@ dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
 #----------------------------------------------------------------------
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
+
+noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
+
+libpriv_utils_ymsg_la_SOURCES = \
+				src/shared/utils_ymsg.c \
+				src/shared/utils_ymsg.h \	
+				src/shared/utils_ymsg++.cc \
+				src/shared/utils_ymsg++.h \ 
+				src/shared/utils_app.c \
+				src/shared/utils_app.h
+			
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -231,9 +243,8 @@ noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h \
-				src/include/str_defs.h
-
-#libpriv_utils_la_LIBADD = libpriv-defs.la
+				src/include/str_defs.h \
+				src/include/defs.h
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -414,7 +425,8 @@ test_utils_SOURCES = 	src/shared/utils.h \
 			tests/shared/test-utils.cc
 
 test_utils_LDADD = 	libpriv-utils.la \
-			libpriv-test-run.la
+			libpriv-test-run.la \
+			libpriv-defs.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
@@ -518,7 +530,10 @@ test_db2_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
-			libpriv-test-run.la
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
 
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -609,11 +624,12 @@ check_PROGRAMS += 	test-agents
 test_agents_SOURCES = \
 			tests/api/test-agents.cc
 
-
 test_agents_LDADD = \
 			libpriv-proto.la \
 			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la
 
 
 test_agents_CPPFLAGS = \
@@ -625,6 +641,32 @@ test_agents_CPPFLAGS = \
 
 test_agents_LDFLAGS = \
 			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
+check_PROGRAMS += 	test-computation
+
+test_computation_SOURCES = \
+			tests/agents/cm/test-cm-agent-utils.cc \
+			src/agents/computation/cm-agent-utils.h \
+			src/agents/computation/cm-agent-utils.cc
+
+test_computation_LDADD = \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+test_computation_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/computation \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_computation_LDFLAGS = \
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
 
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
@@ -662,7 +704,8 @@ test_database_LDADD = 	libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-cidr.la \
 			libpriv-test-run.la \
-			libpriv-log.la
+			libpriv-log.la \
+			libpriv-utils-ymsg.la
 
 test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
@@ -783,14 +826,16 @@ db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
 db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
-			${LIBMLM_LIBS} -ltntdb -lcidr  -lbiosapi
+			${LIBMLM_LIBS} -ltntdb -lcidr
 
 db_ng_LDADD = \
             libpriv-db.la \
+			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
             libpriv-proto.la \
-			libbiosapi.la
+			libbiosapi.la \
+			libpriv-defs.la
 
 
 db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
@@ -846,13 +891,13 @@ client_PROGRAMS +=	agent-nut
 agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
 			src/agents/nut/nut-agent.cc \
-			src/shared/upsstatus.cc \
-			src/shared/utils_ymsg.c
+			src/shared/upsstatus.cc
 
 agent_nut_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
-			libbiosapi.la
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
 
 agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
 
@@ -872,7 +917,8 @@ agent_inventory_LDADD = \
 			libpriv-defs.la \
 			libpriv-log.la \
 			libpriv-proto.la \
-			libbiosapi.la
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
 
 agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
@@ -880,6 +926,29 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
+# WIP (KHR)
+client_PROGRAMS +=	agent-cm
+
+agent_cm_SOURCES = \
+			src/agents/computation/cm-agent.cc \
+			src/agents/computation/cm-agent-db.cc \
+			src/agents/computation/cm-agent-db.h \
+			src/agents/computation/cm-agent-web.cc \
+			src/agents/computation/cm-agent-web.h \
+			src/agents/computation/cm-agent-utils.h \
+			src/agents/computation/cm-agent-utils.cc
+
+agent_cm_LDADD = \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libpriv-utils-ymsg.la
+
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
+
+#
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
@@ -925,7 +994,8 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/mock.cc   src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc
+                      src/shared/upsstatus.cc src/web/src/enc.cc		 
+
 
 EXTRA_DIST +=		src/web/include/enc.h
 
@@ -951,8 +1021,8 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
-			 libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la 
+			libpriv-subprocess.la \
+			libpriv-utils.la libpriv-defs.la libpriv-utils-ymsg.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
