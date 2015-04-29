@@ -163,6 +163,14 @@ sleep 2
 
 # ***** CREATE SOME CHANGES IN THE NETWORK TOPOLOGY *****
     # *** These actions have to be reflected in DSH_FILE_REMOTE for this test to succeed." ***
+logmsg_info "Starting IP addressing changes..."
+
+# Clean up if old test was aborted mid-way
+sut_run "sudo ip addr del 101.25.138.2 dev lo" 2>/dev/null || true
+sut_run "sudo ip addr del 103.15.3.0/24 dev lo" 2>/dev/null || true
+sut_run "sudo ip addr del 20.13.5.4/32 dev lo" 2>/dev/null || true
+
+# add addresses using different "ip" command syntaxes
 sut_run "sudo ip addr add 101.25.138.2 dev lo 2>/dev/null"
 sut_run "sudo ip addr add 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr add 20.13.5.4/32 dev lo"
@@ -171,6 +179,9 @@ sut_run "sudo ip addr add 20.13.5.4/32 dev lo"
 sut_run "sudo ip addr del 101.25.138.2 dev lo 2>/dev/null"
 sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
+
+logmsg_info "Done with IP addressing changes..."
+sleep 2
 
 # ***** GET THE DATA SNIFFERED WITH dshell FROM SUT TO MS. *****
     # *** read the data to variable FILE_DATA ***
