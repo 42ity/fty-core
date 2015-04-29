@@ -226,6 +226,7 @@ sut_run() {
 ### the local and remote tests alike.
 
 do_select() {
+    logmsg_info "do_select(): $1;" >&2
     DB_OUT="$(echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
     DB_RES=$?
     echo "$DB_OUT" | tail -n +2
@@ -241,12 +242,14 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
+        logmsg_info "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
+        logmsg_info "loaddb_file()::local: $DBFILE" >&2
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"
     fi
