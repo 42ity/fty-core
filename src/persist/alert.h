@@ -27,6 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/connect.h>
 #include "dbtypes.h"
 #include "dbhelpers.h"
+#include "ymsg.h"
+
+namespace persist {
 
 //+
 db_reply_t
@@ -139,5 +142,11 @@ db_reply_t
          const char *rule_name,
          int64_t     date_from);
 
+//! Processes alert message and creates an answer
+void process_alert(ymsg_t* out, char** out_subj,
+                   ymsg_t* in, const char* in_subj);
+
+ 
+} //namespace persist
 
 #endif //SRC_PERSIST_ALERT

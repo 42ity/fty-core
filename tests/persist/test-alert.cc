@@ -7,6 +7,8 @@
 #include "assetcrud.h"
 #include "monitor.h"
 
+using namespace persist;
+
 TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][crud_test.sql]")
 {
     log_open ();
