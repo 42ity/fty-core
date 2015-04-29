@@ -27,6 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/connect.h>
 #include "dbtypes.h"
 #include "dbhelpers.h"
+#include "ymsg.h"
+
+namespace persist {
 
 //+
 db_reply_t
@@ -41,7 +44,7 @@ db_reply_t
 
 //+
 db_reply_t
-    update_alert_notification 
+    update_alert_notification_byId 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
          m_alrt_id_t         id);
@@ -119,5 +122,31 @@ db_reply <std::vector<m_dvc_id_t>>
     select_alert_devices
         (tntdb::Connection &conn,
          m_alrt_id_t        alert_id);
+
+
+db_reply <db_alert_t>
+    select_alert_last_byRuleName
+        (tntdb::Connection &conn,
+         const char *rule_name);
+
+db_reply <db_alert_t>
+    select_alert_byRuleNameDateFrom
+        (tntdb::Connection &conn,
+         const char *rule_name,
+         int64_t     date_from);
+
+db_reply_t
+    update_alert_notification 
+        (tntdb::Connection  &conn,
+         m_alrt_ntfctn_t     notification,
+         const char *rule_name,
+         int64_t     date_from);
+
+//! Processes alert message and creates an answer
+void process_alert(ymsg_t* out, char** out_subj,
+                   ymsg_t* in, const char* in_subj);
+
+ 
+} //namespace persist
 
 #endif //SRC_PERSIST_ALERT

@@ -12,6 +12,7 @@
 #include "log.h"
 #include "bios_agent.h"
 #include "persistencelogic.h"
+#include "utils.h"
 
 using namespace persist;
 
@@ -109,9 +110,8 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
 
     persist::process_ymsg(out, &out_s, in, "get_measurements");
 
-    REQUIRE ( out_s != NULL );
-    REQUIRE ( strcmp (out_s, "return_measurements") == 0 );
-
+    CHECK ( out_s != NULL );
+    CHECK ( str_eq (out_s, "return_measurements") );    
 
     zchunk_t *ch = ymsg_get_response(out);
     REQUIRE ( ch != NULL);
@@ -124,7 +124,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     ds.deserialize(si);
 
     std::string test;
-    REQUIRE(si.getMember("units", test));
+    REQUIRE(si.getMember("unit", test));
     REQUIRE(test == "C");
     REQUIRE(si.getMember("data").memberCount() > 2);
 
