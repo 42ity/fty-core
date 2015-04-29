@@ -98,7 +98,10 @@ test-db-asset-crud
 agent-inventory
 db-ng
 agent-nut
+agent-alert
 server-agent
+agent-cm
+bios-email
 
 tests/junit/
 tests/CI/web/log/
