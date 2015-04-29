@@ -29,10 +29,35 @@
 # * set debian proxy from parameter or $http_proxy
 #
 
-# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
+# NOTE: This script is copied to VM hosts and used standalone,
+# so we do not depend it on scriptlib.sh or anything else.
+
+### This is prefixed before ERROR, WARN, INFO tags in the logged messages
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESET-VM"
+### Store some important CLI values
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
+_SCRIPT_ARGS="$*"
+_SCRIPT_ARGC="$#"
+
+logmsg_info() {
+    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+}
+
+logmsg_warn() {
+    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+}
+
+logmsg_error() {
+    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+}
+
 die() {
-	echo "$1" >&2
-	exit 1
+    CODE="${CODE-1}"
+    [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
+    for LINE in "$@" ; do
+        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+    done
+    exit $CODE
 }
 
 usage() {
@@ -97,7 +122,7 @@ while [ $# -gt 0 ] ; do
 	    exit 1
 	    ;;
 	*)
-	    echo "Invalid switch $1"
+	    logmsg_error "Invalid switch $1"
 	    usage
 	    exit 1
 	    ;;
@@ -131,12 +156,12 @@ if \
 ; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
-	echo "Detected support of OVERLAYFS on the `hostname` host," \
+	logmsg_info "Detected support of OVERLAYFS on the `hostname` host," \
 	    "will mount a .$EXT file as an RO base and overlay the RW changes"
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
-	echo "Detected no support of OVERLAYFS on the `hostname` host," \
+	logmsg_info "Detected no support of OVERLAYFS on the `hostname` host," \
 	    "will unpack a .$EXT file into a dedicated full RW directory"
 fi
 
@@ -144,7 +169,7 @@ fi
 # so it is critical that we succeed changing into this directory.
 mkdir -p /srv/libvirt/snapshots
 cd /srv/libvirt/snapshots || \
-	die "FATAL: Can not 'cd /srv/libvirt/snapshots' to download image files"
+	die "Can not 'cd /srv/libvirt/snapshots' to download image files"
 
 # Get latest image for us
 ARCH="`uname -m`"
@@ -163,28 +188,29 @@ sleep 5
 
 # Destroy the overlay-rw half of the old running container, if any
 [ -d "../overlays/${IMAGE}__${VM}" ] && \
-	echo "INFO: Removing RW directory of the stopped VM:" \
+	logmsg_info "Removing RW directory of the stopped VM:" \
 		"'../overlays/${IMAGE}__${VM}'" && \
 	rm -rf "../overlays/${IMAGE}__${VM}"
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
 for D in ../overlays/*__${VM}/ ; do
-	[ -d "$D" ] && echo "WARN: Obsolete RW directory for this VM was found," \
-		"removing '`pwd`/$D'..." >&2 && \
+	[ -d "$D" ] && logmsg_warn "Obsolete RW directory for an old version" \
+		"of this VM was found, removing '`pwd`/$D'..." >&2 && \
 		{ ls -lad "$D"; rm -rf "$D"; }
 done
 for D in ../rootfs/*-ro/ ; do
-	# Do not touch the current IMAGE mountpoint if we reuse it
+	# Do not remove the current IMAGE mountpoint if we reuse it again now
 	[ x"$D" = x"../rootfs/$IMAGE-ro/" ] && continue
-	if [ -d "$D" ] && [ x"`cd $D && find .`" = x ]; then
+	# Now, ignore non-directories and not-empty dirs (used mountpoints)
+	if [ -d "$D" ] && [ x"`cd $D && find .`" = x. ]; then
 		# This is a directory, and it is empty
 		FD="`cd "$D" && pwd`" && \
 		    [ x"`mount | grep ' on '${FD}' type '`" != x ] && \
-		    echo "INFO: Old RO mountpoint '$D' seems still used" >&2 && \
+		    logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
 		    continue
 
-		echo "WARN: Obsolete RO mountpoint for this IMAGE was found," \
-		    "removing '`pwd`/$D'..." >&2
+		logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
+		    "removing '`pwd`/$D'..."
 		ls -la "$D"
 		umount -fl "$D" 2> /dev/null > /dev/null
 		rm -rf "$D"
@@ -196,13 +222,15 @@ umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
-umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null
+# This unmount can fail if for example several containers use the same RO image
+umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null || true
 
 # clean up VM space
 /bin/rm -rf "../rootfs/$VM"
 
 if [ x"$STOPONLY" = xyes ]; then
-	echo "INFO: STOPONLY was requested, so ending '$0 $@' now" >&2
+	logmsg_info "STOPONLY was requested, so ending" \
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
 	exit 0
 fi
 
@@ -275,3 +303,8 @@ path-exclude=/usr/share/linda/*
 
 # Start the virtual machine
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
+
+logmsg_info "Preparation and startup of the virtual machine '$VM'" \
+	"is successfully completed on `date -u` on host `hostname`"
+
+exit 0
