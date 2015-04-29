@@ -549,23 +549,36 @@ db_reply_t
 
 
 //=============================================================================
+
+//
+// TODO: LIMITS - those queries can be potentially HUGE, but our db does not support the queries
+//       with IN and sub select
+// MariaDB [box_utf8]> SELECT * FROM v_bios_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
+// ERROR 1235 (42000): This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
+//
+// The workaround is to call the SELECT with LIMIT and construct the IN clause manually
+//
 static const std::string  sel_alarm_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
-    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
+    "    v.id_asset_element "
     " FROM"
-    "   v_bios_alert v"
-    " WHERE v.date_till is NULL";
+    "   v_bios_alert_all v"
+    " WHERE v.date_till is NULL"
+    " ORDER BY v.id";
 
 static const std::string  sel_alarm_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+    "    v.id_asset_element "
     " FROM"
-    "   v_bios_alert v"
-    " WHERE v.date_till is not NULL";
+    "   v_bios_alert_all v"
+    " WHERE v.date_till is not NULL"
+    " ORDER BY v.id";
 
 static db_reply <std::vector<db_alert_t>>
     select_alert_all_template
@@ -579,12 +592,31 @@ static db_reply <std::vector<db_alert_t>>
     try {
         tntdb::Statement st = conn.prepareCached(query);
         tntdb::Result res = st.select();
-        
-        log_debug ("[t_bios_alert]: was %u rows selected", res.size());
+
+        log_debug ("[v_bios_alert_all]: was %u rows selected", res.size());
+
+        //FIXME: change to dbtypes.h
+        uint64_t last_id = 0u;
+        uint64_t curr_id = 0u;
+        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
+        a_elmnt_id_t element_id = 42;
 
         for ( auto &r : res ) {
-            std::vector<m_dvc_id_t> dvc_ids{}; 
-            db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+
+            r[0].get(curr_id);
+
+            if (curr_id == last_id) {
+                r[8].get(element_id);
+                m.device_ids.push_back(element_id);
+                continue;
+            }
+
+            //NOTE: alarms without device_id are not supported!
+            if (!m.device_ids.empty()) {
+                ret.item.push_back(m);
+            }
+
+            m = {0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
 
             r[0].get(m.id);
             r[1].get(m.rule_name);
@@ -594,18 +626,14 @@ static db_reply <std::vector<db_alert_t>>
             r[5].get(m.notification);
             r[6].get(m.date_from);
             r[7].get(m.date_till);
-            
-            auto reply_internal = select_alert_devices (conn, m.id);
-            if ( reply_internal.status == 0 )
-            {
-                ret.status     = 0;
-                ret.errtype    = DB_ERR;
-                ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
-                ret.msg        = "error in device selecting";
-                ret.item.clear();
-                log_error ("end: %s, %s", "ignore select", ret.msg);
-                return ret;
-            }
+
+            r[8].get(element_id);
+            m.device_ids.push_back(element_id);
+
+            last_id = curr_id;
+        }
+        //NOTE: alarms without device_id are not supported!
+        if (!m.device_ids.empty()) {
             ret.item.push_back(m);
         }
         ret.status = 1;
