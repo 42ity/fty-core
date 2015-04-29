@@ -47,6 +47,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
+#include "alert.h"
 #include "agents.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
@@ -763,6 +764,10 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
 void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj) {
     if(streq(in_subj, "get_measurements")) {
         persist::get_measurements(out, out_subj, in, in_subj);
+        return;
+    }
+    if( in_subj &&  ( strncmp(in_subj, "alert.", 6) == 0 ) ) {
+        persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
 }

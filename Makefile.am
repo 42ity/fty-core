@@ -308,8 +308,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
-			src/persist/alert.cc \
 			src/persist/alert.h \
+			src/persist/alert.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
 			tools/dbpath.cc
@@ -949,6 +949,24 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
 
 #
+client_PROGRAMS +=      agent-alert
+
+agent_alert_SOURCES = \
+                        src/agents/alert/alert-entity.cc \
+                        src/agents/alert/alert-measurement.cc \
+                        src/agents/alert/alert-agent.cc \
+                        src/agents/alert/alert-model.cc \
+                        src/shared/utils_app.c \
+                        src/shared/utils_ymsg.c \
+                        src/include/str_defs.c
+
+agent_alert_LDADD = \
+                        libpriv-log.la \
+                        libbiosapi.la
+
+agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+agent_alert_CPPFLAGS = $(AM_CPPFLAGS)
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)

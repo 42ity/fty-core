@@ -25,10 +25,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/result.h>
 #include <tntdb/error.h>
 #include <tntdb/transaction.h>
+#include <cxxtools/split.h>
 
 #include "log.h"
 #include "defs.h"
 #include "alert.h"
+#include "agents.h"
+#include "dbpath.h"
+#include "bios_agent.h"
+
+namespace persist {
 
 //=============================================================================
 // end date of the alert can't be specified during the insert statement
@@ -677,7 +683,6 @@ db_reply <std::vector<m_dvc_id_t>>
     return ret;
 }
 
-//=============================================================================
 db_reply <db_alert_t>
     select_alert_last_byRuleName
         (tntdb::Connection &conn,
@@ -844,7 +849,78 @@ db_reply_t
         log_info ("end: can't find requested alert");
         return ret;
     }
-    auto ret = update_alert_notification(conn, alert.item.id);
+    ret = update_alert_notification_byId(conn, notification, alert.item.id);
     LOG_END;
     return ret;
 }
+
+//=============================================================================
+// FIXME: move those *_process functions to new file (other files too)
+
+void process_alert(ymsg_t* out, char** out_subj,
+                   ymsg_t* in, const char* in_subj)
+{
+    if( ! in || ! out ) return;
+
+    LOG_START;
+    
+    if( in_subj ) { *out_subj = strdup(in_subj); }
+    else { *out_subj = NULL; }
+    
+    log_debug("processing alert"); // FIXME: some macro
+    ymsg_t *copy = ymsg_dup(in);
+    assert(copy);
+    
+    // decode message
+    char *rule = NULL, *devices = NULL, *desc = NULL;
+    alert_priority_t priority;
+    alert_state_t state;
+    time_t since;
+    if( bios_alert_decode( &copy, &rule, &priority, &state, &devices, &desc, &since) != 0 ) {
+        ymsg_destroy(&copy);
+        log_debug("can't decode message");
+        LOG_END;
+        return;
+    }
+    std::vector<std::string> devices_v;
+    cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
+    tntdb::Connection conn;
+    try{        
+        conn = tntdb::connect(url);
+        db_reply_t ret;
+        
+        switch( (int)state ) {
+        case ALERT_STATE_ONGOING_ALERT:
+            // alert started
+            ret = insert_new_alert(
+                conn,
+                rule,
+                priority,
+                state,
+                ( desc ? desc : rule ),
+                0,
+                since,
+                devices_v);
+            ymsg_set_status( out, ret.status );
+            break;
+        case ALERT_STATE_NO_ALERT:
+            //alarm end
+            ret = update_alert_tilldate_by_rulename(
+                conn,
+                since,
+                rule);
+            ymsg_set_status( out, ret.status );
+            break;
+        }
+        if(!ret.status) { log_error("Writting alert into the database failed"); }
+    } catch(const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        ymsg_set_status( out, false );
+    }
+    if(rule) free(rule);
+    if(devices) free(devices);
+    LOG_END;
+}
+
+} // namespace persist
+

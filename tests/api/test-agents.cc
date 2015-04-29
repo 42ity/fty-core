@@ -285,7 +285,7 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     REQUIRE ( msg );
 
     char *rule = NULL, *devices = NULL, *description = NULL;
-    alert_priority_t priority = ALERT_PRIORITY_UNKOWN;
+    alert_priority_t priority = ALERT_PRIORITY_UNKNOWN;
     alert_state_t state = ALERT_STATE_UNKNOWN;
     time_t time = 0;
 

@@ -149,7 +149,7 @@ typedef enum {
 } alert_state_t;
 
 typedef enum {
-    ALERT_PRIORITY_UNKOWN = 0,
+    ALERT_PRIORITY_UNKNOWN = 0,
     ALERT_PRIORITY_P1,
     ALERT_PRIORITY_P2,
     ALERT_PRIORITY_P3,

@@ -398,14 +398,14 @@ bios_alert_encode (const char *rule_name,
 
 int
 bios_alert_decode (ymsg_t **self_p,
-                   char **alert_name,
+                   char **rule_name,
                    alert_priority_t *priority,
                    alert_state_t *state,
                    char **devices,
                    char **description,
                    time_t *since)
 {
-   if( ! self_p || ! *self_p || ! alert_name || ! priority || ! state || ! devices ) return -1;
+   if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
 
    const char *nam, *dev, *pri, *sta, *sin, *des;
    int32_t tmp;
@@ -420,6 +420,7 @@ bios_alert_decode (ymsg_t **self_p,
    des = app_args_string( app, "description", NULL );
    sin = app_args_string( app, "since", NULL );
    
+
    if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
        app_destroy( &app );
        return -3;
@@ -443,7 +444,7 @@ bios_alert_decode (ymsg_t **self_p,
            return -6;
        }
    }
-   *alert_name = strdup(nam);
+   *rule_name = strdup(nam);
    *devices = strdup(dev);
    if( description ) {
        if( des ) {
