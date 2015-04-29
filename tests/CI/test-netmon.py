@@ -100,20 +100,30 @@ ipres = parse_ip_a_s(ipout)
 assert len(ipres) > 0, "TODO: move to skip - there is nothing to test on this box"
 
 # to create some dummy interface?
-#nic_name = ipres[0][0]
-nic_name = "lo0"
-print(nic_name)
+nic_name = ipres[0][0]
+#nic_name = "lo0"
+### shared.py has lo* explicitly removed from the list
+print("Detected NIC to use in the test: %s" % (nic_name, ))
 assert nic_name, "Name of network card is empty!"
 
 # reset the environment
+print("Removing the address that might be left over from earlier tests (failure is not critical)")
 subprocess.call(["/usr/bin/sudo", "/bin/ip", "addr", "del", "203.0.113.42/24", "dev", nic_name])
 time.sleep(4)
 
-db = connect_to_db()
-dbres = read_db(db)
+try:
+    db = connect_to_db()
+    dbres = read_db(db)
+except AssertionError as e:
+    print(df)
+    raise e
+
+print("=== dbres:\n%s\n---" % ( dbres, ))
+print("=== ipres:\n%s\n---" % ( ipres, ))
+
 try:
     df = compare_results(ipres, dbres)
-    assert df == [], "01-initial-check: results of ip addr SHOULD equals with database results"
+    assert df == [], "01-initial-check: results of ip addr SHOULD equal with database results"
 except AssertionError as e:
     print(df)
     raise e
@@ -125,7 +135,7 @@ db.commit() #WTF WTF
 dbres = read_db(db)
 try:
     df = compare_results(ipres, dbres)
-    assert df != [], "02-added-TEST-NET-3: results of ip addr show SHOULD NOT equals with database results"
+    assert df != [], "02-added-TEST-NET-3: results of ip addr show SHOULD NOT equal with database results"
 except AssertionError as e:
     print(df)
     raise e
@@ -134,7 +144,7 @@ ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
 try:
     df = compare_results(ipres, dbres)
-    assert df == [], "03-added-TEST-NET-3: results of ip addr show SHOULD equals with database results"
+    assert df == [], "03-added-TEST-NET-3: results of ip addr show SHOULD equal with database results"
 except AssertionError as e:
     print(df)
     raise e
@@ -146,7 +156,7 @@ db.commit()
 dbres = read_db(db)
 try:
     df = compare_results(ipres, dbres)
-    assert df != [], "04-deleted-TEST-NET-3: results of ip addr show SHOULD NOT equals with database results"
+    assert df != [], "04-deleted-TEST-NET-3: results of ip addr show SHOULD NOT equal with database results"
 except AssertionError as e:
     print(df)
     raise e
@@ -155,7 +165,7 @@ ipout = subprocess.check_output(["/bin/ip", "a", "s"])
 ipres = parse_ip_a_s(ipout)
 try:
     df = compare_results(ipres, dbres)
-    assert df == [], "05-deleted-TEST-NET-3: results of ip addr show SHOULD equals with database results"
+    assert df == [], "05-deleted-TEST-NET-3: results of ip addr show SHOULD equal with database results"
 except AssertionError as e:
     print(df)
     raise e
