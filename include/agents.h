@@ -148,6 +148,8 @@ typedef enum {
     ALERT_STATE_ONGOING_ALERT
 } alert_state_t;
 
+BIOS_EXPORT const char* alert_state_to_str(alert_state_t astate);
+
 typedef enum {
     ALERT_PRIORITY_UNKNOWN = 0,
     ALERT_PRIORITY_P1,

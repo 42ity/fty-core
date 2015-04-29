@@ -4,6 +4,7 @@
 #include <tntdb/connection.h>
 
 #include "alert.h"
+#include "agents.h"
 #include "dbpath.h"
 #include "data.h"
 
@@ -18,16 +19,6 @@ inline int restapitime(time_t t, char* buf, size_t s) {
     strftime(buf, s, "%Y%m%d%H%M%SZ", tmp);
     return 0;
 }
-// TODO - consolidate with alerts agent once merged
-inline const char* alert_state_to_string(int state) {
-    switch (state) {
-        case 0:
-            return "no-alert";;
-        case 1:
-            return "ongoing";;
-    }
-    return "uknown";;
-}
 
 
 </%pre>
@@ -40,7 +31,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
 
     //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
 
-    auto db_reply = select_alert_all_opened(conn);
+    auto db_reply = persist::select_alert_all_opened(conn);
     if (db_reply.status == 0) {
 </%cpp>
 {
@@ -71,7 +62,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
         "severity" : "critical",
         "priority" : "<$ sprio $>",
         "description" : "<$ i.description $>",
-        "state" : "<$ alert_state_to_string(i.alert_state) $>",
+        "state" : "<$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
         "last_state_ts" : null
     }<$ cnt != db_reply.item.size() ? ',' : ' ' $>
 %}
