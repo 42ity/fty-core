@@ -21,7 +21,9 @@
 
 # NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
 SCRIPTDIR=$(dirname $0)
-CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+export CHECKOUTDIR BUILDSUBDIR
 
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
