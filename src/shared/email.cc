@@ -35,7 +35,7 @@ Smtp::Smtp(
         "--protocol=smtp",
         "--auth=off",
         "--tls=off",
-        "--auto-from=on",
+        "--auto-from=off",
         "--read-recipients",
         "--read-envelope-from"};
 }

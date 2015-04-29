@@ -25,18 +25,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 int main(int argc, char** argv) {
 
-    if (argc != 4) {
-        log_error("Usage: ./bios-email To Subject Body");
+    if (argc != 5) {
+        log_error("Usage: ./bios-email From To Subject Body");
         return -1;
     }
 
-    shared::Smtp smtp{"mail.etn.com", "bios-test@no.ip"};
-
     try {
+        shared::Smtp smtp{"mail.etn.com", argv[1]};
+
         smtp.sendmail(
-            argv[1],
             argv[2],
-            argv[3]
+            argv[3],
+            argv[4]
         );
     }
     catch (const std::runtime_error& e) {
