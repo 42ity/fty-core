@@ -638,6 +638,32 @@ test_agents_CPPFLAGS = \
 test_agents_LDFLAGS = \
 			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
+check_PROGRAMS += 	test-computation
+
+test_computation_SOURCES = \
+			tests/agents/cm/test-cm-agent-utils.cc \
+			src/agents/computation/cm-agent-utils.h \
+			src/agents/computation/cm-agent-utils.cc
+
+test_computation_LDADD = \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+test_computation_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/computation \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_computation_LDFLAGS = \
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
+
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
 
