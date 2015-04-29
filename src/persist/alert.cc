@@ -611,8 +611,7 @@ static db_reply <std::vector<db_alert_t>>
                 continue;
             }
 
-            //NOTE: alarms without device_id are not supported!
-            if (!m.device_ids.empty()) {
+            if (!m.rule_name.empty()) {
                 ret.item.push_back(m);
             }
 
@@ -627,13 +626,13 @@ static db_reply <std::vector<db_alert_t>>
             r[6].get(m.date_from);
             r[7].get(m.date_till);
 
-            r[8].get(element_id);
-            m.device_ids.push_back(element_id);
+            bool isNotNull = r[8].get(element_id);
+            if (isNotNull)
+                m.device_ids.push_back(element_id);
 
             last_id = curr_id;
         }
-        //NOTE: alarms without device_id are not supported!
-        if (!m.device_ids.empty()) {
+        if (!m.rule_name.empty()) {
             ret.item.push_back(m);
         }
         ret.status = 1;
