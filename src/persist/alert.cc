@@ -573,7 +573,7 @@ static const std::string  sel_alarm_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
-    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
     "    v.id_asset_element "
     " FROM"
     "   v_bios_alert_all v"
