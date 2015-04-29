@@ -435,9 +435,9 @@ CREATE VIEW v_bios_alert_all AS
         t3.id_asset_element
     FROM
         v_bios_alert v1
-        INNER JOIN v_bios_alert_device v2
+        LEFT JOIN v_bios_alert_device v2
             ON v1.id = v2.alert_id
-        INNER JOIN t_bios_monitor_asset_relation t3
+        LEFT JOIN t_bios_monitor_asset_relation t3
             ON v2.device_id = t3.id_discovered_device
     ORDER BY v1.id;
 
