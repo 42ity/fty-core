@@ -60,7 +60,7 @@ path-exclude=/usr/share/linda/*
 limit_packages_docs() {
     # try to deny installation of some hugely useless packages
     # tex-docs for example are huge (850Mb) and useless on a test container
-    echo "INFO: Tell DPKG to not install some large documentation packages"
+    echo "INFO: Tell DPKG to not install some large documentation packages (may complain, don't worry)"
     for P in \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc \
@@ -72,7 +72,7 @@ limit_packages_docs() {
     ; do
         apt-mark hold "$P" >&2
         echo "$P  purge"
-    done | dpkg --set-selections 2>/dev/null
+    done | dpkg --set-selections
 }
 
 update_system() {
