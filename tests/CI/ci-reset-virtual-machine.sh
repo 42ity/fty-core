@@ -305,7 +305,7 @@ cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
 mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
 [ -n "$APT_PROXY" ] && \
-	logmsg_info "Set up APT configuration" && \
+	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
 
