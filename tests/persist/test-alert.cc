@@ -7,6 +7,8 @@
 #include "assetcrud.h"
 #include "monitor.h"
 
+using namespace persist;
+
 TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][crud_test.sql]")
 {
     log_open ();
@@ -131,7 +133,7 @@ TEST_CASE("t_bios_alert UPDATE notification #3","[db][CRUD][update][alert][crud_
 
     // update
     int64_t  new_notification = 4;
-    auto reply_update = update_alert_notification(conn, new_notification, rowid);
+    auto reply_update = update_alert_notification_byId(conn, new_notification, rowid);
     REQUIRE (reply_update.status == 1);
     REQUIRE (reply_update.affected_rows == 1);
 

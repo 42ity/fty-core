@@ -93,7 +93,7 @@ TEST_CASE("log-do_log", "[log][do_log]") {
 
     CHECK(r == 64);
     buf[64] = 0;
-    CHECK(streq(buf, "[CRITICAL]: test-log:42 (test_do_log) testing C-formatted string"));
+    CHECK(str_eq(buf, "[CRITICAL]: test-log:42 (test_do_log) testing C-formatted string"));
 
     fclose(tempf);
     unlink(temp_name);
