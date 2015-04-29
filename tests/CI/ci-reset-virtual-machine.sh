@@ -88,6 +88,11 @@ VM="latest"
 [ -z "$TZ" ] && TZ=UTC
 export LANG LANGUAGE LC_ALL TZ
 
+DOTDOMAINNAME="`dnsdomainname | grep -v '('`" || \
+DOTDOMAINNAME="`domainname | grep -v '('`" || \
+DOTDOMAINNAME=""
+[ -n "$DOTDOMAINNAME" ] && DOTDOMAINNAME=".$DOTDOMAINNAME"
+
 [ -z "$STOPONLY" ] && STOPONLY=no
 
 while [ $# -gt 0 ] ; do
@@ -156,13 +161,15 @@ if \
 ; then
 	EXT="squashfs"
 	OVERLAYFS="yes"
-	logmsg_info "Detected support of OVERLAYFS on the `hostname` host," \
-	    "will mount a .$EXT file as an RO base and overlay the RW changes"
+	logmsg_info "Detected support of OVERLAYFS on the host" \
+	    "`hostname`${DOTDOMAINNAME}, so will mount a .$EXT file" \
+	    "as an RO base and overlay the RW changes"
 else
 	EXT="tar.gz"
 	OVERLAYFS=""
-	logmsg_info "Detected no support of OVERLAYFS on the `hostname` host," \
-	    "will unpack a .$EXT file into a dedicated full RW directory"
+	logmsg_info "Detected no support of OVERLAYFS on the host" \
+	    "`hostname`${DOTDOMAINNAME}, so will unpack a .$EXT file" \
+	    "into a dedicated full RW directory"
 fi
 
 # Note: several hardcoded paths are expected relative to this one,
@@ -171,15 +178,20 @@ mkdir -p /srv/libvirt/snapshots
 cd /srv/libvirt/snapshots || \
 	die "Can not 'cd /srv/libvirt/snapshots' to download image files"
 
-# Get latest image for us
+logmsg_info "Get the latest operating environment image prepared for us by OBS"
 ARCH="`uname -m`"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 wget -c "$IMAGE_URL"
 if [ "$1" ]; then
+	# TODO: We should not get to this point in current code structure
+	# (CLI parsing loop above would fail on unrecognized parameter).
+	# Should think if anything must be done about picking a particular
+	# image name for a particular VM, though.
 	IMAGE="$1"
 else
 	IMAGE="`ls -1 *.$EXT | sort -r | head -n 1`"
 fi
+logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up"
 
 # Destroy whatever was running
 virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
@@ -187,16 +199,22 @@ virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
 sleep 5
 
 # Destroy the overlay-rw half of the old running container, if any
-[ -d "../overlays/${IMAGE}__${VM}" ] && \
+if [ -d "../overlays/${IMAGE}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
-		"'../overlays/${IMAGE}__${VM}'" && \
+		"'../overlays/${IMAGE}__${VM}'"
 	rm -rf "../overlays/${IMAGE}__${VM}"
+	sleep 1; echo ""
+fi
 
 # When the host gets ungracefully rebooted, useless old dirs may remain...
 for D in ../overlays/*__${VM}/ ; do
-	[ -d "$D" ] && logmsg_warn "Obsolete RW directory for an old version" \
-		"of this VM was found, removing '`pwd`/$D'..." >&2 && \
-		{ ls -lad "$D"; rm -rf "$D"; }
+	if [ -d "$D" ]; then
+		logmsg_warn "Obsolete RW directory for an old version" \
+			"of this VM was found, removing '`pwd`/$D':"
+		ls -lad "$D"
+		rm -rf "$D"
+		sleep 1; echo ""
+	fi
 done
 for D in ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
@@ -210,22 +228,28 @@ for D in ../rootfs/*-ro/ ; do
 		    continue
 
 		logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
-		    "removing '`pwd`/$D'..."
-		ls -la "$D"
+		    "removing '`pwd`/$D':"
+		ls -lad "$D"; ls -la "$D"
 		umount -fl "$D" 2> /dev/null > /dev/null
 		rm -rf "$D"
+		sleep 1; echo ""
 	fi
 done
 
 # Cleanup of the rootfs
+logmsg_info "Unmounting paths related to VM '$VM':" \
+	"'`pwd`/../rootfs/$VM/lib/modules'," \
+	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/$IMAGE-ro'"
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
 # This unmount can fail if for example several containers use the same RO image
+# or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
 umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null || true
 
 # clean up VM space
+logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
 /bin/rm -rf "../rootfs/$VM"
 
 if [ x"$STOPONLY" = xyes ]; then
@@ -234,35 +258,51 @@ if [ x"$STOPONLY" = xyes ]; then
 	exit 0
 fi
 
+logmsg_info "Creating a new VM rootfs at '`pwd`/../rootfs/$VM'"
 mkdir -p "../rootfs/$VM"
-# Mount RO squashfs
 if [ "$OVERLAYFS" = yes ]; then
-	mkdir -p "../overlays/${IMAGE}__${VM}"
+	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/$IMAGE-ro'"
 	mkdir -p "../rootfs/$IMAGE-ro"
 	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || \
 		die "Can't mount squashfs"
-fi
 
-# Mount RW image
-if [ "$OVERLAYFS" = yes ]; then
+	logmsg_info "Use the individual RW component" \
+		"located in '`pwd`/../overlays/${IMAGE}__${VM}'" \
+		"for an overlay-mount united at '`pwd`/../rootfs/$VM'"
+	mkdir -p "../overlays/${IMAGE}__${VM}"
 	mount -t overlayfs \
 	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/${IMAGE}__${VM}" \
 	    overlayfs "../rootfs/$VM" 2> /dev/null \
 	|| die "Can't overlay-mount rw directory"
 else
+	logmsg_info "Unpack the full individual RW copy of the image" \
+		"'$IMAGE' at '`pwd`/../rootfs/$VM'"
 	tar -C "../rootfs/$VM" -xzf "$IMAGE" \
 	|| die "Can't un-tar the rw directory"
 fi
 
-# Bind-mount kernel modules from the host OS
+logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "../rootfs/$VM/lib/modules"
 mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
-# copy root's ~/.ssh from the host OS
+logmsg_info "Setup virtual hostname"
+echo "$VM" > "../rootfs/$VM/etc/hostname"
+logmsg_info "Put virtual hostname in resolv.conf"
+sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
+
+logmsg_info "Copy root's ~/.ssh from the host OS"
 cp -r --preserve ~/.ssh "../rootfs/$VM/root/"
 cp -r --preserve /etc/ssh/*_key /etc/ssh/*.pub "../rootfs/$VM/etc/ssh"
 
+logmsg_info "Copy environment settings from the host OS"
+cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
+
+logmsg_info "Add xterm terminfo from the host OS"
+mkdir -p ../rootfs/$VM/lib/terminfo/x
+cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
+
+logmsg_info "Set up APT configuration"
 mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 # setup debian proxy
 [ -n "$APT_PROXY" ] && \
@@ -271,20 +311,7 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 #echo 'APT::Install-Recommends "false";' > \
 #	"../rootfs/$VM/etc/apt/apt.conf.d/02no-recommends"
 
-# setup virtual hostname
-echo "$VM" > "../rootfs/$VM/etc/hostname"
-
-# add xterm terminfo from the host OS
-mkdir -p ../rootfs/$VM/lib/terminfo/x
-cp /lib/terminfo/x/xterm* ../rootfs/$VM/lib/terminfo/x
-
-# copy enviroment settings from the host OS
-cp /etc/profile.d/* ../rootfs/$VM/etc/profile.d/
-
-# put hostname in resolv.conf
-sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
-
-# try to influence dpkg
+logmsg_info "Try to influence DPKG to avoid certain large useless files"
 # see also "dpkg --set-selections" in ci-setup-test-machine.sh
 mkdir -p ../rootfs/$VM/etc/dpkg/dpkg.cfg.d
 echo '# avoid installation of docs packages except ours
@@ -301,10 +328,11 @@ path-exclude=/usr/share/lintian/*
 path-exclude=/usr/share/linda/*
 ' >> ../rootfs/$VM/etc/dpkg/dpkg.cfg.d/excludes
 
-# Start the virtual machine
+logmsg_info "Start the virtual machine"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
-	"is successfully completed on `date -u` on host `hostname`"
+	"is successfully completed on `date -u` on host" \
+	"'`hostname`${DOTDOMAINNAME}'"
 
 exit 0
