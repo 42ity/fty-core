@@ -89,7 +89,6 @@ for(
         "test_db_tests",
         "test_netmon",
         "test_restapi",
-        "test_general_database",
         "test_NUT",
         "test_rackpower",
         "test_libbiosapi",
