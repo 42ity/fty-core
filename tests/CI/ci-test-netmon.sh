@@ -115,7 +115,7 @@ sudo ip addr del 20.13.5.4/32 dev lo
 
 [ -n "$DEBUG" ] && \
     echo "DEBUG: Done with IP addressing changes..." >&2
-sleep 2
+sleep 7
 
 file=$(<$dsh_file) # `cat file` for non-bash shell
 if [ -n "$DEBUG" ]; then
