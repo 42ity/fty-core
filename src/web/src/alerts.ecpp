@@ -56,12 +56,12 @@ tntdb::Connection conn = tntdb::connectCached(url);
         "id" : <$ i.id $>,
         "source_ts" : "<$ t1 $>",
         "application_name" : "ALERT",
-        "rule_name" : "<$ i.rule_name $>",
+        "rule_name" : "<$$ i.rule_name $>",
         "element_id" : <$ i.device_ids.empty() ? "null" : std::to_string(i.device_ids[0]) $>,
-        "element_name" : <$ i.device_ids.empty() ? "null" :element_name $>,
+        "element_name" : <$$ i.device_ids.empty() ? "null" :element_name $>,
         "severity" : "critical",
         "priority" : "<$ sprio $>",
-        "description" : "<$ i.description $>",
+        "description" : "<$$ i.description $>",
         "state" : "<$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
         "last_state_ts" : null
     }<$ cnt != db_reply.item.size() ? ',' : ' ' $>
