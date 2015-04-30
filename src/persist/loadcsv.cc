@@ -62,8 +62,10 @@ static int
         (const std::string& s)
 {
     log_debug ("priority string = %s", s.c_str());
+    if ( s.size() > 2 )
+        return 5;
     for (int i = 0; i != 2; i++) {
-        if (s[i] >= 49 && s[i] <= 57) {
+        if (s[i] >= 49 && s[i] <= 53) {
             return s[i] - 48;
         }
     }
