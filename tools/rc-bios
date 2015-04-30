@@ -372,7 +372,7 @@ stop_unit_sysd() {
         return my_systemctl stop ${unit}.service
     fi
 
-    for unit in "${DAEMONS}"; do
+    for unit in "${DAEMONS_OUR_SYSTEMD}"; do
         stop_unit_sysd "${unit}" || :
     done
 }
@@ -382,7 +382,7 @@ stop_unit_user() {
         return stop_daemon "${1}"
     fi
 
-    for name in "${DAEMONS}"; do
+    for name in "${DAEMONS_OUR_SYSTEMD}"; do
         stop_daemon "${name}" || :
     done
 }
