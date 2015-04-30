@@ -32,6 +32,11 @@
 #         will be duplicated to 
 #   TODO: what about mysql?
 #
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+export PATH
+
+BASE_PATH=`dirname $0`
+BASE_PATH=`realpath ${BASE_PATH}/../`
 
 ### System-provided daemons (available as systemd units)
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
@@ -40,37 +45,16 @@ DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon
 ### make webtest additional targets
 MAKE_WEBTEST_TARGETS="db-ng agent-nut driver-nmap netmon"
 
+# Simple check for whether sudo is needed for high-privilege tasks
+# We assume here that the non-privileged user running this command
+# does have "sudo" permissions set up per $BIOS documentation.
+RUNAS=""
+CURID="`id -u`" || CURID=""
+[ "$CURID" = 0 -o "$CURID" = root ] || RUNAS="sudo"
+
 ### List of daemons that we manage as one mega-unit by default
 [ -z "$DAEMONS" ] && \
     DAEMONS="$DAEMONS_OS_SYSTEMD $DAEMONS_OUR_SYSTEMD"
-
-if [ "x$CHECKOUTDIR" = "x" ]; then
-    SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
-    SCRIPTDIR="`dirname $0`"
-    case "$SCRIPTDIR" in
-        */tests/CI|tests/CI)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-        */tools|tools)
-           CHECKOUTDIR="$( echo "$SCRIPTDIR" | sed 's|/tools$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-fi
-[ "x$CHECKOUTDIR" = "x" -a -d ~/project ] && CHECKOUTDIR=~/project
-echo "INFO: Init-umbrella '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
-
-[ -z "$BUILDSUBDIR" -o ! -d "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
-[ ! -x "$BUILDSUBDIR/config.status" ] && BUILDSUBDIR="$PWD"
-if [ ! -x "$BUILDSUBDIR/config.status" ]; then
-    echo "Cannot find $BUILDSUBDIR/config.status, using pre-packaged binaries..."
-    PATH="/usr/local/bin:/usr/local/lib:/usr/local/libexec:/usr/local/lib/bios:/usr/local/libexec/bios:$PATH"
-    PATH="/usr/bin:/usr/lib:/usr/libexec:/usr/lib/bios:/usr/libexec/bios:$PATH"
-else
-    echo "Found $BUILDSUBDIR/config.status, using custom-built binaries preferentially..."
-    echo "Search path: $PWD, $BUILDSUBDIR, $CHECKOUTDIR, under home, system PATH..."
-    PATH="${PWD}:$BUILDSUBDIR:$CHECKOUTDIR:~/bin:~/lib:~/libexec:~/lib/bios:~/libexec/bios:$PATH"
-fi
-export PATH
 
 logmsg_die() {
     [ -z "$CODE" ] || [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
@@ -98,47 +82,6 @@ usage() {
     echo "       If no daemons are given, assume all of: $DAEMONS" >&2
     exit 1
 }
-
-update_compiled() {
-    if  [ -z "$CHECKOUTDIR" ] || \
-        [ ! -d "$CHECKOUTDIR" -o ! -x "$CHECKOUTDIR/autogen.sh" ] \
-    ; then
-        # Use system bins, nothing to compile with
-        return 0
-    fi
-
-    if  [ -z "$BUILDSUBDIR" ] || \
-        [ ! -d "$BUILDSUBDIR" -o ! -x "$BUILDSUBDIR/config.status" ] \
-    ; then
-        # Use system bins, nothing to compile
-        return 0
-    fi
-
-    (   cd "$BUILDSUBDIR" || die "Can't use BUILDSUBDIR='$BUILDSUBDIR'"
-        cd "$CHECKOUTDIR" || die "Can't use CHECKOUTDIR='$CHECKOUTDIR'"
-        AUTOGEN_ACTION_CONFIG=config
-        AUTOGEN_ACTION_MAKE=make
-        [ x"$BUILDSUBDIR" != x"$CHECKOUTDIR" ] && \
-            AUTOGEN_ACTION_CONFIG="${AUTOGEN_ACTION_CONFIG}-subdir" && \
-            AUTOGEN_ACTION_MAKE="${AUTOGEN_ACTION_MAKE}-subdir"
-        logmsg_info "Ensuring that the tested programs have been built and up-to-date with CHECKOUTDIR='$CHECKOUTDIR' and BUILDSUBDIR='$BUILDSUBDIR'"
-        if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-            ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
-        fi
-        ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
-            web-test-deps $MAKE_WEBTEST_TARGETS
-        exit $? )
-
-    return $?
-}
-
-
-# Simple check for whether sudo is needed for high-privilege tasks
-# We assume here that the non-privileged user running this command
-# does have "sudo" permissions set up per $BIOS documentation.
-RUNAS=""
-CURID="`id -u`" || CURID=""
-[ "$CURID" = 0 -o "$CURID" = root ] || RUNAS="sudo"
 
 my_systemctl() {
     $RUNAS /usr/bin/systemctl --system --no-pager --full "$@"
@@ -191,7 +134,7 @@ unit_name() {
     fi
 
     for i in ${arg} bios-${arg} bios-driver-${arg} bios-agent-${arg}; do
-        if [ -r "${CHECKOUTDIR}/tools/${i}.service.in" ] || \
+        if [ -r "${BASE_PATH}/tools/${i}.service.in" ] || \
 	   [ -r "/lib/systemd/system/${i}.service" ] \
 	; then
             echo "${i}"
@@ -202,16 +145,31 @@ unit_name() {
     return 1
 }
 
+find_buildsubdir() {
+    local buildsubdir
+    [ -d "${BASE_PATH}" ] || \
+        logmsg_die "${BASE_PATH} is not directory"
+
+    buildsubdir=`/usr/bin/find -P ${BASE_PATH}/ -xdev -type f -executable -name 'config.status' -print -quit`
+    buildsubdir=`dirname "${buildsubdir}"`
+    buildsubdir=`realpath "${buildsubdir}"`
+    echo "${buildsubdir}"
+}
+
 subst_unit() {
-    local unit
+    local unit buildsubdir
     unit=$(unit_name ${1})
 
-    [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+    buildsubdir=$(find_buildsubdir)
+    [ -d "${buildsubdir}" ] || \
+        logmsg_die "can't find config.status in ${BASE_PATH}"
 
-    sed -e "s|@libdir[@]/bios|${BUILDSUBDIR}|" \
-        -e "s|@libexecdir[@]/bios|${BUILDSUBDIR}|" \
-        -- "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+    [ -n "${unit}" ] || \
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
+
+    sed -e "s|@libdir[@]/bios|${buildsubdir}|" \
+        -e "s|@libexecdir[@]/bios|${buildsubdir}|" \
+        -- "${BASE_PATH}/tools/${unit}.service.in" | \
     sed 's|//|/|g'
 }
 
@@ -221,7 +179,7 @@ install_unit_sysd() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" > /tmp/.${unit}.$$.service && \
     $RUNAS mv -f /tmp/.${unit}.$$.service /run/systemd/system/${unit}.service
@@ -233,9 +191,9 @@ get_unit_dependencies() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
 
-    grep '^Requires=' "${CHECKOUTDIR}/tools/${unit}.service.in" | \
+    grep '^Requires=' "${BASE_PATH}/tools/${unit}.service.in" | \
         cut -d '=' -f 2 | sed -e 's/.service\>//g' -e 's/[ \t]\+/\n/'
 }
 
@@ -244,7 +202,7 @@ get_unit_exec() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
 
     subst_unit "${unit}" | grep -e '^ExecStart=' | cut -d '=' -f 2
 }
@@ -252,7 +210,7 @@ get_unit_exec() {
 is_daemon_running() {
     local name pid pidfile
     name=${1}
-    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
+    pidfile="${BASE_PATH}/${name}.pid"
     
     [ ! -r "${pidfile}" ] && return 1
     pid=$(head -1 "${pidfile}")
@@ -267,22 +225,31 @@ is_daemon_running() {
 }
 
 start_daemon() {
-    local name args pid
+    local name args pid pidfile buildsubdir exe
     name="${1}"
     shift 1
     args="${@}"
+    pidfile="${BASE_PATH}/${name}.pid"
+ 
+    buildsubdir=$(find_buildsubdir)
+    [ -d "${buildsubdir}" ] || \
+        logmsg_die "Can't find config.status in ${BASE_PATH}"
 
     is_daemon_running "${name}" && return 0
 
-    type "${name}" >/dev/null || \
-        [ -x ${name} ] || \
-        logmsg_die "Can't find executable ${name}"
+    if [ -x "${buildsubdir}/${name}" ]; then
+        exe=${buildsubdir}/${name}
+    elif type "${name}" &>/dev/null; then
+        exe=${name}
+    else
+        logmsg_die "Can't find executable ${name} in ${buildsubdir}, neither $PATH"
+    fi
 
-    logmsg_info "START-DAEMON: ${name} ${args}"
+    logmsg_info "START-DAEMON: ${exe} ${args}"
     ${name} ${args} &
     pid=$!
-    logmsg_info "START-DAEMON: ${name}[${pid}] started"
-    echo "${pid}" > "${BUILDSUBDIR}/`basename ${name}`.pid"
+    logmsg_info "START-DAEMON: ${exe}[${pid}] started"
+    echo "${pid}" > "${pidfile}"
 
     # nasty hack to check if pid is still alive - we assume no daemonization
     # will be done by a program! this was script reports success or a fail
@@ -295,7 +262,7 @@ stop_daemon() {
     local name pid pidfile
     name="${1}"
     shift 1
-    pidfile="${BUILDSUBDIR}/`basename ${name}`.pid"
+    pidfile="${BASE_PATH}/${name}.pid"
 
     if ! is_daemon_running "${name}"; then
         rm -f "${pidfile}"
@@ -313,6 +280,10 @@ stop_daemon() {
 run_malamute_user() {
     [ -x /usr/bin/malamute ] || logmsg_die "can't find /usr/bin/malamute"
 
+    if killall -0 malamute &>/dev/null; then
+        logmsg_info "malamute already running"
+    fi
+
     start_daemon malamute /etc/malamute/malamute.cfg
 }
 
@@ -321,7 +292,7 @@ run_unit_user() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
 
     if [ "${unit}" = "malamute" ]; then
         run_malamute_user || logmsg_die "cant run malamute"
@@ -349,7 +320,7 @@ run_unit_sysd() {
     unit=$(unit_name ${1})
 
     [ -n "${unit}" ] || \
-        logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
 
     if ! is_external_unit "${unit}"; then
         install_unit_sysd ${unit} || logmsg_die "Can't install unit file for ${unit}"
@@ -368,8 +339,9 @@ stop_unit_sysd() {
     if [ -n "${1}" ]; then
         unit=$(unit_name ${1})
         [ -n "${unit}" ] || \
-            logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
-        return my_systemctl stop ${unit}.service
+            logmsg_die "${BASE_PATH}/tools/${unit}.service.in does not exist"
+        my_systemctl stop ${unit}.service
+        return $?
     fi
 
     for unit in "${DAEMONS_OUR_SYSTEMD}"; do
@@ -379,7 +351,8 @@ stop_unit_sysd() {
 
 stop_unit_user() {
     if [ -n "${1}" ]; then
-        return stop_daemon "${1}"
+        stop_daemon "${1}"
+        return $?
     fi
 
     for name in "${DAEMONS_OUR_SYSTEMD}"; do
@@ -422,8 +395,6 @@ do_stop() {
 main() {
 
     [ -n "${1}" ] || usage
-
-    update_compiled
 
     [ "${1}" = "--kill" ] && logmsg_die "Switch --kill is obsoleted. To stop use ${0} stop"
 
