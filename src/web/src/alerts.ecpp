@@ -4,22 +4,9 @@
 #include <tntdb/connection.h>
 
 #include "alert.h"
-#include "agents.h"
+#include "utils.h"
 #include "dbpath.h"
 #include "data.h"
-
-//TODO: move to utils.h
-//! \brief convert unix time to rest api time
-//
-//  caller is responsible for allocating large enough buffer
-inline int restapitime(time_t t, char* buf, size_t s) {
-    struct tm* tmp = gmtime(&t);
-    if (!tmp)
-        return -1;
-    strftime(buf, s, "%Y%m%d%H%M%SZ", tmp);
-    return 0;
-}
-
 
 </%pre>
 <%thread scope="global">
@@ -44,7 +31,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
     for (const auto& i : db_reply.item) {
         cnt ++;
         char t1[64];
-        restapitime(i.date_from, t1, 64);
+        unixtime_to_datetime(i.date_from, t1, 64);
         auto element_name = i.rule_name;
         auto idx = element_name.find('@');
         if (idx != std::string::npos) {

@@ -27,18 +27,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "agents.h"
 
-const char* alert_state_to_str(alert_state_t astate) {
-    switch (astate) {
-        case ALERT_STATE_UNKNOWN:
-            return "unknown";;
-        case ALERT_STATE_NO_ALERT:
-            return "no-alert";;
-        case ALERT_STATE_ONGOING_ALERT:
-            return "ongoing";;
-    }
-    return "unknown"; //make gcc happy
-}
-
 ymsg_t *
 bios_netmon_encode
 (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address) {
