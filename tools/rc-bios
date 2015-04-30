@@ -87,7 +87,7 @@ logmsg_info() {
 }
 
 usage() {
-    echo "Usage: rc-bios [{start|stop|restart|status|help}] [names [of [daemons]]]" >&2
+    echo "Usage: rc-bios [{start|stop}] [names [of [daemons]]]" >&2
     if can_use_sysd; then
         echo "       systemd activation WILL BE used" >&2
     else
@@ -362,31 +362,32 @@ can_use_sysd() {
     readlink -f /proc/1/exe | egrep -q "/lib/systemd/systemd$"
 }
 
-main() {
+stop_unit_sysd() {
+    local unit
 
-    [ -n "${1}" ] || usage
-
-    update_compiled
-
-    if [ "${1}" = "--kill" ]; then
-        if can_use_sysd; then
-            for unit in \
-                $(my_systemctl list-units | grep ^bios- | cut -f 1 -d ' ') \
-                malamute \
-            ; do
-                my_systemctl stop "${unit}"
-                rm -f /run/systemd/system/${unit}.service
-            done
-        else
-            for name in \
-                $(ls -1 ${BUILDSUBDIR}/*.pid 2>/dev/null | sed -e 's/\.pid$//') \
-            ; do
-                stop_daemon "${name}"
-            done
-        fi
-        return $?
+    if [ -n "${1}" ]; then
+        unit=$(unit_name ${1})
+        [ -n "${unit}" ] || \
+            logmsg_die "${CHECKOUTDIR}/tools/${unit}.service.in does not exist"
+        return my_systemctl stop ${unit}.service
     fi
 
+    for unit in "${DAEMONS}"; do
+        stop_unit_sysd "${unit}" || :
+    done
+}
+
+stop_unit_user() {
+    if [ -n "${1}" ]; then
+        return stop_daemon "${1}"
+    fi
+
+    for name in "${DAEMONS}"; do
+        stop_daemon "${name}" || :
+    done
+}
+
+do_start() {
     local run
     if can_use_sysd; then
         run=run_unit_sysd
@@ -397,6 +398,49 @@ main() {
     for i in "${@}"; do
         ${run} "${i}"
     done
+}
+
+do_stop() {
+    local stop
+    if can_use_sysd; then
+        stop=stop_unit_sysd
+    else
+        stop=stop_unit_user
+    fi
+
+    if [ -n "${1}" ]; then
+        for i in "${@}"; do
+            ${stop} "${i}"
+        done
+    else
+        for i in "${DAEMONS}"; do
+            ${stop} "${i}"
+        done
+    fi
+}
+
+main() {
+
+    [ -n "${1}" ] || usage
+
+    update_compiled
+
+    [ "${1}" = "--kill" ] && logmsg_die "Switch --kill is obsoleted. To stop use ${0} stop"
+
+    case "${1}" in
+        start)
+            shift 1
+            do_start "${@}"
+            ;;
+        stop)
+            shift 1
+            do_stop "${@}"
+            ;;
+        *)
+            logmsg_info "Unknown option '${1}', defaulting to start"
+            do_start "${@}"
+            ;;
+    esac
 }
 
 main "${@}"
