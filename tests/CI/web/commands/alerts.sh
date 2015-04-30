@@ -1,3 +1,4 @@
 test_it
-api_get /alerts
+api_get_json /alerts >&5
 print_result $?
+
