@@ -37,12 +37,12 @@
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
 ### $BIOS-provided daemons (available as systemd units)
 DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-agent-nut bios-server-agent"
-### Programs which we execute manually
-DAEMONS_OUR_BINS="db-ng agent-nut driver-nmap netmon"
+### make webtest additional targets
+MAKE_WEBTEST_TARGETS="db-ng agent-nut driver-nmap netmon"
 
 ### List of daemons that we manage as one mega-unit by default
 [ -z "$DAEMONS" ] && \
-    DAEMONS="$DAEMONS_OS_SYSTEMD $DAEMONS_OUR_SYSTEMD $DAEMONS_OUR_BINS"
+    DAEMONS="$DAEMONS_OS_SYSTEMD $DAEMONS_OUR_SYSTEMD"
 
 if [ "x$CHECKOUTDIR" = "x" ]; then
     SCRIPTDIR="$(cd "`dirname $0`" && pwd)" || \
@@ -126,7 +126,7 @@ update_compiled() {
             ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
         fi
         ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
-            web-test-deps $DAEMONS_OUR_BINS
+            web-test-deps $MAKE_WEBTEST_TARGETS
         exit $? )
 
     return $?
