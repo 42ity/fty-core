@@ -420,7 +420,7 @@ bios_alert_extract(ymsg_t *self,
         app = ymsg_request_app( self );
         break;
     }
-    if( ! app || ! streq( app_name( app ), "ASSET" ) ) { app_destroy(&app) ; return -2; }
+    if( ! app || ! streq( app_name( app ), "ALERT" ) ) { app_destroy(&app) ; return -2; }
    if( ! app ) return -3;
        
    nam = app_args_string( app, "rule", NULL );
@@ -472,7 +472,7 @@ bios_asset_encode( const char *devicename,
                    uint32_t type_id,
                    uint32_t parent_id,
                    const char* status,
-                   int32_t priority
+                   uint32_t priority
                    )
 {
     if( ! devicename ) return NULL;
@@ -484,7 +484,7 @@ bios_asset_encode( const char *devicename,
     if( type_id ) app_args_set_uint32( app, "type_id", type_id );
     if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
     if( status ) app_args_set_string( app, "status", status );
-    if( priority ) app_args_set_int32( app, "priority", priority );
+    if( priority ) app_args_set_uint32( app, "priority", priority );
     ymsg_request_set_app( msg, &app );
     return msg;
 }
@@ -495,7 +495,7 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *type_id,
                    uint32_t *parent_id,
                    char **status,
-                   int32_t *priority
+                   uint32_t *priority
                    )
 {
     if( ! message || ! devicename ) return -1;
