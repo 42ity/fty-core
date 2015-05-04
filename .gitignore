@@ -82,6 +82,7 @@ cppcheck.xml
 test-agents
 test-api
 test-cidr
+test-computation
 test-csv
 test-loadcsv
 test-database
