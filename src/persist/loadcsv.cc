@@ -141,7 +141,7 @@ static void
     log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
-        {"active", "noactive", "spare", "retired"};
+        {"active", "nonactive", "spare", "retired"};
 
     static auto TYPES = read_element_types (conn);
 
@@ -172,7 +172,7 @@ static void
         // TODO LOG
         log_warning ("Status '%s' is not allowed, use default",
                                                             status.c_str());
-        status = "noactive";    // default
+        status = "nonactive";    // default
     }
     unused_columns.erase("status");
 
