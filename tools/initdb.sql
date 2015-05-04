@@ -80,7 +80,7 @@ CREATE TABLE t_bios_alert(
     date_from   DATETIME         NOT NULL,
     priority    TINYINT UNSIGNED NOT NULL,
     state       TINYINT UNSIGNED NOT NULL,
-    descriprion VARCHAR(255),
+    description VARCHAR(255),
     date_till    DATETIME,
     notification TINYINT         NOT NULL DEFAULT 0,
 
@@ -414,12 +414,32 @@ CREATE VIEW v_bios_alert AS
         date_from,
         priority,
         state,
-        descriprion,
+        description,
         date_till,
         notification
     FROM
         t_bios_alert;
 
+/* for REST API: /asset/all */
+DROP VIEW IF EXISTS v_bios_alert_all;
+CREATE VIEW v_bios_alert_all AS
+    SELECT
+        v1.id,
+        v1.rule_name,
+        v1.date_from,
+        v1.priority,
+        v1.state,
+        v1.description,
+        v1.date_till,
+        v1.notification,
+        t3.id_asset_element
+    FROM
+        v_bios_alert v1
+        LEFT JOIN v_bios_alert_device v2
+            ON v1.id = v2.alert_id
+        LEFT JOIN t_bios_monitor_asset_relation t3
+            ON v2.device_id = t3.id_discovered_device
+    ORDER BY v1.id;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
