@@ -52,7 +52,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
 
     log_close ();
 }
-
+/*
 TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 
     SECTION ("bios_web_average_request_encode") {
@@ -307,4 +307,4 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     if(devices) free (devices);
     if(description) free (description);
 }
-
+*/

@@ -35,7 +35,7 @@ bios_netmon_encode
         (event < NETWORK_EVENT_AUTO_ADD) || (event >= NETWORK_EVENT_TERMINATOR) ||
         (ip_version != IP_VERSION_4 && ip_version != IP_VERSION_6))
         return NULL;
-    _scoped_ymsg_t *message = ymsg_new (YMSG_SEND);
+    ymsg_t *message = ymsg_new (YMSG_SEND);
     if (!message)
         return NULL;
 
@@ -82,7 +82,7 @@ ymsg_t *
     bios_inventory_encode
         (const char *device_name, zhash_t **ext_attributes, const char *module_name)
 {
-    _scoped_ymsg_t *message = ymsg_new (YMSG_SEND);
+    ymsg_t *message = ymsg_new (YMSG_SEND);
     if ( !message )
         return NULL;
    
@@ -167,7 +167,7 @@ bios_measurement_encode (const char *device_name,
                          int64_t time)
 {
     if( ! device_name || ! quantity || ! units ) return NULL; 
-    _scoped_ymsg_t *msg = ymsg_new(YMSG_SEND);
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
     ymsg_set_string(msg, "device", (char *)device_name );
     ymsg_set_string(msg, "quantity", (char *)quantity );
     ymsg_set_string(msg, "units", (char *)units );
@@ -216,7 +216,7 @@ bios_web_average_request_encode (int64_t start_timestamp, int64_t end_timestamp,
     if (!type || !step || !source)
         return NULL;
     
-    _scoped_ymsg_t *message = ymsg_new (YMSG_SEND);
+    ymsg_t *message = ymsg_new (YMSG_SEND);
     if (!message) 
         return NULL;
     
@@ -261,7 +261,7 @@ ymsg_t *
 bios_web_average_reply_encode (const char *json) {
     if (!json)
         return NULL;
-    _scoped_ymsg_t *message = ymsg_new (YMSG_REPLY);
+    ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
     zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
@@ -296,7 +296,7 @@ bios_db_measurements_read_request_encode (int64_t start_timestamp, int64_t end_t
     if (!source || !subject)
         return NULL;
 
-    _scoped_ymsg_t *message = ymsg_new (YMSG_SEND);
+    ymsg_t *message = ymsg_new (YMSG_SEND);
     if (!message) 
         return NULL;
     
@@ -337,7 +337,7 @@ bios_db_measurements_read_request_extract_err:
 
 ymsg_t *
 bios_db_measurements_read_reply_encode (const char *json) {
-    _scoped_ymsg_t *message = ymsg_new (YMSG_REPLY);
+    ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
     zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
@@ -383,7 +383,7 @@ bios_alert_encode (const char *rule_name,
         ( priority < ALERT_PRIORITY_P1 ) ||
         ( priority > ALERT_PRIORITY_P5 )
     ) return NULL;
-    _scoped_ymsg_t *msg = ymsg_new(YMSG_SEND);
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
     _scoped_app_t *app = app_new(APP_MODULE);
     app_set_name( app, "ALERT" );
     app_args_set_string( app, "rule", rule_name );
