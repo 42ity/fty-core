@@ -77,16 +77,6 @@ uint64_t string_to_uint64( const char *value );
  */
 uint32_t string_to_uint32( const char *value );
 
-/**
- * \brief converts char* to int8_t
- * \param value string (char *), containing the number
- * \return text value converted to int8_t
- * \see string_to_int64
- *
- * In case of error UINT8_MAX is returned and errno is set.
- */
-int8_t string_to_int8( const char *value );
-
 // TODO: Tomas Halman should write documentation
 int32_t
 app_params_first_int32(app_t* msg);
@@ -131,8 +121,6 @@ app_args_set_uint64(app_t* msg, const char *key, uint64_t value );
 
 #define app_args_set_uint32 app_args_set_uint64
 
-#define app_args_set_int8 app_args_set_int64
-
 int32_t
 app_args_int32(app_t* msg, const char *key);
 
@@ -144,9 +132,6 @@ app_args_uint32(app_t* msg, const char *key);
 
 uint64_t
 app_args_uint64(app_t* msg, const char *key);
-
-int8_t
-app_args_int8(app_t* msg, const char *key);
 
 #ifdef __cplusplus
 }

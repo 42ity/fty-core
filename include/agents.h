@@ -204,18 +204,6 @@ bios_alert_decode (ymsg_t **self_p,
                    char **description,
                    time_t *since);
 
-BIOS_EXPORT int
-    bios_alert_notification_decode
-        (ymsg_t **self_p,
-         char **rule_name,
-         int8_t *notify_flag);
-
-BIOS_EXPORT ymsg_t*
-    bios_alert_notification_encode 
-        (const char *rule_name,
-         int8_t notify_flag);
-
-
 #ifdef __cplusplus
 }
 #endif

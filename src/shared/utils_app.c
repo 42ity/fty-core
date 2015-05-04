@@ -50,19 +50,6 @@ uint32_t string_to_uint32( const char *value )
     return result;
 }
 
-int8_t string_to_int8( const char *value )
-{
-    char *end;
-    int8_t result;
-    errno = 0;
-    if( ! value ) { errno = EINVAL; return INT8_MAX; }
-    result = strtoull( value, &end, 10 );
-    if( *end ) errno = EINVAL;
-    if( errno ) return INT8_MAX;
-    return result;
-}
-
-
 /* ---------- params ------------ */
 
 
@@ -261,16 +248,3 @@ app_args_uint64(app_t* msg, const char *key) {
     }
     return string_to_uint64(val);
 }
-
-int8_t
-app_args_int8(app_t* msg, const char *key) {
-    if(!msg) { errno = EBADMSG; return INT8_MAX; };
-
-    const char *val = app_args_string( msg, key, NULL );
-    if(val == NULL) {
-        errno = EKEYREJECTED;
-        return INT8_MAX;
-    }
-    return string_to_int8(val);
-}
-

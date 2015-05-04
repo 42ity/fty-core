@@ -65,11 +65,6 @@ bool insert_new_client_info(const char* url, common_msg_t* msg);
 
 ymsg_t* app_msg_process (zmsg_t **msg);
 void process_inventory (ymsg_t **msg);
-void 
-    process_alert_notification 
-        (ymsg_t *out, char       **out_subj,
-         ymsg_t *in , const char  *in_subj);
-
 } // namespace persist
 
 #endif // SRC_PERSIST_PERSISTENCELOGIC_H_

@@ -407,7 +407,6 @@ bios_alert_decode (ymsg_t **self_p,
                    char **description,
                    time_t *since)
 {
-    LOG_START;
     if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
     const char *nam, *dev, *pri, *sta, *sin, *des;
     int32_t tmp;
@@ -458,60 +457,4 @@ bios_alert_decode (ymsg_t **self_p,
     app_destroy(&app);
     ymsg_destroy(self_p);
     return 0;
-}
-
-
-ymsg_t*
-    bios_alert_notification_encode 
-        (const char *rule_name,
-         int8_t notify_flag)
-{
-    if ( !rule_name )
-        return NULL;
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
-    app_t  *app = app_new(APP_MODULE);
-    app_set_name( app, "ALERT_NOTIFY" );
-    app_args_set_string (app, "rule" , rule_name);
-    app_args_set_int8   (app, "notify", notify_flag);
-    ymsg_request_set_app(msg, &app);
-    return msg;
-}
-
-
-int
-    bios_alert_notification_decode
-        (ymsg_t **self_p,
-         char **rule_name,
-         int8_t *notify_flag)
-{
-   if ( !self_p || !*self_p || !rule_name || !notify_flag )
-       return -1;
-
-   const char *name;
-   const char *notify;
-
-   app_t *app = ymsg_request_app(*self_p);
-   if ( !app )
-       return -3;
-       
-   name = app_args_string (app, "rule", NULL);
-   notify = app_args_string (app, "notify", NULL);
-   
-   if ( !name || !notify )
-   {
-       app_destroy (&app);
-       return -3;
-   }
-
-   int8_t tmp = app_args_int8 (app, "notify");
-   if ( tmp != 0x01 && tmp != 0x02 )
-   {
-       app_destroy (&app);
-       return -4;
-   }
-   *notify_flag = (int8_t) tmp;
-   *rule_name = strdup(name);
-   app_destroy(&app);
-   ymsg_destroy(self_p);
-   return 0;
 }
