@@ -58,13 +58,12 @@ std::map <std::string, AlertBasic>::iterator
         {
             //rewrite
             tmp.first->second = a;
-            log_debug ("ten alarm uz nekdy byl, ale skoncil. Ted zase zacal");
+            log_debug ("this alarm started some time ago, then finished. Now it started again.");
         }
         else
         {
             // je to stejny alarm,
-            log_debug ("ten alarm porad bezi");
-//            tmp.first->second = a;
+            log_debug ("alarm is stil active, and we know it");
             // TODO: if we want to notify user if some attribute of the alarm changed
             // it is right place to place here some code
         }
@@ -72,7 +71,7 @@ std::map <std::string, AlertBasic>::iterator
     else{
         log_debug ("element was not found in myDB, it was successfully added to myDB");
     }
-        //byl vlozen uspesne
+    //byl vlozen uspesne
     LOG_END;
     return tmp.first;
 }
