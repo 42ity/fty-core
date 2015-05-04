@@ -409,91 +409,54 @@ bios_alert_decode (ymsg_t **self_p,
 {
     LOG_START;
     if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
-    log_debug ("5");
     const char *nam, *dev, *pri, *sta, *sin, *des;
     int32_t tmp;
 
     app_t *app = ymsg_request_app(*self_p);
-    log_debug ("55");
     if( ! app ) return -3;
-    log_debug ("555");
        
     nam = app_args_string( app, "rule", NULL );
-    log_debug ("5555");
     pri = app_args_string( app, "priority", NULL );
-    log_debug ("55555");
     sta = app_args_string( app, "state", NULL );
-    log_debug ("555555");
     dev = app_args_string( app, "devices", NULL );
-    log_debug ("5555555");
     des = app_args_string( app, "description", NULL );
-    log_debug ("56");
     sin = app_args_string( app, "since", NULL );
-    log_debug ("566");
    
 
     if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
-    log_debug ("5666");
         app_destroy( &app );
-    log_debug ("56666");
         return -3;
     }
-    log_debug ("566666");
     tmp = app_args_int32( app, "priority" );
-    log_debug ("5666666");
     if( tmp < ALERT_PRIORITY_P1 || tmp > ALERT_PRIORITY_P5 ) {
-    log_debug ("57");
         app_destroy( &app );
-    log_debug ("577");
         return -4;
     }
-    log_debug ("5777");
     *priority = (alert_priority_t)tmp;
-    log_debug ("57777");
     tmp = app_args_int32( app, "state" );
-    log_debug ("577777");
     if( tmp < ALERT_STATE_NO_ALERT || tmp > ALERT_STATE_ONGOING_ALERT ) {
-    log_debug ("5777777");
         app_destroy( &app );
-    log_debug ("57777777");
         return -5;
     }
-    log_debug ("577777777");
     *state = (alert_state_t)tmp;
-    log_debug ("58");
     if( since ) {
-    log_debug ("588");
         *since = string_to_int64( sin );
-    log_debug ("5888");
         if( errno ) {
-    log_debug ("58888");
             app_destroy(&app);
-    log_debug ("588888");
             return -6;
         }
     }
-    log_debug ("59");
     *rule_name = strdup(nam);
-    log_debug ("599");
     *devices = strdup(dev);
-    log_debug ("5999");
     if( description ) {
-    log_debug ("5999");
         if( des ) {
-    log_debug ("59999");
             *description = strdup(des);
-    log_debug ("599999");
         } else {
-    log_debug ("5999999");
             *description = NULL;
-    log_debug ("59999999");
         }
     }
-    log_debug ("599999999");
     app_destroy(&app);
-    log_debug ("5999999999");
     ymsg_destroy(self_p);
-    log_debug ("59999999999");
     return 0;
 }
 
