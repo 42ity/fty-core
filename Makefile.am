@@ -1116,21 +1116,19 @@ edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
+# Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service
 
+# The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
-bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
-bios-agent-cm.service: $(top_srcdir)/tools/bios-agent-cm.service.in
-bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
-bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
-bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
-bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
-
+# Per-file dependency definitions are semi-identical
+$(foreach m,$(SYSTEMD_UNITS), \
+	$(eval ${m}: $(top_srcdir)/tools/${m}.in ))
 
 systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
 
