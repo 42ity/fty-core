@@ -1090,7 +1090,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbpath.h \
 			$(top_srcdir)/tools/dbpath.cc.in \
 			$(top_builddir)/tools/dbpath.cc \
-			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
@@ -1111,7 +1110,7 @@ SYSTEMD_UNITS =
 # systemd integration
 if HAVE_SYSTEMD
 
-# copy from autoconf manual, note signle suffix rules can't be used there!!
+# copy from autoconf manual, note single suffix rules can't be used there!!
 edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
@@ -1123,16 +1122,25 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
+	echo "  SED      $@"
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS), \
-	$(eval ${m}: $(top_srcdir)/tools/${m}.in ))
+	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
-systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
+# Explicit path desired by dependencies in systemdsystemunit_DATA below
+$(foreach m,$(SYSTEMD_UNITS), \
+	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
-CLEANFILES += $(systemdsystemunit_DATA)
+# $(systemdsystemunitdir) may be defined externally by automake/autoconf;
+# otherwise it is empty and should effectively resolve to the top_builddir
+systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+
+# auto-cleanup and dist targets
+CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_UNITS)))
 endif
 
 #----------------------------------------------------------------------
