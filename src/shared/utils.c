@@ -143,6 +143,15 @@ int64_t datetime_to_calendar (const char *datetime) {
     return t;
 }
 
+
+int unixtime_to_datetime(time_t t, char* buf, size_t s) {
+    struct tm* tmp = gmtime(&t);
+    if (!tmp)
+        return -1;
+    strftime(buf, s, "%Y%m%d%H%M%SZ", tmp);
+    return 0;
+}
+
 int64_t my_timegm (struct tm *tm) {
     // set the TZ environment variable to UTC, call mktime(3) and restore the value of TZ. 
     time_t ret;
@@ -159,4 +168,15 @@ int64_t my_timegm (struct tm *tm) {
     return (int64_t) ret;
 }
 
+const char* alert_state_to_str(alert_state_t astate) {
+    switch (astate) {
+        case ALERT_STATE_UNKNOWN:
+            return "unknown";;
+        case ALERT_STATE_NO_ALERT:
+            return "no-alert";;
+        case ALERT_STATE_ONGOING_ALERT:
+            return "ongoing";;
+    }
+    return "unknown"; //make gcc happy
+}
 

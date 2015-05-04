@@ -1,0 +1,11 @@
+[Unit]
+Description=Computation Module agent for BIOS project
+After=malamute.service
+Requires=malamute.service
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/agent-cm
+
+[Install]
+WantedBy=multi-user.target
