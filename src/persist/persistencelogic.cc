@@ -49,6 +49,8 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "measurement.h"
 #include "alert.h"
 #include "agents.h"
+#include "cleanup.h"
+
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -58,7 +60,7 @@ namespace persist {
 
 void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
     log_debug("Processing measurement");
-    ymsg_t *ymsg = ymsg_decode(msg);
+    _scoped_ymsg_t *ymsg = ymsg_decode(msg);
     
     if(ymsg == NULL) {
         log_error("Can't decode the ymsg");
@@ -112,7 +114,7 @@ free_mem_toto:
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
     log_debug("Processing asset message in persistence layer");
-    zmsg_t *result = NULL;
+    _scoped_zmsg_t *result = NULL;
 
     asset_msg_t *amsg = asset_msg_decode(msg);
     if(amsg == NULL) {
@@ -213,7 +215,7 @@ bool
 process_message(const std::string& url, zmsg_t *msg) {
     log_info ("start");
 
-    zmsg_t *msg2;
+    _scoped_zmsg_t *msg2 = NULL;
 
     //XXX: this is ugly, however we need to distinguish between types of messages
     //     zccp will solve that by DIRECT message
@@ -251,7 +253,7 @@ process_message(const std::string& url, zmsg_t *msg) {
 
 zmsg_t* nmap_msg_process(zmsg_t **msg) {
     nmap_msg_t *nmsg = nmap_msg_decode(msg);
-    zmsg_t *ret = NULL;
+    _scoped_zmsg_t *ret = NULL;
 
     if(nmsg == NULL) {
         log_warning ("Malformed nmap message received!");
@@ -633,7 +635,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                 if (device_id != 0 ) // device was found or inserted
                 {
                      // create blob information
-                     zmsg_t *zmsg = powerdev_msg_encode_powerdev_status (
+                     _scoped_zmsg_t *zmsg = powerdev_msg_encode_powerdev_status (
                          powerdev_msg_deviceid(&msg_c),
                          powerdev_msg_model(&msg_c),
                          powerdev_msg_manufacturer(&msg_c),
@@ -702,7 +704,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
                                   "Malformed common message!", NULL);
     }
-    zmsg_t *ret = NULL;
+    _scoped_zmsg_t *ret = NULL;
     int msg_id = common_msg_id (cmsg);
     switch (msg_id) {
     case COMMON_MSG_NEW_MEASUREMENT: {
@@ -712,7 +714,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
         break;
     }
     case COMMON_MSG_INSERT_DEVICE: {
-        zmsg_t *tmpz = common_msg_msg(cmsg);
+        _scoped_zmsg_t *tmpz = common_msg_msg(cmsg);
         if(tmpz != NULL) {
         common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {
@@ -725,7 +727,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
         break;
     }
     case COMMON_MSG_INSERT_CLIENT: {
-        zmsg_t *tmpz = common_msg_msg(cmsg);
+        _scoped_zmsg_t *tmpz = common_msg_msg(cmsg);
         if(tmpz != NULL) {
         common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {

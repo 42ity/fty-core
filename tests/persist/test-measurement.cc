@@ -13,6 +13,7 @@
 #include "bios_agent.h"
 #include "persistencelogic.h"
 #include "utils.h"
+#include "cleanup.h"
 
 using namespace persist;
 
@@ -93,8 +94,8 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     
     INFO ("measurement_getter start\n");
 
-    ymsg_t *in = ymsg_new(YMSG_SEND);
-    ymsg_t *out = ymsg_new(YMSG_REPLY);
+    _scoped_ymsg_t *in = ymsg_new(YMSG_SEND);
+    _scoped_ymsg_t *out = ymsg_new(YMSG_REPLY);
     char *out_s = NULL;
     REQUIRE ( in != NULL);
     REQUIRE ( out != NULL);

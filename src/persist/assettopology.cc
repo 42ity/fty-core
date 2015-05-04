@@ -40,6 +40,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "assettopology.h"
 #include "persist_error.h"
+#include "cleanup.h"
 
 // TODO HARDCODED CONSTANTS for asset device types
 
@@ -56,7 +57,7 @@ zmsg_t *process_assettopology (const char *database_url,
 
     assert (message_p);
     assert (database_url);
-    zmsg_t *return_msg = NULL;
+    _scoped_zmsg_t *return_msg = NULL;
     if (*message_p) {
         asset_msg_t *message = *message_p;
         assert (message);
@@ -254,11 +255,11 @@ zmsg_t* select_group_elements(
         int i = 0;
         int rv = 0;
 
-        zmsg_t* dcss     = zmsg_new();
-        zmsg_t* roomss   = zmsg_new();
-        zmsg_t* rowss    = zmsg_new();
-        zmsg_t* rackss   = zmsg_new();
-        zmsg_t* devicess = zmsg_new();
+        _scoped_zmsg_t* dcss     = zmsg_new();
+        _scoped_zmsg_t* roomss   = zmsg_new();
+        _scoped_zmsg_t* rowss    = zmsg_new();
+        _scoped_zmsg_t* rackss   = zmsg_new();
+        _scoped_zmsg_t* devicess = zmsg_new();
 
         for ( auto &row: result )
         {
@@ -295,7 +296,7 @@ zmsg_t* select_group_elements(
             {
                 // dcs, rooms, rows, racks, devices, groups are NULL
                 // because we provide only first layer of inclusion
-                zmsg_t* el = asset_msg_encode_return_location_from 
+                _scoped_zmsg_t* el = asset_msg_encode_return_location_from 
                               (id, id_type, name.c_str(), dtype_name.c_str(), 
                                NULL, NULL, NULL, NULL, NULL, NULL);
                 assert ( el );
@@ -339,7 +340,7 @@ zmsg_t* select_group_elements(
         assert ( rv == 0 );
 
         // generate message for the group with filled elements
-        zmsg_t* el = asset_msg_encode_return_location_from 
+        _scoped_zmsg_t* el = asset_msg_encode_return_location_from 
                       (element_id, element_type_id, group_name, dtype_name, 
                        dcs, rooms, rows, racks, devices, NULL);
         assert ( el );
@@ -445,7 +446,7 @@ zframe_t* select_childs(
         }
         log_debug("rows selected %u", result.size());
         int rv = 0;
-        zmsg_t* ret = zmsg_new();
+        _scoped_zmsg_t* ret = zmsg_new();
         int i = 0;
         for ( auto &row: result )
         {
@@ -477,7 +478,7 @@ zframe_t* select_childs(
             zframe_t* rows    = NULL;
             zframe_t* racks   = NULL;
             zframe_t* devices = NULL;
-            zmsg_t*   grp     = NULL;
+            _scoped_zmsg_t*   grp     = NULL;
             
             // Select childs only if it is not a leaf (is not a device), 
             // it is recursive search, and we didn't achive max 
@@ -573,7 +574,7 @@ zframe_t* select_childs(
                )
             {
                 
-                zmsg_t* el;
+                _scoped_zmsg_t* el;
                 if (    ( child_type_id == asset_type::GROUP ) && 
                         ( is_recursive ) )
                     el = grp;   // because of the special group processing
@@ -835,7 +836,7 @@ zmsg_t* get_return_topology_from(const char* url, asset_msg_t* getmsg)
         log_info ("end select_grps");
     }
     
-    zmsg_t* el = NULL; 
+    _scoped_zmsg_t* el = NULL; 
     log_info ("creating return element");
     if ( type_id == asset_type::GROUP )
     {
@@ -877,10 +878,10 @@ edge_lf print_frame_to_edges (zframe_t* frame, a_elmnt_id_t parent_id,
     
     edge_lf result, result1;
 
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
      
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
@@ -949,10 +950,10 @@ void print_frame (zframe_t* frame, a_elmnt_id_t parent_id)
     byte* buffer = zframe_data (frame);
     assert ( buffer );
 
-    zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
      
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         asset_msg_t* item = asset_msg_decode (&pop); // zmsg_t is freed
@@ -1044,7 +1045,7 @@ zmsg_t* select_parents (const char* url, a_elmnt_id_t element_id,
         
         if ( parent_id != 0 )
         {
-            zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
+            _scoped_zmsg_t* parent = select_parents (url, parent_id, parent_type_id);
             if ( is_asset_msg (parent) )
                 return asset_msg_encode_return_location_to (element_id, 
                             element_type_id, name.c_str(), 
@@ -1118,7 +1119,7 @@ zmsg_t* get_return_topology_to(const char* url, asset_msg_t* getmsg)
     }
     
     log_debug("type_id=%" PRIu16, type_id);
-    zmsg_t* result = select_parents (url, element_id, type_id);
+    _scoped_zmsg_t* result = select_parents (url, element_id, type_id);
 
     log_info ("end");
     return result;
@@ -1166,10 +1167,10 @@ zmsg_t* convert_powerchain_devices2matryoshka (
 {
     // tuple: ( id,  device_name, device_type_name )
     // encode: id, device_type_name, device_name
-    zmsg_t* ret = zmsg_new();
+    _scoped_zmsg_t* ret = zmsg_new();
     for ( auto &adevice : devices )
     {
-        zmsg_t* el = asset_msg_encode_powerchain_device
+        _scoped_zmsg_t* el = asset_msg_encode_powerchain_device
                     (std::get<0>(adevice), (std::get<2>(adevice)).c_str(), 
                     (std::get<1>(adevice)).c_str() );
         int rv = zmsg_addmsg (ret, &el);
@@ -1199,13 +1200,13 @@ zlist_t* convert_powerchain_powerlink2list (
 zmsg_t* generate_return_power (std::set < device_info_t >    const &devices, 
                                std::set < powerlink_info_t > const &powerlinks)
 {
-    zmsg_t  *devices_msg = convert_powerchain_devices2matryoshka (devices);
+    _scoped_zmsg_t  *devices_msg = convert_powerchain_devices2matryoshka (devices);
     zlist_t *powers_list = convert_powerchain_powerlink2list     (powerlinks);
     
     zframe_t *devices_frame = NULL;
     int rv = matryoshka2frame (&devices_msg, &devices_frame);
     assert ( rv == 0 );
-    zmsg_t *result = asset_msg_encode_return_power 
+    _scoped_zmsg_t *result = asset_msg_encode_return_power 
                                                 (devices_frame, powers_list);
     zlist_destroy  (&powers_list);
     zframe_destroy (&devices_frame);
@@ -1344,7 +1345,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     }
 
 
-    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
+    _scoped_zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal");
     return result;
 }
@@ -1354,10 +1355,10 @@ void print_frame_devices (zframe_t* frame)
     byte* buffer = zframe_data (frame);
     assert ( buffer );
 
-    zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
      
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         asset_msg_t* item = asset_msg_decode (&pop);
@@ -1564,7 +1565,7 @@ zmsg_t* get_return_power_topology_to (const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
 
-    zmsg_t* result = generate_return_power (topology.first, topology.second);
+    _scoped_zmsg_t* result = generate_return_power (topology.first, topology.second);
     
     log_info ("end normal");
     return result;
@@ -1721,7 +1722,7 @@ zmsg_t* get_return_power_topology_group(const char* url, asset_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     log_info("end select devices");
-    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
+    _scoped_zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal");
     return result;
 }
@@ -1866,7 +1867,7 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
                                                         e.what(), NULL);
     }
     log_info ("end select powers");
-    zmsg_t* result = generate_return_power (resultdevices, resultpowers);
+    _scoped_zmsg_t* result = generate_return_power (resultdevices, resultpowers);
     log_info ("end normal");
     return result;
 }

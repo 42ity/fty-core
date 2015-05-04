@@ -10,6 +10,8 @@
 #include "common_msg.h"
 #include "assetcrud.h"
 
+#include "cleanup.h"
+
 TEST_CASE("Power topology from #1","[db][topology][power][from][power_topology.sql][n1]")
 {
     log_open();
@@ -20,7 +22,7 @@ TEST_CASE("Power topology from #1","[db][topology][power][from][power_topology.s
     asset_msg_set_element_id (getmsg, 5019);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_common_msg (retTopology) );
     common_msg_t* cretTopology = common_msg_decode (&retTopology);
@@ -48,7 +50,7 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     std::set<std::tuple<int,std::string,std::string>> sdevices;
     sdevices.insert (std::make_tuple(5020, "UPSFROM2", "ups")); // id,  device_name, device_type_name
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -59,11 +61,11 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
      
-    zmsg_t* pop = zmsg_popmsg (zmsg);
+    _scoped_zmsg_t* pop = zmsg_popmsg (zmsg);
     // the first device
     REQUIRE ( pop != NULL );
     
@@ -104,7 +106,7 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     asset_msg_set_element_id (getmsg, 5021);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -115,11 +117,11 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
      
-    zmsg_t* pop = zmsg_popmsg (zmsg);
+    _scoped_zmsg_t* pop = zmsg_popmsg (zmsg);
     // the first device
     REQUIRE ( pop != NULL );
     
@@ -165,7 +167,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     sdevices.insert (std::make_tuple(5024, "UPSFROM4", "ups")); // id,  device_name, device_type_name
     sdevices.insert (std::make_tuple(5027, "SINK5", "sink"));
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -190,11 +192,11 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
     
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     int n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -246,7 +248,7 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5028:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5032"); 
     spowers.insert ("4:5028:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5033"); 
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -280,11 +282,11 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -337,7 +339,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5034:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5036"); 
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5034:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5037"); 
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -372,11 +374,11 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -420,7 +422,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     sdevices.insert (std::make_tuple(5038, "UPSFROM7", "ups")); // id,  device_name, device_type_name
     sdevices.insert (std::make_tuple(5039, "SINK14", "sink"));
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -445,11 +447,11 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     int n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -488,7 +490,7 @@ TEST_CASE("Power topology from #8","[db][topology][power][from][power_topology.s
     asset_msg_set_element_id (getmsg, 4998);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     
     REQUIRE ( is_common_msg (retTopology) );
@@ -522,7 +524,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     std::set<std::string> spowers;
     spowers.insert ("5:5040:6:5040"); 
 
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -533,11 +535,11 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     int n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -595,7 +597,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5041:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5042"); 
     spowers.insert ("5:5041:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5042"); 
     
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -629,11 +631,11 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -681,7 +683,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     std::set<std::string> spowers;
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5043:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5044"); 
     
-    zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -715,11 +717,11 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   

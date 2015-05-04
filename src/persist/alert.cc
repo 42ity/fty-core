@@ -33,6 +33,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "agents.h"
 #include "dbpath.h"
 #include "bios_agent.h"
+#include "cleanup.h"
 
 namespace persist {
 
@@ -868,7 +869,7 @@ void process_alert(ymsg_t* out, char** out_subj,
     else { *out_subj = NULL; }
     
     log_debug("processing alert"); // FIXME: some macro
-    ymsg_t *copy = ymsg_dup(in);
+    _scoped_ymsg_t *copy = ymsg_dup(in);
     assert(copy);
     
     // decode message

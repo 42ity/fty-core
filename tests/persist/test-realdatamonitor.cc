@@ -14,6 +14,9 @@
 #include "monitor.h"
 #include "defs.h"
 #include "dbpath.h"
+
+#include "cleanup.h"
+
 /* tests for real monitoring assumed, that DB has the following state
  * In case, the initial data should be changed, the following tests should be changed too
 
@@ -188,10 +191,10 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     REQUIRE_NOTHROW (val = st.selectValue ());
     REQUIRE_NOTHROW (val.get (id));
 
-    zmsg_t* getlastmeasurements = common_msg_encode_get_last_measurements (id);
+    _scoped_zmsg_t* getlastmeasurements = common_msg_encode_get_last_measurements (id);
     common_msg_t* glm = common_msg_decode (&getlastmeasurements);
     common_msg_print (glm);
-    zmsg_t* returnmeasurements = _get_last_measurements (url.c_str(), glm);
+    _scoped_zmsg_t* returnmeasurements = _get_last_measurements (url.c_str(), glm);
     common_msg_print (glm);
     REQUIRE ( returnmeasurements );
 

@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <czmq.h>
 #include <cxxtools/split.h>
 #include <errno.h>
@@ -38,8 +39,8 @@ std::string dev;
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-        zmsg_t *req = common_msg_encode_get_last_measurements(id);
-        zmsg_t *rep = get_last_measurements(&req);
+        _scoped_zmsg_t *req = common_msg_encode_get_last_measurements(id);
+        _scoped_zmsg_t *rep = get_last_measurements(&req);
         if(!is_common_msg(rep)){
 </%cpp>
 { "error":"internal_error" }

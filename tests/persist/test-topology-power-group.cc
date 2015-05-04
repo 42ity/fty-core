@@ -10,6 +10,7 @@
 #include "common_msg.h"
 #include "assetcrud.h"
 
+#include "cleanup.h"
 
 TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology.sql][pg1]")
 {
@@ -25,7 +26,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     std::set<std::tuple<int,std::string,std::string>> sdevices;
     sdevices.insert (std::make_tuple(5087, "MAIN-05", "main")); // id,  device_name, device_type_name
     
-    zmsg_t* retTopology = get_return_power_topology_group (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_group (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -43,11 +44,11 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     int n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   

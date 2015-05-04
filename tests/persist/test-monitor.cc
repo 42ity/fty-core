@@ -10,6 +10,8 @@
 #include "dbpath.h"
 #include "log.h"
 
+#include "cleanup.h"
+
 TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]")
 {
     uint32_t errnonew = 1;
@@ -113,7 +115,7 @@ TEST_CASE("Common messages: _generate_return_client","[common][generate][return_
     REQUIRE ( common_msg_id (msgreturnclient) == COMMON_MSG_RETURN_CLIENT );
     REQUIRE ( common_msg_rowid (msgreturnclient) == client_id );
 
-    zmsg_t* newmsg = common_msg_get_msg (msgreturnclient);
+    _scoped_zmsg_t* newmsg = common_msg_get_msg (msgreturnclient);
     REQUIRE ( newmsg != NULL );
     REQUIRE ( zmsg_is (newmsg) == true );
 
@@ -138,7 +140,7 @@ TEST_CASE("Common messages: select_client","[common][select][client][byName][db]
     // it is inserted during the db creation  and must have 4
     
 //    common_msg_print (newreturn);
-    zmsg_t* newmsg = common_msg_get_msg (newreturn);
+    _scoped_zmsg_t* newmsg = common_msg_get_msg (newreturn);
     common_msg_t* newclient = common_msg_decode (&newmsg);
     REQUIRE ( newclient != NULL );
     REQUIRE ( streq(common_msg_name (newclient), name) );
@@ -167,7 +169,7 @@ TEST_CASE("Common messages: select_client2","[common][select][client][byId][db]"
     REQUIRE ( common_msg_rowid (newreturn) == 4 ); 
     
 //    common_msg_print (newreturn);
-    zmsg_t* newmsg = common_msg_get_msg (newreturn);
+    _scoped_zmsg_t* newmsg = common_msg_get_msg (newreturn);
     common_msg_t* newclient = common_msg_decode (&newmsg);
     REQUIRE ( newclient != NULL );
     REQUIRE ( streq(common_msg_name (newclient), name) );

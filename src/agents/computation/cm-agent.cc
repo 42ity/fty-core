@@ -20,6 +20,7 @@
 
 #include "cm-agent-web.h"
 #include "cm-agent-db.h"
+#include "cleanup.h"
 
 #define DEFAULT_LOG_LEVEL LOG_INFO
 #define STREAM_CONSUMER_PATTERN ""
@@ -69,7 +70,7 @@ int main (int argc, char **argv) {
     rules.emplace (std::make_pair ("return_measurements", process_db_measurement));
     rules.emplace (std::make_pair ("metric/computed/average", process_web_average));
 
-    bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
+    _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
     if (agent == NULL) {
         log_critical ("bios_agent_new (\"%s\", \"%s\") failed.", bios_get_stream_main (), BIOS_AGENT_NAME_COMPUTATION);
         log_info ("%s finished.", BIOS_AGENT_NAME_COMPUTATION);
@@ -86,7 +87,7 @@ int main (int argc, char **argv) {
 
     // We don't really need a poller. We just have one client (actor/socket)
     while (!zsys_interrupted) {
-        ymsg_t *msg_recv = bios_agent_recv (agent);
+        _scoped_ymsg_t *msg_recv = bios_agent_recv (agent);
         const char *subject = safe_str (bios_agent_subject (agent)); 
         const char *pattern = safe_str (bios_agent_command (agent));
         const char *sender = safe_str (bios_agent_sender (agent));
@@ -109,7 +110,7 @@ int main (int argc, char **argv) {
 
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
-            ymsg_t *msg_out = NULL;
+            _scoped_ymsg_t *msg_out = NULL;
             rv = rules.at (subject) (agent, msg_recv, requests, sender, &msg_out);
             assert (rv != -1);
             if (msg_out != NULL) {

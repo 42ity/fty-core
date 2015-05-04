@@ -6,6 +6,7 @@
 #include "bios_agent.h"
 #include "utils_ymsg.h"
 #include "defs.h"
+#include "cleanup.h"
 
 #define TIMEOUT 1000
 #define BIOS_MLM_STREAM "bios"
@@ -21,7 +22,7 @@ bios_agent_new (const char* endpoint, const char* address) {
         return NULL;
     }
 
-    bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));
+    _scoped_bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));
     if (self) {
         self->client = mlm_client_new();
         if (!self->client) {
@@ -69,7 +70,7 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
     }
     // Note: zmq_atomic_counter_inc() returns current value and increments by one
     ymsg_set_seq (*msg_p, zmq_atomic_counter_inc (self->seq));
-    zmsg_t *zmsg = ymsg_encode (msg_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (msg_p);
     if (!zmsg) {
         return -1;
     }
@@ -83,7 +84,7 @@ bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject,
         return -2;
     }
     ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
-    zmsg_t *zmsg = ymsg_encode (send_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (send_p);
     if (!zmsg) {
         return -1;
     }
@@ -103,7 +104,7 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
         zchunk_t *chunk = ymsg_get_request (send);
         ymsg_set_request (*reply_p, &chunk);
     }
-    zmsg_t *zmsg = ymsg_encode (reply_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (reply_p);
     if (!zmsg) {
         return -1;
     }
@@ -117,7 +118,7 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
         return -2;
     }
     ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
-    zmsg_t *zmsg = ymsg_encode (send_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (send_p);
     if (!zmsg) {
         return -1;
     }
@@ -148,11 +149,11 @@ bios_agent_recv (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
-    zmsg_t *zmsg = mlm_client_recv (self->client);
+    _scoped_zmsg_t *zmsg = mlm_client_recv (self->client);
     if (!zmsg) {
         return NULL;
     }
-    ymsg_t *ymsg = ymsg_decode (&zmsg);
+    _scoped_ymsg_t *ymsg = ymsg_decode (&zmsg);
     return ymsg;
 }
 
@@ -168,7 +169,7 @@ bios_agent_recv_wait(bios_agent_t *self, int timeout) {
         return NULL;
     }
 
-    zmsg_t *zmsg = NULL;
+    _scoped_zmsg_t *zmsg = NULL;
     zsock_t *which = NULL;
     zpoller_t *poller = zpoller_new(pipe, NULL);
     if(poller) {
@@ -182,7 +183,7 @@ bios_agent_recv_wait(bios_agent_t *self, int timeout) {
     if (!zmsg) {
         return NULL;
     }
-    ymsg_t *ymsg = ymsg_decode(&zmsg);
+    _scoped_ymsg_t *ymsg = ymsg_decode(&zmsg);
     return ymsg;
 }
 
@@ -240,7 +241,7 @@ bios_agent_content (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
-    zmsg_t *zmsg = mlm_client_content (self->client);
+    _scoped_zmsg_t *zmsg = mlm_client_content (self->client);
     if (!zmsg) {
         return NULL;
     }

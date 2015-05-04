@@ -1,3 +1,4 @@
+#include "cleanup.h"
 #include "defs.h"
 #include "data.h"
 #include "asset_types.h"
@@ -135,7 +136,7 @@ std::string ui_props_manager::get(std::string& result) {
         return std::string("{\"error\" : \"Unexpected msg_id delivered, expected COMMON_MSG_RETURN_CINFO\"}");
     }
 
-    zmsg_t *zmsg = common_msg_get_msg(reply);
+    _scoped_zmsg_t *zmsg = common_msg_get_msg(reply);
     if (!zmsg) {
         common_msg_destroy(&reply);
         return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");

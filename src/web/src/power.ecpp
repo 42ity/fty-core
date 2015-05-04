@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <cstdlib>
 #include <string>
 #include <algorithm>
@@ -237,7 +238,7 @@ std::string filter_group;
     } // filter_group block
 
 
-    zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+    _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
     if (return_msg == NULL) {
 </%cpp>
         {
@@ -316,7 +317,7 @@ std::string filter_group;
             if (devices) {
                 byte *buffer = zframe_data (devices);
                 assert (buffer);
-                zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
+                _scoped_zmsg_t *zmsg = zmsg_decode ( buffer, zframe_size (devices));
                 if (zmsg == NULL || !zmsg_is (zmsg)) {
                     zframe_destroy (&devices);
 </%cpp>
@@ -331,7 +332,7 @@ std::string filter_group;
 
                 json.append ("\"devices\" : [");
 
-                zmsg_t *pop = NULL;
+                _scoped_zmsg_t *pop = NULL;
                 bool first = true;
                 while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t
                     if (!is_asset_msg (pop)) {
@@ -339,7 +340,7 @@ std::string filter_group;
                         // TODO internal error
                         return HTTP_INTERNAL_SERVER_ERROR; 
                     }
-                    asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+                    asset_msg_t *item = asset_msg_decode (&pop); // _scoped_zmsg_t is freed
                     if (item == NULL) {
                         if (pop != NULL) {
                             zmsg_destroy (&pop);

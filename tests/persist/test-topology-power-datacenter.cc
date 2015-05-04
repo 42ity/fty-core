@@ -10,6 +10,8 @@
 #include "common_msg.h"
 #include "assetcrud.h"
 
+#include "cleanup.h"
+
 
 TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][power_topology.sql][pd1]")
 {
@@ -42,7 +44,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5085"); 
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5086"); 
     
-    zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -76,11 +78,11 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
     {   
@@ -118,7 +120,7 @@ TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][powe
     asset_msg_set_element_id (getmsg, 5019);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -133,11 +135,11 @@ TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][powe
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    zmsg_t* pop = zmsg_popmsg (zmsg);
+    _scoped_zmsg_t* pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
  
 //    asset_msg_print (cretTopology);

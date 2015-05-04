@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <cstdlib>
 #include <string>
 #include <algorithm>
@@ -103,7 +104,7 @@ std::string filter;
         assert (input_msg);
         asset_msg_set_element_id (input_msg, element_id);
         
-        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
             {
@@ -229,7 +230,7 @@ std::string filter;
                     }                 
 
                     if (zmsg_size (asset_msg_msg (asset_msg)) != 0) {
-                        zmsg_t *inner = asset_msg_get_msg (asset_msg); 
+                        _scoped_zmsg_t *inner = asset_msg_get_msg (asset_msg); 
                         asset_msg_destroy (&asset_msg);
                         asset_msg = asset_msg_decode (&inner);
 
@@ -436,7 +437,7 @@ std::string filter;
 
         asset_msg_print(input_msg);
         
-        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
             {

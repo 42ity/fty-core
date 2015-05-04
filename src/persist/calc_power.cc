@@ -36,6 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "persist_error.h"
 #include "dbhelpers.h"
 #include "monitor.h"
+#include "cleanup.h"
+
 
 bool is_epdu (const device_info_t &device)
 {
@@ -405,7 +407,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     compute_result_num_missed_set (result, ret_results.missed.size());
 
     // fill the return message
-    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    _scoped_zmsg_t* retmsg = compute_msg_encode_return_computation(result);
     return retmsg;
 }
 
@@ -704,10 +706,10 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     byte *buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
      
-    zmsg_t* pop = NULL;
+    _scoped_zmsg_t* pop = NULL;
     zframe_t* fr;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
@@ -793,7 +795,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("get_msg filled");
 
     // get topology
-    zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
+    _scoped_zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
     asset_msg_t* item = asset_msg_decode (&dc_topology);
     log_debug("get_msg decoded");
 
@@ -857,7 +859,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     compute_result_num_missed_set (result, ret_result.missed.size());
 
     // fill the return message
-    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    _scoped_zmsg_t* retmsg = compute_msg_encode_return_computation(result);
     log_debug("end: normal");
     return retmsg;
 }

@@ -1,3 +1,4 @@
+#include "cleanup.h"
 #include "bios_agent.h"
 #include "defs.h"
 
@@ -38,7 +39,7 @@ int main (int argc, char *argv []) {
     gethostname(hostname, HOST_NAME_MAX);
 
     // Create client
-    bios_agent_t *client = bios_agent_new(addr, id);
+    _scoped_bios_agent_t *client = bios_agent_new(addr, id);
     if (!client) {
         zsys_error ("server-agent: server not reachable at ipc://@/malamute");
         return 0;
@@ -70,7 +71,7 @@ int main (int argc, char *argv []) {
                         }
                         // Create message and publish it
                         std::string quantity = "temperature." + *it;
-                        ymsg_t *msg = bios_measurement_encode(
+                        _scoped_ymsg_t *msg = bios_measurement_encode(
                             hostname, quantity.c_str(), "C",
                             temp / 100, -1, -1);
                         topic = "measurement." + quantity + "@" + hostname;

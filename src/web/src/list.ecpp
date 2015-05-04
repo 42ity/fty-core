@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <czmq.h>
 
 #include "asset_msg.h"
@@ -14,7 +15,7 @@ asset_manager asset_mgr;
     std::string id;
 
     // Get data
-    zmsg_t* dta = asset_mgr.get_items (request.getArg("type"));
+    _scoped_zmsg_t* dta = asset_mgr.get_items (request.getArg("type"));
 
     // Error handling
     if ( dta == NULL ) {

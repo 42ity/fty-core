@@ -1,5 +1,6 @@
 #include <catch.hpp>
 
+#include "defs.h"
 #include "utils.h"
 
 TEST_CASE("str_eq","[utils][streq]"){
@@ -57,17 +58,16 @@ TEST_CASE ("average_step_seconds", "[average_step_seconds][utils][average]") {
 TEST_CASE ("average_extend_left_margin", "[utils][average][time]") {
 // TODO: Very important, make other types, unusual and corner cases
     SECTION ("8h") {
-        CHECK ( average_extend_left_margin (1426611600, "8h") == 1426607700 ); // 2015-03-17 17:00:00 overlap => 15:55
-        CHECK ( average_extend_left_margin (1426618800, "8h") == 1426607700 ); // 2015-03-17 19:00:00 overlap
-        CHECK ( average_extend_left_margin (1426593600, "8h") == 1426578900 ); // 2015-03-17 12:00:00 overlap
-        CHECK ( average_extend_left_margin (1426622400, "8h") == 1426607700 ); // 2015-03-17 20:00:00 overlap
-        CHECK ( average_extend_left_margin (1426608000, "8h") == 1426578900 ); // 2015-03-17 16:00:00 => 07:55 
-        CHECK ( average_extend_left_margin (1426550400, "8h") == 1426521300 ); // 2015-03-17 00:00:00
+        CHECK ( average_extend_left_margin (1426611600, "8h") == 1426607700 ); // 2015-03-17 17:00:00 overlap => 2015-03-17 15:55:00
+        CHECK ( average_extend_left_margin (1426618800, "8h") == 1426607700 ); // 2015-03-17 19:00:00 overlap => 2015-03-17 15:55:00
+        CHECK ( average_extend_left_margin (1426593600, "8h") == 1426578900 ); // 2015-03-17 12:00:00 overlap => 2015-03-17 07:55:00
+        CHECK ( average_extend_left_margin (1426622400, "8h") == 1426607700 ); // 2015-03-17 20:00:00 overlap => 2015-03-17 15:55:00
+        CHECK ( average_extend_left_margin (1426608000, "8h") == 1426578900 ); // 2015-03-17 16:00:00         => 2015-03-17 07:55:00
+        CHECK ( average_extend_left_margin (1426550400, "8h") == 1426521300 ); // 2015-03-17 00:00:00         => 2015-03-16 15:55:00
 
-        CHECK ( average_extend_left_margin (1426554015, "8h") == 1426550100 ); // 2015-03-17 01:00:15
+        CHECK ( average_extend_left_margin (1426554015, "8h") == 1426550100 ); // 2015-03-17 01:00:15         => 2015-03-16 23:55:00
         CHECK ( average_extend_left_margin (1426608115, "8h") == 1426607700 ); // 2015-03-17 16:01:55
         CHECK ( average_extend_left_margin (1426636799, "8h") == 1426607700 ); // 2015-03-17 23:59:59
-
 
         CHECK ( average_extend_left_margin (1426266000, "8h") == 1426262100 ); // 2015-03-13 17:00:00
     }

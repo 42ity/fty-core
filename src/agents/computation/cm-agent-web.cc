@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg++.h"
 
 #include "cm-agent-web.h"
+#include "cleanup.h"
 
 int
 process_web_average
@@ -47,7 +48,7 @@ process_web_average
     if (rv != 0) {
         log_error ("bios_web_average_request_extract () failed.");
 
-        ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
+        _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
         assert (msg_reply);
         ymsg_set_status (msg_reply, false);
         ymsg_set_errmsg (msg_reply, "Internal error. Please check logs."); // TODO: maybe rewrite the message
@@ -62,7 +63,7 @@ process_web_average
     // Additional AGENT_NUT_REPEAT_INTERVAL_SEC seconds are deducted to complete possible leading values `missing`.
     start_ts = average_extend_left_margin (start_ts, step); // shared/utils.c 
     // we are requesting sampled data from db, therefore no topic construction (i.e. <source>.<type>_<step>) is needed.
-    ymsg_t *msg_send = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &send_subject);
+    _scoped_ymsg_t *msg_send = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &send_subject);
     FREE0 (type);
     FREE0 (step);
     FREE0 (source);
@@ -78,7 +79,7 @@ process_web_average
     if (rv != 0) {
         log_critical ("bios_agent_sendto (\"%s\", \"%s\") failed.", BIOS_AGENT_NAME_DB_MEASUREMENT, send_subject);
 
-        ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
+        _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
         assert (msg_reply);
         ymsg_set_status (msg_reply, false);
         ymsg_set_errmsg (msg_reply, "Internal error. Please check logs."); // TODO: maybe rewrite the message

@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "preproc.h"
 #include "persist_error.h"
 #include "dbhelpers.h"
-
+#include "cleanup.h"
 
 common_msg_t* generate_db_fail(uint32_t errorid, const char* errmsg, 
                                zhash_t** erraux)
@@ -87,7 +87,7 @@ common_msg_t* generate_return_client(m_clnt_id_t client_id,
     assert ( *client );
     assert ( common_msg_id (*client) == COMMON_MSG_CLIENT );
    
-    zmsg_t* nnmsg = common_msg_encode (client);
+    _scoped_zmsg_t* nnmsg = common_msg_encode (client);
     assert ( nnmsg );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CLIENT);
     common_msg_set_rowid (resultmsg, client_id);
@@ -335,7 +335,7 @@ common_msg_t* generate_return_client_info(m_clnt_info_id_t client_info_id,
     assert ( *client_info );
     assert ( common_msg_id (*client_info) == COMMON_MSG_CLIENT_INFO );
 
-    zmsg_t* nnmsg = common_msg_encode (client_info);
+    _scoped_zmsg_t* nnmsg = common_msg_encode (client_info);
     assert ( nnmsg );
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_CINFO);
     common_msg_set_rowid (resultmsg, client_info_id);
@@ -706,7 +706,7 @@ common_msg_t* generate_return_device_type(m_dvc_tp_id_t device_type_id,
     assert ( *device_type );
     assert ( common_msg_id (*device_type) == COMMON_MSG_DEVICE_TYPE );
     
-    zmsg_t* nnmsg = common_msg_encode (device_type);
+    _scoped_zmsg_t* nnmsg = common_msg_encode (device_type);
     assert ( nnmsg );
    
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_DEVTYPE);
@@ -956,7 +956,7 @@ common_msg_t* generate_return_device(m_dvc_id_t device_id,
     
     common_msg_t* resultmsg = common_msg_new (COMMON_MSG_RETURN_DEVICE);
     
-    zmsg_t* nnmsg = common_msg_encode (device);
+    _scoped_zmsg_t* nnmsg = common_msg_encode (device);
     assert ( nnmsg );
     
     common_msg_set_msg (resultmsg, &nnmsg);
@@ -1488,7 +1488,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
     }
     else
     {
-        zmsg_t* return_measurements = 
+        _scoped_zmsg_t* return_measurements = 
             common_msg_encode_return_last_measurements(
                 device_id,
                 device_name.c_str(),
@@ -1502,7 +1502,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
 zmsg_t* get_last_measurements(zmsg_t** getmsg) {
     log_info ("start");
     common_msg_t *req = common_msg_decode(getmsg);
-    zmsg_t *rep = _get_last_measurements(url.c_str(), req);
+    _scoped_zmsg_t *rep = _get_last_measurements(url.c_str(), req);
     common_msg_destroy(&req);
     log_info ("end: normal");
     return rep;

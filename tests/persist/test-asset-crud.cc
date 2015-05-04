@@ -6,6 +6,8 @@
 #include "assetcrud.h"
 #include "common_msg.h"
 
+#include "cleanup.h"
+
 TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ext_attribute][crud_test.sql]")
 {
     log_open ();
@@ -184,7 +186,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE ( reply_insert.affected_rows == 1 );
 
     // check select
-    zmsg_t* reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t* reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -244,7 +246,7 @@ TEST_CASE("asset device INSERT/DELETE #4","[db][CRUD][insert][delete][asset_devi
     uint64_t rowid = reply_insert.rowid;
 
     // check select
-    zmsg_t *reply_select = select_asset_device (conn, asset_element_id);
+    _scoped_zmsg_t *reply_select = select_asset_device (conn, asset_element_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_DEVICE);
@@ -424,7 +426,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -510,7 +512,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -594,7 +596,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -683,7 +685,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -767,7 +769,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
@@ -860,7 +862,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
 
     // check select
     //              element
-    zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
+    _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
     asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);

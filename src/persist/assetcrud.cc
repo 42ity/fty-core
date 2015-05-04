@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Then for every succesfull delete statement
 // 0 would be return as rowid
 
-
 #include <exception>
 #include <assert.h>
 
@@ -43,6 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "monitor.h"
 #include "persist_error.h"
 #include "asset_types.h"
+#include "cleanup.h"
 
 static const std::string  ins_upd_ass_ext_att_QUERY =
         " INSERT INTO"
@@ -322,7 +322,7 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
     std::string fqdn = "";
     std::string type_name = "";
 
-    zmsg_t* adevice = select_asset_device (conn, element_id);
+    _scoped_zmsg_t* adevice = select_asset_device (conn, element_id);
     if ( is_common_msg(adevice) )
     {
         asset_msg_destroy (element);
@@ -351,7 +351,7 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
                 "internal error during selecting powerlinks occured", NULL);
         }
 
-        zmsg_t *nnmsg = asset_msg_encode (element);
+        _scoped_zmsg_t *nnmsg = asset_msg_encode (element);
         assert ( nnmsg );
     
         asset_msg_t *adevice_decode = asset_msg_decode (&adevice);
@@ -423,7 +423,7 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL,
           "internal error during selecting ext attributes occured", NULL);
 
-    zmsg_t* msgelement = asset_msg_encode_element
+    _scoped_zmsg_t* msgelement = asset_msg_encode_element
             (name.c_str(), parent_id, parent_type_id, 
              element_type_id, extAttributes);
     assert ( msgelement );
@@ -490,7 +490,7 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
         
         tntdb::Connection conn = tntdb::connectCached(url);
         
-        zmsg_t* msgelement = 
+        _scoped_zmsg_t* msgelement = 
             select_asset_element (conn, element_id, element_type_id);
 
         if ( is_common_msg (msgelement) )
@@ -524,7 +524,7 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
         }
         // TODO rework this function
         // make ASSET_MSG_RETURN_ELEMENT
-        zmsg_t* resultmsg = asset_msg_encode_return_element 
+        _scoped_zmsg_t* resultmsg = asset_msg_encode_return_element 
                     (element_id, msgelement);
         assert ( resultmsg );
         zmsg_destroy (&msgelement);
@@ -597,7 +597,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     }
   
     // make ASSET_MSG_RETURN_ELEMENTS
-    zmsg_t *resultmsg = asset_msg_encode_return_elements (elements);
+    _scoped_zmsg_t *resultmsg = asset_msg_encode_return_elements (elements);
     assert(resultmsg);
 
     zhash_destroy (&elements);

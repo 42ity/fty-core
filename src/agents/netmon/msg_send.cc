@@ -29,6 +29,7 @@ References: BIOS-406
 
 #include "netdisc_msg.h"
 #include "msg_send.h"
+#include "cleanup.h"
 
 void
 netmon_msg_send(
@@ -61,7 +62,7 @@ netmon_msg_send(
     netdisc_msg_set_prefixlen (msg, prefixlen);
     netdisc_msg_set_mac (msg, "%s", mac);
 
-    zmsg_t *zmsg = netdisc_msg_encode (&msg);
+    _scoped_zmsg_t *zmsg = netdisc_msg_encode (&msg);
     assert (zmsg);
 
     int rv = mlm_client_send ((mlm_client_t *) client, event, &zmsg);

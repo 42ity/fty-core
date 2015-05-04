@@ -4,6 +4,7 @@
 #include<ctime>
 
 #include "agents.h"
+#include "cleanup.h"
 
 Measurement::Measurement( const ymsg_t *message )
 {
@@ -27,7 +28,7 @@ void Measurement::set( const ymsg_t *message )
     char *device_name = NULL;
     char *source = NULL;
     char *units = NULL;
-    ymsg_t *copy = ymsg_dup( (ymsg_t *)message );
+    _scoped_ymsg_t *copy = ymsg_dup( (ymsg_t *)message );
     if( ! copy ) return;
 
     // TODO: use extract, get rid of copy

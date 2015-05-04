@@ -8,6 +8,7 @@
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "str_defs.h"
+#include "cleanup.h"
 
 #define ALERT_POLLING_INTERVAL  5000
 #define check_ymsg(X) ( X && *X )
@@ -29,7 +30,7 @@ void AlertAgent::onReply( ymsg_t **message )
 {
     if( ! check_ymsg(message) && ! ymsg_is_ok(*message) ) return;
 
-    app_t *app = ymsg_request_app( *message );
+    _scoped_app_t *app = ymsg_request_app( *message );
     if( app ) {
         // is this an alert confirmation?
         const char *name = app_name(app);
@@ -56,7 +57,7 @@ void AlertAgent::onReply( ymsg_t **message )
 void AlertAgent::onPoll() {
     for( auto al = _model.begin(); al != _model.end() ; ++al ) {
         if( al->second.timeToPublish() ) {
-            ymsg_t * msg = bios_alert_encode (
+            _scoped_ymsg_t * msg = bios_alert_encode (
                 al->second.ruleName().c_str(),
                 al->second.priority(),
                 al->second.state(),
@@ -65,7 +66,7 @@ void AlertAgent::onPoll() {
                 al->second.since());
             std::string topic = "alert." + al->second.ruleName();
             if( ! al->second.persistenceInformed() ) {
-                ymsg_t *pmsg = ymsg_dup(msg);
+                _scoped_ymsg_t *pmsg = ymsg_dup(msg);
                 if( pmsg ) {
                     ymsg_set_repeat( pmsg, true );
                     log_debug("sending alert %s state %i to persistence\n", al->second.ruleName().c_str(), al->second.state() );

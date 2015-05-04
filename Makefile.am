@@ -222,7 +222,8 @@ libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_ymsg++.cc \
 				src/shared/utils_ymsg++.h \ 
 				src/shared/utils_app.c \
-				src/shared/utils_app.h
+				src/shared/utils_app.h \
+				src/include/cleanup.h
 			
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
@@ -348,7 +349,8 @@ libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
 noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
 libpriv_nmap_parse_la_SOURCES = \
 			src/agents/nmap/nmap-parse.h \
-			src/agents/nmap/nmap-parse.cc
+			src/agents/nmap/nmap-parse.cc \
+			src/include/cleanup.h
 
 noinst_LTLIBRARIES +=	libpriv-email.la
 libpriv_email_la_SOURCES = \
@@ -748,7 +750,8 @@ check_PROGRAMS +=		test-libbiosapiut
 test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
 test_libbiosapiut_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include \
-			-I$(abs_top_srcdir)/include
+			-I$(abs_top_srcdir)/include \
+			-I$(abs_top_srcdir)/src/include
 test_libbiosapiut_LDADD =	libpriv-test-run.la -lbiosapi
 test_libbiosapiut_DEPENDENCIES = \
 				libpriv-test-run.la \

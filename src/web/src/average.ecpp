@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -111,7 +112,7 @@
     }
 
     // TODO: Replace with a real computation module
-    ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
+    _scoped_ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
     if (msg == NULL) {
 </%cpp>
         {

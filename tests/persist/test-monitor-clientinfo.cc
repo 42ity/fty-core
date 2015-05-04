@@ -9,6 +9,7 @@
 #include "monitor.h"
 #include "dbpath.h"
 
+#include "cleanup.h"
 
 TEST_CASE("Common messages: generate_client_info","[common][generate][client_info][db]")
 {
@@ -50,7 +51,7 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
     REQUIRE ( common_msg_id (msgreturnclient_info) == COMMON_MSG_RETURN_CINFO );
     REQUIRE ( common_msg_rowid (msgreturnclient_info) == client_info_id );
 
-    zmsg_t* newmsg = common_msg_get_msg (msgreturnclient_info);
+    _scoped_zmsg_t* newmsg = common_msg_get_msg (msgreturnclient_info);
     REQUIRE ( newmsg != NULL );
     REQUIRE ( zmsg_is (newmsg) == true );
 
@@ -94,7 +95,7 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
     REQUIRE ( common_msg_rowid (newreturn) == newid ); 
     
 //    common_msg_print (newreturn);
-    zmsg_t* newmsg = common_msg_get_msg (newreturn);
+    _scoped_zmsg_t* newmsg = common_msg_get_msg (newreturn);
     common_msg_t* newclient_info = common_msg_decode (&newmsg);
     REQUIRE ( newclient_info != NULL );
     REQUIRE ( common_msg_id (newclient_info) == COMMON_MSG_CLIENT_INFO );

@@ -11,6 +11,8 @@
 #include "assetcrud.h"
 #include <queue>          // std::queue
 
+#include "cleanup.h"
+
 #define id_device 6
 #define id_rack 5
 #define id_row 4
@@ -34,7 +36,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01",""));
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -56,7 +58,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
@@ -108,7 +110,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01",""));
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -131,7 +133,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
@@ -181,7 +183,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02",""));
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -204,7 +206,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
@@ -251,7 +253,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
     expected.push (std::make_tuple (7023,id_device,"srv_LOC_50","server"));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -274,7 +276,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
@@ -322,7 +324,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02",""));
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -345,7 +347,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
@@ -392,7 +394,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     expected.push (std::make_tuple (7025,id_group,"inputpowergroup DC_LOC_01","happynewyear"));
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -414,7 +416,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
@@ -460,7 +462,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
     expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
     asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -482,7 +484,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     REQUIRE ( compare_start_element (cretTopology, std::get<0>(el), std::get<1>(el), 
                     std::get<2>(el).c_str(), std::get<3>(el).c_str() ));
 
-    zmsg_t* submsg = asset_msg_get_msg (cretTopology);
+    _scoped_zmsg_t* submsg = asset_msg_get_msg (cretTopology);
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
@@ -524,7 +526,7 @@ TEST_CASE("Location topology to #8","[db][topology][location][location_topology.
     asset_msg_set_type (getmsg, id_dc);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_common_msg (retTopology) );
     common_msg_t* cretTopology = common_msg_decode (&retTopology);
