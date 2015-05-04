@@ -133,9 +133,13 @@ tools/db-init
 !tools/bios-driver-netmon.service.in
 !tools/bios-driver-nut.service.in
 !tools/bios-db.service.in
+!tools/bios-agent-alert.service.in
+!tools/bios-agent-cm.service.in
 !tools/bios-agent-inventory.service.in
 !tools/bios-server-agent.service.in
 bios-driver-netmon.service
+bios-agent-alert.service
+bios-agent-cm.service
 bios-agent-nut.service
 bios-db.service
 bios-agent-inventory.service
