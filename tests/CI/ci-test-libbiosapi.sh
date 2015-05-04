@@ -88,9 +88,10 @@ else
     ret=${gccret}
 fi
 
-retut=0
 logmsg_info "Try to compile and run a libbiosapi Unit-tester..."
-if ./autogen.sh ${AUTOGEN_ACTION_MAKE} test-libbiosapiut ; then
+./autogen.sh ${AUTOGEN_ACTION_MAKE} test-libbiosapiut
+retut=$?
+if [ "$retut" = 0 ]; then
     echo "    RUN test-libbiosapiut"
     LD_LIBRARY_PATH=${LIBDIR}/ ${BUILDSUBDIR}/test-libbiosapiut || retut=$?
 fi
