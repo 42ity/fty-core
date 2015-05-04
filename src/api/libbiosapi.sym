@@ -133,6 +133,8 @@ global:
 
         bios_alert_encode;
         bios_alert_decode;
+        bios_alert_notification_encode;
+        bios_alert_notification_decode;
 
         is_app;
         is_ymsg;

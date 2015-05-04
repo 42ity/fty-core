@@ -21,6 +21,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 
 #include "utils.h" 
+#include "log.h" 
+#include "log.c" 
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "bios_agent.h"
@@ -405,54 +407,147 @@ bios_alert_decode (ymsg_t **self_p,
                    char **description,
                    time_t *since)
 {
-   if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
+    LOG_START;
+    if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
+    log_debug ("5");
+    const char *nam, *dev, *pri, *sta, *sin, *des;
+    int32_t tmp;
 
-   const char *nam, *dev, *pri, *sta, *sin, *des;
-   int32_t tmp;
-
-   app_t *app = ymsg_request_app(*self_p);
-   if( ! app ) return -3;
+    app_t *app = ymsg_request_app(*self_p);
+    log_debug ("55");
+    if( ! app ) return -3;
+    log_debug ("555");
        
-   nam = app_args_string( app, "rule", NULL );
-   pri = app_args_string( app, "priority", NULL );
-   sta = app_args_string( app, "state", NULL );
-   dev = app_args_string( app, "devices", NULL );
-   des = app_args_string( app, "description", NULL );
-   sin = app_args_string( app, "since", NULL );
+    nam = app_args_string( app, "rule", NULL );
+    log_debug ("5555");
+    pri = app_args_string( app, "priority", NULL );
+    log_debug ("55555");
+    sta = app_args_string( app, "state", NULL );
+    log_debug ("555555");
+    dev = app_args_string( app, "devices", NULL );
+    log_debug ("5555555");
+    des = app_args_string( app, "description", NULL );
+    log_debug ("56");
+    sin = app_args_string( app, "since", NULL );
+    log_debug ("566");
    
 
-   if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
-       app_destroy( &app );
+    if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
+    log_debug ("5666");
+        app_destroy( &app );
+    log_debug ("56666");
+        return -3;
+    }
+    log_debug ("566666");
+    tmp = app_args_int32( app, "priority" );
+    log_debug ("5666666");
+    if( tmp < ALERT_PRIORITY_P1 || tmp > ALERT_PRIORITY_P5 ) {
+    log_debug ("57");
+        app_destroy( &app );
+    log_debug ("577");
+        return -4;
+    }
+    log_debug ("5777");
+    *priority = (alert_priority_t)tmp;
+    log_debug ("57777");
+    tmp = app_args_int32( app, "state" );
+    log_debug ("577777");
+    if( tmp < ALERT_STATE_NO_ALERT || tmp > ALERT_STATE_ONGOING_ALERT ) {
+    log_debug ("5777777");
+        app_destroy( &app );
+    log_debug ("57777777");
+        return -5;
+    }
+    log_debug ("577777777");
+    *state = (alert_state_t)tmp;
+    log_debug ("58");
+    if( since ) {
+    log_debug ("588");
+        *since = string_to_int64( sin );
+    log_debug ("5888");
+        if( errno ) {
+    log_debug ("58888");
+            app_destroy(&app);
+    log_debug ("588888");
+            return -6;
+        }
+    }
+    log_debug ("59");
+    *rule_name = strdup(nam);
+    log_debug ("599");
+    *devices = strdup(dev);
+    log_debug ("5999");
+    if( description ) {
+    log_debug ("5999");
+        if( des ) {
+    log_debug ("59999");
+            *description = strdup(des);
+    log_debug ("599999");
+        } else {
+    log_debug ("5999999");
+            *description = NULL;
+    log_debug ("59999999");
+        }
+    }
+    log_debug ("599999999");
+    app_destroy(&app);
+    log_debug ("5999999999");
+    ymsg_destroy(self_p);
+    log_debug ("59999999999");
+    return 0;
+}
+
+
+ymsg_t*
+    bios_alert_notification_encode 
+        (const char *rule_name,
+         int8_t notify_flag)
+{
+    if ( !rule_name )
+        return NULL;
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    app_t  *app = app_new(APP_MODULE);
+    app_set_name( app, "ALERT_NOTIFY" );
+    app_args_set_string (app, "rule" , rule_name);
+    app_args_set_int8   (app, "notify", notify_flag);
+    ymsg_request_set_app(msg, &app);
+    return msg;
+}
+
+
+int
+    bios_alert_notification_decode
+        (ymsg_t **self_p,
+         char **rule_name,
+         int8_t *notify_flag)
+{
+   if ( !self_p || !*self_p || !rule_name || !notify_flag )
+       return -1;
+
+   const char *name;
+   const char *notify;
+
+   app_t *app = ymsg_request_app(*self_p);
+   if ( !app )
+       return -3;
+       
+   name = app_args_string (app, "rule", NULL);
+   notify = app_args_string (app, "notify", NULL);
+   
+   if ( !name || !notify )
+   {
+       app_destroy (&app);
        return -3;
    }
-   tmp = app_args_int32( app, "priority" );
-   if( tmp < ALERT_PRIORITY_P1 || tmp > ALERT_PRIORITY_P5 ) {
-       app_destroy( &app );
+
+   int8_t tmp = app_args_int8 (app, "notify");
+   if ( tmp != 0x01 && tmp != 0x02 )
+   {
+       app_destroy (&app);
        return -4;
    }
-   *priority = (alert_priority_t)tmp;
-   tmp = app_args_int32( app, "state" );
-   if( tmp < ALERT_STATE_NO_ALERT || tmp > ALERT_STATE_ONGOING_ALERT ) {
-       app_destroy( &app );
-       return -5;
-   }
-   *state = (alert_state_t)tmp;
-   if( since ) {
-       *since = string_to_int64( sin );
-       if( errno ) {
-           app_destroy(&app);
-           return -6;
-       }
-   }
-   *rule_name = strdup(nam);
-   *devices = strdup(dev);
-   if( description ) {
-       if( des ) {
-           *description = strdup(des);
-       } else {
-           *description = NULL;
-       }
-   }
+   *notify_flag = (int8_t) tmp;
+   *rule_name = strdup(name);
    app_destroy(&app);
    ymsg_destroy(self_p);
    return 0;

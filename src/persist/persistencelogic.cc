@@ -49,6 +49,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "measurement.h"
 #include "alert.h"
 #include "agents.h"
+#include "alert.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -770,6 +771,11 @@ void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj)
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
+    // TODO subject
+    if(streq(in_subj, "get_measurements")) {
+        persist::process_alert_notification(out, out_subj, in, in_subj);
+        return;
+    }
 }
 
 /**
@@ -794,6 +800,59 @@ zmsg_t* process_message(zmsg_t** msg) {
                                   "Wrong message received!", NULL);
     }
 }
+
+
+void 
+    process_alert_notification 
+        (ymsg_t *out, char       **out_subj,
+         ymsg_t *in , const char  *in_subj)
+{
+    if ( !in || !out )
+        return;
+
+    LOG_START;
+    
+    if ( in_subj )
+        *out_subj = strdup(in_subj);
+    else
+        *out_subj = NULL;
+    
+    ymsg_t *copy = ymsg_dup(in);
+    assert(copy);
+    
+    // decode message
+    char *rule = NULL;
+    int8_t notify_flag = 0;
+
+    int rv = bios_alert_notification_decode 
+                (&copy, &rule, &notify_flag);
+    if ( rv != 0 )
+    {
+        if (rule) free(rule);
+        ymsg_destroy(&copy);
+        log_debug("can't decode message");
+        LOG_END;
+        return;
+    }
+    try{        
+        tntdb::Connection conn = tntdb::connect(url);
+
+        db_reply_t ret = update_alert_notification_byRuleName(
+                conn,
+                notify_flag,
+                rule);
+        ymsg_set_status( out, ret.status );
+        if ( !ret.status )
+            log_error ("Writting alert into the database failed");
+    }
+    catch(const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        ymsg_set_status( out, false );
+    }
+    if (rule) free(rule);
+    LOG_END;
+}
+    
 
 
 // should process destroy ymsg?

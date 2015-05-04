@@ -484,6 +484,7 @@ bin_PROGRAMS += 	test-db
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
 test_db_LDADD = \
+			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-test-run.la
@@ -903,6 +904,26 @@ agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosap
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
+client_PROGRAMS +=	agent-alert-smtp
+
+agent_alert_smtp_SOURCES = \
+			src/agents/alert-smtp/alert-smtp-agent.h \
+			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/alert-basic.h
+
+
+agent_alert_smtp_LDADD = \
+			libbiosapi.la \
+			libpriv-log.la \
+			libpriv-email.la \
+			libpriv-subprocess.la
+
+agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
+		    -I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/agents/alert
+			
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \

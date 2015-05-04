@@ -19,14 +19,17 @@ void AlertAgent::onStart( )
 
 void AlertAgent::onSend( ymsg_t **message )
 {
+    LOG_START;
     // hope we get some measurement
     if( ! check_ymsg( message ) ) return;
     _model.newMeasurement( *message );
     ymsg_destroy( message );
+    LOG_END;
 }
 
 void AlertAgent::onReply( ymsg_t **message )
 {
+    LOG_START;
     if( ! check_ymsg(message) && ! ymsg_is_ok(*message) ) return;
 
     app_t *app = ymsg_request_app( *message );
@@ -51,9 +54,11 @@ void AlertAgent::onReply( ymsg_t **message )
         app_destroy(&app);
     }
     ymsg_destroy( message );
+    LOG_END;
 }
 
 void AlertAgent::onPoll() {
+    LOG_START;
     for( auto al = _model.begin(); al != _model.end() ; ++al ) {
         if( al->second.timeToPublish() ) {
             ymsg_t * msg = bios_alert_encode (
@@ -80,6 +85,7 @@ void AlertAgent::onPoll() {
             zclock_sleep(100);
         }
     }
+    LOG_END;
 }
 
 
