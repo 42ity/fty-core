@@ -157,6 +157,9 @@ void AlertSmtpAgent::onSend(ymsg_t **message) {
     time_t  since       = 0;
     alert_priority_t priority;
     alert_state_t    state;
+
+    log_debug ("topic='%s'", subject());
+    log_debug ("sender='%s'", sender());
     // decode
     int rv = bios_alert_decode (message, &ruleName, &priority,
                    &state, &devices, &description, &since);
@@ -196,7 +199,7 @@ int main(int argc, char **argv){
     log_set_level(LOG_DEBUG);
     log_info ("agent alert smtp started");
     AlertSmtpAgent agent("alert-smtp");
-    if( agent.connect("ipc://@/malamute", bios_get_stream_main(), ".*") ) {
+    if( agent.connect("ipc://@/malamute", bios_get_stream_main(), "^alert\\..*") ) {
         result = agent.run();
     }
     log_info ("Alert Smpt Agent exited with code %i\n", result);
