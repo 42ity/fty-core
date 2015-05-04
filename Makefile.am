@@ -1119,7 +1119,7 @@ edit = sed \
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
-						bios-agent-alert.service
+			bios-agent-alert.service
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
@@ -1141,7 +1141,7 @@ systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
-EXTRA_DIST += $(addsuffix .in,$(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_UNITS)))
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
 endif
 
 #----------------------------------------------------------------------
