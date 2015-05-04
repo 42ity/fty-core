@@ -21,8 +21,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 
 #include "utils.h" 
-#include "log.h" 
-#include "log.c" 
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "bios_agent.h"
