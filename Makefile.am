@@ -951,9 +951,6 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
 
-# agent_cm_DEPENDENCIES = libbiosapi.so
-
-#
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
@@ -967,8 +964,8 @@ agent_alert_SOURCES = \
 
 agent_alert_LDADD = \
 			libpriv-utils.la \
-                        libpriv-log.la \
-                        libbiosapi.la
+			libpriv-log.la \
+			libbiosapi.la
 
 agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
