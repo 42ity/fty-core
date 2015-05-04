@@ -29,7 +29,8 @@ Description: various random C and project wide helpers
 #include <stdbool.h>
 #include <string.h>
 #include <time.h>
-
+#include <stdint.h>
+#include <errno.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -78,6 +79,57 @@ int64_t datetime_to_calendar (const char *datetime);
 
 //! portable version of timegm() taken from manual pages 
 int64_t my_timegm (struct tm *tm);
+
+// TODO: move string_to_X functioncs into utils.[hc] as soon as streq conflict is solved
+
+/**
+ * \brief converts char* to int64_t
+ * \param value string (char *), containing the number
+ * \return text value converted to int32_t
+ *
+ * Function converts text representation of number to int32_t
+ * In case of error, INT32_MAX is returned and errno is set.
+ *
+ * The input value must be whole used. Strings like "42aaa" is
+ * not converted to 42 but error is produced.
+ */
+int64_t string_to_int64( const char *value );
+
+/**
+ * \brief converts char* to int32_t
+ * \param value string (char *), containing the number
+ * \return text value converted to int32_t
+ * \see string_to_int64
+ *
+ * In case of error INT32_MAX is returned and errno is set.
+ */
+int32_t string_to_int32( const char *value );
+
+/**
+ * \brief converts char* to uint64_t
+ * \param value string (char *), containing the number
+ * \return text value converted to uint64_t
+ * \see string_to_int64
+ *
+ * In case of error UINT64_MAX is returned and errno is set.
+ */
+uint64_t string_to_uint64( const char *value );
+
+/**
+ * \brief converts char* to uint32_t
+ * \param value string (char *), containing the number
+ * \return text value converted to uint32_t
+ * \see string_to_int64
+ *
+ * In case of error UINT32_MAX is returned and errno is set.
+ */
+uint32_t string_to_uint32( const char *value );
+
+int16_t string_to_int16( const char *value );
+uint16_t string_to_uint16( const char *value );
+
+int8_t string_to_int8( const char *value );
+uint8_t string_to_uint8( const char *value );
 
 
 // Macros
