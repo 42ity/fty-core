@@ -116,7 +116,7 @@ void
             it->second.informStart();
         }
         catch (const std::runtime_error& e) {
-            log_error("unexcpected error");
+            LOG_END_ABNORMAL(e);
            // here we'll handle the error
         }
     }
@@ -134,7 +134,7 @@ void
             it->second.informEnd();
         }
         catch (const std::runtime_error& e) {
-            log_error("unexcpected error");
+            LOG_END_ABNORMAL(e);
            // here we'll handle the error
         }
     }

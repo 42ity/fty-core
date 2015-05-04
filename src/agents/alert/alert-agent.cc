@@ -20,17 +20,14 @@ void AlertAgent::onStart( )
 
 void AlertAgent::onSend( ymsg_t **message )
 {
-    LOG_START;
     // hope we get some measurement
     if( ! check_ymsg( message ) ) return;
     _model.newMeasurement( *message );
     ymsg_destroy( message );
-    LOG_END;
 }
 
 void AlertAgent::onReply( ymsg_t **message )
 {
-    LOG_START;
     if( ! check_ymsg(message) && ! ymsg_is_ok(*message) ) return;
     if( ! streq( sender(), BIOS_AGENT_NAME_DB_MEASUREMENT ) ) return;
 
@@ -60,11 +57,9 @@ void AlertAgent::onReply( ymsg_t **message )
         }
         FREE0( device );
     }
-    LOG_END;
 }
 
 void AlertAgent::onPoll() {
-    LOG_START;
     for( auto al = _model.begin(); al != _model.end() ; ++al ) {
         if( al->second.priority() == ALERT_PRIORITY_UNKNOWN ) {
             // hmm, ask for priority
@@ -102,7 +97,6 @@ void AlertAgent::onPoll() {
             zclock_sleep(100);
         }
     }
-    LOG_END;
 }
 
 
