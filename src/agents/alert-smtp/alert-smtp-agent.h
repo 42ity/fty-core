@@ -34,14 +34,7 @@ public:
     explicit AlertSmtpAgent( const std::string &agentName ) :BIOSAgent( agentName ) { };
     
     void onSend(ymsg_t **message);
-    void onReply(ymsg_t **message){};
     
-    struct alert_info_t{
-        std::string ruleName;
-        int64_t dateFrom;
-        int64_t dateTill;
-        int8_t notification;
-    };
     std::map <std::string, AlertBasic>::iterator addAlertClose(AlertBasic a);
     std::map <std::string, AlertBasic>::iterator addAlertNew(AlertBasic a);
 private:
@@ -51,24 +44,12 @@ private:
     static const std::string _emailTo;
     static const std::string _emailFrom;
 
-    void notifyUser(const std::string &email, alert_info_t info, 
-                    const char * devices, const char * descriprion,
-                    alert_priority_t  priority, alert_state_t state){};
-    void notifyEndDB(const char *rule_name, int64_t since){};
-    void notifyMyself(const char *rule_name, int8_t flag, int64_t since){};
 protected:
         // represents an information about alerts retrieved from DB
     std::map <std::string, AlertBasic> alertList;
     
-    void addAlertToList(const std::string &ruleName,int64_t dateFrom, int64_t dateTill);
-    void addAlertToList(const char        *ruleName,int64_t dateFrom, int64_t dateTill);
-
-    
-    void notily();
     std::string emailAddressTo(void);
     std::string emailAddressFrom(void);
-    void askDB(const std::string &ruleName){};
-    void askDBforNotNotified(void){};
     void notify (std::map <std::string, AlertBasic>::iterator it);
 
 
