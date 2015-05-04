@@ -40,6 +40,8 @@ class AlertModel {
     std::map<std::string, Alert>::iterator alertByRule(std::string ruleName);
     std::map<std::string, Alert>::iterator begin();
     std::map<std::string, Alert>::iterator end();
+
+    void setPriority( std::string device, alert_priority_t priority );
  protected:
     std::map< std::string, Measurement > _last_measurements;
     std::map<std::string, Alert> _alerts;

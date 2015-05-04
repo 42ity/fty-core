@@ -73,7 +73,6 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 // this is ups let's create simple alert configuration
                 Alert A;
                 A.name("upsonbattery");
-                A.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 A.addTopic( measurement.topic() );
                 A.setEvaluateFunction( evaluate_on_battery_alert );
                 A.description("UPS is running on battery!");
@@ -81,7 +80,6 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 
                 Alert B;
                 B.name("upslowbattery");
-                B.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 B.addTopic( measurement.topic() );
                 B.setEvaluateFunction( evaluate_low_battery_alert );
                 B.description("Low battery!");
@@ -89,7 +87,6 @@ void AlertModel::newMeasurement( const Measurement &measurement )
 
                 Alert C;
                 C.name("upsonbypass");
-                C.priority( ALERT_PRIORITY_P5 ); //FIXME remove this and get it from DB
                 C.addTopic( measurement.topic() );
                 C.setEvaluateFunction( evaluate_on_bypass_alert );
                 C.description("UPS is on bypass!");
@@ -124,4 +121,12 @@ std::map<std::string, Alert>::iterator AlertModel::end()
 std::map<std::string, Alert>::iterator AlertModel::begin()
 {
     return _alerts.begin();
+}
+
+void AlertModel::setPriority( std::string device, alert_priority_t priority )
+{
+    // TODO: this simple solution (alert priority = device priority) suppose to be
+    // replaced by taking alert priority from configuration
+    for( auto &al: _alerts )
+        if( al.second.devices() == device ) al.second.priority(priority);
 }
