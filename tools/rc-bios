@@ -42,8 +42,6 @@ BASE_PATH=`realpath ${BASE_PATH}/../`
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
 ### $BIOS-provided daemons (available as systemd units)
 DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-agent-nut bios-server-agent"
-### make webtest additional targets
-MAKE_WEBTEST_TARGETS="db-ng agent-nut driver-nmap netmon"
 
 # Simple check for whether sudo is needed for high-privilege tasks
 # We assume here that the non-privileged user running this command
