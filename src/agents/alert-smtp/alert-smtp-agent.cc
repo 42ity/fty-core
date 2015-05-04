@@ -64,7 +64,7 @@ std::map <std::string, AlertBasic>::iterator
         {
             // je to stejny alarm,
             log_debug ("ten alarm porad bezi");
-            tmp.first->second = a;
+//            tmp.first->second = a;
             // TODO: if we want to notify user if some attribute of the alarm changed
             // it is right place to place here some code
         }
@@ -106,10 +106,8 @@ void
     pid_t tmptmp = getpid();
     if ( ! (it->second.informedStart()) )
     {
-        log_debug ("4");
+        log_debug ("Whant to notify, that event started");
         shared::Smtp smtp{"mail.etn.com", emailAddressFrom() };
-
-        log_debug ("44");
         try {
             smtp.sendmail(
                 emailAddressTo(),
@@ -117,22 +115,17 @@ void
                 "Dear Mr. Smith,\n......" + it->second.toString() +"pid=" + std::to_string(tmptmp));
             log_error("blue mail sended");
             it->second.informStart();
-            log_debug ("444");
         }
         catch (const std::runtime_error& e) {
             log_error("unexcpected error");
            // here we'll handle the error
         }
-        log_debug ("4444");
     }
-    log_debug ("44444");
     
     if ( ( it->second.till() != 0 )  && ( ! (it->second.informedEnd()) ))
     {
-        log_debug ("444444");
+        log_debug ("Whant to notify, that event ended");
         shared::Smtp smtp{"mail.etn.com", emailAddressFrom() };
-
-        log_debug ("4444444");
         try {
             smtp.sendmail(
                 emailAddressTo(),
@@ -140,15 +133,12 @@ void
                 "Dear Mr. Smith,\n......"+ it->second.toString() +"pid=" + std::to_string(tmptmp));
             log_error("red mail sended");
             it->second.informEnd();
-            log_debug ("44444444");
         }
         catch (const std::runtime_error& e) {
             log_error("unexcpected error");
            // here we'll handle the error
         }
-        log_debug ("444444444");
     }
-    log_debug ("4444444444");
     LOG_END;
     return;
 }
@@ -167,36 +157,27 @@ void AlertSmtpAgent::onSend(ymsg_t **message) {
     time_t  since       = 0;
     alert_priority_t priority;
     alert_state_t    state;
-    log_debug ("1");
     // decode
     int rv = bios_alert_decode (message, &ruleName, &priority,
                    &state, &devices, &description, &since);
     log_debug ("ruleName=%s",ruleName);
     log_debug ("since=%ld",since);
     log_debug ("state=%d",state);
-    log_debug ("11");
     if ( !rv ) //if decode was successful
     {
-        log_debug ("111");
         if ( state == ALERT_STATE_NO_ALERT )
         {
-            log_debug ("1111");
+            log_debug ("ALERT_STATE_NO_ALERT");
             AlertBasic a (ruleName, 1, devices, description, since, 0, priority);
-            log_debug ("11111");
             auto it = addAlertClose(a);
-            log_debug ("111111");
             notify (it);
-            log_debug ("1111111");
         }
         if ( state == ALERT_STATE_ONGOING_ALERT )
         {  
-            log_debug ("11111111");
+            log_debug ("ALERT_STATE_ONGOING_ALERT");
             AlertBasic a (ruleName, 1, devices, description, 0, since, priority);
-            log_debug ("111111111");
             auto it = addAlertNew(a);
-            log_debug ("1111111111");
             notify (it);
-            log_debug ("11111111111");
         }
     }
     if ( ruleName ) free(ruleName);
