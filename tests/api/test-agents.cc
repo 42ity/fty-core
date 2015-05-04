@@ -319,7 +319,8 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
     REQUIRE ( msg );
 
     char *device = NULL, *status = NULL;
-    uint32_t type_id = 0, parent_id = 0, priority = 0;
+    uint32_t type_id = 0, parent_id = 0;
+    uint8_t priority = 0;
 
     int x = bios_asset_extract( msg, &device, &type_id, &parent_id, &status, &priority );
     REQUIRE( msg );

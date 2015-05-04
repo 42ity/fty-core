@@ -50,7 +50,7 @@ void AlertAgent::onReply( ymsg_t **message )
     }
     else if( streq( topic, "get_asset_element" ) ) {
         char *device = NULL;
-        uint32_t priority;
+        uint8_t priority;
         if( bios_asset_extract( *message, &device, NULL, NULL, NULL, &priority) == 0 ) {
             log_debug( "Device %s priority is %i", device, priority );
             _model.setPriority( device, (alert_priority_t)priority );

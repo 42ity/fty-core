@@ -472,7 +472,7 @@ bios_asset_encode( const char *devicename,
                    uint32_t type_id,
                    uint32_t parent_id,
                    const char* status,
-                   uint32_t priority
+                   uint8_t priority
                    )
 {
     if( ! devicename ) return NULL;
@@ -484,7 +484,7 @@ bios_asset_encode( const char *devicename,
     if( type_id ) app_args_set_uint32( app, "type_id", type_id );
     if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
     if( status ) app_args_set_string( app, "status", status );
-    if( priority ) app_args_set_uint32( app, "priority", priority );
+    if( priority ) app_args_set_uint8( app, "priority", priority );
     ymsg_request_set_app( msg, &app );
     return msg;
 }
@@ -495,7 +495,7 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *type_id,
                    uint32_t *parent_id,
                    char **status,
-                   uint32_t *priority
+                   uint8_t *priority
                    )
 {
     if( ! message || ! devicename ) return -1;
@@ -521,7 +521,7 @@ bios_asset_extract(ymsg_t *message,
         if( ! *devicename ) goto bios_asset_extract_err;
     }
     if( priority ) {
-        *priority = app_args_uint32( app, "priority" );
+        *priority = app_args_uint8( app, "priority" );
         if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
             goto bios_asset_extract_err;
     }
