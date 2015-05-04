@@ -218,12 +218,12 @@ noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
 libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_ymsg.c \
-				src/shared/utils_ymsg.h \	
+				src/shared/utils_ymsg.h \
 				src/shared/utils_ymsg++.cc \
-				src/shared/utils_ymsg++.h \ 
+				src/shared/utils_ymsg++.h \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h
-			
+
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -1017,13 +1017,14 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la libpriv-utils-ymsg.la
+			libpriv-utils.la libpriv-defs.la \
+			libpriv-utils-ymsg.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
