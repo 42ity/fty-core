@@ -174,8 +174,6 @@ libbiosapi_la_SOURCES = \
 				src/api/bios_agent.c \
 				src/api/agents.c \
 				src/api/ymsg.c \
-				src/shared/utils.c \
-				src/shared/utils.h \
 				src/include/defs.h \
 				$(libbiosapi_la_HEADERS_noinst)
 
@@ -224,6 +222,7 @@ libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h
 
+libpriv_utils_ymsg_la_LIBADD =  libpriv-utils.la
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -245,6 +244,9 @@ libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h \
 				src/include/str_defs.h \
 				src/include/defs.h
+
+libpriv_utils_la_LIBADD = 	libpriv-defs.la
+
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -310,6 +312,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/alert.h \
 			src/persist/alert.cc \
+			src/persist/ymsg-asset.h \
+			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
 			tools/dbpath.cc
@@ -940,30 +944,28 @@ agent_cm_SOURCES = \
 
 agent_cm_LDADD = \
 			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-defs.la \
-			libpriv-utils-ymsg.la \
-            libbiosapi.la
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)
 
-#
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
-                        src/agents/alert/alert-entity.cc \
-                        src/agents/alert/alert-measurement.cc \
-                        src/agents/alert/alert-agent.cc \
-                        src/agents/alert/alert-model.cc \
-                        src/shared/utils_app.c \
-                        src/shared/utils_ymsg.c \
-                        src/include/str_defs.c
+			src/agents/alert/alert-entity.cc \
+			src/agents/alert/alert-measurement.cc \
+			src/agents/alert/alert-agent.cc \
+			src/agents/alert/alert-model.cc \
+			src/shared/utils_app.c \
+			src/shared/utils_ymsg.c \
+			src/include/str_defs.c
 
 agent_alert_LDADD = \
-                        libpriv-log.la \
-                        libbiosapi.la
+			libpriv-utils.la \
+			libpriv-log.la \
+			libbiosapi.la
 
 agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
@@ -1023,7 +1025,6 @@ bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la \
 			libpriv-utils-ymsg.la
 
 dist_noinst_HEADERS += \

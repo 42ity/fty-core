@@ -171,19 +171,19 @@ typedef enum {
  */
 BIOS_EXPORT ymsg_t *
 bios_alert_encode (const char *rule_name,
-                   alert_priority_t priority,
-                   alert_state_t state,
+                   uint8_t priority,
+                   int8_t state,
                    const char *devices,
                    const char *alert_description,
                    time_t since);
 
 /**
- * \brief decode alert message
+ * \brief extract alert message
  *
- * \param[in] ymsg - measurement message to decode
- * \param[out] rule_name - alarm rule name.
- * \param[out] priority - alarm priority P1 - P5.
- * \param[out] alert_state - alarm is triggered in the system or it is not (end of alarm).
+ * \param[in] ymsg - alert message to decode
+ * \param[out] rule_name - alert rule name.
+ * \param[out] priority - alert priority P1 - P5.
+ * \param[out] alert_state - alert is triggered in the system or it is not (end of alert).
  * \param[out] devices - devices, causing this alert (comma separated list).
  * \param[out] description - optional, user alert description.
  * \param[out] since - time, when this alarm state has been discovered.
@@ -193,16 +193,30 @@ bios_alert_encode (const char *rule_name,
  *             -5 = invalid state
  *             -6 = malformed timestamp
  *
- * In case of failure, message is not destroyed
  */
 BIOS_EXPORT int
-bios_alert_decode (ymsg_t **self_p,
+bios_alert_extract(ymsg_t *self,
                    char **rule_name,
-                   alert_priority_t *priority,
-                   alert_state_t *state,
+                   uint8_t *priority,
+                   int8_t *state,
                    char **devices,
                    char **description,
                    time_t *since);
+
+BIOS_EXPORT ymsg_t *
+bios_asset_encode( const char *devicename,
+                   uint32_t type_id,
+                   uint32_t parent_id,
+                   const char* status,
+                   uint8_t priority);
+
+BIOS_EXPORT int
+bios_asset_extract(ymsg_t *message,
+                   char **devicename,
+                   uint32_t *type_id,
+                   uint32_t *parent_id,
+                   char **status,
+                   uint8_t *priority);
 
 
 #ifdef __cplusplus

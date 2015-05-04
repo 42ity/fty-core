@@ -31,8 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "alert-measurement.h"
 
-#define NO_ALERT_PUBLISH_INTERVAL 20
-#define ONGOING_ALERT_PUBLISH_INTERVAL 5
+#define NO_ALERT_PUBLISH_INTERVAL 3600
+#define ONGOING_ALERT_PUBLISH_INTERVAL 60
 
 typedef alert_state_t (*alert_evaluate_function_t)(
     const std::map<std::string, Measurement> &measurements,
