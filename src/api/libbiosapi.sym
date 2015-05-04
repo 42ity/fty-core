@@ -132,7 +132,10 @@ global:
         bios_db_measurements_read_reply_extract;
 
         bios_alert_encode;
-        bios_alert_decode;
+        bios_alert_extract;
+
+        bios_asset_encode;
+        bios_asset_extract;
 
         is_app;
         is_ymsg;
