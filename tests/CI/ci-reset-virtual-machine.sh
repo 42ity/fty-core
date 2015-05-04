@@ -220,19 +220,40 @@ for D in ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
 	[ x"$D" = x"../rootfs/$IMAGE-ro/" ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
-	if [ -d "$D" ] && [ x"`cd $D && find .`" = x. ]; then
-		# This is a directory, and it is empty
-		FD="`cd "$D" && pwd`" && \
-		    [ x"`mount | grep ' on '${FD}' type '`" != x ] && \
-		    logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
-		    continue
+	if [ -d "$D" ]; then
+		# This is a directory
+		if FD="`cd "$D" && pwd`" && \
+			[ x"`mount | grep ' on '${FD}' type '`" != x ] \
+		; then
+			# This is an active mountpoint... is anything overlaid?
+			mount | egrep 'lowerdir=('"`echo ${D} | sed 's,/$,,g'`|${FD}),upperdir=" && \
+			logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
+			continue
 
-		logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
-		    "removing '`pwd`/$D':"
-		ls -lad "$D"; ls -la "$D"
-		umount -fl "$D" 2> /dev/null > /dev/null
-		rm -rf "$D"
-		sleep 1; echo ""
+			logmsg_info "Old RO mountpoint '$FD' seems unused, unmounting"
+			umount -fl "$FD"
+
+			### NOTE: experiments showed, that even if we unmount
+			### the RO lowerdir and it is no longer seen by the OS,
+			### the overlay mounted filesystem tree remains alive
+			### and usable until that overlay is unmounted.
+		fi
+
+		if [ x"`cd $D && find .`" = x. ]; then
+			# This is a directory, and it is empty
+			# Just in case, re-check the mountpoint activity
+			FD="`cd "$D" && pwd`" && \
+			    [ x"`mount | grep ' on '${FD}' type '`" != x ] && \
+			    logmsg_warn "Old RO mountpoint '$FD' seems still used" && \
+			    continue
+
+			logmsg_warn "Obsolete RO mountpoint for this IMAGE was found," \
+			    "removing '`pwd`/$D':"
+			ls -lad "$D"; ls -la "$D"
+			umount -fl "$D" 2> /dev/null > /dev/null
+			rm -rf "$D"
+			sleep 1; echo ""
+		fi
 	fi
 done
 

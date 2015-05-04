@@ -30,6 +30,7 @@ Description: various random C and project wide helpers
 #include <string.h>
 #include <time.h>
 
+#include "agents.h" //definitions of common data types
 
 #ifdef __cplusplus
 extern "C"
@@ -76,9 +77,19 @@ int64_t average_first_since (int64_t timestamp, const char *step);
 */
 int64_t datetime_to_calendar (const char *datetime);
 
+//! \brief convert unix time to rest api time
+//
+//  \param t - unix time
+//  \param buf - caller's buffer large enough to store the string
+//  \param s - size of the buffer
+//  \return -1 in case of failure, 0 otherwise
+int unixtime_to_datetime(time_t t, char* buf, size_t s);
+
 //! portable version of timegm() taken from manual pages 
 int64_t my_timegm (struct tm *tm);
 
+//! \brief convert alert_state_t to string
+const char* alert_state_to_str(alert_state_t astate);
 
 // Macros
 #define STR(X) #X

@@ -218,12 +218,12 @@ noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
 libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_ymsg.c \
-				src/shared/utils_ymsg.h \	
+				src/shared/utils_ymsg.h \
 				src/shared/utils_ymsg++.cc \
-				src/shared/utils_ymsg++.h \ 
+				src/shared/utils_ymsg++.h \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h
-			
+
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -963,7 +963,8 @@ agent_cm_LDADD = \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-defs.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+            libbiosapi.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
@@ -1037,13 +1038,14 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-			-module -lm -ltntdb -ltntnet -lcidr -lmagic
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
 
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la libpriv-utils-ymsg.la
+			libpriv-utils.la libpriv-defs.la \
+			libpriv-utils-ymsg.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -1137,13 +1139,14 @@ edit = sed \
 
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
-                        bios-agent-inventory.service
+                        bios-agent-inventory.service bios-agent-cm.service
 
 $(SYSTEMD_UNITS): Makefile
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
+bios-agent-cm.service: $(top_srcdir)/tools/bios-agent-cm.service.in
 bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
 bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
 bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in

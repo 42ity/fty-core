@@ -34,12 +34,12 @@ apt-get update
 if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     echo "=========== auto-make (refresh) and install ================="
-    ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} \
+    ./autogen.sh --install-dir "$HOME" --no-distclean ${AUTOGEN_ACTION_MAKE} \
         install 2>&1 | tee -a ${MAKELOG}
 else
     # Newly checked-out branch, rebuild
     echo "========= auto-configure, rebuild and install ==============="
-    ./autogen.sh --configure-flags \
+    ./autogen.sh --install-dir "$HOME" --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}
 fi

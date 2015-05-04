@@ -1,43 +1,57 @@
+<%pre>
+#include <string>
+#include <vector>
+#include <tntdb/connection.h>
+
+#include "alert.h"
+#include "utils.h"
+#include "dbpath.h"
+#include "data.h"
+
+</%pre>
+<%thread scope="global">
+tntdb::Connection conn = tntdb::connectCached(url);
+</%thread>
 { "alerts":
   [
-    {
-        "id":3,
-        "source_ts":"20150327163012Z",
-        "application_name":"ALERT", 
-        "rule_name":"upsonbattery@UPS1-LAB",
-        "element_id":"22",
-        "element_name":"UPS1-LAB",
-        "severity":"alert",
-        "priority":"P2",
-        "description":"UPS is on battery",
-        "state":"active",
-        "last_state_ts":null
-    },
-    {
-        "id":2,
-        "source_ts":"20150328064110Z",
-        "application_name":"ALERT", 
-        "rule_name":"upsonbypass@UPS2-LAB",
-        "element_id":"23",
-        "element_name":"UPS2-LAB",
-        "severity":"alert",
-        "priority":"P1",
-        "description":"UPS is on bypass",
-        "state":"active",
-        "last_state_ts":null
-    },
-    {
-        "id":2423,
-        "source_ts":"20150423233411Z",
-        "application_name":"ALERT", 
-        "rule_name":"upslowbattery@UPS1-LAB",
-        "element_id":"22",
-        "element_name":"UPS1-LAB",
-        "severity":"alert",
-        "priority":"P1",
-        "description":"Low battery in UPS",
-        "state":"active",
-        "last_state_ts":null
+<%cpp>
+
+    //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
+
+    auto db_reply = persist::select_alert_all_opened(conn);
+    if (db_reply.status == 0) {
+</%cpp>
+{
+    "error" : "<$$ db_reply.msg $>"
+}
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
     }
+    size_t cnt = 0;
+    for (const auto& i : db_reply.item) {
+        cnt ++;
+        char t1[64];
+        unixtime_to_datetime(i.date_from, t1, 64);
+        auto element_name = i.rule_name;
+        auto idx = element_name.find('@');
+        if (idx != std::string::npos) {
+            element_name = '"' + element_name.substr(idx+1) + '"';
+        }
+        auto sprio = "P" + std::to_string(i.priority);
+</%cpp>
+    {
+        "id" : <$ i.id $>,
+        "source_ts" : "<$ t1 $>",
+        "application_name" : "ALERT",
+        "rule_name" : "<$$ i.rule_name $>",
+        "element_id" : <$ i.device_ids.empty() ? "null" : std::to_string(i.device_ids[0]) $>,
+        "element_name" : <$$ i.device_ids.empty() ? "null" :element_name $>,
+        "severity" : "critical",
+        "priority" : "<$ sprio $>",
+        "description" : "<$$ i.description $>",
+        "state" : "<$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
+        "last_state_ts" : null
+    }<$ cnt != db_reply.item.size() ? ',' : ' ' $>
+%}
   ]
 }
