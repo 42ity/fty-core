@@ -26,15 +26,14 @@ void process_get_asset(ymsg_t* out, char** out_subj,
         conn = tntdb::connect(url);
         char *devname = NULL;
         if( bios_asset_extract( in, &devname, NULL, NULL, NULL, NULL ) == 0 ) {
-            // db_reply <db_a_elmnt_t> element = select_asset_element_by_name(conn, devname);
             auto element = select_asset_element_by_name(conn, devname);
             if( element.status ) {
                 app_t *app = app_new(APP_MODULE);
                 if( app ) {
-                    log_debug("Setting ASSET reply for %s\n", element.item.name.c_str() );
+                    log_debug("Setting ASSET reply for %s", element.item.name.c_str() );
                     app_set_name( app, "ASSET" );
                     app_args_set_string( app, "devicename", element.item.name.c_str() );
-                    app_args_set_uint32( app, "type_id", element.item.type_id );
+                    app_args_set_uint16( app, "type_id", element.item.type_id );
                     app_args_set_uint32( app, "parent_id", element.item.parent_id );
                     app_args_set_string( app, "status", element.item.status.c_str() );
                     app_args_set_uint8( app, "priority", element.item.priority );
@@ -43,7 +42,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
                     app_destroy( &app );
                 }
             } else {
-                log_error("Setting ASSET reply for %s failed\n", devname );
+                log_error("Setting ASSET reply for %s failed", devname );
             }
         }
         FREE0(devname);
