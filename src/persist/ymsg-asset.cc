@@ -17,7 +17,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
                        ymsg_t* in, const char* in_subj)
 {
     if( ! in || ! out ) return;
-
+    LOG_START;
     *out_subj = strdup( in_subj );
     ymsg_set_status( out, false );
     
@@ -51,6 +51,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
         LOG_END_ABNORMAL(e);
         ymsg_set_status( out, false );
     }
+    LOG_END;
 }
 
 } // namespace
