@@ -234,12 +234,13 @@ is_app (zmsg_t *msg)
 {
     if (msg == NULL)
         return false;
-    app_t *self= NULL;
+
     zframe_t *frame = zmsg_first (msg);
-    if( ! frame ) goto malformed;
+    if( frame == NULL )
+        return false;
 
     //  Get and check protocol signature
-    self = app_new (0);
+    app_t *self = app_new (0);
     self->needle = zframe_data (frame);
     self->ceiling = self->needle + zframe_size (frame);
     uint16_t signature;
