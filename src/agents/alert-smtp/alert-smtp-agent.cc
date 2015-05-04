@@ -154,13 +154,13 @@ void AlertSmtpAgent::onSend(ymsg_t **message) {
     char   *devices     = NULL;
     char   *description = NULL;
     time_t  since       = 0;
-    alert_priority_t priority;
-    alert_state_t    state;
+    uint8_t priority;
+    int8_t    state;
 
     log_debug ("topic='%s'", subject());
     log_debug ("sender='%s'", sender());
     // decode
-    int rv = bios_alert_decode (message, &ruleName, &priority,
+    int rv = bios_alert_extract (*message, &ruleName, &priority,
                    &state, &devices, &description, &since);
     log_debug ("ruleName=%s",ruleName);
     log_debug ("since=%ld",since);
