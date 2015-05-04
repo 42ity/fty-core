@@ -949,18 +949,18 @@ agent_cm_LDADD = \
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
-                        src/agents/alert/alert-entity.cc \
-                        src/agents/alert/alert-measurement.cc \
-                        src/agents/alert/alert-agent.cc \
-                        src/agents/alert/alert-model.cc \
-                        src/shared/utils_app.c \
-                        src/shared/utils_ymsg.c \
-                        src/include/str_defs.c
+			src/agents/alert/alert-entity.cc \
+			src/agents/alert/alert-measurement.cc \
+			src/agents/alert/alert-agent.cc \
+			src/agents/alert/alert-model.cc \
+			src/shared/utils_app.c \
+			src/shared/utils_ymsg.c \
+			src/include/str_defs.c
 
 agent_alert_LDADD = \
 			libpriv-utils.la \
