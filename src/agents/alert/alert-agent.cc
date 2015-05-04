@@ -60,7 +60,6 @@ void AlertAgent::onReply( ymsg_t **message )
         }
         FREE0( device );
     }
-    ymsg_destroy( message );
     LOG_END;
 }
 
