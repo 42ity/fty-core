@@ -22,13 +22,13 @@ asset_manager asset_mgr;
     }
     // Get data
     _scoped_zmsg_t *tmp = asset_mgr.get_item(request.getArg("type"), id);
-    asset_msg_t *dta = NULL;
-    asset_msg_t *device = NULL;
+    _scoped_asset_msg_t *dta = NULL;
+    _scoped_asset_msg_t *device = NULL;
     if ( tmp != NULL ) 
     {
         if ( is_asset_msg (tmp) )
         {
-            asset_msg_t* element = asset_msg_decode (&tmp);
+            _scoped_asset_msg_t* element = asset_msg_decode (&tmp);
             if ( asset_msg_id (element) == ASSET_MSG_DEVICE ) 
             {
                 device = element;
@@ -46,7 +46,7 @@ asset_manager asset_mgr;
         }
         else if( is_common_msg (tmp) )
         {
-            common_msg_t* commonmsg = common_msg_decode (&tmp);
+            _scoped_common_msg_t* commonmsg = common_msg_decode (&tmp);
             if ( common_msg_id (commonmsg) == COMMON_MSG_FAIL )
             {
                 switch ( common_msg_errorno (commonmsg) ) {
@@ -95,7 +95,7 @@ asset_manager asset_mgr;
       "id": "<$ id $>"
     , "name": "<$ asset_msg_name(dta) $>"
 <%cpp>
-    zhash_t *ext = asset_msg_get_ext(dta);
+    _scoped_zhash_t *ext = asset_msg_get_ext(dta);
     assert (ext);
     int ext_count = 0;
     if ( ext != NULL ) {
@@ -133,7 +133,7 @@ asset_manager asset_mgr;
     , "mac": "<$ temp_string $>"
 %       }
 <%cpp>
-        zlist_t *groups = asset_msg_get_groups (device);
+        _scoped_zlist_t *groups = asset_msg_get_groups (device);
         if ( groups != NULL ) {
             void* last = zlist_last(groups);
 </%cpp>
@@ -146,7 +146,7 @@ asset_manager asset_mgr;
 <%cpp>
         }
         zlist_destroy (&groups);
-        zlist_t *power = asset_msg_get_powers(device);
+        _scoped_zlist_t *power = asset_msg_get_powers(device);
 
         if ( power != NULL ) {
             void* last = zlist_last(power);

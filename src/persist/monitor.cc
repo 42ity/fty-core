@@ -134,7 +134,7 @@ common_msg_t* select_client(const char* url, const char* client_name)
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client = generate_client (client_name);
+    _scoped_common_msg_t* client = generate_client (client_name);
     log_info ("end: normal");
     return generate_return_client (client_id, &client);
 }
@@ -167,7 +167,7 @@ common_msg_t* select_client(const char* url, m_clnt_id_t client_id)
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client = generate_client (client_name.c_str());
+    _scoped_common_msg_t* client = generate_client (client_name.c_str());
     log_info ("end: normal");
     return generate_return_client (client_id, &client);
 }
@@ -319,7 +319,7 @@ common_msg_t* generate_client_info
     assert ( resultmsg );
     common_msg_set_client_id (resultmsg, client_id);
     common_msg_set_device_id (resultmsg, device_id);
-    zchunk_t* blob = zchunk_new (data, datasize);
+    _scoped_zchunk_t* blob = zchunk_new (data, datasize);
     common_msg_set_info (resultmsg, &blob);
     common_msg_set_date (resultmsg, mytime);
 
@@ -403,7 +403,7 @@ common_msg_t* insert_client_info  (const char* url, m_dvc_id_t device_id,
     assert ( client_id );         // is required
     assert ( blobsize );          // is required
 
-    zchunk_t* blob = zchunk_new (blobdata, blobsize);
+    _scoped_zchunk_t* blob = zchunk_new (blobdata, blobsize);
 
     return insert_client_info (url, device_id, client_id, &blob);
 }
@@ -628,7 +628,7 @@ common_msg_t* select_client_info(const char* url,
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client_info = generate_client_info(client_id, device_id, 
+    _scoped_common_msg_t* client_info = generate_client_info(client_id, device_id, 
                         mydatetime, (byte*)myBlob.data(), myBlob.size());
     log_info ("end: normal");
     return generate_return_client_info (client_info_id, &client_info);
@@ -678,7 +678,7 @@ common_msg_t* select_ui_properties(const char* url)
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* client_info = generate_client_info(
+    _scoped_common_msg_t* client_info = generate_client_info(
             UI_PROPERTIES_CLIENT_ID, device_id, mydatetime, 
             (byte*)myBlob.data(), myBlob.size());
     log_info ("end: normal");
@@ -755,7 +755,7 @@ common_msg_t* select_device_type(const char* url,
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* device_type = generate_device_type (device_type_name);
+    _scoped_common_msg_t* device_type = generate_device_type (device_type_name);
     log_info ("end: normal");
     return generate_return_device_type (device_type_id, &device_type);
 }
@@ -789,7 +789,7 @@ common_msg_t* select_device_type(const char* url,
         log_warning ("end: abnormal with '%s'", e.what());
         return generate_db_fail(DB_ERROR_INTERNAL, e.what(), NULL);
     }
-    common_msg_t* device_type = generate_device_type 
+    _scoped_common_msg_t* device_type = generate_device_type 
                                             (device_type_name.c_str());
     log_info ("end: normal");
     return generate_return_device_type (device_type_id, &device_type);
@@ -1104,7 +1104,7 @@ common_msg_t* select_device (const char* url, m_dvc_tp_id_t device_type_id,
             row[0].get(id);
             assert ( id );  // database, was corrupted
 
-            common_msg_t* device = generate_device (device_name, 
+            _scoped_common_msg_t* device = generate_device (device_name, 
                                                     device_type_id);
             log_info ("end: normal");
             return generate_return_device (id, &device);
@@ -1470,7 +1470,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
                                                         e.what(), NULL);
     }
     std::string device_name = "NOT IMPLEMENTED";
-    zlist_t* last_measurements = 
+    _scoped_zlist_t* last_measurements = 
             select_last_measurements(conn, device_id_monitor, device_name);
     // TODO take care about it
     if ( last_measurements == NULL )
@@ -1488,7 +1488,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
     }
     else
     {
-        _scoped_zmsg_t* return_measurements = 
+        zmsg_t* return_measurements = 
             common_msg_encode_return_last_measurements(
                 device_id,
                 device_name.c_str(),
@@ -1501,8 +1501,8 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
 
 zmsg_t* get_last_measurements(zmsg_t** getmsg) {
     log_info ("start");
-    common_msg_t *req = common_msg_decode(getmsg);
-    _scoped_zmsg_t *rep = _get_last_measurements(url.c_str(), req);
+    _scoped_common_msg_t *req = common_msg_decode(getmsg);
+    zmsg_t *rep = _get_last_measurements(url.c_str(), req);
     common_msg_destroy(&req);
     log_info ("end: normal");
     return rep;

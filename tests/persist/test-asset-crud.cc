@@ -30,7 +30,7 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
     REQUIRE ( reply_insert.affected_rows == 1 );
 
     // check select
-    zhash_t *reply_select = select_asset_element_attributes (conn, asset_element_id);
+    _scoped_zhash_t *reply_select = select_asset_element_attributes (conn, asset_element_id);
     REQUIRE ( zhash_size (reply_select) == 1 );
     char *value_s  = (char *) zhash_first  (reply_select);   // first value
     char *keytag_s = (char *) zhash_cursor (reply_select);   // key of this value
@@ -99,7 +99,7 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
     REQUIRE ( reply_insert.affected_rows == 1 );
 
     // check select
-    zhash_t *reply_select = select_asset_element_attributes (conn, asset_element_id);
+    _scoped_zhash_t *reply_select = select_asset_element_attributes (conn, asset_element_id);
     REQUIRE ( zhash_size (reply_select) == 1 );
     char *value_s  = (char *) zhash_first  (reply_select);   // first value
     char *keytag_s = (char *) zhash_cursor (reply_select);   // key of this value
@@ -188,7 +188,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     // check select
     _scoped_zmsg_t* reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), element_name) );
@@ -210,7 +210,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -248,7 +248,7 @@ TEST_CASE("asset device INSERT/DELETE #4","[db][CRUD][insert][delete][asset_devi
     // check select
     _scoped_zmsg_t *reply_select = select_asset_device (conn, asset_element_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_DEVICE);
     REQUIRE ( !strcmp(asset_msg_device_type (reply_select_decode), asset_device_type) );
     zmsg_destroy (&reply_select);
@@ -267,7 +267,7 @@ TEST_CASE("asset device INSERT/DELETE #4","[db][CRUD][insert][delete][asset_devi
     // check select
     reply_select = select_asset_device (conn, asset_element_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -354,7 +354,7 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     REQUIRE ( reply_insert.status == 1 );
 
     // check select
-    zlist_t *reply_select;
+    _scoped_zlist_t *reply_select = NULL;
     REQUIRE_NOTHROW ( reply_select = select_asset_device_links_all (conn, asset_element_id_src, INPUT_POWER_CHAIN) );
     REQUIRE ( zlist_size (reply_select) == 1 );
     REQUIRE ( !strcmp ( (char*)zlist_first (reply_select),"999:4:999:5"));// ATTENTION: string depends on input parameters;
@@ -399,7 +399,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     const char      *name = "DC_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::DATACENTER;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -428,12 +428,12 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     // check select
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -462,7 +462,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -491,7 +491,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     const char      *name = "ROOM_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::ROOM;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -514,12 +514,12 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     // check select
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -547,7 +547,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -575,7 +575,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     const char      *name = "ROW_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::ROW;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -598,12 +598,12 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     // check select
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -631,7 +631,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -659,7 +659,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     const char      *name = "RACK_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::RACK;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -687,12 +687,12 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     // check select
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -720,7 +720,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -748,7 +748,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     const char      *name = "GROUP_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::GROUP;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -771,12 +771,12 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     // check select
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -804,7 +804,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
@@ -833,7 +833,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     const char      *name = "DEVICE_TEST";
     a_elmnt_tp_id_t  element_type_id = asset_type::DEVICE;
     a_elmnt_id_t     parent_id = 0;                     // unlockated
-    zhash_t         *ext_attributes = zhash_new();
+    _scoped_zhash_t         *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     const char* status = "active";
     a_elmnt_pr_t priority   = 4;
@@ -849,7 +849,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     
     std::vector <link_t>        links;      // left empty, simple case
     std::set <a_elmnt_id_t>  groups;     // left empty, simple case
-    zhash_t       *extattributes = NULL; // left empty, simple case, TODO with NEW
+    _scoped_zhash_t       *extattributes = NULL; // left empty, simple case, TODO with NEW
     a_dvc_tp_id_t  asset_device_type_id = 4;
     const char    *asset_device_type = "pdu";
 
@@ -864,13 +864,13 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     //              element
     _scoped_zmsg_t *reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_asset_msg (reply_select) );
-    asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
+    _scoped_asset_msg_t *reply_select_decode = asset_msg_decode (&reply_select);
     REQUIRE ( asset_msg_id (reply_select_decode) == ASSET_MSG_ELEMENT);
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
     //              extattributes
-    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
     char *value = (char*) zhash_first  (reply_ext_attributes);
@@ -906,7 +906,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     // check select
     reply_select = select_asset_element (conn, rowid, element_type_id);
     REQUIRE ( is_common_msg (reply_select) );
-    common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
+    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
     REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
     REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
     REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );

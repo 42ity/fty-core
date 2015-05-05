@@ -88,7 +88,7 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     std::string name;
     tntdb::Connection conn;
     REQUIRE_NOTHROW (conn = tntdb::connectCached(url.c_str()));
-    zlist_t* measurements = select_last_measurements (conn, id, name);
+    _scoped_zlist_t* measurements = select_last_measurements (conn, id, name);
     REQUIRE ( measurements );
     CHECK (name == "select_device");
 /*
@@ -192,7 +192,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     REQUIRE_NOTHROW (val.get (id));
 
     _scoped_zmsg_t* getlastmeasurements = common_msg_encode_get_last_measurements (id);
-    common_msg_t* glm = common_msg_decode (&getlastmeasurements);
+    _scoped_common_msg_t* glm = common_msg_decode (&getlastmeasurements);
     common_msg_print (glm);
     _scoped_zmsg_t* returnmeasurements = _get_last_measurements (url.c_str(), glm);
     common_msg_print (glm);
@@ -204,7 +204,7 @@ TEST_CASE("get_last_measurements", "[db][get][lastmeasurements]")
     glm = common_msg_decode (&returnmeasurements);
     REQUIRE ( common_msg_id (glm) == COMMON_MSG_RETURN_LAST_MEASUREMENTS );
     REQUIRE ( common_msg_device_id (glm) == id );
-    zlist_t* measurements = common_msg_get_measurements (glm);
+    _scoped_zlist_t* measurements = common_msg_get_measurements (glm);
     
     REQUIRE (zlist_size(measurements) == EXP.size());
     std::set<std::string> results;

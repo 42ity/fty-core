@@ -49,8 +49,8 @@ TEST_CASE("Rack power #1","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -109,8 +109,8 @@ TEST_CASE("Rack power #2","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -175,8 +175,8 @@ TEST_CASE("Rack power #3","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -240,8 +240,8 @@ TEST_CASE("Rack power #4","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -308,8 +308,8 @@ TEST_CASE("Rack power #5","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -377,8 +377,8 @@ TEST_CASE("Rack power #6","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -452,8 +452,8 @@ TEST_CASE("Rack power #7","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -549,8 +549,8 @@ TEST_CASE("Rack power #8","[db][power][rack][calc][rack_power.sql][trp]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -612,8 +612,8 @@ TEST_CASE("Rack power #9","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -674,8 +674,8 @@ TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
     
     REQUIRE ( is_compute_msg (res) );
 
-    compute_msg_t* res_compute = compute_msg_decode (&res);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&res);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;

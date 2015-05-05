@@ -50,6 +50,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "alert.h"
 #include "agents.h"
 #include "cleanup.h"
+#include "utils.h"
 
 
 #define NETHISTORY_AUTO_CMD     'a'
@@ -67,9 +68,9 @@ void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
         return;
     }
     int64_t tme = 0;
-    char *device_name = NULL;
-    char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
-    char *units       = NULL;
+    _scoped_char *device_name = NULL;
+    _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
+    _scoped_char *units       = NULL;
     m_msrmnt_value_t value = 0;
     int32_t scale = -1;
     int rv;
@@ -104,19 +105,16 @@ free_mem_toto:
     //free resources
     if(ymsg)
         ymsg_destroy(&ymsg);
-    if(device_name)
-        free(device_name);
-    if(quantity)
-        free(quantity);
-    if(units)
-        free(units);
+    FREE0 (device_name)
+    FREE0 (quantity)
+    FREE0 (units)
 }
 
 zmsg_t* asset_msg_process(zmsg_t **msg) {
     log_debug("Processing asset message in persistence layer");
-    _scoped_zmsg_t *result = NULL;
+    zmsg_t *result = NULL;
 
-    asset_msg_t *amsg = asset_msg_decode(msg);
+    _scoped_asset_msg_t *amsg = asset_msg_decode(msg);
     if(amsg == NULL) {
         log_warning ("Malformed asset message received!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
@@ -223,7 +221,7 @@ process_message(const std::string& url, zmsg_t *msg) {
     msg2 = zmsg_dup(msg);
     zmsg_pop(msg2);
     assert(msg2);
-    powerdev_msg_t *powerdev_msg = powerdev_msg_decode(&msg2);
+    _scoped_powerdev_msg_t *powerdev_msg = powerdev_msg_decode(&msg2);
     if (powerdev_msg) {
         //TODO: check the log level!
         powerdev_msg_print(powerdev_msg);
@@ -232,7 +230,7 @@ process_message(const std::string& url, zmsg_t *msg) {
     msg2 = zmsg_dup(msg);
     zmsg_pop(msg2);
     assert(msg2);
-    common_msg_t *common_msg = common_msg_decode(&msg2);
+    _scoped_common_msg_t *common_msg = common_msg_decode(&msg2);
     if (common_msg) {
         //TODO: check the log level!
         common_msg_print(common_msg);
@@ -252,8 +250,8 @@ process_message(const std::string& url, zmsg_t *msg) {
 */
 
 zmsg_t* nmap_msg_process(zmsg_t **msg) {
-    nmap_msg_t *nmsg = nmap_msg_decode(msg);
-    _scoped_zmsg_t *ret = NULL;
+    _scoped_nmap_msg_t *nmsg = nmap_msg_decode(msg);
+    zmsg_t *ret = NULL;
 
     if(nmsg == NULL) {
         log_warning ("Malformed nmap message received!");
@@ -321,7 +319,7 @@ zmsg_t* nmap_msg_process(zmsg_t **msg) {
 zmsg_t* netdisc_msg_process(zmsg_t** msg) {
 
     // cast away the const - zproto generated methods dont' have const
-    netdisc_msg_t* msg_nc = netdisc_msg_decode(msg);
+    _scoped_netdisc_msg_t* msg_nc = netdisc_msg_decode(msg);
     if(msg_nc == NULL) {
         log_warning ("Malformed netdisc message received!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
@@ -545,7 +543,7 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
     //FIXME: we now support is == 5 == UI_properties
     assert (client_id == UI_PROPERTIES_CLIENT_ID);
 
-    common_msg_t *reply = update_client_info(url, client_id, &info);
+    _scoped_common_msg_t *reply = update_client_info(url, client_id, &info);
     int msgid = common_msg_id (reply);
 
     if ( msgid  == COMMON_MSG_FAIL )
@@ -588,7 +586,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
             const char* clientname = "NUT";
 
             // look for a client
-            common_msg_t* retClient = select_client(url.c_str(), clientname);
+            _scoped_common_msg_t* retClient = select_client(url.c_str(), clientname);
 
             m_clnt_id_t client_id = 0;
             int msgid = common_msg_id (retClient);
@@ -602,7 +600,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
 
                 // look for a device
                 // device is indicated by devicename and devicetype
-                common_msg_t* retDevice = select_device(url.c_str(), devicetype, devicename);
+                _scoped_common_msg_t* retDevice = select_device(url.c_str(), devicetype, devicename);
 
                 m_dvc_id_t device_id = 0;
                 msgid = common_msg_id (retDevice);
@@ -610,7 +608,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                 if ( msgid == COMMON_MSG_FAIL )
                 {
                     // the device was not found, then insert new device
-                    common_msg_t* newDevice = insert_disc_device(url.c_str(), devicetype, devicename);
+                    _scoped_common_msg_t* newDevice = insert_disc_device(url.c_str(), devicetype, devicename);
 
                     int newmsgid = common_msg_id (newDevice);
 
@@ -649,7 +647,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                     size_t infolen = zmsg_encode (zmsg, &encoded);
                     assert (encoded);
                     // inserting into client_info
-                    common_msg_t* newClientInfo = insert_client_info
+                    _scoped_common_msg_t* newClientInfo = insert_client_info
                                     (url.c_str(), device_id, client_id, encoded, infolen);
                     assert (newClientInfo);
                     msgid = common_msg_id (newClientInfo);
@@ -698,13 +696,13 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
  * case.
  */
 zmsg_t* common_msg_process(zmsg_t **msg) {
-    common_msg_t *cmsg = common_msg_decode(msg);
+    _scoped_common_msg_t *cmsg = common_msg_decode(msg);
     if(cmsg == NULL) {
         log_warning("Malformed common message!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
                                   "Malformed common message!", NULL);
     }
-    _scoped_zmsg_t *ret = NULL;
+    zmsg_t *ret = NULL;
     int msg_id = common_msg_id (cmsg);
     switch (msg_id) {
     case COMMON_MSG_NEW_MEASUREMENT: {
@@ -716,9 +714,9 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
     case COMMON_MSG_INSERT_DEVICE: {
         _scoped_zmsg_t *tmpz = common_msg_msg(cmsg);
         if(tmpz != NULL) {
-        common_msg_t *tmpc = common_msg_decode(&tmpz);
+        _scoped_common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {
-        common_msg_t *retc = insert_disc_device(url.c_str(),
+        _scoped_common_msg_t *retc = insert_disc_device(url.c_str(),
                            common_msg_devicetype_id(tmpc),
                            common_msg_name(tmpc));
         common_msg_destroy(&tmpc);
@@ -729,9 +727,9 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
     case COMMON_MSG_INSERT_CLIENT: {
         _scoped_zmsg_t *tmpz = common_msg_msg(cmsg);
         if(tmpz != NULL) {
-        common_msg_t *tmpc = common_msg_decode(&tmpz);
+        _scoped_common_msg_t *tmpc = common_msg_decode(&tmpz);
         if(tmpc != NULL) {
-        common_msg_t *retc = insert_client(url.c_str(),
+        _scoped_common_msg_t *retc = insert_client(url.c_str(),
                            common_msg_name(tmpc));
         common_msg_destroy(&tmpc);
         ret = common_msg_encode(&retc);
@@ -810,9 +808,9 @@ void process_inventory (ymsg_t **msg)
         return;
     }
 
-    char *device_name    = NULL;
-    char *module_name    = NULL;
-    zhash_t    *ext_attributes = NULL;
+    _scoped_char *device_name    = NULL;
+    _scoped_char *module_name    = NULL;
+    _scoped_zhash_t    *ext_attributes = NULL;
 
     int rv = bios_inventory_decode 
                 (msg, &device_name, &ext_attributes, &module_name);

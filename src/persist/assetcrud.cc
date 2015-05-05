@@ -326,12 +326,12 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
     if ( is_common_msg(adevice) )
     {
         asset_msg_destroy (element);
-        return adevice;
+        return zmsg_dup (adevice);
     }
     else
     {
         // device was found
-        zlist_t *groups = select_asset_element_groups(conn, element_id);
+        _scoped_zlist_t *groups = select_asset_element_groups(conn, element_id);
         if ( groups == NULL )    // internal error in database
         {
             zmsg_destroy (&adevice);
@@ -340,7 +340,7 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
-        zlist_t *powers = select_asset_device_links_to(conn, element_id, INPUT_POWER_CHAIN);
+        _scoped_zlist_t *powers = select_asset_device_links_to(conn, element_id, INPUT_POWER_CHAIN);
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
@@ -354,7 +354,7 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
         _scoped_zmsg_t *nnmsg = asset_msg_encode (element);
         assert ( nnmsg );
     
-        asset_msg_t *adevice_decode = asset_msg_decode (&adevice);
+        _scoped_asset_msg_t *adevice_decode = asset_msg_decode (&adevice);
         asset_msg_set_powers (adevice_decode, &powers);
         asset_msg_set_groups (adevice_decode, &groups);
         asset_msg_set_msg (adevice_decode, &nnmsg);
@@ -418,12 +418,12 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
                                                     e.what(), NULL);
     }
            
-    zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
+    _scoped_zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
     if ( extAttributes == NULL )    // internal error in database
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL,
           "internal error during selecting ext attributes occured", NULL);
 
-    _scoped_zmsg_t* msgelement = asset_msg_encode_element
+    zmsg_t* msgelement = asset_msg_encode_element
             (name.c_str(), parent_id, parent_type_id, 
              element_type_id, extAttributes);
     assert ( msgelement );
@@ -497,14 +497,14 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
         {
             // element was not found  or error occurs
             log_info("errors occured in subroutine %s ","end");
-            return msgelement;
+            return zmsg_dup (msgelement);
         }
         // element was found
         if ( element_type_id == asset_type::DEVICE )
         {
             log_debug ("%s ", "start looking for device");
             // destroys msgelement
-            asset_msg_t* returnelement = asset_msg_decode (&msgelement);
+            _scoped_asset_msg_t* returnelement = asset_msg_decode (&msgelement);
             msgelement = extend_asset_element2device(conn, &returnelement, element_id);
             assert ( msgelement );
             assert ( returnelement == NULL );
@@ -524,7 +524,7 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
         }
         // TODO rework this function
         // make ASSET_MSG_RETURN_ELEMENT
-        _scoped_zmsg_t* resultmsg = asset_msg_encode_return_element 
+        zmsg_t* resultmsg = asset_msg_encode_return_element 
                     (element_id, msgelement);
         assert ( resultmsg );
         zmsg_destroy (&msgelement);
@@ -543,7 +543,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     assert ( msg );
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENTS );
 
-    zhash_t *elements = zhash_new();
+    _scoped_zhash_t *elements = zhash_new();
     zhash_autofree(elements);
 
     try{
@@ -597,7 +597,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     }
   
     // make ASSET_MSG_RETURN_ELEMENTS
-    _scoped_zmsg_t *resultmsg = asset_msg_encode_return_elements (elements);
+    zmsg_t *resultmsg = asset_msg_encode_return_elements (elements);
     assert(resultmsg);
 
     zhash_destroy (&elements);

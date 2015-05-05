@@ -12,6 +12,7 @@
 #include "persistencelogic.h"
 #include "dbpath.h"
 #include "assetcrud.h"
+#include "cleanup.h"
 
 zmsg_t *asset_manager::get_item(std::string type, std::string id) {
     log_debug("Trying to get element %s of type %s", id.c_str(), type.c_str());
@@ -23,7 +24,7 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
     if(real_id == 0) {
         return NULL;
     }
-    zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
+    _scoped_zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
     zmsg_t *ret = persist::process_message(&get_element);
     zmsg_destroy(&get_element);
     assert(ret != NULL);
@@ -31,7 +32,7 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
         return ret;          // it can be only COMMON_MSG_FAIL
     }
     // Return directly element message which is packed inside return element
-    asset_msg_t* msg = asset_msg_decode(&ret);
+    _scoped_asset_msg_t* msg = asset_msg_decode(&ret);
     if(msg == NULL) {
         log_error("Decoding reply from persistence failed!");
         return NULL;
@@ -49,7 +50,7 @@ zmsg_t *asset_manager::get_items(std::string type) {
         return NULL;
     }
 
-    zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
+    _scoped_zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
     zmsg_t *ret = persist::process_message(&get_elements);
     zmsg_destroy(&get_elements);
 

@@ -13,7 +13,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     log_open ();
 
     const char *device_name = "my_test_device";
-    zhash_t    *ext_attributes = zhash_new();
+    _scoped_zhash_t    *ext_attributes = zhash_new();
     zhash_autofree (ext_attributes);
     zhash_insert (ext_attributes, "key1", (char*)"value1");
     zhash_insert (ext_attributes, "key2", (char*)"value2");
@@ -25,9 +25,9 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     REQUIRE ( ext_attributes == NULL );
     ymsg_print (ymsg_encoded);
 
-    char    *device_name_new = NULL;
-    zhash_t *ext_attributes_new = NULL;
-    char    *module_name_new = NULL;
+    _scoped_char    *device_name_new = NULL;
+    _scoped_zhash_t *ext_attributes_new = NULL;
+    _scoped_char    *module_name_new = NULL;
 
     int rv = bios_inventory_decode (&ymsg_encoded, &device_name_new, &ext_attributes_new, &module_name_new);
 
@@ -52,7 +52,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
 
     log_close ();
 }
-/*
+
 TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 
     SECTION ("bios_web_average_request_encode") {
@@ -102,7 +102,7 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
     }
 
     SECTION ("bios_web_average_reply_extract") {
-        char *json = NULL;
+        _scoped_char *json = NULL;
         _scoped_ymsg_t *msg = ymsg_new (YMSG_SEND);
         REQUIRE (msg);
         CHECK ( bios_web_average_reply_extract (NULL, &json) == -1 );
@@ -114,7 +114,7 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
     }
 
     SECTION ("bios_db_measurements_read_request_encode") {
-        char *subject = NULL;
+        _scoped_char *subject = NULL;
         CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, NULL, &subject) == NULL );
         CHECK ( subject == NULL );
         CHECK ( bios_db_measurements_read_request_encode (0, 0, 0, "", NULL) == NULL );
@@ -123,7 +123,7 @@ TEST_CASE ("Functions fail for bad input arguments", "[agents][public_api]") {
 
     SECTION ("bios_db_measurements_read_request_extract") {
         int64_t start_ts = -1, end_ts = -1;
-        char *source = NULL;
+        _scoped_char *source = NULL;
         uint64_t element_id = 0;
         _scoped_ymsg_t *msg = ymsg_new (YMSG_SEND);
         REQUIRE (msg);
@@ -179,10 +179,8 @@ TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]")
 
     int64_t start_ts_r;
     int64_t end_ts_r;
-    char *type_r = NULL;
-    char *step_r = NULL;
+    _scoped_char *type_r = NULL, *step_r = NULL, *source_r = NULL;
     uint64_t element_id_r = 0;
-    char *source_r = NULL;
    
     int rv = bios_web_average_request_extract (msg, &start_ts_r, &end_ts_r, &type_r, &step_r, &element_id_r, &source_r);
     CHECK ( msg );
@@ -200,12 +198,10 @@ TEST_CASE ("bios web average request encoded & decoded", "[agents][public_api]")
     CHECK ( element_id == element_id_r );
     CHECK ( str_eq (source, source_r) );
 
-    if (type_r)
-        free (type_r);
-    if (step_r)
-        free (step_r);
-    if (source_r)
-        free (source_r);
+
+    FREE0 (type_r)
+    FREE0 (step_r)
+    FREE0 (source_r)
 }
 
 TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
@@ -213,7 +209,7 @@ TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
     _scoped_ymsg_t *msg = bios_web_average_reply_encode (json);
     REQUIRE ( msg );
 
-    char *json_r = NULL;
+    _scoped_char *json_r = NULL;
     int rv = bios_web_average_reply_extract (msg, &json_r);
     CHECK ( msg );
     ymsg_destroy (&msg);
@@ -221,8 +217,7 @@ TEST_CASE ("bios web average reply encoded & decoded", "[agents][public_api]") {
 
     CHECK ( json_r );
     CHECK ( str_eq (json, json_r) );
-    if (json_r)
-        free (json_r);
+    FREE0 (json_r)
 }
 
 TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][public_api]") {
@@ -230,19 +225,18 @@ TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][publi
     int64_t end_ts = 14287322211;
     uint64_t element_id = 412;
     const char *source = "temperature.thermal_zone0";
-    char *subject = NULL;
+    _scoped_char *subject = NULL;
    
     _scoped_ymsg_t *msg = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &subject);
     CHECK ( msg );
     CHECK ( subject );
     CHECK ( str_eq (subject, "get_measurements") );
-    if (subject)
-        free (subject);
+    FREE0 (subject)
 
     int64_t start_ts_r = -1;
     int64_t end_ts_r = -1;
     uint64_t element_id_r = 0;
-    char *source_r = NULL;
+    _scoped_char *source_r = NULL;
 
     int rv = bios_db_measurements_read_request_extract (msg, &start_ts_r, &end_ts_r, &element_id_r, &source_r);
     CHECK ( msg );
@@ -255,8 +249,7 @@ TEST_CASE ("bios db measurement read request encoded & decoded", "[agents][publi
     CHECK ( end_ts == end_ts_r );
     CHECK ( element_id == element_id_r );
     CHECK ( str_eq (source, source_r) );
-    if (source_r)
-        free (source_r);
+    FREE0 (source_r)
 }
 
 TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_api]") {
@@ -264,15 +257,14 @@ TEST_CASE ("bios db measurement read reply encoded & decoded", "[agents][public_
     _scoped_ymsg_t *msg = bios_db_measurements_read_reply_encode (json);
     CHECK ( msg );
 
-    char *json_r = NULL;
+    _scoped_char *json_r = NULL;
     int rv = bios_db_measurements_read_reply_extract (msg, &json_r);
     CHECK ( msg );
     ymsg_destroy (&msg);
     CHECK ( rv == 0 );
     CHECK ( json_r );
     CHECK ( str_eq (json, json_r) );
-    if (json_r)
-        free (json_r);
+    FREE0 (json_r)
 }
 
 TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
@@ -286,7 +278,7 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
         42);
     REQUIRE ( msg );
 
-    char *rule = NULL, *devices = NULL, *description = NULL;
+    _scoped_char *rule = NULL, *devices = NULL, *description = NULL;
     alert_priority_t priority = ALERT_PRIORITY_UNKNOWN;
     alert_state_t state = ALERT_STATE_UNKNOWN;
     time_t time = 0;
@@ -303,8 +295,8 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     CHECK ( priority == ALERT_PRIORITY_P2 );
     CHECK ( state == ALERT_STATE_ONGOING_ALERT );
     CHECK ( time == 42 );
-    if(rule) free (rule);
-    if(devices) free (devices);
-    if(description) free (description);
+    FREE0 (rule)
+    FREE0 (devices)
+    FREE0 (description)
 }
-*/
+

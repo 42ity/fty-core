@@ -25,7 +25,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #1 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7014);
     asset_msg_set_type (getmsg, id_rack);
@@ -39,7 +39,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -62,7 +62,7 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -97,7 +97,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #2 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7022);
     asset_msg_set_type (getmsg, id_device);
@@ -113,7 +113,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -137,7 +137,7 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -172,7 +172,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #3 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7005);
     asset_msg_set_type (getmsg, id_row);
@@ -186,7 +186,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -210,7 +210,7 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -244,7 +244,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #4 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7023);
     asset_msg_set_type (getmsg, id_device);
@@ -256,7 +256,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -280,7 +280,7 @@ TEST_CASE("Location topology to #4","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() ) )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -314,7 +314,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #5 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7002);
     asset_msg_set_type (getmsg, id_room);
@@ -327,7 +327,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -351,7 +351,7 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -384,7 +384,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #6 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7025);
     asset_msg_set_type (getmsg, id_group);
@@ -397,7 +397,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -420,7 +420,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -453,7 +453,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #7 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 7000);
     asset_msg_set_type (getmsg, id_dc);
@@ -465,7 +465,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
@@ -488,7 +488,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
     assert ( submsg );
     while ( ( zmsg_size (submsg) != 0 ) && ( !expected.empty() )  )
     {
-        asset_msg_t* parent = asset_msg_decode (&submsg);
+        _scoped_asset_msg_t* parent = asset_msg_decode (&submsg);
         assert ( parent );
         el = expected.front();
         expected.pop();
@@ -520,7 +520,7 @@ TEST_CASE("Location topology to #8","[db][topology][location][location_topology.
     log_open();
 
     log_info ("=============== LOCATION TO #8 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);
     asset_msg_set_type (getmsg, id_dc);

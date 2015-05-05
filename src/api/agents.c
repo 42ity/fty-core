@@ -91,7 +91,7 @@ ymsg_t *
     app_set_name (request, module_name);
     
     // device name
-    zlist_t *paramslist = zlist_new ();
+    _scoped_zlist_t *paramslist = zlist_new ();
     zlist_autofree (paramslist);
     zlist_append (paramslist, (void *)device_name);
     app_set_params (request, &paramslist); 
@@ -106,7 +106,7 @@ ymsg_t *
     size_t sz = zmsg_encode (request_encoded, &buffer);
     zmsg_destroy(&request_encoded);
 
-    zchunk_t *request_chunk = zchunk_new (buffer, sz);
+    _scoped_zchunk_t *request_chunk = zchunk_new (buffer, sz);
     free(buffer);
 
     ymsg_set_request (message, &request_chunk);
@@ -125,7 +125,7 @@ bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attrib
     {
         ymsg_t *self = *self_p;
        
-        zchunk_t *request = ymsg_get_request (self);
+        _scoped_zchunk_t *request = ymsg_get_request (self);
         if ( !request )
                 return -2;  // no chunk to decode        
         _scoped_zmsg_t *zmsg = zmsg_decode (zchunk_data (request), zchunk_size (request));
@@ -139,7 +139,7 @@ bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attrib
         if ( !app_msg )
             return -3; // malformed app_msg
 
-        zlist_t *param = app_get_params (app_msg);
+        _scoped_zlist_t *param = app_get_params (app_msg);
         if ( zlist_size (param) != 1 )
         {
             zlist_destroy (&param);
@@ -264,7 +264,7 @@ bios_web_average_reply_encode (const char *json) {
     ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
-    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    _scoped_zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
     if (!chunk) {
         ymsg_destroy (&message);       
         return NULL;
@@ -340,7 +340,7 @@ bios_db_measurements_read_reply_encode (const char *json) {
     ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
-    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    _scoped_zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
     if (!chunk) {
         ymsg_destroy (&message);       
         return NULL;

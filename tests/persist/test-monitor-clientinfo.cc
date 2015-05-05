@@ -18,13 +18,13 @@ TEST_CASE("Common messages: generate_client_info","[common][generate][client_inf
     uint32_t mytime = 4294967295;
     byte data[] = "1234567890";
     uint32_t datasize = 10;
-    common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
+    _scoped_common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
     REQUIRE ( msgclient_info );
     REQUIRE ( common_msg_id (msgclient_info) == COMMON_MSG_CLIENT_INFO );
 //    common_msg_print (msgclient_info);
     REQUIRE ( client_id == common_msg_client_id (msgclient_info) );
     REQUIRE ( device_id == common_msg_device_id (msgclient_info) );
-    zchunk_t* info = common_msg_info (msgclient_info);
+    _scoped_zchunk_t* info = common_msg_info (msgclient_info);
     REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
     REQUIRE ( zchunk_size(info) == datasize );
     REQUIRE ( mytime == common_msg_date (msgclient_info) );
@@ -40,10 +40,10 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
     uint32_t mytime = 4294967295;
     byte data[] = "1234567890";
     uint32_t datasize = 10;
-    common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
+    _scoped_common_msg_t* msgclient_info = generate_client_info (client_id, device_id, mytime, data, datasize);
     REQUIRE ( msgclient_info );
     uint32_t client_info_id = 77;
-    common_msg_t* msgreturnclient_info = generate_return_client_info (client_info_id, &msgclient_info);
+    _scoped_common_msg_t* msgreturnclient_info = generate_return_client_info (client_info_id, &msgclient_info);
     REQUIRE ( msgreturnclient_info != NULL );
     REQUIRE ( msgclient_info == NULL );
     
@@ -55,14 +55,14 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
     REQUIRE ( newmsg != NULL );
     REQUIRE ( zmsg_is (newmsg) == true );
 
-    common_msg_t* newclient_info = common_msg_decode (&newmsg);
+    _scoped_common_msg_t* newclient_info = common_msg_decode (&newmsg);
     REQUIRE ( newmsg == NULL );
     REQUIRE ( newclient_info != NULL );
     REQUIRE ( common_msg_id (newclient_info) == COMMON_MSG_CLIENT_INFO );
 
     REQUIRE ( client_id == common_msg_client_id (newclient_info) );
     REQUIRE ( device_id == common_msg_device_id (newclient_info) );
-    zchunk_t* info = common_msg_info (newclient_info);
+    _scoped_zchunk_t* info = common_msg_info (newclient_info);
     REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
     REQUIRE ( zchunk_size(info) == datasize );
     REQUIRE ( mytime == common_msg_date (newclient_info) );
@@ -79,7 +79,7 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
     uint32_t client_id = 1;
     zchunk_t* blob = zchunk_new("jjj",4);
 
-    common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
+    _scoped_common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
@@ -89,14 +89,14 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
     REQUIRE ( newid > 0 );
 
 
-    common_msg_t* newreturn = select_client_info (url.c_str(), newid);
+    _scoped_common_msg_t* newreturn = select_client_info (url.c_str(), newid);
     // this row shold be there
     REQUIRE ( common_msg_id (newreturn) == COMMON_MSG_RETURN_CINFO );
     REQUIRE ( common_msg_rowid (newreturn) == newid ); 
     
 //    common_msg_print (newreturn);
     _scoped_zmsg_t* newmsg = common_msg_get_msg (newreturn);
-    common_msg_t* newclient_info = common_msg_decode (&newmsg);
+    _scoped_common_msg_t* newclient_info = common_msg_decode (&newmsg);
     REQUIRE ( newclient_info != NULL );
     REQUIRE ( common_msg_id (newclient_info) == COMMON_MSG_CLIENT_INFO );
     REQUIRE ( common_msg_client_id (newclient_info) == client_id );
@@ -118,7 +118,7 @@ TEST_CASE("Common messages: insert_client_info/delete_client_info","[common][ins
 
 
 
-    common_msg_t* response2 = delete_client_info (url.c_str(), newid);
+    _scoped_common_msg_t* response2 = delete_client_info (url.c_str(), newid);
     REQUIRE ( response2 != NULL );
 //    common_msg_print (response);
 
@@ -135,9 +135,9 @@ TEST_CASE("Common messages: update_client_info1","[common][update][client_info]"
     char name[] = "insert_for_update1";
     uint32_t device_id = 1;
     uint32_t client_id = 1;
-    zchunk_t* blob = zchunk_new("jjj",4);
+    _scoped_zchunk_t* blob = zchunk_new("jjj",4);
 
-    common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
+    _scoped_common_msg_t* response = insert_client_info (url.c_str(), device_id, client_id, &blob);
     REQUIRE ( response != NULL );
 //    common_msg_print (response);
 
@@ -147,7 +147,7 @@ TEST_CASE("Common messages: update_client_info1","[common][update][client_info]"
 
     common_msg_destroy (&response);
 
-    common_msg_t* client_info = generate_client_info ("insert_updated");
+    _scoped_common_msg_t* client_info = generate_client_info ("insert_updated");
     response = update_client_info (url.c_str(), newid, &client_info);
     REQUIRE ( response != NULL );
     REQUIRE ( client_info == NULL );

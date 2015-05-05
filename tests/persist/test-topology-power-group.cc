@@ -17,7 +17,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     log_open();
 
     log_info ("=============== POWER GROUP #1 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_GROUP);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5088);
 //    asset_msg_print (getmsg);
@@ -29,18 +29,18 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     _scoped_zmsg_t* retTopology = get_return_power_topology_group (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
     
     // check powers
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( zlist_size(powers) == 0 );
     zlist_destroy (&powers);
 
     // check the devices
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -56,7 +56,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
         INFO(n);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),

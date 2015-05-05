@@ -125,7 +125,7 @@
 
     agent.sendto (BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);    
     msg = agent.recv_wait (1000);
-    char *json = NULL;
+    _scoped_char *json = NULL;
     if(msg == NULL) {
 </%cpp>
         {

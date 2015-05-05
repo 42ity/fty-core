@@ -13,6 +13,8 @@
 #include "bios_agent.h"
 #include "agents.h"
 #include "utils_ymsg.h"
+#include "cleanup.h"
+#include "utils.h"
 
 namespace persist {
 
@@ -224,7 +226,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
 
         int64_t start_ts = -1, end_ts = -1;
         uint64_t element_id = 0;
-        char *source = NULL;
+        _scoped_char *source = NULL;
 
         int rv = bios_db_measurements_read_request_extract (in, &start_ts, &end_ts, &element_id, &source);
         if (rv != 0) {
@@ -232,7 +234,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
         }
 
         std::string topic (source);
-        free (source); source = NULL;
+        FREE0 (source)
         topic += "@%";
 
         st.set("id", element_id).set("topic", topic).set("time_st", start_ts).set("time_end", end_ts);
@@ -261,7 +263,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
                "  \"end_ts\": " + ymsg_get_string(in,"end_ts") + ",\n" +
                "\"data\": [\n" + json + "\n] }";
 
-        zchunk_t *ch = zchunk_new (json.c_str (), json.length ());
+        _scoped_zchunk_t *ch = zchunk_new (json.c_str (), json.length ());
         if (!ch) {
             throw std::invalid_argument ("zchunk_new failed.");
         }

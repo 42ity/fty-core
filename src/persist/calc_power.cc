@@ -398,7 +398,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300u);
 
     // transform numbers to string and fill hash
-    zhash_t* result = zhash_new();
+    _scoped_zhash_t* result = zhash_new();
     zhash_autofree (result);
     compute_result_value_set (result, ret_results.power);
     compute_result_scale_set (result, ret_results.scale);
@@ -407,7 +407,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     compute_result_num_missed_set (result, ret_results.missed.size());
 
     // fill the return message
-    _scoped_zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
     return retmsg;
 }
 
@@ -710,10 +710,10 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     assert ( zmsg );
      
     _scoped_zmsg_t* pop = NULL;
-    zframe_t* fr;
+    _scoped_zframe_t* fr;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
-        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+        _scoped_asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
         asset_msg_print(item);
         assert ( item );
          
@@ -788,7 +788,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     // here we need to select und unpack it
     
     // fill the getmsg
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (getmsg, dc_element_id);
     asset_msg_set_recursive (getmsg, true);
     asset_msg_set_filter_type (getmsg, asset_type::RACK);
@@ -796,13 +796,13 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
 
     // get topology
     _scoped_zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
-    asset_msg_t* item = asset_msg_decode (&dc_topology);
+    _scoped_asset_msg_t* item = asset_msg_decode (&dc_topology);
     log_debug("get_msg decoded");
 
     // find all ids of rack in topology
     // process rooms
     log_debug("start look racks in rooms");
-    zframe_t* fr = asset_msg_rooms (item);
+    _scoped_zframe_t* fr = asset_msg_rooms (item);
     std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
     log_debug("end look racks in rooms");
     log_debug("number of racks found: %zu", rack_ids.size());
@@ -851,7 +851,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("total: value = %" PRIi32 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
-    zhash_t* result = zhash_new();
+    _scoped_zhash_t* result = zhash_new();
     zhash_autofree (result);
     compute_result_value_set (result, ret_result.power);
     compute_result_scale_set (result, ret_result.scale);
@@ -859,7 +859,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     compute_result_num_missed_set (result, ret_result.missed.size());
 
     // fill the return message
-    _scoped_zmsg_t* retmsg = compute_msg_encode_return_computation(result);
+    zmsg_t* retmsg = compute_msg_encode_return_computation(result);
     log_debug("end: normal");
     return retmsg;
 }

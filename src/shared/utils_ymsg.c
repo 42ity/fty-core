@@ -364,7 +364,7 @@ ymsg_set_addinfo (ymsg_t *self, UNUSED_PARAM zhash_t *addinfo) {
 ymsg_t*
 ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo)
 {
-    _scoped_ymsg_t *resultmsg = ymsg_new (YMSG_REPLY);
+    ymsg_t *resultmsg = ymsg_new (YMSG_REPLY);
     ymsg_set_rowid (resultmsg, rowid);
     if ( addinfo != NULL )
         ymsg_set_addinfo (resultmsg, addinfo);
@@ -374,7 +374,7 @@ ymsg_generate_ok(uint64_t rowid, zhash_t *addinfo)
 ymsg_t*
 ymsg_generate_fail (int errtype, int errsubtype, const char *errmsg, zhash_t *addinfo)
 {
-    _scoped_ymsg_t* resultmsg = ymsg_new (YMSG_REPLY);
+    ymsg_t* resultmsg = ymsg_new (YMSG_REPLY);
     ymsg_set_errtype    (resultmsg, errtype);
     ymsg_set_errsubtype (resultmsg, errsubtype);
     ymsg_set_errmsg     (resultmsg, errmsg );

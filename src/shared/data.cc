@@ -1,11 +1,3 @@
-#include "cleanup.h"
-#include "defs.h"
-#include "data.h"
-#include "asset_types.h"
-#include "common_msg.h"
-#include "dbpath.h"
-#include "monitor.h"
-#include "upsstatus.h"
 #include <zmq.h>
 #include <czmq.h>
 #include <tnt/http.h>
@@ -14,6 +6,16 @@
 #include <string>
 #include <map>
 #include <limits.h>
+
+#include "cleanup.h"
+#include "defs.h"
+#include "data.h"
+#include "asset_types.h"
+#include "common_msg.h"
+#include "dbpath.h"
+#include "monitor.h"
+#include "upsstatus.h"
+#include "utils.h"
 
 typedef std::string (*MapValuesTransformation)(std::string);
 
@@ -118,7 +120,7 @@ std::string measures_manager::map_values(std::string name, std::string value) {
 std::string ui_props_manager::get(std::string& result) {
 
     //FIXME: where to put the constant?
-    common_msg_t *reply = select_ui_properties(url.c_str());
+    _scoped_common_msg_t *reply = select_ui_properties(url.c_str());
     if (!reply)
         return std::string("{\"error\" : \"Can't load ui/properties from database!\"}");
 
@@ -142,23 +144,23 @@ std::string ui_props_manager::get(std::string& result) {
         return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");
     }
 
-    common_msg_t *msg = common_msg_decode(&zmsg);
+    _scoped_common_msg_t *msg = common_msg_decode(&zmsg);
     common_msg_destroy(&reply);
     if (!msg)
         return std::string("{\"error\" : \"Can't decode inner message from reply!\"}");
     
-    zchunk_t *info = common_msg_get_info(msg);
+    _scoped_zchunk_t *info = common_msg_get_info(msg);
     common_msg_destroy(&msg);
     if (!info)
         return std::string("{\"error\" : \"Can't get chunk from reply!\"}");
 
-    char *s = zchunk_strdup(info);
+    _scoped_char *s = zchunk_strdup(info);
     zchunk_destroy(&info);
     if (!s)
         return std::string("{\"error\" : \"Can't get string from reply!\"}");
     
     result = s;
-    free(s);
+    FREE0 (s)
 
     return std::string{};
 }
@@ -167,12 +169,12 @@ std::string ui_props_manager::put(const std::string& ext) {
 
     const char* s = ext.c_str();
 
-    zchunk_t *chunk = zchunk_new(s, strlen(s));
+    _scoped_zchunk_t *chunk = zchunk_new(s, strlen(s));
     if (!chunk)
         return std::string("fail to create zchunk");
 
     //FIXME: where to store client_id?
-    common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
+    _scoped_common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
     uint32_t msg_id = common_msg_id(reply);
     common_msg_destroy(&reply);
 

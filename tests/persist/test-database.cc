@@ -31,7 +31,7 @@ TEST_CASE (
         const char *ip_1 = "10.130.38.197";
         const int state_1 = 0;
         const char *reason_1 = "echo-reply";
-        nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_1);
 
         nmap_msg_set_addr (msg_1, "%s", ip_1);
@@ -52,7 +52,7 @@ TEST_CASE (
         const char *ip_2 = "192.168.0.1";
         const int state_2 = 1;
  
-        nmap_msg_t *msg_2 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_2 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_2);
 
         nmap_msg_set_addr (msg_2, "%s", ip_2);
@@ -66,7 +66,7 @@ TEST_CASE (
         // Third message - one field only
         const char *ip_3 = "102.16.230.5";
  
-        nmap_msg_t *msg_3 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_3 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_3);
 
         nmap_msg_set_addr (msg_3, "%s", ip_3);
@@ -83,7 +83,7 @@ TEST_CASE (
         //
         const int state_1 = 0;
         const char *reason_1 = "echo-reply";
-        nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_1);
 
         nmap_msg_set_host_state (msg_1, (byte) state_1);

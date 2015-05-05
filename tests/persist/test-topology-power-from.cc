@@ -17,7 +17,7 @@ TEST_CASE("Power topology from #1","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #1 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5019);
 //    asset_msg_print (getmsg);
@@ -25,7 +25,7 @@ TEST_CASE("Power topology from #1","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_common_msg (retTopology) );
-    common_msg_t* cretTopology = common_msg_decode (&retTopology);
+    _scoped_common_msg_t* cretTopology = common_msg_decode (&retTopology);
     assert ( cretTopology );
 //    common_msg_print (cretTopology);
     REQUIRE ( common_msg_errtype (cretTopology) == BIOS_ERROR_DB );
@@ -41,7 +41,7 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #2 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5020);
 //    asset_msg_print (getmsg);
@@ -53,11 +53,11 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
     
     // check the devices, should be one
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -69,7 +69,7 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     // the first device
     REQUIRE ( pop != NULL );
     
-    asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+    _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
     assert ( item );
 //    asset_msg_print (item);
     
@@ -83,7 +83,7 @@ TEST_CASE("Power topology from #2","[db][topology][power][from][power_topology.s
     REQUIRE ( pop == NULL );
 
     // check powers, should be empty
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
     REQUIRE ( zlist_size (powers) == 0 );
 
@@ -101,7 +101,7 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #3 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5021);
 //    asset_msg_print (getmsg);
@@ -109,11 +109,11 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
     
     // check the devices, should be one
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -125,7 +125,7 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     // the first device
     REQUIRE ( pop != NULL );
     
-    asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+    _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
     assert ( item );
 //    asset_msg_print (item);
     
@@ -139,7 +139,7 @@ TEST_CASE("Power topology from #3","[db][topology][power][from][power_topology.s
     REQUIRE ( pop == NULL );
 
     // check powers, should be empty
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
     REQUIRE ( zlist_size (powers) == 0 );
 
@@ -157,7 +157,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #4 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5024);
 //    asset_msg_print (getmsg);
@@ -170,13 +170,13 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
     
     // check powers, should be one link
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     char first1[15]  = "1:5024:2:5027";//src_socket:src_id:dst_socket:dst_id
@@ -188,7 +188,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
     zlist_destroy (&powers);
 
     // check the devices, should be two
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -203,7 +203,7 @@ TEST_CASE("Power topology from #4","[db][topology][power][from][power_topology.s
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -230,7 +230,7 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #5 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5028);
 //    asset_msg_print (getmsg);
@@ -251,13 +251,13 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
     
     // check powers, should be three links
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     char* a = NULL;
@@ -278,7 +278,7 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
     zlist_destroy (&powers);
     
     // check the devices, should be four devices
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -293,7 +293,7 @@ TEST_CASE("Power topology from #5","[db][topology][power][from][power_topology.s
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -321,7 +321,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #6 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5034);
 //    asset_msg_print (getmsg);
@@ -342,13 +342,13 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
     
     // check powers, should be three links
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     char* a = NULL;
@@ -370,7 +370,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
     zlist_destroy (&powers);
 
     // check the devices, should be four devices
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -385,7 +385,7 @@ TEST_CASE("Power topology from #6","[db][topology][power][from][power_topology.s
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -412,7 +412,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #7 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5038);
 //    asset_msg_print (getmsg);
@@ -425,13 +425,13 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
 //    print_frame_devices (asset_msg_devices (cretTopology));
     
     // check powers, should be one link
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     std::string first1  = std::string(SRCOUT_DESTIN_IS_NULL) + ":5038:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5039";//src_socket:src_id:dst_socket:dst_id
@@ -443,7 +443,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
     zlist_destroy (&powers);
 
     // check the devices, should be two devices
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -458,7 +458,7 @@ TEST_CASE("Power topology from #7","[db][topology][power][from][power_topology.s
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -485,7 +485,7 @@ TEST_CASE("Power topology from #8","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #8 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 4998);
 //    asset_msg_print (getmsg);
@@ -494,7 +494,7 @@ TEST_CASE("Power topology from #8","[db][topology][power][from][power_topology.s
     assert ( retTopology );
     
     REQUIRE ( is_common_msg (retTopology) );
-    common_msg_t* cretTopology = common_msg_decode (&retTopology);
+    _scoped_common_msg_t* cretTopology = common_msg_decode (&retTopology);
     assert ( cretTopology );
 //    common_msg_print (cretTopology);
     REQUIRE ( common_msg_errtype (cretTopology) == BIOS_ERROR_DB );
@@ -511,7 +511,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     log_open();
 
     log_info ("=============== POWER FROM #9 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5040);
 //    asset_msg_print (getmsg);
@@ -527,11 +527,11 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
 //    asset_msg_print (cretTopology);
 
     // check the devices, should be one device
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -546,7 +546,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -563,7 +563,7 @@ TEST_CASE("Power topology from #9","[db][topology][power][from][power_topology.s
     REQUIRE ( sdevices.empty() );
     
     // check powers, should be one link
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     REQUIRE ( spowers.count(std::string ((const char*)zlist_first  (powers))) == 1 );
@@ -582,7 +582,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     log_open();
 
     log_info ("=============== POWER FROM #10 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5041);
 //    asset_msg_print (getmsg);
@@ -600,12 +600,12 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
     // check powers, should be one link
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     char* a = NULL;
@@ -627,7 +627,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
     zlist_destroy (&powers);
 
     // check the devices, should be two devices
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -642,7 +642,7 @@ TEST_CASE("Power topology from #10","[db][topology][power][from][power_topology.
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
@@ -669,7 +669,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     log_open();
 
     log_info ("=============== POWER FROM #11 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_POWER_FROM);
     assert ( getmsg );
     asset_msg_set_element_id (getmsg, 5043);
 //    asset_msg_print (getmsg);
@@ -686,12 +686,12 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     _scoped_zmsg_t* retTopology = get_return_power_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     
     // check powers, should be one link
-    zlist_t* powers = asset_msg_get_powers (cretTopology);
+    _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
     char* a = NULL;
@@ -713,7 +713,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
     zlist_destroy (&powers);
 
     // check the devices, should be two
-    zframe_t* frame = asset_msg_devices (cretTopology);
+    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -728,7 +728,7 @@ TEST_CASE("Power topology from #11","[db][topology][power][from][power_topology.
         pop = zmsg_popmsg (zmsg);
         REQUIRE ( pop != NULL );
     
-        asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
+        _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert ( item );
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),

@@ -1,6 +1,7 @@
 #include "upsstatus.h"
 #include <string.h>
 #include <iostream>
+#include "cleanup.h"
 
 namespace shared {
 
@@ -46,7 +47,7 @@ uint16_t upsstatus_single_status_to_int(char *status) {
 
 uint16_t upsstatus_to_int(const char *status) {
     uint16_t result = 0;
-    char *buff = strdup(status);
+    _scoped_char *buff = strdup(status);
     char *b = buff;
     char *e;
 

@@ -26,6 +26,7 @@ Description: various random C and project wide helpers
 #include "utils.h"
 #include "str_defs.h"
 #include "defs.h"
+#include "cleanup.h"
 
 const char *str_bool(const bool b) {
     return b ? "true" : "false";
@@ -91,7 +92,7 @@ int64_t average_step_seconds (const char *step) {
         default:
             return -1;
     }
-    char *substr = strndup (step, strlen (step) - 1);
+    _scoped_char *substr = strndup (step, strlen (step) - 1);
     if (!substr)
         return -1;
     int number = atoi (substr);

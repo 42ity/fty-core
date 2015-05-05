@@ -17,10 +17,10 @@ float total_datacenter_power(a_elmnt_id_t rack_element_id) {
         zmsg_destroy(&msg);
         throw "invalid message type";
     }
-    compute_msg_t* res_compute = compute_msg_decode (&msg);
+    _scoped_compute_msg_t* res_compute = compute_msg_decode (&msg);
     zmsg_destroy(&msg);
     compute_msg_print (res_compute);
-    zhash_t* results = compute_msg_get_results (res_compute);
+    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -134,7 +134,7 @@ asset_manager asset_mgr;
 for( size_t D = 0; D <DCs.size() ; ++D ) {
     _scoped_zmsg_t * msg = asset_mgr.get_item("datacenter",DCs[D]);
     if ( is_asset_msg (msg) ) {
-        asset_msg_t* element = asset_msg_decode (&msg);
+        _scoped_asset_msg_t* element = asset_msg_decode (&msg);
         if ( asset_msg_id( element ) == ASSET_MSG_ELEMENT ) {
             DCNames.push_back(asset_msg_name(element));
         } else {

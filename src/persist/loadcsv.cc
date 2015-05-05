@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include "assetcrud.h"
 #include "dbpath.h"
+#include "cleanup.h"
 
 using namespace shared;
 
@@ -348,7 +349,7 @@ static void
             }
         }
     }
-    zhash_t *extattributes = zhash_new();
+    _scoped_zhash_t *extattributes = zhash_new();
     zhash_autofree(extattributes);
     for ( auto &key: unused_columns )
     {

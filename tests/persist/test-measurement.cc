@@ -96,7 +96,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
 
     _scoped_ymsg_t *in = ymsg_new(YMSG_SEND);
     _scoped_ymsg_t *out = ymsg_new(YMSG_REPLY);
-    char *out_s = NULL;
+    _scoped_char *out_s = NULL;
     REQUIRE ( in != NULL);
     REQUIRE ( out != NULL);
 
@@ -114,7 +114,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     CHECK ( out_s != NULL );
     CHECK ( str_eq (out_s, "return_measurements") );    
 
-    zchunk_t *ch = ymsg_get_response(out);
+    _scoped_zchunk_t *ch = ymsg_get_response(out);
     REQUIRE ( ch != NULL);
 
     std::string json ((char *) zchunk_data (ch), zchunk_size (ch));
