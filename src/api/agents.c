@@ -421,8 +421,9 @@ bios_alert_extract(ymsg_t *self,
         break;
     }
     if( ! app || ! streq( app_name( app ), "ALERT" ) ) { app_destroy(&app) ; return -2; }
+   
    if( ! app ) return -3;
-       
+   
    nam = app_args_string( app, "rule", NULL );
    pri = app_args_string( app, "priority", NULL );
    sta = app_args_string( app, "state", NULL );
@@ -430,7 +431,6 @@ bios_alert_extract(ymsg_t *self,
    des = app_args_string( app, "description", NULL );
    sin = app_args_string( app, "since", NULL );
    
-
    if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
        app_destroy( &app );
        return -3;

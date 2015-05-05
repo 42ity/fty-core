@@ -244,4 +244,3 @@ app_args_uint64(app_t* msg, const char *key) {
     }
     return string_to_uint64(val);
 }
-

@@ -103,7 +103,6 @@ app_args_uint32(app_t* msg, const char *key);
 uint64_t
 app_args_uint64(app_t* msg, const char *key);
 
-
 #ifdef __cplusplus
 }
 #endif

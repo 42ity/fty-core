@@ -800,7 +800,6 @@ zmsg_t* process_message(zmsg_t** msg) {
     }
 }
 
-
 // should process destroy ymsg?
 //
 // TODO do we want to have void here?

@@ -236,6 +236,8 @@ is_app (zmsg_t *msg)
         return false;
 
     zframe_t *frame = zmsg_first (msg);
+    if( frame == NULL )
+        return false;
 
     //  Get and check protocol signature
     app_t *self = app_new (0);

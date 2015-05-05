@@ -218,7 +218,6 @@ bios_asset_extract(ymsg_t *message,
                    char **status,
                    uint8_t *priority);
 
-
 #ifdef __cplusplus
 }
 #endif

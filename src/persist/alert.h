@@ -136,11 +136,10 @@ db_reply <db_alert_t>
          int64_t     date_from);
 
 db_reply_t
-    update_alert_notification 
+    update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
-         const char *rule_name,
-         int64_t     date_from);
+         const char *rule_name);
 
 //! Processes alert message and creates an answer
 void process_alert(ymsg_t* out, char** out_subj,
