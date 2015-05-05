@@ -46,8 +46,8 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
     REQUIRE ( strcmp (value3, "value3") == 0 );
 
-    free(device_name_new);
-    free(module_name_new);
+    FREE0 (device_name_new)
+    FREE0 (module_name_new)
     zhash_destroy(&ext_attributes_new);
 
     log_close ();
