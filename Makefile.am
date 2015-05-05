@@ -433,6 +433,8 @@ test_utils_LDADD = 	libpriv-utils.la \
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
 
+test_utils_LDFLAGS =	${LIBCZMQ_LIBS}
+
 check_PROGRAMS += 	test-log
 
 test_log_SOURCES = 	src/shared/log.h \
