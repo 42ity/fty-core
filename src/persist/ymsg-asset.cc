@@ -23,7 +23,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
     
     tntdb::Connection conn;
     try{
-        conn = tntdb::connect(url);
+        conn = tntdb::connectCached(url);
         char *devname = NULL;
         if( bios_asset_extract( in, &devname, NULL, NULL, NULL, NULL ) == 0 ) {
             auto element = select_asset_element_by_name(conn, devname);
