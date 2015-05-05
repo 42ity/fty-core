@@ -750,10 +750,12 @@ test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
 test_libbiosapiut_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include \
 			-I$(abs_top_srcdir)/include \
+			-I$(abs_top_srcdir)/src/msg \
 			-I$(abs_top_srcdir)/src/include
-test_libbiosapiut_LDADD =	libpriv-test-run.la -lbiosapi
+test_libbiosapiut_LDADD =	libpriv-test-run.la libpriv-proto.la -lbiosapi
 test_libbiosapiut_DEPENDENCIES = \
 				libpriv-test-run.la \
+				libpriv-proto.la \
 				libbiosapi.la
 
 ###
