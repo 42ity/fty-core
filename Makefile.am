@@ -920,7 +920,8 @@ agent_alert_smtp_LDADD = \
 			libbiosapi.la \
 			libpriv-log.la \
 			libpriv-email.la \
-			libpriv-subprocess.la
+			libpriv-subprocess.la \
+			libpriv-defs.la
 
 agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
