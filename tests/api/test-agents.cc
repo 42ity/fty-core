@@ -279,16 +279,16 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     REQUIRE ( msg );
 
     _scoped_char *rule = NULL, *devices = NULL, *description = NULL;
-    alert_priority_t priority = ALERT_PRIORITY_UNKNOWN;
-    alert_state_t state = ALERT_STATE_UNKNOWN;
+    uint8_t priority = ALERT_PRIORITY_UNKNOWN;
+    int8_t state = ALERT_STATE_UNKNOWN;
     time_t time = 0;
 
-    bios_alert_decode( &msg, NULL, &priority, &state, &devices, &description, &time);
+    bios_alert_extract( msg, NULL, &priority, &state, &devices, &description, &time);
     CHECK( msg );
     
-    int x = bios_alert_decode( &msg, &rule, &priority, &state, &devices, &description, &time);
-    CHECK ( x == 0 );
-    CHECK ( msg == NULL );
+    int x = bios_alert_extract( msg, &rule, &priority, &state, &devices, &description, &time);
+    REQUIRE ( x == 0 );
+    CHECK ( msg != NULL );
     CHECK ( strcmp (rule, "testrule") == 0 );
     CHECK ( strcmp (devices, "myDev") == 0 );
     CHECK ( strcmp (description, "some text") == 0 );
@@ -298,5 +298,34 @@ TEST_CASE ("bios alert message encoded & decoded", "[agents][public_api]") {
     FREE0 (rule)
     FREE0 (devices)
     FREE0 (description)
+    ymsg_destroy( &msg );
+}
+
+TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
+
+    ymsg_t *msg = bios_asset_encode(
+        "device1",
+        1,
+        2,
+        "ok",
+        3);
+
+    REQUIRE ( msg );
+
+    char *device = NULL, *status = NULL;
+    uint32_t type_id = 0, parent_id = 0;
+    uint8_t priority = 0;
+
+    int x = bios_asset_extract( msg, &device, &type_id, &parent_id, &status, &priority );
+    REQUIRE( msg );
+    REQUIRE ( x == 0 );
+    CHECK ( str_eq( device, "device1") );
+    CHECK ( type_id == 1 );
+    CHECK ( parent_id == 2 );
+    CHECK ( str_eq( status, "ok" ) );
+    CHECK ( priority == 3 );
+    ymsg_destroy( &msg );
+    FREE0( device );
+    FREE0( status );
 }
 

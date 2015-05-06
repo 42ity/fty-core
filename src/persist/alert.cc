@@ -861,16 +861,15 @@ db_reply <db_alert_t>
 }
 
 db_reply_t
-    update_alert_notification 
+    update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
-         const char *rule_name,
-         int64_t     date_from)
+         const char *rule_name)
 {
     LOG_START;
     db_reply_t ret = db_reply_new();
-    auto alert = select_alert_byRuleNameDateFrom
-        (conn, rule_name, date_from);
+    auto alert = select_alert_last_byRuleName
+        (conn, rule_name);
     if ( alert.status == 0 )
     {
         ret.status     = alert.status;
@@ -899,16 +898,13 @@ void process_alert(ymsg_t* out, char** out_subj,
     else { *out_subj = NULL; }
     
     log_debug("processing alert"); // FIXME: some macro
-    _scoped_ymsg_t *copy = ymsg_dup(in);
-    assert(copy);
     
     // decode message
     _scoped_char *rule = NULL, *devices = NULL, *desc = NULL;
-    alert_priority_t priority;
-    alert_state_t state;
+    uint8_t priority;
+    int8_t state;
     time_t since;
-    if( bios_alert_decode( &copy, &rule, &priority, &state, &devices, &desc, &since) != 0 ) {
-        ymsg_destroy(&copy);
+    if( bios_alert_extract( in, &rule, &priority, &state, &devices, &desc, &since) != 0 ) {
         log_debug("can't decode message");
         LOG_END;
         return;

@@ -1,5 +1,6 @@
 #include "utils_app.h"
 #include "cleanup.h"
+#include "utils.h"
 
 // TODO: move string_to_X functioncs into utils.[hc] as soon as streq conflict is solved
 
@@ -204,6 +205,30 @@ app_args_set_uint64(app_t* msg, const char *key, uint64_t value ) {
     app_args_set_string( msg, key, buff );
 }
 
+int8_t
+app_args_int8(app_t* msg, const char *key) {
+    if(!msg) { errno = EINVAL; return INT8_MAX; };
+
+    const char *val = app_args_string( msg, key, NULL );
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return INT8_MAX;
+    }
+    return string_to_int8(val);
+}
+
+int16_t
+app_args_int16(app_t* msg, const char *key) {
+    if(!msg) { errno = EINVAL; return INT16_MAX; };
+
+    const char *val = app_args_string( msg, key, NULL );
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return INT16_MAX;
+    }
+    return string_to_int16(val);
+}
+
 int32_t
 app_args_int32(app_t* msg, const char *key) {
     if(!msg) { errno = EINVAL; return INT32_MAX; };
@@ -226,6 +251,30 @@ app_args_int64(app_t* msg, const char *key) {
         return INT64_MAX;
     }
     return string_to_int64(val);
+}
+
+uint8_t
+app_args_uint8(app_t* msg, const char *key) {
+    if(!msg) { errno = EINVAL; return UINT8_MAX; };
+
+    const char *val = app_args_string( msg, key, NULL );
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return UINT8_MAX;
+    }
+    return string_to_uint8(val);
+}
+
+uint16_t
+app_args_uint16(app_t* msg, const char *key) {
+    if(!msg) { errno = EINVAL; return UINT16_MAX; };
+
+    const char *val = app_args_string( msg, key, NULL );
+    if(val == NULL) {
+        errno = EKEYREJECTED;
+        return UINT16_MAX;
+    }
+    return string_to_uint16(val);
 }
 
 uint32_t
@@ -251,4 +300,3 @@ app_args_uint64(app_t* msg, const char *key) {
     }
     return string_to_uint64(val);
 }
-

@@ -5,6 +5,7 @@
 
 #include "agents.h"
 #include "log.h"
+#include "utils.h"
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "str_defs.h"
@@ -29,33 +30,48 @@ void AlertAgent::onSend( ymsg_t **message )
 void AlertAgent::onReply( ymsg_t **message )
 {
     if( ! check_ymsg(message) && ! ymsg_is_ok(*message) ) return;
+    if( ! streq( sender(), BIOS_AGENT_NAME_DB_MEASUREMENT ) ) return;
 
-    _scoped_app_t *app = ymsg_request_app( *message );
-    if( app ) {
-        // is this an alert confirmation?
-        const char *name = app_name(app);
-        const char *from = sender();
-        if( name && strcmp(name, "ALERT") == 0 && from && strcmp(from, "persistence.measurement") == 0 ) {
-            // name is alert, and was written into db
-            // let's check rule and state 
-            const char *rule = app_args_string(app,"rule", NULL);
-            int32_t state = app_args_int32(app,"state");
-            if( rule && ( state != INT32_MAX ) ) {
-                // rule and state supplied
-                auto it = _model.alertByRule(rule);
-                if( ( it != _model.end() ) && ( it->second.state() == state ) ) {
-                    // such alarm exists and it is in the same state
-                    it->second.persistenceInformed(true);
-                }
+    const char *topic = subject();
+    if( topic && strncmp( topic, "alert.", 6 ) == 0 ) {
+        // this should be alert confirmation from persistence
+        char *rule = NULL, *devices = NULL;
+        int8_t state = 0;
+        uint8_t priority = 0;
+        if( bios_alert_extract( *message, &rule, &priority, &state, &devices, NULL, NULL ) == 0 ) {
+            auto it = _model.alertByRule(rule);
+            if( ( it != _model.end() ) && ( it->second.state() == state ) ) {
+                // such alarm exists and it is in the same state
+                it->second.persistenceInformed(true);
             }
         }
-        app_destroy(&app);
+        FREE0(rule);
+        FREE0(devices);
     }
-    ymsg_destroy( message );
+    else if( streq( topic, "get_asset_element" ) ) {
+        char *device = NULL;
+        uint8_t priority;
+        if( bios_asset_extract( *message, &device, NULL, NULL, NULL, &priority) == 0 ) {
+            log_debug( "Device %s priority is %i", device, priority );
+            _model.setPriority( device, (alert_priority_t)priority );
+        }
+        FREE0( device );
+    }
 }
 
 void AlertAgent::onPoll() {
     for( auto al = _model.begin(); al != _model.end() ; ++al ) {
+        if( al->second.priority() == ALERT_PRIORITY_UNKNOWN ) {
+            // hmm, ask for priority
+            ymsg_t * msg = bios_asset_encode( al->second.devices().c_str(), 0, 0, NULL, 0);
+            if( msg ) {
+                ymsg_set_repeat( msg, true ); // FIXME: failed if not used
+                log_debug( "Sending request for device %s priority", al->second.devices().c_str() );
+                sendto( BIOS_AGENT_NAME_DB_MEASUREMENT, "get_asset_element", &msg );
+                ymsg_destroy(&msg);
+            }
+        }
+        else
         if( al->second.timeToPublish() ) {
             _scoped_ymsg_t * msg = bios_alert_encode (
                 al->second.ruleName().c_str(),
@@ -69,12 +85,12 @@ void AlertAgent::onPoll() {
                 _scoped_ymsg_t *pmsg = ymsg_dup(msg);
                 if( pmsg ) {
                     ymsg_set_repeat( pmsg, true );
-                    log_debug("sending alert %s state %i to persistence\n", al->second.ruleName().c_str(), al->second.state() );
-                    sendto("persistence.measurement",topic.c_str(),&pmsg); // FIXME: use str_defs.c, not available now
+                    log_debug("sending alert %s state %i to persistence", al->second.ruleName().c_str(), al->second.state() );
+                    sendto( BIOS_AGENT_NAME_DB_MEASUREMENT, topic.c_str(), &pmsg );
                 }
                 ymsg_destroy(&pmsg);
             }
-            log_debug("advertising alert %s state %i\n", al->second.ruleName().c_str(), al->second.state() );
+            log_debug("Advertising alert %s state %i", al->second.ruleName().c_str(), al->second.state() );
             send( topic.c_str(), &msg );
             ymsg_destroy(&msg);
             al->second.published();

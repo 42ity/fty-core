@@ -174,8 +174,6 @@ libbiosapi_la_SOURCES = \
 				src/api/bios_agent.c \
 				src/api/agents.c \
 				src/api/ymsg.c \
-				src/shared/utils.c \
-				src/shared/utils.h \
 				src/include/defs.h \
 				$(libbiosapi_la_HEADERS_noinst)
 
@@ -224,7 +222,9 @@ libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h \
 				src/include/cleanup.h
-			
+				src/shared/utils_app.h
+
+libpriv_utils_ymsg_la_LIBADD =  libpriv-utils.la
 
 noinst_LTLIBRARIES += 		libpriv-defs.la
 
@@ -246,6 +246,9 @@ libpriv_utils_la_SOURCES = 	src/shared/utils.c \
 				src/shared/utils.h \
 				src/include/str_defs.h \
 				src/include/defs.h
+
+libpriv_utils_la_LIBADD = 	libpriv-defs.la
+
 
 noinst_LTLIBRARIES += 		libpriv-log.la
 
@@ -311,6 +314,8 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/alert.h \
 			src/persist/alert.cc \
+			src/persist/ymsg-asset.h \
+			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
 			tools/dbpath.cc
@@ -488,6 +493,7 @@ bin_PROGRAMS += 	test-db
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
 test_db_LDADD = \
+			libpriv-log.la \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-test-run.la
@@ -910,6 +916,26 @@ agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosap
 
 agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 
+client_PROGRAMS +=	agent-alert-smtp
+
+agent_alert_smtp_SOURCES = \
+			src/agents/alert-smtp/alert-smtp-agent.h \
+			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/alert-basic.h
+
+
+agent_alert_smtp_LDADD = \
+			libbiosapi.la \
+			libpriv-log.la \
+			libpriv-email.la \
+			libpriv-subprocess.la
+
+agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
+		    -I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/agents/alert
+			
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
@@ -947,30 +973,28 @@ agent_cm_SOURCES = \
 
 agent_cm_LDADD = \
 			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-defs.la \
-			libpriv-utils-ymsg.la \
-            libbiosapi.la
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)					
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)
 
-#
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
-                        src/agents/alert/alert-entity.cc \
-                        src/agents/alert/alert-measurement.cc \
-                        src/agents/alert/alert-agent.cc \
-                        src/agents/alert/alert-model.cc \
-                        src/shared/utils_app.c \
-                        src/shared/utils_ymsg.c \
-                        src/include/str_defs.c
+			src/agents/alert/alert-entity.cc \
+			src/agents/alert/alert-measurement.cc \
+			src/agents/alert/alert-agent.cc \
+			src/agents/alert/alert-model.cc \
+			src/shared/utils_app.c \
+			src/shared/utils_ymsg.c \
+			src/include/str_defs.c
 
 agent_alert_LDADD = \
-                        libpriv-log.la \
-                        libbiosapi.la
+			libpriv-utils.la \
+			libpriv-log.la \
+			libbiosapi.la
 
 agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
@@ -1030,7 +1054,6 @@ bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			libpriv-subprocess.la \
-			libpriv-utils.la libpriv-defs.la \
 			libpriv-utils-ymsg.la
 
 dist_noinst_HEADERS += \
@@ -1097,7 +1120,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/tools/dbpath.h \
 			$(top_srcdir)/tools/dbpath.cc.in \
 			$(top_builddir)/tools/dbpath.cc \
-			$(top_srcdir)/tools/bios-*.service.in \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
@@ -1118,30 +1140,38 @@ SYSTEMD_UNITS =
 # systemd integration
 if HAVE_SYSTEMD
 
-# copy from autoconf manual, note signle suffix rules can't be used there!!
+# copy from autoconf manual, note single suffix rules can't be used there!!
 edit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
+# Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
-                        bios-agent-inventory.service bios-agent-cm.service
+                        bios-agent-inventory.service bios-agent-cm.service \
+			bios-agent-alert.service
 
+# The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
+	echo "  SED      $@"
 	rm -f $@
 	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
-bios-agent-nut.service: $(top_srcdir)/tools/bios-agent-nut.service.in
-bios-agent-cm.service: $(top_srcdir)/tools/bios-agent-cm.service.in
-bios-driver-netmon.service: $(top_srcdir)/tools/bios-driver-netmon.service.in
-bios-driver-db.service: $(top_srcdir)/tools/bios-db.service.in
-bios-server-agent.service: $(top_srcdir)/tools/bios-server-agent.service.in
-bios-agent-inventory.service: $(top_srcdir)/tools/bios-agent-inventory.service.in
+# Per-file dependency definitions are semi-identical
+$(foreach m,$(SYSTEMD_UNITS), \
+	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
+# Explicit path desired by dependencies in systemdsystemunit_DATA below
+$(foreach m,$(SYSTEMD_UNITS), \
+	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
-systemdsystemunit_DATA =	$(addprefix $(top_builddir)/,$(SYSTEMD_UNITS))
+# $(systemdsystemunitdir) may be defined externally by automake/autoconf;
+# otherwise it is empty and should effectively resolve to the top_builddir
+systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
 
-CLEANFILES += $(systemdsystemunit_DATA)
+# auto-cleanup and dist targets
+CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
 endif
 
 #----------------------------------------------------------------------

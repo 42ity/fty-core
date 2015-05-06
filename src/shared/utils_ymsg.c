@@ -190,6 +190,9 @@ ymsg_aux_set_double (ymsg_t *self, const char *key, uint8_t precision, double va
 
 static zchunk_t *
 app_to_chunk (app_t **request) {
+    if (!request || !*request)
+        return NULL;
+
     _scoped_zmsg_t *zmsg = app_encode (request);
     if (!zmsg) {
         return NULL;
@@ -220,9 +223,11 @@ ymsg_request_set_app (ymsg_t *self, app_t **request) {
 
 app_t *
 ymsg_request_app(ymsg_t *ymsg) {
+    if (!ymsg)
+        return NULL;
     zchunk_t *chunk = ymsg_request( ymsg );
-    if( ! chunk ) return NULL;
-
+    if (!chunk)
+       return NULL;
     _scoped_zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
     if( (! zmsg) || (! is_app( zmsg ) ) ) {
         zmsg_destroy( &zmsg );
@@ -232,7 +237,7 @@ ymsg_request_app(ymsg_t *ymsg) {
 }
 
 int
-ymsg_set_response_app (ymsg_t *self, app_t **response) {
+ymsg_response_set_app (ymsg_t *self, app_t **response) {
     if (!self || !response) {
         return -1;
     }

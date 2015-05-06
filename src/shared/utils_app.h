@@ -31,52 +31,6 @@ extern "C"
 {
 #endif
 
-
-// TODO: move string_to_X functioncs into utils.[hc] as soon as streq conflict is solved
-
-/**
- * \brief converts char* to int64_t
- * \param value string (char *), containing the number
- * \return text value converted to int32_t
- *
- * Function converts text representation of number to int32_t
- * In case of error, INT32_MAX is returned and errno is set.
- *
- * The input value must be whole used. Strings like "42aaa" is
- * not converted to 42 but error is produced.
- */
-int64_t string_to_int64( const char *value );
-
-/**
- * \brief converts char* to int32_t
- * \param value string (char *), containing the number
- * \return text value converted to int32_t
- * \see string_to_int64
- *
- * In case of error INT32_MAX is returned and errno is set.
- */
-int32_t string_to_int32( const char *value );
-
-/**
- * \brief converts char* to uint64_t
- * \param value string (char *), containing the number
- * \return text value converted to uint64_t
- * \see string_to_int64
- *
- * In case of error UINT64_MAX is returned and errno is set.
- */
-uint64_t string_to_uint64( const char *value );
-
-/**
- * \brief converts char* to uint32_t
- * \param value string (char *), containing the number
- * \return text value converted to uint32_t
- * \see string_to_int64
- *
- * In case of error UINT32_MAX is returned and errno is set.
- */
-uint32_t string_to_uint32( const char *value );
-
 // TODO: Tomas Halman should write documentation
 int32_t
 app_params_first_int32(app_t* msg);
@@ -115,11 +69,21 @@ void
 app_args_set_int64(app_t* msg, const char *key, int64_t value );
 
 #define app_args_set_int32 app_args_set_int64
+#define app_args_set_int16 app_args_set_int64
+#define app_args_set_int8 app_args_set_int64
 
 void
 app_args_set_uint64(app_t* msg, const char *key, uint64_t value );
 
 #define app_args_set_uint32 app_args_set_uint64
+#define app_args_set_uint16 app_args_set_uint64
+#define app_args_set_uint8 app_args_set_uint64
+
+int8_t
+app_args_int8(app_t* msg, const char *key);
+
+int16_t
+app_args_int16(app_t* msg, const char *key);
 
 int32_t
 app_args_int32(app_t* msg, const char *key);
@@ -127,12 +91,17 @@ app_args_int32(app_t* msg, const char *key);
 int64_t
 app_args_int64(app_t* msg, const char *key);
 
+uint8_t
+app_args_uint8(app_t* msg, const char *key);
+
+uint16_t
+app_args_uint16(app_t* msg, const char *key);
+
 uint32_t
 app_args_uint32(app_t* msg, const char *key);
 
 uint64_t
 app_args_uint64(app_t* msg, const char *key);
-
 
 #ifdef __cplusplus
 }

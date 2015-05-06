@@ -370,8 +370,8 @@ bios_db_measurements_read_reply_extract_err:
 
 ymsg_t *
 bios_alert_encode (const char *rule_name,
-                   alert_priority_t priority,
-                   alert_state_t state,
+                   uint8_t priority,
+                   int8_t state,
                    const char *devices,
                    const char *alert_description,
                    time_t since)
@@ -387,8 +387,8 @@ bios_alert_encode (const char *rule_name,
     _scoped_app_t *app = app_new(APP_MODULE);
     app_set_name( app, "ALERT" );
     app_args_set_string( app, "rule", rule_name );
-    app_args_set_int32( app, "priority", priority );
-    app_args_set_int32( app, "state", state );
+    app_args_set_uint8( app, "priority", priority );
+    app_args_set_int8( app, "state", state );
     app_args_set_string( app, "devices",  devices );
     if(alert_description) app_args_set_string(app, "description",  alert_description );
     app_args_set_int64( app, "since", since );
@@ -398,22 +398,33 @@ bios_alert_encode (const char *rule_name,
 
 
 int
-bios_alert_decode (ymsg_t **self_p,
+bios_alert_extract(ymsg_t *self,
                    char **rule_name,
-                   alert_priority_t *priority,
-                   alert_state_t *state,
+                   uint8_t *priority,
+                   int8_t *state,
                    char **devices,
                    char **description,
                    time_t *since)
 {
-   if( ! self_p || ! *self_p || ! rule_name || ! priority || ! state || ! devices ) return -1;
-
-   const char *nam, *dev, *pri, *sta, *sin, *des;
-   int32_t tmp;
-
-   app_t *app = ymsg_request_app(*self_p);
+    if( ! self || ! rule_name || ! priority || ! state || ! devices ) return -1;
+    
+    const char *nam, *dev, *pri, *sta, *sin, *des;
+    int32_t tmp;
+    
+    app_t *app = NULL;
+    switch( ymsg_id( self ) ) {
+    case YMSG_REPLY:
+        if( ! ymsg_is_ok( self ) ) return -1;
+        app = ymsg_response_app( self );
+        break;
+    case YMSG_SEND:
+        app = ymsg_request_app( self );
+        break;
+    }
+    if( ! app || ! streq( app_name( app ), "ALERT" ) ) { app_destroy(&app) ; return -2; }
+   
    if( ! app ) return -3;
-       
+   
    nam = app_args_string( app, "rule", NULL );
    pri = app_args_string( app, "priority", NULL );
    sta = app_args_string( app, "state", NULL );
@@ -421,18 +432,17 @@ bios_alert_decode (ymsg_t **self_p,
    des = app_args_string( app, "description", NULL );
    sin = app_args_string( app, "since", NULL );
    
-
    if( ! nam || ! pri || ! sta || ! dev || ! sin ) {
        app_destroy( &app );
        return -3;
    }
-   tmp = app_args_int32( app, "priority" );
+   tmp = app_args_uint8( app, "priority" );
    if( tmp < ALERT_PRIORITY_P1 || tmp > ALERT_PRIORITY_P5 ) {
        app_destroy( &app );
        return -4;
    }
    *priority = (alert_priority_t)tmp;
-   tmp = app_args_int32( app, "state" );
+   tmp = app_args_int8( app, "state" );
    if( tmp < ALERT_STATE_NO_ALERT || tmp > ALERT_STATE_ONGOING_ALERT ) {
        app_destroy( &app );
        return -5;
@@ -455,6 +465,89 @@ bios_alert_decode (ymsg_t **self_p,
        }
    }
    app_destroy(&app);
-   ymsg_destroy(self_p);
    return 0;
 }
+
+ymsg_t *
+bios_asset_encode( const char *devicename,
+                   uint32_t type_id,
+                   uint32_t parent_id,
+                   const char* status,
+                   uint8_t priority
+                   )
+{
+    if( ! devicename ) return NULL;
+    
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    app_t *app = app_new(APP_MODULE);
+    app_set_name( app, "ASSET" );
+    app_args_set_string( app, "devicename", devicename );
+    if( type_id ) app_args_set_uint32( app, "type_id", type_id );
+    if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
+    if( status ) app_args_set_string( app, "status", status );
+    if( priority ) app_args_set_uint8( app, "priority", priority );
+    ymsg_request_set_app( msg, &app );
+    return msg;
+}
+
+int
+bios_asset_extract(ymsg_t *message,
+                   char **devicename,
+                   uint32_t *type_id,
+                   uint32_t *parent_id,
+                   char **status,
+                   uint8_t *priority
+                   )
+{
+    if( ! message || ! devicename ) return -1;
+
+    if( devicename ) *devicename = NULL;
+    if( status ) *status = NULL;
+
+    app_t *app = NULL;
+    switch( ymsg_id( message ) ) {
+    case YMSG_REPLY:
+        if( ! ymsg_is_ok(message) ) return -1;
+        app = ymsg_response_app( message );
+        break;
+    case YMSG_SEND:
+        app = ymsg_request_app( message );
+        break;
+    }
+    if( ! app || ! streq( app_name( app ), "ASSET" ) ) { app_destroy(&app) ; return -2; }
+
+    if( devicename ) {
+        const char *p = app_args_string( app, "devicename", NULL );
+        if( p ) { *devicename = strdup(p); }
+        if( ! *devicename ) goto bios_asset_extract_err;
+    }
+    if( priority ) {
+        *priority = app_args_uint8( app, "priority" );
+        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
+            goto bios_asset_extract_err;
+    }
+    if( type_id ) {
+        *type_id = app_args_uint32( app, "type_id" );
+        if( errno ) goto bios_asset_extract_err;
+    }
+    if( parent_id ) {
+        *parent_id = app_args_uint32( app, "parent_id" );
+        if( errno ) goto bios_asset_extract_err;
+    }
+    if( status ) {
+        const char *p = app_args_string( app, "status", NULL );
+        if( p ) *status = strdup(p);
+        if( ! *status ) goto bios_asset_extract_err;
+    }
+    app_destroy( &app );
+    return 0;
+ bios_asset_extract_err:
+    FREE0( *devicename );
+    if( status ) FREE0( *status );
+    if( type_id ) *type_id = 0;
+    if( parent_id ) *parent_id = 0;
+    if( priority ) *priority = 0;
+    app_destroy( &app );
+    return -3;
+}
+

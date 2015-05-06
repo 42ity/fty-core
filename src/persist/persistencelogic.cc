@@ -51,7 +51,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
-
+#include "ymsg-asset.h"
 
 #define NETHISTORY_AUTO_CMD     'a'
 #define NETHISTORY_MAN_CMD      'm'
@@ -770,6 +770,10 @@ void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj)
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
+    if( streq(in_subj, "get_asset_element") ) {
+        persist::process_get_asset(out, out_subj, in, in_subj);
+        return;
+    }
 }
 
 /**
@@ -794,7 +798,6 @@ zmsg_t* process_message(zmsg_t** msg) {
                                   "Wrong message received!", NULL);
     }
 }
-
 
 // should process destroy ymsg?
 //
