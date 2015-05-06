@@ -62,6 +62,10 @@ namespace shared {
                     const std::string& from
                     );
 
+            void sendmail(
+                const std::vector<std::string> &to,
+                const std::string& subject,
+                const std::string& body);
             /**
              * \brief send the email
              *

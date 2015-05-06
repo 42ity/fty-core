@@ -27,13 +27,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg.h"
 #include "alert-smtp-agent.h"
 #include "email.h"
+#include "str_defs.h"
 #include <sys/types.h>
 #include <unistd.h>
+#include <cxxtools/split.h>
 
-const std::string AlertSmtpAgent::_emailFrom = "alenachernikava@eaton.com";
-const std::string AlertSmtpAgent::_emailTo = "alenachernikava@eaton.com";
-
-std::string AlertSmtpAgent::emailAddressTo(void)
+std::vector<std::string> AlertSmtpAgent::emailAddressTo(void)
 {
     return _emailTo;
 }
@@ -41,6 +40,50 @@ std::string AlertSmtpAgent::emailAddressTo(void)
 std::string AlertSmtpAgent::emailAddressFrom(void)
 {
     return _emailFrom;
+}
+
+void AlertSmtpAgent::configure()
+{
+    char *env;
+
+    env = getenv("BIOS_EMAIL_FROM");
+    _emailFrom = env ? env : "bios@eaton.com" ;
+    
+    env = getenv("BIOS_EMAIL_TO");
+    if( env && strlen(env) ) {
+        cxxtools::split( ',', std::string(env), std::back_inserter(_emailTo) );
+    }
+    env = getenv("BIOS_EMAIL_BODY_START");
+    _emailBodyStart = env ? env : "Alert ${rulename} started.";
+    env = getenv("BIOS_EMAIL_SUBJECT_START");
+    _emailSubjectStart = env ? env : "Alert P${priority} ${rulename} is active!";
+    
+    env = getenv("BIOS_EMAIL_BODY_END");
+    _emailBodyEnd = env ? env : "Alert ${rulename} ended.";
+    env = getenv("BIOS_EMAIL_SUBJECT_END");
+    _emailSubjectEnd = env ? env : "OK ${rulename}";
+
+    env = getenv("BIOS_SMTP_SERVER");
+    _smtpServer = env ? env : "";
+    log_debug("SMTP server is %s", _smtpServer.c_str() );
+    log_debug("sub start is %s", _emailSubjectStart.c_str() );
+}
+
+std::string AlertSmtpAgent::replaceTokens( const std::string &text, const std::string &pattern, const std::string &replacement) const
+{
+    std::string result = text;
+    size_t pos = 0;
+    while( ( pos = result.find(pattern, pos) ) != std::string::npos){
+        result.replace(pos, pattern.length(), replacement);
+        pos += replacement.length();
+    }
+    return result;
+}
+
+std::string AlertSmtpAgent::replaceTokens( const std::string text, alertIterator_t it ) const
+{
+    std::string result = replaceTokens(text, "${rulename}", it->first );
+    return replaceTokens(result, "${priority}", std::to_string( it->second.priority() ) );
 }
 
 std::map <std::string, AlertBasic>::iterator 
@@ -88,6 +131,7 @@ std::map <std::string, AlertBasic>::iterator
         // nebyl vlozen, protoze key is duplicate
         // tmp->first->second - actualni hodnota nalezeneho alertu
         tmp.first->second.till(a.till());
+        tmp.first->second.state(a.state());
     }
     //byl vlozen uspesne
     else{
@@ -102,34 +146,39 @@ void
         (std::map <std::string, AlertBasic>::iterator it)
 {
     LOG_START;
-    pid_t tmptmp = getpid();
-    if ( ! (it->second.informedStart()) )
+    //pid_t tmptmp = getpid();
+    log_debug("alert state is %i",it->second.state() );
+    if( emailAddressTo().empty() || _smtpServer.empty() ) {
+        log_error("Mail system is not configured!");
+        return;
+    }
+    if ( ( ! it->second.informedStart() ) && ( it->second.state() == ALERT_STATE_ONGOING_ALERT ) )
     {
-        log_debug ("Whant to notify, that event started");
-        shared::Smtp smtp{"mail.etn.com", emailAddressFrom() };
+        log_debug ("Want to notify, that event started");
+        shared::Smtp smtp{ _smtpServer, emailAddressFrom() };
         try {
             smtp.sendmail(
                 emailAddressTo(),
-                "The blue pill taken by Neo",
-                "Dear Mr. Smith,\n......" + it->second.toString() +"pid=" + std::to_string(tmptmp));
+                replaceTokens( _emailSubjectStart, it ),
+                replaceTokens( _emailBodyStart, it ));
             log_error("blue mail sended");
             it->second.informStart();
         }
         catch (const std::runtime_error& e) {
             LOG_END_ABNORMAL(e);
-           // here we'll handle the error
+            // here we'll handle the error
         }
     }
     
-    if ( ( it->second.till() != 0 )  && ( ! (it->second.informedEnd()) ))
+    if ( ( it->second.till() != 0 )  && ( ! it->second.informedEnd() ) && ( it->second.state() == ALERT_STATE_NO_ALERT ) )
     {
-        log_debug ("Whant to notify, that event ended");
-        shared::Smtp smtp{"mail.etn.com", emailAddressFrom() };
+        log_debug ("What to notify, that event ended");
+        shared::Smtp smtp{ _smtpServer, emailAddressFrom() };
         try {
             smtp.sendmail(
                 emailAddressTo(),
-                "The red pill taken by Neo",
-                "Dear Mr. Smith,\n......"+ it->second.toString() +"pid=" + std::to_string(tmptmp));
+                replaceTokens( _emailSubjectEnd, it ),
+                replaceTokens( _emailBodyEnd, it ));
             log_error("red mail sended");
             it->second.informEnd();
         }
@@ -170,14 +219,14 @@ void AlertSmtpAgent::onSend(ymsg_t **message) {
         if ( state == ALERT_STATE_NO_ALERT )
         {
             log_debug ("ALERT_STATE_NO_ALERT");
-            AlertBasic a (ruleName, 1, devices, description, since, 0, priority);
+            AlertBasic a (ruleName, ALERT_STATE_NO_ALERT, devices, description, since, 0, priority);
             auto it = addAlertClose(a);
             notify (it);
         }
         if ( state == ALERT_STATE_ONGOING_ALERT )
         {  
             log_debug ("ALERT_STATE_ONGOING_ALERT");
-            AlertBasic a (ruleName, 1, devices, description, 0, since, priority);
+            AlertBasic a (ruleName, ALERT_STATE_ONGOING_ALERT, devices, description, 0, since, priority);
             auto it = addAlertNew(a);
             notify (it);
         }
@@ -196,9 +245,9 @@ int main(int argc, char **argv){
     int result = 1;
     log_open();
     log_set_level(LOG_DEBUG);
-    log_info ("agent alert smtp started");
+    log_info ("Alert Smtp Agent started");
     AlertSmtpAgent agent("alert-smtp");
-    if( agent.connect("ipc://@/malamute", bios_get_stream_main(), "^alert\\..*") ) {
+    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^alert\\..*") ) {
         result = agent.run();
     }
     log_info ("Alert Smpt Agent exited with code %i\n", result);
