@@ -138,6 +138,7 @@ tools/db-init
 !tools/bios-agent-cm.service.in
 !tools/bios-agent-inventory.service.in
 !tools/bios-server-agent.service.in
+!tools/bios-agent-alert-smtp.service
 bios-driver-netmon.service
 bios-agent-alert.service
 bios-agent-cm.service
