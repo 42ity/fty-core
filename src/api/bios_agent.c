@@ -165,20 +165,22 @@ bios_agent_recv_wait(bios_agent_t *self, int timeout) {
     }
 
     zsock_t *pipe = bios_agent_msgpipe(self);
-    if(!pipe) {
+    if (!pipe) {
         return NULL;
     }
 
     _scoped_zmsg_t *zmsg = NULL;
-    _scoped_zsock_t *which = NULL;
+    zsock_t *which = NULL;
     _scoped_zpoller_t *poller = zpoller_new(pipe, NULL);
-    if(poller) {
-        which = (zsock_t *)zpoller_wait(poller, timeout);
-        if(which) {
-            zmsg = mlm_client_recv(self->client);
-        }
-        zpoller_destroy(&poller);
+    if (!poller) {
+        return NULL;
     }
+
+    which = (zsock_t *) zpoller_wait (poller, timeout);
+    if(which) {
+        zmsg = mlm_client_recv (self->client);
+    }
+    zpoller_destroy (&poller);
 
     if (!zmsg) {
         return NULL;
