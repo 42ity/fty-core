@@ -62,15 +62,26 @@ namespace shared {
                     const std::string& from
                     );
 
-            void sendmail(
-                const std::vector<std::string> &to,
-                const std::string& subject,
-                const std::string& body);
             /**
              * \brief send the email
              *
              * Technically this put email to msmtp's outgoing queue
-             * \param to        email header To:
+             * \param to        email header To: multiple recipient in vector
+             * \param subject   email header Subject:
+             * \param body      email body
+             *
+             * \throws std::runtime_error for msmtp invocation errors
+             */
+            void sendmail(
+                const std::vector<std::string> &to,
+                const std::string& subject,
+                const std::string& body);
+
+            /**
+             * \brief send the email
+             *
+             * Technically this put email to msmtp's outgoing queue
+             * \param to        email header To: single recipient
              * \param subject   email header Subject:
              * \param body      email body
              *
