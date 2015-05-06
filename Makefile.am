@@ -1142,7 +1142,7 @@ edit = sed \
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
-			bios-agent-alert.service
+			bios-agent-alert.service bios-agent-alert-smtp.service 
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
