@@ -100,6 +100,7 @@ agent-inventory
 db-ng
 agent-nut
 agent-alert
+agent-alert-smtp
 server-agent
 agent-cm
 bios-email
