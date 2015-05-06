@@ -2,9 +2,6 @@
 #include "cleanup.h"
 #include "utils.h"
 
-/* ---------- params ------------ */
-
-
 int32_t
 app_params_first_int32(app_t* msg) {
     errno = 0;
