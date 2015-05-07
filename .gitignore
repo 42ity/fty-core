@@ -131,22 +131,24 @@ tools/run-test-doc.sh.trs
 tools/db-init
 !tools/db-init.in
 
-!tools/bios-driver-netmon.service.in
-!tools/bios-driver-nut.service.in
-!tools/bios-db.service.in
 !tools/bios-agent-alert.service.in
-!tools/bios-agent-cm.service.in
-!tools/bios-agent-inventory.service.in
-!tools/bios-server-agent.service.in
-!tools/bios-agent-alert-smtp.service.in
-bios-driver-netmon.service
 bios-agent-alert.service
-bios-agent-cm.service
-bios-agent-nut.service
-bios-db.service
-bios-agent-inventory.service
-bios-server-agent.service
+!tools/bios-agent-alert-smtp.service.in
 bios-agent-alert-smtp.service
+!tools/bios-agent-cm.service.in
+bios-agent-cm.service
+!tools/bios-agent-inventory.service.in
+bios-agent-inventory.service
+!tools/bios-agent-nut.service.in
+bios-agent-nut.service
+!tools/bios-driver-netmon.service.in
+bios-driver-netmon.service
+!tools/bios-driver-nmap.service.in
+bios-driver-nmap.service
+!tools/bios-db.service.in
+bios-db.service
+!tools/bios-server-agent.service.in
+bios-server-agent.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp

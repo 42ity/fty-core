@@ -928,7 +928,7 @@ agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 		    -I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
-			
+
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
@@ -1017,7 +1017,7 @@ BUILT_SOURCES_bios_web_la = \
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
-                      src/web/src/mock.cc   src/web/src/sasl.cc          \
+                      src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
                       src/shared/upsstatus.cc src/web/src/enc.cc		 
 
@@ -1142,7 +1142,8 @@ edit = sed \
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
-			bios-agent-alert.service bios-agent-alert-smtp.service 
+                        bios-agent-alert.service bios-driver-nmap.service \
+                        bios-agent-alert-smtp.service
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile

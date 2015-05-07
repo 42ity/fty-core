@@ -37,7 +37,11 @@ echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 
 ### Should the test suite break upon first failed test?
-[ -z "$WEBLIB_QUICKFAIL" ] && WEBLIB_QUICKFAIL=no
+if  [ -z "$WEBLIB_QUICKFAIL" ] ; then
+    [ x"$CITEST_QUICKFAIL" = xno -o x"$CITEST_QUICKFAIL" = xyes ] && \
+        WEBLIB_QUICKFAIL="$CITEST_QUICKFAIL" || \
+        WEBLIB_QUICKFAIL=no
+fi
 
 # Should the test suite abort if "curl" errors out?
 [ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes

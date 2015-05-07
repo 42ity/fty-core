@@ -51,28 +51,50 @@ DB_CRUD="crud_test.sql"
 RESULT=0
 FAILED=""
 
-echo "--------------- ensure bins to test --------------"
+trap_exit() {
+    if [ -n "$FAILED" ]; then
+        logmsg_error "The following tests have failed:"
+        for F in $FAILED; do echo " * $F" >&2; done
+    fi
+
+    cd -
+    exit $RESULT
+}
+
+trap "trap_exit" 0 1 2 3 15
+
+echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
     test-db test-db2 test-database test-db-alert \
     test-db-asset-crud test-dbtopology test-totalpower \
     || FAILED="compilation"
 sleep 1
 
-echo "-------------------- empty db --------------------"
-${CHECKOUTDIR}/tests/CI/ci-empty-db.sh
-sleep 1
-
 # From here on we use the build directory since libtool-generated
 # scripts which wrap our build products may want that
-cd "$BUILDSUBDIR"
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+
+echo "------------- empty the db before tests ----------"
+${CHECKOUTDIR}/tests/CI/ci-empty-db.sh || \
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "FATAL: ci-empty-db.sh preparation failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED ci-empty-db.sh"
+    die "Can't prepare the database"
+fi
+sleep 1
+
 echo "-------------------- test-database ---------------"
 "$BUILDSUBDIR"/test-database
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
-    echo "error: test-database failed"
+    echo "ERROR: test-database failed"
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-database"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
@@ -88,6 +110,7 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-db"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
@@ -95,10 +118,11 @@ echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
-    echo "error: test-db2 failed"
+    echo "ERROR: test-db2 failed"
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-db2"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
@@ -106,10 +130,11 @@ echo "-------------------- test-db-alert --------------------"
 "$BUILDSUBDIR"/test-db-alert
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
-    echo "error: test-db-alert failed"
+    echo "ERROR: test-db-alert failed"
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-db-alert"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
@@ -124,6 +149,7 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-db-asset-crud"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
@@ -140,6 +166,7 @@ for P in "$DB_TOPO" "$DB_TOPO1"; do
         echo "----------------------------------------"
         RESULT=1
         FAILED="$FAILED test-dbtopology::$P"
+        [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
     fi
     sleep 1
 done
@@ -155,13 +182,9 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-totalpower"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
-if [ -n "$FAILED" ]; then
-    logmsg_error "The following tests have failed:"
-    for F in $FAILED; do echo " * $F" >&2; done
-fi
-
-cd -
+# The trap-handler should display the summary (if any)
 exit $RESULT
