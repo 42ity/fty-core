@@ -85,8 +85,8 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     ret2 = delete_from_measurement_by_id(conn, highest_measurements_id + 1);
     REQUIRE(ret2.status == 1);
     REQUIRE(ret2.affected_rows == 0);
-    
-    // 5.) DELETE EXISTING
+
+    // 6.) DELETE EXISTING
     for (i = ret1.rowid; i <=ret3.rowid; i++) {
         ret2 = delete_from_measurement_by_id(conn, i);
         REQUIRE(ret2.status == 1);
