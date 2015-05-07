@@ -73,7 +73,7 @@ logmsg_info "Try to compile and run a libbiosapi API-client..."
 echo "    CC test-libbiosapi.c"
 ### Note that we should not explicitly pull the other libraries that are used by API...
 #gcc -g -o test-libbiosapi -I ${CHECKOUTDIR}/include/ -lczmq -lzmq -lmlm -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
-gcc -g -o ${BUILDSUBDIR}/test-libbiosapi -I ${CHECKOUTDIR}/include/ \
+gcc -g -o ${BUILDSUBDIR}/test-libbiosapi -I ${CHECKOUTDIR}/include/ -I ${CHECKOUTDIR}/src/include -I ${CHECKOUTDIR}/src/msg  \
     -L ${LIBDIR} -lbiosapi ${CHECKOUTDIR}/tests/api/test-libbiosapi.c
 gccret=$?
 
