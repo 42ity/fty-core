@@ -230,7 +230,7 @@ sut_run() {
 
 do_select() {
     logmsg_info "do_select(): $1;" >&2
-    DB_OUT="$(echo "$1;" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+    DB_OUT="$(echo "$1;" | sed 's,;*$,;,g' | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
     DB_RES=$?
     echo "$DB_OUT" | tail -n +2
     [ $? = 0 -a "$DB_RES" = 0 ]
