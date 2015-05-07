@@ -109,7 +109,6 @@ process_db_measurement
         // TODO: return and ?
     }
 
-    _scoped_ymsg_t *msg_reply = NULL;
     try {
 
         log_debug ("samples map size before post-calculation: %ld\n", samples.size ());                            
@@ -192,9 +191,10 @@ process_db_measurement
                       
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
         
-        assert (msg_reply == NULL);
-        _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
+
+        _scoped_msg_reply = ymsg_new (YMSG_REPLY);
         assert (msg_reply);
+
         ymsg_set_status (msg_reply, true);
         zchunk_t *chunk = zchunk_new (json_out.c_str (), json_out.size ());
         ymsg_set_response (msg_reply, &chunk);
@@ -213,18 +213,15 @@ process_db_measurement
     // it's safe to call msg_destroy on uninitialized ymsg_t*
     catch (const cxxtools::SerializationError& e) {
         ymsg_destroy (&msg_orig);
-        ymsg_destroy (&msg_reply);
         log_error ("cxxtools::SerializationError caught: %s", e.what ());
         
     }
     catch (const std::exception& e) {
         ymsg_destroy (&msg_orig);
-        ymsg_destroy (&msg_reply);
         log_error ("std::exception caught: %s", e.what ());
     }
     catch (...) {
         ymsg_destroy (&msg_orig);
-        ymsg_destroy (&msg_reply);
         log_error ("unknown exception caught");
     }
     return 0;
