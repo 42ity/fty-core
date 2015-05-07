@@ -211,10 +211,10 @@ for UPS in $UPS1 $UPS2 ; do
         STR2="$(printf "%f" $POWER)"  # also returns "2000000.000000"
         DEL="$(awk -vX=${STR1} -vY=${STR2} 'BEGIN{ print int( 10*(X - Y) - 0.5 ); }')"
         if [ "$DEL" = 0 ]; then
-           echo "The total power has an expected value $TP = $POWER. Test PASSED."
-           SUCCESSES=$(expr $SUCCESSES + 1)
+            echo "The total power has an expected value: $TP = $POWER. Test PASSED."
+            SUCCESSES=$(expr $SUCCESSES + 1)
         else
-            echo "$TP does not equal expected value $TP <> $POWER - Test FAILED."
+            echo "The total power does not equal expected value: $TP <> $POWER - Test FAILED."
             ERRORS=$(expr $ERRORS + 1)
         fi
     done
