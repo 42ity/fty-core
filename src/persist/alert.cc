@@ -913,7 +913,7 @@ void process_alert(ymsg_t* out, char** out_subj,
     cxxtools::split(',', std::string(devices), std::back_inserter(devices_v));
     tntdb::Connection conn;
     try{        
-        conn = tntdb::connect(url);
+        conn = tntdb::connectCached(url);
         db_reply_t ret;
         
         switch( (int)state ) {
