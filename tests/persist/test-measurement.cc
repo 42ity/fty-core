@@ -75,11 +75,11 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     REQUIRE(ret.item.size() == 3);
 
     // 5.) DELETE NON EXISTING
-    ret2 = delete_from_measurement_by_id(conn, 42);
+    ret2 = delete_from_measurement_by_id(conn, 424242);
     REQUIRE(ret2.status == 1);
     REQUIRE(ret2.affected_rows == 0);
-    
-    // 5.) DELETE EXISTING
+
+    // 6.) DELETE EXISTING
     for (i = ret1.rowid; i <=ret3.rowid; i++) {
         ret2 = delete_from_measurement_by_id(conn, i);
         REQUIRE(ret2.status == 1);
