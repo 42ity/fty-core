@@ -192,7 +192,7 @@ process_db_measurement
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
         
 
-        _scoped_msg_reply = ymsg_new (YMSG_REPLY);
+        _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
         assert (msg_reply);
 
         ymsg_set_status (msg_reply, true);
