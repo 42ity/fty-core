@@ -206,8 +206,8 @@ kill_daemons() {
   DBNGPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' 0
-  trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 15
+  trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' EXIT
+  trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' SIGHUP SIGINT SIGQUIT SIGTERM
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \

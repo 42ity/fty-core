@@ -64,7 +64,7 @@ else
     malamute /etc/malamute/malamute.cfg &
     [ $? = 0 ] && MALAMUTE_STARTED=yes
     echo $! > ${BUILDSUBDIR}/malamute.pid
-    trap trap_stop_malamute 0 1 2 3 15
+    trap trap_stop_malamute EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 fi
 
 rm -f ${BUILDSUBDIR}/test-libbiosapi
