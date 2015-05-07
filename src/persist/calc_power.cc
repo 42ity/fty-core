@@ -535,7 +535,7 @@ static rack_power_t
         
     try
     {
-        tntdb::Connection conn = tntdb::connect(url);
+        tntdb::Connection conn = tntdb::connectCached(url);
         std::string select = \
             " SELECT"
             "    v.device_id, v.value, v.scale"
