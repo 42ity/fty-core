@@ -20,7 +20,7 @@
 #endif
 
 #ifndef __GNUC__
-#error Use the real compiler, Luke
+#error Please use a compiler supporting attribute cleanup
 #endif
 
 static inline void _destroy_zmsg (zmsg_t **self_p) {
