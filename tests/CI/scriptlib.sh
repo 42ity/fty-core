@@ -62,6 +62,9 @@ export BIOS_USER BIOS_PASSWD
 [ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
 export SUT_IS_REMOTE SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
 
+### Should the test suite break upon first failed test?
+[ x"$CITEST_QUICKFAIL" != xyes ] && CITEST_QUICKFAIL=no
+
 ### Set the default language (e.g. for CI apt-get to stop complaining)
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
