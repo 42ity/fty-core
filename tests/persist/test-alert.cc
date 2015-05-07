@@ -89,7 +89,7 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     int64_t             date_from = 2049829;
 
     // before first insert
-    auto reply_select = select_alert_all_opened (conn);
+    auto reply_select = select_alert_all_closed (conn);
     REQUIRE ( reply_select.status == 1 );
     auto                oldsize_a = reply_select.item.size() ;
 
@@ -492,7 +492,7 @@ TEST_CASE("t_bios_alert UPDATE end date #7","[db][CRUD][update][alert][crud_test
     int64_t             date_from = 2049829;
 
     // before first insert
-    auto reply_select = select_alert_all_opened (conn);
+    auto reply_select = select_alert_all_closed (conn);
     REQUIRE ( reply_select.status == 1 );
     auto                oldsize_a = reply_select.item.size() ;
 
