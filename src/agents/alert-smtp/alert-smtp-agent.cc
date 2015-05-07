@@ -32,15 +32,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <unistd.h>
 #include <cxxtools/split.h>
 
-std::vector<std::string> AlertSmtpAgent::emailAddressTo(void)
+std::string AlertSmtpAgent::emailBody( alert_state_t state )
 {
-    return _emailTo;
-}
+    return ( state == ALERT_STATE_ONGOING_ALERT ) ? _emailBodyStart : _emailBodyEnd;
+};
 
-std::string AlertSmtpAgent::emailAddressFrom(void)
+std::string AlertSmtpAgent::emailSubject( alert_state_t state )
 {
-    return _emailFrom;
-}
+    return ( state == ALERT_STATE_ONGOING_ALERT ) ? _emailSubjectStart : _emailSubjectEnd ;
+};
 
 void AlertSmtpAgent::configure()
 {
@@ -148,19 +148,19 @@ void
     LOG_START;
     //pid_t tmptmp = getpid();
     log_debug("alert state is %i",it->second.state() );
-    if( emailAddressTo().empty() || _smtpServer.empty() ) {
+    if( emailAddressTo().empty() || smtpServer().empty() ) {
         log_error("Mail system is not configured!");
         return;
     }
     if ( ( ! it->second.informedStart() ) && ( it->second.state() == ALERT_STATE_ONGOING_ALERT ) )
     {
         log_debug ("Want to notify, that event started");
-        shared::Smtp smtp{ _smtpServer, emailAddressFrom() };
+        shared::Smtp smtp{ smtpServer(), emailAddressFrom() };
         try {
             smtp.sendmail(
                 emailAddressTo(),
-                replaceTokens( _emailSubjectStart, it ),
-                replaceTokens( _emailBodyStart, it ));
+                replaceTokens( emailSubject( ALERT_STATE_ONGOING_ALERT ), it ),
+                replaceTokens( emailBody( ALERT_STATE_ONGOING_ALERT ), it ));
             log_error("blue mail sended");
             it->second.informStart();
         }
@@ -173,12 +173,12 @@ void
     if ( ( it->second.till() != 0 )  && ( ! it->second.informedEnd() ) && ( it->second.state() == ALERT_STATE_NO_ALERT ) )
     {
         log_debug ("What to notify, that event ended");
-        shared::Smtp smtp{ _smtpServer, emailAddressFrom() };
+        shared::Smtp smtp{ smtpServer(), emailAddressFrom() };
         try {
             smtp.sendmail(
                 emailAddressTo(),
-                replaceTokens( _emailSubjectEnd, it ),
-                replaceTokens( _emailBodyEnd, it ));
+                replaceTokens( emailSubject( ALERT_STATE_NO_ALERT ), it ),
+                replaceTokens( emailBody( ALERT_STATE_NO_ALERT ), it ));
             log_error("red mail sended");
             it->second.informEnd();
         }

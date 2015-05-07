@@ -56,13 +56,14 @@ protected:
     // represents an information about alerts retrieved from DB
     std::map <std::string, AlertBasic> alertList;
     
-    std::vector<std::string> emailAddressTo(void);
-    std::string emailAddressFrom(void);
+    std::vector<std::string> emailAddressTo(void) { return _emailTo; };
+    std::string emailAddressFrom(void) { return _emailFrom; };
+    std::string emailBody( alert_state_t state );
+    std::string emailSubject( alert_state_t state );
+    std::string smtpServer() { return _smtpServer; }
     void notify (std::map <std::string, AlertBasic>::iterator it);
     std::string replaceTokens(const std::string &text, const std::string &pattern, const std::string &replacement) const;
     std::string replaceTokens( const std::string text, alertIterator_t it ) const;
-
-
 };
 
 #endif // SRC_AGENTS_ALERT_SMTP_AGENT_H__
