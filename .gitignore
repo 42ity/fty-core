@@ -100,6 +100,7 @@ agent-inventory
 db-ng
 agent-nut
 agent-alert
+agent-alert-smtp
 server-agent
 agent-cm
 bios-email
@@ -132,6 +133,8 @@ tools/db-init
 
 !tools/bios-agent-alert.service.in
 bios-agent-alert.service
+!tools/bios-agent-alert-smtp.service.in
+bios-agent-alert-smtp.service
 !tools/bios-agent-cm.service.in
 bios-agent-cm.service
 !tools/bios-agent-inventory.service.in
