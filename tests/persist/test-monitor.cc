@@ -22,7 +22,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
 
     byte        errno1 = common_msg_errorno (fail);
     const char* errmsg = common_msg_errmsg  (fail);
-    _scoped_zhash_t *   erraux = common_msg_aux  (fail);
+    zhash_t *   erraux = common_msg_aux  (fail);
     REQUIRE ( errnonew == errno1 );
     REQUIRE ( erraux   == NULL );
     REQUIRE ( streq(errmsg, "")  );
@@ -68,6 +68,7 @@ TEST_CASE("Common messages: _generate_db_fail","[common][generate][db_fail][db]"
     common_msg_destroy (&fail);
     REQUIRE ( fail == NULL );
 }
+
 
 TEST_CASE("Common messages: _generate_ok","[common][generate][db_ok][db]")
 {
@@ -326,3 +327,4 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client][db]")
     REQUIRE ( common_msg_id (response) == COMMON_MSG_DB_OK );
     common_msg_destroy (&response);
 }
+

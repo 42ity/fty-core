@@ -24,7 +24,7 @@ TEST_CASE("Common messages: generate_client_info","[common][generate][client_inf
 //    common_msg_print (msgclient_info);
     REQUIRE ( client_id == common_msg_client_id (msgclient_info) );
     REQUIRE ( device_id == common_msg_device_id (msgclient_info) );
-    _scoped_zchunk_t* info = common_msg_info (msgclient_info);
+    zchunk_t* info = common_msg_info (msgclient_info);
     REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
     REQUIRE ( zchunk_size(info) == datasize );
     REQUIRE ( mytime == common_msg_date (msgclient_info) );
@@ -62,7 +62,7 @@ TEST_CASE("Common messages: generate_return_client_info","[common][generate][ret
 
     REQUIRE ( client_id == common_msg_client_id (newclient_info) );
     REQUIRE ( device_id == common_msg_device_id (newclient_info) );
-    _scoped_zchunk_t* info = common_msg_info (newclient_info);
+    zchunk_t* info = common_msg_info (newclient_info);
     REQUIRE ( memcmp (zchunk_data (info), data, datasize) == 0);
     REQUIRE ( zchunk_size(info) == datasize );
     REQUIRE ( mytime == common_msg_date (newclient_info) );

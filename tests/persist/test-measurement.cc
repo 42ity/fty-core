@@ -1,6 +1,7 @@
 #include <catch.hpp>
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
+#include <tntdb/value.h>
 
 #include <vector>
 #include <cxxtools/serializationinfo.h>
@@ -76,7 +77,12 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     REQUIRE(ret.item.size() == 3);
 
     // 5.) DELETE NON EXISTING
-    ret2 = delete_from_measurement_by_id(conn, 42);
+    // First find highest id
+    uint64_t highest_measurements_id = 0;
+    conn.selectValue("select id from t_bios_measurement ORDER BY id DESC LIMIT 1").get (highest_measurements_id); 
+    CHECK (highest_measurements_id != 0 );  
+        
+    ret2 = delete_from_measurement_by_id(conn, highest_measurements_id + 1);
     REQUIRE(ret2.status == 1);
     REQUIRE(ret2.affected_rows == 0);
     
