@@ -65,8 +65,8 @@ void AlertSmtpAgent::configure()
 
     env = getenv("BIOS_SMTP_SERVER");
     _smtpServer = env ? env : "";
-    log_debug("SMTP server is %s", _smtpServer.c_str() );
-    log_debug("sub start is %s", _emailSubjectStart.c_str() );
+    if( _smtpServer.empty() ) log_error("SMTP server is not specified");
+    if( _emailTo.empty() ) log_error("Mail recipient is not specified");
 }
 
 std::string AlertSmtpAgent::replaceTokens( const std::string &text, const std::string &pattern, const std::string &replacement) const
