@@ -28,8 +28,7 @@ TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][cru
     // before first insert
     auto reply_select = select_alert_all_opened (conn);
     REQUIRE ( reply_select.status == 1 );
-    REQUIRE ( reply_select.item.size() >= 0 );
-    size_type           oldsize = reply_select.item.size() ;
+    auto                oldsize = reply_select.item.size() ;
 
     // first insert
     auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
@@ -41,7 +40,7 @@ TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][cru
     // check select
     reply_select = select_alert_all_opened (conn);
     REQUIRE ( reply_select.status == 1 );
-    REQUIRE ( reply_select.item.size() == oldsize + 1 );
+    REQUIRE ( reply_select.item.size() == (oldsize + 1) );
     REQUIRE ( reply_select.item.at(0).id == rowid );
     REQUIRE ( reply_select.item.at(0).rule_name == std::string(rule_name) );
     REQUIRE ( reply_select.item.at(0).alert_state == alert_state );
