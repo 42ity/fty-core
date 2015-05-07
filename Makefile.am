@@ -1145,9 +1145,8 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
-	echo "  SED      $@"
-	rm -f $@
-	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	@echo "  SED      $@"
+	rm -f $@; $(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS), \
