@@ -146,7 +146,7 @@ stop() {
     done
     sleep 1
     for d in $DAEMONS ; do
-       ( pidof $d lt-$d >/dev/null 2>&1 && killall -9 $d lt-$d 2>/dev/null ) || true
+       ( pidof $d lt-$d >/dev/null 2>&1 && killall -KILL $d lt-$d 2>/dev/null ) || true
     done
     sleep 1
     # Test successful kills
