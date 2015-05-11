@@ -161,7 +161,7 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-trap "summarizeResults" 0 1 2 3 15
+trap "summarizeResults" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 for i in $POSITIVE; do
     for NAME in *$i*; do

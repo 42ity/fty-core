@@ -119,7 +119,7 @@ fill_database(){
 start_bios_daemons(){
     # Kill existing process
     for d in db-ng agent-nut netmon driver-nmap ; do
-        killall -9 $d lt-$d || true
+        killall -KILL $d lt-$d || true
     done
     # start db-ng
     for d in db-ng agent-nut netmon driver-nmap ; do
@@ -142,7 +142,7 @@ start_bios_daemons(){
 # start tntnet in order to make REST API request
 start_tntnet(){
     # Kill existing process
-    killall -9 tntnet || true
+    killall -KILL tntnet || true
     # Mod xml file and start tntnet
     if [ -f "$CHECKOUTDIR/src/web/$XML_TNTNET" ] ; then
         cp "$CHECKOUTDIR/src/web/$XML_TNTNET" "$SCRIPTDIR/$XML_TNTNET"
@@ -161,9 +161,9 @@ start_tntnet(){
 # stop all processes launched in the script
 stop_processes(){
     for d in db-ng agent-nut netmon driver-nmap ; do
-        killall -9 $d lt-$d || true
+        killall -KILL $d lt-$d || true
     done
-    killall -9 tntnet || true
+    killall -KILL tntnet || true
 }
 
 for d in mysql saslauthd malamute ; do
