@@ -1,26 +1,36 @@
 <%pre>
-#include "cleanup.h"
 #include <czmq.h>
 #include <cxxtools/split.h>
+#include <stdexcept>
 
 #include "asset_msg.h"
 #include "assetcrud.h"
 #include "data.h"
 #include "calc_power.h"
 #include "dbpath.h"
+#include "cleanup.h"
 
 float total_datacenter_power(a_elmnt_id_t rack_element_id) {
-    
-    _scoped_zmsg_t *msg = calc_total_dc_power(url.c_str(),rack_element_id);
-    if( ! msg ) { throw "no message"; }
+    _scoped_zmsg_t *msg = NULL;
+    msg = calc_total_dc_power(url.c_str(),rack_element_id);
+    if( ! msg ) {
+        throw std::runtime_error ("no message");
+    }
     if( ! is_compute_msg(msg) ) {
         zmsg_destroy(&msg);
-        throw "invalid message type";
+        throw std::runtime_error ("invalid message type");
     }
     _scoped_compute_msg_t* res_compute = compute_msg_decode (&msg);
+    if (!res_compute) {        
+        throw std::runtime_error ("compute_msg_decode() failed.");
+    }
+
     zmsg_destroy(&msg);
     compute_msg_print (res_compute);
     _scoped_zhash_t* results = compute_msg_get_results (res_compute);
+    if (!results) {                
+        throw std::runtime_error ("compute_msg_get_results() failed.");
+    }
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
@@ -184,8 +194,8 @@ try {
     json << "\t]\n}\n";
 } catch ( const std::exception& e ) {
 </%cpp>
-<h1>internal server error</h1>
-<$ e.what() $>
+    <h1>internal server error</h1>
+    <$ e.what() $>
 <%cpp>      
       return HTTP_INTERNAL_SERVER_ERROR;   
 }

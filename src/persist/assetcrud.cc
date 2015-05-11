@@ -419,9 +419,13 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
     }
            
     _scoped_zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
-    if ( extAttributes == NULL )    // internal error in database
+    if ( extAttributes == NULL ) {    // internal error in database
+        log_error ("extAttributes is NULL after call from select_asset_element_attributes");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL,
           "internal error during selecting ext attributes occured", NULL);
+    } else {
+        log_info ("extAttributes not NULL");
+    }
 
     zmsg_t* msgelement = asset_msg_encode_element
             (name.c_str(), parent_id, parent_type_id, 
@@ -429,6 +433,7 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
     assert ( msgelement );
 
     zhash_destroy (&extAttributes);
+
     log_info("normal %s ","end");
     return msgelement;
 }

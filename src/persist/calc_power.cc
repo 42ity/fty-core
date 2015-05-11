@@ -710,7 +710,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     assert ( zmsg );
      
     _scoped_zmsg_t* pop = NULL;
-    _scoped_zframe_t* fr;
+    // _scoped_zframe_t* fr;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
         _scoped_asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
@@ -720,7 +720,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
         // process rooms
         if ( parent_type_id == asset_type::DATACENTER )
         {
-            fr = asset_msg_rooms (item);
+            zframe_t *fr = asset_msg_rooms (item);
             auto result1 = find_racks (fr, asset_msg_type(item));
             result.insert (result1.begin(), result1.end());
         }
@@ -729,7 +729,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
         if ( ( parent_type_id == asset_type::DATACENTER ) ||
              ( parent_type_id == asset_type::ROOM ) )
         {
-            fr = asset_msg_rows (item);
+            zframe_t *fr = asset_msg_rows (item);
             auto result1 = find_racks (fr, asset_msg_type(item));
             result.insert (result1.begin(), result1.end());
         }
@@ -739,7 +739,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
              ( parent_type_id == asset_type::ROOM ) ||
              ( parent_type_id == asset_type::ROW ) )
         {
-            fr = asset_msg_racks (item);
+            zframe_t *fr = asset_msg_racks (item);
             auto result1 = find_racks (fr, asset_msg_type(item)); 
             result.insert (result1.begin(), result1.end());
         }
@@ -802,23 +802,23 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     // find all ids of rack in topology
     // process rooms
     log_debug("start look racks in rooms");
-    _scoped_zframe_t* fr = asset_msg_rooms (item);
+    zframe_t* fr = asset_msg_rooms (item);
     std::set <a_elmnt_id_t > rack_ids = find_racks (fr, asset_msg_type(item));
     log_debug("end look racks in rooms");
     log_debug("number of racks found: %zu", rack_ids.size());
         
     // process rows
     log_debug("start look racks in rows");
-    fr = asset_msg_rows (item);
-    auto tmp = find_racks (fr, asset_msg_type(item));
+    zframe_t *fr2 = asset_msg_rows (item);
+    auto tmp = find_racks (fr2, asset_msg_type(item));
     rack_ids.insert(tmp.begin(), tmp.end());
     log_debug("end look racks in rows");
     log_debug("total number of racks found: %zu", rack_ids.size());
         
     // process racks
     log_debug("strat look racks");
-    fr = asset_msg_racks (item);
-    auto tmp1 = find_racks (fr, asset_msg_type(item)); 
+    zframe_t *fr3 = asset_msg_racks (item);
+    auto tmp1 = find_racks (fr3, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
     log_debug("end look racks");
     log_debug("total number of racks found: %zu", rack_ids.size());

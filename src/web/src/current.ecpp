@@ -1,5 +1,4 @@
 <%pre>
-#include "cleanup.h"
 #include <czmq.h>
 #include <cxxtools/split.h>
 #include <errno.h>
@@ -12,6 +11,8 @@
 #include "monitor.h"
 #include "data.h"
 #include "upsstatus.h"
+#include "cleanup.h"
+
 </%pre>
 <%thread scope="global">
 measures_manager mes_mgr;
@@ -87,7 +88,7 @@ std::string dev;
             json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
             json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
 
-            _scoped_zlist_t *list = common_msg_measurements(dta);
+            zlist_t *list = common_msg_measurements(dta);
 
             for (void *it = zlist_first(list); it != nullptr; it = zlist_next(list)) {
                std::vector<std::string> measurements;

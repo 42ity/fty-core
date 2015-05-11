@@ -59,7 +59,7 @@ zmsg_t *process_assettopology (const char *database_url,
     assert (database_url);
     zmsg_t *return_msg = NULL;
     if (*message_p) {
-        _scoped_asset_msg_t *message = *message_p;
+        asset_msg_t *message = *message_p;
         assert (message);
 //        asset_msg_print(message);
         int id = asset_msg_id (message);

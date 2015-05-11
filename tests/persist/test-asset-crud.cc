@@ -433,7 +433,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE ( asset_msg_location (reply_select_decode) == parent_id );
     REQUIRE ( !strcmp(asset_msg_name (reply_select_decode), name) );
     REQUIRE ( asset_msg_type (reply_select_decode) == element_type_id );
-    _scoped_zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
+    zhash_t *reply_ext_attributes = asset_msg_ext (reply_select_decode);
     REQUIRE ( zhash_size (reply_ext_attributes) == expected_ext_attributes.size() );
     
     std::set<std::pair<std::string, std::string>> real_ext_attributes;
@@ -477,7 +477,6 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
 
     log_close();
 }
-
 
 TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlockated][room][crud_test.sql]")
 {
@@ -921,3 +920,4 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     
     log_close();
 }
+
