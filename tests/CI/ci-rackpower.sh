@@ -40,20 +40,20 @@ kill_daemons() {
     set +e
     if [ -n "$WEBTESTPID" -a -d "/proc/$WEBTESTPID" ]; then
         logmsg_info "Killing make web-test PID $WEBTESTPID to exit"
-        kill -2 "$WEBTESTPID"
+        kill -INT "$WEBTESTPID"
     fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
         logmsg_info "Killing db-ng PID $DBNGPID to exit"
-        kill -2 "$DBNGPID"
+        kill -INT "$DBNGPID"
     fi
 
-    killall -2 tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
-    killall    tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall -INT tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall      tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
 
     ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
         logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
-        { killall -9 tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
+        { killall -KILL tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
 
     return 0
 }
@@ -73,8 +73,8 @@ ${BUILDSUBDIR}/db-ng &
 DBNGPID=$!
 
 # Ensure that no processes remain dangling when test completes
-trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' 0
-trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' 1 2 3 15
+trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' EXIT
+trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' SIGHUP SIGINT SIGQUIT SIGTERM
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"

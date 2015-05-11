@@ -928,14 +928,15 @@ agent_alert_smtp_LDADD = \
 			libbiosapi.la \
 			libpriv-log.la \
 			libpriv-email.la \
-			libpriv-subprocess.la
+			libpriv-subprocess.la \
+			libpriv-defs.la
 
 agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 		    -I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
-			
+
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
@@ -1149,7 +1150,8 @@ edit = sed \
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
-                        bios-agent-alert.service bios-driver-nmap.service
+                        bios-agent-alert.service bios-driver-nmap.service \
+                        bios-agent-alert-smtp.service
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
