@@ -229,8 +229,14 @@ sut_run() {
 ### the local and remote tests alike.
 
 do_select() {
-    logmsg_info "do_select(): $1;" >&2
-    DB_OUT="$(echo "$1;" | sed 's,;*$,;,g' | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+    ### Note1: while it is technically possible to pass several SQL sentences
+    ### separated by semicolons into this function's parameters, the results
+    ### will be garbled because we expect only one request (one header line,
+    ### followed by results, as our tail is chopped below).
+    ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
+    ### semicolons does not matter for such non-interactive mysql client use.
+    logmsg_info "do_select(): $1 ;" >&2
+    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
     DB_RES=$?
     echo "$DB_OUT" | tail -n +2
     [ $? = 0 -a "$DB_RES" = 0 ]
