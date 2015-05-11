@@ -41,7 +41,7 @@ Smtp::Smtp(
 }
 
 void Smtp::sendmail(
-        const std::string& to,
+        const std::vector<std::string> &to,
         const std::string& subject,
         const std::string& body)
 {
@@ -51,9 +51,11 @@ void Smtp::sendmail(
     sbuf << _from;
     sbuf << "\n";
 
-    sbuf << "To: ";
-    sbuf << to;
-    sbuf << "\n";
+    for( auto &it : to ) { 
+        sbuf << "To: ";
+        sbuf << it;
+        sbuf << "\n";
+    }
 
     //NOTE: setLocale(LC_DATE, "C") should be called in outer scope
     sbuf << "Date: ";
@@ -73,6 +75,16 @@ void Smtp::sendmail(
     sbuf << "\n";
 
     return sendmail(sbuf.str());
+}
+
+void Smtp::sendmail(
+        const std::string& to,
+        const std::string& subject,
+        const std::string& body)
+{
+    std::vector<std::string> recip;
+    recip.push_back(to);
+    return sendmail(recip, subject, body);
 }
 
 void Smtp::sendmail(

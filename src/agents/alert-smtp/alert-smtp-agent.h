@@ -28,12 +28,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bios_agent++.h"
 #include "alert-basic.h"
 
+typedef std::map <std::string, AlertBasic>::iterator alertIterator_t;
+
 class AlertSmtpAgent : public BIOSAgent {
 public:
-    explicit AlertSmtpAgent( const char *agentName ) :BIOSAgent( agentName ) {  };
+    explicit AlertSmtpAgent( const char *agentName ) :BIOSAgent( agentName ) { configure(); };
     explicit AlertSmtpAgent( const std::string &agentName ) :BIOSAgent( agentName ) { };
     
     void onSend(ymsg_t **message);
+    void configure();
     
     std::map <std::string, AlertBasic>::iterator addAlertClose(AlertBasic a);
     std::map <std::string, AlertBasic>::iterator addAlertNew(AlertBasic a);
@@ -41,19 +44,27 @@ private:
     // TODO: should be moved somewhere????
     static const int ALERT_START=0x01;
     static const int ALERT_END  =0x02;
-    static const std::string _emailTo;
-    static const std::string _emailFrom;
+    std::vector<std::string> _emailTo;
+    std::string _emailFrom;
+    std::string _emailBodyStart;
+    std::string _emailSubjectStart;
+    std::string _emailBodyEnd;
+    std::string _emailSubjectEnd;
+    std::string _smtpServer;
 
 protected:
-        // represents an information about alerts retrieved from DB
+    // represents an information about alerts retrieved from DB
     std::map <std::string, AlertBasic> alertList;
     
-    std::string emailAddressTo(void);
-    std::string emailAddressFrom(void);
+    std::vector<std::string> emailAddressTo(void) { return _emailTo; };
+    std::string emailAddressFrom(void) { return _emailFrom; };
+    std::string emailBody( alert_state_t state );
+    std::string emailSubject( alert_state_t state );
+    std::string smtpServer() { return _smtpServer; }
     void notify (std::map <std::string, AlertBasic>::iterator it);
-
-
+    std::string replaceTokens(const std::string &text, const std::string &pattern, const std::string &replacement) const;
+    std::string replaceTokens( const std::string text, alertIterator_t it ) const;
 };
 
-#endif // SRC_AGENTS_NUT_NUT_AGENT_H__
+#endif // SRC_AGENTS_ALERT_SMTP_AGENT_H__
 
