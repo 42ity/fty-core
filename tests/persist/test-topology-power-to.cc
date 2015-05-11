@@ -83,7 +83,7 @@ TEST_CASE("Power topology to #3","[db][topology][power][power_topology.sql][to][
     assert ( cretTopology );
     
     // check the devices, should be one
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -138,7 +138,7 @@ TEST_CASE("Power topology to #4","[db][topology][power][power_topology.sql][to][
     assert ( cretTopology );
     
     // check the devices, should be one
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -231,7 +231,7 @@ TEST_CASE("Power topology to #5","[db][topology][power][power_topology.sql][to][
     zlist_destroy (&powers);
 
     // check the devices, should be three
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -327,7 +327,7 @@ TEST_CASE("Power topology to #6","[db][topology][power_topology.sql][power][to][
     zlist_destroy (&powers);
     
     // check the devices, should be fsix devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -413,7 +413,7 @@ TEST_CASE("Power topology to #7","[db][topology][power_topology.sql][power][to][
     zlist_destroy (&powers);
 
     // check the devices, should be one device
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -502,7 +502,7 @@ TEST_CASE("Power topology to #8","[db][topology][power_topology.sql][power][to][
     zlist_destroy (&powers);
 
     // check the devices, should be three devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -579,7 +579,7 @@ TEST_CASE("Power topology to #9","[db][topology][power_topology.sql][power][to][
 //    asset_msg_print (cretTopology);
 
     // check the devices, should be nine device
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -687,7 +687,7 @@ TEST_CASE("Power topology to #10","[db][topology][power_topology.sql][power][to]
     zlist_destroy (&powers);
 
     // check the devices, should be two devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -775,7 +775,7 @@ TEST_CASE("Power topology to #11","[db][topology][power][power_topology.sql][to]
     zlist_destroy (&powers);
 
     // check the devices, should be two
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     

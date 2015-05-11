@@ -40,7 +40,7 @@ TEST_CASE("Power topology group #1","[db][topology][power][group][power_topology
     zlist_destroy (&powers);
 
     // check the devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     

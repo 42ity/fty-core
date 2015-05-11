@@ -1742,18 +1742,19 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
     std::set< device_info_t > resultdevices;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        tntdb::Statement st = conn.prepareCached(
+        tntdb::Statement st = conn.prepare(
             " SELECT"
             "   v.id_asset_element, v.name,"
             "   v.type_name, v.id_asset_device_type" 
             " FROM"
             "   v_bios_asset_element_super_parent v"
-            " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
-            "                   v.id_parent4)"
+            " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3, v.id_parent4)"
         );
         // can return more than one row
-        tntdb::Result result = st.set("dcid", element_id).
-                                  select();
+        log_debug ("element id %u", element_id);
+        tntdb::Result result = st.set("dcid", element_id).select();
+//        tntdb::Result result = st.select();
+        log_debug ("dva");
         log_debug("rows selected %u", result.size());
         
         for ( auto &row: result )

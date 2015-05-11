@@ -74,7 +74,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     zlist_destroy (&powers);
 
     // check the devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
@@ -131,7 +131,7 @@ TEST_CASE("Power topology datacenter #2","[db][topology][power][datacenter][powe
     REQUIRE ( zlist_size(powers) == 0 );
     
     // check the devices
-    _scoped_zframe_t* frame = asset_msg_devices (cretTopology);
+    zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
     
