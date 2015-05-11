@@ -61,7 +61,7 @@ trap_exit() {
     exit $RESULT
 }
 
-trap "trap_exit" 0 1 2 3 15
+trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \

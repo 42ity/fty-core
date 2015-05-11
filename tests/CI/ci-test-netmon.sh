@@ -47,7 +47,7 @@ function cleanup {
     set +e
     killall malamute
     killall dshell lt-dshell
-    killall -9 netmon lt-netmon
+    killall -KILL netmon lt-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
 }
 
@@ -57,7 +57,7 @@ if [ -f "$LOCKFILE" ]; then
 fi
 
 echo $$ > "$LOCKFILE"
-trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 
 ### Section: setting necessary variables

@@ -131,7 +131,7 @@ fi
     # *** lock the script with creating $LOCKFILE ***
 echo $$ > "$LOCKFILE"
     # *** call cleanup() when some of te signal appears *** 
-trap cleanup EXIT SIGINT SIGQUIT SIGTERM
+trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
