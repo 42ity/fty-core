@@ -12,7 +12,7 @@ Type=simple
 # - BIOS_EMAIL_BODY_START body of the alert email [Alert ${rulename} started.]
 # - BIOS_EMAIL_SUBJECT_START subject of the alert email [Alert P${priority} ${rulename} is active!]
 # - BIOS_EMAIL_BODY_END body of the end-alert email [Alert ${rulename} ended.]
-# - BIOS_EMAIL_SUBJECT_END subject of the end-alert email [Alert P${priority} ${rulename} is ended.]
+# - BIOS_EMAIL_SUBJECT_END subject of the end-alert email [Alert P${priority} ${rulename} ended.]
 # - BIOS_SMTP_SERVER SMTP server for relaying emails [no default]
 #
 # You can use ${rulename} and ${priority} variables in texts (case sensitive, curly brackets are mandatory)
