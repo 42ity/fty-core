@@ -19,7 +19,8 @@
 #
 # Description: starts or stops the $BIOS daemons installed in $HOME
 
-DAEMONS="db-ng agent-nut driver-nmap netmon"
+# Names of daemons to (build and) start up for the test
+DAEMONS="db-ng agent-nut agent-cm agent-alert agent-alert-smtp driver-nmap netmon"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -185,7 +186,7 @@ update_compiled() {
         ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
     fi
     ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
-        web-test-deps db-ng agent-nut driver-nmap netmon
+        web-test-deps $DAEMONS
 }
 
 start() {

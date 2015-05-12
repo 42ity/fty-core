@@ -41,7 +41,7 @@ BASE_PATH=`realpath ${BASE_PATH}/../`
 ### System-provided daemons (available as systemd units)
 DAEMONS_OS_SYSTEMD="malamute nut-client nut-driver nut-monitor mysql saslauthd"
 ### $BIOS-provided daemons (available as systemd units)
-DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-agent-nut bios-server-agent bios-agent-alert bios-agent-alert-smtp"
+DAEMONS_OUR_SYSTEMD="tntnet@bios bios-agent-inventory bios-db bios-driver-netmon bios-agent-nut bios-server-agent bios-agent-alert bios-agent-alert-smtp bios-agent-cm"
 
 # Simple check for whether sudo is needed for high-privilege tasks
 # We assume here that the non-privileged user running this command
@@ -347,7 +347,7 @@ stop_unit_sysd() {
         return $?
     fi
 
-    for unit in "${DAEMONS_OUR_SYSTEMD}"; do
+    for unit in ${DAEMONS_OUR_SYSTEMD}; do
         stop_unit_sysd "${unit}" || :
     done
 }
@@ -358,7 +358,7 @@ stop_unit_user() {
         return $?
     fi
 
-    for name in "${DAEMONS_OUR_SYSTEMD}"; do
+    for name in ${DAEMONS_OUR_SYSTEMD}; do
         stop_daemon "${name}" || :
     done
 }
@@ -371,7 +371,7 @@ do_start() {
         run=run_unit_user
     fi
 
-    for i in "${@}"; do
+    for i in "$@"; do
         ${run} "${i}"
     done
 }
@@ -385,11 +385,11 @@ do_stop() {
     fi
 
     if [ -n "${1}" ]; then
-        for i in "${@}"; do
+        for i in "$@"; do
             ${stop} "${i}"
         done
     else
-        for i in "${DAEMONS}"; do
+        for i in ${DAEMONS}; do
             ${stop} "${i}"
         done
     fi
@@ -404,17 +404,17 @@ main() {
     case "${1}" in
         start)
             shift 1
-            do_start "${@}"
+            do_start "$@"
             ;;
         stop)
             shift 1
-            do_stop "${@}"
+            do_stop "$@"
             ;;
         *)
             logmsg_info "Unknown option '${1}', defaulting to start"
-            do_start "${@}"
+            do_start "$@"
             ;;
     esac
 }
 
-main "${@}"
+main "$@"
