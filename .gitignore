@@ -1,5 +1,6 @@
 *.c.bak
 *.cc.bak
+*.ecpp.bak
 .*.swp
 .*.swo
 *.bnf
