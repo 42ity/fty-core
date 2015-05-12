@@ -16,8 +16,10 @@ Type=simple
 # - BIOS_SMTP_SERVER SMTP server for relaying emails [no default]
 #
 # You can use ${rulename} and ${priority} variables in texts (case sensitive, curly brackets are mandatory)
+# Put those variables into config file in /etc/sysconfig
 #
-Environment=BIOS_EMAIL_TO='' BIOS_SMTP_SERVER='mail.etn.com'
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios
 ExecStart=@libexecdir@/bios/agent-alert-smtp
 
 [Install]
