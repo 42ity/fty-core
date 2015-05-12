@@ -1155,9 +1155,8 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
-	echo "  SED      $@"
-	rm -f $@
-	$(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	@echo "  SED      $@"
+	rm -f $@; $(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS), \
@@ -1625,7 +1624,24 @@ all-buildproducts: all-local all sdk-tests web-test-deps \
 #----------------------------------------------------------------------
 
 # Run compile/link tests defined in this Makefile
-check-local: check-dlls web-link-test test-sdk
+# Note that check-gitignore should be the last target
+check-local: check-dlls web-link-test test-sdk \
+        check-gitignore
+
+# If git repo details are not available, or git program does not exist,
+# or if everything is properly GitIgnored - then succeed
+# If some not-gitignored files are found, then fail
+check-gitignore: all-buildproducts
+	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" = xyes ]; then \
+	    echo "SKIP: $@ (by explicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
+	  else \
+	    if which git >/dev/null 2>&1 ; then \
+	        git status -s | egrep '^\?\? ' && \
+	        echo "FAIL: $@" && exit 1; \
+	        echo "PASS: $@"; exit 0 ; \
+	    fi ; \
+	    echo "SKIP: $@ (no git)"; exit 0 ; \
+	  fi )
 
 # Makes sense only for -shared builds
 check-dlls: check-dll-libs check-dll-progs
@@ -1879,4 +1895,12 @@ $(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git
 	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
 	  touch -r "$<" "$@"; } || true
 	@sync || true
+
+##########################################################################
+### The following targets should enforce sequentially processed builds ###
+##########################################################################
+
+.NOTPARALLEL:
+
+MAKEFLAGS := -j 1
 
