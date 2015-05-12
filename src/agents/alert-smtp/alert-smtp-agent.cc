@@ -220,8 +220,14 @@ void AlertSmtpAgent::onSend(ymsg_t **message) {
         {
             log_debug ("ALERT_STATE_NO_ALERT");
             AlertBasic a (ruleName, ALERT_STATE_NO_ALERT, devices, description, since, 0, priority);
-            auto it = addAlertClose(a);
-            notify (it);
+            if( alertList.find(ruleName) == alertList.end() ) {
+                // such alert doesn't exists and is ok => don't notify
+                auto it = addAlertClose(a);
+                it->second.informEnd();
+            } else {
+                auto it = addAlertClose(a);
+                notify (it);
+            }
         }
         if ( state == ALERT_STATE_ONGOING_ALERT )
         {  
@@ -247,7 +253,7 @@ int main(int argc, char **argv){
     log_set_level(LOG_DEBUG);
     log_info ("Alert Smtp Agent started");
     AlertSmtpAgent agent("alert-smtp");
-    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^alert\\..*") ) {
+    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^alert\\.") ) {
         result = agent.run();
     }
     log_info ("Alert Smpt Agent exited with code %i\n", result);
