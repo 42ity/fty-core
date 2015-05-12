@@ -577,7 +577,7 @@ zframe_t* select_childs(
                 _scoped_zmsg_t* el;
                 if (    ( child_type_id == asset_type::GROUP ) && 
                         ( is_recursive ) )
-                    el = grp;   // because of the special group processing
+                    el = zmsg_dup (grp);   // because of the special group processing
                 else 
                     el = asset_msg_encode_return_location_from 
                                 (id, id_type, name.c_str(), 
@@ -896,7 +896,7 @@ edge_lf print_frame_to_edges (zframe_t* frame, a_elmnt_id_t parent_id,
                     parent_id, type, name, dtype_name) ); 
         log_debug ("parent_id = %" PRIu32, parent_id );
         
-        _scoped_zframe_t* fr = asset_msg_dcs (item);
+        zframe_t* fr = asset_msg_dcs (item);
         result1 = print_frame_to_edges (fr, asset_msg_element_id (item), 
                                             asset_msg_type(item), 
                                             asset_msg_name(item),
@@ -1742,19 +1742,17 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
     std::set< device_info_t > resultdevices;
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        tntdb::Statement st = conn.prepare(
+        tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id_asset_element, v.name,"
             "   v.type_name, v.id_asset_device_type" 
             " FROM"
             "   v_bios_asset_element_super_parent v"
-            " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3, v.id_parent4)"
+            " WHERE ':dcid' IN (v.id_parent1, v.id_parent2 ,v.id_parent3, v.id_parent4)"
         );
         // can return more than one row
         log_debug ("element id %u", element_id);
         tntdb::Result result = st.set("dcid", element_id).select();
-//        tntdb::Result result = st.select();
-        log_debug ("dva");
         log_debug("rows selected %u", result.size());
         
         for ( auto &row: result )

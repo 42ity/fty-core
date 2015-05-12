@@ -56,7 +56,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     _scoped_zlist_t* powers = asset_msg_get_powers (cretTopology);
     REQUIRE ( powers );
 
-    _scoped_char* a = NULL;
+    char* a = NULL;
     int n = zlist_size(powers);
     for ( int i = 1; i <= n; i++ )
     {
@@ -82,15 +82,15 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
 
-    _scoped_zmsg_t* pop = NULL;
     n = sdevices.size();
     for (int i = 1 ; i <= n ; i ++ )
-    {   
+    {
+        _scoped_zmsg_t* pop = NULL;
         pop = zmsg_popmsg (zmsg);
-        REQUIRE ( pop != NULL );
+        REQUIRE (pop);
     
         _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
-        assert ( item );
+        assert (item);
 //    asset_msg_print (item);
         auto it = sdevices.find ( std::make_tuple ( asset_msg_element_id (item),
                                                     asset_msg_name (item),
@@ -101,7 +101,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     }
     
     // there is no more devices
-    pop = zmsg_popmsg (zmsg);
+    _scoped_zmsg_t *pop = zmsg_popmsg (zmsg);
     REQUIRE ( pop == NULL );
     REQUIRE ( sdevices.empty() );
     

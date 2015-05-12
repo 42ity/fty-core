@@ -56,11 +56,11 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
         return NULL;
     }
     _scoped_zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
-    zmsg_t *ret = persist::process_message(&get_element);
+    _scoped_zmsg_t *ret = persist::process_message(&get_element);
     zmsg_destroy(&get_element);
     assert(ret != NULL);
     if (is_common_msg(ret) ) {
-        return ret;          // it can be only COMMON_MSG_FAIL
+        return zmsg_dup (ret);          // it can be only COMMON_MSG_FAIL
     }
     // Return directly element message which is packed inside return element
     _scoped_asset_msg_t* msg = asset_msg_decode(&ret);
@@ -69,9 +69,9 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
         return NULL;
     }
 
-    ret = asset_msg_get_msg(msg);
+    zmsg_t *return_message = asset_msg_get_msg(msg);
     asset_msg_destroy(&msg);
-    return ret;
+    return return_message;
 }
 
 zmsg_t *asset_manager::get_items(std::string type) {

@@ -350,7 +350,6 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
-
         _scoped_zmsg_t *nnmsg = asset_msg_encode (element);
         assert ( nnmsg );
     
@@ -417,7 +416,7 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     e.what(), NULL);
     }
-           
+
     _scoped_zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
     if ( extAttributes == NULL ) {    // internal error in database
         log_error ("extAttributes is NULL after call from select_asset_element_attributes");
@@ -494,7 +493,7 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
     try{
         
         tntdb::Connection conn = tntdb::connectCached(url);
-        
+       
         _scoped_zmsg_t* msgelement = 
             select_asset_element (conn, element_id, element_type_id);
 
