@@ -176,7 +176,12 @@ int8_t access_auth_level;
 
           // A glob usable by shell "case" and "egrep":
           std::string interesting_basenames;
-          interesting_basenames = "mysqld|upsd|saslauthd|tntnet|netmon|driver-nmap";
+          interesting_basenames = "mysqld|upsd|saslauthd|tntnet";
+          interesting_basenames += "|db-ng|agent-cm";
+          interesting_basenames += "|netmon|driver-nmap|agent-nut";
+          interesting_basenames += "|agent-alert|agent-alert-smtp";
+          interesting_basenames += "|agent-inventory|server-agent";
+          //interesting_basenames += "|";
           //testing-hack// interesting_basenames = "abc";
           //testing-hack// interesting_basenames = "netm*|upsd*|my*";
 
