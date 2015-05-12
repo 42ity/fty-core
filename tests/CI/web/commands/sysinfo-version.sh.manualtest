@@ -4,7 +4,7 @@
 
 ###############################################################
 # Check getting server system info (authorized only?)
-test_it "sysinfo_get_auth=2_raw"
+test_it "sysinfo_get_auth=2_raw__version_procstatus"
 curlfail_push "warn" ""
 SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
 RES=$?
@@ -20,5 +20,3 @@ if [ $RES = 0 ]; then
     echo "Got HTTP-4xx error" && RES=123
 fi >&2
 print_result $RES
-
-
