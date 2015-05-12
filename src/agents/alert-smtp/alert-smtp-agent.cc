@@ -61,7 +61,7 @@ void AlertSmtpAgent::configure()
     env = getenv("BIOS_EMAIL_BODY_END");
     _emailBodyEnd = env ? env : "Alert ${rulename} ended.";
     env = getenv("BIOS_EMAIL_SUBJECT_END");
-    _emailSubjectEnd = env ? env : "OK ${rulename}";
+    _emailSubjectEnd = env ? env : "Alert P${priority} ${rulename} ended.";
 
     env = getenv("BIOS_SMTP_SERVER");
     _smtpServer = env ? env : "";
