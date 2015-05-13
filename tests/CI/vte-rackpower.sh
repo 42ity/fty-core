@@ -221,7 +221,7 @@ set_values_in_ups() {
 
     # *** restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-server"
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server"
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
     sleep 7
