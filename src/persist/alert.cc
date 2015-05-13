@@ -26,7 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 #include <tntdb/transaction.h>
 #include <cxxtools/split.h>
-
+#include <cxxtools/utf8codec.h>
 #include "log.h"
 #include "defs.h"
 #include "alert.h"
@@ -553,7 +553,7 @@ db_reply_t
 //
 // TODO: LIMITS - those queries can be potentially HUGE, but our db does not support the queries
 //       with IN and sub select
-// MariaDB [box_utf8]> SELECT * FROM v_bios_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
+// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
 // ERROR 1235 (42000): This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
 //
 // The workaround is to call the SELECT with LIMIT and construct the IN clause manually
@@ -565,7 +565,7 @@ static const std::string  sel_alarm_opened_QUERY =
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
     "    v.id_asset_element "
     " FROM"
-    "   v_bios_alert_all v"
+    "   v_web_alert_all v"
     " WHERE v.date_till is NULL"
     " ORDER BY v.id";
 
@@ -576,7 +576,7 @@ static const std::string  sel_alarm_closed_QUERY =
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
     "    v.id_asset_element "
     " FROM"
-    "   v_bios_alert_all v"
+    "   v_web_alert_all v"
     " WHERE v.date_till is not NULL"
     " ORDER BY v.id";
 
@@ -593,7 +593,7 @@ static db_reply <std::vector<db_alert_t>>
         tntdb::Statement st = conn.prepareCached(query);
         tntdb::Result res = st.select();
 
-        log_debug ("[v_bios_alert_all]: was %u rows selected", res.size());
+        log_debug ("[v_web_alert_all]: was %u rows selected", res.size());
 
         //FIXME: change to dbtypes.h
         uint64_t last_id = 0u;
@@ -628,6 +628,7 @@ static db_reply <std::vector<db_alert_t>>
             r[6].get(m.date_from);
             r[7].get(m.date_till);
 
+            log_debug ("rule_name is %s", m.rule_name.c_str());
             bool isNotNull = r[8].get(element_id);
             if (isNotNull)
                 m.device_ids.push_back(element_id);
