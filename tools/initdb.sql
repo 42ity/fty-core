@@ -421,8 +421,8 @@ CREATE VIEW v_bios_alert AS
         t_bios_alert;
 
 /* for REST API: /asset/all */
-DROP VIEW IF EXISTS v_bios_alert_all;
-CREATE VIEW v_bios_alert_all AS
+DROP VIEW IF EXISTS v_web_alert_all;
+CREATE VIEW v_web_alert_all AS
     SELECT
         v1.id,
         v1.rule_name,
