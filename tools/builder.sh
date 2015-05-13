@@ -691,9 +691,33 @@ case "$1" in
 	    echo "FAIL: Cannot run '$@' under build dir '${BUILDSUBDIR}'" >&2
 	    exit 2
 	else
-	    echo "INFO: Running '$@' under build directory '${BUILDSUBDIR}'..."
+            _PROG="$1"
+            shift
+            case "$_PROG" in
+                /*) ;;
+                *)  # See if we have variants for requested relative pathname
+                    if  [ ! -x "`pwd`/$_PROG" ] && \
+                        [ -x "${BUILDSUBDIR}/$_PROG" ] \
+                    ; then
+                        _PROG="${BUILDSUBDIR}/$_PROG"
+                        echo "INFO: Using program from '${BUILDSUBDIR}/'"
+                    else
+                        [ -x "`pwd`/$_PROG" ] && \
+                            echo "INFO: Using program from '`pwd`/'" && \
+                            _PROG="`pwd`/$_PROG"
+                    fi
+                    ;;
+            esac
+
+            case "$_PROG" in
+                /*) ;;
+                ./*) _PROG="`pwd`/$_PROG"; echo "INFO: Using program from '`pwd`/'" ;;
+                *) echo "INFO: Using program from '${BUILDSUBDIR}/'" ;;
+            esac
+
+	    echo "INFO: Running '$_PROG $@' under build directory '${BUILDSUBDIR}'..."
 	    ( cd "${BUILDSUBDIR}" && \
-	      verb_run "$@" )
+	      verb_run "$_PROG" "$@" )
 	fi
 	;;
     help|-help|--help|-h)
