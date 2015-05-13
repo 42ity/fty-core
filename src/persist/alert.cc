@@ -563,7 +563,7 @@ static const std::string  sel_alarm_opened_QUERY =
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
-    "    v.id_asset_element "
+    "    v.id_asset_element, v.type_name, v.subtype_name"
     " FROM"
     "   v_web_alert_all v"
     " WHERE v.date_till is NULL"
@@ -574,7 +574,7 @@ static const std::string  sel_alarm_closed_QUERY =
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
-    "    v.id_asset_element "
+    "    v.id_asset_element, v_type_name, v.subtype_name"
     " FROM"
     "   v_web_alert_all v"
     " WHERE v.date_till is not NULL"
@@ -598,7 +598,7 @@ static db_reply <std::vector<db_alert_t>>
         //FIXME: change to dbtypes.h
         uint64_t last_id = 0u;
         uint64_t curr_id = 0u;
-        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
+        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "", std::vector<m_dvc_id_t>{}};
         a_elmnt_id_t element_id = 42; // suppress the compiler may be unitialized warning
                                       // variable is never used unitialized, but gcc don't understand the r[8].get(element_id) does it
                                       // 42 is the Answer, so why not? ;-)
@@ -617,7 +617,7 @@ static db_reply <std::vector<db_alert_t>>
                 ret.item.push_back(m);
             }
 
-            m = {0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
+            m = {0, "", 0, 0, "", 0 , 0, 0, "","",std::vector<m_dvc_id_t>{}};
 
             r[0].get(m.id);
             r[1].get(m.rule_name);
@@ -627,6 +627,8 @@ static db_reply <std::vector<db_alert_t>>
             r[5].get(m.notification);
             r[6].get(m.date_from);
             r[7].get(m.date_till);
+            r[9].get(m.type_name);
+            r[10].get(m.subtype_name);
 
             log_debug ("rule_name is %s", m.rule_name.c_str());
             bool isNotNull = r[8].get(element_id);
@@ -720,7 +722,7 @@ db_reply <db_alert_t>
 {   
     LOG_START;
     std::vector<m_dvc_id_t> dvc_ids{}; 
-    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0,"","", dvc_ids};
 
     db_reply<db_alert_t> ret = db_reply_new(m);
 
@@ -797,7 +799,7 @@ db_reply <db_alert_t>
 {   
     LOG_START;
     std::vector<m_dvc_id_t> dvc_ids{}; 
-    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0,"","", dvc_ids};
 
     db_reply<db_alert_t> ret = db_reply_new(m);
 
