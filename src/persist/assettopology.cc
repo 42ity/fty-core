@@ -1745,10 +1745,11 @@ zmsg_t* get_return_power_topology_datacenter(const char* url,
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.id_asset_element, v.name,"
-            "   v.type_name, v.id_asset_device_type" 
+            "   v.type_name, v.id_asset_device_type"
             " FROM"
             "   v_bios_asset_element_super_parent v"
-            " WHERE ':dcid' IN (v.id_parent1, v.id_parent2 ,v.id_parent3, v.id_parent4)"
+            " WHERE :dcid IN (v.id_parent1, v.id_parent2 ,v.id_parent3,"
+            "                   v.id_parent4)"
         );
         // can return more than one row
         log_debug ("element id %u", element_id);

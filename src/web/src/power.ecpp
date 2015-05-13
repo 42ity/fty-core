@@ -331,7 +331,6 @@ std::string filter_group;
                 zframe_destroy (&devices);
 
                 json.append ("\"devices\" : [");
-
                 _scoped_zmsg_t *pop = NULL;
                 bool first = true;
                 while ((pop = zmsg_popmsg (zmsg)) != NULL) { // caller owns zmgs_t

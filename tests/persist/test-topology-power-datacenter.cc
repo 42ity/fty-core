@@ -43,7 +43,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5083:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5086"); 
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5085"); 
     spowers.insert (std::string(SRCOUT_DESTIN_IS_NULL) + ":5084:" + std::string(SRCOUT_DESTIN_IS_NULL) + ":5086"); 
-    
+
     _scoped_zmsg_t* retTopology = get_return_power_topology_datacenter (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
@@ -77,7 +77,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
     zframe_t* frame = asset_msg_devices (cretTopology);
     byte* buffer = zframe_data (frame);
     assert ( buffer );
-    
+   
     _scoped_zmsg_t* zmsg = zmsg_decode ( buffer, zframe_size (frame));
     assert ( zmsg );
     assert ( zmsg_is (zmsg) );
@@ -88,7 +88,7 @@ TEST_CASE("Power topology datacenter #1","[db][topology][power][datacenter][powe
         _scoped_zmsg_t* pop = NULL;
         pop = zmsg_popmsg (zmsg);
         REQUIRE (pop);
-    
+   
         _scoped_asset_msg_t* item = asset_msg_decode (&pop); // pop is freed
         assert (item);
 //    asset_msg_print (item);
