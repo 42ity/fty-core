@@ -474,7 +474,8 @@ CREATE VIEW v_web_alert_all AS
         v1.date_till,
         v1.notification,
         t3.id_asset_element,
-        v4.type_name
+        v4.type_name,
+        v4.subtype_name
     FROM
         v_bios_alert v1
         LEFT JOIN v_bios_alert_device v2
