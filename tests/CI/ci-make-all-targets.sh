@@ -34,7 +34,7 @@ set -e
 
 # NOTE: with this job we want everything wiped and rebuilt in the workspace
 echo "============= auto-configure and rebuild ===================="
-./autogen.sh --install-dir "$HOME" --configure-flags \
+./autogen.sh --install-dir / --configure-flags \
     "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
     ${AUTOGEN_ACTION_BUILD} all-buildproducts 2>&1 | tee ${MAKELOG}
 
