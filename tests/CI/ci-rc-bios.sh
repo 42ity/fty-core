@@ -160,15 +160,18 @@ stop() {
 }
 
 status() {
+    GOODSTATE="$1"
+    [ -z "$GOODSTATE" ] && GOODSTATE=started
     RESULT=0
     for d in malamute $DAEMONS ; do
-       echo -n "$d is currently "
-       if pidof $d lt-$d >/dev/null 2>&1 ; then
-           echo "running (`pidof $d lt-$d `)"
-       else
-           echo "stopped"
-           RESULT=1
-       fi
+        echo -n "$d is currently "
+        if pidof $d lt-$d >/dev/null 2>&1 ; then
+            echo "running (`pidof $d lt-$d `)"
+            [ "$GOODSTATE" = started ] || RESULT=1
+        else
+            echo "stopped"
+            [ "$GOODSTATE" = stopped ] || RESULT=1
+        fi
     done
     return $RESULT
 }
@@ -244,18 +247,20 @@ case "$OPERATION" in
         update_compiled
         start_malamute && \
         start
-        status || RESULT=$?
+        status started || \
+            { echo "ERROR: Some daemons are not running" ; RESULT=1; }
         exit $RESULT
         ;;
     stop)
         RESULT=0
         stop || RESULT=$?
         stop_malamute || RESULT=$?
-        status && echo "ERROR: Some daemons are still running" && RESULT=1
+        status stopped || \
+            { echo "ERROR: Some daemons are still running" ; RESULT=1; }
         exit $RESULT
         ;;
     status)
-        status
+        status $2
         exit
         ;;
     update_compiled)
