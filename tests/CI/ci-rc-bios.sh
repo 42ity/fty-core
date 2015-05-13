@@ -206,6 +206,7 @@ Options:
     --stop       stop BIOS processes
     --start      start BIOS processes (does restart if BIOS is running)
     --status     check whether all processes are running
+    --statusX    check whether all processes are stopped
     --update-compiled   when using custom compiled code (rather than packaged)
                  use this option to ensure needed programs are up-to-date
                  (invoked automatically before a start)
@@ -227,6 +228,9 @@ while [ $# -gt 0 ] ; do
             ;;
         --status)
             OPERATION=status
+            ;;
+        --statusX)
+            OPERATION=statusX
             ;;
         --update-compiled)
             OPERATION=update_compiled
@@ -260,7 +264,11 @@ case "$OPERATION" in
         exit $RESULT
         ;;
     status)
-        status $2
+        status started
+        exit
+        ;;
+    statusX)
+        status stopped
         exit
         ;;
     update_compiled)
