@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#   Copyright (c) 2014 Eaton Corporation <www.eaton.com>
+#   Copyright (c) 2014-2015 Eaton Corporation <www.eaton.com>
 #
 #   This file is part of the Eaton $BIOS project.
 #
@@ -153,7 +153,8 @@ fi
         "however a limit of MAXPARMAKES=$MAXPARMAKES was configured" && \
     NPARMAKES="$MAXPARMAKES"
 
-#[ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""
+# Just make sure this variable is defined
+[ -z "$CONFIGURE_FLAGS" ] && CONFIGURE_FLAGS=""
 
 # enable timing of the steps
 case "$TIME_MAKE" in
