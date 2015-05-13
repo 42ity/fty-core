@@ -162,11 +162,11 @@ stop() {
 status() {
     RESULT=0
     for d in malamute $DAEMONS ; do
-       echo -n "$d "
+       echo -n "$d is currently "
        if pidof $d lt-$d >/dev/null 2>&1 ; then
-           echo "OK: $d is running (`pidof $d lt-$d `)"
+           echo "running (`pidof $d lt-$d `)"
        else
-           echo "ERROR: $d is stopped"
+           echo "stopped"
            RESULT=1
        fi
     done
@@ -239,16 +239,19 @@ done
 
 case "$OPERATION" in
     start)
+        RESULT=0
         stop
         update_compiled
         start_malamute && \
         start
-        exit
+        status || RESULT=$?
+        exit $RESULT
         ;;
     stop)
         RESULT=0
         stop || RESULT=$?
         stop_malamute || RESULT=$?
+        status && echo "ERROR: Some daemons are still running" && RESULT=1
         exit $RESULT
         ;;
     status)
