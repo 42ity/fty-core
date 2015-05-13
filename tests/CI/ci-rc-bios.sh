@@ -183,7 +183,9 @@ update_compiled() {
 
     logmsg_info "Ensuring that the tested programs have been built and up-to-date"
     if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-        ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
+        ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG}
     fi
     ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
         web-test-deps $DAEMONS
