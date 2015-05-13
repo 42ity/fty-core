@@ -225,13 +225,15 @@ set_values_in_ups() {
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
     sleep 7
-    N=0
-    while [ "$N" -lt 20 ]; do
+    N=20
+    while [ "$N" -gt 0 ]; do
         OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
-        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=100; break; fi
+        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=-$N; break; fi
         sleep 1
-        N="`expr $N + 1`"
+        N="`expr $N - 1`"
     done
+    [ "$N" = 0 ] && \
+        echo "NOTE: The wait loop for NUT response has expired without success"
 
     # *** start upsrw (output hidden because this can fail for some target variables)
     echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
