@@ -49,7 +49,7 @@ apt-get update >/dev/null 2>&1
 NEWBUILD=no
 if [ ! -s "${MAKELOG}" ] ; then
     # Newly checked-out branch, rebuild
-    echo "=============== auto-configure and rebuild =================="
+    echo "============= auto-configure and rebuild all ================"
     /bin/rm -f ${MAKELOG}
     touch ${MAKELOG}
     ./autogen.sh --configure-flags \
