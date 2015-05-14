@@ -575,7 +575,7 @@ static const std::string  sel_alarm_closed_QUERY =
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
-    "    v.id_asset_element, v_type_name, v.subtype_name"
+    "    v.id_asset_element, v.type_name, v.subtype_name"
     " FROM"
     "   v_web_alert_all v"
     " WHERE v.date_till is not NULL"
