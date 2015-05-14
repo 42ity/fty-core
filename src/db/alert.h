@@ -15,26 +15,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file ymsg-asset.h
-    \author Tomas Halman
+/*! \file alert.h
+    \brief Header file for all low level functions for alerts
+
+    \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef SRC_PERSIST_YMSG_ASSET_H__
-#define SRC_PERSIST_YMSG_ASSET_H__
-
-#include "ymsg.h"
-
-namespace persist {
-
-//! Processes alert message and creates an answer
-void process_alert(ymsg_t* out, char** out_subj,
-                   ymsg_t* in, const char* in_subj);
-
-void process_get_asset(ymsg_t* out, char** out_subj,
-                       ymsg_t* in, const char* in_subj);
-
-
-}
-
-#endif // SRC_PERSIST_YMSG_ASSET_H__
-
+#include "alert_basic.h"
