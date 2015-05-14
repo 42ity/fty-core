@@ -40,16 +40,18 @@ tntdb::Connection conn = tntdb::connectCached(url);
         auto sprio = "P" + std::to_string(i.priority);
 </%cpp>
     {
-        "id" : <$ i.id $>,
-        "source_ts" : "<$ t1 $>",
+        "id" : <$$ i.id $>,
+        "source_ts" : "<$$ t1 $>",
         "application_name" : "ALERT",
         "rule_name" : "<$$ i.rule_name $>",
-        "element_id" : <$ i.device_ids.empty() ? "null" : std::to_string(i.device_ids[0]) $>,
-        "element_name" : <$$ i.device_ids.empty() ? "null" :element_name $>,
+        "element_id" : <$$ i.device_ids.empty() ? "null" : std::to_string(i.device_ids[0]) $>,
+        "element_name" : <$$ i.device_ids.empty() ? "null" : element_name $>,
+        "element_type" : <$$ i.type_name.empty() ?  "null" : "\"" + i.type_name + "\"" $>, 
+        "element_sub_type" : <$$ i.subtype_name.empty() ? "null" : "\"" + i.subtype_name + "\"" $>,
         "severity" : "critical",
-        "priority" : "<$ sprio $>",
+        "priority" : "<$$ sprio $>",
         "description" : "<$$ i.description $>",
-        "state" : "<$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
+        "state" : "<$$ alert_state_to_str(static_cast<alert_state_t>(i.alert_state)) $>",
         "last_state_ts" : null
     }<$ cnt != db_reply.item.size() ? ',' : ' ' $>
 %}

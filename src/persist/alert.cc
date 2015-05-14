@@ -26,13 +26,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 #include <tntdb/transaction.h>
 #include <cxxtools/split.h>
-
+#include <cxxtools/utf8codec.h>
 #include "log.h"
 #include "defs.h"
 #include "alert.h"
 #include "agents.h"
 #include "dbpath.h"
 #include "bios_agent.h"
+#include "cleanup.h"
+#include "utils.h"
 
 namespace persist {
 
@@ -553,7 +555,7 @@ db_reply_t
 //
 // TODO: LIMITS - those queries can be potentially HUGE, but our db does not support the queries
 //       with IN and sub select
-// MariaDB [box_utf8]> SELECT * FROM v_bios_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
+// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
 // ERROR 1235 (42000): This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
 //
 // The workaround is to call the SELECT with LIMIT and construct the IN clause manually
@@ -563,9 +565,9 @@ static const std::string  sel_alarm_opened_QUERY =
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
-    "    v.id_asset_element "
+    "    v.id_asset_element, v.type_name, v.subtype_name"
     " FROM"
-    "   v_bios_alert_all v"
+    "   v_web_alert_all v"
     " WHERE v.date_till is NULL"
     " ORDER BY v.id";
 
@@ -574,9 +576,9 @@ static const std::string  sel_alarm_closed_QUERY =
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
     "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
-    "    v.id_asset_element "
+    "    v.id_asset_element, v_type_name, v.subtype_name"
     " FROM"
-    "   v_bios_alert_all v"
+    "   v_web_alert_all v"
     " WHERE v.date_till is not NULL"
     " ORDER BY v.id";
 
@@ -593,12 +595,12 @@ static db_reply <std::vector<db_alert_t>>
         tntdb::Statement st = conn.prepareCached(query);
         tntdb::Result res = st.select();
 
-        log_debug ("[v_bios_alert_all]: was %u rows selected", res.size());
+        log_debug ("[v_web_alert_all]: was %u rows selected", res.size());
 
         //FIXME: change to dbtypes.h
         uint64_t last_id = 0u;
         uint64_t curr_id = 0u;
-        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
+        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "", std::vector<m_dvc_id_t>{}};
         a_elmnt_id_t element_id = 42; // suppress the compiler may be unitialized warning
                                       // variable is never used unitialized, but gcc don't understand the r[8].get(element_id) does it
                                       // 42 is the Answer, so why not? ;-)
@@ -617,7 +619,7 @@ static db_reply <std::vector<db_alert_t>>
                 ret.item.push_back(m);
             }
 
-            m = {0, "", 0, 0, "", 0 , 0, 0, std::vector<m_dvc_id_t>{}};
+            m = {0, "", 0, 0, "", 0 , 0, 0, "","",std::vector<m_dvc_id_t>{}};
 
             r[0].get(m.id);
             r[1].get(m.rule_name);
@@ -627,7 +629,10 @@ static db_reply <std::vector<db_alert_t>>
             r[5].get(m.notification);
             r[6].get(m.date_from);
             r[7].get(m.date_till);
+            r[9].get(m.type_name);
+            r[10].get(m.subtype_name);
 
+            log_debug ("rule_name is %s", m.rule_name.c_str());
             bool isNotNull = r[8].get(element_id);
             if (isNotNull)
                 m.device_ids.push_back(element_id);
@@ -719,7 +724,7 @@ db_reply <db_alert_t>
 {   
     LOG_START;
     std::vector<m_dvc_id_t> dvc_ids{}; 
-    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0,"","", dvc_ids};
 
     db_reply<db_alert_t> ret = db_reply_new(m);
 
@@ -796,7 +801,7 @@ db_reply <db_alert_t>
 {   
     LOG_START;
     std::vector<m_dvc_id_t> dvc_ids{}; 
-    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0, dvc_ids};
+    db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0,"","", dvc_ids};
 
     db_reply<db_alert_t> ret = db_reply_new(m);
 
@@ -898,7 +903,7 @@ void process_alert(ymsg_t* out, char** out_subj,
     log_debug("processing alert"); // FIXME: some macro
     
     // decode message
-    char *rule = NULL, *devices = NULL, *desc = NULL;
+    _scoped_char *rule = NULL, *devices = NULL, *desc = NULL;
     uint8_t priority;
     int8_t state;
     time_t since;
@@ -942,8 +947,8 @@ void process_alert(ymsg_t* out, char** out_subj,
         LOG_END_ABNORMAL(e);
         ymsg_set_status( out, false );
     }
-    if(rule) free(rule);
-    if(devices) free(devices);
+    FREE0 (rule)
+    FREE0 (devices)
     LOG_END;
 }
 

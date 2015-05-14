@@ -25,7 +25,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // Then for every succesfull delete statement
 // 0 would be return as rowid
 
-
 #include <exception>
 #include <assert.h>
 
@@ -43,6 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "monitor.h"
 #include "persist_error.h"
 #include "asset_types.h"
+#include "cleanup.h"
 
 static const std::string  ins_upd_ass_ext_att_QUERY =
         " INSERT INTO"
@@ -322,16 +322,16 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
     std::string fqdn = "";
     std::string type_name = "";
 
-    zmsg_t* adevice = select_asset_device (conn, element_id);
+    _scoped_zmsg_t* adevice = select_asset_device (conn, element_id);
     if ( is_common_msg(adevice) )
     {
         asset_msg_destroy (element);
-        return adevice;
+        return zmsg_dup (adevice);
     }
     else
     {
         // device was found
-        zlist_t *groups = select_asset_element_groups(conn, element_id);
+        _scoped_zlist_t *groups = select_asset_element_groups(conn, element_id);
         if ( groups == NULL )    // internal error in database
         {
             zmsg_destroy (&adevice);
@@ -340,7 +340,7 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting groups occured", NULL);
         }
-        zlist_t *powers = select_asset_device_links_to(conn, element_id, INPUT_POWER_CHAIN);
+        _scoped_zlist_t *powers = select_asset_device_links_to(conn, element_id, INPUT_POWER_CHAIN);
         if ( powers == NULL )   // internal error in database
         {
             zlist_destroy (&groups);
@@ -350,11 +350,10 @@ zmsg_t* extend_asset_element2device(tntdb::Connection &conn, asset_msg_t** eleme
             return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                 "internal error during selecting powerlinks occured", NULL);
         }
-
-        zmsg_t *nnmsg = asset_msg_encode (element);
+        _scoped_zmsg_t *nnmsg = asset_msg_encode (element);
         assert ( nnmsg );
     
-        asset_msg_t *adevice_decode = asset_msg_decode (&adevice);
+        _scoped_asset_msg_t *adevice_decode = asset_msg_decode (&adevice);
         asset_msg_set_powers (adevice_decode, &powers);
         asset_msg_set_groups (adevice_decode, &groups);
         asset_msg_set_msg (adevice_decode, &nnmsg);
@@ -417,11 +416,15 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
                                                     e.what(), NULL);
     }
-           
-    zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
-    if ( extAttributes == NULL )    // internal error in database
+
+    _scoped_zhash_t* extAttributes = select_asset_element_attributes(conn, element_id);
+    if ( extAttributes == NULL ) {    // internal error in database
+        log_error ("extAttributes is NULL after call from select_asset_element_attributes");
         return common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL,
           "internal error during selecting ext attributes occured", NULL);
+    } else {
+        log_info ("extAttributes not NULL");
+    }
 
     zmsg_t* msgelement = asset_msg_encode_element
             (name.c_str(), parent_id, parent_type_id, 
@@ -429,6 +432,7 @@ zmsg_t* select_asset_element(tntdb::Connection &conn, a_elmnt_id_t element_id,
     assert ( msgelement );
 
     zhash_destroy (&extAttributes);
+
     log_info("normal %s ","end");
     return msgelement;
 }
@@ -489,22 +493,22 @@ zmsg_t* get_asset_element(const char *url, asset_msg_t *msg)
     try{
         
         tntdb::Connection conn = tntdb::connectCached(url);
-        
-        zmsg_t* msgelement = 
+       
+        _scoped_zmsg_t* msgelement = 
             select_asset_element (conn, element_id, element_type_id);
 
         if ( is_common_msg (msgelement) )
         {
             // element was not found  or error occurs
             log_info("errors occured in subroutine %s ","end");
-            return msgelement;
+            return zmsg_dup (msgelement);
         }
         // element was found
         if ( element_type_id == asset_type::DEVICE )
         {
             log_debug ("%s ", "start looking for device");
             // destroys msgelement
-            asset_msg_t* returnelement = asset_msg_decode (&msgelement);
+            _scoped_asset_msg_t* returnelement = asset_msg_decode (&msgelement);
             msgelement = extend_asset_element2device(conn, &returnelement, element_id);
             assert ( msgelement );
             assert ( returnelement == NULL );
@@ -543,7 +547,7 @@ zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg)
     assert ( msg );
     assert ( asset_msg_id (msg) == ASSET_MSG_GET_ELEMENTS );
 
-    zhash_t *elements = zhash_new();
+    _scoped_zhash_t *elements = zhash_new();
     zhash_autofree(elements);
 
     try{

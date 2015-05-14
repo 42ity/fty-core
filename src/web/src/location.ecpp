@@ -1,4 +1,5 @@
 <%pre>
+#include "cleanup.h"
 #include <cstdlib>
 #include <string>
 #include <algorithm>
@@ -99,11 +100,11 @@ std::string filter;
             return HTTP_BAD_REQUEST;
         }
         // Call persistence layer
-        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+        _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
         assert (input_msg);
         asset_msg_set_element_id (input_msg, element_id);
         
-        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
             {
@@ -116,7 +117,7 @@ std::string filter;
         assert (input_msg == NULL); // This is not testing czmq. It tests whether our code correctly nullifies a reference
     
         if (is_common_msg (return_msg)) {
-            common_msg_t *common_msg = common_msg_decode (&return_msg);
+            _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
             if (common_msg == NULL) {
                 if (return_msg != NULL) {
                     zmsg_destroy (&return_msg);
@@ -158,7 +159,7 @@ std::string filter;
             }
         }
         else if (is_asset_msg (return_msg)) {
-            asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
             if (asset_msg == NULL) {
                 if (return_msg != NULL) {
                     zmsg_destroy (&return_msg);
@@ -229,7 +230,7 @@ std::string filter;
                     }                 
 
                     if (zmsg_size (asset_msg_msg (asset_msg)) != 0) {
-                        zmsg_t *inner = asset_msg_get_msg (asset_msg); 
+                        _scoped_zmsg_t *inner = asset_msg_get_msg (asset_msg); 
                         asset_msg_destroy (&asset_msg);
                         asset_msg = asset_msg_decode (&inner);
 
@@ -428,7 +429,7 @@ std::string filter;
         }
 
         // Call persistence layer
-        asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+        _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
         assert (input_msg);
         asset_msg_set_element_id (input_msg, (uint32_t) element_id);
         asset_msg_set_recursive (input_msg, (byte) is_recursive);
@@ -436,7 +437,7 @@ std::string filter;
 
         asset_msg_print(input_msg);
         
-        zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
         if (return_msg == NULL) {
 </%cpp>
             {
@@ -449,7 +450,7 @@ std::string filter;
         assert (input_msg == NULL);
 
         if (is_common_msg (return_msg)) {
-            common_msg_t *common_msg = common_msg_decode (&return_msg);
+            _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
             if (common_msg == NULL) {
                 if (return_msg != NULL) {
                     zmsg_destroy (&return_msg);
@@ -492,7 +493,7 @@ std::string filter;
             }
         }
         else if (is_asset_msg (return_msg)) {
-            asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
             if (asset_msg == NULL) {
                 if (return_msg != NULL) {
                     zmsg_destroy (&return_msg);

@@ -219,7 +219,7 @@ for UPS in $UPS1 $UPS2 ; do
             echo "The total power has an expected value: $TP = $POWER. Test PASSED."
             SUCCESSES=$(expr $SUCCESSES + 1)
         else
-            echo "The total power does not equal expected value: $TP <> $POWER - Test FAILED."
+            echo "Total power does not equal expected value $TP <> $POWER - Test FAILED."
             ERRORS=$(expr $ERRORS + 1)
         fi
     done

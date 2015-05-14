@@ -6,6 +6,7 @@
 #include "agents.h"
 #include "upsstatus.h"
 #include "utils_ymsg.h"
+#include "cleanup.h"
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
 #define NUT_MEASUREMENT_REPEAT_AFTER 300
@@ -55,7 +56,7 @@ void NUTAgent::advertisePhysics() {
                     continue;
                 }
                 // Create message and publish it
-                ymsg_t *msg = bios_measurement_encode(
+                _scoped_ymsg_t *msg = bios_measurement_encode(
                     device.second.name().c_str(),
                     measurement.first.c_str(),
                     units.c_str(),
@@ -75,7 +76,7 @@ void NUTAgent::advertisePhysics() {
                 topic = "measurement.status@" + device.second.name();
                 std::string status_s = device.second.property("status.ups");
                 uint16_t    status_i = shared::upsstatus_to_int( status_s );
-                ymsg_t *msg = bios_measurement_encode(
+                _scoped_ymsg_t *msg = bios_measurement_encode(
                     device.second.name().c_str(),
                     "status.ups",
                     "",
@@ -107,7 +108,7 @@ void NUTAgent::advertiseInventory() {
             }
         }
         if( zhash_size(inventory) > 0 ) {
-            ymsg_t *message = bios_inventory_encode(
+            _scoped_ymsg_t *message = bios_inventory_encode(
                 device.second.name().c_str(),
                 &inventory,
                 "inventory" );

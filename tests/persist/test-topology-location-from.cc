@@ -10,12 +10,14 @@
 #include "common_msg.h"
 #include "assetcrud.h"
 
+#include "cleanup.h"
+
 TEST_CASE("Location topology from #1","[db][topology][location][location_topology.sql][from][lf1]")
 {
     log_open();
 
     log_info ("=============== LOCATION FROM #1 ==================");
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     // t_bios_asset_element with id 5019 should not exist
     asset_msg_set_element_id (getmsg, 5019);
@@ -24,10 +26,10 @@ TEST_CASE("Location topology from #1","[db][topology][location][location_topolog
     asset_msg_set_recursive (getmsg, true);
 //    asset_msg_print (getmsg);
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );
     REQUIRE ( is_common_msg (retTopology) );
-    common_msg_t* cretTopology = common_msg_decode (&retTopology);
+    _scoped_common_msg_t* cretTopology = common_msg_decode (&retTopology);
     assert ( cretTopology );
 //    common_msg_print (cretTopology);
     REQUIRE ( common_msg_errtype (cretTopology) == BIOS_ERROR_DB );
@@ -59,7 +61,7 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #3 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -85,11 +87,11 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     // a group
     expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -163,7 +165,7 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #4 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -212,11 +214,11 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , 7025, id_group, "inputpowergroup DC_LOC_01"  , "happynewyear"));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -290,7 +292,7 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #5 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -306,11 +308,11 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
     expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
     
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -390,7 +392,7 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
 
     log_info ("=============== LOCATION FROM #5.1 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -406,11 +408,11 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
     expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
     expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
     
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -483,7 +485,7 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #6 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -503,11 +505,11 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
 
     expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", ""));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -580,7 +582,7 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
 
     log_info ("=============== LOCATION FROM #6.1 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -593,11 +595,11 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
     // id, id_type, name, device_type_name
     edge_lf expected;
     
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -656,7 +658,7 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #7 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -671,11 +673,11 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
     
     expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , ""      , start_id, id_dc  , start_name    , ""));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -748,7 +750,7 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #8 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -764,11 +766,11 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
     expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
     expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -841,7 +843,7 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
 
     log_info ("=============== LOCATION FROM #9 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -871,11 +873,11 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
     
     expected.insert (std::make_tuple(7012, id_rack  , "RACK_LOC_21" , ""      , 7006    , id_row , "ROW_LOC_21"  , ""));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -949,7 +951,7 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #10 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -964,11 +966,11 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
    
     expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -1041,7 +1043,7 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #11 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1059,11 +1061,11 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , ""));
     expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , ""));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -1136,7 +1138,7 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #12 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1161,11 +1163,11 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010"  , "ups"  , 7009    , id_rack, "RACK_LOC_010", ""));
     expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -1239,7 +1241,7 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #13 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1259,11 +1261,11 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7008, id_row, "ROW_LOC_50"   , "", 0, 0,"", ""));
     expected.insert (std::make_tuple(7003, id_room, "ROOM_LOC_50"  , "", 0, 0,"", ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1338,7 +1340,7 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #14 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1354,11 +1356,11 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7023, id_device, "srv_LOC_50"  , "server", 0, 0,"", ""));
     expected.insert (std::make_tuple(7024, id_device, "srv_LOC_51"  , "server", 0, 0,"", ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1433,7 +1435,7 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #15 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1446,11 +1448,11 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1510,7 +1512,7 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #16 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1523,11 +1525,11 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1588,7 +1590,7 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #17 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1601,11 +1603,11 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1666,7 +1668,7 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #18 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1679,11 +1681,11 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1744,7 +1746,7 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #19 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1757,11 +1759,11 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1823,7 +1825,7 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #20 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1836,11 +1838,11 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1901,7 +1903,7 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #21 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1914,11 +1916,11 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -1979,7 +1981,7 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #22 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -1992,11 +1994,11 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
 //    asset_msg_print (cretTopology);
@@ -2056,7 +2058,7 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #23 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -2071,11 +2073,11 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
  
     expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , ""      , start_id, id_dc  , start_name    , ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -2148,7 +2150,7 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #24 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -2161,11 +2163,11 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
     
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -2222,7 +2224,7 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #25 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -2244,11 +2246,11 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
     expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
 
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -2323,7 +2325,7 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #26 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -2341,11 +2343,11 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok
@@ -2420,7 +2422,7 @@ TEST_CASE("Location topology from #27","[db][topology][location][location_topolo
 
     log_info ("=============== LOCATION FROM #27 ==================");
     
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
     asset_msg_set_type        (getmsg, start_type_id);
@@ -2437,11 +2439,11 @@ TEST_CASE("Location topology from #27","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
  
-    zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
+    _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
     REQUIRE ( is_asset_msg (retTopology) );
 
-    asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
+    _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 //    asset_msg_print (cretTopology);
     // check if the root is ok

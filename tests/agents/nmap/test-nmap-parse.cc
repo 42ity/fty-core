@@ -14,6 +14,7 @@
 #include <vector>
 #include <tuple>
 #include <cstdint>
+#include "cleanup.h"
 
 #ifndef TDIR
 #error TDIR is not defined, build with -DTDIR=/path/to/tests
@@ -290,15 +291,15 @@ const static std::string s_read_file(const char* filename) {
 
 TEST_CASE("nmap-parse-mbt-lab", "[driver-nmap]") {
     auto s = s_read_file("mbt-lab.xml");
-    zsock_t *insock = zsock_new_router(TEST_DRIVER_NMAP_REPLY);
+    _scoped_zsock_t *insock = zsock_new_router(TEST_DRIVER_NMAP_REPLY);
     REQUIRE(insock != NULL);
     zclock_sleep(150);
-    zsock_t *ousock = zsock_new_dealer(TEST_DRIVER_NMAP_REPLY);
+    _scoped_zsock_t *ousock = zsock_new_dealer(TEST_DRIVER_NMAP_REPLY);
     REQUIRE(ousock != NULL);
     parse_list_scan(s, ousock);
 
     for (auto i=0u; i != MBT_LAB_DATA.size(); i++) {
-        nmap_msg_t *msg = nmap_msg_recv(insock);
+        _scoped_nmap_msg_t *msg = nmap_msg_recv(insock);
         CHECK(msg != NULL);
         CHECK(nmap_msg_id(msg) == NMAP_MSG_LIST_SCAN);
         CHECK(nmap_msg_addr(msg) == MBT_LAB_DATA[i]);
@@ -306,7 +307,7 @@ TEST_CASE("nmap-parse-mbt-lab", "[driver-nmap]") {
         CHECK(nmap_msg_hostnames_size(msg) == 1);
         nmap_msg_destroy(&msg);
     }
-    nmap_msg_t *msg = nmap_msg_recv_nowait(insock);
+    _scoped_nmap_msg_t *msg = nmap_msg_recv_nowait(insock);
     REQUIRE(msg == NULL);
     zsock_destroy(&insock);
     zsock_destroy(&ousock);
