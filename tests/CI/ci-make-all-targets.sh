@@ -33,8 +33,8 @@ set -e
 #( which mk-build-deps >/dev/null && mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc ) || true
 
 # NOTE: with this job we want everything wiped and rebuilt in the workspace
-echo "============= auto-configure and rebuild ===================="
-./autogen.sh --install-dir "$HOME" --configure-flags \
+echo "=========== auto-configure and rebuild all =================="
+./autogen.sh --install-dir / --configure-flags \
     "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
     ${AUTOGEN_ACTION_BUILD} all-buildproducts 2>&1 | tee ${MAKELOG}
 

@@ -160,15 +160,18 @@ stop() {
 }
 
 status() {
+    GOODSTATE="$1"
+    [ -z "$GOODSTATE" ] && GOODSTATE=started
     RESULT=0
     for d in malamute $DAEMONS ; do
-       echo -n "$d "
-       if pidof $d lt-$d >/dev/null 2>&1 ; then
-           echo "OK: $d is running (`pidof $d lt-$d `)"
-       else
-           echo "ERROR: $d is stopped"
-           RESULT=1
-       fi
+        echo -n "$d is currently "
+        if pidof $d lt-$d >/dev/null 2>&1 ; then
+            echo "running (`pidof $d lt-$d `)"
+            [ "$GOODSTATE" = started ] || RESULT=1
+        else
+            echo "stopped"
+            [ "$GOODSTATE" = stopped ] || RESULT=1
+        fi
     done
     return $RESULT
 }
@@ -183,7 +186,9 @@ update_compiled() {
 
     logmsg_info "Ensuring that the tested programs have been built and up-to-date"
     if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-        ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
+        ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG}
     fi
     ./autogen.sh --optseqmake ${AUTOGEN_ACTION_MAKE} \
         web-test-deps $DAEMONS
@@ -201,6 +206,7 @@ Options:
     --stop       stop BIOS processes
     --start      start BIOS processes (does restart if BIOS is running)
     --status     check whether all processes are running
+    --statusX    check whether all processes are stopped
     --update-compiled   when using custom compiled code (rather than packaged)
                  use this option to ensure needed programs are up-to-date
                  (invoked automatically before a start)
@@ -223,6 +229,9 @@ while [ $# -gt 0 ] ; do
         --status)
             OPERATION=status
             ;;
+        --statusX)
+            OPERATION=statusX
+            ;;
         --update-compiled)
             OPERATION=update_compiled
             ;;
@@ -237,20 +246,29 @@ done
 
 case "$OPERATION" in
     start)
+        RESULT=0
         stop
         update_compiled
         start_malamute && \
         start
-        exit
+        status started || \
+            { echo "ERROR: Some daemons are not running" ; RESULT=1; }
+        exit $RESULT
         ;;
     stop)
         RESULT=0
         stop || RESULT=$?
         stop_malamute || RESULT=$?
+        status stopped || \
+            { echo "ERROR: Some daemons are still running" ; RESULT=1; }
         exit $RESULT
         ;;
     status)
-        status
+        status started
+        exit
+        ;;
+    statusX)
+        status stopped
         exit
         ;;
     update_compiled)
