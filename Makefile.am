@@ -311,8 +311,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
-			src/persist/alert.h \
-			src/persist/alert.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
@@ -326,12 +324,41 @@ DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/db/alerts \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_builddir)/src/db \
+			-I$(abs_top_builddir)/src/db/alerts
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
-			libpriv-log.la libpriv-csv.la
+						libpriv-log.la \
+						libpriv-csv.la
 
+#####
+noinst_LTLIBRARIES += 		libpriv-db-alerts.la
+
+libpriv_db_alerts_la_SOURCES = \
+			src/db/alerts/alert.cc \
+			src/db/alerts/alert_basic.h \
+			src/db/alert.h
+
+libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/db/alerts \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_builddir)/src/db \
+			-I$(abs_top_builddir)/src/db/alerts
+
+#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
+#			libpriv-log.la libpriv-csv.la
+
+
+#####
 noinst_LTLIBRARIES +=	libpriv-proto.la
 
 libpriv_proto_la_SOURCES = \
@@ -537,6 +564,7 @@ test_db2_SOURCES = \
 test_db2_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-utils.la \
@@ -613,6 +641,7 @@ test_db_alert_SOURCES = \
 
 test_db_alert_LDADD = \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -622,8 +651,12 @@ test_db_alert_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/db/alerts \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/db/alerts \
+			-I$(abs_top_builddir)/src/db
 
 test_db_alert_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
@@ -706,11 +739,11 @@ test_totalpower_LDFLAGS = \
 bin_PROGRAMS += 	test-database
 
 test_database_SOURCES = tests/persist/test-database.cc \
-			src/persist/persistencelogic.cc \
 			tools/dbpath.h
 
 test_database_LDADD = 	libpriv-db.la \
 			libpriv-proto.la \
+			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-test-run.la \
 			libpriv-log.la \
@@ -842,6 +875,7 @@ db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 
 db_ng_LDADD = \
             libpriv-db.la \
+            libpriv-db-alerts.la \
 			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
@@ -944,8 +978,11 @@ agent_inventory_SOURCES = \
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
 
+### TODO this agent should not link with libpriv-db-alerts.
+### But now it is required, because of "huge" libpriv-db
 agent_inventory_LDADD = \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
 			libpriv-log.la \
@@ -1043,8 +1080,12 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 			-I$(abs_top_srcdir)/src/web/include \
 			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/db \
+			-I$(abs_top_builddir)/src/db/alerts \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/db/alerts
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
@@ -1053,6 +1094,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
+			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la
 
