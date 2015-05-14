@@ -11,6 +11,8 @@
 #include "monitor.h"
 #include "data.h"
 #include "upsstatus.h"
+#include "cleanup.h"
+
 </%pre>
 <%thread scope="global">
 measures_manager mes_mgr;
@@ -38,15 +40,15 @@ std::string dev;
 <%cpp>
             return HTTP_BAD_REQUEST;
         }
-        zmsg_t *req = common_msg_encode_get_last_measurements(id);
-        zmsg_t *rep = get_last_measurements(&req);
+        _scoped_zmsg_t *req = common_msg_encode_get_last_measurements(id);
+        _scoped_zmsg_t *rep = get_last_measurements(&req);
         if(!is_common_msg(rep)){
 </%cpp>
 { "error":"internal_error" }
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
-        common_msg_t *dta = common_msg_decode(&rep);
+        _scoped_common_msg_t *dta = common_msg_decode(&rep);
         if(dta == NULL) {
 </%cpp>
 { "error":"internal_error - decode fail" }

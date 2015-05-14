@@ -9,6 +9,7 @@
 #include "utils_ymsg.h"
 #include "utils_app.h"
 #include "str_defs.h"
+#include "cleanup.h"
 
 #define ALERT_POLLING_INTERVAL  5000
 #define check_ymsg(X) ( X && *X )
@@ -31,7 +32,6 @@ void AlertAgent::onReply( ymsg_t **message )
     if( ! check_ymsg(message) && ! ymsg_is_ok(*message) ) return;
     if( ! streq( sender(), BIOS_AGENT_NAME_DB_MEASUREMENT ) ) return;
 
-    //    app_t *app = ymsg_request_app( *message );
     const char *topic = subject();
     if( topic && strncmp( topic, "alert.", 6 ) == 0 ) {
         // this should be alert confirmation from persistence
@@ -73,7 +73,7 @@ void AlertAgent::onPoll() {
         }
         else
         if( al->second.timeToPublish() ) {
-            ymsg_t * msg = bios_alert_encode (
+            _scoped_ymsg_t * msg = bios_alert_encode (
                 al->second.ruleName().c_str(),
                 al->second.priority(),
                 al->second.state(),
@@ -82,7 +82,7 @@ void AlertAgent::onPoll() {
                 al->second.since());
             std::string topic = "alert." + al->second.ruleName();
             if( ! al->second.persistenceInformed() ) {
-                ymsg_t *pmsg = ymsg_dup(msg);
+                _scoped_ymsg_t *pmsg = ymsg_dup(msg);
                 if( pmsg ) {
                     ymsg_set_repeat( pmsg, true );
                     log_debug("sending alert %s state %i to persistence", al->second.ruleName().c_str(), al->second.state() );

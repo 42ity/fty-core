@@ -2,88 +2,104 @@
 #include <czmq.h>
 #include <cxxtools/split.h>
 
+#include "log.h"
 #include "asset_msg.h"
 #include "common_msg.h"
 #include "data.h"
 #include "assetcrud.h"
+#include "cleanup.h"
+
+
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
 <%cpp>
+
+{
     // Check URL validity
     std::string id;
     if((id = request.getArg("id")).empty()) {
-</%cpp>
-{ "error":"invalid_url" }
-<%cpp>
+        </%cpp>
+        { "error":"invalid_url" }
+        <%cpp>
         return HTTP_BAD_REQUEST;
     }
     // Get data
-    zmsg_t *tmp = asset_mgr.get_item(request.getArg("type"), id);
-    asset_msg_t *dta = NULL;
-    asset_msg_t *device = NULL;
-    if ( tmp != NULL ) 
-    {
-        if ( is_asset_msg (tmp) )
+    _scoped_zmsg_t *tmp = NULL;
+    tmp = asset_mgr.get_item(request.getArg("type"), id);
+    if (tmp == NULL) {
+        </%cpp>
+        { "error":"internal_error" }
+        <%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    _scoped_asset_msg_t *dta = NULL;
+    _scoped_asset_msg_t *device = NULL;
+
+    // TODO: We know element is not being properyl freed.
+    //      This is a mystery for the moment and ongoing
+    //      investigation is in progress.
+    if ( is_asset_msg (tmp) ) {
+        asset_msg_t* element = NULL;
+        element = asset_msg_decode (&tmp);
+        if ( asset_msg_id (element) == ASSET_MSG_DEVICE ) 
         {
-            asset_msg_t* element = asset_msg_decode (&tmp);
-            if ( asset_msg_id (element) == ASSET_MSG_DEVICE ) 
-            {
-                device = element;
-                zmsg_t *tmp_msg = asset_msg_get_msg (element);
-                dta = asset_msg_decode (&tmp_msg);
-            } else if (asset_msg_id (element) == ASSET_MSG_ELEMENT ) {
-                dta = element;
-            }
-            else
-            {
-                asset_msg_destroy (&element);
-                dta = NULL;
-                // TODO proper error handling
-            }
+            device = element;
+            _scoped_zmsg_t *tmp_msg = asset_msg_get_msg (element);
+            dta = asset_msg_decode (&tmp_msg);
+        } else if (asset_msg_id (element) == ASSET_MSG_ELEMENT ) {
+            dta = element;
         }
-        else if( is_common_msg (tmp) )
+        else
         {
-            common_msg_t* commonmsg = common_msg_decode (&tmp);
-            if ( common_msg_id (commonmsg) == COMMON_MSG_FAIL )
-            {
-                switch ( common_msg_errorno (commonmsg) ) {
-                    case DB_ERROR_NOTFOUND:
+            asset_msg_destroy (&element);
+            dta = NULL;
+            // TODO proper error handling
+        }
+    }
+    else if( is_common_msg (tmp) )
+    {
+        _scoped_common_msg_t* commonmsg = common_msg_decode (&tmp);
+        if ( common_msg_id (commonmsg) == COMMON_MSG_FAIL )
+        {
+            switch ( common_msg_errorno (commonmsg) ) {
+                case DB_ERROR_NOTFOUND:
 </%cpp>
 { "error":"item_not_found" }
 <%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_NOT_FOUND;
-                    case DB_ERROR_BADINPUT:
+                    common_msg_destroy (&commonmsg);
+                    return HTTP_NOT_FOUND;
+                case DB_ERROR_BADINPUT:
 </%cpp>
 { "error":"bad_input" }
 <%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_BAD_REQUEST;
-                    default:
+                    common_msg_destroy (&commonmsg);
+                    return HTTP_BAD_REQUEST;
+                default:
 </%cpp>
 { "error":"internal_error" }
 <%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_INTERNAL_SERVER_ERROR;
-                }
-            }
-            else
-            {
-                common_msg_destroy (&commonmsg);
-                dta = NULL;
-                //TODO proper error handling
+                    common_msg_destroy (&commonmsg);
+                    return HTTP_INTERNAL_SERVER_ERROR;
             }
         }
-        else {
-            zmsg_destroy (&tmp);
+        else
+        {
+            common_msg_destroy (&commonmsg);
             dta = NULL;
+            //TODO proper error handling
         }
     }
+    else {
+        zmsg_destroy (&tmp);
+        dta = NULL;
+    }
+    
+
     if ( dta == NULL ) {
 </%cpp>
-{ "error":"internal_error" }
+        { "error":"internal_error" }
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
@@ -94,8 +110,16 @@ asset_manager asset_mgr;
       "id": "<$ id $>"
     , "name": "<$ asset_msg_name(dta) $>"
 <%cpp>
-    zhash_t *ext = asset_msg_get_ext(dta);
+    _scoped_zhash_t *ext = NULL;
+    ext = asset_msg_get_ext(dta);
+    if (ext == NULL) {
+</%cpp>
+        { "error":"internal_error" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
     assert (ext);
+
     int ext_count = 0;
     if ( ext != NULL ) {
         ext_count = zhash_size (ext);
@@ -132,7 +156,9 @@ asset_manager asset_mgr;
     , "mac": "<$ temp_string $>"
 %       }
 <%cpp>
-        zlist_t *groups = asset_msg_get_groups (device);
+        _scoped_zlist_t *groups = asset_msg_get_groups (device);
+        if (groups == NULL) {
+}
         if ( groups != NULL ) {
             void* last = zlist_last(groups);
 </%cpp>
@@ -145,19 +171,24 @@ asset_manager asset_mgr;
 <%cpp>
         }
         zlist_destroy (&groups);
-        zlist_t *power = asset_msg_get_powers(device);
+        _scoped_zlist_t *power = NULL;
+        power = asset_msg_get_powers(device);
 
         if ( power != NULL ) {
             void* last = zlist_last(power);
 </%cpp>
     , "powers": [
 <%cpp>
-            for(it = zlist_first(power); it != 0;
+            for(it = zlist_first(power); it != NULL;
                 it = zlist_next(power) ) {
                 std::vector<std::string> tokens;
+
                 cxxtools::split(':', std::string((char*)it), std::back_inserter(tokens));
 
-                if(tokens.size() != 4) continue;
+                if(tokens.size() != 4) {
+                    log_warning ("Number of tokens != 4");
+                    continue;
+                }
 </%cpp>
         {
 %               if (!tokens[0].empty() && tokens[0] != SRCOUT_DESTIN_IS_NULL) {
@@ -214,4 +245,5 @@ asset_manager asset_mgr;
     zhash_destroy (&ext);
     asset_msg_destroy (&dta);
     asset_msg_destroy (&device);
+}
 </%cpp>

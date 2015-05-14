@@ -36,6 +36,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "persist_error.h"
 #include "dbhelpers.h"
 #include "monitor.h"
+#include "cleanup.h"
+
 
 bool is_epdu (const device_info_t &device)
 {
@@ -396,7 +398,7 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     auto ret_results = compute_total_rack_power_v1 (url, rack_devices, 300u);
 
     // transform numbers to string and fill hash
-    zhash_t* result = zhash_new();
+    _scoped_zhash_t* result = zhash_new();
     zhash_autofree (result);
     compute_result_value_set (result, ret_results.power);
     compute_result_scale_set (result, ret_results.scale);
@@ -704,21 +706,21 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     byte *buffer = zframe_data (frame);
     assert ( buffer );
     
-    zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
+    _scoped_zmsg_t* zmsg = zmsg_decode (buffer, zframe_size (frame));
     assert ( zmsg );
      
-    zmsg_t* pop = NULL;
-    zframe_t* fr;
+    _scoped_zmsg_t* pop = NULL;
+    // _scoped_zframe_t* fr;
     while ( ( pop = zmsg_popmsg (zmsg) ) != NULL )
     { 
-        asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
+        _scoped_asset_msg_t *item = asset_msg_decode (&pop); // zmsg_t is freed
         asset_msg_print(item);
         assert ( item );
          
         // process rooms
         if ( parent_type_id == asset_type::DATACENTER )
         {
-            fr = asset_msg_rooms (item);
+            zframe_t *fr = asset_msg_rooms (item);
             auto result1 = find_racks (fr, asset_msg_type(item));
             result.insert (result1.begin(), result1.end());
         }
@@ -727,7 +729,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
         if ( ( parent_type_id == asset_type::DATACENTER ) ||
              ( parent_type_id == asset_type::ROOM ) )
         {
-            fr = asset_msg_rows (item);
+            zframe_t *fr = asset_msg_rows (item);
             auto result1 = find_racks (fr, asset_msg_type(item));
             result.insert (result1.begin(), result1.end());
         }
@@ -737,7 +739,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
              ( parent_type_id == asset_type::ROOM ) ||
              ( parent_type_id == asset_type::ROW ) )
         {
-            fr = asset_msg_racks (item);
+            zframe_t *fr = asset_msg_racks (item);
             auto result1 = find_racks (fr, asset_msg_type(item)); 
             result.insert (result1.begin(), result1.end());
         }
@@ -786,15 +788,15 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     // here we need to select und unpack it
     
     // fill the getmsg
-    asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+    _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     asset_msg_set_element_id (getmsg, dc_element_id);
     asset_msg_set_recursive (getmsg, true);
     asset_msg_set_filter_type (getmsg, asset_type::RACK);
     log_debug("get_msg filled");
 
     // get topology
-    zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
-    asset_msg_t* item = asset_msg_decode (&dc_topology);
+    _scoped_zmsg_t* dc_topology = get_return_topology_from (url, getmsg);
+    _scoped_asset_msg_t* item = asset_msg_decode (&dc_topology);
     log_debug("get_msg decoded");
 
     // find all ids of rack in topology
@@ -807,16 +809,16 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
         
     // process rows
     log_debug("start look racks in rows");
-    fr = asset_msg_rows (item);
-    auto tmp = find_racks (fr, asset_msg_type(item));
+    zframe_t *fr2 = asset_msg_rows (item);
+    auto tmp = find_racks (fr2, asset_msg_type(item));
     rack_ids.insert(tmp.begin(), tmp.end());
     log_debug("end look racks in rows");
     log_debug("total number of racks found: %zu", rack_ids.size());
         
     // process racks
     log_debug("strat look racks");
-    fr = asset_msg_racks (item);
-    auto tmp1 = find_racks (fr, asset_msg_type(item)); 
+    zframe_t *fr3 = asset_msg_racks (item);
+    auto tmp1 = find_racks (fr3, asset_msg_type(item)); 
     rack_ids.insert(tmp1.begin(), tmp1.end());
     log_debug("end look racks");
     log_debug("total number of racks found: %zu", rack_ids.size());
@@ -849,7 +851,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("total: value = %" PRIi32 ", scale = %" PRIi16, ret_result.power, ret_result.scale);
 
     // transform numbers to string and fill hash
-    zhash_t* result = zhash_new();
+    _scoped_zhash_t* result = zhash_new();
     zhash_autofree (result);
     compute_result_value_set (result, ret_result.power);
     compute_result_scale_set (result, ret_result.scale);

@@ -15,6 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "cleanup.h"
 #include "utils_ymsg.h"
 #include "defs.h"
 #include "preproc.h"
@@ -189,9 +190,10 @@ ymsg_aux_set_double (ymsg_t *self, const char *key, uint8_t precision, double va
 
 static zchunk_t *
 app_to_chunk (app_t **request) {
-    if( ! request || ! *request ) return NULL;
+    if (!request || !*request)
+        return NULL;
 
-    zmsg_t *zmsg = app_encode (request);
+    _scoped_zmsg_t *zmsg = app_encode (request);
     if (!zmsg) {
         return NULL;
     }
@@ -221,9 +223,12 @@ ymsg_request_set_app (ymsg_t *self, app_t **request) {
 
 app_t *
 ymsg_request_app(ymsg_t *ymsg) {
+    if (!ymsg)
+        return NULL;
     zchunk_t *chunk = ymsg_request( ymsg );
-    if( ! chunk ) return NULL;
-    zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
+    if (!chunk)
+       return NULL;
+    _scoped_zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
     if( (! zmsg) || (! is_app( zmsg ) ) ) {
         zmsg_destroy( &zmsg );
         return NULL;
@@ -249,7 +254,7 @@ ymsg_response_app(ymsg_t *ymsg) {
     zchunk_t *chunk = ymsg_response( ymsg );
     if( ! chunk ) return NULL;
 
-    zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
+    _scoped_zmsg_t *zmsg = zmsg_decode( zchunk_data( chunk ), zchunk_size( chunk ) );
     if( (! zmsg) || (! is_app( zmsg ) ) ) {
         zmsg_destroy( &zmsg );
         return NULL;

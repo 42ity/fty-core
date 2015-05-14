@@ -20,6 +20,8 @@ FUTURE:
 #include "nmap_msg.h"
 #include "powerdev_msg.h"
 
+#include "cleanup.h"
+
 void print_usage() {
     // TODO
 }
@@ -59,7 +61,7 @@ int main (int argc, char *argv [])
     }
 
     mlm_client_verbose = verbose;
-    mlm_client_t *client = mlm_client_new ();
+    _scoped_mlm_client_t *client = mlm_client_new ();
     if (!client || mlm_client_connect(client, endpoint, timeout_num, address)) {
         zsys_error ("dshell: server not reachable at %s\n", endpoint);
         return 0;
@@ -69,7 +71,7 @@ int main (int argc, char *argv [])
     mlm_client_set_consumer (client, stream, subject);
     while (true) {
         //  Now receive and print any messages we get
-        zmsg_t *msg = mlm_client_recv (client);
+        _scoped_zmsg_t *msg = mlm_client_recv (client);
         if (!msg) {
             zsys_error ("interrupted\n");
             break;
@@ -79,39 +81,39 @@ int main (int argc, char *argv [])
         
         if (is_netdisc_msg (msg)) {
             printf ("\n");
-            netdisc_msg_t *netdisc_msg = netdisc_msg_decode (&msg);
+            _scoped_netdisc_msg_t *netdisc_msg = netdisc_msg_decode (&msg);
             netdisc_msg_print (netdisc_msg);
             netdisc_msg_destroy (&netdisc_msg);
         }
         else if (is_common_msg (msg)) {
             printf ("\n");
-            common_msg_t *common_msg = common_msg_decode (&msg);
+            _scoped_common_msg_t *common_msg = common_msg_decode (&msg);
             common_msg_print (common_msg); // TODO: For some common messages it might make sense not use generic _print function
             common_msg_destroy (&common_msg);
         }
         else if (is_asset_msg (msg)) {
             printf ("\n");
-            asset_msg_t *asset_msg = asset_msg_decode (&msg);
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&msg);
             asset_msg_print (asset_msg);
             asset_msg_destroy (&asset_msg);
             // TODO: For some messages it makes sense to not use generic _print function
         }
         else if (is_nmap_msg (msg)) {
             printf ("\n");
-            nmap_msg_t *nmap_msg = nmap_msg_decode (&msg);
+            _scoped_nmap_msg_t *nmap_msg = nmap_msg_decode (&msg);
             nmap_msg_print (nmap_msg);
             nmap_msg_destroy (&nmap_msg);
             // TODO: For some messages it makes sense to not use generic _print function
         }
         else if (is_powerdev_msg (msg)) {
             printf ("\n");
-            powerdev_msg_t *powerdev_msg = powerdev_msg_decode (&msg);
+            _scoped_powerdev_msg_t *powerdev_msg = powerdev_msg_decode (&msg);
             powerdev_msg_print (powerdev_msg);
             powerdev_msg_destroy (&powerdev_msg);
             // TODO: For some messages it makes sense to not use generic _print function
         }
         else { // assume string
-            char *content = zmsg_popstr (msg);
+            _scoped_char *content = zmsg_popstr (msg);
             printf ("%s\n", content ? content : "<nullptr>");
             zstr_free (&content);
         }

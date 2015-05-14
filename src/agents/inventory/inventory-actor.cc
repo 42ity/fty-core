@@ -7,6 +7,7 @@
 #include "log.h"
 #include "dbpath.h"
 #include "persistencelogic.h"
+#include "cleanup.h"
 
 // it is a persistence agent, so it has a right to comunicate with DB directly
 
@@ -37,7 +38,7 @@ int main (int argc, char *argv[])
     }
 
     // Create an agent
-    bios_agent_t *agent = bios_agent_new(addr, "persistenceinventory");
+    _scoped_bios_agent_t *agent = bios_agent_new(addr, "persistenceinventory");
     if ( !agent ) {
         log_error ("db-inventory: error bios_agent_new");
         return 1;

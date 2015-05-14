@@ -1,6 +1,7 @@
 #include <catch.hpp>
 #include <tntdb/connection.h>
 #include <tntdb/connect.h>
+#include <tntdb/value.h>
 
 #include <vector>
 #include <cxxtools/serializationinfo.h>
@@ -13,6 +14,7 @@
 #include "bios_agent.h"
 #include "persistencelogic.h"
 #include "utils.h"
+#include "cleanup.h"
 
 using namespace persist;
 
@@ -75,7 +77,12 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
     REQUIRE(ret.item.size() == 3);
 
     // 5.) DELETE NON EXISTING
-    ret2 = delete_from_measurement_by_id(conn, 424242);
+    // First find highest id
+    uint64_t highest_measurements_id = 0;
+    conn.selectValue("select id from t_bios_measurement ORDER BY id DESC LIMIT 1").get (highest_measurements_id); 
+    CHECK (highest_measurements_id != 0 );  
+        
+    ret2 = delete_from_measurement_by_id(conn, highest_measurements_id + 1);
     REQUIRE(ret2.status == 1);
     REQUIRE(ret2.affected_rows == 0);
 
@@ -93,9 +100,9 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     
     INFO ("measurement_getter start\n");
 
-    ymsg_t *in = ymsg_new(YMSG_SEND);
-    ymsg_t *out = ymsg_new(YMSG_REPLY);
-    char *out_s = NULL;
+    _scoped_ymsg_t *in = ymsg_new(YMSG_SEND);
+    _scoped_ymsg_t *out = ymsg_new(YMSG_REPLY);
+    _scoped_char *out_s = NULL;
     REQUIRE ( in != NULL);
     REQUIRE ( out != NULL);
 
@@ -113,7 +120,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
     CHECK ( out_s != NULL );
     CHECK ( str_eq (out_s, "return_measurements") );    
 
-    zchunk_t *ch = ymsg_get_response(out);
+    _scoped_zchunk_t *ch = ymsg_get_response(out);
     REQUIRE ( ch != NULL);
 
     std::string json ((char *) zchunk_data (ch), zchunk_size (ch));

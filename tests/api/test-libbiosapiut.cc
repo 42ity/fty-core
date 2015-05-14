@@ -4,12 +4,14 @@
  * Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
  */
 
+#include "cleanup.h"
+
 #include <catch.hpp>
 
 #include "bios_agent.h"
 
 TEST_CASE("Aux setters and getters work","[api][ymsg]") {
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    _scoped_ymsg_t *msg = ymsg_new(YMSG_SEND);
     ymsg_set_string(msg, "string",  "test_string");
     ymsg_set_int32(msg, "int32", 256);
     ymsg_set_int64(msg, "int64", 512);

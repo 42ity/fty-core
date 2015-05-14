@@ -8,6 +8,7 @@
 #include "asset_types.h"
 #include "asset_msg.h"
 #include "location_helpers.h"
+#include "cleanup.h"
 
 // Note: in the future, if more than one operation requires parsing these
 //       strings on input, we should consider moving this to a general
@@ -70,9 +71,9 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
     asset_msg_destroy(asset_msg);
 
     bool first_contains = true;
-    zframe_t *it_f = NULL;
-    zmsg_t *zmsg = NULL;
-    asset_msg_t *item = NULL;
+    _scoped_zframe_t *it_f = NULL;
+    _scoped_zmsg_t *zmsg = NULL;
+    _scoped_asset_msg_t *item = NULL;
     while(!(frames.empty() || names.empty())) {
         it_f = frames.front();
         frames.pop_front();
@@ -88,7 +89,7 @@ int asset_location_r(asset_msg_t** asset_msg, std::string& json) {
             goto err_cleanup;               
         zframe_destroy(&it_f);
 
-        zmsg_t *pop = NULL;
+        _scoped_zmsg_t *pop = NULL;
         bool first = true;
         while((pop = zmsg_popmsg(zmsg)) != NULL) { // caller owns zmgs_t
             if(!is_asset_msg (pop))

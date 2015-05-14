@@ -14,6 +14,7 @@
 #include "nmap_msg.h"
 #include "log.h"
 #include "defs.h"
+#include "cleanup.h"
 
 using namespace cxxtools::xml;
 using namespace cxxtools;
@@ -388,19 +389,19 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
     nmap_msg_t *devscan = NULL;
     
-    zmsg_t *devscan_ports = NULL;       // MATRYOSHKA ("port_scan")
-    zmsg_t *devscan_os = NULL;          // MATRYOSHKA ("os_scan")
-    zmsg_t *devscan_scripts = NULL;     // MATRYOSHKA ("script")
+    _scoped_zmsg_t *devscan_ports = NULL;       // MATRYOSHKA ("port_scan")
+    _scoped_zmsg_t *devscan_os = NULL;          // MATRYOSHKA ("os_scan")
+    _scoped_zmsg_t *devscan_scripts = NULL;     // MATRYOSHKA ("script")
 
     nmap_msg_t *portscan = NULL;    
-    zmsg_t *portscan_scripts = NULL;    // MATRYOSHKA ("script")
+    _scoped_zmsg_t *portscan_scripts = NULL;    // MATRYOSHKA ("script")
 
     nmap_msg_t *osscan = NULL;
-    zmsg_t *osscan_portused = NULL;     // MATRYOSHKA ("os_scan")
-    zmsg_t *osscan_osmatch = NULL;      // MATRYOSHKA ("portused")
+    _scoped_zmsg_t *osscan_portused = NULL;     // MATRYOSHKA ("os_scan")
+    _scoped_zmsg_t *osscan_osmatch = NULL;      // MATRYOSHKA ("portused")
 
     nmap_msg_t *osmatch = NULL;
-    zmsg_t *osmatch_osclass = NULL;     // MATRYOSHKA ("osclass")
+    _scoped_zmsg_t *osmatch_osclass = NULL;     // MATRYOSHKA ("osclass")
 
     // tntnet specific String constants; _term suffix
     const String accuracy_term("accuracy");
@@ -692,7 +693,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                         (const void *) tmp.data(),
                         tmp.size());
 
-                    zmsg_t *to_be_ins = 
+                    _scoped_zmsg_t *to_be_ins = 
                     nmap_msg_encode_script (
                         convert<std::string>
                         (el.attribute(id_term)).c_str(),
@@ -721,7 +722,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
 
                 // std::stoi throws on empty string
                 assert (el.attribute (portid_term).empty() == false);
-                zmsg_t *to_be_ins =
+                _scoped_zmsg_t *to_be_ins =
                 nmap_msg_encode_portused (
                     (byte) str2state(
                     convert<std::string>
@@ -879,7 +880,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                 }
                 assert (devscan_ports != NULL);
 
-                zmsg_t *portscan_msg = nmap_msg_encode (&portscan); // portscan freed
+                _scoped_zmsg_t *portscan_msg = nmap_msg_encode (&portscan); // portscan freed
                 assert (portscan_msg);
 
                 rv = zmsg_addmsg (
@@ -957,7 +958,7 @@ void parse_device_scan(std::istream& inp, zsock_t *socket) {
                 }
                 assert (devscan_os != NULL);
 
-                zmsg_t *osscan_msg = nmap_msg_encode (&osscan); // osscan freed
+                _scoped_zmsg_t *osscan_msg = nmap_msg_encode (&osscan); // osscan freed
                 assert (osscan_msg);
 
                 rv = zmsg_addmsg (

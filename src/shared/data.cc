@@ -1,12 +1,10 @@
-#include "data.h"
-
-#include <limits.h>
 #include <zmq.h>
 #include <czmq.h>
 #include <tnt/http.h>
 #include <algorithm>
 #include <string>
 #include <map>
+#include <limits.h>
 
 #include "log.h"
 #include "asset_types.h"
@@ -16,6 +14,16 @@
 #include "upsstatus.h"
 #include "persistencelogic.h"
 #include "defs.h"
+
+#include "cleanup.h"
+#include "defs.h"
+#include "data.h"
+#include "asset_types.h"
+#include "common_msg.h"
+#include "dbpath.h"
+#include "monitor.h"
+#include "upsstatus.h"
+#include "utils.h"
 
 typedef std::string (*MapValuesTransformation)(std::string);
 
@@ -47,23 +55,23 @@ zmsg_t *asset_manager::get_item(std::string type, std::string id) {
     if(real_id == 0) {
         return NULL;
     }
-    zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
-    zmsg_t *ret = persist::process_message(&get_element);
+    _scoped_zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
+    _scoped_zmsg_t *ret = persist::process_message(&get_element);
     zmsg_destroy(&get_element);
     assert(ret != NULL);
     if (is_common_msg(ret) ) {
-        return ret;          // it can be only COMMON_MSG_FAIL
+        return zmsg_dup (ret);          // it can be only COMMON_MSG_FAIL
     }
     // Return directly element message which is packed inside return element
-    asset_msg_t* msg = asset_msg_decode(&ret);
+    _scoped_asset_msg_t* msg = asset_msg_decode(&ret);
     if(msg == NULL) {
         log_error("Decoding reply from persistence failed!");
         return NULL;
     }
 
-    ret = asset_msg_get_msg(msg);
+    zmsg_t *return_message = asset_msg_get_msg(msg);
     asset_msg_destroy(&msg);
-    return ret;
+    return return_message;
 }
 
 zmsg_t *asset_manager::get_items(std::string type) {
@@ -73,7 +81,7 @@ zmsg_t *asset_manager::get_items(std::string type) {
         return NULL;
     }
 
-    zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
+    _scoped_zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
     zmsg_t *ret = persist::process_message(&get_elements);
     zmsg_destroy(&get_elements);
 
@@ -162,7 +170,7 @@ std::string measures_manager::map_values(std::string name, std::string value) {
 std::string ui_props_manager::get(std::string& result) {
 
     //FIXME: where to put the constant?
-    common_msg_t *reply = select_ui_properties(url.c_str());
+    _scoped_common_msg_t *reply = select_ui_properties(url.c_str());
     if (!reply)
         return std::string("{\"error\" : \"Can't load ui/properties from database!\"}");
 
@@ -180,29 +188,29 @@ std::string ui_props_manager::get(std::string& result) {
         return std::string("{\"error\" : \"Unexpected msg_id delivered, expected COMMON_MSG_RETURN_CINFO\"}");
     }
 
-    zmsg_t *zmsg = common_msg_get_msg(reply);
+    _scoped_zmsg_t *zmsg = common_msg_get_msg(reply);
     if (!zmsg) {
         common_msg_destroy(&reply);
         return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");
     }
 
-    common_msg_t *msg = common_msg_decode(&zmsg);
+    _scoped_common_msg_t *msg = common_msg_decode(&zmsg);
     common_msg_destroy(&reply);
     if (!msg)
         return std::string("{\"error\" : \"Can't decode inner message from reply!\"}");
     
-    zchunk_t *info = common_msg_get_info(msg);
+    _scoped_zchunk_t *info = common_msg_get_info(msg);
     common_msg_destroy(&msg);
     if (!info)
         return std::string("{\"error\" : \"Can't get chunk from reply!\"}");
 
-    char *s = zchunk_strdup(info);
+    _scoped_char *s = zchunk_strdup(info);
     zchunk_destroy(&info);
     if (!s)
         return std::string("{\"error\" : \"Can't get string from reply!\"}");
     
     result = s;
-    free(s);
+    FREE0 (s)
 
     return std::string{};
 }
@@ -211,12 +219,12 @@ std::string ui_props_manager::put(const std::string& ext) {
 
     const char* s = ext.c_str();
 
-    zchunk_t *chunk = zchunk_new(s, strlen(s));
+    _scoped_zchunk_t *chunk = zchunk_new(s, strlen(s));
     if (!chunk)
         return std::string("fail to create zchunk");
 
     //FIXME: where to store client_id?
-    common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
+    _scoped_common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
     uint32_t msg_id = common_msg_id(reply);
     common_msg_destroy(&reply);
 
