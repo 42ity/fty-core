@@ -156,11 +156,28 @@ default_posval() {
 ### high in its environment variables for a specific script run.
 ### Scripts can use this mechanism to set flexible required-verbosity
 ### levels for their messages.
+default_posval CI_DEBUGLEVEL_ECHO       0
+        # By default, do echo unless $1 says otherwise
+
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
 default_posval CI_DEBUGLEVEL_DEBUG      5
 default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
+
+logmsg_echo() {
+    ### Optionally echoes a message, based on current debug-level
+    ### Does not add any headers to the output line
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        WANT_DEBUG_LEVEL="$1"
+        shift
+    else
+        WANT_DEBUG_LEVEL=0      
+    fi
+    [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
+    echo -E "$@"
+    :
+}
 
 logmsg_info() {
     WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_INFO
