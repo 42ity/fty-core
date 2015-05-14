@@ -3,7 +3,7 @@
 #include <vector>
 #include <tntdb/connection.h>
 
-#include "alert.h"
+#include "db/alerts.h"
 #include "utils.h"
 #include "dbpath.h"
 #include "data.h"

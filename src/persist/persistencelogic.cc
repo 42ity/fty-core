@@ -47,7 +47,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
-#include "alert.h"
+#include "db/alerts.h"
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
