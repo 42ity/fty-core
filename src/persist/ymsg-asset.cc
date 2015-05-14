@@ -54,6 +54,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
     }
     LOG_END;
 }
+
 void process_alert(ymsg_t* out, char** out_subj,
                    ymsg_t* in, const char* in_subj)
 {
@@ -67,7 +68,7 @@ void process_alert(ymsg_t* out, char** out_subj,
     log_debug("processing alert"); // FIXME: some macro
     
     // decode message
-    char *rule = NULL, *devices = NULL, *desc = NULL;
+    _scoped_char *rule = NULL, *devices = NULL, *desc = NULL;
     uint8_t priority;
     int8_t state;
     time_t since;
@@ -111,8 +112,8 @@ void process_alert(ymsg_t* out, char** out_subj,
         LOG_END_ABNORMAL(e);
         ymsg_set_status( out, false );
     }
-    if(rule) free(rule);
-    if(devices) free(devices);
+    FREE0 (rule)
+    FREE0 (devices)
     LOG_END;
 }
 

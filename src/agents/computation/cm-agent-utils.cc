@@ -32,6 +32,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg++.h"
 
 #include "cm-agent-utils.h"
+#include "cleanup.h"
 
 int 
 replyto_err 
@@ -43,7 +44,7 @@ replyto_err
         return -1;
     }
 
-    ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
+    _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
     assert (msg_reply);
     ymsg_set_status (msg_reply, false);
     ymsg_set_errmsg (msg_reply, error_message);

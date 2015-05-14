@@ -73,6 +73,7 @@ enum ipaddr_version {
 };
 
 //TODO: Make AGENT_NUT_ values configurable
+// NOTE !!! If you change this value you have to change the following tests as well: TODO
 //! Measurement is sent each AGENT_NUT_REPEAT_INTERVAL_SEC seconds even when there is no change in value. This is done to conserve space and bandwidth.
 #define AGENT_NUT_REPEAT_INTERVAL_SEC 300
 //! Approximate sampling rate of NUT  

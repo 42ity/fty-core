@@ -1,4 +1,5 @@
 #include "utils_app.h"
+#include "cleanup.h"
 #include "utils.h"
 
 int32_t
@@ -118,7 +119,7 @@ app_args_set_string(app_t* msg, const char *key, const char *value) {
     errno = 0;
     if(!msg) { errno = EINVAL; return ; };
 
-    zhash_t *hash = app_get_args(msg);
+    _scoped_zhash_t *hash = app_get_args(msg);
     if(hash == NULL) {
         hash = zhash_new();
         zhash_autofree(hash);

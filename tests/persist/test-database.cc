@@ -9,6 +9,8 @@
 #include "persistencelogic.h"
 #include "nmap_msg.h"
 
+#include "cleanup.h"
+
 TEST_CASE (
 "function: nmap_msg_process",
 "[db][database][store][storing][message][nmap][network][discovery]") {
@@ -29,14 +31,14 @@ TEST_CASE (
         const char *ip_1 = "10.130.38.197";
         const int state_1 = 0;
         const char *reason_1 = "echo-reply";
-        nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_1);
 
         nmap_msg_set_addr (msg_1, "%s", ip_1);
         nmap_msg_set_host_state (msg_1, (byte) state_1);
         nmap_msg_set_reason (msg_1, "%s", reason_1);
 
-        zmsg_t *zmsg1 = nmap_msg_encode(&msg_1);
+        _scoped_zmsg_t *zmsg1 = nmap_msg_encode(&msg_1);
         REQUIRE_NOTHROW(persist::nmap_msg_process(&zmsg1));
 
         // now check the db, this particular line has been stored.
@@ -50,13 +52,13 @@ TEST_CASE (
         const char *ip_2 = "192.168.0.1";
         const int state_2 = 1;
  
-        nmap_msg_t *msg_2 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_2 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_2);
 
         nmap_msg_set_addr (msg_2, "%s", ip_2);
         nmap_msg_set_host_state (msg_2, (byte) state_2);
 
-        zmsg_t *zmsg2 = nmap_msg_encode(&msg_2);
+        _scoped_zmsg_t *zmsg2 = nmap_msg_encode(&msg_2);
         REQUIRE_NOTHROW(persist::nmap_msg_process(&zmsg2));
         result = st.setString("v1", ip_2).select();
         REQUIRE (result.size() == 1);
@@ -64,12 +66,12 @@ TEST_CASE (
         // Third message - one field only
         const char *ip_3 = "102.16.230.5";
  
-        nmap_msg_t *msg_3 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_3 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_3);
 
         nmap_msg_set_addr (msg_3, "%s", ip_3);
 
-        zmsg_t *zmsg3 = nmap_msg_encode(&msg_3);
+        _scoped_zmsg_t *zmsg3 = nmap_msg_encode(&msg_3);
         REQUIRE_NOTHROW(persist::nmap_msg_process(&zmsg3));
         result = st.setString("v1", ip_3).select();
         REQUIRE (result.size() == 1);
@@ -81,7 +83,7 @@ TEST_CASE (
         //
         const int state_1 = 0;
         const char *reason_1 = "echo-reply";
-        nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
+        _scoped_nmap_msg_t *msg_1 = nmap_msg_new (NMAP_MSG_LIST_SCAN);
         assert (msg_1);
 
         nmap_msg_set_host_state (msg_1, (byte) state_1);
@@ -92,7 +94,7 @@ TEST_CASE (
             "SELECT COUNT(*) FROM t_bios_discovered_ip");
 
         unsigned int size_before = st.select().size();        
-        zmsg_t *zmsg1 = nmap_msg_encode(&msg_1);
+        _scoped_zmsg_t *zmsg1 = nmap_msg_encode(&msg_1);
         REQUIRE_NOTHROW(persist::nmap_msg_process(&zmsg1));
         unsigned int size_after = st.select().size();
 

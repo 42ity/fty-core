@@ -26,6 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bios_agent.h"
 
 #include "agents.h"
+#include "cleanup.h"
 
 ymsg_t *
 bios_netmon_encode
@@ -85,12 +86,12 @@ ymsg_t *
     if ( !message )
         return NULL;
    
-    app_t *request = app_new (APP_MODULE);
+    _scoped_app_t *request = app_new (APP_MODULE);
     // module name
     app_set_name (request, module_name);
     
     // device name
-    zlist_t *paramslist = zlist_new ();
+    _scoped_zlist_t *paramslist = zlist_new ();
     zlist_autofree (paramslist);
     zlist_append (paramslist, (void *)device_name);
     app_set_params (request, &paramslist); 
@@ -100,12 +101,12 @@ ymsg_t *
     app_set_args (request, ext_attributes);
     zhash_destroy (ext_attributes);
 
-    zmsg_t *request_encoded = app_encode (&request);
+    _scoped_zmsg_t *request_encoded = app_encode (&request);
     byte *buffer;
     size_t sz = zmsg_encode (request_encoded, &buffer);
     zmsg_destroy(&request_encoded);
 
-    zchunk_t *request_chunk = zchunk_new (buffer, sz);
+    _scoped_zchunk_t *request_chunk = zchunk_new (buffer, sz);
     free(buffer);
 
     ymsg_set_request (message, &request_chunk);
@@ -124,21 +125,21 @@ bios_inventory_decode (ymsg_t **self_p, char **device_name, zhash_t **ext_attrib
     {
         ymsg_t *self = *self_p;
        
-        zchunk_t *request = ymsg_get_request (self);
+        _scoped_zchunk_t *request = ymsg_get_request (self);
         if ( !request )
                 return -2;  // no chunk to decode        
-        zmsg_t *zmsg = zmsg_decode (zchunk_data (request), zchunk_size (request));
+        _scoped_zmsg_t *zmsg = zmsg_decode (zchunk_data (request), zchunk_size (request));
         zchunk_destroy (&request);
         
         if ( !zmsg )
             return -2; // zmsg decode fail
 
-        app_t *app_msg = app_decode (&zmsg);
+        _scoped_app_t *app_msg = app_decode (&zmsg);
     
         if ( !app_msg )
             return -3; // malformed app_msg
 
-        zlist_t *param = app_get_params (app_msg);
+        _scoped_zlist_t *param = app_get_params (app_msg);
         if ( zlist_size (param) != 1 )
         {
             zlist_destroy (&param);
@@ -263,7 +264,7 @@ bios_web_average_reply_encode (const char *json) {
     ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
-    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    _scoped_zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
     if (!chunk) {
         ymsg_destroy (&message);       
         return NULL;
@@ -339,7 +340,7 @@ bios_db_measurements_read_reply_encode (const char *json) {
     ymsg_t *message = ymsg_new (YMSG_REPLY);
     if (!message) 
         return NULL;
-    zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
+    _scoped_zchunk_t *chunk = zchunk_new ((void *) json, strlen (json));
     if (!chunk) {
         ymsg_destroy (&message);       
         return NULL;
@@ -383,7 +384,7 @@ bios_alert_encode (const char *rule_name,
         ( priority > ALERT_PRIORITY_P5 )
     ) return NULL;
     ymsg_t *msg = ymsg_new(YMSG_SEND);
-    app_t *app = app_new(APP_MODULE);
+    _scoped_app_t *app = app_new(APP_MODULE);
     app_set_name( app, "ALERT" );
     app_args_set_string( app, "rule", rule_name );
     app_args_set_uint8( app, "priority", priority );

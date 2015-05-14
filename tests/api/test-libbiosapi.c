@@ -9,6 +9,8 @@
 #include <bios_agent.h>
 #include <stdio.h>
 
+#include "cleanup.h"
+
 int main() {
 
     int r;
@@ -16,16 +18,16 @@ int main() {
     static const char* endpoint = "ipc://@/malamute";
     static const char* content_type = "application/octet-stream";
 
-    bios_agent_t *reader = bios_agent_new(endpoint, "reader");
+    _scoped_bios_agent_t *reader = bios_agent_new(endpoint, "reader");
     assert(reader);
     fprintf(stderr, ">>>>>> reader::new done\n");
     
-    bios_agent_t *writer = bios_agent_new(endpoint, "writer");
+    _scoped_bios_agent_t *writer = bios_agent_new(endpoint, "writer");
     assert(writer);
     fprintf(stderr, ">>>>>> writer::new done\n");
 
     {
-    ymsg_t *ymsg = ymsg_new(YMSG_SEND);
+    _scoped_ymsg_t *ymsg = ymsg_new(YMSG_SEND);
     ymsg_set_content_type(ymsg, content_type);
 
     fprintf(stderr, ">>>>>> writer::sendto starting\n");
@@ -36,7 +38,7 @@ int main() {
 
     {
     fprintf(stderr, ">>>>>> reader::recv starting\n");
-    ymsg_t *ymsg = bios_agent_recv(reader);
+    _scoped_ymsg_t *ymsg = bios_agent_recv(reader);
     fprintf(stderr, ">>>>>> reader::reader done\n");
     const char* mime = ymsg_content_type(ymsg);
     assert(streq(mime, content_type));

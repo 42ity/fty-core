@@ -1,3 +1,4 @@
+#include "cleanup.h"
 #include "malamute.h"
 #include "monitor.h"
 #include "ymsg.h"
@@ -40,20 +41,20 @@ int main (int argc, char *argv []) {
     // We are listening for measurements
     mlm_client_set_consumer(client, bios_get_stream_main (), ".*"); // regex might be "^measurements\..+" 
     while(!zsys_interrupted) {
-        zmsg_t *msg = mlm_client_recv(client);
+        _scoped_zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
             continue;
         log_info ("Command is '%s'", mlm_client_command(client));
         // Mailbox deliver is direct message
         if(streq (mlm_client_command(client), "MAILBOX DELIVER")) {
             if(is_ymsg(msg)) {
-                ymsg_t *in = ymsg_decode(&msg);
+                _scoped_ymsg_t *in = ymsg_decode(&msg);
                 if(ymsg_id(in) != YMSG_SEND) {
                     log_warning("Got REPLY ymsg, that looks weird, discarding!\n");
                     ymsg_destroy(&in);
                     continue;
                 }
-                ymsg_t *out = ymsg_new(YMSG_REPLY);
+                _scoped_ymsg_t *out = ymsg_new(YMSG_REPLY);
                 char* out_subj = NULL;
                 persist::process_ymsg(out, &out_subj, in, mlm_client_subject(client));
                 if(out_subj == NULL) {
@@ -68,7 +69,7 @@ int main (int argc, char *argv []) {
                     zchunk_t *chunk = ymsg_get_request(in);
                     ymsg_set_request(out, &chunk);
                 }
-                zmsg_t *out_z = ymsg_encode(&out);
+                _scoped_zmsg_t *out_z = ymsg_encode(&out);
                 if(out_z != NULL)
                 mlm_client_sendto(client, (char*)mlm_client_sender(client),
                                           out_subj, NULL, 0, &out_z);
@@ -83,7 +84,7 @@ int main (int argc, char *argv []) {
                     continue;
                 }
 
-                zmsg_t *rep = persist::process_message(&msg);
+                _scoped_zmsg_t *rep = persist::process_message(&msg);
                 if(rep != NULL) {
                     // Send a reply back
                     mlm_client_sendto(client, (char*)mlm_client_sender(client),
@@ -99,7 +100,7 @@ int main (int argc, char *argv []) {
                 persist::process_measurement(topic, &msg);
             // Legacy stuff
             } else {
-                zmsg_t *rep = persist::process_message(&msg);
+                _scoped_zmsg_t *rep = persist::process_message(&msg);
                 if(rep != NULL)
                     zmsg_destroy(&rep);
             }

@@ -31,6 +31,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "agents.h"
 #include "dbpath.h"
 #include "bios_agent.h"
+#include "cleanup.h"
+#include "utils.h"
 
 namespace persist {
 

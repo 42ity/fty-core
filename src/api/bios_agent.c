@@ -6,6 +6,7 @@
 #include "bios_agent.h"
 #include "utils_ymsg.h"
 #include "defs.h"
+#include "cleanup.h"
 
 #define TIMEOUT 1000
 #define BIOS_MLM_STREAM "bios"
@@ -69,7 +70,7 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
     }
     // Note: zmq_atomic_counter_inc() returns current value and increments by one
     ymsg_set_seq (*msg_p, zmq_atomic_counter_inc (self->seq));
-    zmsg_t *zmsg = ymsg_encode (msg_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (msg_p);
     if (!zmsg) {
         return -1;
     }
@@ -83,7 +84,7 @@ bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject,
         return -2;
     }
     ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
-    zmsg_t *zmsg = ymsg_encode (send_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (send_p);
     if (!zmsg) {
         return -1;
     }
@@ -100,10 +101,10 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
     ymsg_set_rep (*reply_p, ymsg_seq (send));
 
     if (ymsg_is_repeat (send)) { // default is not to repeat
-        zchunk_t *chunk = ymsg_get_request (send);
+        _scoped_zchunk_t *chunk = ymsg_get_request (send);
         ymsg_set_request (*reply_p, &chunk);
     }
-    zmsg_t *zmsg = ymsg_encode (reply_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (reply_p);
     if (!zmsg) {
         return -1;
     }
@@ -117,7 +118,7 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
         return -2;
     }
     ymsg_set_seq (*send_p, zmq_atomic_counter_inc (self->seq)); // return value && increment by one
-    zmsg_t *zmsg = ymsg_encode (send_p);
+    _scoped_zmsg_t *zmsg = ymsg_encode (send_p);
     if (!zmsg) {
         return -1;
     }
@@ -148,7 +149,7 @@ bios_agent_recv (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
-    zmsg_t *zmsg = mlm_client_recv (self->client);
+    _scoped_zmsg_t *zmsg = mlm_client_recv (self->client);
     if (!zmsg) {
         return NULL;
     }
@@ -164,20 +165,22 @@ bios_agent_recv_wait(bios_agent_t *self, int timeout) {
     }
 
     zsock_t *pipe = bios_agent_msgpipe(self);
-    if(!pipe) {
+    if (!pipe) {
         return NULL;
     }
 
-    zmsg_t *zmsg = NULL;
+    _scoped_zmsg_t *zmsg = NULL;
     zsock_t *which = NULL;
-    zpoller_t *poller = zpoller_new(pipe, NULL);
-    if(poller) {
-        which = (zsock_t *)zpoller_wait(poller, timeout);
-        if(which) {
-            zmsg = mlm_client_recv(self->client);
-        }
-        zpoller_destroy(&poller);
+    _scoped_zpoller_t *poller = zpoller_new(pipe, NULL);
+    if (!poller) {
+        return NULL;
     }
+
+    which = (zsock_t *) zpoller_wait (poller, timeout);
+    if(which) {
+        zmsg = mlm_client_recv (self->client);
+    }
+    zpoller_destroy (&poller);
 
     if (!zmsg) {
         return NULL;
@@ -240,7 +243,7 @@ bios_agent_content (bios_agent_t *self) {
     if (!self) {
         return NULL;
     }
-    zmsg_t *zmsg = mlm_client_content (self->client);
+    _scoped_zmsg_t *zmsg = mlm_client_content (self->client);
     if (!zmsg) {
         return NULL;
     }
@@ -321,7 +324,7 @@ ymsg_set_content_type (ymsg_t *self, const char *content_type) {
 
 void
 set_hash(ymsg_t *msg, const void *key, void *value) {
-    zhash_t *hash = ymsg_get_aux(msg);
+    _scoped_zhash_t *hash = ymsg_get_aux(msg);
     if(hash == NULL) {
         hash = zhash_new();
         zhash_autofree(hash);
