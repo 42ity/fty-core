@@ -122,6 +122,8 @@ struct db_alert_t {
     m_alrt_ntfctn_t     notification;
     int64_t             date_from;
     int64_t             date_till;
+    std::string         type_name;
+    std::string         subtype_name;
     std::vector<m_dvc_id_t> device_ids;
 };
 
