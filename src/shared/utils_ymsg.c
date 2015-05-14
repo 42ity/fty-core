@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg.h"
 #include "defs.h"
 #include "preproc.h"
+#include "utils.h"
 
 int
 ymsg_aux_uint64 (ymsg_t *self, const char *key, uint64_t *value)
@@ -197,14 +198,14 @@ app_to_chunk (app_t **request) {
     if (!zmsg) {
         return NULL;
     }
-    byte *buffer = NULL;
+    _scoped_byte *buffer = NULL;
     size_t buff_size = zmsg_encode (zmsg, &buffer);
     zmsg_destroy (&zmsg);
     if (buff_size == 0 || !buffer) {
         return NULL;
     }
     zchunk_t *chunk = zchunk_new ((const void *) buffer, buff_size);
-    free (buffer);
+    FREE0 (buffer)
     return chunk;
 }
 
