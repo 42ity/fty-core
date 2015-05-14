@@ -3,7 +3,7 @@
 #include "dbpath.h"
 #include "log.h"
 
-#include "alert.h"
+#include "db/alert.h"
 #include "assetcrud.h"
 #include "monitor.h"
 

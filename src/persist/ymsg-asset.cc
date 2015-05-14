@@ -1,7 +1,7 @@
 #include <string>
 
 #include "assetcrud.h"
-#include "alert.h"
+#include "db/alert.h"
 
 #include "log.h"
 #include "cleanup.h"

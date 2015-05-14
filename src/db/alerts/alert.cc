@@ -27,7 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/transaction.h>
 #include "log.h"
 #include "defs.h"
-#include "alert.h"
+#include "db/alerts/alert_basic.h"
 #include "agents.h"
 #include "dbpath.h"
 #include "bios_agent.h"
