@@ -420,26 +420,13 @@ CREATE VIEW v_bios_alert AS
     FROM
         t_bios_alert;
 
-/* for REST API: /asset/all */
-DROP VIEW IF EXISTS v_bios_alert_all;
-CREATE VIEW v_bios_alert_all AS
+DROP VIEW IF EXISTS v_bios_asset_element_type;
+CREATE VIEW v_bios_asset_element_type AS
     SELECT
-        v1.id,
-        v1.rule_name,
-        v1.date_from,
-        v1.priority,
-        v1.state,
-        v1.description,
-        v1.date_till,
-        v1.notification,
-        t3.id_asset_element
+        t1.id_asset_element_type AS id,
+        t1.name 
     FROM
-        v_bios_alert v1
-        LEFT JOIN v_bios_alert_device v2
-            ON v1.id = v2.alert_id
-        LEFT JOIN t_bios_monitor_asset_relation t3
-            ON v2.device_id = t3.id_discovered_device
-    ORDER BY v1.id;
+        t_bios_asset_element_type t1;
 
 CREATE VIEW v_bios_asset_device AS
     SELECT  v1.id_asset_device,
@@ -449,6 +436,56 @@ CREATE VIEW v_bios_asset_device AS
     FROM t_bios_asset_device v1
         LEFT JOIN t_bios_asset_device_type v2
         ON (v1.id_asset_device_type = v2.id_asset_device_type);
+
+DROP VIEW IF EXISTS v_web_element;
+CREATE VIEW v_web_element AS
+    SELECT
+        t1.id_asset_element AS id,
+        t1.name,
+        t1.id_type,
+        v3.name AS type_name,
+        v4.id_asset_device_type AS subtype_id,
+        v4.name AS subtype_name,
+        t1.id_parent,
+        t2.id_type AS id_parent_type,
+        t1.business_crit,
+        t1.status,
+        t1.priority
+    FROM        
+        t_bios_asset_element t1
+        LEFT JOIN t_bios_asset_element t2 
+            ON (t1.id_parent = t2.id_asset_element)
+        LEFT JOIN v_bios_asset_element_type v3
+            ON (t1.id_type = v3.id)
+        LEFT JOIN v_bios_asset_device v4
+            ON (v4.id_asset_element = t1.id_asset_element);
+ 
+
+/* for REST API: /asset/all */
+DROP VIEW IF EXISTS v_web_alert_all;
+CREATE VIEW v_web_alert_all AS
+    SELECT
+        v1.id,
+        v1.rule_name,
+        v1.date_from,
+        v1.priority,
+        v1.state,
+        v1.description,
+        v1.date_till,
+        v1.notification,
+        t3.id_asset_element,
+        v4.type_name,
+        v4.subtype_name
+    FROM
+        v_bios_alert v1
+        LEFT JOIN v_bios_alert_device v2
+            ON v1.id = v2.alert_id
+        LEFT JOIN t_bios_monitor_asset_relation t3
+            ON v2.device_id = t3.id_discovered_device
+        LEFT JOIN v_web_element v4
+            ON t3.id_asset_element = v4.id
+    ORDER BY v1.id;
+
 
 CREATE VIEW v_bios_asset_link AS
     SELECT  v1.id_link,
@@ -495,7 +532,6 @@ create view v_bios_asset_device_type as select id_asset_device_type as id, name 
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
 create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
-create view v_bios_asset_element_type as select id_asset_element_type as id, name from t_bios_asset_element_type ;
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
