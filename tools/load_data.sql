@@ -522,6 +522,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* KAROL-LAB */
+
 insert into t_bios_asset_element (name , id_type, id_parent) values ("KAROL-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Server for Karol's average testing data", @last_asset_element);
@@ -794,7 +795,9 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
 /* SRVs */
 INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV1-LAB', @device_server);
 INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('SRV2-LAB', @device_server);
+
 INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('KAROL-LAB', @device_server);
+
 INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV1-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-LAB')
@@ -803,10 +806,12 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'SRV2-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-LAB')
 );
+
 INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
     (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'KAROL-LAB'),
     (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'KAROL-LAB')
 );
+
 
 /* Example averages */
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
@@ -825,12 +830,15 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 01:20:00", 200, -1, @topic_id);
 
 /* KAROL-LAB */
+
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
     SELECT r.id_discovered_device,'C','temperature.thermal_zone0@karol.lab.mbt.etn.com' 
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id2 = LAST_INSERT_ID();
+
 /* Expected continuous data */
+/*
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:42:13", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:47:13", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:48:22", 589, -1, @topic_id2);
@@ -984,7 +992,7 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 10:48:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 10:53:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 10:58:52", 560, -1, @topic_id2);
-/* 10+ */
+
 
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 11:03:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 11:08:52", 560, -1, @topic_id2);
@@ -1103,7 +1111,6 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 19:53:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 19:58:52", 560, -1, @topic_id2);
 
-/* 20 + */
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 20:03:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 20:08:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 20:13:52", 560, -1, @topic_id2);
@@ -1155,6 +1162,7 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 23:48:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 23:53:52", 560, -1, @topic_id2);
 INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 23:58:52", 560, -1, @topic_id2);
+*/
 
 /* Example alerts */
 INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (2, "upsonbypass@UPS2-LAB", "2015-03-28 06:41:10", 2, 1, "UPS is on battery");
