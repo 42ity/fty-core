@@ -231,7 +231,7 @@ logmsg_debug() {
 tee_stderr() {
     ### This routine allows to optionally "sniff" piped streams, e.g.
     ###   prog1 | tee_stderr LISTING_TOKENS $DEBUGLEVEL_PRINTTOKENS | prog2
-    TEE_TAG="PIPESNIFF: "
+    TEE_TAG="PIPESNIFF:"
     [ -n "$1" ] && TEE_TAG="$1:"
     [ -n "$2" -a "$2" -ge 0 ] 2>/dev/null && \
         TEE_DEBUG="$2" || \
