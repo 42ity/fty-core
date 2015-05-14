@@ -139,48 +139,66 @@ determineDirs() {
 ### details, while "No" only leaves the default errors and warnings.
 [ -z "$CI_DEBUG" ] && CI_DEBUG=3
 case "$CI_DEBUG" in
-    [Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])     CI_DEBUG=99 ;;
-    [Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]) CI_DEBUG=2 ;;
+    [Yy]|[Yy][Ee][Ss]|[Oo][Nn]|[Tt][Rr][Uu][Ee])     CI_DEBUG=99 ;;
+    [Nn]|[Nn][Oo]|[Oo][Ff][Ff]|[Ff][Aa][Ll][Ss][Ee]) CI_DEBUG=2 ;;
 esac
 [ "$CI_DEBUG" -ge 0 ] 2>/dev/null || CI_DEBUG=3
 
+### Empty and non-numeric and non-positive values should be filtered out here
+is_positive() {
+    [ -n "$1" -a "$1" -gt 0 ] 2>/dev/null
+}
+default_posval() {
+    eval is_positive "\$$1" || eval "$1"="$2"
+}
+
+### Caller can disable specific debuggers by setting their level too
+### high in its environment variables for a specific script run.
+### Scripts can use this mechanism to set flexible required-verbosity
+### levels for their messages.
+default_posval CI_DEBUGLEVEL_ERROR      1
+default_posval CI_DEBUGLEVEL_WARN       2
+default_posval CI_DEBUGLEVEL_INFO       3
+default_posval CI_DEBUGLEVEL_DEBUG      5
+default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
+
 logmsg_info() {
-    WANT_DEBUG_LEVEL=3
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_INFO
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
     :
 }
 
 logmsg_warn() {
-    WANT_DEBUG_LEVEL=2
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_WARN
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
     :
 }
 
 logmsg_error() {
-    WANT_DEBUG_LEVEL=1
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_ERROR
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
     :
 }
 
 logmsg_debug() {
     # A script can flexibly define its different debug messages via variables
     # with debug-levels assigned (and easily changeable) to different subjects
-    WANT_DEBUG_LEVEL=5
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_DEBUG
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
@@ -188,8 +206,26 @@ logmsg_debug() {
 
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
         for LINE in "$@"; do
-            echo "${LOGMSG_PREFIX}DEBUG[$WANT_DEBUG_LEVEL<=$CI_DEBUG]: $LINE"
+            echo -E "${LOGMSG_PREFIX}DEBUG[$WANT_DEBUG_LEVEL<=$CI_DEBUG]: $LINE"
         done >&2
+    :
+}
+
+tee_stderr() {
+    ### This routine allows to optionally "sniff" piped streams, e.g.
+    ###   prog1 | tee_stderr LISTING_TOKENS $DEBUGLEVEL_PRINTTOKENS | prog2
+    TEE_TAG="PIPESNIFF: "
+    [ -n "$1" ] && TEE_TAG="$1:"
+    [ -n "$2" -a "$2" -ge 0 ] 2>/dev/null && \
+        TEE_DEBUG="$2" || \
+        TEE_DEBUG=$CI_DEBUGLEVEL_PIPESNIFFER
+
+    ### If debug is not enabled, skip tee'ing quickly with little impact
+    [ "$CI_DEBUG" -lt "$TEE_DEBUG" ] 2>/dev/null && cat || \
+    while IFS= read -r LINE; do
+        echo -E "$LINE"
+        echo -E "${LOGMSG_PREFIX}$TEE_TAG" "$LINE" >&2
+    done
     :
 }
 
@@ -203,7 +239,7 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
     done
     exit $CODE
 }
