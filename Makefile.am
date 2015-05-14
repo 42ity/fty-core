@@ -222,7 +222,6 @@ libpriv_utils_ymsg_la_SOURCES = \
 				src/shared/utils_app.c \
 				src/shared/utils_app.h \
 				src/include/cleanup.h
-				src/shared/utils_app.h
 
 libpriv_utils_ymsg_la_LIBADD =  libpriv-utils.la
 
