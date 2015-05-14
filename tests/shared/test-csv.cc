@@ -95,7 +95,7 @@ TEST_CASE("CSV utf-8 input", "[csv]") {
     std::string path{__FILE__};
     path += ".csv";
 
-    std::fstream buf{path};
+    std::ifstream buf{path};
     skip_utf8_BOM(buf);
 
     std::vector<std::vector<cxxtools::String> > data;
