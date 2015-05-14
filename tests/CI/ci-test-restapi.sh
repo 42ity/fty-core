@@ -192,7 +192,9 @@ kill_daemons() {
 
   if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
     logmsg_warn "Did not detect ${BUILDSUBDIR}/config.status, so will try to configure the project first, now..."
-    ./autogen.sh ${AUTOGEN_ACTION_CONFIG} || exit
+    ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG} || exit
   fi
   ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
 
