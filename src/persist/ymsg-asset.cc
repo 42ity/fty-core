@@ -4,6 +4,7 @@
 #include "alert.h"
 
 #include "log.h"
+#include "cleanup.h"
 #include "defs.h"
 #include "agents.h"
 #include "dbpath.h"
