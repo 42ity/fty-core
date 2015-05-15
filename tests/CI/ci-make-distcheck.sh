@@ -56,8 +56,10 @@ isCheckRequired() {
         case "$GIT_UPSTREAM" in
             ssh://*)
                 GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,' | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" &&
-                if ! egrep -i 'Host.*$GIT_HOST' ~/.ssh/config >/dev/null 2>&1 ; then
-                    logmsg_info "Added SSH-client trust to Git host $GIT_HOST"
+                egrep -i "Host.*$GIT_HOST" ~/.ssh/config >/dev/null 2>&1
+                if [ $? != 0 ] ; then
+                    # Entry not found - add it
+                    logmsg_info "Adding SSH-client trust to Git host $GIT_HOST"
                     echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
                 fi
                 ;;
