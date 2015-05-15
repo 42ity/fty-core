@@ -29,21 +29,61 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -o pipefail || true
-set -e
+#set -e
 
-( which apt-get 2>/dev/null ) && apt-get update
+( which apt-get >/dev/null 2>&1) && apt-get update || true
 #mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
-# TODO: optionally compare to previous commit and only run this test if there
-# were added/removed/renamed files or changes to Makefile.am or configure.ac
+# We can make distcheck unconditionally, or try to see if it is needed
+[ -z "$REQUIRE_DISTCHECK" ] && REQUIRE_DISTCHECK=no
+[ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+
+if [ "$REQUIRE_DISTCHECK" = no ]; then
+    if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
+        # Optionally compare to previous commit and only run this test if there
+        # were added/removed/renamed files or changes to Makefile.am / configure.ac
+        CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep 'create|delete|rename'`"
+        if [ $? = 0 -a -n "$CHANGED_DIRENTRIES" ] ; then
+            # New files might not be reflected in a Makefile
+            logmsg_info "Some directory entries were changed since the last Git commit, so requesting a distcheck"
+            logmsg_echo "$CHANGED_DIRENTRIES"
+            REQUIRE_DISTCHECK=yes
+        else
+            CHANGED_FILENAMES_SET=""
+            CHANGED_FILENAMES="`git diff ${OLD_COMMIT} | egrep '^diff '`" && \
+            CHANGED_FILENAMES_SET="`echo "$CHANGED_FILENAMES" | egrep '/Makefile.am|/configure.ac|/autogen.sh|/tools/(builder.sh|git_details.sh)'`"
+            if [ $? = 0 -a -n "$CHANGED_FILENAMES_SET" ] ; then
+                logmsg_info "Some central project files were changed since the last Git commit, so requesting a distcheck"
+                logmsg_echo "$CHANGED_FILENAMES_SET"
+                REQUIRE_DISTCHECK=yes
+            fi
+            # TODO: It may be possible to detect renames here as well (detect
+            # comparison of different filenames under ./a and ./b virtpaths)?
+        fi
+    else
+        logmsg_warn "Could not verify content of recent Git changes, so requesting a distcheck"
+        REQUIRE_DISTCHECK=yes
+    fi
+fi
+
+if [ "$REQUIRE_DISTCHECK" = no ]; then
+    logmsg_warn "Detected that there were no such changes that require a make distcheck."
+    logmsg_warn "  export REQUIRE_DISTCHECK=yes  to enforce this test. Quitting cleanly."
+    ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
+    logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
+    exit 0
+fi
 
 if [ ! -s "Makefile" ] ; then
     # Newly checked-out branch, rebuild
-    echo "========= auto-configure, rebuild and install ==============="
+    echo "==================== auto-configure ========================="
     ./autogen.sh --install-dir / --no-distclean --configure-flags \
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG} 2>&1 | tee -a ${MAKELOG}
+else
+    logmsg_info "Using the previously configured source-code workspace"
 fi
 
 echo "==================== make distcheck ========================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}
+./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}
+echo $?
