@@ -29,10 +29,6 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -o pipefail || true
-#set -e
-
-( which apt-get >/dev/null 2>&1) && apt-get update || true
-#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
 # We can make distcheck unconditionally, or try to see if it is needed
 [ -z "$REQUIRE_DISTCHECK" ] && REQUIRE_DISTCHECK=no
@@ -135,12 +131,16 @@ isCheckRequired() {
 if [ "$REQUIRE_DISTCHECK" = no ]; then
     isCheckRequired
     if [ "$GOT_GIT" = yes ] ; then
+        echo ""
+        echo "====================================="
         logmsg_info "Summary of the Git verification performed:"
         ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
         logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
         git remote -v
         git branch -a
         git diff "${OLD_COMMIT}" | egrep '^diff '
+        echo "====================================="
+        echo ""
     fi
 fi
 
