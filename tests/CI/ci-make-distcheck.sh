@@ -36,13 +36,21 @@ set -o pipefail || true
 
 # We can make distcheck unconditionally, or try to see if it is needed
 [ -z "$REQUIRE_DISTCHECK" ] && REQUIRE_DISTCHECK=no
-[ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+#[ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='http://stash.mbt.lab.etn.com/scm/bios/core.git'
+[ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git'
 
 if [ "$REQUIRE_DISTCHECK" = no ]; then
     if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
         # Optionally compare to previous commit and only run this test if there
         # were added/removed/renamed files or changes to Makefile.am / configure.ac
-        CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep 'create|delete|rename'`"
+
+        if ! git remote -v | egrep '^upstream' > /dev/null ; then
+            git remote add upstream "$GIT_UPSTREAM"
+        fi
+        git fetch upstream && [ -z "$OLD_COMMIT" ] && OLD_COMMIT='upstream/master'
+        [ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+
+        CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep '^ (create|delete|rename) '`"
         if [ $? = 0 -a -n "$CHANGED_DIRENTRIES" ] ; then
             # New files might not be reflected in a Makefile
             logmsg_info "Some directory entries were changed since the last Git commit, so requesting a distcheck"
@@ -71,6 +79,8 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
     logmsg_warn "  export REQUIRE_DISTCHECK=yes  to enforce this test. Quitting cleanly."
     ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
     logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
+    git remote -v
+    git branch -a
     exit 0
 fi
 
