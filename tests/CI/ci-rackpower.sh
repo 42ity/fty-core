@@ -60,7 +60,9 @@ kill_daemons() {
 
 logmsg_info "Ensuring that the tested programs have been built and up-to-date"
 if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
-    ./autogen.sh --nodistclean ${AUTOGEN_ACTION_CONFIG}
+    ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG}
 fi
 ./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps db-ng agent-nut driver-nmap netmon
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
@@ -153,6 +155,9 @@ instcmds=ALL" > $CFGDIR/upsd.users
     logmsg_info "restart NUT server"
     systemctl stop nut-server
     systemctl stop nut-driver
+    sleep 3
+    systemctl start nut-driver
+    sleep 3
     systemctl start nut-server
     logmsg_info "waiting for a while..."
     sleep 15
