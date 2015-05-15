@@ -28,9 +28,6 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 set -o pipefail || true
 set -e
 
-apt-get update
-#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
-
 if [ -s "${MAKELOG}" ] ; then
     # This branch was already configured and compiled here, only refresh it now
     # Just in case, we still provide consistent configure flags
