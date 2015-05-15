@@ -39,16 +39,21 @@ set -o pipefail || true
 #[ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='http://stash.mbt.lab.etn.com/scm/bios/core.git'
 [ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git'
 
+GOT_GIT=no
+if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
+    GOT_GIT=yes
+fi
+
 isCheckRequired() {
     [ "$REQUIRE_DISTCHECK" = yes ] && return 0
 
-    if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
+    if [ "$GOT_GIT" = yes ] ; then
         # Optionally compare to previous commit and only run this test if there
         # were added/removed/renamed files or changes to Makefile.am / configure.ac
 
         CHANGED_LOCAL="`git status -s | egrep -v '^\?\? '`"
         if [ $? = 0 ] && [ -n "$CHANGED_LOCAL" ]; then
-            logmsg_info "Uncommitted local changes detected, so requesting the distcheck"
+            logmsg_warn "Uncommitted local changes detected, so requesting the distcheck"
             REQUIRE_DISTCHECK=yes
             return 0
         fi
@@ -66,11 +71,14 @@ isCheckRequired() {
         esac
 
         if ! git remote -v | egrep '^upstream' > /dev/null ; then
+            logmsg_info "Registering Git 'upstream' remote repository"
             git remote add upstream "$GIT_UPSTREAM"
         fi
+
+        logmsg_info "Fetching the latest bits from Git 'upstream' remote repository"
         git fetch upstream
         if [ $? != 0 ]; then
-            logmsg_info "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
+            logmsg_warn "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
             REQUIRE_DISTCHECK=yes
             return 0
         fi
@@ -115,15 +123,20 @@ isCheckRequired() {
     [ "$REQUIRE_DISTCHECK" = yes ] # Set a useful return code
 }
 
-isCheckRequired
+if [ "$REQUIRE_DISTCHECK" = no ]; then
+    isCheckRequired
+    if [ "$GOT_GIT" = yes ] ; then
+        logmsg_info "Summary of the Git verification performed:"
+        ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
+        logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
+        git remote -v
+        git branch -a
+    fi
+fi
 
 if [ "$REQUIRE_DISTCHECK" = no ]; then
     logmsg_warn "Detected that there were no such changes that require a make distcheck."
     logmsg_warn "  export REQUIRE_DISTCHECK=yes  to enforce this test. Quitting cleanly."
-    ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
-    logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
-    git remote -v
-    git branch -a
     exit 0
 fi
 
