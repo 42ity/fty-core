@@ -980,6 +980,22 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)
 
+client_PROGRAMS +=	agent-tpower
+
+agent_tpower_SOURCES = \
+			src/agents/tpower/agent-tpower.cc \
+			src/agents/tpower/tp-rack.cc \
+			src/agents/alert/alert-measurement.cc
+
+agent_tpower_LDADD = \
+			libpriv-log.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+
+agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/alert
+
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
