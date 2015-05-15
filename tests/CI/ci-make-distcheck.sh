@@ -65,7 +65,7 @@ isCheckRequired() {
                 if [ $? != 0 ] ; then
                     # Entry not found - add it
                     logmsg_info "Adding SSH-client trust to Git host $GIT_HOST"
-                    echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_dsa\n\tIdentityFile ~/.ssh/id_dsa-jenkins\n\tIdentityFile ~/.ssh/id_rsa\n\tPubkeyAuthentication yes\n" >> ~/.ssh/config
+                    echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_dsa\n\tIdentityFile ~/.ssh/id_dsa-jenkins\n\tIdentityFile ~/.ssh/id_rsa\n\tIdentityFile ~/.ssh/id_rsa-jenkins\n\tPubkeyAuthentication yes\n" >> ~/.ssh/config
                 fi
                 ;;
         esac
