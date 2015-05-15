@@ -46,8 +46,8 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
 
         case "$GIT_UPSTREAM" in
             ssh://*)
-                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,'`" &&
-                { egrep -i 'Host.*$GIT_HOST' ~/.ssh/config || \
+                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,' | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" &&
+                { egrep -i 'Host.*$GIT_HOST' ~/.ssh/config >/dev/null 2>&1 || \
                     echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
                 }
                 ;;
