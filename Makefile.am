@@ -324,13 +324,10 @@ DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/db/alerts \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/persist \
-			-I$(abs_top_builddir)/src/db \
-			-I$(abs_top_builddir)/src/db/alerts
+			-I$(abs_top_builddir)/src/persist
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
@@ -342,17 +339,14 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
 			src/db/alerts/alert_basic.h \
-			src/db/alert.h
+			src/db/alerts.h
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/db/alerts \
 			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/persist \
-			-I$(abs_top_builddir)/src/db \
-			-I$(abs_top_builddir)/src/db/alerts
+			-I$(abs_top_builddir)/src/persist
 
 #libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
 #			libpriv-log.la libpriv-csv.la
@@ -656,12 +650,9 @@ test_db_alert_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/db/alerts \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/db/alerts \
-			-I$(abs_top_builddir)/src/db
+			-I$(abs_top_builddir)/tools
 
 test_db_alert_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
@@ -1084,13 +1075,11 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 			-I$(abs_top_srcdir)/src/web/include \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/db \
-			-I$(abs_top_builddir)/src/db/alerts \
+			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db \
-			-I$(abs_top_srcdir)/src/db/alerts
+			-I$(abs_top_srcdir)/src/persist
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
