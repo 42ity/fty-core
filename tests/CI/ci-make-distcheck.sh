@@ -56,7 +56,7 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
         if ! git remote -v | egrep '^upstream' > /dev/null ; then
             yes yes | git remote add upstream "$GIT_UPSTREAM"
         fi
-        yes yes | git fetch upstream
+        yes yes | git fetch upstream || REQUIRE_DISTCHECK=yes
 
         if [ -z "$OLD_COMMIT" ]; then
             OUT="`git diff upstream/master`"
