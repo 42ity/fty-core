@@ -71,7 +71,10 @@ isCheckRequired() {
         esac
 
         if git remote -v | egrep '^origin.*'"$GIT_UPSTREAM" ; then
-            # We are in a replica of upstream; so consider it a fresh one
+            # TODO: We inherently assume this is upstream/master... but it may
+            # be a no-problem anyway - we compare old comit in this branch.
+
+            logmsg_info "We are in a replica of upstream; so consider it a fresh one and compare to our own older commit"
             [ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
         else
             # Try to get the upstream to compare with
@@ -91,12 +94,12 @@ isCheckRequired() {
             if [ -z "$OLD_COMMIT" ]; then
                 OUT="`git diff upstream/master`"
                 if [ $? = 0 ] && [ -n "$OUT" ] ; then
-                    # We are on a branch not identical to a known upstream/master
-                    # So compare to that.
+                    logmsg_info "We are on a branch not identical to a known upstream/master," \
+                        "so compare to that"
                     OLD_COMMIT='upstream/master'
                 else
-                    # This is a replica of upstream/master, or we couldn't fetch it
-                    # Compare to our own older commit
+                    logmsg_info "This is a replica of upstream/master, or we couldn't fetch it," \
+                        "so compare to our own older commit"
                     OLD_COMMIT='HEAD~1'
                 fi
             fi
@@ -137,6 +140,7 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
         logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
         git remote -v
         git branch -a
+        git diff "${OLD_COMMIT}" | egrep '^diff '
     fi
 fi
 
