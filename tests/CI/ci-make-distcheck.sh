@@ -44,11 +44,32 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
         # Optionally compare to previous commit and only run this test if there
         # were added/removed/renamed files or changes to Makefile.am / configure.ac
 
+        case "$GIT_UPSTREAM" in
+            ssh://*)
+                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,'`" &&
+                { egrep -i 'Host.*$GIT_HOST' ~/.ssh/config || \
+                    echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+                }
+                ;;
+        esac
+
         if ! git remote -v | egrep '^upstream' > /dev/null ; then
-            git remote add upstream "$GIT_UPSTREAM"
+            yes yes | git remote add upstream "$GIT_UPSTREAM"
         fi
-        git fetch upstream && [ -z "$OLD_COMMIT" ] && OLD_COMMIT='upstream/master'
-        [ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+        yes yes | git fetch upstream
+
+        if [ -z "$OLD_COMMIT" ]; then
+            OUT="`git diff upstream/master`"
+            if [ $? = 0 ] && [ -n "$OUT" ] ; then
+                # We are on a branch not identical to a known upstream/master
+                # So compare to it
+                OLD_COMMIT='upstream/master'
+            else
+                # This is a replica of upstream/master, or we couldn't fetch it
+                # Compare to our own older commit
+                OLD_COMMIT='HEAD~1'
+            fi
+        fi
 
         CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep '^ (create|delete|rename) '`"
         if [ $? = 0 -a -n "$CHANGED_DIRENTRIES" ] ; then
