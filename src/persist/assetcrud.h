@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbhelpers.h"
 #include <tntdb/connect.h>
 #include "asset_types.h"
+#include "calc_power.h"
 
 typedef struct _asset_link
 {
@@ -423,5 +424,10 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
     select_links_by_container
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
+db_reply <std::vector<device_info_t>>
+    select_asset_device_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id);
+
 
 #endif // SRC_PERSIST_ASSETCRUD_H_

@@ -1065,22 +1065,28 @@ std::vector<std::string>
         throw new bios::NotFound ();
     }
 
-    std::vector<std::string> dvc = {};
-    
+    std::vector <std::string> dvc{};
+    std::set <device_info_t> todelete{};
     while ( !border_devices.empty() )
     {
         for ( auto &border_device: border_devices )
         {
             if ( is_ups(border_device) || is_epdu(border_device) )
-            {   // ADD to result
-                // remove from border
-            }
-            if ( is_it_device(border_device) )
             {
+                dvc.push_back(std::get<1>(border_device));
                 // remove from border
-                // add to ipmi
+                todelete.insert(border_device);
+                continue;
             }
+            // NOT IMPLEMENTED
+            //if ( is_it_device(border_device) )
+            //{
+            //    // remove from border
+            //    // add to ipmi
+            //}
         }
+        for (auto &todel: todelete)
+            border_devices.erase(todel);
         update_border_devices(dc_devices, links, border_devices);
     }
     LOG_END;
@@ -1128,7 +1134,7 @@ db_reply <std::map<std::string, std::vector<std::string>>>
     {
         // select all devices in the rack
         std::set <device_info_t> rack_devices = select_rack_devices (conn, rack.id);
-        
+   
         // here would be name of devices to summ up
         std::vector<std::string> result(0);
         
@@ -1136,28 +1142,145 @@ db_reply <std::map<std::string, std::vector<std::string>>>
         {
             log_warning ("'%s': has no devices", rack.name.c_str());
             ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
         }
-        else
+        auto links = select_links_by_container (conn, rack.id);
+
+        if ( links.status == 0 )
         {
-            auto links = select_links_by_container (conn, rack.id);
-
-            if ( links.status == 0 )
-            {
-                log_warning ("'%s': internal problems in links detecting", rack.name.c_str());
-                ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
-            }
-
-            if ( links.item.empty() )
-            {
-                log_warning ("'%s': has no power links", rack.name.c_str());
-                ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
-            }
-            else
-            {
-                result = compute_total_rack_power_v2(rack_devices, links.item);
-                ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
-            }
+            log_warning ("'%s': internal problems in links detecting", rack.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
         }
+        if ( links.item.empty() )
+        {
+            log_warning ("'%s': has no power links", rack.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
+        }
+        result = compute_total_rack_power_v2(rack_devices, links.item);
+        ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+    }
+    LOG_END;
+    return ret;
+}
+
+// because this function is intent to support agent, that listens 
+// to the stream, then agent has no idea about ids, so input and output 
+// are supposed to be names of devices
+//
+// ACE: it is ugly, but supposed to work. Should be cleaned up later
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_dcs 
+        (tntdb::Connection  &conn)
+{   
+    LOG_START;
+    
+    std::map<std::string, std::vector<std::string>> item{};
+    db_reply <std::map<std::string, std::vector<std::string>>> ret = db_reply_new(item);
+
+    // there is no need to do all in one select, so let's do it by steps
+    // select all dcs
+    auto allDcs = select_asset_elements_by_type(conn, asset_type::DATACENTER);
+    
+    if  ( allDcs.status == 0 )
+    {
+        ret.status = 0;
+        ret.msg        = allDcs.msg;
+        ret.errtype    = allDcs.errtype;
+        ret.errsubtype = allDcs.errsubtype;
+        log_error ("some error appears, during selecting the dcs");
+        return ret;
+    }
+    // if there is no racks, then it is an error
+    if  ( allDcs.item.empty() )
+    {
+        ret.status = 0;
+        ret.msg        = "there is no dcs at all";
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        log_error (ret.msg);
+        return ret;
+    }
+
+    // go through every dc and "compute" what should be summed up
+    for ( auto &dc : allDcs.item )
+    {
+        // select all devices in the dc
+        auto dc_devices_set = select_asset_device_by_container (conn, dc.id);
+
+        // here would be name of devices to summ up
+        std::vector<std::string> result(0);
+        
+        if ( dc_devices_set.status == 0 )
+        {
+            log_warning ("'%s': problems appeared in selecting devices", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }       
+        if ( dc_devices_set.item.empty() )
+        {
+            log_warning ("'%s': has no devices", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+
+        std::map <a_elmnt_id_t, device_info_t> dc_devices{};
+        for ( auto &dc_dev: dc_devices_set.item )
+        {
+            a_elmnt_id_t tmp = std::get<0>(dc_dev);
+            dc_devices.insert(std::pair<a_elmnt_id_t, device_info_t>(tmp, dc_dev));
+        }
+        
+        auto links = select_links_by_container (conn, dc.id);
+        if ( links.status == 0 )
+        {
+            log_warning ("'%s': internal problems in links detecting", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+
+        if ( links.item.empty() )
+        {
+            log_warning ("'%s': has no power links", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+         std::set <device_info_t> border_devices;
+        //  from (first)   to (second)
+        //           +--------------+ 
+        //  B________|______A__C    |
+        //           |              |
+        //           +--------------+
+        //   B is out of the DC
+        //   A is in the DC
+        //   then A is border device
+        //
+        std::set <a_elmnt_id_t> dest_dvcs{};
+        for ( auto &oneLink : links.item )
+        {
+            auto it = dc_devices.find (oneLink.first);
+            if ( it == dc_devices.end() )         
+                border_devices.insert ( dc_devices.find(oneLink.second)->second );
+            dest_dvcs.insert(oneLink.second);
+        }
+        
+        //  from (first)   to (second)
+        //           +-----------+ 
+        //           |A_____C    |
+        //           |           |
+        //           +-----------+
+        //   A is in the DC (from)
+        //   C is in the DC (to)
+        //   then A is border device
+        for ( auto &oneDevice : dc_devices )
+        {
+            if ( dest_dvcs.find (oneDevice.first) == dest_dvcs.end() )
+                border_devices.insert ( oneDevice.second );
+        }
+
+        result = compute_total_dc_power_v2(dc_devices, links.item, border_devices);
+        ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
     }
     LOG_END;
     return ret;

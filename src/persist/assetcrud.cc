@@ -1192,3 +1192,67 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
         return ret;
     }
 }
+
+// TODO redo into struct instead of tuple
+db_reply <std::vector<device_info_t>>
+    select_asset_device_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id)
+{
+    LOG_START;
+
+    std::vector<device_info_t> item{};
+    db_reply <std::vector<device_info_t>> ret = db_reply_new(item);
+    
+    try{
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name,"
+            "   v.id, v.id_asset_device_type, v.type_name"
+            " FROM"
+            "   v_bios_asset_element_super_parent v"
+            " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
+        );
+    
+        tntdb::Result result = st.set("containerid", element_id).
+                                  select();
+        log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows",
+                                                            result.size());
+
+        // Go through the selected elements
+        for ( auto &row: result )
+        {
+            a_elmnt_id_t device_asset_id = 0;
+            row[1].get(device_asset_id);
+            assert ( device_asset_id );
+            
+            std::string device_name = "";
+            row[0].get(device_name);
+            assert ( !device_name.empty() );
+
+            std::string device_type_name = "";
+            row[2].get(device_type_name);
+            assert ( !device_type_name.empty() );
+
+            a_dvc_tp_id_t device_type_id = 0;
+            row[3].get(device_type_id);
+            assert ( device_type_id );
+
+            ret.item.push_back(std::make_tuple(device_asset_id, device_name, 
+                                device_type_name, device_type_id));
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}

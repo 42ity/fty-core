@@ -542,7 +542,10 @@ SELECT v1.id_asset_element,
        v1.id_parent AS id_parent1,
        v2.id_parent AS id_parent2,
        v3.id_parent AS id_parent3,
-       v4.id_parent AS id_parent4 
+       v4.id_parent AS id_parent4,
+       v1.status, 
+       v1.priority, 
+       v1.business_crit
 FROM t_bios_asset_element v1 
      LEFT JOIN t_bios_asset_element v2 
         ON (v1.id_parent = v2.id_asset_element) 
