@@ -414,4 +414,14 @@ db_reply < std::map <std::string, int> >
     get_dictionary_device_type
         (tntdb::Connection &conn);
 
+db_reply <std::vector<db_a_elmnt_t>>
+    select_asset_elements_by_type
+        (tntdb::Connection &conn,
+         a_elmnt_tp_id_t type_id);
+
+db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
+    select_links_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id);
+
 #endif // SRC_PERSIST_ASSETCRUD_H_

@@ -696,3 +696,30 @@ TEST_CASE("Rack power #10","[db][power][rack][calc][rack_power.sql]")
     zmsg_destroy (&res);
     log_close();
 }
+
+TEST_CASE("Rack power #1 v2","[db][power][rack][calc][v2][rack_power.sql]")
+{
+    log_open();
+    log_info ("=============== RACK POWER #1 v2 ==================");
+    
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW (conn = tntdb::connectCached(url)); 
+    
+    db_reply <std::map<std::string, std::vector<std::string>>> ret =
+        select_devices_total_power_racks (conn);
+
+    REQUIRE ( ret.status == 1 );
+
+    for ( auto & oneRack : ret.item )
+    {
+        log_debug ("rack: '%s'",oneRack.first.c_str());
+        auto devices = oneRack.second;
+        log_debug ("power_sources:");
+        for ( auto &oneDevice : devices )
+        {
+            log_debug ("   : '%s'",oneDevice.c_str());
+        }
+    }
+    log_close();
+}
+
