@@ -134,11 +134,13 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
         echo ""
         echo "====================================="
         logmsg_info "Summary of the Git verification performed:"
-        ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
-        logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
         git remote -v
         git branch -a
-        git diff "${OLD_COMMIT}" | egrep '^diff '
+        ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
+        logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
+        [ -n "${OLD_COMMIT}" ] && \
+            logmsg_info "Following flies were changed between these commits:" &&\
+            git diff "${OLD_COMMIT}" | egrep '^diff '
         echo "====================================="
         echo ""
     fi
