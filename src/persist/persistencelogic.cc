@@ -47,7 +47,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "log.h"
 #include "dbpath.h"
 #include "measurement.h"
-#include "alert.h"
+#include "db/alerts.h"
 #include "agents.h"
 #include "cleanup.h"
 #include "utils.h"
@@ -643,7 +643,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                          powerdev_msg_otherproperties(&msg_c)
                     );
                     assert (zmsg);
-                    byte *encoded;
+                    _scoped_byte *encoded = NULL;
                     size_t infolen = zmsg_encode (zmsg, &encoded);
                     assert (encoded);
                     // inserting into client_info
@@ -675,7 +675,7 @@ powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
                     else
                         assert (false); // unknown response
                     common_msg_destroy (&newClientInfo);
-                    free (encoded);
+                    FREE0 (encoded)
                     zmsg_destroy (&zmsg);
                 }
             }

@@ -102,6 +102,14 @@ static inline void _destroy_char (char **self_p) {
     zstr_free (self_p);
 }
 
+static inline void _destroy_byte (byte **self_p) {
+    assert (self_p);
+    if (*self_p) {
+        free (*self_p);
+        *self_p = NULL;
+    }
+}
+
 static inline void _destroy_mlm_client (mlm_client_t **self_p) {
     mlm_client_destroy (self_p);
 }
@@ -130,9 +138,9 @@ static inline void _destroy_mlm_client (mlm_client_t **self_p) {
 #define _scoped_zsock_t     _cleanup_(_destroy_zsock) zsock_t
 #define _scoped_zhash_t     _cleanup_(_destroy_zhash) zhash_t
 #define _scoped_zlist_t     _cleanup_(_destroy_zlist) zlist_t
-#define _scoped_char        _cleanup_(_destroy_char) char // this is a better "version" of FREE0 macro 
+#define _scoped_char        _cleanup_(_destroy_char) char 
+#define _scoped_byte        _cleanup_(_destroy_byte) byte
 #define _scoped_mlm_client_t        _cleanup_(_destroy_mlm_client) mlm_client_t
-// TODO: byte
 
 #endif // SRC_INCLUDE_CLEANUP_H__
 
