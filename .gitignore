@@ -1,5 +1,7 @@
+*.h.bak
 *.c.bak
 *.cc.bak
+*.cpp.bak
 *.ecpp.bak
 .*.swp
 .*.swo
@@ -76,7 +78,7 @@ test-log.*
 test-*.log
 test-*.trs
 make.log
-make.output
+make.output*
 cppcheck.supp
 cppcheck.xml
 
