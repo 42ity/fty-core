@@ -70,32 +70,38 @@ isCheckRequired() {
                 ;;
         esac
 
-        if ! git remote -v | egrep '^upstream' > /dev/null ; then
-            logmsg_info "Registering Git 'upstream' remote repository"
-            git remote add upstream "$GIT_UPSTREAM"
-        fi
-
-        logmsg_info "Fetching the latest bits from Git 'upstream' remote repository"
-        git fetch upstream
-        if [ $? != 0 ]; then
-            logmsg_warn "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
-            REQUIRE_DISTCHECK=yes
-            return 0
-        fi
-
-        if [ -z "$OLD_COMMIT" ]; then
-            OUT="`git diff upstream/master`"
-            if [ $? = 0 ] && [ -n "$OUT" ] ; then
-                # We are on a branch not identical to a known upstream/master
-                # So compare to that.
-                OLD_COMMIT='upstream/master'
-            else
-                # This is a replica of upstream/master, or we couldn't fetch it
-                # Compare to our own older commit
-                OLD_COMMIT='HEAD~1'
+        if git remote -v | egrep '^origin.*'"$GIT_UPSTREAM" ; then
+            # We are in a replica of upstream; so consider it a fresh one
+            [ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+        else
+            # Try to get the upstream to compare with
+            if ! git remote -v | egrep '^upstream' > /dev/null ; then
+                logmsg_info "Registering Git 'upstream' remote repository"
+                git remote add upstream "$GIT_UPSTREAM"
             fi
-            logmsg_info "Decided to compare current workspace contents to '$OLD_COMMIT'"
+
+            logmsg_info "Fetching the latest bits from Git 'upstream' remote repository"
+            git fetch upstream
+            if [ $? != 0 ]; then
+                logmsg_warn "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
+                REQUIRE_DISTCHECK=yes
+                return 0
+            fi
+
+            if [ -z "$OLD_COMMIT" ]; then
+                OUT="`git diff upstream/master`"
+                if [ $? = 0 ] && [ -n "$OUT" ] ; then
+                    # We are on a branch not identical to a known upstream/master
+                    # So compare to that.
+                    OLD_COMMIT='upstream/master'
+                else
+                    # This is a replica of upstream/master, or we couldn't fetch it
+                    # Compare to our own older commit
+                    OLD_COMMIT='HEAD~1'
+                fi
+            fi
         fi
+        logmsg_info "Will compare current workspace contents to '$OLD_COMMIT'"
 
         CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep '^ (create|delete|rename) '`"
         if [ $? = 0 -a -n "$CHANGED_DIRENTRIES" ] ; then
