@@ -102,12 +102,12 @@ ymsg_t *
     zhash_destroy (ext_attributes);
 
     _scoped_zmsg_t *request_encoded = app_encode (&request);
-    byte *buffer;
+    _scoped_byte *buffer = NULL;
     size_t sz = zmsg_encode (request_encoded, &buffer);
     zmsg_destroy(&request_encoded);
 
     _scoped_zchunk_t *request_chunk = zchunk_new (buffer, sz);
-    free(buffer);
+    FREE0 (buffer)
 
     ymsg_set_request (message, &request_chunk);
     return message; 
