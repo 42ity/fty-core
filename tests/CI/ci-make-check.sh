@@ -48,5 +48,3 @@ fi
 
 echo "======================== make check ========================="
 ./autogen.sh --no-distclean ${AUTOGEN_ACTION_MAKE} check 2>&1 | tee -a ${MAKELOG}
-echo "==================== make distcheck ========================="
-./autogen.sh ${AUTOGEN_ACTION_MAKE} distcheck 2>&1 | tee -a ${MAKELOG}
