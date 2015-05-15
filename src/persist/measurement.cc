@@ -243,6 +243,9 @@ void get_measurements(ymsg_t* out, char** out_subj,
         tntdb::Result result = st.select();
 
         std::string units;
+        if (result.size () == 0) {
+            throw std::runtime_error ("Empty result set.");
+        }
         for(auto &row: result) {
             if(!json.empty()) {
                 json += ",\n";
@@ -270,9 +273,11 @@ void get_measurements(ymsg_t* out, char** out_subj,
         (*out_subj) = strdup("return_measurements");
         ymsg_set_response (out, &ch);
         ymsg_set_status (out, true);
+
+        log_debug ("json:\n%s", json.c_str ());
        
     } catch(const std::exception &e) {
-        log_error("Run into '%s' while getting measurements", e.what());
+        log_error("Ran into '%s' while getting measurements", e.what());
         ymsg_set_status (out, false);
         ymsg_set_errmsg (out, e.what());
         return;
