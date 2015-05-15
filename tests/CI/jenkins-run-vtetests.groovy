@@ -55,7 +55,7 @@ def jobParams = [
 ]
 
 
-// Running other tests, it make sense to continue if some of them fails
+// Running other tests, it make sense to continue if some of them fail
 for(
     jobName in [
         "vtetest_restapi",
@@ -72,6 +72,10 @@ for(
             if ( result == Result.SUCCESS ) {
             print result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else  if ( result == Result.ABORTED ) {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName was aborted");
         } else {
             print "WARNING: " + jobName + " result is " + result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + "  for failed build details";
