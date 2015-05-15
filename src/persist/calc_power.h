@@ -427,5 +427,8 @@ int compute_result_num_missed_get (zhash_t *results,
 db_reply <std::map<std::string, std::vector<std::string>>>
     select_devices_total_power_racks 
         (tntdb::Connection  &conn);
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_dcs 
+        (tntdb::Connection  &conn);
 
 #endif //SRC_PERSIST_CALC_POWER_H_
