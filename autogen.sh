@@ -179,11 +179,18 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
 
     if [ x"$FORCE_MKBUILDDEPS" = xyes -o x"$FORCE_MKBUILDDEPS" = xyesauto ]; then
         echo "autogen.sh: info: Making sure all needed packages are installed (note: may try to elevate privileges)."
-        { echo "Trying direct invokation..."
+        { echo "apt-get: Trying direct invokation..."
+          apt-get update; } || \
+        { echo "apt-get: Retrying sudo..."
+          sudo apt-get update; } || \
+        { echo "apt-get: Retrying su..."
+          su - -c "apt-get update"; }
+
+        { echo "mk-build-deps: Trying direct invokation..."
           mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "Retrying sudo..."
+        { echo "mk-build-deps: Retrying sudo..."
           sudo mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "Retrying su..."
+        { echo "mk-build-deps: Retrying su..."
           su - -c "mk-build-deps --tool 'apt-get --yes --force-yes' --install '$MKBD_DSC'"; }
         RES=$?
         if [ $RES -ne 0 ]; then
