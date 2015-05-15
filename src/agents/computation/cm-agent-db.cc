@@ -106,7 +106,9 @@ process_db_measurement
     FREE0 (json_in);
     if (rv == -1) {
         ymsg_destroy (&msg_orig);
-        // TODO: return and ?
+        log_error ("process_db_measurement_json_to_map() failed.");
+        // TODO: replyto
+        return 0;
     }
 
     try {

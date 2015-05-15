@@ -203,6 +203,8 @@ db_reply_t
 
 void get_measurements(ymsg_t* out, char** out_subj,
                       ymsg_t* in, const char* in_subj) {
+
+    (*out_subj) = strdup("return_measurements");
     std::string json;
     try {
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -243,9 +245,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
         tntdb::Result result = st.select();
 
         std::string units;
-        if (result.size () == 0) {
-            throw std::runtime_error ("Empty result set.");
-        }
+
         for(auto &row: result) {
             if(!json.empty()) {
                 json += ",\n";
@@ -259,6 +259,13 @@ void get_measurements(ymsg_t* out, char** out_subj,
             json += " }";
         }
 
+        // quick temp workaround
+        if (result.size () == 0 && units.empty ()) {
+            std::string strerr("Empty result set or no measurement topic for specified element_id:");
+            strerr.append (std::to_string (element_id));
+            throw std::runtime_error (strerr.c_str ());
+        }
+
         json = "{ \"unit\": \"" + units + "\",\n" +
                "  \"source\": \"" + ymsg_get_string(in,"source") + "\",\n" +
                "  \"element_id\": " + ymsg_get_string(in,"element_id") + ",\n" +
@@ -270,7 +277,6 @@ void get_measurements(ymsg_t* out, char** out_subj,
         if (!ch) {
             throw std::invalid_argument ("zchunk_new failed.");
         }
-        (*out_subj) = strdup("return_measurements");
         ymsg_set_response (out, &ch);
         ymsg_set_status (out, true);
 
