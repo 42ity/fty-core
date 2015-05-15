@@ -56,12 +56,15 @@ isCheckRequired() {
 
         case "$GIT_UPSTREAM" in
             ssh://*)
-                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,' | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" &&
+                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,'`" && \
+                { GIT_PORT="`echo "$GIT_HOST" | grep : | sed 's,^.*:\([0-9]*\)$,\1,'`" || GIT_PORT=22;
+                  [ -n "$GIT_PORT" ] && [ "$GIT_PORT" -gt 0 ] 2>/dev/null || GIT_PORT=22; } && \
+                GIT_HOST="`echo "$GIT_HOST" | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" && \
                 egrep -i "Host.*$GIT_HOST" ~/.ssh/config >/dev/null 2>&1
                 if [ $? != 0 ] ; then
                     # Entry not found - add it
-                    logmsg_info "Adding SSH-client trust to Git host $GIT_HOST"
-                    echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_dsa\n\tIdentityFile ~/.ssh/id_dsa-jenkins\n\tIdentityFile ~/.ssh/id_rsa\n\tIdentityFile ~/.ssh/id_rsa-jenkins\n\tPubkeyAuthentication yes\n" >> ~/.ssh/config
+                    logmsg_info "Adding SSH-client trust to Git host $GIT_HOST:$GIT_PORT"
+                    echo -e "Host $GIT_HOST\n\tPort $GIT_PORT\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_dsa\n\tIdentityFile ~/.ssh/id_dsa-jenkins\n\tIdentityFile ~/.ssh/id_rsa\n\tIdentityFile ~/.ssh/id_rsa-jenkins\n\tPubkeyAuthentication yes\n" >> ~/.ssh/config
                 fi
                 ;;
         esac
