@@ -710,7 +710,8 @@ test_computation_LDFLAGS = \
 bin_PROGRAMS += 	test-totalpower
 
 test_totalpower_SOURCES = \
-			tests/persist/test-rack-power.cc 
+			tests/persist/test-rack-power.cc \
+			tests/persist/test-dc-power.cc 
 
 
 test_totalpower_LDADD = \
