@@ -31,6 +31,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "common_msg.h"
 #include "compute_msg.h"
 #include "dbtypes.h"
+#include "dbhelpers.h"
 
 #include "assettopology.h"
 
@@ -422,5 +423,12 @@ void compute_result_num_missed_set (zhash_t *results,
  */
 int compute_result_num_missed_get (zhash_t *results, 
                                                     a_elmnt_id_t *num_missed);
+
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_racks 
+        (tntdb::Connection  &conn);
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_dcs 
+        (tntdb::Connection  &conn);
 
 #endif //SRC_PERSIST_CALC_POWER_H_

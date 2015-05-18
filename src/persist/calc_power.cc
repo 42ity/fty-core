@@ -37,7 +37,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "dbhelpers.h"
 #include "monitor.h"
 #include "cleanup.h"
-
+#include "assetcrud.h"
 
 bool is_epdu (const device_info_t &device)
 {
@@ -863,147 +863,116 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("end: normal");
     return retmsg;
 }
-/*
 
-static rack_power_t
-    doB(tntdb::Connection &conn,
-        const std::set <a_elmnt_id_t> &asset_ids,
-        time_t date_start,
-        time_t date_end)
+// from to
+std::set<a_elmnt_id_t>
+    find_srcs
+        (const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
+         a_elmnt_id_t element_id)
 {
-    log_info("start real calculation");
-    if ( date_start > date_end )
-    {
-        throw new bios::BadInput("date_start must be smaller than date_end");
-    }
+    LOG_START;
 
-    rack_power_t ret{0, 0, 255, all_asset_ids, date_start, date_end};
+    std::set<a_elmnt_id_t> srcs;
     
-    if ( all_asset_ids.empty() )
+    for ( auto &one_link: links )
     {
-        log_debug ("end: no devices to compute was recieved");
-        return ret;
+        if ( std::get<1>(one_link) == element_id )
+            srcs.insert(std::get<0>(one_link));
     }
-    
-    // FIXME: asking for mapping each time sounds slow
-    // convert id from asset part to monitor part
-    std::map<m_dvc_id_t, a_elmnt_id_t> idmap;
-    for ( a_elmnt_id_t asset_id : asset_ids ) 
-    {
-        try
-        {
-            m_dvc_id_t dev_id = convert_asset_to_monitor(url, asset_id);
-            idmap[dev_id] = asset_id;
-        }
-        catch (const bios::NotFound &e) {
-            log_info("asset element %" PRIu32 " notfound, ignore it", asset_id);
-        }
-        catch (const bios::ElementIsNotDevice &e) {
-            log_info("asset element %" PRIu32 " is not a device, ignore it", asset_id);
-        }
-        catch (bios::MonitorCounterpartNotFound &e ) {
-            log_warning("monitor counterpart for the %" PRIu32 " was not found,"
-                                            " ignore it", asset_id);
-        }
-        // ATTENTION: if internal, leave it to upper level
-    }
-    if ( idmap.empty() ) // no id was correctly converted
-    {
-        log_debug ("end: all devices were converted to monitor part"
-                                                            "with errors");
-        return ret;
-    }
+    LOG_END;
+    return srcs;
+}
+//==================================================================================================
 
-    // NOTE: cannot cache as SQL query is not stable
+std::set <device_info_t>
+    select_rack_devices 
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id)
+{
+    // ASSUMPTION
+    // specified element_id is already in DB and has type asset_type::RACK
+    log_info ("start");
+    std::set <device_info_t> result_set;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT"
+                "   v.id, v.name, v1.name as type_name,"
+                "   v1.id_asset_device_type"
+                " FROM"
+                "   v_bios_asset_element v"
+                " INNER JOIN v_bios_asset_device v1"
+                "   ON v1.id_asset_element = v.id"
+                " WHERE v.id_parent = :elementid"
+        );
         
-    // XXX: SQL placeholders can't deal with list of values, 
-    // as we're using plain int, there is no issue in generating 
-    // SQL by hand
-        
-    //TODO: read realpower.default from database, 
-    // SELECT v.id as id_subkey, v.id_type as id_key 
-    // FROM v_bios_measurement_subtypes v 
-    // WHERE name='default' AND typename='realpower';
-    try
-    {
-        std::string select = \
-            " SELECT"
-            "    v.device_id, v.value, v.scale"
-            " FROM"
-            "   v_bios_measurement_last v"
-            " WHERE"
-            "   v.id_discovered_device IN (" 
-                    + s_generate_in_clause(idmap) + ")"  // XXX
-//                        "   AND v.id_key=3 AND v.id_subkey=1 "   // TODO
-            "   AND v.id_key=3 AND v.id_subkey IN (1,5) "    
-            "   AND (v.timestamp BETWEEN"
-            "       FROM_UNIXTIME(:date_start) AND FROM_UNIXTIME(:date_end))"
-            
-             SELECT p.id_asset_element_dest FROM v_bios_asset_link p, t_bios_asset_element p1  where p.id_asset_element_dest = p1.id_asset_element and p1.id_parent = 8000 and p.id_asset_element_src not in (select v.id_asset_element from t_bios_asset_element v where id_parent = 8000)
-;
-
-        // v_..._last contain only last measures
-        tntdb::Statement st = conn.prepare(select);
-
-        log_debug("%s, %lu, %lu\n", select.c_str(), date_start, date_end);
-
-        tntdb::Result result = st.set("date_start", date_start).
-                                  set("date_end", date_end).
+        // Could return more than one row
+        tntdb::Result result = st.set("elementid", element_id).
                                   select();
-        log_debug("rows selected %u", result.size());
+        log_debug("selected %u different devices", result.size());
+
         for ( auto &row: result )
         {
-            m_dvc_id_t dev_id = 0;
-            row[0].get(dev_id);
-            ret.missed.erase(idmap[dev_id]);  //<- no assert needed, 
-            // invalid value will raise an exception, 
-            // converts from device id back to asset id
+            a_elmnt_id_t device_asset_id = 0;
+            row[0].get(device_asset_id);
+            assert ( device_asset_id );
+            
+            std::string device_name = "";
+            row[1].get(device_name);
+            assert ( !device_name.empty() );
 
-            m_msrmnt_value_t value = 0;
-            row[1].get(value);
+            std::string device_type_name = "";
+            row[2].get(device_type_name);
+            assert ( !device_type_name.empty() );
 
-            m_msrmnt_scale_t scale = 0;
-            row[2].get(scale);
-
-            s_add_scale(ret, value, scale);
-            log_debug (" device %" PRIu32, dev_id);
-            log_debug ("    value %" PRIi64, value);
-            log_debug ("    scale %" PRIi16, scale);
+            a_dvc_tp_id_t device_type_id = 0;
+            row[3].get(device_type_id);
+            assert ( device_type_id );
+            
+            result_set.insert (std::make_tuple(device_asset_id, device_name, 
+                                device_type_name, device_type_id));
         }
+        log_info ("end");
+        // TODO
+        // result_set is empty if:
+        //  - someone removed a rack from DB (but this should never happen)
+        //  - there is no any device in a rack
+        return result_set;
     }
     catch (const std::exception &e) {
         log_warning ("end: abnormal with '%s'", e.what());
         throw bios::InternalDBError(e.what());
     }
-    log_debug ("end: normal");
-    return ret;
 }
 
-*/
+
 /*
-rack_power_t
-compute_total_rack_power_v2(
-        tntdb::Connection &conn,
+ *  inside the rack power chain has a maximum length 3!!!!
+ *  so, possible situations:
+ *      -ups-epdu-device    take ups
+ *      -ups-pdu-device     take ups
+ *      -ups-device         take ups
+ *
+ *      -epdu-device        take epdu
+ *
+ *      -pdu-device         take device
+ *
+ *      -device             take device
+ *
+ */
+std::vector<std::string> 
+    compute_total_rack_power_v2(
         const std::set <device_info_t> &rack_devices,
-        const std::set <a_elmnt_id_t, a_elmnt_id_t> &links,
-        time_t date_start,
-        time_t date_end
+        const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links
         )
 {
     LOG_START;
-
-    if ( date_start > date_end )
-    {
-        throw new bios::BadInput ("date_start must be smaller than date_end");
-    }
 
     if ( rack_devices.size() == 0 )
     {
         throw new bios::NotFound ();
     }
 
-    std::set <device_info_t> dvc = {};
-// Fro links use multimap, ignore outlets and inlets
+    std::vector<std::string> dvc = {};
     
     // to benefit from operations with set, stansform device_info_t into set of id's
     std::set <a_elmnt_id_t> r_ids;
@@ -1012,104 +981,307 @@ compute_total_rack_power_v2(
 
     for ( auto &adevice : rack_devices )
     {
+        if ( is_pdu (adevice) )
+            continue;
+
         if ( is_ups (adevice) )
-        {
-            dvc.insert (adevice);   // ups-epdu-device ; ups-pdu-device -> include ups
+        {   
+            // insert the name
+            dvc.push_back (std::get<1>(adevice)); // ups-epdu-device ; ups-pdu-device -> include ups
             continue;
         }
         
-        auto adevice_srcs = find_srcs (links, r_ids);
-        std::set <a_elmnt_id_t> diff;
-        auto it = std::set_intersection (adevice_srcs.begin(), adevice_srcs.end(), r_ids.begin, r_ids.end(), diff.begin() );
+        auto adevice_srcs = find_srcs (links, std::get<0>(adevice));
+        std::vector <a_elmnt_id_t> diff(r_ids.size());
+        auto it = std::set_intersection (adevice_srcs.begin(), adevice_srcs.end(), r_ids.begin(), r_ids.end(), diff.begin() );
+        diff.resize(it-diff.begin());
         if ( is_epdu (adevice) && ( diff.size() == 0 ) )
         {
-            dvc.insert (adevice); // ups-epdu-device -> not include epdu;  epdu-device ->include epdu
+            dvc.push_back (std::get<1>(adevice));  // ups-epdu-device -> not include epdu;  epdu-device ->include epdu
             continue;
         }
-        // TODO this should be implemented in future
         
-        if ( is_it_device (adevice) )
-        {
-            log_info ("IPMI is not implemented, ignore device");
-            //
-           // if ( diff.size() == 0 )
-         //      dvc.insert();    // device; -> include device
-         //   if ( src is pdu and src-src not in rack )
-         //      add
-        //    
-        }
+        // TODO this should be implemented in future
+        //auto it1 = std::set_intersection (adevice_srcs.begin(), adevice_srcs.end(), r_ids.begin, r_ids.end(), diff.begin() );
+        //if ( is_it_device (adevice) )
+        //{
+        //    log_info ("IPMI is not implemented, ignore device");
+        //}
     }
     log_debug ("number of devices to summ up is %zu", dvc.size());
+    LOG_END;
+    return dvc;
+}
 
+// from to
+std::set<a_elmnt_id_t>
+    find_dests
+        (const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
+         a_elmnt_id_t element_id)
+{
+    LOG_START;
 
- */
- 
-    // for every missed value try to find its power path
-/*    for ( auto &bdevice: ret.missed )
+    std::set<a_elmnt_id_t> dests;
+    
+    for ( auto &one_link: links )
     {
-        device_info_t src_device;
-        // find more info about device from device set
-        for ( auto &adevice : dvc )
-        {
-            if ( std::get<0>(adevice) == bdevice )
-            {
-                src_device = adevice;
-                break;
-            }
-        }
-        log_debug ("missed device processed:");
-        log_debug ("device_id = %" PRIu32, std::get<0>(src_device));
-        log_debug ("device_name = %s", std::get<1>(src_device).c_str());
-        log_debug ("device type name = %s", std::get<2>(src_device).c_str());
-        log_debug ("device type_id = %" PRIu16,std::get<3>(src_device));
-
-        auto new_power_srcs = select_pow_src_for_device (url, src_device);
-
-        // in V1 if power_source should be taken in account iff 
-        // it is in rack
-        
-        log_debug ("power sources for device %" PRIu32, std::get<0>(src_device));
-        log_debug ("num of epdus is %zu", std::get<0>(new_power_srcs).size());
-        log_debug ("num of upses is %zu", std::get<1>(new_power_srcs).size());
-        log_debug ("num of devices is %zu", std::get<2>(new_power_srcs).size());
-        
-        for ( auto &bdevice: std::get<0>(new_power_srcs) )
-            if ( rack_devices.count(bdevice) == 1 )
-                std::get<0>(power_sources).insert (bdevice);
-            else
-            {
-                // decrese quality
-            }
-
-        for ( auto &bdevice: std::get<1>(new_power_srcs) )
-            if ( rack_devices.count(bdevice) == 1 )
-                std::get<1>(power_sources).insert (bdevice);
-            else
-            {
-                // decrese quality
-            }
-
-        for ( auto &bdevice: std::get<2>(new_power_srcs) )
-            if ( rack_devices.count(bdevice) == 1 )
-                std::get<2>(power_sources).insert (bdevice);
-            else
-            {
-                // decrese quality
-            }
+        if ( std::get<0>(one_link) == element_id )
+            dests.insert(std::get<1>(one_link));
     }
-    log_debug ("total power sources");
-    log_debug ("num of epdus is %zu", std::get<0>(power_sources).size());
-    log_debug ("num of upses is %zu", std::get<1>(power_sources).size());
-    log_debug ("num of devices is %zu", std::get<2>(power_sources).size());
-    auto ret2 = doA (url, std::get<1>(power_sources), 
-                          std::get<0>(power_sources),
-                          std::get<2>(power_sources),
-                          date_start,
-                          date_end
-                          );
-    s_add_scale (ret, ret2.power, ret2.scale);
-    // TODO manage quality + missed
-    log_debug ("end: power = %" PRIi64 ", scale = %" PRIi16, ret.power, ret.scale);
-    return ret;*/
-//}
+    LOG_END;
+    return dests;
+}
 
+void
+    update_border_devices
+        (const std::map <a_elmnt_id_t, device_info_t> &dc_devices,
+         const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
+         std::set <device_info_t> &border_devices)
+{
+    LOG_START;
+
+    std::set<device_info_t> new_border_devices;
+    for ( auto &border_device: border_devices )
+    {
+        auto adevice_dests = find_dests (links, std::get<0>(border_device));
+        for ( auto &adevice: adevice_dests )
+            new_border_devices.insert(dc_devices.find(adevice)->second);
+    }
+    border_devices.clear();
+    border_devices.insert(new_border_devices.begin(), new_border_devices.end());
+    LOG_END;
+}
+
+std::vector<std::string> 
+    compute_total_dc_power_v2(
+        const std::map <a_elmnt_id_t, device_info_t> &dc_devices,
+        const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
+        std::set <device_info_t> border_devices)
+{
+    LOG_START;
+
+    if ( border_devices.size() == 0 )
+    {
+        throw new bios::NotFound ();
+    }
+
+    std::vector <std::string> dvc{};
+    std::set <device_info_t> todelete{};
+    while ( !border_devices.empty() )
+    {
+        for ( auto &border_device: border_devices )
+        {
+            if ( is_ups(border_device) || is_epdu(border_device) )
+            {
+                dvc.push_back(std::get<1>(border_device));
+                // remove from border
+                todelete.insert(border_device);
+                continue;
+            }
+            // NOT IMPLEMENTED
+            //if ( is_it_device(border_device) )
+            //{
+            //    // remove from border
+            //    // add to ipmi
+            //}
+        }
+        for (auto &todel: todelete)
+            border_devices.erase(todel);
+        update_border_devices(dc_devices, links, border_devices);
+    }
+    LOG_END;
+    return dvc;
+}
+
+// because this function is intent to support agent, that listens 
+// to the stream, then agent has no idea about ids, so input and output 
+// are supposed to be names of devices
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_racks 
+        (tntdb::Connection  &conn)
+{   
+    LOG_START;
+    
+    std::map<std::string, std::vector<std::string>> item{};
+    db_reply <std::map<std::string, std::vector<std::string>>> ret = db_reply_new(item);
+
+    // there is no need to do all in one select, so let's do it by steps
+    // select all racks
+    auto allRacks = select_asset_elements_by_type(conn, asset_type::RACK);
+    
+    if  ( allRacks.status == 0 )
+    {
+        ret.status = 0;
+        ret.msg        = allRacks.msg;
+        ret.errtype    = allRacks.errtype;
+        ret.errsubtype = allRacks.errsubtype;
+        log_error ("some error appears, during selecting the racks");
+        return ret;
+    }
+    // if there is no racks, then it is an error
+    if  ( allRacks.item.empty() )
+    {
+        ret.status = 0;
+        ret.msg        = "there is no racks at all";
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        log_error (ret.msg);
+        return ret;
+    }
+
+    // go through every rack and "compute" what should be summed up
+    for ( auto &rack : allRacks.item )
+    {
+        // select all devices in the rack
+        std::set <device_info_t> rack_devices = select_rack_devices (conn, rack.id);
+   
+        // here would be name of devices to summ up
+        std::vector<std::string> result(0);
+        
+        if ( rack_devices.empty() )
+        {
+            log_warning ("'%s': has no devices", rack.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
+        }
+        auto links = select_links_by_container (conn, rack.id);
+
+        if ( links.status == 0 )
+        {
+            log_warning ("'%s': internal problems in links detecting", rack.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
+        }
+        if ( links.item.empty() )
+        {
+            log_warning ("'%s': has no power links", rack.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+            continue;
+        }
+        result = compute_total_rack_power_v2(rack_devices, links.item);
+        ret.item.insert(std::pair< std::string, std::vector<std::string>>(rack.name, result));
+    }
+    LOG_END;
+    return ret;
+}
+
+// because this function is intent to support agent, that listens 
+// to the stream, then agent has no idea about ids, so input and output 
+// are supposed to be names of devices
+//
+// ACE: it is ugly, but supposed to work. Should be cleaned up later
+db_reply <std::map<std::string, std::vector<std::string>>>
+    select_devices_total_power_dcs 
+        (tntdb::Connection  &conn)
+{   
+    LOG_START;
+    
+    std::map<std::string, std::vector<std::string>> item{};
+    db_reply <std::map<std::string, std::vector<std::string>>> ret = db_reply_new(item);
+
+    // there is no need to do all in one select, so let's do it by steps
+    // select all dcs
+    auto allDcs = select_asset_elements_by_type(conn, asset_type::DATACENTER);
+    
+    if  ( allDcs.status == 0 )
+    {
+        ret.status = 0;
+        ret.msg        = allDcs.msg;
+        ret.errtype    = allDcs.errtype;
+        ret.errsubtype = allDcs.errsubtype;
+        log_error ("some error appears, during selecting the dcs");
+        return ret;
+    }
+    // if there is no racks, then it is an error
+    if  ( allDcs.item.empty() )
+    {
+        ret.status = 0;
+        ret.msg        = "there is no dcs at all";
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        log_error (ret.msg);
+        return ret;
+    }
+
+    // go through every dc and "compute" what should be summed up
+    for ( auto &dc : allDcs.item )
+    {
+        // select all devices in the dc
+        auto dc_devices_set = select_asset_device_by_container (conn, dc.id);
+
+        // here would be name of devices to summ up
+        std::vector<std::string> result(0);
+        
+        if ( dc_devices_set.status == 0 )
+        {
+            log_warning ("'%s': problems appeared in selecting devices", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }       
+        if ( dc_devices_set.item.empty() )
+        {
+            log_warning ("'%s': has no devices", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+
+        std::map <a_elmnt_id_t, device_info_t> dc_devices{};
+        for ( auto &dc_dev: dc_devices_set.item )
+        {
+            a_elmnt_id_t tmp = std::get<0>(dc_dev);
+            dc_devices.insert(std::pair<a_elmnt_id_t, device_info_t>(tmp, dc_dev));
+        }
+        
+        auto links = select_links_by_container (conn, dc.id);
+        if ( links.status == 0 )
+        {
+            log_warning ("'%s': internal problems in links detecting", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+
+        if ( links.item.empty() )
+        {
+            log_warning ("'%s': has no power links", dc.name.c_str());
+            ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+            continue;
+        }
+         std::set <device_info_t> border_devices;
+        //  from (first)   to (second)
+        //           +--------------+ 
+        //  B________|______A__C    |
+        //           |              |
+        //           +--------------+
+        //   B is out of the DC
+        //   A is in the DC
+        //   then A is border device
+        //
+        std::set <a_elmnt_id_t> dest_dvcs{};
+        for ( auto &oneLink : links.item )
+        {
+            auto it = dc_devices.find (oneLink.first);
+            if ( it == dc_devices.end() )         
+                border_devices.insert ( dc_devices.find(oneLink.second)->second );
+            dest_dvcs.insert(oneLink.second);
+        }
+        
+        //  from (first)   to (second)
+        //           +-----------+ 
+        //           |A_____C    |
+        //           |           |
+        //           +-----------+
+        //   A is in the DC (from)
+        //   C is in the DC (to)
+        //   then A is border device
+        for ( auto &oneDevice : dc_devices )
+        {
+            if ( dest_dvcs.find (oneDevice.first) == dest_dvcs.end() )
+                border_devices.insert ( oneDevice.second );
+        }
+
+        result = compute_total_dc_power_v2(dc_devices, links.item, border_devices);
+        ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
+    }
+    LOG_END;
+    return ret;
+}

@@ -1067,3 +1067,192 @@ db_reply <db_a_elmnt_t>
     } 
 }
 
+db_reply <std::vector<db_a_elmnt_t>>
+    select_asset_elements_by_type
+        (tntdb::Connection &conn,
+         a_elmnt_tp_id_t type_id)
+{
+    LOG_START;
+
+    std::vector<db_a_elmnt_t> item{};
+    db_reply <std::vector<db_a_elmnt_t>> ret = db_reply_new(item);
+    
+    try{
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id"
+            " FROM"
+            "   v_bios_asset_element v"
+            " WHERE v.id_type = :typeid"
+        );
+    
+        tntdb::Result result = st.set("typeid", type_id).
+                                  select();
+        log_debug("[v_bios_asset_element]: were selected %" PRIu32 " rows",
+                                                            result.size());
+
+        // Go through the selected elements
+        for ( auto &row: result )
+        {
+            db_a_elmnt_t m{0,"","",0,5,0,0};
+            
+            row[0].get(m.name);
+            assert ( !m.name.empty() );  // database is corrupted
+
+            row[1].get(m.parent_id);
+            row[2].get(m.status);
+            row[3].get(m.priority);
+            row[4].get(m.bc);
+            row[5].get(m.id);
+
+            ret.item.push_back(m);
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
+
+//=============================================================================
+db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
+    select_links_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id)
+{
+    LOG_START;
+    a_lnk_tp_id_t linktype = INPUT_POWER_CHAIN;
+    
+    //      all powerlinks are included into "resultpowers"
+    std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>> item{};
+    db_reply <std::set<std::pair<a_elmnt_id_t ,a_elmnt_id_t>>> ret = db_reply_new(item);
+
+    try{
+        // v_bios_asset_link are only devices, 
+        // so there is no need to add more constrains
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"                
+            "   v.id_asset_element_src,"
+            "   v.id_asset_element_dest"              
+            " FROM"
+            "   v_bios_asset_link v,"
+            "   v_bios_asset_element_super_parent v1,"
+            "   v_bios_asset_element_super_parent v2"
+            " WHERE"
+            "   v.id_asset_link_type = :linktypeid AND"
+            "   v.id_asset_element_dest = v2.id_asset_element AND"
+            "   ( :containerid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
+            "               v2.id_parent4) ) AND"
+            "   v.id_asset_element_src = v1.id_asset_element AND" 
+            "   ( :containerid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
+            "               v1.id_parent4) )"
+        );
+        
+        // can return more than one row
+        tntdb::Result result = st.set("containerid", element_id).
+                                  set("linktypeid", linktype).
+                                  select();
+        log_debug("[t_bios_asset_link]: were selected %" PRIu32 " rows",
+                                                         result.size());
+
+        // Go through the selected links
+        for ( auto &row: result )
+        {
+            // id_asset_element_src, required
+            a_elmnt_id_t id_asset_element_src = 0;
+            row[0].get(id_asset_element_src);
+            assert ( id_asset_element_src );
+            
+            // id_asset_element_dest, required
+            a_elmnt_id_t id_asset_element_dest = 0;
+            row[1].get(id_asset_element_dest);
+            assert ( id_asset_element_dest );
+            
+            ret.item.insert(std::pair<a_elmnt_id_t ,a_elmnt_id_t>(id_asset_element_src, id_asset_element_dest));
+        } // end for
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+// TODO redo into struct instead of tuple
+db_reply <std::vector<device_info_t>>
+    select_asset_device_by_container
+        (tntdb::Connection &conn,
+         a_elmnt_id_t element_id)
+{
+    LOG_START;
+
+    std::vector<device_info_t> item{};
+    db_reply <std::vector<device_info_t>> ret = db_reply_new(item);
+    
+    try{
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name,"
+            "   v.id, v.id_asset_device_type, v.type_name"
+            " FROM"
+            "   v_bios_asset_element_super_parent v"
+            " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
+        );
+    
+        tntdb::Result result = st.set("containerid", element_id).
+                                  select();
+        log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows",
+                                                            result.size());
+
+        // Go through the selected elements
+        for ( auto &row: result )
+        {
+            a_elmnt_id_t device_asset_id = 0;
+            row[1].get(device_asset_id);
+            assert ( device_asset_id );
+            
+            std::string device_name = "";
+            row[0].get(device_name);
+            assert ( !device_name.empty() );
+
+            std::string device_type_name = "";
+            row[2].get(device_type_name);
+            assert ( !device_type_name.empty() );
+
+            a_dvc_tp_id_t device_type_id = 0;
+            row[3].get(device_type_id);
+            assert ( device_type_id );
+
+            ret.item.push_back(std::make_tuple(device_asset_id, device_name, 
+                                device_type_name, device_type_id));
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
