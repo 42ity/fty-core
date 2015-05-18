@@ -152,6 +152,9 @@ create_nut_config() {
     logmsg_info "restart NUT server"
     systemctl stop nut-server
     systemctl stop nut-driver
+    sleep 3
+    systemctl start nut-driver
+    sleep 3
     systemctl start nut-server
     logmsg_info "waiting for a while"
     sleep 15

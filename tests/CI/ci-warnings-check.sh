@@ -40,16 +40,12 @@ RESULT=0
 set -o pipefail || true
 set -e
 
-echo "======================== update ============================="
-apt-get update >/dev/null 2>&1
-#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
-
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
 NEWBUILD=no
 if [ ! -s "${MAKELOG}" ] ; then
     # Newly checked-out branch, rebuild
-    echo "=============== auto-configure and rebuild =================="
+    echo "============= auto-configure and rebuild all ================"
     /bin/rm -f ${MAKELOG}
     touch ${MAKELOG}
     ./autogen.sh --configure-flags \

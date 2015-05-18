@@ -77,7 +77,7 @@ usage() {
 # defaults
 #
 VM="latest"
-[ -z "$IMGTYPE" ] && IMGTYPE="deploy"
+[ -z "$IMGTYPE" ] && IMGTYPE="devel"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
 [ -n "$http_proxy" ] && export http_proxy
@@ -198,6 +198,19 @@ virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
 # may be wait for slow box
 sleep 5
 
+# Cleanup of the rootfs
+logmsg_info "Unmounting paths related to VM '$VM':" \
+	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
+	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/$IMAGE-ro'"
+umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
+fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
+
+# This unmount can fail if for example several containers use the same RO image
+# or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
+umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null || true
+
 # Destroy the overlay-rw half of the old running container, if any
 if [ -d "../overlays/${IMAGE}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
@@ -257,17 +270,6 @@ for D in ../rootfs/*-ro/ ; do
 	fi
 done
 
-# Cleanup of the rootfs
-logmsg_info "Unmounting paths related to VM '$VM':" \
-	"'`pwd`/../rootfs/$VM/lib/modules'," \
-	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/$IMAGE-ro'"
-umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
-umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
-fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
-
-# This unmount can fail if for example several containers use the same RO image
-# or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
-umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null || true
 
 # clean up VM space
 logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
@@ -305,6 +307,8 @@ fi
 logmsg_info "Bind-mount kernel modules from the host OS"
 mkdir -p "../rootfs/$VM/lib/modules"
 mount -o rbind "/lib/modules" "../rootfs/$VM/lib/modules"
+mkdir -p "../rootfs/$VM/root/.ccache"
+mount -o rbind "/root/.ccache" "../rootfs/$VM/root/.ccache"
 mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Setup virtual hostname"

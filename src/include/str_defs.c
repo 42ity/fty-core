@@ -45,3 +45,5 @@ const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL =
     "\t\t\"timestamp\": ##TIMESTAMP##\n"
     "\t}";
 
+const char* STRFTIME_DATETIME_FORMAT = "%Y%m%d%H%M%SZ";    
+
