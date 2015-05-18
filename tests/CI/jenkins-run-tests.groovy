@@ -73,6 +73,10 @@ for(
         } else  if ( result == Result.UNSTABLE ) {
             print "WARNING: " + jobName + " result is " + result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+        } else  if ( result == Result.ABORTED ) {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName was aborted");
         } else {
             print "ERROR: " + jobName + " result is " + result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
@@ -104,6 +108,10 @@ for(
         if ( result == Result.SUCCESS ) {
             print result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else  if ( result == Result.ABORTED ) {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName was aborted");
         } else {
             print "WARNING: " + jobName + " result is " + result.toString();
             println ", see " + lastbuild.getAbsoluteUrl() + "  for failed build details";
