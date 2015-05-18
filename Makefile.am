@@ -1022,14 +1022,17 @@ agent_tpower_SOURCES = \
 
 agent_tpower_LDADD = \
 			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la
 
-agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
 
 agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/alert \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools
 
 client_PROGRAMS +=      agent-alert
 
