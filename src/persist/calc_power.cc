@@ -1019,8 +1019,6 @@ std::set<a_elmnt_id_t>
         (const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
          a_elmnt_id_t element_id)
 {
-    LOG_START;
-
     std::set<a_elmnt_id_t> dests;
     
     for ( auto &one_link: links )
@@ -1028,7 +1026,6 @@ std::set<a_elmnt_id_t>
         if ( std::get<0>(one_link) == element_id )
             dests.insert(std::get<1>(one_link));
     }
-    LOG_END;
     return dests;
 }
 
@@ -1192,7 +1189,7 @@ db_reply <std::map<std::string, std::vector<std::string>>>
         log_error ("some error appears, during selecting the dcs");
         return ret;
     }
-    // if there is no racks, then it is an error
+    // if there is no dcs, then it is an error
     if  ( allDcs.item.empty() )
     {
         ret.status = 0;
@@ -1239,13 +1236,14 @@ db_reply <std::map<std::string, std::vector<std::string>>>
             ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
             continue;
         }
-
+        
         if ( links.item.empty() )
         {
             log_warning ("'%s': has no power links", dc.name.c_str());
             ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
             continue;
         }
+        
          std::set <device_info_t> border_devices;
         //  from (first)   to (second)
         //           +--------------+ 
@@ -1259,12 +1257,12 @@ db_reply <std::map<std::string, std::vector<std::string>>>
         std::set <a_elmnt_id_t> dest_dvcs{};
         for ( auto &oneLink : links.item )
         {
+            log_debug ("  cur_link: %d->%d", oneLink.first,oneLink.second);
             auto it = dc_devices.find (oneLink.first);
             if ( it == dc_devices.end() )         
                 border_devices.insert ( dc_devices.find(oneLink.second)->second );
             dest_dvcs.insert(oneLink.second);
         }
-        
         //  from (first)   to (second)
         //           +-----------+ 
         //           |A_____C    |

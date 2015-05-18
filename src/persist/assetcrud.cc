@@ -1150,11 +1150,13 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
             " WHERE"
             "   v.id_asset_link_type = :linktypeid AND"
             "   v.id_asset_element_dest = v2.id_asset_element AND"
-            "   ( :containerid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
-            "               v2.id_parent4) ) AND"
             "   v.id_asset_element_src = v1.id_asset_element AND" 
-            "   ( :containerid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
+            "   ("
+            "       ( :containerid IN (v2.id_parent1, v2.id_parent2 ,v2.id_parent3,"
+            "               v2.id_parent4) ) OR"
+            "       ( :containerid IN (v1.id_parent1, v1.id_parent2 ,v1.id_parent3,"
             "               v1.id_parent4) )"
+            "   )"
         );
         
         // can return more than one row
@@ -1200,6 +1202,7 @@ db_reply <std::vector<device_info_t>>
          a_elmnt_id_t element_id)
 {
     LOG_START;
+    log_debug ("element_id = %" PRIi32, element_id);
 
     std::vector<device_info_t> item{};
     db_reply <std::vector<device_info_t>> ret = db_reply_new(item);
@@ -1209,7 +1212,7 @@ db_reply <std::vector<device_info_t>>
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.name,"
-            "   v.id, v.id_asset_device_type, v.type_name"
+            "   v.id_asset_element, v.id_asset_device_type, v.type_name"
             " FROM"
             "   v_bios_asset_element_super_parent v"
             " WHERE :containerid in (v.id_parent1, v.id_parent2, v.id_parent3, v.id_parent4)"
@@ -1223,21 +1226,21 @@ db_reply <std::vector<device_info_t>>
         // Go through the selected elements
         for ( auto &row: result )
         {
-            a_elmnt_id_t device_asset_id = 0;
-            row[1].get(device_asset_id);
-            assert ( device_asset_id );
-            
             std::string device_name = "";
             row[0].get(device_name);
             assert ( !device_name.empty() );
-
-            std::string device_type_name = "";
-            row[2].get(device_type_name);
-            assert ( !device_type_name.empty() );
+            
+            a_elmnt_id_t device_asset_id = 0;
+            row[1].get(device_asset_id);
+            assert ( device_asset_id );
 
             a_dvc_tp_id_t device_type_id = 0;
-            row[3].get(device_type_id);
+            row[2].get(device_type_id);
             assert ( device_type_id );
+
+            std::string device_type_name = "";
+            row[3].get(device_type_name);
+            assert ( !device_type_name.empty() );
 
             ret.item.push_back(std::make_tuple(device_asset_id, device_name, 
                                 device_type_name, device_type_id));

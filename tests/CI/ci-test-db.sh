@@ -46,6 +46,7 @@ DB_DATA="load_data.sql"
 DB_TOPO="power_topology.sql"
 DB_TOPO1="location_topology.sql"
 DB_RACK_POWER="rack_power.sql"
+DB_DC_POWER="dc_power.sql"
 DB_CRUD="crud_test.sql"
 
 RESULT=0
@@ -181,7 +182,22 @@ if [ "$?" != 0 ] ; then
     echo "ERROR: test-totalpower failed"
     echo "----------------------------------------"
     RESULT=1
-    FAILED="$FAILED test-totalpower"
+    FAILED="$FAILED test-totalpower::rack"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
+fi
+sleep 1
+
+echo "-------------------- test-total-power --------------------"
+echo "-------------------- fill db for dc power --------------------"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_DC_POWER"
+"$BUILDSUBDIR"/test-totalpower "[$DB_DC_POWER]"
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-totalpower failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-totalpower::dc"
     [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
