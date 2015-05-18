@@ -80,7 +80,7 @@ db_reply_t
  * \param id            - an id of the alert in the database
  * 
  * \return in case of success: status = 1,
- *                             rowid is set,
+ *                             rowid is set(is 0, if id doesn't exist),
  *                             affected_rows is set
  *         in case of fail:    status = 0,
  *                             errtype is set,
@@ -94,6 +94,23 @@ db_reply_t
          m_alrt_id_t         id);
 
 //+
+/*
+ * \brief Updates the record in the table [t_bios_alert] by id.
+ *        Sets an end date of the alert.
+ *
+ * \param conn          - a connection to the database
+ * \param date_till     - a date+time when system evaluated that 
+ *                        this alert had ended
+ * \param id            - an id of the alert in the database
+ * 
+ * \return in case of success: status = 1,
+ *                             rowid is set(is 0, if id doesn't exist),
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     update_alert_tilldate 
         (tntdb::Connection  &conn,

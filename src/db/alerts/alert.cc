@@ -166,7 +166,10 @@ db_reply_t
         ret.status = 1;
         // update statement doesn't trigger a lastinsertedid functionality
         // use from the paramenter
-        ret.rowid = id;
+        if ( ret.affected_rows != 0 )
+        {
+            ret.rowid = id;
+        }
         LOG_END;
         return ret;
     }
@@ -248,10 +251,14 @@ db_reply_t
         ret.affected_rows = st.set("id", id).
                                set("till", date_till).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was updated %" 
                                     PRIu64 " rows", ret.affected_rows);
-        ret.status = 1;
+        if ( ret.affected_rows != 0 )
+        {
+            ret.rowid = id;
+        }
+        
+        ret.rowid = id;
         LOG_END;
         return ret;
     }

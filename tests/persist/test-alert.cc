@@ -581,3 +581,43 @@ TEST_CASE("t_bios_alert INSERT Null description #9","[db][CRUD][insert][alert][c
     log_close();
 }
 
+TEST_CASE("t_bios_alert UPDATE notification by id #10","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT UPDATE by ID #10 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    // update
+    int64_t  new_notification = 4;
+    m_alrt_id_t id = 999;
+    auto reply_update = update_alert_notification_byId(conn, new_notification, id);
+    REQUIRE (reply_update.status == 1);
+    REQUIRE (reply_update.affected_rows == 0);
+    REQUIRE (reply_update.rowid == 0);
+
+    log_close();
+}
+
+TEST_CASE("t_bios_alert UPDATE tilldate by rulename #11","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT UPDATE by ID #11 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    // update
+    int64_t  date_till = 2059829;
+    const char *rule_name = "abra-cadabra";
+    auto reply_update = update_alert_tilldate_by_rulename (conn, date_till, rule_name);
+    REQUIRE (reply_update.status == 1);
+    REQUIRE (reply_update.affected_rows == 0);
+    REQUIRE (reply_update.rowid == 0);
+
+    log_close();
+}
+
