@@ -15,23 +15,47 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file alert.h
+/*! \file alert_basic.h
     \brief Pure DB API for CRUD operations on alerts
 
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@eaton.com>
 */
 
-#ifndef SRC_PERSIST_ALERT
-#define SRC_PERSIST_ALERT
+#ifndef SRC_DB_ALERTS_ALERT_BASIC
+#define SRC_DB_ALERTS_ALERT_BASIC
 
 #include <tntdb/connect.h>
 #include "dbtypes.h"
 #include "dbhelpers.h"
-#include "ymsg.h"
 
 namespace persist {
 
 //+
+/*
+ * \brief Inserts a new record into the table [t_bios_alert]
+ *        about new alert discovered in the system.
+ *
+ *  An end date of the alert can't be specified during the insert statement,
+ *  because alert just started.
+ *
+ * \param conn          - a connection to the database
+ * \param rule_name     - a rule name that produced this alert
+ * \param priority      - a priority of the alert
+ * \param alert_state   - an alert state
+ * \param description   - a description of the alert (can be NULL)
+ * \param notification  - a bit-vector about notifications already sent 
+ *                        about this alert
+ * \param date_from     - a date+time when system evaluated that 
+ *                        this alert had started
+ * 
+ * \return in case of success: status = 1,
+ *                             rowid is set,
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     insert_into_alert 
         (tntdb::Connection  &conn,
@@ -43,6 +67,26 @@ db_reply_t
          int64_t             date_from);
 
 //+
+/*
+ * \brief Updates the record in the table [t_bios_alert] by id.
+ *        Sets a new notification bit-vector.
+ *
+ *  Sets a new notification bit-vector. It is able only to add 
+ *  a new notifications sended. (Because we cannot "unsend" a notification).
+ *
+ * \param conn          - a connection to the database
+ * \param notification  - a bit-vector about new notifications sent 
+ *                        about this alert
+ * \param id            - an id of the alert in the database
+ * 
+ * \return in case of success: status = 1,
+ *                             rowid is set,
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     update_alert_notification_byId 
         (tntdb::Connection  &conn,
@@ -145,4 +189,4 @@ db_reply_t
  
 } //namespace persist
 
-#endif //SRC_PERSIST_ALERT
+#endif //SRC_DB_ALERTS_ALERT_BASIC

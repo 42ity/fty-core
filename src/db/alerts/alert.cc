@@ -37,7 +37,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 namespace persist {
 
 //=============================================================================
-// end date of the alert can't be specified during the insert statement
 db_reply_t
     insert_into_alert 
         (tntdb::Connection  &conn,
@@ -65,7 +64,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "rule name is invalid";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( !is_ok_priority (priority) )
@@ -74,7 +73,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unsupported value of priority";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( !is_ok_alert_state (alert_state) )
@@ -83,7 +82,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "alert state is invalid";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     // description can be even NULL
@@ -139,7 +138,6 @@ db_reply_t
 
 
 //=============================================================================
-
 db_reply_t
     update_alert_notification_byId 
         (tntdb::Connection  &conn,
@@ -163,10 +161,12 @@ db_reply_t
         ret.affected_rows = st.set("id", id).
                                set("note", notification).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was updated %" 
                                     PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
+        // update statement doesn't trigger a lastinsertedid functionality
+        // use from the paramenter
+        ret.rowid = id;
         LOG_END;
         return ret;
     }
@@ -197,7 +197,8 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " UPDATE"
             "   t_bios_alert"
-            " SET date_till = FROM_UNIXTIME(:till)"
+            " SET date_till = FROM_UNIXTIME(:till),"
+            "     id=LAST_INSERT_ID(id)"
             " WHERE rule_name = :rule AND"
             "   date_till is NULL"
         );
@@ -205,9 +206,9 @@ db_reply_t
         ret.affected_rows = st.set("rule", rule_name).
                                set("till", date_till).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was updated %" 
                                     PRIu64 " rows", ret.affected_rows);
+        ret.rowid = conn.lastInsertId();
         ret.status = 1;
         LOG_END;
         return ret;
