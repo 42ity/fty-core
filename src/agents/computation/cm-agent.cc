@@ -60,10 +60,6 @@ int main (int argc, char **argv) {
     log_set_level (log_level);
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
-    // INPROGRESS: delete
-    // memento of pending requests (someone requests something from us)
-    //    std::map <uint16_t, std::pair <std::string, ymsg_t *>> requests; 
-
     // TODO: Rewrite the std::function in rules to also return subject when returning message_out; edit fnctions accordingly
     // TODO: _later_ extend this with pattern once we start listening on stream
     std::map <std::string, std::function<int(bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
