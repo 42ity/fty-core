@@ -258,7 +258,7 @@ db_reply_t
             ret.rowid = id;
         }
         
-        ret.rowid = id;
+        ret.status = 1;
         LOG_END;
         return ret;
     }
