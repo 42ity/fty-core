@@ -145,11 +145,11 @@ int64_t datetime_to_calendar (const char *datetime) {
 }
 
 
-int unixtime_to_datetime(time_t t, char* buf, size_t s) {
-    struct tm* tmp = gmtime(&t);
-    if (!tmp)
+int calendar_to_datetime(time_t timestamp, char* buffer, size_t n) {
+    struct tm* tmp = gmtime (&timestamp);
+    if (!tmp || strftime (buffer, n, STRFTIME_DATETIME_FORMAT, tmp) == 0) { // it's safe to check for 0, since we expect non-zero string
         return -1;
-    strftime(buf, s, "%Y%m%d%H%M%SZ", tmp);
+    }
     return 0;
 }
 
