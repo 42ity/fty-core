@@ -508,8 +508,8 @@ TEST_CASE("t_bios_alert UPDATE end date #7","[db][CRUD][update][alert][crud_test
 
     // check select
     reply_select = select_alert_all_closed (conn);
-    REQUIRE ( reply_select.status == (oldsize_a + 1) );
-    REQUIRE ( reply_select.item.size() == 1 );
+    REQUIRE ( reply_select.status == 1);
+    REQUIRE ( reply_select.item.size() ==(oldsize_a + 1 ) );
     REQUIRE ( reply_select.item.at(oldsize_a).id == rowid );
     REQUIRE ( reply_select.item.at(oldsize_a).rule_name == std::string(rule_name) );
     REQUIRE ( reply_select.item.at(oldsize_a).alert_state == alert_state );
