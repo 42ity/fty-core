@@ -1089,7 +1089,7 @@ db_reply <std::vector<db_a_elmnt_t>>
     
         tntdb::Result result = st.set("typeid", type_id).
                                   select();
-        log_debug("[t_bios_asset_element]: were selected %" PRIu32 " rows",
+        log_debug("[v_bios_asset_element]: were selected %" PRIu32 " rows",
                                                             result.size());
 
         // Go through the selected elements
