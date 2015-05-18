@@ -109,6 +109,7 @@ agent-alert-smtp
 server-agent
 agent-cm
 bios-email
+agent-tpower
 
 tests/junit/
 tests/CI/web/log/

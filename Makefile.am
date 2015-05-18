@@ -1018,7 +1018,7 @@ client_PROGRAMS +=	agent-tpower
 
 agent_tpower_SOURCES = \
 			src/agents/tpower/agent-tpower.cc \
-			src/agents/tpower/tp-rack.cc \
+			src/agents/tpower/tp-unit.cc \
 			src/agents/alert/alert-measurement.cc
 
 agent_tpower_LDADD = \
