@@ -155,6 +155,8 @@ bios-driver-nmap.service
 bios-db.service
 !tools/bios-server-agent.service.in
 bios-server-agent.service
+!tools/bios-agent-tpower.service.in
+bios-agent-tpower.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
