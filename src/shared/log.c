@@ -60,7 +60,7 @@ void log_set_syslog_level(int level) {
 
     ASSERT_LEVEL;
 
-    LOG_UPTO(level);
+    setlogmask(LOG_UPTO(level));
     log_syslog_level = level;
 }
 
