@@ -1,73 +1,126 @@
 #include <stdio.h>
+#include <iostream>
+#include <string>
+#include <errno.h>
+#include <tntdb/connect.h>
 
 #include "agent-tpower.h"
 #include "str_defs.h"
 #include "log.h"
 #include "cleanup.h"
+#include "dbhelpers.h"
+#include "calc_power.h"
+#include "dbpath.h"
 
-#include <iostream>
-#include <string>
-#include <errno.h>
-
-void TotalPowerAgent::configuration( )
+bool TotalPowerAgent::configuration( )
 {
-    _racks["R1"] = TPRack();
-    _racks["R1"].name("R1");
-    _racks["R1"].addPowerDevice("UPS1-LAB");
-    _affects["UPS1-LAB"]="R1";
-    _racks["R1"].addPowerDevice("UPS2-LAB");
-    _affects["UPS2-LAB"]="R1";
+    tntdb::Connection connection;
+
+    try {
+        connection = tntdb::connect(url);
+        // reading racks
+        db_reply <std::map<std::string, std::vector<std::string>>> ret =
+            select_devices_total_power_racks (connection);
+
+        if( ret.status ) {
+            for( auto & rack_it: ret.item ) {
+                log_debug("reading rack %s powerdevices", rack_it.first.c_str() );
+                auto devices = rack_it.second;
+                for( auto device_it: devices ) {
+                    log_debug("rack %s powerdevice %s", rack_it.first.c_str(), device_it.c_str() );
+                    addDeviceToMap(_racks, _affectedRacks, rack_it.first, device_it );
+                }
+            }
+        }
+        // reading DCs
+        ret = select_devices_total_power_dcs (connection);
+        if( ret.status ) {
+            for( auto & dc_it: ret.item ) {
+                log_debug("reading DC %s powerdevices", dc_it.first.c_str() );
+                auto devices = dc_it.second;
+                for( auto device_it: devices ) {
+                    log_debug("DC %s powerdevice %s", dc_it.first.c_str(), device_it.c_str() );
+                    addDeviceToMap(_DCs, _affectedDCs, dc_it.first, device_it );
+                }
+            }
+        }
+        connection.close();
+        return true;
+    } catch(...) {
+        return false;
+    }
 }
 
-std::string TotalPowerAgent::device()
+void TotalPowerAgent::addDeviceToMap(
+    std::map< std::string, TPUnit > &elements,
+    std::map< std::string, std::string > &reverseMap,
+    const std::string & owner,
+    const std::string & device )
 {
-    std::string subj = subject();
-    size_t i = subj.find('@');
-    if( i == std::string::npos ) return "";
-    return subj.substr(i + 1);
+    auto element = elements.find(owner);
+    if( element == elements.end() ) {
+        auto box = TPUnit();
+        box.name(owner);
+        box.addPowerDevice(device);
+        elements[owner] = box;
+    } else {
+        element->second.addPowerDevice(device);
+    }
+    reverseMap[device] = owner;
 }
 
 void TotalPowerAgent::onStart( )
 {
-    //FIXME: remove static config
-    configuration();
     _timeout = TPOWER_POLLING_INTERVAL;
+    if( ! configuration() ) {
+        log_error("Failed to read configuration from database");
+        zsys_interrupted = true;
+        _exitStatus = 1;
+    }
 }
 
 void TotalPowerAgent::onSend( ymsg_t **message ) {
-    std::cout << device() << "\n";
-    std::string dev = device();
     Measurement M = *message;
-    M.print();
 
-    auto afit = _affects.find( M.deviceName() );
-    if( afit != _affects.end() ) {
-        // this device affects something
-        auto rackit = _racks.find( afit->second );
-        if( rackit != _racks.end() ) {
-            // affected rack/dc found
-            rackit->second.setMeasurement(M);
+    auto affected_it = _affectedRacks.find( M.deviceName() );
+    if( affected_it != _affectedRacks.end() ) {
+        // this device affects some total rack
+        auto rack_it = _racks.find( affected_it->second );
+        if( rack_it != _racks.end() ) {
+            // affected rack found
+            rack_it->second.setMeasurement(M);
+            sendMeasurement( _racks );
         }
-        onPoll();
     }
-    // ymsg_print(*message);
+    affected_it = _affectedDCs.find( M.deviceName() );
+    if( affected_it != _affectedDCs.end() ) {
+        // this device affects some total DC
+        auto dc_it = _DCs.find( affected_it->second );
+        if( dc_it != _DCs.end() ) {
+            // affected dc found
+            dc_it->second.setMeasurement(M);
+            sendMeasurement( _DCs );
+        }
+    }
 }
 
-void TotalPowerAgent::onPoll() {
-    for( auto &rack : _racks ) {
-        std::cout << "rack " << rack.first << " changed: " << rack.second.changed() <<
-            " known: " << rack.second.realpowerIsKnown() << "\n";
-        if( rack.second.advertise() ) {
-            std::cout << "sending\n";
-            _scoped_ymsg_t *message = rack.second.measurementMessage();
+void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements) {
+    for( auto &element : elements ) {
+        if( element.second.advertise() ) {
+            log_debug("Sending total power of %s", element.second.name().c_str() );
+            _scoped_ymsg_t *message = element.second.measurementMessage();
             if( message ) {
-                ymsg_print(message);
-                std::string topic = "measurement.realpower.default@" + rack.second.name();
+                std::string topic = "measurement.realpower.default@" + element.second.name();
                 send( topic.c_str(), &message );
-                rack.second.advertised();
+                element.second.advertised();
             }
         }
     }
+}
+
+void TotalPowerAgent::onPoll() {
+    sendMeasurement( _racks );
+    sendMeasurement( _DCs );
 }
 
 int main(int argc, char *argv[]){

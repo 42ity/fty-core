@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include <string>
 
-#include "tp-rack.h"
+#include "tp-unit.h"
 
 // TODO: read this from configuration (once in 5 minutes now (300s))
 #define TPOWER_MEASUREMENT_REPEAT_AFTER 300
@@ -42,14 +42,30 @@ class TotalPowerAgent : public BIOSAgent {
     explicit TotalPowerAgent( const char *agentName ) :BIOSAgent( agentName ) {  };
     explicit TotalPowerAgent( const std::string &agentName ) :BIOSAgent( agentName ) { };
 
-    void configuration();
-    std::string device();
     void onStart();
     void onSend( ymsg_t **message );
     void onPoll();
  private:
-    std::map< std::string, std::string> _affects;
-    std::map< std::string, TPRack > _racks;
+    //! \brief list of racks
+    std::map< std::string, TPUnit > _racks;
+    //! \brief list of datacenters
+    std::map< std::string, TPUnit > _DCs;
+    //! \brief list of racks, affected by powerdevice
+    std::map< std::string, std::string> _affectedRacks;
+    //! \brief list of DCs, affected by powerdevice
+    std::map< std::string, std::string> _affectedDCs;
+
+    //! \brief read configuration from database
+    bool configuration();
+    //! \brief send measurement message if needed
+    void sendMeasurement(std::map< std::string, TPUnit > &elements);
+    //! \brief powerdevice to DC or rack and put it also in _affected* map
+    void addDeviceToMap(
+        std::map< std::string, TPUnit > &elements,
+        std::map< std::string, std::string > &reverseMap,
+        const std::string & owner,
+        const std::string & device );
+
 };
 
 #endif // SRC_AGENTS_TPOWER_AGENT_TPOWER_H__
