@@ -86,7 +86,7 @@ int64_t datetime_to_calendar (const char *datetime);
 //  \param buf - caller's buffer large enough to store the string
 //  \param s - size of the buffer
 //  \return -1 in case of failure, 0 otherwise
-int unixtime_to_datetime(time_t t, char* buf, size_t s);
+int calendar_to_datetime (time_t timestamp, char* buffer, size_t n);
 
 //! portable version of timegm() taken from manual pages 
 int64_t my_timegm (struct tm *tm);

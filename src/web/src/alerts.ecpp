@@ -31,7 +31,7 @@ tntdb::Connection conn = tntdb::connectCached(url);
     for (const auto& i : db_reply.item) {
         cnt ++;
         char t1[64];
-        unixtime_to_datetime(i.date_from, t1, 64);
+        calendar_to_datetime(i.date_from, t1, 64); // TODO: check return value?
         auto element_name = i.rule_name;
         auto idx = element_name.find('@');
         if (idx != std::string::npos) {
