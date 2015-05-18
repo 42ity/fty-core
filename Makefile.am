@@ -998,21 +998,21 @@ client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
 			src/agents/computation/cm-agent.cc \
-			src/agents/computation/cm-agent-db.cc \
-			src/agents/computation/cm-agent-db.h \
 			src/agents/computation/cm-agent-web.cc \
 			src/agents/computation/cm-agent-web.h \
 			src/agents/computation/cm-agent-utils.h \
 			src/agents/computation/cm-agent-utils.cc
 
 agent_cm_LDADD = \
+            libpriv-db.la \
 			libpriv-log.la \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la
 
-agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
-agent_cm_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist
 
 client_PROGRAMS +=      agent-alert
 

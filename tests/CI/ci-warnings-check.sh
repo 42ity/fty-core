@@ -40,10 +40,6 @@ RESULT=0
 set -o pipefail || true
 set -e
 
-echo "======================== update ============================="
-apt-get update >/dev/null 2>&1
-#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc >/dev/null 2>&1
-
 ### Note that configure and make are used explicitly to avoid a cleanup
 ### and full rebuild of the project if nothing had changed.
 NEWBUILD=no
