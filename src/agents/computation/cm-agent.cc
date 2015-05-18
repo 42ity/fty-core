@@ -19,7 +19,6 @@
 #include "utils_ymsg++.h"
 
 #include "cm-agent-web.h"
-#include "cm-agent-db.h"
 #include "cleanup.h"
 
 #define DEFAULT_LOG_LEVEL LOG_INFO
@@ -61,13 +60,13 @@ int main (int argc, char **argv) {
     log_set_level (log_level);
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
+    // INPROGRESS: delete
     // memento of pending requests (someone requests something from us)
-    std::map <uint16_t, std::pair <std::string, ymsg_t *>> requests; 
+    //    std::map <uint16_t, std::pair <std::string, ymsg_t *>> requests; 
 
     // TODO: Rewrite the std::function in rules to also return subject when returning message_out; edit fnctions accordingly
     // TODO: _later_ extend this with pattern once we start listening on stream
-    std::map <std::string, std::function<int(bios_agent_t*,  ymsg_t *, std::map <uint16_t, std::pair <std::string, ymsg_t *>>&, const char*, ymsg_t **)>> rules;
-    rules.emplace (std::make_pair ("return_measurements", process_db_measurement));
+    std::map <std::string, std::function<int(bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
     rules.emplace (std::make_pair ("metric/computed/average", process_web_average));
 
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
@@ -111,7 +110,7 @@ int main (int argc, char **argv) {
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
             _scoped_ymsg_t *msg_out = NULL;
-            rv = rules.at (subject) (agent, msg_recv, requests, sender, &msg_out);
+            rv = rules.at (subject) (agent, msg_recv, sender, &msg_out);
             assert (rv != -1);
             if (msg_out != NULL) {
                 ymsg_format (msg_out, msg_print);                
