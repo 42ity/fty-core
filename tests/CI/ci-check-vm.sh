@@ -105,6 +105,18 @@ copy_project() {
     scp -r -P "$SUT_SSH_PORT" "$CHECKOUTDIR" "${SUT_USER}@$SUT_HOST:~/"
 }
 
+copy_keys() {
+    if [ x"`id -un`" = xjenkins ]; then
+        for KF in `cd ${HOME}/.ssh && ls -1 id_* | grep -v '.pub'` ; do
+            [ -s "${HOME}/.ssh/$KF" -a -s "${HOME}/.ssh/$KF.pub" ] && \
+            echo "-- copying Jenkins SSH keys: $KF $KF.pub" && \
+            scp -P "$SUT_SSH_PORT" "${HOME}/.ssh/$KF.pub" "${SUT_USER}@$SUT_HOST:.ssh/${KF}-jenkins.pub" && \
+            scp -P "$SUT_SSH_PORT" "${HOME}/.ssh/$KF" "${SUT_USER}@$SUT_HOST:.ssh/${KF}-jenkins" && \
+            sut_run "chmod 600 .ssh/${KF}-jenkins ; chmod 644 .ssh/${KF}-jenkins.pub"
+        done
+    fi
+}
+
 remote_make() {
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
     BMAKELOG=$(basename $MAKELOG)
@@ -148,6 +160,7 @@ echo "BRANCH:   $BRANCH"
 echo "PLATFORM: $BUILDMACHINE"
 echo "======================== BUILD PARAMETERS ==============================="
 
+copy_keys
 if ! compare_revisions ; then
     echo "-------------- project on $SUT_HOST:$SUT_SSH_PORT needs synchronization ---------------"
     remote_cleanup

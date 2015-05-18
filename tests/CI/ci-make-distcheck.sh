@@ -29,63 +29,81 @@ NEED_BUILDSUBDIR=no determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -o pipefail || true
-#set -e
-
-( which apt-get >/dev/null 2>&1) && apt-get update || true
-#mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
 
 # We can make distcheck unconditionally, or try to see if it is needed
 [ -z "$REQUIRE_DISTCHECK" ] && REQUIRE_DISTCHECK=no
 #[ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='http://stash.mbt.lab.etn.com/scm/bios/core.git'
 [ -z "$GIT_UPSTREAM" ] && GIT_UPSTREAM='ssh://git@stash.mbt.lab.etn.com:7999/bios/core.git'
 
+GOT_GIT=no
+if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
+    GOT_GIT=yes
+fi
+
 isCheckRequired() {
     [ "$REQUIRE_DISTCHECK" = yes ] && return 0
 
-    if ( which git >/dev/null 2>&1) && [ -d .git ] && git status > /dev/null; then
+    if [ "$GOT_GIT" = yes ] ; then
         # Optionally compare to previous commit and only run this test if there
         # were added/removed/renamed files or changes to Makefile.am / configure.ac
 
         CHANGED_LOCAL="`git status -s | egrep -v '^\?\? '`"
         if [ $? = 0 ] && [ -n "$CHANGED_LOCAL" ]; then
-            logmsg_info "Uncommitted local changes detected, so requesting the distcheck"
+            logmsg_warn "Uncommitted local changes detected, so requesting the distcheck"
             REQUIRE_DISTCHECK=yes
             return 0
         fi
 
         case "$GIT_UPSTREAM" in
             ssh://*)
-                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,' | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" &&
-                if ! egrep -i 'Host.*$GIT_HOST' ~/.ssh/config >/dev/null 2>&1 ; then
-                    logmsg_info "Added SSH-client trust to Git host $GIT_HOST"
-                    echo -e "Host $GIT_HOST\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+                GIT_HOST="`echo "$GIT_UPSTREAM" | sed 's,^ssh://\([^/]*\)/.*$,\1,'`" && \
+                { GIT_PORT="`echo "$GIT_HOST" | grep : | sed 's,^.*:\([0-9]*\)$,\1,'`" || GIT_PORT=22;
+                  [ -n "$GIT_PORT" ] && [ "$GIT_PORT" -gt 0 ] 2>/dev/null || GIT_PORT=22; } && \
+                GIT_HOST="`echo "$GIT_HOST" | sed 's,^.*@,,' | sed 's,:[0-9]*$,,'`" && \
+                egrep -i "Host.*$GIT_HOST" ~/.ssh/config >/dev/null 2>&1
+                if [ $? != 0 ] ; then
+                    # Entry not found - add it
+                    logmsg_info "Adding SSH-client trust to Git host $GIT_HOST:$GIT_PORT"
+                    echo -e "Host $GIT_HOST\n\tPort $GIT_PORT\n\tStrictHostKeyChecking no\n\tIdentityFile ~/.ssh/id_dsa\n\tIdentityFile ~/.ssh/id_dsa-jenkins\n\tIdentityFile ~/.ssh/id_rsa\n\tIdentityFile ~/.ssh/id_rsa-jenkins\n\tPubkeyAuthentication yes\n" >> ~/.ssh/config
                 fi
                 ;;
         esac
 
-        if ! git remote -v | egrep '^upstream' > /dev/null ; then
-            git remote add upstream "$GIT_UPSTREAM"
-        fi
-        git fetch upstream
-        if [ $? != 0 ]; then
-            logmsg_info "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
-            REQUIRE_DISTCHECK=yes
-            return 0
-        fi
+        if git remote -v | egrep '^origin.*'"$GIT_UPSTREAM" ; then
+            # TODO: We inherently assume this is upstream/master... but it may
+            # be a no-problem anyway - we compare old comit in this branch.
 
-        if [ -z "$OLD_COMMIT" ]; then
-            OUT="`git diff upstream/master`"
-            if [ $? = 0 ] && [ -n "$OUT" ] ; then
-                # We are on a branch not identical to a known upstream/master
-                # So compare to that.
-                OLD_COMMIT='upstream/master'
-            else
-                # This is a replica of upstream/master, or we couldn't fetch it
-                # Compare to our own older commit
-                OLD_COMMIT='HEAD~1'
+            logmsg_info "We are in a replica of upstream; so consider it a fresh one and compare to our own older commit"
+            [ -z "$OLD_COMMIT" ] && OLD_COMMIT='HEAD~1'
+        else
+            # Try to get the upstream to compare with
+            if ! git remote -v | egrep '^upstream' > /dev/null ; then
+                logmsg_info "Registering Git 'upstream' remote repository"
+                git remote add upstream "$GIT_UPSTREAM"
             fi
-            logmsg_info "Decided to compare current workspace contents to '$OLD_COMMIT'"
+
+            logmsg_info "Fetching the latest bits from Git 'upstream' remote repository"
+            git fetch upstream
+            if [ $? != 0 ]; then
+                logmsg_warn "Communication with remote upstream '$GIT_UPSTREAM' failed, so requesting the distcheck"
+                REQUIRE_DISTCHECK=yes
+                return 0
+            fi
+
+            if [ -z "$OLD_COMMIT" ]; then
+                OUT="`git diff upstream/master`"
+                if [ $? = 0 ] && [ -n "$OUT" ] ; then
+                    logmsg_info "We are on a branch not identical to a known upstream/master," \
+                        "so compare to that"
+                    OLD_COMMIT='upstream/master'
+                else
+                    logmsg_info "This is a replica of upstream/master, or we couldn't fetch it," \
+                        "so compare to our own older commit"
+                    OLD_COMMIT='HEAD~1'
+                fi
+            fi
         fi
+        logmsg_info "Will compare current workspace contents to '$OLD_COMMIT'"
 
         CHANGED_DIRENTRIES="`git diff --summary ${OLD_COMMIT} | egrep '^ (create|delete|rename) '`"
         if [ $? = 0 -a -n "$CHANGED_DIRENTRIES" ] ; then
@@ -113,15 +131,27 @@ isCheckRequired() {
     [ "$REQUIRE_DISTCHECK" = yes ] # Set a useful return code
 }
 
-isCheckRequired
+if [ "$REQUIRE_DISTCHECK" = no ]; then
+    isCheckRequired
+    if [ "$GOT_GIT" = yes ] ; then
+        echo ""
+        echo "====================================="
+        logmsg_info "Summary of the Git verification performed:"
+        git remote -v
+        git branch -a
+        ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
+        logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
+        [ -n "${OLD_COMMIT}" ] && \
+            logmsg_info "Following flies were changed between these commits:" &&\
+            git diff "${OLD_COMMIT}" | egrep '^diff '
+        echo "====================================="
+        echo ""
+    fi
+fi
 
 if [ "$REQUIRE_DISTCHECK" = no ]; then
     logmsg_warn "Detected that there were no such changes that require a make distcheck."
     logmsg_warn "  export REQUIRE_DISTCHECK=yes  to enforce this test. Quitting cleanly."
-    ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
-    logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
-    git remote -v
-    git branch -a
     exit 0
 fi
 
