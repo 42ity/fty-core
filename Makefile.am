@@ -994,7 +994,9 @@ agent_tpower_LDADD = \
 
 agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi
 
-agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/alert
+agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/persist
 
 client_PROGRAMS +=      agent-alert
 
