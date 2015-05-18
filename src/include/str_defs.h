@@ -21,6 +21,8 @@ extern const char* AVG_TYPES[AVG_TYPES_SIZE];
 extern const char* DATETIME_FORMAT;
 #define DATETIME_FORMAT_LENGTH 15
 
+extern const char* STRFTIME_DATETIME_FORMAT;
+
 // protocol related
 extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_TMPL;
 extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
