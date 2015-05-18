@@ -105,18 +105,32 @@ copy_project() {
     scp -r -P "$SUT_SSH_PORT" "$CHECKOUTDIR" "${SUT_USER}@$SUT_HOST:~/"
 }
 
+copy_keys() {
+    if [ x"`id -un`" = xjenkins ]; then
+        for KF in `cd ${HOME}/.ssh && ls -1 id_* | grep -v '.pub'` ; do
+            [ -s "${HOME}/.ssh/$KF" -a -s "${HOME}/.ssh/$KF.pub" ] && \
+            echo "-- copying Jenkins SSH keys: $KF $KF.pub" && \
+            scp -P "$SUT_SSH_PORT" "${HOME}/.ssh/$KF.pub" "${SUT_USER}@$SUT_HOST:.ssh/${KF}-jenkins.pub" && \
+            scp -P "$SUT_SSH_PORT" "${HOME}/.ssh/$KF" "${SUT_USER}@$SUT_HOST:.ssh/${KF}-jenkins" && \
+            sut_run "chmod 600 .ssh/${KF}-jenkins ; chmod 644 .ssh/${KF}-jenkins.pub"
+        done
+    fi
+}
+
 remote_make() {
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
     BMAKELOG=$(basename $MAKELOG)
     if sut_run "cd $BCHECKOUTDIR && [ -s ${BMAKELOG} ]" ; then
         # This branch was already configured and compiled on that VM, refresh only
+        # Just in case, we still provide consistent configure flags
         echo "-- compiling to refresh"
-        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { ./autogen.sh --install-dir \"\$HOME\"  --nodistclean ${AUTOGEN_ACTION_MAKE} all-buildproducts install 2>&1 | tee -a ${BMAKELOG}; }; '"
+        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { ./autogen.sh --install-dir / --nodistclean --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_MAKE} all-buildproducts install 2>&1 | tee -a ${BMAKELOG}; }; '"
         return $?
     else
         # Newly fetched branch - clean up, configure and make it fully
+        # Note that the "--prefix=$HOME" should expand on the remote system
         echo "-- compiling to rebuild"
-        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --install-dir \"\$HOME\" --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_BUILD} all-buildproducts install 2>&1 | tee ${BMAKELOG}; }; '"
+        sut_run -t "/bin/bash --login -x -c 'set -o pipefail ; cd $BCHECKOUTDIR && { eval ./autogen.sh --install-dir / --configure-flags \"--prefix=\$HOME\ --with-saslauthd-mux=/var/run/saslauthd/mux\" ${AUTOGEN_ACTION_BUILD} all-buildproducts install 2>&1 | tee ${BMAKELOG}; }; '"
         return $?
     fi
 }
@@ -146,6 +160,7 @@ echo "BRANCH:   $BRANCH"
 echo "PLATFORM: $BUILDMACHINE"
 echo "======================== BUILD PARAMETERS ==============================="
 
+copy_keys
 if ! compare_revisions ; then
     echo "-------------- project on $SUT_HOST:$SUT_SSH_PORT needs synchronization ---------------"
     remote_cleanup
