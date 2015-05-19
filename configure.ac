@@ -540,6 +540,22 @@ AS_IF([test "x$with_systemdsystemunitdir" != "xno"],
         [AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
 AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
 
+# same logic as above, for presets (list of svcs enabled/disabled by default)
+AC_ARG_WITH([systemdsystempresetdir],
+     [AS_HELP_STRING([--with-systemdsystempresetdir=DIR], [Directory for systemd preset files])],,
+     [with_systemdsystempresetdir=auto])
+AS_IF([test "x$with_systemdsystempresetdir" = "xyes" -o "x$with_systemdsystempresetdir" = "xauto"], [
+     def_systemdsystempresetdir=$($PKG_CONFIG --variable=systemdsystempresetdir systemd)
+
+     AS_IF([test "x$def_systemdsystempresetdir" = "x"],
+         [AS_IF([test "x$with_systemdsystempresetdir" = "xyes"],
+                [AC_MSG_ERROR([systemd support requested but pkg-config unable to query systemd package])])
+          with_systemdsystempresetdir=no],
+         [with_systemdsystempresetdir="$def_systemdsystempresetdir"])])
+AS_IF([test "x$with_systemdsystempresetdir" != "xno"],
+        [AC_SUBST([systemdsystempresetdir], [$with_systemdsystempresetdir])])
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystempresetdir" != "xno"])
+
 AC_SUBST([my_CFLAGS])
 AC_SUBST([my_CPPFLAGS])
 AC_SUBST([my_CXXFLAGS])
@@ -630,6 +646,7 @@ Summary:
         LIBMLM_LIBS:             ${LIBMLM_LIBS}
         SASLAUTHD_MUX:           ${SASLAUTHD_MUX}
         SYSTEMDSYSTEMUNITDIR:    ${systemdsystemunitdir}
+        SYSTEMDSYSTEMPRESETDIR:  ${systemdsystempresetdir}
 
         absolute SRC DIR:        ${_srcdir_abs}
         absolute CUR DIR:        ${_curdir_abs}
