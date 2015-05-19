@@ -78,6 +78,9 @@ usage() {
 # defaults
 #
 VM="latest"
+# TODO: "devel" and "deploy" image types have same name pattern of
+# "simpleimage.<timestamp>.<ext>" - this is easy to mistake in the
+# common flat directories as we have them currently...
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
 [ -z "$APT_PROXY" ] && APT_PROXY='http://gate.roz.lab.etn.com:3142'
