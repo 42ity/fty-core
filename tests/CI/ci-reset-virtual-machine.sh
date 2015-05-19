@@ -69,6 +69,7 @@ usage() {
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+    echo "    --download-only      end the script after downloading the newest image file"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
 }
@@ -94,6 +95,7 @@ DOTDOMAINNAME=""
 [ -n "$DOTDOMAINNAME" ] && DOTDOMAINNAME=".$DOTDOMAINNAME"
 
 [ -z "$STOPONLY" ] && STOPONLY=no
+[ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -120,6 +122,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--stop-only)
 	    STOPONLY=yes
+	    shift
+	    ;;
+	--download-only)
+	    DOWNLOADONLY=yes
 	    shift
 	    ;;
 	-h|--help)
@@ -182,6 +188,14 @@ logmsg_info "Get the latest operating environment image prepared for us by OBS"
 ARCH="`uname -m`"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 wget -c "$IMAGE_URL"
+WGET_RES=$?
+logmsg_info "Download completed with exit-code: $WGET_RES"
+if [ x"$DOWNLOADONLY" = xyes ]; then
+	logmsg_info "DOWNLOADONLY was requested, so ending" \
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
+	exit $WGET_RES
+fi
+
 if [ "$1" ]; then
 	# TODO: We should not get to this point in current code structure
 	# (CLI parsing loop above would fail on unrecognized parameter).
@@ -189,6 +203,7 @@ if [ "$1" ]; then
 	# image name for a particular VM, though.
 	IMAGE="$1"
 else
+        # If download failed, we can have a previous image file for this type
 	IMAGE="`ls -1 *.$EXT | sort -r | head -n 1`"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up"
