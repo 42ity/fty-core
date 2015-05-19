@@ -1199,7 +1199,7 @@ SYSTEMD_UNITS =
 if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
-edit = sed \
+autopathedit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
@@ -1210,10 +1210,14 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service
 
+$(abs_top_builddir)/bios-systemd.preset: Makefile
+	@( echo "### This is a generated file with a list of BIOS services"; \
+	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
+
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
 	@echo "  SED      $@"
-	rm -f $@; $(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS), \
@@ -1225,7 +1229,8 @@ $(foreach m,$(SYSTEMD_UNITS), \
 
 # $(systemdsystemunitdir) may be defined externally by automake/autoconf;
 # otherwise it is empty and should effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS)) \
+				$(abs_top_builddir)/bios-systemd.preset
 
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
