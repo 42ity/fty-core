@@ -102,6 +102,7 @@ void TotalPowerAgent::onSend( ymsg_t **message ) {
             sendMeasurement( _DCs );
         }
     }
+    _timeout = getPollInterval();
 }
 
 void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements) {
@@ -118,9 +119,24 @@ void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements
     }
 }
 
+time_t TotalPowerAgent::getPollInterval() {
+    time_t T = TPOWER_MEASUREMENT_REPEAT_AFTER;
+    for( auto &rack_it : _racks ) {
+        time_t Tx = rack_it.second.timeToAdvertisement();
+        if( Tx > 0 && Tx < T ) T = Tx;
+    }
+    for( auto &dc_it : _racks ) {
+        time_t Tx = dc_it.second.timeToAdvertisement();
+        if( Tx > 0 && Tx < T ) T = Tx;
+    }
+    return T * 1000;
+}
+
+
 void TotalPowerAgent::onPoll() {
     sendMeasurement( _racks );
     sendMeasurement( _DCs );
+    _timeout = getPollInterval();
 }
 
 int main(int argc, char *argv[]){

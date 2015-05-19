@@ -64,6 +64,9 @@ class TPUnit {
     //! \brief set timestamp of the last publishing moment
     void advertised();
 
+    //! \brief time to next advertisement [s]
+    time_t timeToAdvertisement();
+
     //! \brief create ymsg meeasurement message
     ymsg_t *measurementMessage();
  protected:

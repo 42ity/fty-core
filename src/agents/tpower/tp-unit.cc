@@ -48,6 +48,13 @@ void TPUnit::advertised() {
     _timestamp = time(NULL);
 }
 
+time_t TPUnit::timeToAdvertisement() {
+    if( ( _timestamp == 0 ) || realpowerIsUnknown() ) return TPOWER_MEASUREMENT_REPEAT_AFTER;
+    time_t dt = time(NULL) - _timestamp;
+    if( dt > TPOWER_MEASUREMENT_REPEAT_AFTER ) return 0;
+    return TPOWER_MEASUREMENT_REPEAT_AFTER - dt;
+}
+
 bool TPUnit::advertise() {
     if( realpowerIsUnknown() ) return false;
     return ( _changed || ( time(NULL) - _timestamp > TPOWER_MEASUREMENT_REPEAT_AFTER ) );

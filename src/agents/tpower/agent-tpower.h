@@ -66,6 +66,8 @@ class TotalPowerAgent : public BIOSAgent {
         const std::string & owner,
         const std::string & device );
 
+    //! \brief calculete polling interval (not to wake up every 5s)
+    time_t getPollInterval();
 };
 
 #endif // SRC_AGENTS_TPOWER_AGENT_TPOWER_H__
