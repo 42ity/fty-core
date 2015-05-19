@@ -4,6 +4,7 @@
 #include<ctime>
 
 #include "agents.h"
+#include "utils.h"
 #include "cleanup.h"
 
 Measurement::Measurement( const ymsg_t *message )
@@ -61,25 +62,16 @@ Measurement & Measurement::operator+=(const Measurement &rhs) {
     int32_t value = rhs.value();
     int32_t scale = rhs.scale();
 
-    while( scale < this->_scale ) {
-        if( this->_value >= INT32_MAX / 10 ) {
-            ++scale;
-            value /= 10;
-        } else {
-            this->_scale--;
-            this->_value *= 10;
-        }
-    }
-    while( scale > this->_scale ) {
-        if( value >= INT32_MAX / 10 ) {
-            this->_scale++;
-            this->_value /=10;
-        } else {
-            scale--;
-            value *= 10;
-        }
-    }
-    this->_value += value;
+    int32_t l_value;
+    int8_t l_scale;
+    bool ret;
+
+    ret = bsi32_add(this->value(), this->scale(), value, scale, &l_value, &l_scale);
+    if (!ret)
+        throw "value overflow";
+
+    this->_value = l_value;
+    this->_scale = l_scale;
     return *this;
 }
 
