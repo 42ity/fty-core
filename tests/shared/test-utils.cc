@@ -141,15 +141,15 @@ TEST_CASE("addi32_overflow", "[utils][overflow]") {
     int32_t a, b, value;
     bool ret;
 
-    ret = addi64_overflow(22, 20, &value);
+    ret = addi32_overflow(22, 20, &value);
     CHECK(ret);
     CHECK(value == 42);
 
-    ret = addi64_overflow(INT32_MAX, 0, &value);
+    ret = addi32_overflow(INT32_MAX, 0, &value);
     CHECK(ret);
     CHECK(value == INT32_MAX);
 
-    ret = addi64_overflow(INT32_MAX, 2, &value);
+    ret = addi32_overflow(INT32_MAX, 2, &value);
     CHECK(!ret);
     CHECK(value == INT32_MAX); // old value
 }
