@@ -204,11 +204,11 @@ if [ "$1" ]; then
 	# Should think if anything must be done about picking a particular
 	# image name for a particular VM, though.
 	IMAGE="$1"
-        IMAGE_FLAT="`basename "$IMAGE"`"
+	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-        # If download failed, we can have a previous image file for this type
+	# If download failed, we can have a previous image file for this type
 	IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
-        IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
+	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
