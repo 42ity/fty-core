@@ -105,7 +105,8 @@ DISTCLEANDIRS += \
 
 # recommended by daemon(7)
 DISTCHECK_CONFIGURE_FLAGS = \
-        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
+        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) \
+        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir)
 
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
@@ -1195,6 +1196,7 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
 
@@ -1210,8 +1212,11 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service
 
-$(abs_top_builddir)/bios-systemd.preset: Makefile
-	@( echo "### This is a generated file with a list of BIOS services"; \
+SYSTEMD_PRESETS += 42-bios-systemd.preset
+
+### TODO? Add the build info (git commit, timestamp) to the header comment?
+$(abs_top_builddir)/42-bios-systemd.preset: Makefile
+	@( echo "### This is a generated file with a list of all BIOS services"; \
 	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
@@ -1227,13 +1232,14 @@ $(foreach m,$(SYSTEMD_UNITS), \
 $(foreach m,$(SYSTEMD_UNITS), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
-# $(systemdsystemunitdir) may be defined externally by automake/autoconf;
-# otherwise it is empty and should effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS)) \
-				$(abs_top_builddir)/bios-systemd.preset
+# $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
+# externally by automake/autoconf; otherwise they are empty and should
+# effectively resolve to the top_builddir
+systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
+CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
 EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
 endif
 
@@ -1679,7 +1685,7 @@ all-local: $(abs_top_builddir)/src/include/git_details_override.c \
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
