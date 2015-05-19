@@ -1,0 +1,11 @@
+[Unit]
+Description=Total power agent for BIOS project
+After=malamute.service
+Requires=malamute.service
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/agent-tpower
+
+[Install]
+WantedBy=multi-user.target

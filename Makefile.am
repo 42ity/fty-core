@@ -1014,6 +1014,27 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -lt
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
+client_PROGRAMS +=	agent-tpower
+
+agent_tpower_SOURCES = \
+			src/agents/tpower/agent-tpower.cc \
+			src/agents/tpower/tp-unit.cc \
+			src/agents/alert/alert-measurement.cc
+
+agent_tpower_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
+
+agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools
+
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
@@ -1187,7 +1208,7 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
-                        bios-agent-alert-smtp.service
+                        bios-agent-alert-smtp.service bios-agent-tpower.service
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile

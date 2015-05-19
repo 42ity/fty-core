@@ -57,11 +57,13 @@ class Measurement {
     std::string deviceName() const { return _device_name; };
     std::string source() const { return _source; };
     std::string units() const { return _units; };
+    void units(const std::string &U) { _units = U; };
     int32_t value() const { return _value; };
     int32_t scale() const { return _scale; };
     int64_t time() const { return _time; };
     void print() const;
     Measurement& operator=( const ymsg_t *message ) { set( message ); return *this; }
+    Measurement& operator+=( const Measurement &rhs );
  protected:
     std::string _topic;
     std::string _device_name;
@@ -71,6 +73,16 @@ class Measurement {
     int32_t _scale = 0;
     int64_t _time = 0;
 };
+
+inline bool operator==( const Measurement &lhs, const Measurement &rhs ) {
+    return ( lhs.units() == rhs.units() &&
+             lhs.value() == rhs.value() &&
+             lhs.scale() == rhs.scale() );
+}
+
+inline bool operator!=( const Measurement &lhs, const Measurement &rhs ) {
+    return ! ( lhs == rhs );
+}
 
 #endif // SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__
 

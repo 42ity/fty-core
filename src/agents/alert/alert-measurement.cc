@@ -55,6 +55,34 @@ void Measurement::clear()
     
 }
 
+Measurement & Measurement::operator+=(const Measurement &rhs) {
+    if( this->_units != rhs.units() ) { throw "incompatible units"; }
+
+    int32_t value = rhs.value();
+    int32_t scale = rhs.scale();
+
+    while( scale < this->_scale ) {
+        if( this->_value >= INT32_MAX / 10 ) {
+            ++scale;
+            value /= 10;
+        } else {
+            this->_scale--;
+            this->_value *= 10;
+        }
+    }
+    while( scale > this->_scale ) {
+        if( value >= INT32_MAX / 10 ) {
+            this->_scale++;
+            this->_value /=10;
+        } else {
+            scale--;
+            value *= 10;
+        }
+    }
+    this->_value += value;
+    return *this;
+}
+
 void Measurement::print() const
 {
     std::cout <<
