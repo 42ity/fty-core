@@ -429,7 +429,7 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 # Note that apparently "make dist(check)" adds all *.cpp files to its tarball
 # including those that are generated here. And does not add *.ecpp by default.
 # Not-including the build *.cpp into dist is tricky, but does not matter much.
-EXTRA_DIST +=				src/web/src/*.ecpp
+EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
 
 src/web/src/sysinfo.cpp: src/include/git_details_override.h
 
