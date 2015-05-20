@@ -181,8 +181,13 @@ TEST_CASE("bsi32_rescale","[utils][bs_rescale]"){
     CHECK(ret);
     CHECK(value == 42000);
 
-    // overflow
+    // underflow
     ret = bsi32_rescale(42, 0, -128, &value);
+    CHECK(!ret);
+    CHECK(value == 42000); //<<< just the previous value
+
+    // overflow
+    ret = bsi32_rescale(42, 0, 128, &value);
     CHECK(!ret);
     CHECK(value == 42000); //<<< just the previous value
 
@@ -195,6 +200,12 @@ TEST_CASE("bsi32_rescale","[utils][bs_rescale]"){
     ret = bsi32_rescale(-42, 0, -3, &value);
     CHECK(ret);
     CHECK(value == -42000);
+
+    // underflow - negative
+    ret = bsi32_rescale(INT32_MIN / 10, 0, -2, &value);
+    CHECK(!ret);
+    CHECK(value == -42000); //<<< just the previous value
+    
 }
 
 TEST_CASE("bsi32_add","[utils][bs_add]"){

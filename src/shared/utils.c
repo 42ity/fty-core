@@ -288,9 +288,8 @@ bool bsi32_rescale(int32_t in_value, int8_t in_scale, int8_t new_scale, int32_t*
 
     if (in_scale > new_scale) {
         for (int i = 0; i != abs(in_scale - new_scale); i++) {
-            if (l_value >= (INT32_MAX / 10)) {
+            if (l_value >= (INT32_MAX / 10) || l_value <= (INT32_MIN / 10))
                 return false;
-            }
             l_value *= 10;
         }
         *value = l_value;
