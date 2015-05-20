@@ -308,7 +308,7 @@ bool bsi32_add(int32_t value1, int8_t scale1,
             int32_t value2, int8_t scale2,
             int32_t *value, int8_t* scale)
 {
-    bool ret = 0;
+    bool ret = false;
 
     int32_t l_value = 0, l_value1 = 0, l_value2 = 0;
     int8_t l_scale = 0;
@@ -318,13 +318,15 @@ bool bsi32_add(int32_t value1, int8_t scale1,
     ret = bsi32_rescale(value1, scale1, l_scale, &l_value1);
     if (!ret)
         return false;
+
     ret = bsi32_rescale(value2, scale2, l_scale, &l_value2);
     if (!ret)
         return false;
 
-    if (!addi32_overflow(l_value1, l_value2, &l_value)) {
+    ret = addi32_overflow(l_value1, l_value2, &l_value);
+    if (!ret)
         return false;
-    }
+
     *value = l_value;
     *scale = l_scale;
     return true;
