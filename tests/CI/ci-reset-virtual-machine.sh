@@ -33,7 +33,7 @@
 # so we do not depend it on scriptlib.sh or anything else.
 
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
-[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESET-VM"
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESETVM-"
 ### Store some important CLI values
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"
