@@ -717,6 +717,7 @@ test_totalpower_SOURCES = \
 
 test_totalpower_LDADD = \
 			libpriv-db.la \
+			libpriv-utils.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
