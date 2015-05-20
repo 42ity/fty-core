@@ -137,6 +137,7 @@ tools/run-test-doc.sh.trs
 tools/db-init
 !tools/db-init.in
 
+42-bios-systemd.preset
 !tools/bios-agent-alert.service.in
 bios-agent-alert.service
 !tools/bios-agent-alert-smtp.service.in
