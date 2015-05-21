@@ -108,10 +108,14 @@ void TotalPowerAgent::onSend( ymsg_t **message ) {
 void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements) {
     for( auto &element : elements ) {
         if( element.second.advertise() ) {
-            log_debug("Sending total power of %s", element.second.name().c_str() );
             _scoped_ymsg_t *message = element.second.measurementMessage();
             if( message ) {
                 std::string topic = "measurement.realpower.default@" + element.second.name();
+                Measurement M = element.second.realpower();
+                log_debug("Sending total power topic: %s value: %" PRIi32 "*10^%" PRIi32,
+                          topic.c_str(),
+                          M.value(),
+                          M.scale());
                 send( topic.c_str(), &message );
                 element.second.advertised();
             }
