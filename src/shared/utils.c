@@ -119,7 +119,7 @@ int64_t average_first_since (int64_t timestamp, const char *step) {
     int64_t step_sec = average_step_seconds (step);
     int64_t mod = timestamp % step_sec;
     if (mod == 0)
-        return timestamp;
+        return timestamp + step_sec;
     return timestamp + (step_sec - mod);
 }
 
