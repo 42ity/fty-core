@@ -60,6 +60,7 @@ db_reply_t
     }
 
     try {
+insert_into_measurement_again:
         tntdb::Statement st = conn.prepareCached(
                 " INSERT INTO"
                 "   t_bios_measurement_topic"
@@ -102,6 +103,25 @@ db_reply_t
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ", ret.affected_rows);
 
+        if( ret.affected_rows == 0 && device_name != NULL && device_name[0] != 0 ) {
+            // probably device doesn't exist in t_bios_discovered_device. Let's fill it.
+            st = conn.prepareCached(
+                " INSERT INTO"
+                "   t_bios_discovered_device"
+                "     (name, id_device_type)"
+                " SELECT"
+                "   :name,"
+                "   (SELECT T.id_device_type FROM t_bios_device_type T WHERE T.name = 'not_classified')"
+                " FROM"
+                "   t_bios_discovered_device"
+                " WHERE NOT EXISTS ( SELECT 1 FROM t_bios_discovered_device C WHERE C.name = :name ) LIMIT 1"
+             );
+            uint32_t n = st.set("name", device_name).execute();
+            log_debug("[t_bios_measurement_topic]: new discovered device '%s' inserted %" PRIu32 " rows ",
+                      device_name ? device_name : "null", n);
+            if( n == 1 ) goto insert_into_measurement_again; // successfully inserted, save measurement one more time
+        }
+        
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
     } catch(const std::exception &e) {
