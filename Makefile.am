@@ -514,6 +514,92 @@ test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 
 test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
+check_PROGRAMS += 	test-agents
+
+test_agents_SOURCES = \
+			tests/api/test-agents.cc
+
+test_agents_LDADD = \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la
+
+
+test_agents_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_agents_LDFLAGS = \
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
+check_PROGRAMS += 	test-computation
+
+test_computation_SOURCES = \
+			tests/agents/cm/test-cm-agent-utils.cc \
+			src/agents/computation/cm-agent-utils.h \
+			src/agents/computation/cm-agent-utils.cc
+
+test_computation_LDADD = \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+test_computation_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/computation \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_computation_LDFLAGS = \
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
+### The unit-tester for some routines from libbiosapi
+check_PROGRAMS +=		test-libbiosapiut
+test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
+test_libbiosapiut_CPPFLAGS = \
+			-I$(abs_top_srcdir)/tests/include \
+			-I$(abs_top_srcdir)/include \
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/src/include
+test_libbiosapiut_LDADD =	libpriv-test-run.la libpriv-proto.la -lbiosapi
+test_libbiosapiut_DEPENDENCIES = \
+				libpriv-test-run.la \
+				libpriv-proto.la \
+				libbiosapi.la
+
+###
+check_PROGRAMS += 	test-nmap-parse
+test_nmap_parse_SOURCES = tests/agents/nmap/test-nmap-parse.cc
+test_nmap_parse_LDADD = \
+			libpriv-nmap-parse.la \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libpriv-test-run.la
+test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
+test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/nmap/ \
+			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
+EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
+
+###
+
+
+#----------------------------------------------------------------------
+#                        CI tests
+#----------------------------------------------------------------------
+
+if ENABLE_CI_TESTS
 bin_PROGRAMS += 	test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
@@ -657,56 +743,6 @@ test_db_alert_CPPFLAGS = \
 
 test_db_alert_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-check_PROGRAMS += 	test-agents
-
-test_agents_SOURCES = \
-			tests/api/test-agents.cc
-
-test_agents_LDADD = \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-defs.la
-
-
-test_agents_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_agents_LDFLAGS = \
-			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
-
-check_PROGRAMS += 	test-computation
-
-test_computation_SOURCES = \
-			tests/agents/cm/test-cm-agent-utils.cc \
-			src/agents/computation/cm-agent-utils.h \
-			src/agents/computation/cm-agent-utils.cc
-
-test_computation_LDADD = \
-			libpriv-test-run.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libpriv-defs.la \
-			libbiosapi.la \
-			libpriv-utils-ymsg.la
-
-test_computation_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/agents/computation \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_computation_LDFLAGS = \
-			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
-
-
 #### total power tests
 bin_PROGRAMS += 	test-totalpower
 
@@ -756,18 +792,6 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
-### Verification that bios_web.so is in fact usable on binary level
-### Note that this creates no retainable output file
-web-link-test: bios_web.la
-			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
-			$(abs_top_srcdir)/tests/web-linking-test.cpp \
-			${CXXTOOLS_LIBS} -ltntnet \
-			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
-			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
-
-EXTRA_DIST +=		tests/web-linking-test.cpp
-
 ###
 bin_PROGRAMS +=		test-web
 
@@ -783,38 +807,6 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
-### The unit-tester for some routines from libbiosapi
-check_PROGRAMS +=		test-libbiosapiut
-test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
-test_libbiosapiut_CPPFLAGS = \
-			-I$(abs_top_srcdir)/tests/include \
-			-I$(abs_top_srcdir)/include \
-			-I$(abs_top_srcdir)/src/msg \
-			-I$(abs_top_srcdir)/src/include
-test_libbiosapiut_LDADD =	libpriv-test-run.la libpriv-proto.la -lbiosapi
-test_libbiosapiut_DEPENDENCIES = \
-				libpriv-test-run.la \
-				libpriv-proto.la \
-				libbiosapi.la
-
-###
-check_PROGRAMS += 	test-nmap-parse
-test_nmap_parse_SOURCES = tests/agents/nmap/test-nmap-parse.cc
-test_nmap_parse_LDADD = \
-			libpriv-nmap-parse.la \
-			libpriv-defs.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-test-run.la
-test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
-test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/agents/nmap/ \
-			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
-EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
-
-###
-
 bin_PROGRAMS += bios-email
 bios_email_SOURCES = \
 			src/shared/email.h \
@@ -824,6 +816,19 @@ bios_email_LDADD = \
 			libpriv-email.la \
 			libpriv-subprocess.la 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
+endif
+
+### Verification that bios_web.so is in fact usable on binary level
+### Note that this creates no retainable output file
+web-link-test: bios_web.la
+			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
+			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			${CXXTOOLS_LIBS} -ltntnet \
+			$(abs_top_builddir)/.libs/bios_web.so && \
+			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
+			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
+
+EXTRA_DIST +=		tests/web-linking-test.cpp
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
