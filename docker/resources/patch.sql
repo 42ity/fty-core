@@ -36,3 +36,20 @@ SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHER
 INSERT INTO t_bios_measurement_topic (device_id, units, topic) values (@select_device, "W","realpower.default@ePDU2-LAB" );
 SELECT @topic_id := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@ePDU2-LAB";
 CALL insert_measurement(@topic_id,30);
+
+INSERT INTO t_bios_discovered_device (name, id_device_type) values ("DC-LAB",1);
+SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "DC-LAB";
+SELECT @select_element := id_asset_element FROM t_bios_asset_element WHERE name = "DC-LAB";
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) values (@select_device, @select_element);
+INSERT INTO t_bios_measurement_topic (device_id, units, topic) values (@select_device, "W","realpower.default@DC-LAB");
+SELECT @topic_id := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@DC-LAB";
+CALL insert_measurement(@topic_id,30);
+
+INSERT INTO t_bios_discovered_device (name, id_device_type) values ("RACK1-LAB",1);
+SELECT @select_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "RACK1-LAB";
+SELECT @select_element := id_asset_element FROM t_bios_asset_element WHERE name = "RACK1-LAB";
+INSERT INTO t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) values (@select_device, @select_element);
+INSERT INTO t_bios_measurement_topic (device_id, units, topic) values (@select_device, "W","realpower.default@RACK1-LAB");
+SELECT @topic_id := id FROM t_bios_measurement_topic WHERE topic = "realpower.default@RACK1-LAB";
+CALL insert_measurement(@topic_id,30);
+
