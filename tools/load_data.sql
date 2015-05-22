@@ -687,7 +687,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV1-LAB'),
     @asset_link_powerchain,
-    "B6", 
+    "13", 
     "1"
 );
 /* link (ePDU2-LAB, SRV1-LAB, 'power chain', B6, 2) */
@@ -698,7 +698,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV1-LAB'),
     @asset_link_powerchain,
-    "B6",
+    "13",
     "1"
 );
 /* link (ePDU1-LAB, SRV2-LAB, 'power chain', B5, 1) */
@@ -709,7 +709,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV2-LAB'),
     @asset_link_powerchain,
-    "B5",
+    "12",
     "1"
 );
 /* link (ePDU2-LAB, SRV2-LAB, 'power chain', B5, 2) */
@@ -720,7 +720,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV2-LAB'),
     @asset_link_powerchain,
-    "B5",
+    "12",
     "2"
 );
 
@@ -732,7 +732,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV3-LAB'),
     @asset_link_powerchain,
-    "B2",
+    "9",
     "1"
 );
 /* link (ePDU2-LAB, SRV3-LAB, 'power chain', B2, 2) */
@@ -743,7 +743,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV3-LAB'),
     @asset_link_powerchain,
-    "B2",
+    "9",
     "2"
 );
 
@@ -755,7 +755,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV4-LAB'),
     @asset_link_powerchain,
-    "B1",
+    "8",
     "1"
 );
 /* link (ePDU2-LAB, SRV4-LAB, 'power chain', B1, 2) */
@@ -766,7 +766,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV4-LAB'),
     @asset_link_powerchain,
-    "B1",
+    "8",
     "2"
 );
 
@@ -778,7 +778,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV5-LAB'),
     @asset_link_powerchain,
-    "A7",
+    "7",
     "1"
 );
 /* link (ePDU2-LAB, SRV5-LAB, 'power chain', A7, 2) */
@@ -789,7 +789,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV5-LAB'),
     @asset_link_powerchain,
-    "A7",
+    "7",
     "2"
 );
 
@@ -801,7 +801,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU1-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV6-LAB'),
     @asset_link_powerchain,
-    "A5",
+    "5",
     "1"
 );
 /* link (ePDU2-LAB, SRV6-LAB, 'power chain', A5, 2) */
@@ -812,7 +812,7 @@ values
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ePDU2-LAB'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV6-LAB'),
     @asset_link_powerchain,
-    "A5",
+    "5",
     "2"
 );
 
