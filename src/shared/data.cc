@@ -269,3 +269,103 @@ void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::str
         *code = HTTP_INTERNAL_SERVER_ERROR;
     }
 }
+
+
+db_reply <db_web_element_t>
+    asset_manager::get_item1
+        (const std::string &id)
+{
+    db_reply <db_web_element_t> ret;
+
+    // TODO add better converter
+    uint32_t real_id = atoi(id.c_str());
+    if ( real_id == 0 )
+    {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = "cannot convert an id";
+        log_warning (ret.msg);
+        return ret;
+    }
+    log_debug ("id converted successfully");
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        log_debug ("connection was successful");
+
+        auto basic_ret = persist::select_asset_element_web_byId(conn, real_id);
+        log_debug ("basic select is done");
+
+        if ( basic_ret.status == 0 )
+        {
+            ret.status        = basic_ret.status;
+            ret.errtype       = basic_ret.errtype; 
+            ret.errsubtype    = basic_ret.errsubtype;
+            ret.msg           = basic_ret.msg;
+            log_warning (ret.msg);
+            return ret;
+        }
+        log_debug (" and there were no errors");
+        ret.item.basic = basic_ret.item;
+        
+        auto ext_ret = persist::select_ext_attributes(conn, real_id);
+        log_debug ("ext select is done");
+
+        if ( ext_ret.status == 0 )
+        {
+            ret.status        = ext_ret.status;
+            ret.errtype       = ext_ret.errtype; 
+            ret.errsubtype    = ext_ret.errsubtype;
+            ret.msg           = ext_ret.msg;
+            log_warning (ret.msg);
+            return ret;
+        }
+        log_debug (" and there were no errors");
+        ret.item.ext = ext_ret.item;
+
+        auto group_ret = persist::select_asset_element_groups(conn, real_id);
+        log_debug ("groups select is done");
+
+        if ( group_ret.status == 0 )
+        {
+            ret.status        = group_ret.status;
+            ret.errtype       = group_ret.errtype; 
+            ret.errsubtype    = group_ret.errsubtype;
+            ret.msg           = group_ret.msg;
+            log_warning (ret.msg);
+            return ret;
+        }
+        log_debug (" and there were no errors");
+        ret.item.groups = group_ret.item;
+
+        if ( ret.item.basic.type_id == asset_type::DEVICE )
+        {
+            auto powers = persist::select_asset_device_links_to (conn, real_id, INPUT_POWER_CHAIN);
+            log_debug ("powers select is done");
+
+            if ( powers.status == 0 )
+            {
+                ret.status        = powers.status;
+                ret.errtype       = powers.errtype; 
+                ret.errsubtype    = powers.errsubtype;
+                ret.msg           = powers.msg;
+                log_warning (ret.msg);
+                return ret;
+            }
+            log_debug (" and there were no errors");
+            ret.item.powers = powers.item;
+        }
+
+        ret.status = 1;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
