@@ -1,0 +1,114 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          bios-containers
+# Required-Start:    
+# Required-Stop:
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the $BIOS containers on CI hosts
+# Description:       Starts BIOS containers on CI hosts during boot
+### END INIT INFO
+#
+
+# Copyright (C) 2015 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# Description: /etc/init.d/rc-bios-ci-container-delayedstart
+#       Auto-start wrapper for $BIOS containers to start up a bit
+#       after the host OS is up, so they can pull new images (if any).
+#       Intended for hosts involved in CI and test infrastructure.
+
+[ -z "$CONTAINERS" ] && CONTAINERS="latest"
+[ -z "$STARTDELAY" ] && STARTDELAY="3 min"
+
+# The real script is part of $BIOS CI suite
+[ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
+[ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
+
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+start_delayed() {
+	for C in $CONTAINERS ; do
+		echo "Queuing '$C' container to autoboot in $STARTDELAY..." >&2
+		echo "$CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY"
+	done
+}
+
+start_instant() {
+	for C in $CONTAINERS ; do
+		echo "(Re-)starting '$C' container..." >&2
+		$CI_RESET_VM -m "$C"
+	done
+}
+
+start() {
+	if /etc/init.d/atd status || /etc/init.d/atd restart ; then
+		start_delayed
+	else
+		start_instant
+	fi
+}
+
+restart() {
+	start_instant
+}
+
+stop() {
+	for C in $CONTAINERS ; do
+		$CI_RESET_VM -m "$C" --stop-only
+	done >/dev/null 2>&1
+}
+
+refresh() {
+	$CI_RESET_VM --download-only 2>&1 | \
+	grep 'The file is already fully retrieved; nothing to do' || \
+	restart
+}
+
+status() {
+	LIST="`virsh -c lxc:// list --all | tail -n +3`"
+	RES=$?
+	echo "$LIST"
+
+	[ "$RES" = 0 ] && \
+	for C in $CONTAINERS ; do
+		echo "$LIST" | ( \
+		RES=-1	# Container not defined
+		while read _ID _NAME _STATE ; do
+			if [ "$_NAME" = "$C" ]; then
+				RES=0
+				[ "$_ID" = "-" -o "$_STATE" != running ] && RES=2 # Container not up
+			fi
+			[ $RES -ge 0 ] && exit $RES
+		done; exit 127 ) || RES=$?
+		[ $RES != 0 ] && return $RES	# At least one VM is not found, or found and not up
+	done
+
+	return $RES
+}
+
+case "$1" in
+start|start_delayed|start_instant|restart|stop|refresh|status)
+	$1
+	return $?
+	;;
+esac
