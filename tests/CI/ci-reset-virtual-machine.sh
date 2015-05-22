@@ -33,7 +33,7 @@
 # so we do not depend it on scriptlib.sh or anything else.
 
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
-[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESET-VM"
+[ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESETVM-"
 ### Store some important CLI values
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"
@@ -69,6 +69,7 @@ usage() {
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+    echo "    --download-only      end the script after downloading the newest image file"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
 }
@@ -94,6 +95,7 @@ DOTDOMAINNAME=""
 [ -n "$DOTDOMAINNAME" ] && DOTDOMAINNAME=".$DOTDOMAINNAME"
 
 [ -z "$STOPONLY" ] && STOPONLY=no
+[ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -120,6 +122,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--stop-only)
 	    STOPONLY=yes
+	    shift
+	    ;;
+	--download-only)
+	    DOWNLOADONLY=yes
 	    shift
 	    ;;
 	-h|--help)
@@ -172,26 +178,39 @@ else
 	    "into a dedicated full RW directory"
 fi
 
-# Note: several hardcoded paths are expected relative to this one,
-# so it is critical that we succeed changing into this directory.
-mkdir -p /srv/libvirt/snapshots
-cd /srv/libvirt/snapshots || \
-	die "Can not 'cd /srv/libvirt/snapshots' to download image files"
+[ -z "$ARCH" ] && ARCH="`uname -m`"
+# Note: several hardcoded paths are expected relative to "snapshots", so
+# it is critical that we succeed changing into this directory in the end.
+mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
+	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
 
 logmsg_info "Get the latest operating environment image prepared for us by OBS"
-ARCH="`uname -m`"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 wget -c "$IMAGE_URL"
+WGET_RES=$?
+logmsg_info "Download completed with exit-code: $WGET_RES"
+if [ x"$DOWNLOADONLY" = xyes ]; then
+	logmsg_info "DOWNLOADONLY was requested, so ending" \
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
+	exit $WGET_RES
+fi
+
+cd "/srv/libvirt/snapshots" || \
+	die "Can not 'cd /srv/libvirt/snapshots' to proceed"
 if [ "$1" ]; then
 	# TODO: We should not get to this point in current code structure
 	# (CLI parsing loop above would fail on unrecognized parameter).
 	# Should think if anything must be done about picking a particular
 	# image name for a particular VM, though.
 	IMAGE="$1"
+	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	IMAGE="`ls -1 *.$EXT | sort -r | head -n 1`"
+	# If download failed, we can have a previous image file for this type
+	IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
 fi
-logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up"
+logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
 # Destroy whatever was running
 virsh -c lxc:// destroy "$VM" 2> /dev/null > /dev/null
@@ -201,7 +220,7 @@ sleep 5
 # Cleanup of the rootfs
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
-	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/$IMAGE-ro'"
+	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
@@ -209,13 +228,13 @@ fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
 # This unmount can fail if for example several containers use the same RO image
 # or if it is not used at all; not shielding by "$OVERLAYFS" check just in case
-umount -fl "../rootfs/$IMAGE-ro" 2> /dev/null > /dev/null || true
+umount -fl "../rootfs/${IMAGE_FLAT}-ro" 2> /dev/null > /dev/null || true
 
 # Destroy the overlay-rw half of the old running container, if any
-if [ -d "../overlays/${IMAGE}__${VM}" ]; then
+if [ -d "../overlays/${IMAGE_FLAT}__${VM}" ]; then
 	logmsg_info "Removing RW directory of the stopped VM:" \
-		"'../overlays/${IMAGE}__${VM}'"
-	rm -rf "../overlays/${IMAGE}__${VM}"
+		"'../overlays/${IMAGE_FLAT}__${VM}'"
+	rm -rf "../overlays/${IMAGE_FLAT}__${VM}"
 	sleep 1; echo ""
 fi
 
@@ -231,7 +250,7 @@ for D in ../overlays/*__${VM}/ ; do
 done
 for D in ../rootfs/*-ro/ ; do
 	# Do not remove the current IMAGE mountpoint if we reuse it again now
-	[ x"$D" = x"../rootfs/$IMAGE-ro/" ] && continue
+	[ x"$D" = x"../rootfs/${IMAGE_FLAT}-ro/" ] && continue
 	# Now, ignore non-directories and not-empty dirs (used mountpoints)
 	if [ -d "$D" ]; then
 		# This is a directory
@@ -284,17 +303,17 @@ fi
 logmsg_info "Creating a new VM rootfs at '`pwd`/../rootfs/$VM'"
 mkdir -p "../rootfs/$VM"
 if [ "$OVERLAYFS" = yes ]; then
-	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/$IMAGE-ro'"
-	mkdir -p "../rootfs/$IMAGE-ro"
-	mount -o loop "$IMAGE" "../rootfs/$IMAGE-ro" || \
+	logmsg_info "Mount the common RO squashfs at '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+	mkdir -p "../rootfs/${IMAGE_FLAT}-ro"
+	mount -o loop "$IMAGE" "../rootfs/${IMAGE_FLAT}-ro" || \
 		die "Can't mount squashfs"
 
 	logmsg_info "Use the individual RW component" \
-		"located in '`pwd`/../overlays/${IMAGE}__${VM}'" \
+		"located in '`pwd`/../overlays/${IMAGE_FLAT}__${VM}'" \
 		"for an overlay-mount united at '`pwd`/../rootfs/$VM'"
-	mkdir -p "../overlays/${IMAGE}__${VM}"
+	mkdir -p "../overlays/${IMAGE_FLAT}__${VM}"
 	mount -t overlayfs \
-	    -o lowerdir="../rootfs/$IMAGE-ro",upperdir="../overlays/${IMAGE}__${VM}" \
+	    -o lowerdir="../rootfs/${IMAGE_FLAT}-ro",upperdir="../overlays/${IMAGE_FLAT}__${VM}" \
 	    overlayfs "../rootfs/$VM" 2> /dev/null \
 	|| die "Can't overlay-mount rw directory"
 else

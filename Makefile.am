@@ -105,7 +105,8 @@ DISTCLEANDIRS += \
 
 # recommended by daemon(7)
 DISTCHECK_CONFIGURE_FLAGS = \
-        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
+        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) \
+        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir)
 
 AM_CPPFLAGS = \
 		${my_CPPFLAGS} \
@@ -428,7 +429,7 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 # Note that apparently "make dist(check)" adds all *.cpp files to its tarball
 # including those that are generated here. And does not add *.ecpp by default.
 # Not-including the build *.cpp into dist is tricky, but does not matter much.
-EXTRA_DIST +=				src/web/src/*.ecpp
+EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
 
 src/web/src/sysinfo.cpp: src/include/git_details_override.h
 
@@ -710,11 +711,13 @@ test_computation_LDFLAGS = \
 bin_PROGRAMS += 	test-totalpower
 
 test_totalpower_SOURCES = \
-			tests/persist/test-rack-power.cc 
+			tests/persist/test-rack-power.cc \
+			tests/persist/test-dc-power.cc 
 
 
 test_totalpower_LDADD = \
 			libpriv-db.la \
+			libpriv-utils.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -1013,6 +1016,27 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -lt
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
+client_PROGRAMS +=	agent-tpower
+
+agent_tpower_SOURCES = \
+			src/agents/tpower/agent-tpower.cc \
+			src/agents/tpower/tp-unit.cc \
+			src/agents/alert/alert-measurement.cc
+
+agent_tpower_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
+
+agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools
+
 client_PROGRAMS +=      agent-alert
 
 agent_alert_SOURCES = \
@@ -1173,11 +1197,12 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
-edit = sed \
+autopathedit = sed \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
@@ -1186,12 +1211,19 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-db.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
-                        bios-agent-alert-smtp.service
+                        bios-agent-alert-smtp.service bios-agent-tpower.service
+
+SYSTEMD_PRESETS += 42-bios-systemd.preset
+
+### TODO? Add the build info (git commit, timestamp) to the header comment?
+$(abs_top_builddir)/42-bios-systemd.preset: Makefile
+	@( echo "### This is a generated file with a list of all BIOS services"; \
+	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS): Makefile
 	@echo "  SED      $@"
-	rm -f $@; $(edit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS), \
@@ -1201,12 +1233,14 @@ $(foreach m,$(SYSTEMD_UNITS), \
 $(foreach m,$(SYSTEMD_UNITS), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
-# $(systemdsystemunitdir) may be defined externally by automake/autoconf;
-# otherwise it is empty and should effectively resolve to the top_builddir
+# $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
+# externally by automake/autoconf; otherwise they are empty and should
+# effectively resolve to the top_builddir
 systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(SYSTEMD_UNITS)
+CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
 EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
 endif
 
@@ -1652,7 +1686,7 @@ all-local: $(abs_top_builddir)/src/include/git_details_override.c \
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
