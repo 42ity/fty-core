@@ -37,9 +37,7 @@ cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the database tests"
 
 set -u
-# Do not "set -e" because we actually test for failed results
-# because instead, this feature only shields away error detection
-#set -e
+set -e
 
 DB_LOADDIR="$CHECKOUTDIR/tools"
 
@@ -55,14 +53,19 @@ RESULT=0
 FAILED=""
 
 trap_exit() {
+    # Capture the exit code first, if any was set by an exit() or "set -e".
+    # Prefer to use the program-defined error code if any was set, though.
+    TRAP_RESULT=$?
+    [ "$RESULT" -gt 0 ] && TRAP_RESULT="$RESULT"
+
     if [ -n "$FAILED" ]; then
         logmsg_error "The following tests have failed:"
         for F in $FAILED; do echo " * $F" >&2; done
-        [ "$RESULT" = 0 ] || RESULT=1
+        [ "$TRAP_RESULT" = 0 ] || TRAP_RESULT=1
     fi
 
     cd -
-    exit $RESULT
+    exit $TRAP_RESULT
 }
 
 trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
