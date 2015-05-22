@@ -16,179 +16,179 @@ input.current: 0.17
 input.frequency: 50.00
 input.L1.current: 1.17
 input.L1.power: 41.00
-input.L1.realpower: 19.00
+input.L1.realpower: 190.00
 input.L1.voltage: 245.49
 input.L1.load: 15
 input.phases: 1.00
 input.power: 41.00
-input.realpower: 19.00
+input.realpower: 190.00
 input.voltage: 245.49
 outlet.1.current: 0.00
 outlet.1.desc: Outlet 1
 outlet.1.id: 1
 outlet.1.power: 0.00
-outlet.1.realpower: 0.00
+outlet.1.realpower: 101.00
 outlet.1.status: on
 outlet.1.voltage: 244.54
 outlet.10.current: 1.00
 outlet.10.desc: Outlet 10
 outlet.10.id: 10
 outlet.10.power: 10.00
-outlet.10.realpower: 15.00
+outlet.10.realpower: 110.00
 outlet.10.status: on
 outlet.10.voltage: 243.73
 outlet.11.current: 0.00
 outlet.11.desc: Outlet 11
 outlet.11.id: 11
 outlet.11.power: 0.00
-outlet.11.realpower: 0.00
+outlet.11.realpower: 111.00
 outlet.11.status: on
 outlet.11.voltage: 243.73
 outlet.12.current: 0.00
 outlet.12.desc: Outlet 12
 outlet.12.id: 12
 outlet.12.power: 0.00
-outlet.12.realpower: 0.00
+outlet.12.realpower: 112.00
 outlet.12.status: on
 outlet.12.voltage: 243.73
 outlet.13.current: 0.00
 outlet.13.desc: Outlet 13
 outlet.13.id: 13
 outlet.13.power: 0.00
-outlet.13.realpower: 0.00
+outlet.13.realpower: 130.00
 outlet.13.status: on
 outlet.13.voltage: 243.73
 outlet.14.current: 0.00
 outlet.14.desc: Outlet 14
 outlet.14.id: 14
 outlet.14.power: 0.00
-outlet.14.realpower: 0.00
+outlet.14.realpower: 140.00
 outlet.14.status: on
 outlet.14.voltage: 243.73
 outlet.15.current: 0.00
 outlet.15.desc: Outlet 15
 outlet.15.id: 15
 outlet.15.power: 0.00
-outlet.15.realpower: 0.00
+outlet.15.realpower: 150.00
 outlet.15.status: on
 outlet.15.voltage: 243.73
 outlet.16.current: 0.00
 outlet.16.desc: Outlet 16
 outlet.16.id: 16
 outlet.16.power: 0.00
-outlet.16.realpower: 0.00
+outlet.16.realpower: 160.00
 outlet.16.status: on
 outlet.16.voltage: 244.50
 outlet.17.current: 0.00
 outlet.17.desc: Outlet 17
 outlet.17.id: 17
 outlet.17.power: 0.00
-outlet.17.realpower: 0.00
+outlet.17.realpower: 170.00
 outlet.17.status: on
 outlet.17.voltage: 243.74
 outlet.18.current: 0.00
 outlet.18.desc: Outlet 18
 outlet.18.id: 18
 outlet.18.power: 0.00
-outlet.18.realpower: 0.00
+outlet.18.realpower: 180.00
 outlet.18.status: on
 outlet.18.voltage: 243.74
 outlet.19.current: 0.00
 outlet.19.desc: Outlet 19
 outlet.19.id: 19
 outlet.19.power: 0.00
-outlet.19.realpower: 0.00
+outlet.19.realpower: 190.00
 outlet.19.status: on
 outlet.19.voltage: 243.74
 outlet.2.current: 0.00
 outlet.2.desc: Outlet 2
 outlet.2.id: 2
 outlet.2.power: 0.00
-outlet.2.realpower: 0.00
+outlet.2.realpower: 102.00
 outlet.2.status: on
 outlet.2.voltage: 244.54
 outlet.20.current: 0.00
 outlet.20.desc: Outlet 20
 outlet.20.id: 20
 outlet.20.power: 0.00
-outlet.20.realpower: 0.00
+outlet.20.realpower: 120.00
 outlet.20.status: on
 outlet.20.voltage: 243.74
 outlet.21.current: 0.00
 outlet.21.desc: Outlet 21
 outlet.21.id: 21
 outlet.21.power: 0.00
-outlet.21.realpower: 0.00
+outlet.21.realpower: 121.00
 outlet.21.status: on
 outlet.21.voltage: 243.74
 outlet.22.current: 0.00
 outlet.22.desc: Outlet 22
 outlet.22.id: 22
 outlet.22.power: 0.00
-outlet.22.realpower: 0.00
+outlet.22.realpower: 122.00
 outlet.22.status: on
 outlet.22.voltage: 243.74
 outlet.23.current: 0.00
 outlet.23.desc: Outlet 23
 outlet.23.id: 23
 outlet.23.power: 0.00
-outlet.23.realpower: 0.00
+outlet.23.realpower: 123.00
 outlet.23.status: on
 outlet.23.voltage: 243.74
 outlet.24.current: 0.00
 outlet.24.desc: Outlet 24
 outlet.24.id: 24
 outlet.24.power: 0.00
-outlet.24.realpower: 0.00
+outlet.24.realpower: 124.00
 outlet.24.status: on
 outlet.24.voltage: 243.74
 outlet.3.current: 0.00
 outlet.3.desc: Outlet 3
 outlet.3.id: 3
 outlet.3.power: 0.00
-outlet.3.realpower: 0.00
+outlet.3.realpower: 103.00
 outlet.3.status: on
 outlet.3.voltage: 244.54
 outlet.4.current: 0.00
 outlet.4.desc: Outlet 4
 outlet.4.id: 4
 outlet.4.power: 0.00
-outlet.4.realpower: 0.00
+outlet.4.realpower: 104.00
 outlet.4.status: on
 outlet.4.voltage: 244.54
 outlet.5.current: 0.00
 outlet.5.desc: Outlet 5
 outlet.5.id: 5
 outlet.5.power: 0.00
-outlet.5.realpower: 0.00
+outlet.5.realpower: 105.00
 outlet.5.status: on
 outlet.5.voltage: 244.54
 outlet.6.current: 0.00
 outlet.6.desc: Outlet 6
 outlet.6.id: 6
 outlet.6.power: 0.00
-outlet.6.realpower: 0.00
+outlet.6.realpower: 106.00
 outlet.6.status: on
 outlet.6.voltage: 244.54
 outlet.7.current: 0.00
 outlet.7.desc: Outlet 7
 outlet.7.id: 7
 outlet.7.power: 0.00
-outlet.7.realpower: 0.00
+outlet.7.realpower: 107.00
 outlet.7.status: on
 outlet.7.voltage: 244.54
 outlet.8.current: 0.00
 outlet.8.desc: Outlet 8
 outlet.8.id: 8
 outlet.8.power: 0.00
-outlet.8.realpower: 0.00
+outlet.8.realpower: 108.00
 outlet.8.status: on
 outlet.8.voltage: 244.54
 outlet.9.current: 0.00
 outlet.9.desc: Outlet 9
 outlet.9.id: 9
 outlet.9.power: 0.00
-outlet.9.realpower: 0.00
+outlet.9.realpower: 109.00
 outlet.9.status: on
 outlet.9.voltage: 243.73
 outlet.count: 24.00
@@ -197,7 +197,7 @@ outlet.desc: All outlets
 outlet.frequency: 50.00
 outlet.id: 0
 outlet.power: 41.00
-outlet.realpower: 19.00
+outlet.realpower: 190.00
 outlet.voltage: 244.28
 ups.firmware: 00.12.0001
 ups.mfr: EATON
