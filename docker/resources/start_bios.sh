@@ -46,6 +46,7 @@ echo "starting BIOS .."
 /usr/local/libexec/bios/agent-inventory &
 /usr/local/libexec/bios/agent-alert &
 /usr/local/libexec/bios/agent-cm &
+/usr/local/libexec/bios/agent-tpower &
 /usr/local/libexec/bios/agent-nut 
 
  
