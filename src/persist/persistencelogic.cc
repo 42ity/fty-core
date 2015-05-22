@@ -127,7 +127,9 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
 
         case ASSET_MSG_GET_ELEMENT: {
             // datacenter|room|row|rack|group|device
-            result = get_asset_element(url.c_str(), amsg);
+            // THIS SHOULD NEVER BE USED
+            log_critical ("This shoul be never used");
+            result = NULL;
             break;
         }
         case ASSET_MSG_UPDATE_ELEMENT:
