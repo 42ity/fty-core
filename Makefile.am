@@ -339,6 +339,7 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
+			src/db/assets/assetr.cc \
 			src/db/alerts/alert_basic.h \
 			src/db/alerts.h
 
