@@ -80,7 +80,7 @@ update_system() {
     curl http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
     # curl http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
     apt-get clean all
-    apt-get update
+    apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
     limit_packages_recommends
     limit_packages_paths
     apt-get -f -y --force-yes --fix-missing install

@@ -182,9 +182,9 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
         { echo "apt-get: Trying direct invokation..."
           apt-get update; } || \
         { echo "apt-get: Retrying sudo..."
-          sudo apt-get update; } || \
+          sudo apt-get update || { echo "Wipe metadata and retry"; sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update; } ; } || \
         { echo "apt-get: Retrying su..."
-          su - -c "apt-get update"; }
+          su - -c "apt-get update || { echo 'Wipe metadata and retry'; rm -rf /var/lib/apt/lists/*; apt-get update; } "; }
 
         { echo "mk-build-deps: Trying direct invokation..."
           mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
