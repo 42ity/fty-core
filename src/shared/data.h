@@ -7,7 +7,9 @@
 #include "defs.h"
 #include "asset_msg.h"
 #include "asset_types.h"
+#include "dbhelpers.h"
 #include "common_msg.h"
+#include "assets.h"
 
 /**
  * \brief extract error, msg and HTTP error code from common_msg instance
@@ -17,6 +19,11 @@ void common_msg_to_rest_error(common_msg_t* cm_msg, std::string& error, std::str
 
 class asset_manager {
     public:
+        // new functionality
+        db_reply <db_web_element_t>  get_item1(const std::string &id);
+        db_reply <db_web_element_t>  get_item1(const std::string &id, const std::string &type);
+
+        // should be deprecated
         zmsg_t* get_item(std::string type, std::string id);
         zmsg_t* get_items(std::string type);
         static byte type_to_byte(std::string type);
