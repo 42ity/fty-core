@@ -243,6 +243,7 @@ process_db_measurement_calculate_arithmetic_mean
     if (!type || start >= end || samples.empty ())
         return -1;
 
+    // TODO: Remove when done testing
     printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) // requested interval is empty
@@ -260,14 +261,20 @@ process_db_measurement_calculate_arithmetic_mean
         int64_t weight = 0;
 
         if (it2 == samples.end ()) {
+
+            // TODO: Remove when done testing
             printf ("it2 == samples.end ()\n");
             weight = 1;    
         }
         else if (it2->first >= end) {
+
+            // TODO: Remove when done testing
             printf ("it2->first: %ld >= end: %ld\n", it2->first, end);
             weight = sample_weight (it1->first, end);
             if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
                 samples.emplace (std::make_pair (end, it1->second));
+
+            // TODO: Remove when done testing
                 printf ("emplacing value '%ld' with timestamp '%f'\n", end, it2->second);
             }
         }
@@ -284,6 +291,8 @@ process_db_measurement_calculate_arithmetic_mean
     }
 
     result = (double) sum / counter;
+
+            // TODO: Remove when done testing
     printf ("end _calculate_arithmetic_mean\n");
     return 0;
 }

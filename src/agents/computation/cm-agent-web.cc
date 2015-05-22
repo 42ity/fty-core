@@ -161,15 +161,15 @@ process_web_average
 
         std::string data_str;
         int comma_counter = 0;
-
+// TODO: remove when done testing
         printf ("Starting big cycle. first_ts: %ld\tsecond_ts: %ld\tend_ts:%ld\n", first_ts, second_ts, end_ts_db);
         while (second_ts <= end_ts_db) {
 
             std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-            printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts);
+            printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
             rv = process_db_measurement_calculate (samples, first_ts, second_ts, type, comp_result);
             if (rv == 0) {
-                printf ("%ld\t%f\n", second_ts, comp_result);
+                printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
                 item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
                 item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
                 if (comma_counter == 0) 
