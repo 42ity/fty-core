@@ -43,6 +43,10 @@ DISTCLEANDIRS =
 clientdir = ${pkglibexecdir}
 client_PROGRAMS =
 
+# test programs executed by CI scripts
+cibindir = ${pkgbindir}
+cibin_PROGRAMS =
+
 TESTS =
 
 # Initialize some more variables
@@ -600,8 +604,7 @@ EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 #                        CI tests
 #----------------------------------------------------------------------
 
-if ENABLE_CI_TESTS
-bin_PROGRAMS += 	test-db
+cibin_PROGRAMS += 	test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
@@ -620,7 +623,8 @@ test_db_CPPFLAGS = \
 
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
-bin_PROGRAMS += 	test-loadcsv
+
+cibin_PROGRAMS += 	test-loadcsv
 
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
@@ -640,7 +644,8 @@ test_loadcsv_CPPFLAGS = \
 
 test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
-bin_PROGRAMS += 	test-db2
+
+cibin_PROGRAMS += 	test-db2
 
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
@@ -659,7 +664,6 @@ test_db2_LDADD = \
 			libpriv-test-run.la \
 			libpriv-utils-ymsg.la
 
-
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
@@ -668,7 +672,8 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-bin_PROGRAMS += 	test-dbtopology
+
+cibin_PROGRAMS += 	test-dbtopology
 
 test_dbtopology_SOURCES = \
 			tests/persist/test-topology.cc \
@@ -679,13 +684,11 @@ test_dbtopology_SOURCES = \
 			tests/persist/test-topology-location-from.cc \
 			tests/persist/test-topology-location-to.cc
 
-
 test_dbtopology_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
-
 
 test_dbtopology_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
@@ -697,18 +700,17 @@ test_dbtopology_CPPFLAGS = \
 test_dbtopology_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-bin_PROGRAMS += 	test-db-asset-crud
+
+cibin_PROGRAMS += 	test-db-asset-crud
 
 test_db_asset_crud_SOURCES = \
 			tests/persist/test-asset-crud.cc
-
 
 test_db_asset_crud_LDADD = \
 			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
-
 
 test_db_asset_crud_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
@@ -720,11 +722,11 @@ test_db_asset_crud_CPPFLAGS = \
 test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
-bin_PROGRAMS += 	test-db-alert
+
+cibin_PROGRAMS += 	test-db-alert
 
 test_db_alert_SOURCES = \
 			tests/persist/test-alert.cc
-
 
 test_db_alert_LDADD = \
 			libpriv-db.la \
@@ -732,7 +734,6 @@ test_db_alert_LDADD = \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
-
 
 test_db_alert_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
@@ -744,13 +745,14 @@ test_db_alert_CPPFLAGS = \
 
 test_db_alert_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
 #### total power tests
-bin_PROGRAMS += 	test-totalpower
+cibin_PROGRAMS += 	test-totalpower
 
 test_totalpower_SOURCES = \
 			tests/persist/test-rack-power.cc \
 			tests/persist/test-dc-power.cc 
-
 
 test_totalpower_LDADD = \
 			libpriv-db.la \
@@ -758,7 +760,6 @@ test_totalpower_LDADD = \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
-
 
 test_totalpower_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
@@ -772,7 +773,7 @@ test_totalpower_LDFLAGS = \
 
 
 ###
-bin_PROGRAMS += 	test-database
+cibin_PROGRAMS += 	test-database
 
 test_database_SOURCES = tests/persist/test-database.cc \
 			tools/dbpath.h
@@ -794,7 +795,7 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
 ###
-bin_PROGRAMS +=		test-web
+cibin_PROGRAMS +=	test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
 			src/web/src/location_helpers.cc
@@ -808,15 +809,22 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
-bin_PROGRAMS += bios-email
+
+cibin_PROGRAMS +=	bios-email
+
 bios_email_SOURCES = \
 			src/shared/email.h \
 			tests/shared/bios-email.cc
+
 bios_email_LDADD = \
 			libpriv-log.la \
 			libpriv-email.la \
 			libpriv-subprocess.la 
+
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
+
+if ENABLE_CI_TESTS
+bin_PROGRAMS += $(cibin_PROGRAMS)
 endif
 
 ### Verification that bios_web.so is in fact usable on binary level
@@ -863,7 +871,7 @@ server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 server_agent_LDADD = \
-				 libpriv-proto.la
+			 libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
@@ -879,12 +887,12 @@ db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr
 
 db_ng_LDADD = \
-            libpriv-db.la \
-            libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
-            libpriv-proto.la \
+			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-defs.la
 
@@ -1692,7 +1700,7 @@ all-local: $(abs_top_builddir)/src/include/git_details_override.c \
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_PROGRAMS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
