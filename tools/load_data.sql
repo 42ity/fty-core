@@ -389,8 +389,24 @@ insert into t_bios_asset_ext_attributes
     (keytag, value, id_asset_element)
 values
 (
-    "contact",
+    "contact_name",
+    "Mike Ekim",
+    (select id_asset_element from t_bios_asset_element where name = 'DC2')
+);
+insert into t_bios_asset_ext_attributes
+    (keytag, value, id_asset_element)
+values
+(
+    "contact_email",
     "mike@nn.com",
+    (select id_asset_element from t_bios_asset_element where name = 'DC2')
+);
+insert into t_bios_asset_ext_attributes
+    (keytag, value, id_asset_element)
+values
+(
+    "contact_phone",
+    "555-2323",
     (select id_asset_element from t_bios_asset_element where name = 'DC2')
 );
 insert into t_bios_asset_ext_attributes
