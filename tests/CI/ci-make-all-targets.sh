@@ -37,7 +37,7 @@ set -e
 # "make distcheck" does all of the above in an out-of-tree builddir
 echo "=========== auto-configure and rebuild all =================="
 ./autogen.sh --install-dir / --configure-flags \
-    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux --enable-ci-tests" \
     ${AUTOGEN_ACTION_BUILD} all-buildproducts 2>&1 | tee ${MAKELOG}
 
 echo "========================= cppcheck =========================="
