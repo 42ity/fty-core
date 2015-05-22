@@ -119,7 +119,23 @@ insert_into_measurement_again:
             uint32_t n = st.set("name", device_name).execute();
             log_debug("[t_bios_measurement_topic]: new discovered device '%s' inserted %" PRIu32 " rows ",
                       device_name ? device_name : "null", n);
-            if( n == 1 ) goto insert_into_measurement_again; // successfully inserted, save measurement one more time
+            if( n == 1 ) {
+                // update also relation table
+                st = conn.prepareCached(
+                    " INSERT INTO"
+                    "   t_bios_monitor_asset_relation (id_discovered_device, id_asset_element)"
+                    " SELECT"
+                    "   DD.id_discovered_device, AE.id_asset_element"
+                    " FROM"
+                    "   t_bios_discovered_device DD INNER JOIN t_bios_asset_element AE on DD.name = AE.name"
+                    " WHERE"
+                    "   DD.name = :name AND"
+                    "   DD.id_discovered_device NOT IN ( SELECT id_discovered_device FROM t_bios_monitor_asset_relation )"
+                );
+                n = st.set("name", device_name).execute();
+                log_debug("[t_bios_measurement_topic]: t_bios_monitor_asset_relation inserted %" PRIu32 " rows ", n);
+                goto insert_into_measurement_again; // successfully inserted into _discovered_device, save measurement one more time
+            }
         }
         
         ret.rowid = conn.lastInsertId();
