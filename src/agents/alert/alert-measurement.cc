@@ -4,6 +4,7 @@
 #include<ctime>
 
 #include "agents.h"
+#include "utils.h"
 #include "cleanup.h"
 
 Measurement::Measurement( const ymsg_t *message )
@@ -53,6 +54,25 @@ void Measurement::clear()
     _scale = 0;
     _time = 0;
     
+}
+
+Measurement & Measurement::operator+=(const Measurement &rhs) {
+    if( this->_units != rhs.units() ) { throw "incompatible units"; }
+
+    int32_t value = rhs.value();
+    int32_t scale = rhs.scale();
+
+    int32_t l_value;
+    int8_t l_scale;
+    bool ret;
+
+    ret = bsi32_add(this->value(), this->scale(), value, scale, &l_value, &l_scale);
+    if (!ret)
+        throw "value overflow";
+
+    this->_value = l_value;
+    this->_scale = l_scale;
+    return *this;
 }
 
 void Measurement::print() const

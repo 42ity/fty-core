@@ -34,6 +34,14 @@ Description: various random C and project wide helpers
 
 #include "agents.h" //definitions of common data types
 
+// Macros
+#define STR(X) #X
+
+#define FREE0(X) \
+    if (X) { \
+        free (X); \
+        X = NULL; \
+    }
 
 #ifdef __cplusplus
 extern "C"
@@ -140,18 +148,39 @@ uint16_t string_to_uint16( const char *value );
 int8_t string_to_int8( const char *value );
 uint8_t string_to_uint8( const char *value );
 
+// inspired by https://gcc.gnu.org/onlinedocs/gcc/Integer-Overflow-Builtins.html#Integer-Overflow-Builtins
+bool addi32_overflow(int32_t a, int32_t b, int32_t *res);
+
 //! \brief convert alert_state_t to string
 const char* alert_state_to_str(alert_state_t astate);
 
-// Macros
-#define STR(X) #X
+/**
+ *  \brief rescale number to the new scale - upscalling loses information
+ *
+ *  \param in_value - input value to convert
+ *  \param in_scale - input scale
+ *  \param new_scale - new scale to be returned
+ *  \param value - pointer to variable to store the result
+ *
+ *  \return true means success, false means overflow or underflow
+ *
+ */
+bool bsi32_rescale(int32_t in_value, int8_t in_scale, int8_t new_scale, int32_t* value);
 
-#define FREE0(X) \
-    if (X) { \
-        free (X); \
-        X = NULL; \
-    }
-
+/** \brief binary scale add
+ *
+ *  \param value1 - first operand's value
+ *  \param scale1 - first operand's scale
+ *  \param value2 - second operand's value
+ *  \param scale2 - second operand's scale
+ *  \param value - pointer to variable to store the result value
+ *  \param scale - pointer to variable to store the result scale
+ *
+ *  \return true means success, false means overflow or underflow
+ */
+bool bsi32_add(int32_t value1, int8_t scale1,
+           int32_t value2, int8_t scale2,
+           int32_t *value, int8_t* scale);
 #ifdef __cplusplus
 }
 #endif

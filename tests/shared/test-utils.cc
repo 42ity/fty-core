@@ -150,6 +150,117 @@ TEST_CASE ("average_first_since", "[utils][average][time]") {
     }
 }
 
+TEST_CASE("addi32_overflow", "[utils][overflow]") {
+    int32_t a, b, value;
+    bool ret;
 
+    ret = addi32_overflow(22, 20, &value);
+    CHECK(ret);
+    CHECK(value == 42);
 
+    ret = addi32_overflow(INT32_MAX, 0, &value);
+    CHECK(ret);
+    CHECK(value == INT32_MAX);
 
+    ret = addi32_overflow(INT32_MAX, 2, &value);
+    CHECK(!ret);
+    CHECK(value == INT32_MAX); // old value
+
+    ret = addi32_overflow(66, -24, &value);
+    CHECK(ret);
+    CHECK(value == 42);
+
+    ret = addi32_overflow(INT32_MIN, -1, &value);
+    CHECK(!ret);
+    CHECK(value == 42); // old value
+}
+
+TEST_CASE("bsi32_rescale","[utils][bs_rescale]"){
+
+    int32_t value;
+    bool ret;
+
+    // upscale
+    ret = bsi32_rescale(42, 0, 1, &value);
+    CHECK(ret);
+    CHECK(value == 4);
+
+    ret = bsi32_rescale(42, 0, 3, &value);
+    CHECK(ret);
+    CHECK(value == 0);
+
+    // down
+    ret = bsi32_rescale(42, 0, -3, &value);
+    CHECK(ret);
+    CHECK(value == 42000);
+
+    // underflow
+    ret = bsi32_rescale(42, 0, -128, &value);
+    CHECK(!ret);
+    CHECK(value == 42000); //<<< just the previous value
+
+    // overflow
+    ret = bsi32_rescale(42, 0, 128, &value);
+    CHECK(!ret);
+    CHECK(value == 42000); //<<< just the previous value
+
+    // upscale - negative
+    ret = bsi32_rescale(-42, 0, 1, &value);
+    CHECK(ret);
+    CHECK(value == -4);
+
+    // downscale - negative
+    ret = bsi32_rescale(-42, 0, -3, &value);
+    CHECK(ret);
+    CHECK(value == -42000);
+
+    // underflow - negative
+    ret = bsi32_rescale(INT32_MIN / 10, 0, -2, &value);
+    CHECK(!ret);
+    CHECK(value == -42000); //<<< just the previous value
+    
+}
+
+TEST_CASE("bsi32_add","[utils][bs_add]"){
+
+    int32_t value;
+    int8_t scale;
+    bool ret;
+
+    // add with the same scale is easy ...
+    ret = bsi32_add(22, 0, 20, 0, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 42);
+    CHECK(scale == 0);
+
+    // ... but we do support any arbitrary scale
+    ret = bsi32_add(40, 0, 20, -1, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 420);
+    CHECK(scale == -1);
+
+    // ... and we check overflows
+    ret = bsi32_add(40, 0, 20, -128, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 420);    //<<< just the previous value
+    CHECK(scale == -1);     //<<< just the previous value
+
+    // ... and we check overflows
+    ret = bsi32_add(INT32_MAX, 0, 42, 0, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 420);    //<<< just the previous value
+    CHECK(scale == -1);     //<<< just the previous value
+
+    // negative numbers
+    ret = bsi32_add(64, 0, -22, 0, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 42);
+    CHECK(scale == 0);
+
+    // negative numbers - underflows
+    ret = bsi32_add(INT32_MIN, 0, -22, 0, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 42);    //<<< just the previous value
+    CHECK(scale == 0);     //<<< just the previous value
+    return;
+}

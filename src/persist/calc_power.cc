@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ctime>
 
 #include "log.h"
+#include "utils.h"
 #include "defs.h"
 #include "calc_power.h"
 
@@ -412,42 +413,21 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 }
 
 /**
- *  \brief rescale number to the new scale - upscalling loses information
- *
- *  assert's to prevent integer overflow
- */
-static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, 
-                m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale)
-{
-    if (old_scale == new_scale) {
-        return value;
-    }
-
-    if (old_scale > new_scale) {
-        for (auto i = 0; i != abs(old_scale - new_scale); i++) {
-            assert(value < (INT32_MAX / 10));
-            value *= 10;
-        }
-        return value;
-    }
-
-    for (auto i = 0; i != abs(old_scale - new_scale); i++) {
-        value /= 10;
-    }
-    return value;
-}
-
-/**
  *  \brief add a value with a respect to the scale - downscale all the time
  */
-static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, 
-                                                m_msrmnt_scale_t scale)
+static bool s_add_scale(rack_power_t& ret,
+                        m_msrmnt_value_t value, m_msrmnt_scale_t scale)
 {
-    if (ret.scale > scale) {
-        ret.power = s_rescale(ret.power, ret.scale, scale);
-        ret.scale = scale;
-    }
-    ret.power += s_rescale(value, ret.scale, scale);
+    m_msrmnt_value_t l_value;
+    int8_t l_scale;
+    bool bret;
+
+    bret = bsi32_add(ret.power, ret.scale, value, scale, &l_value, &l_scale);
+    if (!bret)
+        return false;
+
+    ret.power = l_value, ret.scale = (m_msrmnt_scale_t) l_scale;
+    return true;
 }
 
 
@@ -1019,8 +999,6 @@ std::set<a_elmnt_id_t>
         (const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t>> &links,
          a_elmnt_id_t element_id)
 {
-    LOG_START;
-
     std::set<a_elmnt_id_t> dests;
     
     for ( auto &one_link: links )
@@ -1028,7 +1006,6 @@ std::set<a_elmnt_id_t>
         if ( std::get<0>(one_link) == element_id )
             dests.insert(std::get<1>(one_link));
     }
-    LOG_END;
     return dests;
 }
 
@@ -1192,7 +1169,7 @@ db_reply <std::map<std::string, std::vector<std::string>>>
         log_error ("some error appears, during selecting the dcs");
         return ret;
     }
-    // if there is no racks, then it is an error
+    // if there is no dcs, then it is an error
     if  ( allDcs.item.empty() )
     {
         ret.status = 0;
@@ -1239,13 +1216,14 @@ db_reply <std::map<std::string, std::vector<std::string>>>
             ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
             continue;
         }
-
+        
         if ( links.item.empty() )
         {
             log_warning ("'%s': has no power links", dc.name.c_str());
             ret.item.insert(std::pair< std::string, std::vector<std::string>>(dc.name, result));
             continue;
         }
+        
          std::set <device_info_t> border_devices;
         //  from (first)   to (second)
         //           +--------------+ 
@@ -1259,12 +1237,12 @@ db_reply <std::map<std::string, std::vector<std::string>>>
         std::set <a_elmnt_id_t> dest_dvcs{};
         for ( auto &oneLink : links.item )
         {
+            log_debug ("  cur_link: %d->%d", oneLink.first,oneLink.second);
             auto it = dc_devices.find (oneLink.first);
             if ( it == dc_devices.end() )         
                 border_devices.insert ( dc_devices.find(oneLink.second)->second );
             dest_dvcs.insert(oneLink.second);
         }
-        
         //  from (first)   to (second)
         //           +-----------+ 
         //           |A_____C    |
