@@ -339,6 +339,7 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
+			src/db/assets/assetr.cc \
 			src/db/alerts/alert_basic.h \
 			src/db/alerts.h
 
@@ -1103,7 +1104,8 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
