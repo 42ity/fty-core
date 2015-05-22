@@ -120,20 +120,33 @@ TEST_CASE ("average_first_since", "[utils][average][time]") {
         CHECK ( average_first_since (1430174399, "30m") == 1430175600 ); // 2015-04-27 23:00:00
         CHECK ( average_first_since (1430174399, "1h") == 1430175600 );  // 2015-04-27 23:00:00
 
-        // 1430180776 == Tue Apr 28 00:26:16 UTC 2015                       expected
+        // 1407801599 == 2014-08-11 23:59:59 UTC                       expected
+        CHECK ( average_first_since (1407801599, "8h") == 1407801600 );  // 2014-08-12 00:00:00
+        CHECK ( average_first_since (1407801599, "15m") == 1407801600 );
+        CHECK ( average_first_since (1407801599, "30m") == 1407801600 );
+        CHECK ( average_first_since (1407801599, "1h") == 1407801600 );  
+
+        // 1430180776 == 00:26:16 2015-04-28 UTC                       expected
         CHECK ( average_first_since (1430180776, "8h") == 1430208000 ); // 2015-04-28 08:00:00
         CHECK ( average_first_since (1430180776, "1h") == 1430182800 ); // 2015-04-28 01:00:00
         CHECK ( average_first_since (1430180776, "30m") == 1430181000 ); // 2015-04-28 00:30:00
         CHECK ( average_first_since (1430180776, "15m") == 1430181000 ); // 2015-04-28 00:30:00
 
         // exact
-        CHECK ( average_first_since (1430179200, "8h") == 1430179200 );  // 2015-04-28 00:00:00
-        CHECK ( average_first_since (1430179200, "15m") == 1430179200 );  // 2015-04-28 00:00:00
-        CHECK ( average_first_since (1430179200, "1h") == 1430179200 );  // 2015-04-28 00:00:00
+        // 1430179200 == 00:00:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430179200, "8h") == 1430208000 );  // 2015-04-28 08:00:00
+        CHECK ( average_first_since (1430179200, "15m") == 1430180100 );  // 2015-04-28 00:15:00
+        CHECK ( average_first_since (1430179200, "1h") == 1430182800 );  // 2015-04-28 01:00:00
 
-        CHECK ( average_first_since (1430208000, "8h") == 1430208000 ); // 2015-04-28 08:00:00
-        CHECK ( average_first_since (1430208000, "1h") == 1430208000 ); // 2015-04-28 08:00:00
-        CHECK ( average_first_since (1430208000, "15m") == 1430208000 ); // 2015-04-28 08:00:00
+        // 1430208000 == 08:00:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430208000, "8h") == 1430236800 ); // 2015-04-28 16:00:00
+        CHECK ( average_first_since (1430208000, "1h") == 1430211600 ); // 2015-04-28 09:00:00
+        CHECK ( average_first_since (1430208000, "15m") == 1430208900 ); // 2015-04-28 08:15:00
+
+        // 1430183700 == 01:15:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430183700, "8h") == 1430208000 ); // 2015-04-28 08:00:00
+        CHECK ( average_first_since (1430183700, "1h") == 1430186400 ); // 2015-04-28 02:00:00
+        CHECK ( average_first_since (1430183700, "15m") == 1430184600 ); // 2015-04-28 01:30:00
     }
 }
 

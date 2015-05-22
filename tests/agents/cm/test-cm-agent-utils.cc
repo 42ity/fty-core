@@ -466,9 +466,11 @@ TEST_CASE ("process_db_measurement_calculate","[agent-cm][computation][average][
         CHECK ( process_db_measurement_calculate (samples, 1430149500, 1430150400, "arithmetic_mean", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
 
     }
-/*
+/* TODO: Write simple isolated cases here, bigger ones in ci script
     SECTION ("arithmetic_mean") {
     }
 */
+
 }
+
 

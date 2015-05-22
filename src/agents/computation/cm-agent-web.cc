@@ -160,12 +160,12 @@ process_web_average
         std::string data_str;
         int comma_counter = 0;
 
-        log_debug ("second_ts: %ld\tend_ts:%ld", second_ts, end_ts_db);
+        printf ("Starting big cycle. first_ts: %ld\tsecond_ts: %ld\tend_ts:%ld\n", first_ts, second_ts, end_ts_db);
         while (second_ts <= end_ts_db) {
 
             std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-            rv = process_db_measurement_calculate
-                (samples, first_ts, second_ts, type, comp_result);
+            printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts);
+            rv = process_db_measurement_calculate (samples, first_ts, second_ts, type, comp_result);
             if (rv == 0) {
                 printf ("%ld\t%f\n", second_ts, comp_result);
                 item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
@@ -176,6 +176,8 @@ process_web_average
                     data_str += ",\n";
 
                 data_str += item;
+            } else {
+                log_warning ("process_db_measurement_calculate failed"); // TODO
             }
             first_ts = second_ts;
             second_ts += average_step_seconds (step);
