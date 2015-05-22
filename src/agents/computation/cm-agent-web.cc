@@ -89,6 +89,8 @@ process_web_average
     _scoped_ymsg_t *db_msg_reply = ymsg_new (YMSG_REPLY);
     assert (db_msg_reply);
     _scoped_char *reply_subject = NULL;
+    std::string mod_send_subject (send_subject);
+    mod_send_subject.append ("<>");
     persist::get_measurements (db_msg_reply, &reply_subject, db_msg_send, send_subject);
     FREE0 (send_subject);
     FREE0 (reply_subject);

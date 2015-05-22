@@ -115,9 +115,7 @@ process_db_measurement_json_to_map
             throw std::invalid_argument ("Field 'source' is empty.");
         }
         si.getMember ("unit") >>= unit;
-        if (unit.empty ()) {
-            throw std::invalid_argument ("Field 'unit' is empty.");
-        }
+
         si.getMember ("element_id") >>= element_id_str;
         if (element_id_str.empty ()) {
             throw std::invalid_argument ("Field 'element_id' is empty.");
