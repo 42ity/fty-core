@@ -45,6 +45,15 @@ AM_COND_IF([ENABLE_DEBUG_BUILD],
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG_BUILD],   [$_ENABLE_DEBUG_BUILD],
         [Flag mostly for Makefile: enable various debugging flags (0=no)?])
 
+AC_ARG_ENABLE([ci-tests],
+[  --enable-ci-tests    Turn on build of CI tests],
+[case "${enableval}" in
+  yes) ci_tests=true ;;
+  no)  ci_tests=false ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-tests]) ;;
+esac],[ci_tests=false])
+AM_CONDITIONAL([ENABLE_CI_TESTS], [test x$ci_tests = xtrue])
+
 # Google Thread Sanitizer; see
 #   http://code.google.com/p/thread-sanitizer/wiki
 # Note that TSAN incurs 5x-15x slowdown, so it is off by default
