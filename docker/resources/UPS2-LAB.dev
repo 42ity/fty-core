@@ -129,7 +129,7 @@ ups.serial: G214D17012
 ups.start.auto: yes
 ups.start.battery: yes
 ups.start.reboot: yes
-ups.status: OL 
+ups.status: BYPASS 
 ups.temperature: 45 
 ups.test.interval: 2592000
 ups.test.result: done and error

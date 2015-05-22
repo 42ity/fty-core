@@ -269,17 +269,18 @@ process_db_measurement_calculate_arithmetic_mean
         else if (it2->first >= end) {
 
             // TODO: Remove when done testing
-            printf ("it2->first: %ld >= end: %ld\n", it2->first, end);
             weight = sample_weight (it1->first, end);
             if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
                 samples.emplace (std::make_pair (end, it1->second));
-
-            // TODO: Remove when done testing
+                // TODO: Remove when done testing
                 printf ("emplacing value '%ld' with timestamp '%f'\n", end, it2->second);
             }
+            printf ("it1->first: %ld >= end: %ld\tweight: %ld\n", it1->first, end, weight);
+
         }
         else { // it2->first < end 
             weight = sample_weight (it1->first, it2->first);
+            printf ("it1->first: %ld\tit2->first: %ld\tweight: %ld\n", it1->first, end, weight);
         }
 
         if (weight == -1) {
