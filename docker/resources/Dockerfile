@@ -37,8 +37,8 @@ ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_0.1.0~2
 RUN dpkg -i /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb 
    
 #RUN apt-get install -y --force-yes libnutclient0
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.2-3_amd64.deb   /tmp/libnutclient0_2.7.2-3_amd64.deb  
-RUN dpkg -i /tmp/libnutclient0_2.7.2-3_amd64.deb
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.3-1_amd64.deb /tmp/libnutclient0_2.7.3-1_amd64.deb  
+RUN dpkg -i /tmp/libnutclient0_2.7.3-1_amd64.deb
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
@@ -50,6 +50,9 @@ ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut
 ADD ./usr/local/libexec/bios/agent-inventory /usr/local/libexec/bios/agent-inventory
+ADD ./usr/local/libexec/bios/agent-alert /usr/local/libexec/bios/agent-alert
+ADD ./usr/local/libexec/bios/agent-cm /usr/local/libexec/bios/agent-cm
+ADD ./usr/local/libexec/bios/agent-tpower /usr/local/libexec/bios/agent-tpower
 ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
 RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
 ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
