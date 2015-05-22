@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <ctime>
 
 #include "log.h"
+#include "utils.h"
 #include "defs.h"
 #include "calc_power.h"
 
@@ -412,42 +413,21 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 }
 
 /**
- *  \brief rescale number to the new scale - upscalling loses information
- *
- *  assert's to prevent integer overflow
- */
-static m_msrmnt_value_t s_rescale(m_msrmnt_value_t value, 
-                m_msrmnt_scale_t old_scale, m_msrmnt_scale_t new_scale)
-{
-    if (old_scale == new_scale) {
-        return value;
-    }
-
-    if (old_scale > new_scale) {
-        for (auto i = 0; i != abs(old_scale - new_scale); i++) {
-            assert(value < (INT32_MAX / 10));
-            value *= 10;
-        }
-        return value;
-    }
-
-    for (auto i = 0; i != abs(old_scale - new_scale); i++) {
-        value /= 10;
-    }
-    return value;
-}
-
-/**
  *  \brief add a value with a respect to the scale - downscale all the time
  */
-static void s_add_scale(rack_power_t& ret, m_msrmnt_value_t value, 
-                                                m_msrmnt_scale_t scale)
+static bool s_add_scale(rack_power_t& ret,
+                        m_msrmnt_value_t value, m_msrmnt_scale_t scale)
 {
-    if (ret.scale > scale) {
-        ret.power = s_rescale(ret.power, ret.scale, scale);
-        ret.scale = scale;
-    }
-    ret.power += s_rescale(value, ret.scale, scale);
+    m_msrmnt_value_t l_value;
+    int8_t l_scale;
+    bool bret;
+
+    bret = bsi32_add(ret.power, ret.scale, value, scale, &l_value, &l_scale);
+    if (!bret)
+        return false;
+
+    ret.power = l_value, ret.scale = (m_msrmnt_scale_t) l_scale;
+    return true;
 }
 
 

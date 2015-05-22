@@ -120,23 +120,147 @@ TEST_CASE ("average_first_since", "[utils][average][time]") {
         CHECK ( average_first_since (1430174399, "30m") == 1430175600 ); // 2015-04-27 23:00:00
         CHECK ( average_first_since (1430174399, "1h") == 1430175600 );  // 2015-04-27 23:00:00
 
-        // 1430180776 == Tue Apr 28 00:26:16 UTC 2015                       expected
+        // 1407801599 == 2014-08-11 23:59:59 UTC                       expected
+        CHECK ( average_first_since (1407801599, "8h") == 1407801600 );  // 2014-08-12 00:00:00
+        CHECK ( average_first_since (1407801599, "15m") == 1407801600 );
+        CHECK ( average_first_since (1407801599, "30m") == 1407801600 );
+        CHECK ( average_first_since (1407801599, "1h") == 1407801600 );  
+
+        // 1430180776 == 00:26:16 2015-04-28 UTC                       expected
         CHECK ( average_first_since (1430180776, "8h") == 1430208000 ); // 2015-04-28 08:00:00
         CHECK ( average_first_since (1430180776, "1h") == 1430182800 ); // 2015-04-28 01:00:00
         CHECK ( average_first_since (1430180776, "30m") == 1430181000 ); // 2015-04-28 00:30:00
         CHECK ( average_first_since (1430180776, "15m") == 1430181000 ); // 2015-04-28 00:30:00
 
         // exact
-        CHECK ( average_first_since (1430179200, "8h") == 1430179200 );  // 2015-04-28 00:00:00
-        CHECK ( average_first_since (1430179200, "15m") == 1430179200 );  // 2015-04-28 00:00:00
-        CHECK ( average_first_since (1430179200, "1h") == 1430179200 );  // 2015-04-28 00:00:00
+        // 1430179200 == 00:00:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430179200, "8h") == 1430208000 );  // 2015-04-28 08:00:00
+        CHECK ( average_first_since (1430179200, "15m") == 1430180100 );  // 2015-04-28 00:15:00
+        CHECK ( average_first_since (1430179200, "1h") == 1430182800 );  // 2015-04-28 01:00:00
 
-        CHECK ( average_first_since (1430208000, "8h") == 1430208000 ); // 2015-04-28 08:00:00
-        CHECK ( average_first_since (1430208000, "1h") == 1430208000 ); // 2015-04-28 08:00:00
-        CHECK ( average_first_since (1430208000, "15m") == 1430208000 ); // 2015-04-28 08:00:00
+        // 1430208000 == 08:00:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430208000, "8h") == 1430236800 ); // 2015-04-28 16:00:00
+        CHECK ( average_first_since (1430208000, "1h") == 1430211600 ); // 2015-04-28 09:00:00
+        CHECK ( average_first_since (1430208000, "15m") == 1430208900 ); // 2015-04-28 08:15:00
+
+        // 1430183700 == 01:15:00 2015-04-28 UTC
+        CHECK ( average_first_since (1430183700, "8h") == 1430208000 ); // 2015-04-28 08:00:00
+        CHECK ( average_first_since (1430183700, "1h") == 1430186400 ); // 2015-04-28 02:00:00
+        CHECK ( average_first_since (1430183700, "15m") == 1430184600 ); // 2015-04-28 01:30:00
     }
 }
 
+TEST_CASE("addi32_overflow", "[utils][overflow]") {
+    int32_t a, b, value;
+    bool ret;
 
+    ret = addi32_overflow(22, 20, &value);
+    CHECK(ret);
+    CHECK(value == 42);
 
+    ret = addi32_overflow(INT32_MAX, 0, &value);
+    CHECK(ret);
+    CHECK(value == INT32_MAX);
 
+    ret = addi32_overflow(INT32_MAX, 2, &value);
+    CHECK(!ret);
+    CHECK(value == INT32_MAX); // old value
+
+    ret = addi32_overflow(66, -24, &value);
+    CHECK(ret);
+    CHECK(value == 42);
+
+    ret = addi32_overflow(INT32_MIN, -1, &value);
+    CHECK(!ret);
+    CHECK(value == 42); // old value
+}
+
+TEST_CASE("bsi32_rescale","[utils][bs_rescale]"){
+
+    int32_t value;
+    bool ret;
+
+    // upscale
+    ret = bsi32_rescale(42, 0, 1, &value);
+    CHECK(ret);
+    CHECK(value == 4);
+
+    ret = bsi32_rescale(42, 0, 3, &value);
+    CHECK(ret);
+    CHECK(value == 0);
+
+    // down
+    ret = bsi32_rescale(42, 0, -3, &value);
+    CHECK(ret);
+    CHECK(value == 42000);
+
+    // underflow
+    ret = bsi32_rescale(42, 0, -128, &value);
+    CHECK(!ret);
+    CHECK(value == 42000); //<<< just the previous value
+
+    // overflow
+    ret = bsi32_rescale(42, 0, 128, &value);
+    CHECK(!ret);
+    CHECK(value == 42000); //<<< just the previous value
+
+    // upscale - negative
+    ret = bsi32_rescale(-42, 0, 1, &value);
+    CHECK(ret);
+    CHECK(value == -4);
+
+    // downscale - negative
+    ret = bsi32_rescale(-42, 0, -3, &value);
+    CHECK(ret);
+    CHECK(value == -42000);
+
+    // underflow - negative
+    ret = bsi32_rescale(INT32_MIN / 10, 0, -2, &value);
+    CHECK(!ret);
+    CHECK(value == -42000); //<<< just the previous value
+    
+}
+
+TEST_CASE("bsi32_add","[utils][bs_add]"){
+
+    int32_t value;
+    int8_t scale;
+    bool ret;
+
+    // add with the same scale is easy ...
+    ret = bsi32_add(22, 0, 20, 0, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 42);
+    CHECK(scale == 0);
+
+    // ... but we do support any arbitrary scale
+    ret = bsi32_add(40, 0, 20, -1, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 420);
+    CHECK(scale == -1);
+
+    // ... and we check overflows
+    ret = bsi32_add(40, 0, 20, -128, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 420);    //<<< just the previous value
+    CHECK(scale == -1);     //<<< just the previous value
+
+    // ... and we check overflows
+    ret = bsi32_add(INT32_MAX, 0, 42, 0, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 420);    //<<< just the previous value
+    CHECK(scale == -1);     //<<< just the previous value
+
+    // negative numbers
+    ret = bsi32_add(64, 0, -22, 0, &value, &scale);
+    CHECK(ret);
+    CHECK(value == 42);
+    CHECK(scale == 0);
+
+    // negative numbers - underflows
+    ret = bsi32_add(INT32_MIN, 0, -22, 0, &value, &scale);
+    CHECK(!ret);
+    CHECK(value == 42);    //<<< just the previous value
+    CHECK(scale == 0);     //<<< just the previous value
+    return;
+}

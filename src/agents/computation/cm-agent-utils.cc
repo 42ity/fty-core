@@ -34,6 +34,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cm-agent-utils.h"
 #include "cleanup.h"
 
+// Note: This used to be a complicated computation.
+//       We decided to trade absolute accuracy of computed average for easiness of explanation.
+//
+//       The distortion caused by this will be in range 0% - 7,15% in worst hypothetical case.
+//
+//       For practical purposes the variation is +-0,0401% in the worst case for 15 min averages
+//       and in limit approaches zero as the average duration increases.
+//       Of course, if the values of the measured units are high, the absolute divergence can increase, BUT
+//       since there already is the same kind of distortion between nut and agent-nut due to compression of
+//       similar (i.e. +-5%) values to conserver space, this additional distortion is negligible.
+int64_t
+sample_weight (int64_t begin, int64_t end) {
+    if (begin >= end) {
+        return -1;
+    }
+    int64_t difference = end - begin;
+    if (difference > AGENT_NUT_REPEAT_INTERVAL_SEC) {
+        return 1;
+    }
+    return difference;
+}
+
 int 
 replyto_err 
 (bios_agent_t *agent, ymsg_t **original, const char *sender, const char *error_message, const char *subject) {
@@ -68,7 +90,6 @@ process_db_measurement_json_to_map
     if (!json)
         return -1;
     try {
-        // process the received json into a std::map
         std::stringstream input (json, std::ios_base::in);
 
         cxxtools::SerializationInfo si;
@@ -94,9 +115,7 @@ process_db_measurement_json_to_map
             throw std::invalid_argument ("Field 'source' is empty.");
         }
         si.getMember ("unit") >>= unit;
-        if (unit.empty ()) {
-            throw std::invalid_argument ("Field 'unit' is empty.");
-        }
+
         si.getMember ("element_id") >>= element_id_str;
         if (element_id_str.empty ()) {
             throw std::invalid_argument ("Field 'element_id' is empty.");
@@ -224,6 +243,8 @@ process_db_measurement_calculate_arithmetic_mean
     if (!type || start >= end || samples.empty ())
         return -1;
 
+    // TODO: Remove when done testing
+    printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) // requested interval is empty
         return 1;
@@ -237,38 +258,47 @@ process_db_measurement_calculate_arithmetic_mean
 
     while (it1 != samples.end () && it1->first < end) {
         auto it2 = it1; ++it2;
-        uint32_t count = 0;
-        int64_t difference = 0;
-        if (it2 == samples.end () || it2->first >= end) {
-            difference = end - it1->first;
-            if (difference > AGENT_NUT_REPEAT_INTERVAL_SEC)
-                count = 1;
-            else {
-                count = (difference / AGENT_NUT_SAMPLING_INTERVAL_SEC);
-                if (count == 0)
-                    count = 1;
+        int64_t weight = 0;
+
+        if (it2 == samples.end ()) {
+
+            // TODO: Remove when done testing
+            printf ("it2 == samples.end ()\n");
+            weight = 1;    
+        }
+        else if (it2->first >= end) {
+
+            // TODO: Remove when done testing
+            printf ("it2->first: %ld >= end: %ld\n", it2->first, end);
+            weight = sample_weight (it1->first, end);
+            if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+                samples.emplace (std::make_pair (end, it1->second));
+
+            // TODO: Remove when done testing
+                printf ("emplacing value '%ld' with timestamp '%f'\n", end, it2->second);
             }
-            counter += count;
-            sum += it1->second * count;
-            break;
         }
-        difference = it2->first - it1->first;
-        if (difference > AGENT_NUT_REPEAT_INTERVAL_SEC)
-            count = 1;
-        else
-            count = (it2->first - it1->first) / AGENT_NUT_SAMPLING_INTERVAL_SEC;
-        if (count == 0)
-            count = 1;
-        counter += count;        
-        sum += it1->second * count;
-        ++it1;        
-    }
-    result = sum / counter;
-    if (it1 != samples.end () && it1->first != end) {
-        auto it2 = it1; --it2;
-        if (it1->first - it2->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
-            samples.emplace (std::make_pair (end, it2->second));
+        else { // it2->first < end 
+            weight = sample_weight (it1->first, it2->first);
         }
+
+        if (weight == -1) {
+            return -1;
+        }
+        counter += weight;
+        sum += it1->second * weight;
+        ++it1;
     }
+
+    result = (double) sum / counter;
+
+            // TODO: Remove when done testing
+    printf ("end _calculate_arithmetic_mean\n");
     return 0;
 }
+
+
+
+
+
+

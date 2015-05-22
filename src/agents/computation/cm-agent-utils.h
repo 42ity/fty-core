@@ -29,7 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ymsg.h"
 #include "bios_agent.h"
 
-// TODO: doxygen
+// TODO: doxygen, anonymous namespace
 // original - ownership transfer
 int
 replyto_err
@@ -51,6 +51,9 @@ int
 process_db_measurement_calculate_arithmetic_mean
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result);
 
+// -1 on error (begin > end)
+int64_t
+sample_weight (int64_t begin, int64_t end);
 #endif // SRC_AGENTS_COMPUTATION_CM_AGENT_UTILS_H__
 
 

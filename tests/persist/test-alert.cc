@@ -151,6 +151,7 @@ TEST_CASE("t_bios_alert UPDATE notification #3","[db][CRUD][update][alert][crud_
     auto reply_update = update_alert_notification_byId(conn, new_notification, rowid);
     REQUIRE (reply_update.status == 1);
     REQUIRE (reply_update.affected_rows == 1);
+    REQUIRE (reply_update.rowid == rowid);
 
     // check select
     reply_select = select_alert_all_opened (conn);
@@ -505,11 +506,12 @@ TEST_CASE("t_bios_alert UPDATE end date #7","[db][CRUD][update][alert][crud_test
     auto reply_update = update_alert_tilldate_by_rulename (conn, date_till, rule_name);
     REQUIRE (reply_update.status == 1);
     REQUIRE (reply_update.affected_rows == 1);
+    REQUIRE (reply_update.rowid == rowid);
 
     // check select
     reply_select = select_alert_all_closed (conn);
-    REQUIRE ( reply_select.status == 1 );
-    REQUIRE ( reply_select.item.size() == (oldsize_a + 1) );
+    REQUIRE ( reply_select.status == 1);
+    REQUIRE ( reply_select.item.size() ==(oldsize_a + 1 ) );
     REQUIRE ( reply_select.item.at(oldsize_a).id == rowid );
     REQUIRE ( reply_select.item.at(oldsize_a).rule_name == std::string(rule_name) );
     REQUIRE ( reply_select.item.at(oldsize_a).alert_state == alert_state );
@@ -523,3 +525,99 @@ TEST_CASE("t_bios_alert UPDATE end date #7","[db][CRUD][update][alert][crud_test
     
     log_close();
 }
+
+TEST_CASE("t_bios_alert INSERT Fail #8","[db][CRUD][insert][alert][crud_test.sql][wrong_input]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT INSERT #8 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    const char         *rule_name = NULL;
+    a_elmnt_pr_t        priority  = 1;
+    m_alrt_state_t      alert_state = 1;
+    const char         *description = "very small description";
+    m_alrt_ntfctn_t     notification = 12;
+    int64_t             date_from = 2049829;
+
+    // first insert
+    auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
+    REQUIRE ( reply_insert.status == 0 );
+    REQUIRE ( reply_insert.affected_rows == 0 );
+    REQUIRE ( reply_insert.errtype == DB_ERR );
+    REQUIRE ( reply_insert.errsubtype == DB_ERROR_BADINPUT );
+    REQUIRE ( strlen(reply_insert.msg) != 0 );
+
+    log_close();
+}
+
+TEST_CASE("t_bios_alert INSERT Null description #9","[db][CRUD][insert][alert][crud_test.sql]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT INSERT #9 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    const char         *rule_name = "cool name1";
+    a_elmnt_pr_t        priority  = 1;
+    m_alrt_state_t      alert_state = 1;
+    const char         *description = NULL;
+    m_alrt_ntfctn_t     notification = 12;
+    int64_t             date_from = 2049829;
+
+    // insert
+    auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
+    REQUIRE ( reply_insert.status == 1 );
+    REQUIRE ( reply_insert.affected_rows == 1 );
+    uint64_t rowid = reply_insert.rowid;
+
+    // delete
+    delete_from_alert (conn, rowid);
+
+    log_close();
+}
+
+TEST_CASE("t_bios_alert UPDATE notification by id #10","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT UPDATE by ID #10 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    // update
+    int64_t  new_notification = 4;
+    m_alrt_id_t id = 999;
+    auto reply_update = update_alert_notification_byId(conn, new_notification, id);
+    REQUIRE (reply_update.status == 1);
+    REQUIRE (reply_update.affected_rows == 0);
+    REQUIRE (reply_update.rowid == 0);
+
+    log_close();
+}
+
+TEST_CASE("t_bios_alert UPDATE tilldate by rulename #11","[db][CRUD][update][alert][crud_test.sql][wrong_input]")
+{
+    log_open ();
+
+    log_info ("=============== ALERT: ALERT UPDATE by ID #11 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+
+    // update
+    int64_t  date_till = 2059829;
+    const char *rule_name = "abra-cadabra";
+    auto reply_update = update_alert_tilldate_by_rulename (conn, date_till, rule_name);
+    REQUIRE (reply_update.status == 1);
+    REQUIRE (reply_update.affected_rows == 0);
+    REQUIRE (reply_update.rowid == 0);
+
+    log_close();
+}
+

@@ -119,7 +119,7 @@ int64_t average_first_since (int64_t timestamp, const char *step) {
     int64_t step_sec = average_step_seconds (step);
     int64_t mod = timestamp % step_sec;
     if (mod == 0)
-        return timestamp;
+        return timestamp + step_sec;
     return timestamp + (step_sec - mod);
 }
 
@@ -267,4 +267,66 @@ const char* alert_state_to_str(alert_state_t astate) {
             return "ongoing";;
     }
     return "unknown"; //make gcc happy
+}
+
+bool addi32_overflow(int32_t a, int32_t b, int32_t *res) {
+    int64_t l_res = (int64_t)a + (int64_t)b;
+    if (l_res > INT32_MAX || l_res < INT32_MIN)
+        return false;
+    *res = (int32_t) l_res; //this is safe because of check above
+    return true;
+}
+
+bool bsi32_rescale(int32_t in_value, int8_t in_scale, int8_t new_scale, int32_t* value)
+{
+    if (in_scale == new_scale) {
+        *value = in_value;
+        return true;
+    }
+
+    int32_t l_value = in_value;
+
+    if (in_scale > new_scale) {
+        for (int i = 0; i != abs(in_scale - new_scale); i++) {
+            if (l_value >= (INT32_MAX / 10) || l_value <= (INT32_MIN / 10))
+                return false;
+            l_value *= 10;
+        }
+        *value = l_value;
+        return true;
+    }
+
+    for (int i = 0; i != abs(in_scale - new_scale); i++) {
+        l_value /= 10;
+    }
+    *value = l_value;
+    return true;
+}
+
+bool bsi32_add(int32_t value1, int8_t scale1,
+            int32_t value2, int8_t scale2,
+            int32_t *value, int8_t* scale)
+{
+    bool ret = false;
+
+    int32_t l_value = 0, l_value1 = 0, l_value2 = 0;
+    int8_t l_scale = 0;
+
+    l_scale = (scale1 < scale2) ? scale1 : scale2;
+
+    ret = bsi32_rescale(value1, scale1, l_scale, &l_value1);
+    if (!ret)
+        return false;
+
+    ret = bsi32_rescale(value2, scale2, l_scale, &l_value2);
+    if (!ret)
+        return false;
+
+    ret = addi32_overflow(l_value1, l_value2, &l_value);
+    if (!ret)
+        return false;
+
+    *value = l_value;
+    *scale = l_scale;
+    return true;
 }

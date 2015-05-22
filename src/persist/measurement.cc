@@ -227,11 +227,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
     (*out_subj) = strdup("return_measurements");
     std::string json;
     try {
-        tntdb::Connection conn = tntdb::connectCached(url);
-        // NOTE for miska: az se tady budou vybirat i skutecne prumery, tak
-        // pro okamzita data plati timestamp < time_end
-        // ale pro prumery bude platut timestamp <= time_end
-        tntdb::Statement st = conn.prepareCached(
+       std::string query = std::string(
             " SELECT topic, value, scale, UNIX_TIMESTAMP(timestamp), units "
             " FROM v_bios_measurement"
             " WHERE "
@@ -241,12 +237,15 @@ void get_measurements(ymsg_t* out, char** out_subj,
             "    WHERE rel.id_asset_element = :id AND "
             "          t.device_id = id_discovered_device AND "
             "          t.topic LIKE :topic) AND "
-            " timestamp >= FROM_UNIXTIME(:time_st) AND "
-            " timestamp <  FROM_UNIXTIME(:time_end) "
-            " ORDER BY timestamp ASC"
-        );
+            " timestamp ") +
+            std::string((in_subj && strlen(in_subj) && in_subj[strlen(in_subj)-1] == '>') ? ">=" : ">") +
+            " FROM_UNIXTIME(:time_st) AND "
+            " timestamp "  +
+            std::string((in_subj && strlen(in_subj) && in_subj[strlen(in_subj)-2] == '<') ? "<=" : "<") +
+            " FROM_UNIXTIME(:time_end) "
+            " ORDER BY timestamp ASC";
 
-        int64_t start_ts = -1, end_ts = -1;
+        int64_t start_ts = -1, end_ts = -1, last_ts = -1;
         uint64_t element_id = 0;
         _scoped_char *source = NULL;
 
@@ -258,9 +257,24 @@ void get_measurements(ymsg_t* out, char** out_subj,
         std::string topic (source);
         FREE0 (source)
         topic += "@%";
-
-        st.set("id", element_id).set("topic", topic).set("time_st", start_ts).set("time_end", end_ts);
         log_debug("Got request regarding '%s' from %" PRId64 " till %" PRId64" for %" PRId64, topic.c_str(), start_ts, end_ts, element_id);
+
+        tntdb::Connection conn = tntdb::connectCached(url);
+        {
+            tntdb::Statement st = conn.prepareCached(
+            "SELECT COUNT(t.id) FROM t_bios_measurement_topic AS t, "
+            "                        t_bios_monitor_asset_relation AS rel "
+            "    WHERE rel.id_asset_element = :id AND "
+            "          t.device_id = id_discovered_device AND "
+            "          t.topic LIKE :topic");
+            tntdb::Row res = st.set("id", element_id).set("topic", topic).selectRow();
+            if(res[0].getInt32() == 0)
+                throw std::invalid_argument ("Invalid device or topic");
+        }
+ 
+        log_debug("Running query '%s'\n", query.c_str());
+        tntdb::Statement st = conn.prepareCached(query);
+        st.set("id", element_id).set("topic", topic).set("time_st", start_ts).set("time_end", end_ts);
 
         tntdb::Result result = st.select();
 
@@ -277,13 +291,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
             json += "   \"scale\": " + std::to_string(row[2].getInt32()) +  ",";
             json += "   \"timestamp\": " + std::to_string(row[3].getInt64());
             json += " }";
-        }
-
-        // quick temp workaround
-        if (result.size () == 0 && units.empty ()) {
-            std::string strerr("Empty result set or no measurement topic for specified element_id:");
-            strerr.append (std::to_string (element_id));
-            throw std::runtime_error (strerr.c_str ());
+            last_ts = row[3].getInt64();
         }
 
         json = "{ \"unit\": \"" + units + "\",\n" +
@@ -291,6 +299,7 @@ void get_measurements(ymsg_t* out, char** out_subj,
                "  \"element_id\": " + ymsg_get_string(in,"element_id") + ",\n" +
                "  \"start_ts\": " + ymsg_get_string(in,"start_ts") + ",\n" +
                "  \"end_ts\": " + ymsg_get_string(in,"end_ts") + ",\n" +
+               "  \"last_ts\": " + std::to_string(last_ts) + ",\n" +
                "\"data\": [\n" + json + "\n] }";
 
         _scoped_zchunk_t *ch = zchunk_new (json.c_str (), json.length ());
