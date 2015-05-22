@@ -9,7 +9,7 @@
 #include "asset_types.h"
 #include "dbhelpers.h"
 #include "common_msg.h"
-#include "assets.h"
+#include "db/assets.h"
 
 /**
  * \brief extract error, msg and HTTP error code from common_msg instance

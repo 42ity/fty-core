@@ -1104,8 +1104,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/db
+			-I$(abs_top_srcdir)/src/persist
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
