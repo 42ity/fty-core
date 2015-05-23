@@ -604,7 +604,7 @@ EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 #                        CI tests
 #----------------------------------------------------------------------
 
-cibin_PROGRAMS += 	test-db
+cibin_programs += 	test-db
 
 test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
@@ -624,7 +624,7 @@ test_db_CPPFLAGS = \
 test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
 
-cibin_PROGRAMS += 	test-loadcsv
+cibin_programs += 	test-loadcsv
 
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
@@ -645,7 +645,7 @@ test_loadcsv_CPPFLAGS = \
 test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
 
-cibin_PROGRAMS += 	test-db2
+cibin_programs += 	test-db2
 
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
@@ -673,7 +673,7 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
-cibin_PROGRAMS += 	test-dbtopology
+cibin_programs += 	test-dbtopology
 
 test_dbtopology_SOURCES = \
 			tests/persist/test-topology.cc \
@@ -701,7 +701,7 @@ test_dbtopology_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
-cibin_PROGRAMS += 	test-db-asset-crud
+cibin_programs += 	test-db-asset-crud
 
 test_db_asset_crud_SOURCES = \
 			tests/persist/test-asset-crud.cc
@@ -723,7 +723,7 @@ test_db_asset_crud_LDFLAGS = \
 			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
 
-cibin_PROGRAMS += 	test-db-alert
+cibin_programs += 	test-db-alert
 
 test_db_alert_SOURCES = \
 			tests/persist/test-alert.cc
@@ -748,7 +748,7 @@ test_db_alert_LDFLAGS = \
 
 
 #### total power tests
-cibin_PROGRAMS += 	test-totalpower
+cibin_programs += 	test-totalpower
 
 test_totalpower_SOURCES = \
 			tests/persist/test-rack-power.cc \
@@ -773,7 +773,7 @@ test_totalpower_LDFLAGS = \
 
 
 ###
-cibin_PROGRAMS += 	test-database
+cibin_programs += 	test-database
 
 test_database_SOURCES = tests/persist/test-database.cc \
 			tools/dbpath.h
@@ -795,7 +795,7 @@ test_database_CPPFLAGS = $(AM_CPPFLAGS) \
 test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
 
 ###
-cibin_PROGRAMS +=	test-web
+cibin_programs +=	test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
 			src/web/src/location_helpers.cc
@@ -810,7 +810,7 @@ test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
 #test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
 
 
-cibin_PROGRAMS +=	bios-email
+cibin_programs +=	bios-email
 
 bios_email_SOURCES = \
 			src/shared/email.h \
@@ -823,9 +823,14 @@ bios_email_LDADD = \
 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
+# Do we build and install CI programs by default? (see configure)
 if ENABLE_CI_TESTS
-bin_PROGRAMS += $(cibin_PROGRAMS)
+cibin_PROGRAMS += $(cibin_programs)
+#bin_PROGRAMS += $(cibin_PROGRAMS)
 endif
+
+# These may be built explicitly, so should be removable in any case
+CLEANFILES += $(cibin_programs)
 
 ### Verification that bios_web.so is in fact usable on binary level
 ### Note that this creates no retainable output file
@@ -1700,7 +1705,11 @@ all-local: $(abs_top_builddir)/src/include/git_details_override.c \
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_PROGRAMS)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_programs)
+
+# Note: variable cibin_PROGRAMS may be empty if not enabled via configure
+#   The variable cibin_programs holds the actual list of CI programs instead
+all-ci-bin-programs: $(cibin_PROGRAMS)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
