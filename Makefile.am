@@ -44,7 +44,10 @@ clientdir = ${pkglibexecdir}
 client_PROGRAMS =
 
 # test programs executed by CI scripts
+# lower-case var with actual list (so targets can be built by explicit request)
+# upper-case var picked up by autotools, populated based on configure settings
 cibindir = ${pkgbindir}
+cibin_programs =
 cibin_PROGRAMS =
 
 TESTS =
