@@ -45,10 +45,9 @@ client_PROGRAMS =
 
 # test programs executed by CI scripts
 # lower-case var with actual list (so targets can be built by explicit request)
-# upper-case var picked up by autotools, populated based on configure settings
-cibindir = ${pkgbindir}
+# upper-case var picked up by autotools, populated based on configure settings;
+#   its relevant "cibindir" is conditionally defined below
 cibin_programs =
-cibin_PROGRAMS =
 
 TESTS =
 
@@ -828,8 +827,8 @@ bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
 # Do we build and install CI programs by default? (see configure)
 if ENABLE_CI_TESTS
-cibin_PROGRAMS += $(cibin_programs)
-#bin_PROGRAMS += $(cibin_PROGRAMS)
+cibindir = ${pkgbindir}
+cibin_PROGRAMS = $(cibin_programs)
 endif
 
 # These may be built explicitly, so should be removable in any case
@@ -1712,7 +1711,11 @@ all-buildproducts: all-local all sdk-tests web-test-deps \
 
 # Note: variable cibin_PROGRAMS may be empty if not enabled via configure
 #   The variable cibin_programs holds the actual list of CI programs instead
+if ENABLE_CI_TESTS
 cibin_PROGRAMS: $(cibin_PROGRAMS)
+else
+cibin_PROGRAMS:
+endif
 cibin_programs: $(cibin_programs)
 
 #----------------------------------------------------------------------
