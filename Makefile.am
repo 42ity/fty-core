@@ -826,13 +826,18 @@ bios_email_LDADD = \
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
 # Do we build and install CI programs by default? (see configure)
-if ENABLE_CI_TESTS
+cibin_programs_list = $(cibin_programs)
 cibindir = ${pkgbindir}
+if ENABLE_CI_TESTS
 cibin_PROGRAMS = $(cibin_programs)
+else
+# Try to cheat automake into NOT building these programs on simple "make check"
+cibin_PROGRAMS =
+override cibin_programs =
 endif
 
 # These may be built explicitly, so should be removable in any case
-CLEANFILES += $(cibin_programs)
+CLEANFILES += $(cibin_programs_list)
 
 ### Verification that bios_web.so is in fact usable on binary level
 ### Note that this creates no retainable output file
@@ -1707,7 +1712,7 @@ all-local: $(abs_top_builddir)/src/include/git_details_override.c \
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_programs)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_programs_list)
 
 # Note: variable cibin_PROGRAMS may be empty if not enabled via configure
 #   The variable cibin_programs holds the actual list of CI programs instead
@@ -1716,7 +1721,7 @@ cibin_PROGRAMS: $(cibin_PROGRAMS)
 else
 cibin_PROGRAMS:
 endif
-cibin_programs: $(cibin_programs)
+cibin_programs: $(cibin_programs_list)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
