@@ -1703,7 +1703,7 @@ clean-man:
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
             libbiosapi.la bios_web.la $(client_PROGRAMS) \
-            all-docs sdk sdk-link-test web-link-test
+            all-docs sdk
 
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
@@ -1712,7 +1712,8 @@ all-buildproducts: all-local all sdk-tests web-test-deps \
 
 # Note: variable cibin_PROGRAMS may be empty if not enabled via configure
 #   The variable cibin_programs holds the actual list of CI programs instead
-all-ci-bin-programs: $(cibin_PROGRAMS)
+cibin_PROGRAMS: $(cibin_PROGRAMS)
+cibin_programs: $(cibin_programs)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
