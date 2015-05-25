@@ -180,13 +180,13 @@ int8_t access_auth_level;
           interesting_basenames = "mysqld|upsd|saslauthd|tntnet";
 
           // Add the $BIOS daemon names
-          interesting_basenames += "|db-ng|agent-cm";
+          interesting_basenames += "|agent-dbstore|agent-cm";
           interesting_basenames += "|netmon|driver-nmap|agent-nut";
           interesting_basenames += "|agent-alert|agent-alert-smtp";
           interesting_basenames += "|agent-inventory|server-agent";
 #ifdef DEBUG
           // Add libtoolized $BIOS daemon names for dev-testing
-          interesting_basenames += "|lt-db-ng|lt-agent-cm";
+          interesting_basenames += "|lt-agent-dbstore|lt-agent-cm";
           interesting_basenames += "|lt-netmon|lt-driver-nmap|lt-agent-nut";
           interesting_basenames += "|lt-agent-alert|lt-agent-alert-smtp";
           interesting_basenames += "|lt-agent-inventory|lt-server-agent";
