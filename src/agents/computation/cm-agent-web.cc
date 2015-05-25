@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
 
-#include "measurement.h"
+#include "db/measurements.h"
 #include "cm-agent-utils.h"
 #include "cm-agent-web.h"
 #include "cleanup.h"
@@ -66,92 +66,38 @@ process_web_average
         ymsg_set_errmsg (*message_out, "Internal error. Please check logs.");
         return 0;       
     }
-    ////////////////////////////////////
-    // Prepare measurements read request
-    _scoped_char *send_subject = NULL;
-    // When user says, e.g.: "I want 8h averages starting from 23:15:.... " we need to request sampled data from an earlier period
-    // in order to compute the first 8h average. This first average belongs to 24:00:00 and is computed from <16:00, 24:00).
-    // Additional AGENT_NUT_REPEAT_INTERVAL_SEC seconds are deducted to complete possible leading values `missing`.
-    start_ts = average_extend_left_margin (start_ts, step); // shared/utils.c 
-    // we are requesting sampled data from db, therefore no topic construction (i.e. <source>.<type>_<step>) is needed.
+
+    // TODO: future step in progress, now commented
+    /*    
+    // First, try to request the averages
+    std::map<int64_t, double> averages;
+    rv = persist::get_measurements_sampled (element_id, source, start_ts, end_ts, averages, unit);
+    assert (rv == 0); // TODO: check return value
+    */
+
+    // extend the requested interval
+    start_ts = average_extend_left_margin (start_ts, step); // shared/utils.h 
     end_ts +=  AGENT_NUT_REPEAT_INTERVAL_SEC;
-    _scoped_ymsg_t *db_msg_send = bios_db_measurements_read_request_encode (start_ts, end_ts, element_id, source, &send_subject);
-    assert (db_msg_send);  
 
-    // TODO: remove when done testing
-    std::string msg_print;
-    ymsg_format (db_msg_send, msg_print);
-    log_debug ("Message for persist::get_measurements ()\n%s", msg_print.c_str ()); 
 
-    //////////////////////////////////
-    // Call persistence layer directly       
-    // TODO: as soon as we have a directly callable db low level api remove all of the messages
-    //       but the two from `process_web_average` arguments
-    _scoped_ymsg_t *db_msg_reply = ymsg_new (YMSG_REPLY);
-    assert (db_msg_reply);
-    _scoped_char *reply_subject = NULL;
-    std::string mod_send_subject (send_subject);
-    mod_send_subject.append ("<>");
-    persist::get_measurements (db_msg_reply, &reply_subject, db_msg_send, send_subject);
-    FREE0 (send_subject);
-    FREE0 (reply_subject);
-    ymsg_destroy (&db_msg_send);
-
-    //////////////////////////////////////////////////
-    // Extract payload from persistence layer response
-
-    // TODO: Depending on how we rewrite persist::get_measurements
-    //       message status error might be a meaningfull response;
-    //       we might want to return the message carried
-    if (!ymsg_is_ok (db_msg_reply)) {
-        log_warning ("Message status = error.");
-        ymsg_set_status (*message_out, false);
-        ymsg_set_errmsg (*message_out, "Internal error. Please check logs.");
-        return 0;
-    }
-
-    _scoped_char *json_from_db = NULL;
-    rv = bios_db_measurements_read_reply_extract (db_msg_reply, &json_from_db);
-    if (rv != 0 || !json_from_db || strlen (json_from_db) == 0) {
-        log_error ("bios_db_measurements_read_reply_extract () failed or json empty or NULL.");
-        ymsg_set_status (*message_out, false);
-        ymsg_set_errmsg (*message_out, "Internal error. Please check logs.");
-        return 0;       
-    }
-    ymsg_destroy (&db_msg_reply);   
-    log_debug ("bios_db_measurements_read_reply_extract successfull.");
-    printf ("json:\n%s\n", json_from_db); // TODO: remove when done testing
-
-    //////////////////////////////////////////////
-    // Do some basic pre-processing & value checks
-    std::string source_db, unit_db;
-    int64_t start_ts_db = -1, end_ts_db = -1;
-    uint64_t element_id_db;
+    std::string unit;
     std::map <int64_t, double> samples;
-    // process the received json into a std::map
-    rv = process_db_measurement_json_to_map (json_from_db, samples, start_ts_db, end_ts_db, element_id_db, source_db, unit_db);
-    FREE0 (json_from_db);
-    if (rv != 0) {
-        log_error ("process_db_measurement_json_to_map() failed.");
-        ymsg_set_status (*message_out, false);
-        ymsg_set_errmsg (*message_out, "Internal error. Please check logs.");
-        return 0;
+    rv = persist::get_measurements_sampled (element_id, source, start_ts, end_ts, samples, unit);
+    assert (rv == 0);
+    // TODO: check return value
+    // TODO: remove when done testing
+    printf ("samples directly from db:\n");
+    for (const auto &p : samples) {
+        std::cout << p.first << " => " << p.second << '\n';
     }
 
-    // sanity check
-    if ((element_id != element_id_db) || (end_ts != end_ts_db)) {
-        log_error ("Values returned from persistence DO NOT match the requested.");
-        ymsg_set_status (*message_out, false);
-        ymsg_set_errmsg (*message_out, "Internal error. Please check logs."); 
-        return 0;
-    }
-    //////////////////////
     try {
         log_debug ("samples map size before post-calculation: %ld\n", samples.size ());
         log_debug ("process_db_measurement_solve_left_margin");
-        process_db_measurement_solve_left_margin (samples, start_ts_db);
+        process_db_measurement_solve_left_margin (samples, start_ts);
         log_debug ("process_db_measurement_solve_left_margin finished");
         // TODO: remove when done testing
+        printf ("samples after solving left margin:\n");
         for (const auto &p : samples) {
             std::cout << p.first << " => " << p.second << '\n';
         }
@@ -162,9 +108,9 @@ process_web_average
 
         std::string data_str;
         int comma_counter = 0;
-// TODO: remove when done testing
-        printf ("Starting big cycle. first_ts: %ld\tsecond_ts: %ld\tend_ts:%ld\n", first_ts, second_ts, end_ts_db);
-        while (second_ts <= end_ts_db) {
+        // TODO: remove when done testing
+        printf ("Starting big cycle. first_ts: %ld\tsecond_ts: %ld\tend_ts:%ld\n", first_ts, second_ts, end_ts);
+        while (second_ts <= end_ts) {
 
             std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
             printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
@@ -186,18 +132,17 @@ process_web_average
             second_ts += average_step_seconds (step);
         }
 
-        // TODO
         std::string json_out(BIOS_WEB_AVERAGE_REPLY_JSON_TMPL);           
-        json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit_db);
+        json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);
         json_out.replace (json_out.find ("##SOURCE##"), strlen ("##SOURCE##"), source);
         json_out.replace (json_out.find ("##STEP##"), strlen ("##STEP##"), step);
         json_out.replace (json_out.find ("##TYPE##"), strlen ("##TYPE##"), type);
-        json_out.replace (json_out.find ("##ELEMENT_ID##"), strlen ("##ELEMENT_ID##"), std::to_string (element_id_db));
+        json_out.replace (json_out.find ("##ELEMENT_ID##"), strlen ("##ELEMENT_ID##"), std::to_string (element_id));
         json_out.replace (json_out.find ("##START_TS##"), strlen ("##START_TS##"), std::to_string (start_ts));
         json_out.replace (json_out.find ("##END_TS##"), strlen ("##END_TS##"), std::to_string (end_ts));
                       
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
-        log_debug ("json:\n%s", json_out.c_str ());
+        log_debug ("json that goes to output:\n%s", json_out.c_str ());
 
         ymsg_set_status (*message_out, true);
         zchunk_t *chunk = zchunk_new (json_out.c_str (), json_out.size ());
