@@ -343,8 +343,8 @@ libpriv_db_la_LIBADD =	libbiosapi.la \
 noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 
 libpriv_db_measurements_la_SOURCES = \
-			src/db/measurements/measurements.cc \
-			src/db/measurements/measurements.h \
+			src/db/measurements/measurement.cc \
+			src/db/measurements/measurement.h \
 			src/db/measurements.h \
 			tools/dbpath.h \ 
 			tools/dbpath.cc
