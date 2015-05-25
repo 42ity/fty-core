@@ -199,5 +199,5 @@ asset_manager asset_mgr;
 </%cpp>
     ]
 %   }
-
+}
 % }
