@@ -44,11 +44,17 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
 
 ### Section: actual steps being performed
 function cleanup {
+    # Capture the exit code first, if any was set by an exit() or "set -e".
+    # Prefer to use the program-defined error code if any was set, though.
+    TRAP_RESULT=$?
+
     set +e
     killall malamute
     killall dshell lt-dshell
     killall -KILL netmon lt-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
+
+    exit $TRAP_RESULT
 }
 
 if [ -f "$LOCKFILE" ]; then
@@ -57,7 +63,7 @@ if [ -f "$LOCKFILE" ]; then
 fi
 
 echo $$ > "$LOCKFILE"
-trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+trap "cleanup" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 
 ### Section: setting necessary variables
@@ -65,6 +71,14 @@ DEBUG=
 if [ x"$1" = "x-d" ]; then
     DEBUG=1
 fi
+
+if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
+    logmsg_warn "Did not detect ${BUILDSUBDIR}/config.status, so will try to configure the project first, now..."
+    ./autogen.sh --nodistclean --configure-flags \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        ${AUTOGEN_ACTION_CONFIG} || exit
+fi
+./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 netmon dshell || exit
 
 mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
 dsh_file=$(mktemp -p "$BUILDSUBDIR/tests/CI/")

@@ -22,7 +22,7 @@
 
 install_packages() {
     # if debian
-    apt-get update
+    apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
     apt-get -f -y --force-yes --fix-missing install
     apt-get -f -y --force-yes install "$@"
 }
