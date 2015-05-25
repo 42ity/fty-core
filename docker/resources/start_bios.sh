@@ -42,7 +42,7 @@ echo "starting Broker .."
 malamute /etc/malamute/malamute.cfg &
 
 echo "starting BIOS .."
-/usr/local/libexec/bios/db-ng &
+/usr/local/libexec/bios/agent-dbstore &
 /usr/local/libexec/bios/agent-inventory &
 /usr/local/libexec/bios/agent-alert &
 /usr/local/libexec/bios/agent-cm &

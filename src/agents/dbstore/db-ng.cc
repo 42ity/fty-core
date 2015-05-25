@@ -19,7 +19,7 @@ int main (int argc, char *argv []) {
     
     // Basic settings
     if (argc > 3) {
-        printf ("syntax: db-ng [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
+        printf ("syntax: agent-dbstore [ <endpoint> | <endpoint> <mysql:db=bios;user=bios;password=test> ]\n");
         return 1;
     }
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
@@ -30,11 +30,11 @@ int main (int argc, char *argv []) {
     // Create a client
     mlm_client_t *client = mlm_client_new();
     if(!client) {
-        log_error ("db-ng: error mlm_client_new");
+        log_error ("agent-dbstore: error mlm_client_new");
         return 1;
     }
     if(mlm_client_connect(client, addr, 1000, BIOS_AGENT_NAME_DB_MEASUREMENT) != 0) {
-        log_error ("db-ng: server not reachable at '%s'", addr);
+        log_error ("agent-dbstore: server not reachable at '%s'", addr);
         return 1;
     }
 
