@@ -1234,7 +1234,7 @@ autopathedit = sed \
 
 # Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
-                        bios-db.service bios-server-agent.service \
+                        bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service
