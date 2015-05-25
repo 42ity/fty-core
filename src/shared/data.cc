@@ -342,11 +342,11 @@ db_reply <db_web_element_t>
     } 
 }
 
-db_reply <std::vector <db_web_short_element_t> >
+db_reply <std::map <uint32_t, std::string> >
     get_items1
         (const std::string &typeName)
 {
-    db_reply <db_web_short_element_t> ret;
+    db_reply <std::map <uint32_t, std::string> > ret;
     
     byte type_id = asset_manager::type_to_byte(typeName);
     if ( type_id == (byte)asset_type::UNKNOWN ) {
@@ -361,7 +361,7 @@ db_reply <std::vector <db_web_short_element_t> >
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         log_debug ("connection was successful");
-        auto ret = persist::select_short_elements(conn, type_id);
+        ret = persist::select_short_elements(conn, type_id);
         LOG_END;
         return ret;
     }
