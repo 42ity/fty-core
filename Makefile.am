@@ -340,6 +340,21 @@ libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
 						libpriv-csv.la
 
+noinst_LTLIBRARIES += 		libpriv-db-measurements.la
+
+libpriv_db_measurements_la_SOURCES = \
+			src/db/measurements/measurements.cc \
+			src/db/measurements/measurements.h \
+			src/db/measurements.h \
+			tools/dbpath.h \ 
+			tools/dbpath.cc
+
+libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools
+
+
 #####
 noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
@@ -890,15 +905,15 @@ server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_SCRIPTS =	tools/db-init
 
-client_PROGRAMS +=	db-ng
+client_PROGRAMS +=	agent-dbstore
 
-db_ng_SOURCES =		src/agents/dbstore/db-ng.cc \
+agent_dbstore_SOURCES =		src/agents/dbstore/db-ng.cc \
 			tools/dbpath.h
 
-db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
+agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr
 
-db_ng_LDADD = \
+agent_dbstore_LDADD = \
 			libpriv-db.la \
 			libpriv-db-alerts.la \
 			libpriv-utils-ymsg.la \
@@ -909,7 +924,7 @@ db_ng_LDADD = \
 			libpriv-defs.la
 
 
-db_ng_CPPFLAGS =	$(AM_CPPFLAGS) \
+agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/src/persist \
@@ -1021,7 +1036,6 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-# WIP (KHR)
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
@@ -1035,12 +1049,16 @@ agent_cm_LDADD = \
             libpriv-db.la \
 			libpriv-log.la \
 			libbiosapi.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
 
 client_PROGRAMS +=	agent-tpower
 
@@ -1234,7 +1252,7 @@ autopathedit = sed \
 
 # Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
-                        bios-db.service bios-server-agent.service \
+                        bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service
