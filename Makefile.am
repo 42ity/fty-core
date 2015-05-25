@@ -340,6 +340,21 @@ libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
 						libpriv-csv.la
 
+noinst_LTLIBRARIES += 		libpriv-db-measurements.la
+
+libpriv_db_measurements_la_SOURCES = \
+			src/db/measurements/measurements.cc \
+			src/db/measurements/measurements.h \
+			src/db/measurements.h \
+			tools/dbpath.h \ 
+			tools/dbpath.cc
+
+libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools
+
+
 #####
 noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
@@ -1021,7 +1036,6 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-# WIP (KHR)
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
@@ -1035,12 +1049,16 @@ agent_cm_LDADD = \
             libpriv-db.la \
 			libpriv-log.la \
 			libbiosapi.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
 
 client_PROGRAMS +=	agent-tpower
 
