@@ -53,13 +53,19 @@ RESULT=0
 FAILED=""
 
 trap_exit() {
+    # Capture the exit code first, if any was set by an exit() or "set -e".
+    # Prefer to use the program-defined error code if any was set, though.
+    TRAP_RESULT=$?
+    [ "$RESULT" -gt 0 ] && TRAP_RESULT="$RESULT"
+
     if [ -n "$FAILED" ]; then
         logmsg_error "The following tests have failed:"
         for F in $FAILED; do echo " * $F" >&2; done
+        [ "$TRAP_RESULT" = 0 ] || TRAP_RESULT=1
     fi
 
     cd -
-    exit $RESULT
+    exit $TRAP_RESULT
 }
 
 trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM

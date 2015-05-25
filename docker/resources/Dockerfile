@@ -3,7 +3,7 @@ MAINTAINER gguillaume "geraldguillaume@eaton.com"
 RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
 ENV http_proxy http://proxy.eur.etn.com:8080 
-RUN apt-get update
+RUN apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/* && apt-get update; }
 #RUN apt-get install -y apt-utils
 RUN apt-get install -y --force-yes nut-server nut-client nut 
 RUN apt-get install -y --force-yes tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 
