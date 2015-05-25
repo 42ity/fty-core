@@ -102,7 +102,7 @@ test-web
 test-libbiosapiut
 test-db-asset-crud
 agent-inventory
-db-ng
+agent-dbstore
 agent-nut
 agent-alert
 agent-alert-smtp
@@ -152,8 +152,8 @@ bios-agent-nut.service
 bios-driver-netmon.service
 !tools/bios-driver-nmap.service.in
 bios-driver-nmap.service
-!tools/bios-db.service.in
-bios-db.service
+!tools/bios-agent-dbstore.service.in
+bios-agent-dbstore.service
 !tools/bios-server-agent.service.in
 bios-server-agent.service
 !tools/bios-agent-tpower.service.in
