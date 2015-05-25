@@ -36,7 +36,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
 
-#include "measurements.h"
+#include "db/measurements.h"
 #include "cm-agent-utils.h"
 #include "cm-agent-web.h"
 #include "cleanup.h"
