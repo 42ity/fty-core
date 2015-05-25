@@ -68,11 +68,9 @@ asset_manager asset_mgr;
     , "business_critical": "yes"
 %   }
     , "priority": "P<$$ tmp.item.basic.priority $>"
-
-
 <%cpp>
     // if element is located, then show the location
-    if ( tmp.item.basic.parent_type_id != 0 )
+    if ( tmp.item.basic.parent_id != 0 )
     {
 </%cpp>
     , "location_uri":"<$$ "/api/v1/asset/" +

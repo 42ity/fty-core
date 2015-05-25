@@ -58,7 +58,7 @@ db_reply <db_web_basic_element_t>
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
             "   v.subtype_id, v.subtype_name, v.id_parent,"
-            "   v.business_crit, v.status, v.priority"
+            "   v.id_parent_type, v.business_crit, v.status, v.priority"
             " FROM"
             "   v_web_element v"
             " WHERE :id = v.id"
@@ -82,11 +82,13 @@ db_reply <db_web_basic_element_t>
         log_debug ("subtype_name = '%s'", ret.item.subtype_name.c_str());
         row[6].get(ret.item.parent_id);
         log_debug ("parent_id = %" PRIi32, ret.item.parent_id);
-        row[7].get(ret.item.bc);
+        row[7].get(ret.item.parent_type_id);
+        log_debug ("parent_type_id = %" PRIi32, ret.item.parent_type_id);
+        row[8].get(ret.item.bc);
         log_debug ("bc = %" PRIi16, ret.item.bc);
-        row[8].get(ret.item.status);
+        row[9].get(ret.item.status);
         log_debug ("status = '%s'", ret.item.status.c_str());
-        row[9].get(ret.item.priority);
+        row[10].get(ret.item.priority);
         log_debug ("priority = %" PRIi16, ret.item.priority);
 
         ret.status = 1;
