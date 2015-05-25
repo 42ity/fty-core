@@ -26,7 +26,7 @@
 # ***** PREREQUISITES *****
     # ***   project is built ***
     # ***   script is ran as root ***
-    # ***   BIOS processes (malamut, db-ng, nut, netmon) are running on SUT ***
+    # ***   BIOS processes (malamut, agent-dbstore, nut, netmon) are running on SUT ***
 
 # TODO (nice to have, if there is nothing to do):
 # - grep second iface and do a couple add/del on it as well (lo is special)
@@ -145,9 +145,9 @@ if [ -n "$DEBUG" ]; then
 fi
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-db bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
     # ***  start dshell on SUT ***
