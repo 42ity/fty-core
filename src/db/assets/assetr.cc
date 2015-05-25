@@ -194,7 +194,7 @@ db_reply <std::vector <db_tmp_link_t>>
             "   v.id_asset_element_dest = :iddevice AND"
             "   v.id_asset_link_type = :idlinktype"
         ); 
-        
+
         tntdb::Result result = st_pow.set("iddevice", element_id).
                                       set("idlinktype", link_type_id).
                                       select();
@@ -228,7 +228,7 @@ db_reply <std::vector <db_tmp_link_t>>
 
 db_reply <std::vector <a_elmnt_id_t> >
     select_asset_element_groups
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t element_id)
 {
     LOG_START;
@@ -247,11 +247,11 @@ db_reply <std::vector <a_elmnt_id_t> >
             "   v_bios_asset_group_relation v"
             " WHERE v.id_asset_element = :idelement"
         );
-        
-        // TODO set 
+
+        // TODO set
         tntdb::Result result = st_gr.set("idelement", element_id).
                                      select();
-        
+
         log_debug("[v_bios_asset_group_relation]: were selected %" PRIu32 " rows", result.size());
         // Go through the selected groups
         for ( auto &row: result )
@@ -260,6 +260,66 @@ db_reply <std::vector <a_elmnt_id_t> >
             a_elmnt_id_t group_id = 0;
             row[0].get(group_id);
             ret.item.push_back(group_id);
+        }
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+
+db_reply <std::map <uint32_t, std::string> >
+    select_short_elements
+        (tntdb::Connection &conn,
+         a_elmnt_tp_id_t type_id)
+{
+    LOG_START;
+    log_debug ("type_id = %" PRIi16, type_id);
+
+    std::map <uint32_t, std::string> item{};
+    db_reply <std::map <uint32_t, std::string> > ret = db_reply_new(item);
+
+    try{
+        // Can return more than one row.
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.name, v.id"
+            " FROM"
+            "   v_bios_asset_element v"
+            " WHERE v.id_type = :typeid"
+        );
+
+        tntdb::Result result = st.set("typeid", type_id).
+                                  select();
+
+        // Go through the selected elements
+        for ( auto &row: result )
+        {
+            std::string name="";
+            row[0].get(name);
+            uint32_t id = 0;
+            row[1].get(id);
+
+            ret.item.insert(std::pair<uint32_t, std::string>(id, name)); 
+        }
+
+        if ( ret.item.size() == 0 )  // elements were not found
+        {
+            ret.status        = 0;
+            ret.errtype       = DB_ERR;
+            ret.errsubtype    = DB_ERROR_INTERNAL;
+            ret.msg           = "elements were not found";
+            log_warning (ret.msg);
+            return ret;
         }
         ret.status = 1;
         LOG_END;
