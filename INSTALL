@@ -191,6 +191,15 @@ before starting any installations or upgrades:
 :; apt-get update
 ----
 
+NOTE: with a bleeding-edge distribution used in our case, formats can
+change so once in a year a fallback trick may be required to get `apt`
+to actually work (the error in our particular case was that upstream
+repositories changed compressed metadata file extensions and this
+baffled old cached metadata updates):
+----
+:; apt-get update || { rm -rf /var/lib/apt/lists/*; apt-get update; }
+----
+
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
 

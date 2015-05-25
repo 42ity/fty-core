@@ -43,6 +43,12 @@ DISTCLEANDIRS =
 clientdir = ${pkglibexecdir}
 client_PROGRAMS =
 
+# test programs executed by CI scripts
+# lower-case var with actual list (so targets can be built by explicit request)
+# upper-case var picked up by autotools, populated based on configure settings;
+#   its relevant "cibindir" is conditionally defined below
+cibin_programs =
+
 TESTS =
 
 # Initialize some more variables
@@ -515,150 +521,6 @@ test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 
 test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
 
-bin_PROGRAMS += 	test-db
-
-test_db_SOURCES = 	tests/persist/test-nethistory.cc
-
-test_db_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-test-run.la
-
-test_db_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
-
-bin_PROGRAMS += 	test-loadcsv
-
-test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
-
-test_loadcsv_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-proto.la \
-			libpriv-test-run.la
-
-test_loadcsv_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
-
-bin_PROGRAMS += 	test-db2
-
-test_db2_SOURCES = \
-			tests/persist/test-monitor.cc \
-			tests/persist/test-monitor-clientinfo.cc \
-			tests/persist/test-measurement.cc \
-			tests/persist/test-realdatamonitor.cc
-
-test_db2_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-db-alerts.la \
-			libpriv-cidr.la \
-			libpriv-proto.la \
-			libpriv-utils.la \
-			libpriv-defs.la \
-			libpriv-test-run.la \
-			libpriv-utils-ymsg.la
-
-
-test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-bin_PROGRAMS += 	test-dbtopology
-
-test_dbtopology_SOURCES = \
-			tests/persist/test-topology.cc \
-			tests/persist/test-topology-power-to.cc \
-			tests/persist/test-topology-power-from.cc \
-			tests/persist/test-topology-power-datacenter.cc \
-			tests/persist/test-topology-power-group.cc \
-			tests/persist/test-topology-location-from.cc \
-			tests/persist/test-topology-location-to.cc
-
-
-test_dbtopology_LDADD = \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
-
-
-test_dbtopology_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_dbtopology_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-bin_PROGRAMS += 	test-db-asset-crud
-
-test_db_asset_crud_SOURCES = \
-			tests/persist/test-asset-crud.cc
-
-
-test_db_asset_crud_LDADD = \
-			libpriv-db.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
-
-
-test_db_asset_crud_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_asset_crud_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-bin_PROGRAMS += 	test-db-alert
-
-test_db_alert_SOURCES = \
-			tests/persist/test-alert.cc
-
-
-test_db_alert_LDADD = \
-			libpriv-db.la \
-			libpriv-db-alerts.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
-
-
-test_db_alert_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/src/ \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_alert_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
 check_PROGRAMS += 	test-agents
 
 test_agents_SOURCES = \
@@ -707,83 +569,6 @@ test_computation_CPPFLAGS = \
 test_computation_LDFLAGS = \
 			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
 
-
-#### total power tests
-bin_PROGRAMS += 	test-totalpower
-
-test_totalpower_SOURCES = \
-			tests/persist/test-rack-power.cc \
-			tests/persist/test-dc-power.cc 
-
-
-test_totalpower_LDADD = \
-			libpriv-db.la \
-			libpriv-utils.la \
-			libpriv-proto.la \
-			libpriv-test-run.la \
-			libpriv-log.la
-
-
-test_totalpower_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_totalpower_LDFLAGS = \
-			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
-
-
-###
-bin_PROGRAMS += 	test-database
-
-test_database_SOURCES = tests/persist/test-database.cc \
-			tools/dbpath.h
-
-test_database_LDADD = 	libpriv-db.la \
-			libpriv-proto.la \
-			libpriv-db-alerts.la \
-			libpriv-cidr.la \
-			libpriv-test-run.la \
-			libpriv-log.la \
-			libpriv-utils-ymsg.la
-
-test_database_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/tools
-
-test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
-
-### Verification that bios_web.so is in fact usable on binary level
-### Note that this creates no retainable output file
-web-link-test: bios_web.la
-			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
-			$(abs_top_srcdir)/tests/web-linking-test.cpp \
-			${CXXTOOLS_LIBS} -ltntnet \
-			$(abs_top_builddir)/.libs/bios_web.so && \
-			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
-			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
-
-EXTRA_DIST +=		tests/web-linking-test.cpp
-
-###
-bin_PROGRAMS +=		test-web
-
-test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
-			src/web/src/location_helpers.cc
-
-test_web_LDADD = 	libpriv-test-run.la \
-			libpriv-log.la
-
-test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/web/include
-
-#test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
-
 ### The unit-tester for some routines from libbiosapi
 check_PROGRAMS +=		test-libbiosapiut
 test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
@@ -816,15 +601,255 @@ EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 ###
 
-bin_PROGRAMS += bios-email
+
+#----------------------------------------------------------------------
+#                        CI tests
+#----------------------------------------------------------------------
+
+cibin_programs += 	test-db
+
+test_db_SOURCES = 	tests/persist/test-nethistory.cc
+
+test_db_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la
+
+test_db_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
+
+
+cibin_programs += 	test-loadcsv
+
+test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
+
+test_loadcsv_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-test-run.la
+
+test_loadcsv_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
+
+
+cibin_programs += 	test-db2
+
+test_db2_SOURCES = \
+			tests/persist/test-monitor.cc \
+			tests/persist/test-monitor-clientinfo.cc \
+			tests/persist/test-measurement.cc \
+			tests/persist/test-realdatamonitor.cc
+
+test_db2_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
+
+test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+cibin_programs += 	test-dbtopology
+
+test_dbtopology_SOURCES = \
+			tests/persist/test-topology.cc \
+			tests/persist/test-topology-power-to.cc \
+			tests/persist/test-topology-power-from.cc \
+			tests/persist/test-topology-power-datacenter.cc \
+			tests/persist/test-topology-power-group.cc \
+			tests/persist/test-topology-location-from.cc \
+			tests/persist/test-topology-location-to.cc
+
+test_dbtopology_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_dbtopology_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+cibin_programs += 	test-db-asset-crud
+
+test_db_asset_crud_SOURCES = \
+			tests/persist/test-asset-crud.cc
+
+test_db_asset_crud_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_db_asset_crud_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_asset_crud_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+cibin_programs += 	test-db-alert
+
+test_db_alert_SOURCES = \
+			tests/persist/test-alert.cc
+
+test_db_alert_LDADD = \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_db_alert_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_alert_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+#### total power tests
+cibin_programs += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc \
+			tests/persist/test-dc-power.cc 
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-utils.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+###
+cibin_programs += 	test-database
+
+test_database_SOURCES = tests/persist/test-database.cc \
+			tools/dbpath.h
+
+test_database_LDADD = 	libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-db-alerts.la \
+			libpriv-cidr.la \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils-ymsg.la
+
+test_database_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/tools
+
+test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
+
+###
+cibin_programs +=	test-web
+
+test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
+			src/web/src/location_helpers.cc
+
+test_web_LDADD = 	libpriv-test-run.la \
+			libpriv-log.la
+
+test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/web/include
+
+#test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+
+
+cibin_programs +=	bios-email
+
 bios_email_SOURCES = \
 			src/shared/email.h \
 			tests/shared/bios-email.cc
+
 bios_email_LDADD = \
 			libpriv-log.la \
 			libpriv-email.la \
 			libpriv-subprocess.la 
+
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
+
+# Do we build and install CI programs by default? (see configure)
+cibin_programs_list = $(cibin_programs)
+cibindir = ${pkgbindir}
+if ENABLE_CI_TESTS
+cibin_PROGRAMS = $(cibin_programs)
+else
+# Try to cheat automake into NOT building these programs on simple "make check"
+cibin_PROGRAMS =
+override cibin_programs =
+endif
+
+# These may be built explicitly, so should be removable in any case
+CLEANFILES += $(cibin_programs_list)
+
+### Verification that bios_web.so is in fact usable on binary level
+### Note that this creates no retainable output file
+web-link-test: bios_web.la
+			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
+			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			${CXXTOOLS_LIBS} -ltntnet \
+			$(abs_top_builddir)/.libs/bios_web.so && \
+			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
+			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
+
+EXTRA_DIST +=		tests/web-linking-test.cpp
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
@@ -858,7 +883,7 @@ server_agent_SOURCES =	src/agents/server-agent/server-agent.cc
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 server_agent_LDADD = \
-				 libpriv-proto.la
+			 libpriv-proto.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
@@ -874,12 +899,12 @@ db_ng_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 			${LIBMLM_LIBS} -ltntdb -lcidr
 
 db_ng_LDADD = \
-            libpriv-db.la \
-            libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
-            libpriv-proto.la \
+			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-defs.la
 
@@ -1682,12 +1707,21 @@ clean-man:
 # try to ensure that certain files are built early in the process
 all-local: $(abs_top_builddir)/src/include/git_details_override.c \
             libbiosapi.la bios_web.la $(client_PROGRAMS) \
-            all-docs sdk sdk-link-test web-link-test
+            all-docs sdk
 
 # Try to build everything buildable, e.g. for further warning counters
 all-buildproducts: all-local all sdk-tests web-test-deps \
             $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
-            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS)
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_programs_list)
+
+# Note: variable cibin_PROGRAMS may be empty if not enabled via configure
+#   The variable cibin_programs holds the actual list of CI programs instead
+if ENABLE_CI_TESTS
+cibin_PROGRAMS: $(cibin_PROGRAMS)
+else
+cibin_PROGRAMS:
+endif
+cibin_programs: $(cibin_programs_list)
 
 #----------------------------------------------------------------------
 #                        hook for make check custom verifications
