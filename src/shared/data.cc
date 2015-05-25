@@ -343,7 +343,7 @@ db_reply <db_web_element_t>
 }
 
 db_reply <std::map <uint32_t, std::string> >
-    get_items1
+   asset_manager::get_items1
         (const std::string &typeName)
 {
     db_reply <std::map <uint32_t, std::string> > ret;
