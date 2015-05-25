@@ -45,7 +45,7 @@ RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
 ADD ./usr/local/share/bios/examples/tntnet.xml.example /etc/tntnet/tntnet.xml
 RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
 ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
-ADD ./usr/local/libexec/bios/db-ng /usr/local/libexec/bios/db-ng
+ADD ./usr/local/libexec/bios/agent-dbstore /usr/local/libexec/bios/agent-dbstore
 ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut

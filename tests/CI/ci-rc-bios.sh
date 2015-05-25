@@ -20,7 +20,7 @@
 # Description: starts or stops the $BIOS daemons installed in $HOME
 
 # Names of daemons to (build and) start up for the test
-DAEMONS="db-ng agent-nut agent-cm agent-alert agent-alert-smtp driver-nmap netmon"
+DAEMONS="agent-dbstore agent-nut agent-cm agent-alert agent-alert-smtp driver-nmap netmon"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
