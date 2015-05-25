@@ -111,7 +111,7 @@ starting eaton/bios ..
 root@8cb594194537:/#
 ----
 
- * To run the full suite of BIOS applications (`db-ng`, `agent-inventory`,
+ * To run the full suite of BIOS applications (`agent-dbstore`, `agent-inventory`,
 `agent-nut` as well as `tntnet`, `nut`, `malamute`, `saslauthd`)
 doing a cold start:
 ----

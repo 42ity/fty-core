@@ -128,26 +128,26 @@ kill_daemons() {
         kill -INT "$MAKEPID"
     fi
     if [ -n "$DBNGPID" -a -d "/proc/$DBNGPID" ]; then
-        logmsg_info "Killing db-ng PID $DBNGPID to exit"
+        logmsg_info "Killing agent-dbstore PID $DBNGPID to exit"
         kill -INT "$DBNGPID"
     fi
 
-    killall -INT tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
-    killall      tntnet db-ng lt-db-ng 2>/dev/null || true; sleep 1
+    killall -INT tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
+    killall      tntnet agent-dbstore lt-agent-dbstore 2>/dev/null || true; sleep 1
 
-    ps -ef | grep -v grep | egrep "tntnet|db-ng" | egrep "^`id -u -n` " && \
+    ps -ef | grep -v grep | egrep "tntnet|agent-dbstore" | egrep "^`id -u -n` " && \
         ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
-        logmsg_error "tntnet and/or db-ng still alive, trying SIGKILL" && \
-        { killall -KILL tntnet db-ng lt-db-ng 2>/dev/null ; exit 1; }
+        logmsg_error "tntnet and/or agent-dbstore still alive, trying SIGKILL" && \
+        { killall -KILL tntnet agent-dbstore lt-agent-dbstore 2>/dev/null ; exit 1; }
 
     return 0
 }
 
 # prepare environment
   # might have some mess
-  killall tntnet lt-db-ng db-ng 2>/dev/null || true
+  killall tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
   sleep 1
-  killall -KILL tntnet lt-db-ng db-ng 2>/dev/null || true
+  killall -KILL tntnet lt-agent-dbstore agent-dbstore 2>/dev/null || true
   sleep 1
   test_web_port && \
     die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free"
@@ -196,15 +196,15 @@ kill_daemons() {
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG} || exit
   fi
-  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps db-ng || exit
+  ./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps agent-dbstore || exit
 
   logmsg_info "Spawning the web-server in the background..."
   ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
   MAKEPID=$!
 
   # TODO: this requirement should later become the REST AGENT
-  logmsg_info "Spawning the db-ng server in the background..."
-  ${BUILDSUBDIR}/db-ng &
+  logmsg_info "Spawning the agent-dbstore server in the background..."
+  ${BUILDSUBDIR}/agent-dbstore &
   DBNGPID=$!
 
   # Ensure that no processes remain dangling when test completes
