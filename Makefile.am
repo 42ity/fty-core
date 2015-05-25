@@ -1055,7 +1055,7 @@ agent_cm_LDADD = \
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
