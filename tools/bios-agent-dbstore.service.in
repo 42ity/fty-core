@@ -6,7 +6,7 @@ Requires=malamute.service mysql.service
 [Service]
 Type=simple
 ExecStartPre=@libexecdir@/bios/db-init
-ExecStart=@libexecdir@/bios/db-ng
+ExecStart=@libexecdir@/bios/agent-dbstore
 
 [Install]
 WantedBy=multi-user.target
