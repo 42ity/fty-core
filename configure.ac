@@ -45,6 +45,16 @@ AM_COND_IF([ENABLE_DEBUG_BUILD],
 AC_DEFINE_UNQUOTED([ENABLE_DEBUG_BUILD],   [$_ENABLE_DEBUG_BUILD],
         [Flag mostly for Makefile: enable various debugging flags (0=no)?])
 
+ci_tests=false
+AC_ARG_ENABLE(ci-tests,
+	[AS_HELP_STRING([--enable-ci-tests],
+		[turn on build of CI test programs along with "all"])],
+	[AS_CASE(["x$enableval"],
+		["xyes"],[ci_tests=true],
+		["xno"],[ci_tests=false],
+		[*],[AC_MSG_ERROR([bad value ${enableval} for --enable-ci-tests])])])
+AM_CONDITIONAL([ENABLE_CI_TESTS], [test "x${ci_tests}" = xtrue])
+
 # Google Thread Sanitizer; see
 #   http://code.google.com/p/thread-sanitizer/wiki
 # Note that TSAN incurs 5x-15x slowdown, so it is off by default
@@ -623,6 +633,7 @@ Summary:
         ecppc:                   ${ECPPC:-none}
 
 	ENABLE_DOCKER_SUPPORT:   ${_ENABLE_DOCKER_SUPPORT}
+	ENABLE_CI_TESTS:         ${ci_tests}
 
         CFLAGS:                  ${my_CFLAGS} ${CFLAGS}
         CXXFLAGS:                ${my_CXXFLAGS} ${CXXFLAGS}
