@@ -17,14 +17,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*!
  \file measurements.h
- \brief Header file for all low level functions for measurement
+ \brief Header file for functions for measurement
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
 #ifndef SRC_DB_MEASUREMENTS_H__
 #define SRC_DB_MEASUREMENTS_H__
 
-#include "measurements/measurements.h"
+#include "measurements/measurement.h"
 
 #endif // SRC_DB_MEASUREMENTS_H__
 
