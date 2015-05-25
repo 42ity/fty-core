@@ -4,6 +4,8 @@
 #include "log.h"
 #include "cleanup.h"
 
+#include "measurement.h"
+
 // Note: The individual sql queries being executed can perhaps be later replaced by measurements_basic operations
 
 namespace persist {

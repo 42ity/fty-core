@@ -16,13 +16,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
- \file measurements.h
+ \file measurement.h
  \brief high level db api for measurements
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
 
-#ifndef SRC_DB_MEASUREMENTS_MEASUREMENTS_H__
-#define SRC_DB_MEASUREMENTS_MEASUREMENTS_H__
+#ifndef SRC_DB_MEASUREMENTS_MEASUREMENT_H__
+#define SRC_DB_MEASUREMENTS_MEASUREMENT_H__
 
 #include <tntdb/connect.h>
 #include <map>
@@ -50,5 +50,5 @@ get_measurements_sampled
 } // namespace persist
 
 
-#endif // SRC_DB_MEASUREMENTS_MEASUREMENTS_H__
+#endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__
 
