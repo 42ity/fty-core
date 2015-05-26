@@ -1,4 +1,4 @@
 {"id":"5","name":"serv1",status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/rack/4","type":"server","groups":[],"powers":[{"src_uri":"/api/v1/asset/device/6"}]}
-{"id":"6","name":"epdu",status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","type":"epdu","groups":["/api/v1/asset/group/1"],"powers":[{"src_uri":"/api/v1/asset/device/7"}]}
-{"id":"7","name":"ups",status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","type":"ups","groups":["/api/v1/asset/group/1"],"powers":[{"src_socket":"1","src_uri":"/api/v1/asset/device/8","dst_socket":"2"}]}
-{"id":"8","name":"main",status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/datacenter/1","type":"main","groups":["/api/v1/asset/group/1"],"powers":[]}
+{"id":"6","name":"epdu","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","type":"epdu","groups":["/api/v1/asset/group/1"],"powers":[{"src_uri":"/api/v1/asset/device/7"}]}
+{"id":"7","name":"ups","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","type":"ups","groups":["/api/v1/asset/group/1"],"powers":[{"src_socket":"1","src_uri":"/api/v1/asset/device/8","dst_socket":"2"}]}
+{"id":"8","name":"main","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/datacenter/1","type":"main","groups":["/api/v1/asset/group/1"],"powers":[]}
