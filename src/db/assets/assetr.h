@@ -58,7 +58,7 @@ struct db_web_element_t{
     db_web_basic_element_t basic;
     std::vector <a_elmnt_id_t> groups;
     std::vector <db_tmp_link_t> powers;
-    std::map <std::string, std::pair<std::string, char> > ext;
+    std::map <std::string, std::pair<std::string, bool> > ext;
 };
 
 namespace persist{
@@ -70,7 +70,7 @@ db_reply <db_web_basic_element_t>
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
-db_reply < std::map <std::string, std::pair<std::string, char> > >
+db_reply < std::map <std::string, std::pair<std::string, bool> > >
     select_ext_attributes
         (tntdb::Connection &conn, 
          a_elmnt_id_t element_id);

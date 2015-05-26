@@ -1,14 +1,8 @@
 <%pre>
 #include <czmq.h>
-#include <cxxtools/split.h>
 
 #include "log.h"
-#include "asset_msg.h"
-#include "common_msg.h"
 #include "data.h"
-#include "assetcrud.h"
-#include "cleanup.h"
-
 
 </%pre>
 <%thread scope="global">
@@ -18,6 +12,7 @@ asset_manager asset_mgr;
 <%cpp>
 {
     // Check URL validity
+    std::string typeNameArg = request.getArg("type");
     std::string id = request.getArg("id");
     if ( id.empty() ) {
 </%cpp>
@@ -52,7 +47,16 @@ asset_manager asset_mgr;
 <%cpp>
                 return HTTP_INTERNAL_SERVER_ERROR;
         }
+    } 
+    if ( !typeNameArg.empty() && 
+         (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
+    {
+</%cpp>
+                { "error":"item_not_found" }
+<%cpp>
+        return HTTP_NOT_FOUND;
     }
+
     // Prepare the reply
 </%cpp>
 {
@@ -76,25 +80,25 @@ asset_manager asset_mgr;
     , "location_uri":"<$$ "/api/v1/asset/" +
                    asset_mgr.byte_to_type(tmp.item.basic.parent_type_id) + "/" +
                    std::to_string (tmp.item.basic.parent_id) $>"
+%   }
+    , "groups": [
 <%cpp>
-    }
     // every element (except groups) can be placed in some group
     if ( !tmp.item.groups.empty() )
     {
-</%cpp>
-    , "groups": [ 
-<%cpp>
         uint32_t group_count = tmp.item.groups.size();
         uint32_t i = 1;
         for ( auto &oneGroup : tmp.item.groups )
         {
 </%cpp>
         "/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
-%          i++;
-%       }      
+<%cpp>
+            i++;
+        }   
+    }
+</%cpp>
     ]
 <%cpp>
-    }
     // Device is special element with more attributes
     if ( tmp.item.basic.type_id == asset_type::DEVICE )
     {
@@ -137,11 +141,11 @@ asset_manager asset_mgr;
 <%cpp>
             tmp.item.ext.erase(it);
         }
-        if ( !tmp.item.powers.empty() )
-        {
 </%cpp>
     , "powers": [
 <%cpp>
+        if ( !tmp.item.powers.empty() )
+        {
             uint32_t power_count = tmp.item.powers.size();
             uint32_t i = 1;
             for ( auto &oneLink : tmp.item.powers )
@@ -164,11 +168,12 @@ asset_manager asset_mgr;
 <%cpp>
                 i++;
             }
+        }
 </%cpp>
     ]
 <%cpp>
-        }
     }
+
     if ( tmp.item.basic.type_id == asset_type::GROUP )
     {
         auto it = tmp.item.ext.find("type");
@@ -190,7 +195,7 @@ asset_manager asset_mgr;
         for ( auto &oneExt : tmp.item.ext )
         {
 </%cpp>
-        {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only":"<$$ oneExt.second.second $>" }<? i != ext_count ? "," ?>
+        {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
 <%cpp>
             i++;
         }
