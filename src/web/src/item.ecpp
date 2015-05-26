@@ -70,25 +70,25 @@ asset_manager asset_mgr;
     , "location_uri":"<$$ "/api/v1/asset/" +
                    asset_mgr.byte_to_type(tmp.item.basic.parent_type_id) + "/" +
                    std::to_string (tmp.item.basic.parent_id) $>"
+%   }
+    , "groups": [
 <%cpp>
-    }
     // every element (except groups) can be placed in some group
     if ( !tmp.item.groups.empty() )
     {
-</%cpp>
-    , "groups": [ 
-<%cpp>
         uint32_t group_count = tmp.item.groups.size();
         uint32_t i = 1;
         for ( auto &oneGroup : tmp.item.groups )
         {
 </%cpp>
         "/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
-%          i++;
-%       }      
+<%cpp>
+            i++;
+        }   
+    }
+</%cpp>
     ]
 <%cpp>
-    }
     // Device is special element with more attributes
     if ( tmp.item.basic.type_id == asset_type::DEVICE )
     {
@@ -131,11 +131,11 @@ asset_manager asset_mgr;
 <%cpp>
             tmp.item.ext.erase(it);
         }
-        if ( !tmp.item.powers.empty() )
-        {
 </%cpp>
     , "powers": [
 <%cpp>
+        if ( !tmp.item.powers.empty() )
+        {
             uint32_t power_count = tmp.item.powers.size();
             uint32_t i = 1;
             for ( auto &oneLink : tmp.item.powers )
@@ -158,11 +158,12 @@ asset_manager asset_mgr;
 <%cpp>
                 i++;
             }
+        }
 </%cpp>
     ]
 <%cpp>
-        }
     }
+
     if ( tmp.item.basic.type_id == asset_type::GROUP )
     {
         auto it = tmp.item.ext.find("type");
