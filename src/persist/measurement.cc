@@ -109,12 +109,12 @@ insert_into_measurement_again:
                 " INSERT INTO"
                 "   t_bios_discovered_device"
                 "     (name, id_device_type)"
-                " SELECT"
+                " SELECT DISTINCT"
                 "   :name,"
                 "   (SELECT T.id_device_type FROM t_bios_device_type T WHERE T.name = 'not_classified')"
                 " FROM"
-                "   t_bios_discovered_device"
-                " WHERE NOT EXISTS ( SELECT 1 FROM t_bios_discovered_device C WHERE C.name = :name ) LIMIT 1"
+                "   ( SELECT * FROM t_bios_discovered_device UNION SELECT 0,NULL,0 ) tbl"
+                " WHERE :name NOT IN (SELECT name FROM t_bios_discovered_device )"
              );
             uint32_t n = st.set("name", device_name).execute();
             log_debug("[t_bios_measurement_topic]: new discovered device '%s' inserted %" PRIu32 " rows ",
