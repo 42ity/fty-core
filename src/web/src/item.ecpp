@@ -12,6 +12,7 @@ asset_manager asset_mgr;
 <%cpp>
 {
     // Check URL validity
+    std::string typeNameArg = request.getArg("type");
     std::string id = request.getArg("id");
     if ( id.empty() ) {
 </%cpp>
@@ -46,7 +47,16 @@ asset_manager asset_mgr;
 <%cpp>
                 return HTTP_INTERNAL_SERVER_ERROR;
         }
+    } 
+    if ( !typeNameArg.empty() && 
+         (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
+    {
+</%cpp>
+                { "error":"item_not_found" }
+<%cpp>
+        return HTTP_NOT_FOUND;
     }
+
     // Prepare the reply
 </%cpp>
 {
