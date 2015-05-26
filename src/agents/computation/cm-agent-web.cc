@@ -84,7 +84,7 @@ process_web_average
     std::map <int64_t, double> samples;
     {
         auto ret = persist::get_measurements_sampled (element_id, source, start_ts, end_ts, samples, unit);
-        assert (ret.rv == 0);
+        assert (ret.rv == 0); //TODO: Work in progress
     }
 
     // TODO: check return value

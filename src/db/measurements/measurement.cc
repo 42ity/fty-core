@@ -10,13 +10,13 @@
 
 namespace persist {
 
-reply
+reply_t
 get_measurements
 (uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp, bool left_interval_closed, bool right_interval_closed,
  std::map <int64_t, double>& measurements, std::string& unit) {
     assert (topic);
     measurements.clear ();
-    reply ret;
+    reply_t ret;
     log_debug ("Interval: %s%" PRId64", %" PRId64"%s Element id: %" PRIu64" Topic: %s",
                left_interval_closed ? "<" : "(", start_timestamp, end_timestamp,
                right_interval_closed ? ">" : ")", element_id, topic);
@@ -95,7 +95,7 @@ get_measurements
     return ret;
 }
 
-reply
+reply_t
 get_measurements_averages
 (uint64_t element_id, const char *topic, const char *step, int64_t start_timestamp, int64_t end_timestamp, std::map <int64_t, double>& measurements, std::string& unit, int64_t& last_timestamp) {
     assert (topic);
@@ -108,15 +108,14 @@ get_measurements_averages
         tntdb::Connection connection = tntdb::connectCached (url);
 
         tntdb::Statement statement = connection.prepareCached (
-        " SELECT UNIX_TIMESTAMP(timestamp) FROM v_bios_measurement "
+        " SELECT MAX(UNIX_TIMESTAMP(timestamp)) FROM v_bios_measurement "
         " WHERE topic_id = ( "
         "   SELECT t.id FROM t_bios_measurement_topic AS t, "
         "   t_bios_monitor_asset_relation AS rel "
         "   WHERE rel.id_asset_element = :id AND "
         "         t.device_id = id_discovered_device AND "
         "         t.topic LIKE :topic "
-        "   ) "
-        " ORDER BY timestamp DESC LIMIT 1 ");
+        "   ) ");
         std::string query_topic;
         query_topic.append (averages_topic).append ("@%");
         tntdb::Result result = statement.set ("id", element_id).set ("topic", query_topic).select ();
@@ -128,18 +127,18 @@ get_measurements_averages
     }
     catch (const std::exception &e) {
         log_error("Exception caught: %s", e.what());
-        reply ret; ret.rv = -1;
+        reply_t ret; ret.rv = -1;
         return ret;
     }
     catch (...) {
         log_error("Unknown exception caught!");
-        reply ret; ret.rv = -1;
+        reply_t ret; ret.rv = -1;
         return ret;    
     }
     return get_measurements (element_id, averages_topic.c_str (), start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
-reply
+reply_t
 get_measurements_sampled
 (uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp, std::map <int64_t, double>& measurements, std::string& unit) {
     assert (topic);
