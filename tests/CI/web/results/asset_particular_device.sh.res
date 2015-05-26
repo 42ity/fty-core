@@ -1,4 +1,4 @@
-{"id":"5","name":"serv1",status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/rack/4","groups":[],"type":"server","powers":[{"src_uri":"/api/v1/asset/device/6"}]}
+{"id":"5","name":"serv1","status:"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/rack/4","groups":[],"type":"server","powers":[{"src_uri":"/api/v1/asset/device/6"}]}
 {"id":"6","name":"epdu","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","groups":["/api/v1/asset/group/1"],"type":"epdu","powers":[{"src_uri":"/api/v1/asset/device/7"}]}
-{"id":"7","name":"ups","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","groups":["/api/v1/asset/group/1"],"type":"ups","powers":[{"src_socket":"1","src_uri":"/api/v1/asset/device/8","dst_socket":"2"}]}
+{"id":"7","name":"ups","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/room/2","groups":["/api/v1/asset/group/1"],"type":"ups","powers":[{"src_uri":"/api/v1/asset/device/8","src_socket":"1","dest_socket":"2"}]}
 {"id":"8","name":"main","status":"nonactive","business_critical":"no","priority":"P5","location_uri":"/api/v1/asset/datacenter/1","groups":["/api/v1/asset/group/1"],"type":"main","powers":[]}
