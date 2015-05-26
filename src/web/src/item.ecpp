@@ -190,7 +190,7 @@ asset_manager asset_mgr;
         for ( auto &oneExt : tmp.item.ext )
         {
 </%cpp>
-        {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only":"<$$ oneExt.second.second $>" }<? i != ext_count ? "," ?>
+        {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
 <%cpp>
             i++;
         }
