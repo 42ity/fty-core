@@ -45,34 +45,6 @@ byte asset_manager::type_to_byte(std::string type) {
     }
     return ret;
 }
-zmsg_t *asset_manager::get_item(std::string type, std::string id) {
-    log_debug("Trying to get element %s of type %s", id.c_str(), type.c_str());
-    byte real_type = asset_manager::type_to_byte(type);
-    if(real_type == (byte)asset_type::UNKNOWN) {
-        return NULL;
-    }
-    uint32_t real_id = atoi(id.c_str());
-    if(real_id == 0) {
-        return NULL;
-    }
-    _scoped_zmsg_t *get_element = asset_msg_encode_get_element(real_id, real_type);
-    _scoped_zmsg_t *ret = persist::process_message(&get_element);
-    zmsg_destroy(&get_element);
-    assert(ret != NULL);
-    if (is_common_msg(ret) ) {
-        return zmsg_dup (ret);          // it can be only COMMON_MSG_FAIL
-    }
-    // Return directly element message which is packed inside return element
-    _scoped_asset_msg_t* msg = asset_msg_decode(&ret);
-    if(msg == NULL) {
-        log_error("Decoding reply from persistence failed!");
-        return NULL;
-    }
-
-    zmsg_t *return_message = asset_msg_get_msg(msg);
-    asset_msg_destroy(&msg);
-    return return_message;
-}
 
 zmsg_t *asset_manager::get_items(std::string type) {
     log_debug("Trying to get elements of type %s", type.c_str());
@@ -358,6 +330,39 @@ db_reply <db_web_element_t>
         }
 
         ret.status = 1;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
+
+db_reply <std::map <uint32_t, std::string> >
+   asset_manager::get_items1
+        (const std::string &typeName)
+{
+    db_reply <std::map <uint32_t, std::string> > ret;
+    
+    byte type_id = asset_manager::type_to_byte(typeName);
+    if ( type_id == (byte)asset_type::UNKNOWN ) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = "Unsupported type of the elemtns";
+        log_error (ret.msg);
+        return ret;
+    }
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        log_debug ("connection was successful");
+        ret = persist::select_short_elements(conn, type_id);
+        LOG_END;
         return ret;
     }
     catch (const std::exception &e) {

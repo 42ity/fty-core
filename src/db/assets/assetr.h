@@ -86,5 +86,9 @@ db_reply <std::vector <a_elmnt_id_t> >
         (tntdb::Connection &conn, 
          a_elmnt_id_t element_id);
 
+db_reply <std::map <uint32_t, std::string> >
+    select_short_elements
+        (tntdb::Connection &conn, 
+         a_elmnt_tp_id_t type_id);
 
 } //namespace end

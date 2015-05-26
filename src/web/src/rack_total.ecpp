@@ -50,7 +50,7 @@ asset_manager asset_mgr;
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
-    std::vector<std::string> racks;
+    std::vector<std::string> racks; // list of ids of racks from argument string
     std::vector<std::string> rackNames;
     std::vector<std::string> requestedParams;
     static std::vector<std::string> validParams = {
@@ -62,31 +62,43 @@ asset_manager asset_mgr;
     };
     cxxtools::split(",", arg1, std::back_inserter(racks));
     // check that racks exists
-for( size_t R = 0; R <racks.size() ; ++R ) {
-    _scoped_zmsg_t * msg = asset_mgr.get_item("rack",racks[R]);
-    if ( is_asset_msg (msg) ) {
-        _scoped_asset_msg_t* element = asset_msg_decode (&msg);
-        if ( asset_msg_id( element ) == ASSET_MSG_ELEMENT ) {
-            rackNames.push_back(asset_msg_name(element));
-        } else {
-</%cpp>
-{ "error":"bad_input", "msg":"invalid rack id"}
-<%cpp>
-            asset_msg_destroy (&element);
-            zmsg_destroy(&msg);
-            return HTTP_BAD_REQUEST;
+    
 
-        }
-        asset_msg_destroy (&element);
-    } else {
+    auto allRacksShort= asset_mgr.get_items1("rack");
+    if ( allRacksShort.status == 0 )
+    {
+        // TODO better error handling by types
 </%cpp>
-{"error":"bad_input", "msg":"invalid rack id"}
+{ "error":"internal error", "msg":"while reading information about racks"}
 <%cpp>
-        zmsg_destroy(&msg);
-        return HTTP_BAD_REQUEST;
+        return HTTP_INTERNAL_SERVER_ERROR;   
     }
-    zmsg_destroy(&msg);
-}
+    for ( size_t i = 0; i < racks.size() ; i++ )
+    {
+        // TODO add better converter
+        uint32_t real_id = atoi(racks[i].c_str());
+        if ( real_id == 0 )
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid rack id <$$ racks[i]$> (can not convert)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        auto it = allRacksShort.item.find(real_id);
+        if ( it != allRacksShort.item.end() )
+        {
+            rackNames.push_back(it->second);
+        }
+        else
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid rack id <$$ racks[i]$> (doesn't exist)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+    
     cxxtools::split(",", arg2, std::back_inserter(requestedParams));
     for(std::string &param: requestedParams) {
         if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
