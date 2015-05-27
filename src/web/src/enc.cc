@@ -3,8 +3,9 @@
 
 #include <enc.h>
 
-std::string file_encoding(const char* path) {
-    magic_t magic_cookie = magic_open(MAGIC_MIME_ENCODING | MAGIC_ERROR | MAGIC_NO_CHECK_COMPRESS | MAGIC_NO_CHECK_TAR);
+// helper function to use libmagic
+static std::string s_magic(const char* path, int flags) {
+    magic_t magic_cookie = magic_open(flags);
     if (! magic_cookie) {
         magic_close(magic_cookie);
         throw std::logic_error("fail to open magic_cookie");
@@ -20,14 +21,21 @@ std::string file_encoding(const char* path) {
     const char* magic = magic_file(magic_cookie, path);
     if (! magic) {
         magic_close(magic_cookie);
-        std::string msg{"fail to get the mime for file "};
-        msg += path;
-        msg += ": ";
-        msg += magic_error(magic_cookie);
+        std::string msg = std::string{"fail to get the mime type for file "} + path + ": " + magic_error(magic_cookie);
         throw std::logic_error(msg.c_str());
     }
 
     std::string ret{magic};
     magic_close(magic_cookie);
     return ret;
+}
+
+std::pair<std::string, std::string> file_type_encoding(const char* path) {
+
+    int flags = MAGIC_ERROR | MAGIC_NO_CHECK_COMPRESS | MAGIC_NO_CHECK_TAR;
+
+    auto file_type = s_magic(path, flags);
+    auto encoding = s_magic(path, MAGIC_MIME_ENCODING | flags);
+
+    return std::make_pair(file_type, encoding);
 }

@@ -81,6 +81,18 @@
       </args>
     </mapping>
 
+    <!-- Asset import -->
+    <mapping>
+      <target>asset_import@bios_web</target>
+      <method>POST</method>
+      <url>^/api/v1/asset/import.*</url>
+    </mapping>
+
+    <!--
+         Asset GET
+         XXX: This needs to be last position as this regexp matches all possible
+              asset API, like /asset/import!!!
+         -->
     <mapping>
       <target>item@bios_web</target>
         <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)?/?(.*)$</url>
@@ -88,13 +100,6 @@
         <id>$2</id>
         <type>$1</type>
       </args>
-    </mapping>
-
-    <!-- Asset import -->
-    <mapping>
-      <target>asset_import@bios_web</target>
-      <method>POST</method>
-      <url>^/api/v1/asset/import.*</url>
     </mapping>
 
     <!-- Current meassurements -->

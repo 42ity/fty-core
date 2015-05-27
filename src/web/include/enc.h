@@ -2,13 +2,15 @@
 #define SRC_WEB_INCLUDE_ENC_H
 
 #include <string>
+#include <utility>
 
 /*
- *  return file encoding
+ *  return file (type, encoding)
  *
  *  \throws std::logic_error if magic cookie can't be loaded,
  *          database can't be loaded or file can't be analyzed
  */
-std::string file_encoding(const char* path);
+std::pair<std::string, std::string>
+file_type_encoding(const char* path);
 
 #endif //SRC_WEB_INCLUDE_ENC_H
