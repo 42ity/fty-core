@@ -62,7 +62,7 @@ int main (int argc, char **argv) {
 
     // TODO: Rewrite the std::function in rules to also return subject when returning message_out; edit fnctions accordingly
     // TODO: _later_ extend this with pattern once we start listening on stream
-    std::map <std::string, std::function<int(bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
+    std::map <std::string, std::function<void(bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
     rules.emplace (std::make_pair ("metric/computed/average", process_web_average));
 
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
@@ -106,8 +106,7 @@ int main (int argc, char **argv) {
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
             _scoped_ymsg_t *msg_out = NULL;
-            rv = rules.at (subject) (agent, msg_recv, sender, &msg_out);
-            assert (rv != -1);
+            rules.at (subject) (agent, msg_recv, sender, &msg_out);
             if (msg_out != NULL) {
                 ymsg_format (msg_out, msg_print);                
                 rv = bios_agent_replyto (agent, sender, "", &msg_out, msg_recv); // msg_out is destroyed

@@ -28,22 +28,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "defs.h"
 #include "log.h"
+#include "utils.h"
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
 
 #include "cm-agent-utils.h"
 #include "cleanup.h"
 
-// Note: This used to be a complicated computation.
-//       We decided to trade absolute accuracy of computed average for easiness of explanation.
-//
-//       The distortion caused by this will be in range 0% - 7,15% in worst hypothetical case.
-//
-//       For practical purposes the variation is +-0,0401% in the worst case for 15 min averages
-//       and in limit approaches zero as the average duration increases.
-//       Of course, if the values of the measured units are high, the absolute divergence can increase, BUT
-//       since there already is the same kind of distortion between nut and agent-nut due to compression of
-//       similar (i.e. +-5%) values to conserver space, this additional distortion is negligible.
 int64_t
 sample_weight (int64_t begin, int64_t end) {
     if (begin >= end) {
@@ -83,104 +74,33 @@ replyto_err
     return 0;
 }
 
-int
-process_db_measurement_json_to_map
-(const char *json, std::map <int64_t, double>& samples, int64_t& start_timestamp, int64_t& end_timestamp, uint64_t& element_id, std::string& source, std::string& unit) {
-    samples.clear ();
-    if (!json)
-        return -1;
-    try {
-        std::stringstream input (json, std::ios_base::in);
-
-        cxxtools::SerializationInfo si;
-        cxxtools::JsonDeserializer deserializer (input);
-   
-        std::string start_ts_str, end_ts_str, element_id_str;
-        deserializer.deserialize (si);
-        
-        if (si.category () != cxxtools::SerializationInfo::Category::Object) {
-            throw std::invalid_argument ("Root type is not object.");
-        }
-
-        si.getMember ("start_ts") >>= start_ts_str;
-        if (start_ts_str.empty ()) {
-            throw std::invalid_argument ("Field 'start_ts' is empty.");
-        }
-        si.getMember ("end_ts") >>= end_ts_str;
-        if (end_ts_str.empty ()) {
-            throw std::invalid_argument ("Field 'end_ts' is empty.");
-        }
-        si.getMember ("source") >>= source;
-        if (source.empty ()) {
-            throw std::invalid_argument ("Field 'source' is empty.");
-        }
-        si.getMember ("unit") >>= unit;
-
-        si.getMember ("element_id") >>= element_id_str;
-        if (element_id_str.empty ()) {
-            throw std::invalid_argument ("Field 'element_id' is empty.");
-        }
-        // throws std::invalid_argument, std::out_of_range
-        element_id = std::stoull (element_id_str);
-        start_timestamp = std::stoll (start_ts_str);
-        end_timestamp = std::stoll (end_ts_str);
-
-        log_debug("start_ts: '%ld'  end_ts: '%ld'  source: '%s'  unit: '%s'  element_id: '%ld'",
-                  start_timestamp, end_timestamp, source.c_str (), unit.c_str (), element_id);
-
-        auto data_array = si.getMember("data");
-        if (si.getMember("data").category () != cxxtools::SerializationInfo::Category::Array) {
-            throw std::invalid_argument ("Value of key 'data' is not an array.");
-        }
-        if (si.getMember("data").memberCount () <= 0) {
-            throw std::invalid_argument ("Value of key 'data' is an empty array.");
-        }
-
-        for (auto it = data_array.begin (), it_end = data_array.end (); it != it_end; ++it) {
-            if (it->category() != cxxtools::SerializationInfo::Category::Object) {
-                throw std::invalid_argument ("Item of array data is not an object.");
-            }
-            std::string value, scale, timestamp;                    
-            it->getMember ("value") >>= value;
-            it->getMember ("scale") >>= scale;
-            it->getMember ("timestamp") >>= timestamp;                    
-            double comp_value = std::stol (value)  * std::pow (10, std::stoi (scale));
-            // TODO: Remove when done testing
-            printf ("value: %s\tscale: %s\ttimestamp: %s\tcomputed_value: %f\n", value.c_str(), scale.c_str(), timestamp.c_str(), comp_value);
-            samples.emplace (std::make_pair ( std::stoll (timestamp), comp_value));
-        }        
-    }
-    catch (const cxxtools::SerializationError& e) {
-        log_error ("cxxtools::SerializationError caught: %s", e.what ());
-        return -1;        
-    }
-    catch (const std::exception& e) {
-        log_error ("std::exception caught: %s", e.what ());
-        return -1;
-    }
-    catch (...) {
-        log_error ("unknown exception caught");
-        return -1;
-    }  
-    return 0;
-}
-
 void
 process_db_measurement_solve_left_margin
 (std::map <int64_t, double>& samples, int64_t extended_start) {
-    if (samples.empty () || extended_start < 0)
+    if (samples.empty ()) {
+        log_debug ("Samples empty.");
         return;
+    }
     int64_t start = extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC;
-    if (samples.cbegin()->first >= start)
+    log_debug ("Start: %" PRId64, start);
+    if (samples.cbegin()->first >= start) {
+        log_debug ("Nothing to solve. First item in samples: %" PRId64", >= start: %" PRId64, samples.cbegin()->first, start);
         return;
+    }
     auto it = samples.find (start);
     if (it != samples.end ()) {
+        log_debug ("Value exactly on start: %" PRId64" exists, value = %f", it->first, it->second);
         samples.erase (samples.cbegin(), it);
         return;
     }
 
     it = samples.lower_bound (extended_start);
+    if (it != samples.end ())
+        log_debug ("Lower bound returned timestamp: %" PRId64", value: %f", it->first, it->second);
+    else
+        log_debug ("Lower bound returned samples.end ()");
     if (it == samples.end () || it->first >= start) {
+        log_debug ("Lower bound == samples.end () || lower bound >= start");
         samples.erase (samples.cbegin (), it);
         return;
     }
@@ -189,8 +109,12 @@ process_db_measurement_solve_left_margin
     std::map <int64_t, double>::const_iterator i;
     bool inserted;
     std::tie (i, inserted) = samples.emplace (std::make_pair (extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC, (--it)->second));
-    
-    //cut the beginnning
+    if (inserted)
+        log_debug ("emplace ok");
+    else 
+        log_debug ("did NOT emplace");
+
+    //cut the beginning
     samples.erase (samples.cbegin (), i);
 }
 
@@ -240,14 +164,17 @@ process_db_measurement_calculate
 int
 process_db_measurement_calculate_arithmetic_mean
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
-    if (!type || start >= end || samples.empty ())
+    assert (type);
+    if (start >= end || samples.empty ())
         return -1;
 
     // TODO: Remove when done testing
     printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
     auto it1 = samples.lower_bound (start);
-    if (it1 == samples.end () || it1->first >= end) // requested interval is empty
+    if (it1 == samples.end () || it1->first >= end) { // requested interval is empty
+        log_debug ("requested interval empty");
         return 1;
+    }
     if (samples.size () == 1) {
         result = it1->second;
         return 0; 
@@ -261,29 +188,27 @@ process_db_measurement_calculate_arithmetic_mean
         int64_t weight = 0;
 
         if (it2 == samples.end ()) {
-
-            // TODO: Remove when done testing
-            printf ("it2 == samples.end ()\n");
+            printf ("it2 == samples.end ()\n"); // TODO: Remove when done testing
             weight = 1;    
         }
-        else if (it2->first >= end) {
-
-            // TODO: Remove when done testing
-            weight = sample_weight (it1->first, end);
+        else if (it2->first >= end) {                       
             if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+                weight = sample_weight (it1->first, end);
                 samples.emplace (std::make_pair (end, it1->second));
-                // TODO: Remove when done testing
-                printf ("emplacing value '%ld' with timestamp '%f'\n", end, it2->second);
+                printf ("emplacing value '%ld' with timestamp '%f'\n", end, it1->second); // TODO: Remove when done testing
+            } else {
+                weight = 1;
             }
-            printf ("it1->first: %ld >= end: %ld\tweight: %ld\n", it1->first, end, weight);
+            printf ("it1->first: %ld --> end: %ld\tweight: %ld\tit1->second: %f\n", it1->first, end, weight, it1->second);
 
         }
         else { // it2->first < end 
             weight = sample_weight (it1->first, it2->first);
-            printf ("it1->first: %ld\tit2->first: %ld\tweight: %ld\n", it1->first, end, weight);
+            printf ("it1->first: %ld --> it2->first: %ld\tweight: %ld\tit1->second: %f\n", it1->first, it2->first, weight, it1->second); // TODO: Remove when done testing
         }
 
-        if (weight == -1) {
+        if (weight <= 0) {
+            log_error ("Weight can not be negative!");
             return -1;
         }
         counter += weight;
@@ -292,14 +217,27 @@ process_db_measurement_calculate_arithmetic_mean
     }
 
     result = (double) sum / counter;
-
-            // TODO: Remove when done testing
-    printf ("end _calculate_arithmetic_mean\n");
     return 0;
 }
 
+int
+check_completeness
+(int64_t last_container_timestamp, int64_t last_average_timestamp, int64_t end_timestamp, const char *step, int64_t& new_start) {
+    assert (step);
+    assert (is_average_step_supported (step));
 
+    int64_t block = 0;
 
-
+    int64_t step_sec = average_step_seconds (step);
+    if (end_timestamp - last_average_timestamp < step_sec) {
+        return 1;
+    }
+    // end_timestamp - last_average_timestamp >= step_sec
+    if (last_average_timestamp <= last_container_timestamp) {
+        new_start = last_container_timestamp + step_sec;
+        return 0;
+    }
+    return 1;
+}
 
 

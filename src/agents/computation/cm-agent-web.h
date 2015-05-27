@@ -30,7 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bios_agent.h"
 
 // TODO: doxygen
-int
+void
 process_web_average
 (bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out);
 
