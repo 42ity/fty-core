@@ -64,11 +64,10 @@ try {
     out.close();
 
     // check the encoding
-    auto encoding = file_encoding(path);
+    auto magic = file_type_encoding(path);
+    const auto& encoding = magic.second;
     if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
-        std::string msg = "Unsupported encoding '";
-        msg += encoding;
-        msg += "', supported utf-8 or utf-16le";
+        std::string msg = "This file (" + magic.first + ") is not supported please try again with a different file.";
         throw std::invalid_argument{msg.c_str()};
     }
 
