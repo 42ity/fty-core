@@ -37,8 +37,8 @@ ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_0.1.0~2
 RUN dpkg -i /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb 
    
 #RUN apt-get install -y --force-yes libnutclient0
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.3-1_amd64.deb /tmp/libnutclient0_2.7.3-1_amd64.deb  
-RUN dpkg -i /tmp/libnutclient0_2.7.3-1_amd64.deb
+ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.3-2_amd64.deb /tmp/libnutclient0_2.7.3-2_amd64.deb  
+RUN dpkg -i /tmp/libnutclient0_2.7.3-2_amd64.deb
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
