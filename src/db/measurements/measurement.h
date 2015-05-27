@@ -49,6 +49,10 @@ get_measurements_sampled
 (uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
  std::map <int64_t, double>& measurements, std::string& unit);
 
+reply_t
+get_device_name_from_element_id
+(uint64_t element_id, std::string& device_name);
+
 } // namespace persist
 
 #endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__

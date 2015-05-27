@@ -72,8 +72,14 @@ int main (int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
+    int rv = bios_agent_set_producer (agent, bios_get_stream_main ());    
+    if (rv < 0) {
+        log_critical ("bios_agent_set_producer () failed.");
+        return EXIT_FAILURE;
+    }
+
 #ifndef STREAM_SUPPRESS
-    int rv = bios_agent_set_consumer (agent, bios_get_stream_main (), STREAM_CONSUMER_PATTERN);
+    rv = bios_agent_set_consumer (agent, bios_get_stream_main (), STREAM_CONSUMER_PATTERN);
     if (rv != 0) {
         log_error ("bios_agent_set_consumer (\"%s\", \".*\") failed.", bios_get_stream_main ());
         log_error ("%s WILL NOT be able to listen on %s.",BIOS_AGENT_NAME_COMPUTATION, bios_get_stream_main ());

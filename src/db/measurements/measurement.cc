@@ -180,6 +180,37 @@ get_measurements_sampled
     return get_measurements (element_id, topic, start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
+reply_t
+get_device_name_from_element_id
+(uint64_t element_id, std::string& device_name) {
+    reply_t ret;
+    try {
+        tntdb::Connection connection = tntdb::connectCached (url);
+        tntdb::Statement statement = connection.prepareCached (
+        " SELECT a.name FROM "
+        "    t_bios_discovered_device AS a LEFT JOIN t_bios_monitor_asset_relation AS b "
+        "    on a.id_discovered_device = b.id_discovered_device "
+        " WHERE id_asset_element = :element_id");
+        tntdb::Result result = statement.set ("element_id", element_id).select();
+        if (result.size () != 1) {
+            ret.rv = -1;
+            return ret;
+        }
+        result.getRow (0).getValue (0).get (device_name);
+    }
+    catch (const std::exception &e) {
+        log_error("Exception caught: %s", e.what());
+        ret.rv = -1;
+        return ret;
+    }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        ret.rv = -1;
+        return ret;
+    }
+    ret.rv = 0;
+    return ret;
+}
 
 } // namespace persist
 

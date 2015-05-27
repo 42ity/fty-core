@@ -46,9 +46,6 @@ request_sampled
 (int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out);
 
-// TODO: Some of the functionality will be later broken down into functions
-//       It doesn't make sense to do it now as non-trivial changes to logic are still ahead of us.
-// TODO: Arrangement of try-catch & deallocation not ideal, but fine for the moment
 void
 process_web_average
 (bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
@@ -75,6 +72,17 @@ process_web_average
             ymsg_set_errmsg (*message_out, "Internal error: Protocol failure.");
             return;       
         }
+
+        // Resolve device name from element id        
+        std::string device_name;
+        {
+            auto ret = persist::get_device_name_from_element_id (element_id, device_name);
+            if (ret.rv == -1)
+                log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
+            else
+                log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'", element_id, device_name.c_str ());
+        }
+
         
         // First, try to request the averages
         std::string unit;
@@ -101,19 +109,20 @@ process_web_average
         std::string data_str; // json; member 'data'
         int comma_counter = 0;
 
+        // Check if returned averages are complete
         if (averages.empty ()) {
-            log_debug ("averages empty");
+            log_info ("averages empty");
             if (last_average_ts < start_ts) {
                 // requesting stored averages returned an empty set + last stored averages timestamp's < start of requested interval
                 // => we need to compute the whole requested interval
-                log_debug ("last average timestamp < start timestamp");
+                log_info ("last average timestamp < start timestamp");
                 start_sampled_ts = average_extend_left_margin (start_ts, step);
                 if (!request_sampled (element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
                     return;
                 }
             }
-            else if (start_ts <= last_average_ts && end_ts < last_average_ts) {                        
+            else if (start_ts <= last_average_ts && last_average_ts <= end_ts) {                        
                 log_error ("persist::get_measurements_averages ('%" PRIu64"', %s, %s, %" PRId64 ", %" PRId64", ...) "
                            "returned last average timestamp: %" PRId64", that falls inside <start_timestamp, end_timestamp> "
                            "but returned map of averages is empty.",
@@ -123,10 +132,10 @@ process_web_average
                 return; 
             }
             else // untreated case is end_ts < last_average_ts -> nothing to do
-                log_debug ("last average timestamp > end timestamp");
+                log_info ("last average timestamp > end timestamp");
         }
         else {
-            log_debug ("averages NOT empty");
+            log_info ("averages NOT empty");
             // put the stored averages into json
             for (const auto &p : averages) {
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
@@ -138,14 +147,13 @@ process_web_average
                     data_str += ",\n";           
                 data_str += item;
             }
-            // check if all requested averages returned and if we need to compute something from sampled
+            // check if all requested averages were returned and if we need to compute something from sampled
             auto it = averages.end (); it--;
             int64_t last_container_ts = it->first;
             int64_t new_start;
             rv = check_completeness (last_container_ts, last_average_ts, end_ts, step, new_start);
             if (rv == 0) {
-                log_debug ("returned averages NOT complete");
-                // TODO: Used to be new_start here only
+                log_info ("returned averages NOT complete");
                 start_sampled_ts = average_extend_left_margin (new_start, step);
                 if (!request_sampled (element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
                                       samples, unit, *message_out)) {
@@ -153,21 +161,16 @@ process_web_average
                 }
             }
             else
-                log_debug ("returned averages complete");
+                log_info ("returned averages complete");
         }
 
         if (!samples.empty ()) {
-            // TODO: these need to be published as well
-            
-            // TODO: remove when done testing
-            printf ("samples directly from db:\n");
+            printf ("samples directly from db:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
                 printf ("%" PRId64" => %f\n", p.first, p.second);
             }
-            log_debug ("calling _solve_left_margin (%ld)", start_sampled_ts);
             process_db_measurement_solve_left_margin (samples, start_sampled_ts);
-            // TODO: remove when done testing
-            printf ("samples after solving left margin:\n");
+            printf ("samples after solving left margin:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
                 printf ("%" PRId64" => %f\n", p.first, p.second);
             }
@@ -176,12 +179,13 @@ process_web_average
             int64_t second_ts = average_first_since (first_ts, step);
             double comp_result;
 
-            printf ("Starting big cycle. first_ts: %ld\tsecond_ts: %ld\tend_ts:%ld\n", first_ts, second_ts, end_ts); // TODO: remove when done testing
+            printf ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
+                       first_ts, second_ts, end_ts);
             while (second_ts <= end_ts) {
-
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
                 printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
                 rv = process_db_measurement_calculate (samples, first_ts, second_ts, type, comp_result);
+                // TODO: better return value check
                 if (rv == 0) {
                     printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
                     item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
@@ -192,13 +196,29 @@ process_web_average
                         data_str += ",\n";
 
                     data_str += item;
-                } else {
+                } else if (rv == -1) {
                     log_warning ("process_db_measurement_calculate failed"); // TODO
                 }
                 first_ts = second_ts;
                 second_ts += average_step_seconds (step);
-            }  
 
+
+                // TODO: publish the measurement here
+                /*
+                if (!device_name.empty ()) {
+                    * rescale value
+                    * encode message
+                    * bios_agent_send () ? I think subject == source_type_step@device_name, but not sure, too tired
+                }
+                _scoped_ymsg_t *msg = bios_measurement_encode (
+                         const char *device_name, <-- device_name
+                         const char *quantity, <-- ?
+                         const char *units, <-- unit
+                         int32_t value,
+                         int32_t scale,
+                         int64_t time);
+                */ 
+            }  
         }
                       
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
@@ -260,12 +280,6 @@ request_averages
         case 2:
         {
             log_info ("Topic does not exist for element id: '%" PRIu64"', source: '%s' and step: '%s' or element not in discovered devices.", element_id, source, step);
-            /* TODO: remove
-            ymsg_set_status (message_out, false);
-            message_str.assign ("Topic does not exist for element id '").append (std::to_string (element_id)).append ("', source: '")
-                .append (source).append ("' and step: '").append (step).append ("' or element not in discovered devices.");
-            ymsg_set_errmsg (message_out, message_str.c_str ());
-            */
             return_value = 1;
             break;
         }
@@ -330,6 +344,5 @@ request_sampled
         }
     }
     return return_value;  
-
 }
 

@@ -121,7 +121,8 @@ process_db_measurement_solve_left_margin
 int
 process_db_measurement_calculate
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
-    if (!type || start >= end || samples.empty () || start < 0 || end < 0 )
+    assert (type);
+    if (start >= end || samples.empty ())
         return -1;
 
     auto it1 = samples.lower_bound (start);
@@ -168,7 +169,6 @@ process_db_measurement_calculate_arithmetic_mean
     if (start >= end || samples.empty ())
         return -1;
 
-    // TODO: Remove when done testing
     printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) { // requested interval is empty

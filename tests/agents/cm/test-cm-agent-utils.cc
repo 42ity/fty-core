@@ -197,9 +197,7 @@ TEST_CASE ("process_db_measurement_calculate","[agent-cm][computation][average][
         CHECK ( process_db_measurement_calculate (samples, 500, 1500, "mix", result) == -1 );
         CHECK ( process_db_measurement_calculate (samples, 500, 1500, "man", result) == -1 );
         CHECK ( process_db_measurement_calculate (samples, 500, 1500, "arithmetic mean", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, -1, 2, "min", result) == -1 );
         CHECK ( process_db_measurement_calculate (samples, 1, -2, "min", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, -5, -2, "min", result) == -1 );
     }
 
     SECTION ("min") {
