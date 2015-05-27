@@ -113,7 +113,7 @@ insert_into_measurement_again:
                 "   :name,"
                 "   (SELECT T.id_device_type FROM t_bios_device_type T WHERE T.name = 'not_classified')"
                 " FROM"
-                "   ( SELECT 0,NULL ) tbl"
+                "   ( SELECT NULL name, 0 id_device_type ) tbl"
                 " WHERE :name NOT IN (SELECT name FROM t_bios_discovered_device )"
              );
             uint32_t n = st.set("name", device_name).execute();
