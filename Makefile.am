@@ -725,6 +725,7 @@ test_db_asset_crud_SOURCES = \
 
 test_db_asset_crud_LDADD = \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -733,6 +734,7 @@ test_db_asset_crud_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
