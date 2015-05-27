@@ -113,7 +113,7 @@ db_reply <db_web_basic_element_t>
 }
 
 
-db_reply <std::map <std::string, std::pair<std::string, char> >>
+db_reply <std::map <std::string, std::pair<std::string, bool> >>
     select_ext_attributes
         (tntdb::Connection &conn,
          a_elmnt_id_t element_id)
@@ -121,8 +121,8 @@ db_reply <std::map <std::string, std::pair<std::string, char> >>
     LOG_START;
     log_debug ("element_id = %" PRIi32, element_id);
 
-    std::map <std::string, std::pair<std::string, char> > item{};
-    db_reply <std::map <std::string, std::pair<std::string, char> > > ret =
+    std::map <std::string, std::pair<std::string, bool> > item{};
+    db_reply <std::map <std::string, std::pair<std::string, bool> > > ret =
                                                     db_reply_new(item);
     try {
         // Can return more than one row
@@ -152,9 +152,9 @@ db_reply <std::map <std::string, std::pair<std::string, char> >>
             row[2].get(read_only);
             log_debug ("read_only = '%c'", read_only?'r':'w');
 
-            ret.item.insert (std::pair<std::string,std::pair<std::string,char> >
-                    (keytag, std::pair<std::string, char>
-                                                    (value,read_only?'r':'w')));
+            ret.item.insert (std::pair<std::string,std::pair<std::string, bool> >
+                    (keytag, std::pair<std::string, bool>
+                                                    (value,read_only?true:false)));
         }
         ret.status = 1;
         LOG_END;
