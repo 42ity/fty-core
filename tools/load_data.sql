@@ -885,10 +885,18 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 /* KAROL-LAB */
 
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
-    SELECT r.id_discovered_device,'C','temperature.thermal_zone0@karol.lab.mbt.etn.com' 
+    SELECT r.id_discovered_device,'C','temperature.thermal_zone0@KAROL-LAB' 
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id2 = LAST_INSERT_ID();
+
+INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
+    SELECT r.id_discovered_device,'C','temperature.thermal_zone0_arithmetic_mean_15m@KAROL-LAB' 
+    FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
+    e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
+set @topic_id3 = LAST_INSERT_ID();
+
+
 
 /* Expected continuous data */
 /*
