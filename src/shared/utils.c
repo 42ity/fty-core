@@ -140,7 +140,6 @@ int64_t datetime_to_calendar (const char *datetime) {
     tm.tm_min = minute;
     tm.tm_sec = second;
     int64_t t = my_timegm (&tm);
-    assert (tm.tm_isdst == 0);
     return t;
 }
 
@@ -166,6 +165,8 @@ int64_t my_timegm (struct tm *tm) {
     else
         unsetenv ("TZ");
     tzset ();
+    if (tm->tm_isdst != 0)
+        return -1;
     return (int64_t) ret;
 }
 
