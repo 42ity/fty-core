@@ -41,7 +41,7 @@ get_measurements
 
 reply_t
 get_measurements_averages
-(uint64_t element_id, const char *topic, const char *step, int64_t start_timestamp, int64_t end_timestamp,
+(uint64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
  std::map <int64_t, double>& measurements, std::string& unit, int64_t& last_timestamp);
 
 reply_t
@@ -49,8 +49,11 @@ get_measurements_sampled
 (uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
  std::map <int64_t, double>& measurements, std::string& unit);
 
-} // namespace persist
+reply_t
+get_device_name_from_element_id
+(uint64_t element_id, std::string& device_name);
 
+} // namespace persist
 
 #endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__
 

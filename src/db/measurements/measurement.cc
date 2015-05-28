@@ -3,6 +3,7 @@
 #include "dbpath.h"
 #include "log.h"
 #include "cleanup.h"
+#include "utils.h"
 
 #include "measurement.h"
 
@@ -97,45 +98,79 @@ get_measurements
 
 reply_t
 get_measurements_averages
-(uint64_t element_id, const char *topic, const char *step, int64_t start_timestamp, int64_t end_timestamp, std::map <int64_t, double>& measurements, std::string& unit, int64_t& last_timestamp) {
-    assert (topic);
+(uint64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
+ std::map <int64_t, double>& measurements, std::string& unit, int64_t& last_timestamp) {
+    assert (source);
+    assert (type);
     assert (step);
-    // TODO: check step
-    std::string averages_topic (topic);
-    averages_topic.append ("_").append (step);
+    assert (is_average_step_supported (step));
+    assert (is_average_type_supported (type));
+
+    reply_t ret;
+    std::string topic;    
+    topic.assign (source).append ("_").append (type).append ("_").append (step);
 
     try {        
         tntdb::Connection connection = tntdb::connectCached (url);
+        uint64_t topic_id = 0;
+        {
+            std::string query_topic (topic);
+            query_topic.append ("@%");
 
-        tntdb::Statement statement = connection.prepareCached (
-        " SELECT MAX(UNIX_TIMESTAMP(timestamp)) FROM v_bios_measurement "
-        " WHERE topic_id = ( "
-        "   SELECT t.id FROM t_bios_measurement_topic AS t, "
-        "   t_bios_monitor_asset_relation AS rel "
-        "   WHERE rel.id_asset_element = :id AND "
-        "         t.device_id = id_discovered_device AND "
-        "         t.topic LIKE :topic "
-        "   ) ");
-        std::string query_topic;
-        query_topic.append (averages_topic).append ("@%");
-        tntdb::Result result = statement.set ("id", element_id).set ("topic", query_topic).select ();
-        if (result.size () == 0) {
-            last_timestamp = INT64_MIN;
-        } else {
-            result.getRow (0).getValue (0).get (last_timestamp);
+            tntdb::Statement statement = connection.prepareCached (
+            " SELECT t.id FROM t_bios_measurement_topic AS t, "
+            "            t_bios_monitor_asset_relation AS rel "
+            "   WHERE rel.id_asset_element = :id AND "
+            "         t.device_id = id_discovered_device AND "
+            "         t.topic LIKE :topic ");
+
+            tntdb::Result result = statement.set ("id", element_id).set ("topic", query_topic).select ();
+            if (result.size () == 1) {
+                result.getRow (0).getValue (0).get (topic_id);
+            }
+            else if (result.size () == 0) {
+                last_timestamp = INT64_MIN;
+                ret.rv = 2;
+                return ret;
+            }
+            else {
+                log_critical ("Query returned %d rows.", result.size ());
+                ret.rv = -1;
+                return ret;
+            }
         }
+        log_debug ("topic id = %" PRId64, topic_id);
+        {
+            tntdb::Statement statement = connection.prepareCached (
+            " SELECT UNIX_TIMESTAMP(MAX(timestamp)) FROM v_bios_measurement "
+            " WHERE topic_id = :topic_id ");
+            tntdb::Result result = statement.set ("topic_id", topic_id).select ();
+            if (result.size () == 0) {
+                last_timestamp = INT64_MIN;
+            }
+            else if (result.size () == 1) {            
+                result.getRow (0).getValue (0).get (last_timestamp);
+            }
+            else {
+                log_critical ("Query returned %d rows.", result.size ());
+                ret.rv = -1;
+                return ret;
+            }
+        }
+        log_debug ("last timestamp: '%" PRId64"'", last_timestamp);
+
     }
     catch (const std::exception &e) {
         log_error("Exception caught: %s", e.what());
-        reply_t ret; ret.rv = -1;
+        ret.rv = -1;
         return ret;
     }
     catch (...) {
         log_error("Unknown exception caught!");
-        reply_t ret; ret.rv = -1;
+        ret.rv = -1;
         return ret;    
     }
-    return get_measurements (element_id, averages_topic.c_str (), start_timestamp, end_timestamp, true, true, measurements, unit);
+    return get_measurements (element_id, topic.c_str (), start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
 reply_t
@@ -145,6 +180,37 @@ get_measurements_sampled
     return get_measurements (element_id, topic, start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
+reply_t
+get_device_name_from_element_id
+(uint64_t element_id, std::string& device_name) {
+    reply_t ret;
+    try {
+        tntdb::Connection connection = tntdb::connectCached (url);
+        tntdb::Statement statement = connection.prepareCached (
+        " SELECT a.name FROM "
+        "    t_bios_discovered_device AS a LEFT JOIN t_bios_monitor_asset_relation AS b "
+        "    on a.id_discovered_device = b.id_discovered_device "
+        " WHERE id_asset_element = :element_id");
+        tntdb::Result result = statement.set ("element_id", element_id).select();
+        if (result.size () != 1) {
+            ret.rv = -1;
+            return ret;
+        }
+        result.getRow (0).getValue (0).get (device_name);
+    }
+    catch (const std::exception &e) {
+        log_error("Exception caught: %s", e.what());
+        ret.rv = -1;
+        return ret;
+    }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        ret.rv = -1;
+        return ret;
+    }
+    ret.rv = 0;
+    return ret;
+}
 
 } // namespace persist
 
