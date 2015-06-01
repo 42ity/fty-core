@@ -142,6 +142,11 @@ process
             int64_t last_container_ts = it->first;
             int64_t new_start;
             rv = check_completeness (last_container_ts, last_average_ts, end_ts, step, new_start);
+            if (rv == -1) {
+                ymsg_set_status (*message_out, false);
+                ymsg_set_errmsg (*message_out, "Internal error: Extracting data from database failed.");
+                return;
+            }
             if (rv == 0) {
                 log_info ("returned averages NOT complete");
                 start_sampled_ts = average_extend_left_margin (new_start, step);

@@ -204,16 +204,21 @@ check_completeness
     assert (step);
     assert (is_average_step_supported (step));
 
-    int64_t block = 0;
 
     int64_t step_sec = average_step_seconds (step);
-    if (end_timestamp - last_average_timestamp < step_sec) {
+    log_debug ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
+                last_container_timestamp, last_average_timestamp, end_timestamp, step, step_sec);
+    if (end_timestamp - last_container_timestamp < step_sec) {
         return 1;
     }
-    // end_timestamp - last_average_timestamp >= step_sec
+    // end_timestamp - last_container_timestamp >= step_sec
     if (last_average_timestamp <= last_container_timestamp) {
         new_start = last_container_timestamp + step_sec;
         return 0;
+    }
+    else if (last_average_timestamp <= end_timestamp) { // last_average_timestamp > last_container_timestamp
+        log_error ("last container timestamp < last average timestamp <= end timestamp");
+        return -1;
     }
     return 1;
 }

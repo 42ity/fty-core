@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #include "defs.h"
+#include "str_defs.h"
+#include "utils.h"
 #include "cm-utils.h"
 
 namespace cm = computation;
@@ -342,10 +344,86 @@ TEST_CASE ("cm::web::calculate","[agent-cm][computation][average][db]")
 
 }
 
-/* TODO:
+// check_completeness (int64_t last_container_timestamp, int64_t last_average_timestamp, int64_t end_timestamp, const char *step, int64_t& new_start)
+
 TEST_CASE ("cm::web::check_completeness","[agent-cm][computation][average]")
 {
-    SECTION ("bad args") {
+    SECTION ("Test cases that can be applied to all average steps (alignment with start of day)") {
+        int i = 0;
+        int64_t new_start = 0;
+        for (i = 0; i < AVG_STEPS_SIZE; i++) {
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp > last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            INFO ("Step is " << AVG_STEPS[i]);
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1435708800, AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+            
+            // 1433059200 == 2015-05-31 08:00:00 
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1435708800, AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            // end timestamp == last container timestamp
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1433116800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1433116800, AVG_STEPS[i], new_start) == 1  );
+            CHECK ( new_start == 0 );
+
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp == last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1435708800, AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            // end timestamp == last container timestamp
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1433116800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp < last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            // 1454284800 == 2016-02-01 00:00:00
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1435708800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            // end timestamp == last container timestamp
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1433116800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // CASE: simulate erroneous persist::get_measurements_averages return values
+            // 1433116800 == 2015-06-01 00:00:00
+            new_start = 0;
+            CHECK (
+            cm::web::check_completeness
+            (1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == -1 );
+            CHECK (
+            cm::web::check_completeness
+            (1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), 1433116800 + 2*average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == -1 );
+            CHECK ( new_start == 0 );
+        }
+        // TODO: create a few  hand tailored cases for each avg. step
     }
+
 }
-*/
+
+
