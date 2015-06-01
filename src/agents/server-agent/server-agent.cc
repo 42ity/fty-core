@@ -60,7 +60,7 @@ int main (int argc, char *argv []) {
                     auto cit = cache.find(*it);
                     // Did it changed singificantly since the last time?
                     if((cit == cache.end()) ||
-                       (abs(cit->second.first - temp) > 1000) ||
+                       (abs(cit->second.first - temp) > 2000) ||
                        (time(NULL) - cit->second.second > AGENT_NUT_REPEAT_INTERVAL_SEC)) {
                         if(cit == cache.end()) {
                             cache.insert(std::make_pair(*it,
@@ -87,7 +87,7 @@ int main (int argc, char *argv []) {
             }
         }
         // Hardcoded monitoring interval
-        sleep(1);
+        sleep(10);
     }
 
     bios_agent_destroy (&client);
