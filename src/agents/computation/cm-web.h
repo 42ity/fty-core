@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
 #include <string>
+#include <tntdb/connect.h>
 
 #include "ymsg.h"
 #include "bios_agent.h"
@@ -35,7 +36,7 @@ namespace web {
 // Processing function that needs to adhere to "template" of std::function in std::map <...>  rules; in cm-agent.cc
 void
 process
-(bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out);
+(tntdb::Connection& conn, bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out);
 
 } // namespace computation::web
 } // namespace computation

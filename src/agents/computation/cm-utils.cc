@@ -220,7 +220,7 @@ check_completeness
 
 int
 request_averages
-(int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
+(tntdb::Connection& conn, int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
  std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out) {
     assert (source);
     assert (type);
@@ -230,7 +230,7 @@ request_averages
     int return_value = 0;
     std::string message_str;
     auto ret = persist::get_measurements_averages
-    (element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
+    (conn, element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
     switch (ret.rv) {
         case 0:
         {
@@ -268,7 +268,7 @@ request_averages
 
 int
 request_sampled
-(int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
+(tntdb::Connection& conn, int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
   std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out) {
     assert (topic);
     assert (message_out);
@@ -276,7 +276,7 @@ request_sampled
     int return_value = 0;
     std::string message_str;
 
-    auto ret = persist::get_measurements_sampled (element_id, topic, start_timestamp, end_timestamp, samples, unit);
+    auto ret = persist::get_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
     switch (ret.rv) {
         case 0:
         {

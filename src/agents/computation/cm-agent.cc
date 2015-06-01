@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <functional>
+#include <tntdb/connect.h>
 
 #include <czmq.h>
 
@@ -20,6 +21,7 @@
 
 #include "cm-web.h"
 #include "cleanup.h"
+#include "dbpath.h"
 
 #define DEFAULT_LOG_LEVEL LOG_INFO
 
@@ -52,7 +54,7 @@ int main (int argc, char **argv) {
     log_set_level (log_level);
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
-    std::map <std::string, std::function<void(bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
+    std::map <std::string, std::function<void(tntdb::Connection& conn, bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
     rules.emplace (std::make_pair ("metric/computed/average", cm::web::process));
 
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, BIOS_AGENT_NAME_COMPUTATION);
@@ -82,6 +84,8 @@ int main (int argc, char **argv) {
     }
 #endif
 
+    tntdb::Connection conn = tntdb::connectCached (url);
+
     // We don't really need a poller. We just have one client (actor/socket)
     while (!zsys_interrupted) {
         log_debug ("WAITING");
@@ -108,7 +112,7 @@ int main (int argc, char **argv) {
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
             _scoped_ymsg_t *msg_out = NULL;
-            needle->second (agent, msg_recv, sender, &msg_out);
+            needle->second (conn, agent, msg_recv, sender, &msg_out);
             if (msg_out != NULL) {
                 ymsg_format (msg_out, msg_print);                
                 rv = bios_agent_replyto (agent, sender, "", &msg_out, msg_recv); // msg_out is destroyed

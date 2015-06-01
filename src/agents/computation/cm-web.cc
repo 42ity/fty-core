@@ -40,7 +40,7 @@ namespace web {
 
 void
 process
-(bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
+(tntdb::Connection& conn, bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
     assert (agent);
     assert (message_in);
     assert (sender);
@@ -66,7 +66,7 @@ process
         // Resolve device name from element id        
         std::string device_name;
         {
-            auto ret = persist::get_device_name_from_element_id (element_id, device_name);
+            auto ret = persist::get_device_name_from_element_id (conn, element_id, device_name);
             if (ret.rv == -1)
                 log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
             else
@@ -78,7 +78,7 @@ process
         std::string unit;
         int64_t last_average_ts;
         std::map<int64_t, double> averages;
-        if (!request_averages (element_id, source, type, step, start_ts, end_ts, averages, unit, last_average_ts, *message_out)) {
+        if (!request_averages (conn, element_id, source, type, step, start_ts, end_ts, averages, unit, last_average_ts, *message_out)) {
             return;
         } 
 
@@ -107,7 +107,7 @@ process
                 // => we need to compute the whole requested interval
                 log_info ("last average timestamp < start timestamp");
                 start_sampled_ts = average_extend_left_margin (start_ts, step);
-                if (!request_sampled (element_id, source, start_sampled_ts,
+                if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
                     return;
                 }
@@ -145,7 +145,7 @@ process
             if (rv == 0) {
                 log_info ("returned averages NOT complete");
                 start_sampled_ts = average_extend_left_margin (new_start, step);
-                if (!request_sampled (element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
+                if (!request_sampled (conn, element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
                                       samples, unit, *message_out)) {
                     return;
                 }
