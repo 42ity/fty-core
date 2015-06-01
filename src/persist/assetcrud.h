@@ -192,6 +192,7 @@ db_reply_t
          a_elmnt_id_t   parent_id,
          zhash_t       *extattributes,
          a_dvc_tp_id_t  asset_device_type_id,
+         const char    *asset_device_type_name,
          const char      *status,
          a_elmnt_pr_t     priority,
          a_elmnt_bc_t     bc);

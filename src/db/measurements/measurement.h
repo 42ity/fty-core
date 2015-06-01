@@ -29,29 +29,60 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <string>
 
 #include "db/types.h"
+#include "dbtypes.h"
 
 namespace persist
 {
 
 // -1 err/failure , 0 ok, 1 element_id not found, 2 topic not found    
 reply_t
-get_measurements
-(uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp, bool left_interval_closed,
- bool right_interval_closed, std::map <int64_t, double>& measurements, std::string& unit);
+get_measurements (
+        tntdb::Connection &conn,
+        uint64_t element_id,
+        const char *topic,
+        int64_t start_timestamp,
+        int64_t end_timestamp,
+        bool left_interval_closed,
+        bool right_interval_closed,
+        std::map <int64_t, double>& measurements,
+        std::string& unit);
 
 reply_t
-get_measurements_averages
-(uint64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
- std::map <int64_t, double>& measurements, std::string& unit, int64_t& last_timestamp);
+get_measurements_averages (
+        tntdb::Connection &conn,
+        uint64_t element_id,
+        const char *source,
+        const char *type,
+        const char *step,
+        int64_t start_timestamp,
+        int64_t end_timestamp,
+        std::map <int64_t, double>& measurements,
+        std::string& unit,
+        int64_t& last_timestamp);
 
 reply_t
-get_measurements_sampled
-(uint64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
- std::map <int64_t, double>& measurements, std::string& unit);
+get_measurements_sampled (
+        tntdb::Connection &conn,
+        uint64_t element_id,
+        const char *topic,
+        int64_t start_timestamp,
+        int64_t end_timestamp,
+        std::map <int64_t, double>& measurements,
+        std::string& unit);
 
 reply_t
-get_device_name_from_element_id
-(uint64_t element_id, std::string& device_name);
+get_device_name_from_element_id (
+        tntdb::Connection &conn,
+        uint64_t element_id,
+        std::string& device_name);
+
+reply_t
+select_measurement_last_web_byElementId (
+        tntdb::Connection &conn,
+        const std::string& src,
+        a_elmnt_id_t id,
+        m_msrmnt_value_t& value,
+        m_msrmnt_scale_t& scale);
 
 } // namespace persist
 

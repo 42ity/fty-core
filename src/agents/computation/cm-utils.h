@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
 #include <string>
+#include <tntdb/connect.h>
 
 #include "ymsg.h"
 #include "bios_agent.h"
@@ -99,12 +100,12 @@ check_completeness
 */
 int
 request_averages
-(int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
+(tntdb::Connection& conn, int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
  std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out);
 
 int
 request_sampled
-(int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
+(tntdb::Connection& conn, int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out);
 
 } // namespace computation::web

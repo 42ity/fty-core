@@ -1022,7 +1022,17 @@ void
     {
         auto adevice_dests = find_dests (links, std::get<0>(border_device));
         for ( auto &adevice: adevice_dests )
-            new_border_devices.insert(dc_devices.find(adevice)->second);
+        {
+            auto it = dc_devices.find(adevice);
+            if ( it != dc_devices.end() )
+                new_border_devices.insert(dc_devices.find(adevice)->second);
+            else
+            {
+                log_critical ("database is in inconsistent state");
+                log_critical ("device %" PRIu32 "is not in dc",  std::get<0>(border_device));
+                assert(false);
+            }
+        }
     }
     border_devices.clear();
     border_devices.insert(new_border_devices.begin(), new_border_devices.end());
