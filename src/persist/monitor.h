@@ -606,6 +606,19 @@ common_msg_t* insert_disc_device(const char* url, const char* device_type_name,
                             const char* device_name);
 
 
+db_reply_t 
+    insert_into_monitor_device
+        (tntdb::Connection &conn,
+         m_dvc_tp_id_t device_type_id,
+         const char* device_name);
+
+db_reply_t 
+    insert_into_monitor_device
+        (tntdb::Connection &conn,
+         const char* device_type_name,
+         const char* device_name);
+
+
 // ===============================================================
 // MEASUREMENT
 // ===============================================================
