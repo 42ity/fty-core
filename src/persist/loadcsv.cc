@@ -150,7 +150,7 @@ static void
     
     // This is used to track, what columns we had already proceeded,
     // because if we didn't proceed it yet,
-    // then it should treated as external attribute
+    // then it should be treated as external attribute
     auto unused_columns = cm.getTitles();
 
     auto name = cm.get(row_i, "name");
@@ -170,7 +170,6 @@ static void
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
-        // TODO LOG
         log_warning ("Status '%s' is not allowed, use default",
                                                             status.c_str());
         status = "nonactive";    // default
@@ -181,7 +180,6 @@ static void
     log_debug ("bc = '%s'", bs_critical.c_str());
     if ( bs_critical != "yes" && bs_critical != "no")
     {
-        // TODO LOG
         log_warning ( "Business critical '%s' is not allowed, use default",
                                                         bs_critical.c_str());
         bs_critical = "no";
@@ -222,7 +220,6 @@ static void
     }
     if ( ( !subtype.empty() ) && ( type != "device" ) && ( type != "group") )
     {
-        // TODO LOG
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
     auto subtype_id = SUBTYPES.find(subtype)->second;
@@ -251,7 +248,6 @@ static void
                     groups.insert(ret.item.id);  // if OK, then take ID
                 else
                 {
-                    // TODO LOG
                     log_warning ("'%s' - the group was ignored, "
                             "because doesn't exist in DB", group.c_str());
                 }
@@ -383,7 +379,7 @@ static void
     {   
         // this is a transaction 
         auto ret = insert_device (conn, links, groups, name.c_str(),
-                parent_id, extattributes, subtype_id, status.c_str(),
+                parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
                 priority, bc);
         if ( ret.status != 1 )
         {
