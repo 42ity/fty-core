@@ -257,9 +257,8 @@ select_measurement_last_web_byElementId (
     try {
         tntdb::Statement statement = conn.prepareCached (
         " SELECT v.value, v.scale FROM"
-        "    v_bios_measurement v"
+        "    v_bios_measurement_last v"
         " WHERE topic=:topic"
-        " ORDER BY timestamp DESC LIMIT 1"
         );
 
         tntdb::Row row = statement.set ("topic", topic).selectRow();
