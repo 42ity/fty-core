@@ -47,3 +47,5 @@ const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL =
 
 const char* STRFTIME_DATETIME_FORMAT = "%Y%m%d%H%M%SZ";    
 
+const char* EV_BIOS_LOG_LEVEL = "BIOS_LOG_LEVEL";
+

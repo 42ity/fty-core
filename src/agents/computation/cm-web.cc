@@ -16,11 +16,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
- \file   cm-agent-web.cc
- \brief  TODO
+ \file   cm-web.cc
+ \brief  Implementation of functions for processing logic of rest api request 
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
-
 
 #include "bios_agent.h"
 #include "agents.h"
@@ -32,29 +31,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg++.h"
 
 #include "db/measurements.h"
-#include "cm-agent-utils.h"
-#include "cm-agent-web.h"
+#include "cm-utils.h"
+#include "cm-web.h"
 #include "cleanup.h"
 
-static int 
-request_averages 
-(int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
- std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out);
-
-static int
-request_sampled
-(int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
- std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out);
+namespace computation {
+namespace web {
 
 void
-process_web_average
+process
 (bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
     assert (agent);
     assert (message_in);
     assert (sender);
     assert (message_out);
-
-    log_info ("start");
 
     int64_t start_ts = -1, end_ts = -1;
     char *type = NULL, *step = NULL, *source = NULL;
@@ -169,7 +159,7 @@ process_web_average
             for (const auto &p : samples) {
                 printf ("%" PRId64" => %f\n", p.first, p.second);
             }
-            process_db_measurement_solve_left_margin (samples, start_sampled_ts);
+            solve_left_margin (samples, start_sampled_ts);
             printf ("samples after solving left margin:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
                 printf ("%" PRId64" => %f\n", p.first, p.second);
@@ -184,7 +174,7 @@ process_web_average
             while (second_ts <= end_ts) {
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
                 printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
-                rv = process_db_measurement_calculate (samples, first_ts, second_ts, type, comp_result);
+                rv = calculate (samples, first_ts, second_ts, type, comp_result);
                 // TODO: better return value check
                 if (rv == 0) {
                     printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
@@ -202,22 +192,23 @@ process_web_average
                 first_ts = second_ts;
                 second_ts += average_step_seconds (step);
 
-
-                // TODO: publish the measurement here
-                /*
+                // TODO: create a fnc in cm-utils
                 if (!device_name.empty ()) {
-                    * rescale value
-                    * encode message
-                    * bios_agent_send () ? I think subject == source_type_step@device_name, but not sure, too tired
+                    std::string quantity;
+                    quantity.assign (source).append ("_").append (type).append ("_").append (step);
+                    std::string topic;
+                    topic.assign ("measurement.").append (quantity).append ("@").append (device_name);
+                    _scoped_ymsg_t *published_measurement =
+                        bios_measurement_encode (device_name.c_str (), quantity.c_str(), unit.c_str (), (int32_t) (comp_result * 100), -2, second_ts);
+                    assert (published_measurement);
+                    std::string formatted_msg;
+                    ymsg_format (published_measurement, formatted_msg);
+                    log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
+                    rv = bios_agent_send (agent, topic.c_str (), &published_measurement);
+                    if (rv != 0) {
+                        log_error ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
+                    }
                 }
-                _scoped_ymsg_t *msg = bios_measurement_encode (
-                         const char *device_name, <-- device_name
-                         const char *quantity, <-- ?
-                         const char *units, <-- unit
-                         int32_t value,
-                         int32_t scale,
-                         int64_t time);
-                */ 
             }  
         }
                       
@@ -248,101 +239,6 @@ process_web_average
     return;
 }
 
-
-static int
-request_averages
-(int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
- std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out) {
-    assert (source);
-    assert (type);
-    assert (step);
-    assert (message_out);
-
-    int return_value = 0;
-    std::string message_str;
-    auto ret = persist::get_measurements_averages
-    (element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
-    switch (ret.rv) {
-        case 0:
-        {
-            return_value = 1;
-            break;
-        }
-        case 1:
-        {
-            log_info ("Element id: %" PRIu64" does not exist in persistence.", element_id);
-            ymsg_set_status (message_out, false);
-            message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
-            ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
-            break;
-        }
-        case 2:
-        {
-            log_info ("Topic does not exist for element id: '%" PRIu64"', source: '%s' and step: '%s' or element not in discovered devices.", element_id, source, step);
-            return_value = 1;
-            break;
-        }
-        case -1:
-        default:
-        {
-            log_error ("persist::get_measurements_averages ('%" PRIu64"', %s, %s, %s, %" PRId64 ", %" PRId64", ...) failed",
-                    element_id, source, type, step, start_timestamp, end_timestamp);
-            ymsg_set_status (message_out, false);
-            ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
-            return_value = 0;
-            break;
-        }
-    }
-    return return_value;
-}
-
-static int
-request_sampled
-(int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
-  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out) {
-    assert (topic);
-    assert (message_out);
-
-    int return_value = 0;
-    std::string message_str;
-
-    auto ret = persist::get_measurements_sampled (element_id, topic, start_timestamp, end_timestamp, samples, unit);
-    switch (ret.rv) {
-        case 0:
-        {
-            return_value = 1;
-            break;
-        }
-        case 1:
-        {
-            log_info ("Element id: %" PRIu64" does not exist in persistence.", element_id);
-            ymsg_set_status (message_out, false);
-            message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
-            ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
-            break;
-        }
-        case 2:
-        {
-            log_info ("Topic '%s' does not exist for element id: '%" PRIu64"'", topic, element_id);
-            ymsg_set_status (message_out, false);
-            message_str.assign ("Topic '").append (topic).append ("' does not exist for element id '").append (std::to_string (element_id)).append ("'");
-            ymsg_set_errmsg (message_out, message_str.c_str ());
-            return_value = 0;
-            break;
-        }
-        case -1:
-        default:
-        {
-            log_error ("persist::get_measurements_sampled ('%" PRIu64"', %s, %" PRId64 ", %" PRId64", ...) failed",
-                    element_id, topic, start_timestamp, end_timestamp);
-            ymsg_set_status (message_out, false);
-            ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
-            return_value = 0;
-            break;
-        }
-    }
-    return return_value;  
-}
+} // namespace computation::web
+} // namespace computation
 
