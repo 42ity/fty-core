@@ -2,20 +2,54 @@
 #include <stdio.h>
 
 #include "defs.h"
-#include "cm-agent-utils.h"
+#include "cm-utils.h"
 
-TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][average][db]")
+namespace cm = computation;
+
+TEST_CASE ("cm::web::sample_weight","[agent-cm][computation][average]")
+{
+    SECTION ("bad args") {
+        // begin > end
+        CHECK ( cm::web::sample_weight (2, 1) == -1 );
+        CHECK ( cm::web::sample_weight (1426204882, 1426204881) == -1 );
+        CHECK ( cm::web::sample_weight (0, -1) == -1 );
+        CHECK ( cm::web::sample_weight (-4, -5) == -1 );
+        // begin = end
+        CHECK ( cm::web::sample_weight (1430173900, 1430173900) == -1 );
+        CHECK ( cm::web::sample_weight (0, 0) == -1 );
+        CHECK ( cm::web::sample_weight (-1, -1) == -1 );
+    }
+    SECTION ("correct") {
+        int64_t ts = 14134242829;
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC) == AGENT_NUT_REPEAT_INTERVAL_SEC );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC - 1) == AGENT_NUT_REPEAT_INTERVAL_SEC - 1 );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC - 2) == AGENT_NUT_REPEAT_INTERVAL_SEC - 2 );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC + 1) == 1 );
+        ts = -2428397;
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC) == AGENT_NUT_REPEAT_INTERVAL_SEC );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC - 1) == AGENT_NUT_REPEAT_INTERVAL_SEC - 1 );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC - 2) == AGENT_NUT_REPEAT_INTERVAL_SEC - 2 );
+        CHECK ( cm::web::sample_weight (ts, ts + AGENT_NUT_REPEAT_INTERVAL_SEC + 1) == 1 );
+        
+        CHECK ( cm::web::sample_weight (0, 1) == 1 );
+        CHECK ( cm::web::sample_weight (-2, -1) == 1 );
+        CHECK ( cm::web::sample_weight (-50500, -50425) == 75 );
+        CHECK ( cm::web::sample_weight (1433110045, 1433110090) == 45 );
+    }
+}
+
+TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
 {
 
     SECTION ("bad args") {
         std::map <int64_t, double> samples;
         CHECK (samples.empty ());
-        process_db_measurement_solve_left_margin (samples, 1426204882);
+        cm::web::solve_left_margin (samples, 1426204882);
         CHECK (samples.empty ());
 
         samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-28 00:31:40
         CHECK (samples.size () == 1);
-        process_db_measurement_solve_left_margin (samples, -1);
+        cm::web::solve_left_margin (samples, -1);
         CHECK (samples.size () == 1);
     }
 
@@ -27,7 +61,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-28 00:31:40
         std::size_t size = samples.size ();
 
-        process_db_measurement_solve_left_margin (samples, 1430173599); // 2015-04-28 00:26:39 
+        cm::web::solve_left_margin (samples, 1430173599); // 2015-04-28 00:26:39 
         CHECK ( size == samples.size () );
     }
 
@@ -41,7 +75,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-28 00:31:40
         std::size_t size = samples.size ();
 
-        process_db_measurement_solve_left_margin (samples, 1430173599); // 2015-04-28 00:26:39 
+        cm::web::solve_left_margin (samples, 1430173599); // 2015-04-28 00:26:39 
         CHECK ( samples.size () == 1 );
         CHECK ( samples.begin ()->first == 1430173900 );
         CHECK ( samples.begin ()->second == 12.4 );
@@ -56,7 +90,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430173530, 11.3)); // 2015-04-28 00:25:30
         samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-28 00:31:40
 
-        process_db_measurement_solve_left_margin (samples, 1430173600); // 2015-04-28 00:26:40
+        cm::web::solve_left_margin (samples, 1430173600); // 2015-04-28 00:26:40
         CHECK ( samples.size () == 1 );
         CHECK ( samples.begin ()->first == 1430173900 );
         CHECK ( samples.begin ()->second == 12.4 );
@@ -75,7 +109,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430174405, 3.0482)); // 2015-04-28 00:40:05
         samples.emplace (std::make_pair (1430174410, 7.02)); // 2015-04-28 00:40:10
 
-        process_db_measurement_solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
+        cm::web::solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
         CHECK ( samples.size () == 2 );
         auto it = samples.begin ();
         CHECK ( it->first == 1430174405 );
@@ -99,7 +133,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430174410, 7.02)); // 2015-04-28 00:40:10
         samples.emplace (std::make_pair (1430174422, 17.1)); // 2015-04-28 00:40:22
 
-        process_db_measurement_solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
+        cm::web::solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
         CHECK ( samples.size () == 3 );
         auto it = samples.begin ();
         CHECK ( it->first == 1430174405 );
@@ -125,7 +159,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
         samples.emplace (std::make_pair (1430174410, 7.02)); // 2015-04-28 00:40:10
         samples.emplace (std::make_pair (1430174422, 17.1)); // 2015-04-28 00:40:22
 
-        process_db_measurement_solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
+        cm::web::solve_left_margin (samples, 1430174105); // 2015-04-28 00:35:05
         CHECK ( samples.size () == 3 );
         auto it = samples.begin ();
         CHECK ( it->first == 1430174405 );
@@ -139,7 +173,7 @@ TEST_CASE ("process_db_measurement_solve_left_margin","[agent-cm][computation][a
     }
 }
 
-TEST_CASE ("process_db_measurement_calculate","[agent-cm][computation][average][db]")
+TEST_CASE ("cm::web::calculate","[agent-cm][computation][average][db]")
 {
     std::map <int64_t, double> samples;
     double result;
@@ -189,116 +223,116 @@ TEST_CASE ("process_db_measurement_calculate","[agent-cm][computation][average][
 
     SECTION ("bad args") {
         samples. clear ();
-        CHECK ( process_db_measurement_calculate (samples, 1, 2, "min", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 1, 2, "min", result) == -1 );
         samples.emplace (std::make_pair (1000, 12.231));
-        CHECK ( process_db_measurement_calculate (samples, 3, 2, "min", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 1430174410, 1430174410, "min", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 1430174410, 1430174409, "min", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 500, 1500, "mix", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 500, 1500, "man", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 500, 1500, "arithmetic mean", result) == -1 );
-        CHECK ( process_db_measurement_calculate (samples, 1, -2, "min", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 3, 2, "min", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 1430174410, 1430174410, "min", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 1430174410, 1430174409, "min", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 500, 1500, "mix", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 500, 1500, "man", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 500, 1500, "arithmetic mean", result) == -1 );
+        CHECK ( cm::web::calculate (samples, 1, -2, "min", result) == -1 );
     }
 
     SECTION ("min") {
-        CHECK ( process_db_measurement_calculate (samples, 1430121600, 1430150400, "min", result) == 0 ); // 2015-04-27 08:00:00 -> 2015-04-27 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430121600, 1430150400, "min", result) == 0 ); // 2015-04-27 08:00:00 -> 2015-04-27 16:00:00 8h
         CHECK ( result == 12.5 );
 
         std::size_t size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430140500, 1430141400, "min", result) == 0 ); // 2015-04-27 13:15:00 -> 2015-04-27 13:30:00 30m
+        CHECK ( cm::web::calculate (samples, 1430140500, 1430141400, "min", result) == 0 ); // 2015-04-27 13:15:00 -> 2015-04-27 13:30:00 30m
         CHECK ( result == 12.5 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at (1430141400) == 12.5 );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430035200, 1430064000, "min", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430035200, 1430064000, "min", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
         CHECK ( result == 4 );
         CHECK ( samples.size () == size );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430017200, 1430018100, "min", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
+        CHECK ( cm::web::calculate (samples, 1430017200, 1430018100, "min", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
         CHECK ( result == 10 );
         CHECK ( samples.size () == size );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430017200, 1430018100, "min", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
+        CHECK ( cm::web::calculate (samples, 1430017200, 1430018100, "min", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
         CHECK ( result == 10 );
         CHECK ( samples.size () == size );       
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430035200, 1430064000, "min", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430035200, 1430064000, "min", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
         CHECK ( result == 4 );
         CHECK ( samples.size () == size );       
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429930800, 1429931700, "min", result) == 0 ); // 2015-04-25 03:00:00 -> 2015-04-25 03:15:00 15m
+        CHECK ( cm::web::calculate (samples, 1429930800, 1429931700, "min", result) == 0 ); // 2015-04-25 03:00:00 -> 2015-04-25 03:15:00 15m
         CHECK ( result == 10 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at(1429931700) == 15 );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429948800, 1429977600, "min", result) == 0 ); // 2015-04-25 08:00:00 -> 2015-04-25 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1429948800, 1429977600, "min", result) == 0 ); // 2015-04-25 08:00:00 -> 2015-04-25 16:00:00 8h
         CHECK ( result == 4 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at(1429977600) == 50 );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429890300, 1429891200, "min", result) == 0 ); // 2015-04-24 15:45:00 -> 2015-04-24 16:00:00 15m
+        CHECK ( cm::web::calculate (samples, 1429890300, 1429891200, "min", result) == 0 ); // 2015-04-24 15:45:00 -> 2015-04-24 16:00:00 15m
         CHECK ( result == 4 );
         CHECK ( samples.size () == size );       
     }
     
     SECTION ("max") {
-        CHECK ( process_db_measurement_calculate (samples, 1430121600, 1430150400, "max", result) == 0 ); // 2015-04-27 08:00:00 -> 2015-04-27 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430121600, 1430150400, "max", result) == 0 ); // 2015-04-27 08:00:00 -> 2015-04-27 16:00:00 8h
         CHECK ( result == 12.7);
 
         std::size_t size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430140500, 1430141400, "max", result) == 0 ); // 2015-04-27 13:15:00 -> 2015-04-27 13:30:00 30m
+        CHECK ( cm::web::calculate (samples, 1430140500, 1430141400, "max", result) == 0 ); // 2015-04-27 13:15:00 -> 2015-04-27 13:30:00 30m
         CHECK ( result == 12.5 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at (1430141400) == 12.5 );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430035200, 1430064000, "max", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430035200, 1430064000, "max", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
         CHECK ( result == 170 );
         CHECK ( samples.size () == size );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430017200, 1430018100, "max", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
+        CHECK ( cm::web::calculate (samples, 1430017200, 1430018100, "max", result) == 0 ); // 2015-04-26 03:00:00 -> 2015-04-26 03:15:00 15m
         CHECK ( result == 100 );
         CHECK ( samples.size () == size );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1430035200, 1430064000, "max", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1430035200, 1430064000, "max", result) == 0 ); // 2015-04-26 08:00:00 -> 2015-04-26 16:00:00 8h
         CHECK ( result == 170 );
         CHECK ( samples.size () == size );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429930800, 1429931700, "max", result) == 0 ); // 2015-04-25 03:00:00 -> 2015-04-25 03:15:00 15m
+        CHECK ( cm::web::calculate (samples, 1429930800, 1429931700, "max", result) == 0 ); // 2015-04-25 03:00:00 -> 2015-04-25 03:15:00 15m
         CHECK ( result == 100 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at(1429931700) == 15 );       
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429948800, 1429977600, "max", result) == 0 ); // 2015-04-25 08:00:00 -> 2015-04-25 16:00:00 8h
+        CHECK ( cm::web::calculate (samples, 1429948800, 1429977600, "max", result) == 0 ); // 2015-04-25 08:00:00 -> 2015-04-25 16:00:00 8h
         CHECK ( result == 50 );
         CHECK ( samples.size () == size + 1 );
         CHECK ( samples.at(1429977600) == 50 );
 
         size = samples.size ();
-        CHECK ( process_db_measurement_calculate (samples, 1429890300, 1429891200, "max", result) == 0 ); // 2015-04-24 15:45:00 -> 2015-04-24 16:00:00 15m
+        CHECK ( cm::web::calculate (samples, 1429890300, 1429891200, "max", result) == 0 ); // 2015-04-24 15:45:00 -> 2015-04-24 16:00:00 15m
         CHECK ( result == 50 );
         CHECK ( samples.size () == size );
     }
     
     SECTION ("empty interval") {
-        CHECK ( process_db_measurement_calculate (samples, 1430208000, 1430236800, "min", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
-        CHECK ( process_db_measurement_calculate (samples, 1430208000, 1430236800, "max", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
-        CHECK ( process_db_measurement_calculate (samples, 1430208000, 1430236800, "arithmetic_mean", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430208000, 1430236800, "min", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430208000, 1430236800, "max", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430208000, 1430236800, "arithmetic_mean", result) == 1 ); // 2015-04-28 08:00:00 -> 2015-04-28 16:00:00
 
-        CHECK ( process_db_measurement_calculate (samples, 1430149500, 1430150400, "min", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
-        CHECK ( process_db_measurement_calculate (samples, 1430149500, 1430150400, "max", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
-        CHECK ( process_db_measurement_calculate (samples, 1430149500, 1430150400, "arithmetic_mean", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430149500, 1430150400, "min", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430149500, 1430150400, "max", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
+        CHECK ( cm::web::calculate (samples, 1430149500, 1430150400, "arithmetic_mean", result) == 1 ); // 2015-04-27 15:45:00 -> 2015-04-27 16:00:00
 
     }
 /* TODO: Write simple isolated cases here, bigger ones in ci script
@@ -308,4 +342,10 @@ TEST_CASE ("process_db_measurement_calculate","[agent-cm][computation][average][
 
 }
 
-
+/* TODO:
+TEST_CASE ("cm::web::check_completeness","[agent-cm][computation][average]")
+{
+    SECTION ("bad args") {
+    }
+}
+*/

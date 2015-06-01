@@ -27,5 +27,8 @@ extern const char* STRFTIME_DATETIME_FORMAT;
 extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_TMPL;
 extern const char* BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
 
+// evironment variables
+extern const char* EV_BIOS_LOG_LEVEL;
+
 #endif // SRC_INCLUDE_STR_DEFS_H__
 

@@ -16,12 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
- \file   cm-agent-web.h
- \brief  TODO
+ \file   cm-web.h
+ \brief  Header file of functions for processing logic of rest api request 
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
-#ifndef SRC_AGENTS_COMPUTATION_CM_AGENT_WEB_H__
-#define SRC_AGENTS_COMPUTATION_CM_AGENT_WEB_H__
+#ifndef SRC_AGENTS_COMPUTATION_CM_WEB_H__
+#define SRC_AGENTS_COMPUTATION_CM_WEB_H__
 
 #include <map>
 #include <string>
@@ -29,10 +29,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ymsg.h"
 #include "bios_agent.h"
 
-// TODO: doxygen
+namespace computation {
+namespace web {
+
+// Processing function that needs to adhere to "template" of std::function in std::map <...>  rules; in cm-agent.cc
 void
-process_web_average
+process
 (bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out);
 
-#endif // SRC_AGENTS_COMPUTATION_CM_AGENT_WEB_H__
+} // namespace computation::web
+} // namespace computation
+
+#endif // SRC_AGENTS_COMPUTATION_CM_WEB_H__
  
