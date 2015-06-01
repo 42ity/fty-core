@@ -8,29 +8,18 @@
 #include "data.h"
 #include "calc_power.h"
 #include "dbpath.h"
+#include "db/measurements.h"
 
-float total_rack_power(a_elmnt_id_t rack_element_id) {
-    
-    _scoped_zmsg_t *msg = calc_total_rack_power(url.c_str(),rack_element_id);
-    if( ! msg ) { throw "no message"; }
-    if( ! is_compute_msg(msg) ) {
-        zmsg_destroy(&msg);
-        throw "invalid message type";
-    }
-    _scoped_compute_msg_t* res_compute = compute_msg_decode (&msg);
-    zmsg_destroy(&msg);
-    compute_msg_print (res_compute);
-    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
+float total_rack_power(tntdb::Connection& conn, a_elmnt_id_t id) {
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
-    a_elmnt_id_t num_missed;
-    int rv0 = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
-    compute_msg_destroy(&res_compute);
-    zhash_destroy(&results);
-    if ( rv0 || rv1 || rv2 ) return 0.0;
+    static const std::string src = "realpower.default";
+    auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+
+    if (reply.rv != 0)
+        throw "Fail to find realpower.default for element";
+
     return value * pow(10,scale);
 }
 
@@ -41,6 +30,7 @@ std::string arg2;
 </%args>
 <%thread scope="global">
 asset_manager asset_mgr;
+tntdb::Connection conn = tntdb::connectCached (url);
 </%thread>
 <%cpp>
     // Check URL validity
@@ -62,7 +52,6 @@ asset_manager asset_mgr;
     };
     cxxtools::split(",", arg1, std::back_inserter(racks));
     // check that racks exists
-    
 
     auto allRacksShort= asset_mgr.get_items1("rack");
     if ( allRacksShort.status == 0 )
@@ -117,7 +106,7 @@ try {
               << "      \"name\": \"" << rackNames[R] << "\",\n";
        for(size_t P = 0; P < requestedParams.size(); P++ ) {
            if( requestedParams[P] == "total_power" ) {
-               json << "      \"total_power\": "<< total_rack_power( atoi( racks[R].c_str() ) );
+               json << "      \"total_power\": "<< total_rack_power(conn, atoi( racks[R].c_str() ) );
            } else {
                json << "      \"" << requestedParams[P] << "\": " << (800.0 + (std::rand() % 2000)/10.0 );
            }
