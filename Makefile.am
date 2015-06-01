@@ -562,9 +562,9 @@ test_agents_LDFLAGS = \
 check_PROGRAMS += 	test-computation
 
 test_computation_SOURCES = \
-			tests/agents/cm/test-cm-agent-utils.cc \
-			src/agents/computation/cm-agent-utils.h \
-			src/agents/computation/cm-agent-utils.cc
+			tests/agents/cm/test-cm-utils.cc \
+			src/agents/computation/cm-utils.h \
+			src/agents/computation/cm-utils.cc
 
 test_computation_LDADD = \
 			libpriv-test-run.la \
@@ -572,6 +572,7 @@ test_computation_LDADD = \
 			libpriv-utils.la \
 			libpriv-defs.la \
 			libbiosapi.la \
+			libpriv-db-measurements.la \
 			libpriv-utils-ymsg.la
 
 test_computation_CPPFLAGS = \
@@ -579,10 +580,10 @@ test_computation_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/agents/computation \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
 
-test_computation_LDFLAGS = \
-			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+test_computation_LDFLAGS = ${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS} -ltntdb
 
 ### The unit-tester for some routines from libbiosapi
 check_PROGRAMS +=		test-libbiosapiut
@@ -1042,10 +1043,10 @@ client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
 			src/agents/computation/cm-agent.cc \
-			src/agents/computation/cm-agent-web.cc \
-			src/agents/computation/cm-agent-web.h \
-			src/agents/computation/cm-agent-utils.h \
-			src/agents/computation/cm-agent-utils.cc
+			src/agents/computation/cm-web.cc \
+			src/agents/computation/cm-web.h \
+			src/agents/computation/cm-utils.h \
+			src/agents/computation/cm-utils.cc
 
 agent_cm_LDADD = \
             libpriv-db.la \
