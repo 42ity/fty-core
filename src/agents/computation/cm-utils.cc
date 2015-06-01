@@ -16,10 +16,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
- \file   cm-agent-utils.cc
- \brief  TODO
+ \file   utils.cc
+ \brief  Implementation of utility functions and helpers for computation module
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
+
 #include <utility>
 #include <cmath>
 
@@ -32,8 +33,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
 
-#include "cm-agent-utils.h"
+#include "db/measurements.h"
+#include "cm-utils.h"
 #include "cleanup.h"
+
+namespace computation {
+
+namespace web {
 
 int64_t
 sample_weight (int64_t begin, int64_t end) {
@@ -47,35 +53,8 @@ sample_weight (int64_t begin, int64_t end) {
     return difference;
 }
 
-int 
-replyto_err 
-(bios_agent_t *agent, ymsg_t **original, const char *sender, const char *error_message, const char *subject) {
-    if (!original || !*original)
-        return -1;
-    if (!agent || !sender || !error_message || !subject) {
-        ymsg_destroy (original);
-        return -1;
-    }
-
-    _scoped_ymsg_t *msg_reply = ymsg_new (YMSG_REPLY);
-    assert (msg_reply);
-    ymsg_set_status (msg_reply, false);
-    ymsg_set_errmsg (msg_reply, error_message);
-    std::string formatted_message;
-    ymsg_format (msg_reply, formatted_message);
-    int rv = bios_agent_replyto (agent, sender, subject, &msg_reply, *original); // msg_reply is destroyed
-    ymsg_destroy (original); // original is destroyed
-    if (rv != 0) {
-        log_critical ("bios_agent_replyto (\"%s\", \"%s\") failed.", sender, subject);
-    }
-    else {
-        log_debug ("ACTION. Error message sent to %s with subject %s:\n%s", sender, subject, formatted_message.c_str ());
-    }
-    return 0;
-}
-
 void
-process_db_measurement_solve_left_margin
+solve_left_margin
 (std::map <int64_t, double>& samples, int64_t extended_start) {
     if (samples.empty ()) {
         log_debug ("Samples empty.");
@@ -119,7 +98,7 @@ process_db_measurement_solve_left_margin
 }
 
 int
-process_db_measurement_calculate
+calculate
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
     assert (type);
     if (start >= end || samples.empty ())
@@ -149,7 +128,7 @@ process_db_measurement_calculate
         result = maximum;
     }
     else if (strcmp (type, "arithmetic_mean") == 0) {
-        return process_db_measurement_calculate_arithmetic_mean (samples, start, end, type, result);
+        return calculate_arithmetic_mean (samples, start, end, result);
     }
     else
         return -1;
@@ -163,9 +142,8 @@ process_db_measurement_calculate
 }
 
 int
-process_db_measurement_calculate_arithmetic_mean
-(std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
-    assert (type);
+calculate_arithmetic_mean
+(std::map <int64_t, double>& samples, int64_t start, int64_t end, double& result) {
     if (start >= end || samples.empty ())
         return -1;
 
@@ -208,7 +186,7 @@ process_db_measurement_calculate_arithmetic_mean
         }
 
         if (weight <= 0) {
-            log_error ("Weight can not be negative!");
+            log_error ("Weight can not be negative or zero! Begin timestamp >= end timestamp.");
             return -1;
         }
         counter += weight;
@@ -240,4 +218,105 @@ check_completeness
     return 1;
 }
 
+int
+request_averages
+(int64_t element_id, const char *source, const char *type, const char *step, int64_t start_timestamp, int64_t end_timestamp,
+ std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out) {
+    assert (source);
+    assert (type);
+    assert (step);
+    assert (message_out);
+
+    int return_value = 0;
+    std::string message_str;
+    auto ret = persist::get_measurements_averages
+    (element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
+    switch (ret.rv) {
+        case 0:
+        {
+            return_value = 1;
+            break;
+        }
+        case 1:
+        {
+            log_info ("Element id: %" PRIu64" does not exist in persistence.", element_id);
+            ymsg_set_status (message_out, false);
+            message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
+            ymsg_set_errmsg (message_out, message_str.c_str ());
+            return_value = 0;
+            break;
+        }
+        case 2:
+        {
+            log_info ("Topic does not exist for element id: '%" PRIu64"', source: '%s' and step: '%s' or element not in discovered devices.", element_id, source, step);
+            return_value = 1;
+            break;
+        }
+        case -1:
+        default:
+        {
+            log_error ("persist::get_measurements_averages ('%" PRIu64"', %s, %s, %s, %" PRId64 ", %" PRId64", ...) failed",
+                    element_id, source, type, step, start_timestamp, end_timestamp);
+            ymsg_set_status (message_out, false);
+            ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
+            return_value = 0;
+            break;
+        }
+    }
+    return return_value;
+}
+
+int
+request_sampled
+(int64_t element_id, const char *topic, int64_t start_timestamp, int64_t end_timestamp,
+  std::map<int64_t, double>& samples, std::string& unit, ymsg_t *message_out) {
+    assert (topic);
+    assert (message_out);
+
+    int return_value = 0;
+    std::string message_str;
+
+    auto ret = persist::get_measurements_sampled (element_id, topic, start_timestamp, end_timestamp, samples, unit);
+    switch (ret.rv) {
+        case 0:
+        {
+            return_value = 1;
+            break;
+        }
+        case 1:
+        {
+            log_info ("Element id: %" PRIu64" does not exist in persistence.", element_id);
+            ymsg_set_status (message_out, false);
+            message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
+            ymsg_set_errmsg (message_out, message_str.c_str ());
+            return_value = 0;
+            break;
+        }
+        case 2:
+        {
+            log_info ("Topic '%s' does not exist for element id: '%" PRIu64"'", topic, element_id);
+            ymsg_set_status (message_out, false);
+            message_str.assign ("Topic '").append (topic).append ("' does not exist for element id '").append (std::to_string (element_id)).append ("'");
+            ymsg_set_errmsg (message_out, message_str.c_str ());
+            return_value = 0;
+            break;
+        }
+        case -1:
+        default:
+        {
+            log_error ("persist::get_measurements_sampled ('%" PRIu64"', %s, %" PRId64 ", %" PRId64", ...) failed",
+                    element_id, topic, start_timestamp, end_timestamp);
+            ymsg_set_status (message_out, false);
+            ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
+            return_value = 0;
+            break;
+        }
+    }
+    return return_value;  
+}
+
+
+} // namespace web
+
+} // namespace computation
 
