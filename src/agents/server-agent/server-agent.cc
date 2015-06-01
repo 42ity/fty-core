@@ -87,7 +87,7 @@ int main (int argc, char *argv []) {
             }
         }
         // Hardcoded monitoring interval
-        sleep(1);
+        sleep(10);
     }
 
     bios_agent_destroy (&client);
