@@ -345,9 +345,7 @@ noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 libpriv_db_measurements_la_SOURCES = \
 			src/db/measurements/measurement.cc \
 			src/db/measurements/measurement.h \
-			src/db/measurements.h \
-			tools/dbpath.h \ 
-			tools/dbpath.cc
+			src/db/measurements.h
 
 libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
@@ -1161,7 +1159,8 @@ bios_web_la_LIBADD = \
 			libpriv-git-details-override.la \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
