@@ -38,11 +38,16 @@ namespace web {
  \brief Return weight of a sample at \a begin timestamp
  \param[in] timestamp of the sample
  \param[in] timestamp of the next sample
- \return weight of the sample at \a begin timestamp, -1 if \a begin >= \a end
+ \return weight of the sample at \a begin timestamp
+         -1 if \a begin >= \a end
 */ 
 int64_t
 sample_weight (int64_t begin, int64_t end);
 
+/*
+ \brief If possible re-calculate value at timestamp = \a extended_start + \a AGENT_NUT_REPEAT_INTERVAL_SEC and remove the excess samples 
+ TODO
+*/
 void
 solve_left_margin
 (std::map <int64_t, double>& samples, int64_t extended_start);
@@ -95,8 +100,6 @@ check_completeness
 
  \return 0, error; message_out is set
          1, success; ..
- requested source
- 
 */
 int
 request_averages
@@ -110,7 +113,15 @@ request_sampled
 
 } // namespace computation::web
 
+/*
+ \brief Publish computed measurement to bios_get_stream_main () if device name is not empty
+*/
+void
+publish_measurement_if
+(bios_agent_t *agent, const char *device_name, const char *source, const char *type, const char *step, const char *unit, double value, int64_t timestamp);
+
 } // namespace computation
 
 #endif // SRC_AGENTS_COMPUTATION_CM_UTILS_H__
+
 
