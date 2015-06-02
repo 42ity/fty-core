@@ -12,7 +12,7 @@
 
 static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"total_power", "realpower.default"},
-    {"avg_power_last_day", "<random>"},
+    {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
     {"avg_power_last_week", "<random>"},
     {"avg_power_last_month", "<random>"},
     {"avg_power_last_year", "<random>"}
