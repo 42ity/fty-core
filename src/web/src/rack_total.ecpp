@@ -34,7 +34,7 @@ total_rack_power(
     auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
 
     if (reply.rv != 0)
-        throw "Fail to find " + src + " for element" + std::to_string(id);
+        throw std::invalid_argument("Fail to find " + src + " for element" + std::to_string(id));
 
     return value * pow(10,scale);
 }
@@ -128,12 +128,11 @@ try {
        json << "    }" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";
    }
    json << "  ]\n}\n";
-} catch ( const std::exception& e ) {
+} catch ( const std::invalid_argument& e ) {
 </%cpp>
-<h1>internal server error</h1>
-<$ e.what() $>
-<%cpp>      
-      return HTTP_INTERNAL_SERVER_ERROR;   
+    { "error" : "<$$ e.what()$>" }
+<%cpp>
+      return HTTP_BAD_REQUEST;
 }
 </%cpp>
 <$$ json.str() $>
