@@ -810,7 +810,8 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
 
     // first insert
     auto reply_insert = insert_device (conn, links, groups, name, parent_id,
-                            ext_attributes, asset_device_type_id, status, priority, bc);
+                            ext_attributes, asset_device_type_id,
+                            asset_device_type, status, priority, bc);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -838,7 +839,8 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     }
     // second insert
     reply_insert = insert_device (conn, links, groups, name, parent_id, 
-                            ext_attributes, asset_device_type_id, status, priority, bc);
+                            ext_attributes, asset_device_type_id,
+                            asset_device_type, status, priority, bc);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -858,4 +860,3 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     
     log_close();
 }
-
