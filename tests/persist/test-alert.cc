@@ -9,6 +9,9 @@
 
 using namespace persist;
 
+
+// TODO: add errtype checks
+// use sections in tests
 TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][crud_test.sql]")
 {
     log_open ();
@@ -28,19 +31,22 @@ TEST_CASE("t_bios_alert INSERT/DELETE #1","[db][CRUD][insert][delete][alert][cru
     // before first insert
     auto reply_select = select_alert_all_opened (conn);
     REQUIRE ( reply_select.status == 1 );
-    auto                oldsize_a = reply_select.item.size() ;
+    auto oldsize_a = reply_select.item.size();
+    auto oldalerts = reply_select.item;
 
     // first insert
     auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
     REQUIRE ( reply_insert.status == 1 );
     uint64_t rowid = reply_insert.rowid;
-    CAPTURE (rowid);
+    CAPTURE ( rowid );
     REQUIRE ( reply_insert.affected_rows == 1 );
 
     // check select
     reply_select = select_alert_all_opened (conn);
     REQUIRE ( reply_select.status == 1 );
-    REQUIRE ( reply_select.item.size() == (oldsize_a + 1) );
+    REQUIRE ( reply_select.item.size() == ( oldalerts.size() + 1 ) );
+    // TODO need to do smth with oldsize, because we are not sure, that new element would be placed
+    // at this position, as in db there is no order
     REQUIRE ( reply_select.item.at(oldsize_a).id == rowid );
     REQUIRE ( reply_select.item.at(oldsize_a).rule_name == std::string(rule_name) );
     REQUIRE ( reply_select.item.at(oldsize_a).alert_state == alert_state );
@@ -91,7 +97,7 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     // before first insert
     auto reply_select = select_alert_all_closed (conn);
     REQUIRE ( reply_select.status == 1 );
-    auto                oldsize_a = reply_select.item.size() ;
+    auto oldsize_a = reply_select.item.size();
 
     // insert
     auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
@@ -100,8 +106,9 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     // update
     int64_t  date_till = 2059829;
     auto reply_update = update_alert_tilldate(conn, date_till, rowid);
-    REQUIRE (reply_update.status == 1);
-    REQUIRE (reply_update.affected_rows == 1);
+    REQUIRE ( reply_update.status == 1 );
+    REQUIRE ( reply_update.affected_rows == 1 );
+    REQUIRE ( reply_update.rowid == rowid );
 
     // check select
     reply_select = select_alert_all_closed (conn);
@@ -115,6 +122,36 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     REQUIRE ( reply_select.item.at(oldsize_a).date_from == date_from );
     REQUIRE ( reply_select.item.at(oldsize_a).date_till == date_till );
 
+    // delete
+    delete_from_alert (conn, rowid);
+    
+    // before first insert
+    reply_select = select_alert_all_closed (conn);
+    REQUIRE ( reply_select.status == 1 );
+    oldsize_a = reply_select.item.size() ;
+
+    // insert
+    reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from);
+    rowid = reply_insert.rowid;
+
+    // update
+    reply_update = update_alert_tilldate_by_rulename(conn, date_till + 5, rule_name);
+    REQUIRE ( reply_update.status == 1 );
+    REQUIRE ( reply_update.affected_rows == 1 );
+    REQUIRE ( reply_update.rowid == rowid );
+
+    // check select
+    reply_select = select_alert_all_closed (conn);
+    REQUIRE ( reply_select.status == 1 );
+    REQUIRE ( reply_select.item.size() == (oldsize_a + 1) );
+    REQUIRE ( reply_select.item.at(oldsize_a).id == rowid );
+    REQUIRE ( reply_select.item.at(oldsize_a).rule_name == std::string(rule_name) );
+    REQUIRE ( reply_select.item.at(oldsize_a).alert_state == alert_state );
+    REQUIRE ( reply_select.item.at(oldsize_a).description == std::string(description) );
+    REQUIRE ( reply_select.item.at(oldsize_a).notification == notification );
+    REQUIRE ( reply_select.item.at(oldsize_a).date_from == date_from );
+    REQUIRE ( reply_select.item.at(oldsize_a).date_till == date_till + 5 );
+    
     // delete
     delete_from_alert (conn, rowid);
 

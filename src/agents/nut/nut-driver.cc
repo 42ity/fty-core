@@ -241,23 +241,25 @@ void NUTDevice::updatePhysics(const std::string& varName, const float newValue, 
         // this is new value
         struct NUTPhysicalValue pvalue;
         pvalue.changed = true;
-        pvalue.value = newValueInt;
+        pvalue.value = 0;
+        pvalue.candidate = newValueInt;
         _physics[ varName ] = pvalue;
     } else {
         long int oldValue = _physics[ varName ].value;
+        _physics[ varName ].candidate = _physics[ varName ].value; 
         if( oldValue == newValueInt ) return ;
         try {
             // log_debug("old %li, new %li, change %li >= threshold %i ?\n",oldValue,newValueInt, abs( (oldValue - newValueInt ) * 100 / oldValue ), threshold );
             if( (oldValue == 0.0 ) || ( abs( (oldValue - newValueInt ) * 100 / oldValue ) >= threshold ) ) {
                 // significant change
-                _physics[ varName ].value = newValueInt;
-                _physics[ varName ].changed = true;
+                _physics[ varName ].candidate = newValueInt;
             }
         } catch(...) {
             // probably division by 0
             struct NUTPhysicalValue pvalue;
             pvalue.changed = true;
-            pvalue.value = newValueInt;
+            pvalue.value = 0;
+            pvalue.candidate = newValueInt;
             _physics[ varName ] = pvalue;
         }
     }
@@ -274,6 +276,15 @@ void NUTDevice::updatePhysics(const std::string& varName, std::vector<std::strin
     }
 }
 
+void NUTDevice::commitChanges() {
+    for( auto & item:  _physics ) {
+        if( item.second.value != item.second.candidate ) {
+            item.second.value = item.second.candidate;
+            item.second.changed = true;            
+        }
+    }
+}
+                              
 void NUTDevice::updateInventory(const std::string& varName, std::vector<std::string>& values) {
     std::string inventory = "";
     for(size_t i = 0 ; i < values.size() ; ++i ) {
@@ -339,6 +350,7 @@ void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool
             updateInventory( inventoryBIOS[i], values );
         }
     }
+    commitChanges();
 }
 
 std::string NUTDevice::itof(const long int X) const {

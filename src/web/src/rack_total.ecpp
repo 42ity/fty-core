@@ -10,17 +10,39 @@
 #include "dbpath.h"
 #include "db/measurements.h"
 
-float total_rack_power(tntdb::Connection& conn, a_elmnt_id_t id) {
+static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+    {"total_power", "realpower.default"},
+    {"avg_power_last_day", "<random>"},
+    {"avg_power_last_week", "<random>"},
+    {"avg_power_last_month", "<random>"},
+    {"avg_power_last_year", "<random>"}
+};
+
+float
+total_rack_power(
+    tntdb::Connection& conn,
+    const std::string& src,
+    a_elmnt_id_t id)
+{
+
+    if (src == "<random>") {
+        return (800.0 + (std::rand() % 2000)/10.0 );
+    }
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
-    static const std::string src = "realpower.default";
     auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
 
     if (reply.rv != 0)
-        throw "Fail to find realpower.default for element";
+        throw "Fail to find " + src + " for element" + std::to_string(id);
 
     return value * pow(10,scale);
+}
+
+static bool
+s_is_valid_param(const std::string& p)
+{
+    return PARAM_TO_SRC.count(p) != 0;
 }
 
 </%pre>
@@ -43,13 +65,6 @@ tntdb::Connection conn = tntdb::connectCached (url);
     std::vector<std::string> racks; // list of ids of racks from argument string
     std::vector<std::string> rackNames;
     std::vector<std::string> requestedParams;
-    static std::vector<std::string> validParams = {
-        "total_power",
-        "avg_power_last_day",
-        "avg_power_last_week",
-        "avg_power_last_month",
-        "avg_power_last_year"
-    };
     cxxtools::split(",", arg1, std::back_inserter(racks));
     // check that racks exists
 
@@ -90,7 +105,7 @@ tntdb::Connection conn = tntdb::connectCached (url);
     
     cxxtools::split(",", arg2, std::back_inserter(requestedParams));
     for(std::string &param: requestedParams) {
-        if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+        if (! s_is_valid_param(param)) {
 </%cpp>
 { "error":"bad_input", "msg":"invalid_parameter" }
 <%cpp>
@@ -105,11 +120,9 @@ try {
               << "      \"id\":   \"" << racks[R] << "\",\n"
               << "      \"name\": \"" << rackNames[R] << "\",\n";
        for(size_t P = 0; P < requestedParams.size(); P++ ) {
-           if( requestedParams[P] == "total_power" ) {
-               json << "      \"total_power\": "<< total_rack_power(conn, atoi( racks[R].c_str() ) );
-           } else {
-               json << "      \"" << requestedParams[P] << "\": " << (800.0 + (std::rand() % 2000)/10.0 );
-           }
+           const std::string& key = requestedParams[P];
+           const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
+           json  << "      \"" << key << "\": "<< total_rack_power(conn, val, atoi( racks[R].c_str() ) );
            json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
        };
        json << "    }" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";
