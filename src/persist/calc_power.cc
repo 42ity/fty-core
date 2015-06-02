@@ -863,7 +863,7 @@ std::set<a_elmnt_id_t>
     return srcs;
 }
 //==================================================================================================
-
+/*
 std::set <device_info_t>
     select_rack_devices 
         (tntdb::Connection &conn,
@@ -923,7 +923,7 @@ std::set <device_info_t>
         throw bios::InternalDBError(e.what());
     }
 }
-
+*/
 
 /*
  *  inside the rack power chain has a maximum length 3!!!!
@@ -938,7 +938,7 @@ std::set <device_info_t>
  *
  *      -device             take device
  *
- */
+ *
 std::vector<std::string> 
     compute_total_rack_power_v2(
         const std::set <device_info_t> &rack_devices,
@@ -991,7 +991,7 @@ std::vector<std::string>
     log_debug ("number of devices to summ up is %zu", dvc.size());
     LOG_END;
     return dvc;
-}
+}*/
 
 // from to
 std::set<a_elmnt_id_t>
@@ -1040,7 +1040,7 @@ void
 }
 
 std::vector<std::string> 
-    compute_total_dc_power_v2(
+    compute_total_power_v2(
         const std::map <a_elmnt_id_t, device_info_t> &dc_devices,
         const std::set <std::pair<a_elmnt_id_t, a_elmnt_id_t> > &links,
         std::set <device_info_t> border_devices)
@@ -1079,7 +1079,7 @@ std::vector<std::string>
     LOG_END;
     return dvc;
 }
-
+/*
 // because this function is intent to support agent, that listens 
 // to the stream, then agent has no idea about ids, so input and output 
 // are supposed to be names of devices
@@ -1151,15 +1151,17 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     LOG_END;
     return ret;
 }
+*/
 
 // because this function is intent to support agent, that listens 
 // to the stream, then agent has no idea about ids, so input and output 
 // are supposed to be names of devices
 //
 // ACE: it is ugly, but supposed to work. Should be cleaned up later
-db_reply <std::map<std::string, std::vector<std::string> > >
-    select_devices_total_power_dcs 
-        (tntdb::Connection  &conn)
+static db_reply <std::map<std::string, std::vector<std::string> > >
+    select_devices_total_power_container
+        (tntdb::Connection  &conn,
+         int8_t container_type_id)
 {   
     LOG_START;
     // name of the dc is mapped onto the vecrot of names of its power sources 
@@ -1167,75 +1169,75 @@ db_reply <std::map<std::string, std::vector<std::string> > >
     db_reply <std::map<std::string, std::vector<std::string> > > ret = db_reply_new(item);
 
     // there is no need to do all in one select, so let's do it by steps
-    // select all dcs
-    auto allDcs = select_asset_elements_by_type(conn, asset_type::DATACENTER);
+    // select all containers
+    auto allContainers = select_asset_elements_by_type (conn, container_type_id);
     
-    if  ( allDcs.status == 0 )
+    if  ( allContainers.status == 0 )
     {
-        ret.status = 0;
-        ret.msg        = allDcs.msg;
-        ret.errtype    = allDcs.errtype;
-        ret.errsubtype = allDcs.errsubtype;
-        log_error ("some error appears, during selecting the dcs");
+        ret.status     = 0;
+        ret.msg        = allContainers.msg;
+        ret.errtype    = allContainers.errtype;
+        ret.errsubtype = allContainers.errsubtype;
+        log_error ("some error appears, during selecting the containers");
         return ret;
     }
-    // if there is no dcs, then it is an error
-    if  ( allDcs.item.empty() )
+    // if there is no containers, then it is an error
+    if  ( allContainers.item.empty() )
     {
-        ret.status = 0;
-        ret.msg        = "there is no dcs at all";
+        ret.status     = 0;
+        ret.msg        = "there is no containers at all";
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_NOTFOUND;
         log_error (ret.msg);
         return ret;
     }
 
-    // go through every dc and "compute" what should be summed up
-    for ( auto &dc : allDcs.item )
+    // go through every container and "compute" what should be summed up
+    for ( auto &container : allContainers.item )
     {
-        // select all devices in the dc
-        auto dc_devices_set = select_asset_device_by_container (conn, dc.id);
+        // select all devices in the container
+        auto container_devices_set = select_asset_device_by_container (conn, container.id);
 
         // here would be name of devices to summ up
         std::vector<std::string> result(0);
         
-        if ( dc_devices_set.status == 0 )
+        if ( container_devices_set.status == 0 )
         {
-            log_warning ("'%s': problems appeared in selecting devices", dc.name.c_str());
+            log_warning ("'%s': problems appeared in selecting devices", container.name.c_str());
             // so return an empty set of power devices
-            ret.item.insert(std::pair< std::string, std::vector<std::string> >(dc.name, result));
+            ret.item.insert(std::pair< std::string, std::vector<std::string> >(container.name, result));
             continue;
         }
-        if ( dc_devices_set.item.empty() )
+        if ( container_devices_set.item.empty() )
         {
-            log_warning ("'%s': has no devices", dc.name.c_str());
+            log_warning ("'%s': has no devices", container.name.c_str());
             // so return an empty set of power devices
-            ret.item.insert(std::pair< std::string, std::vector<std::string> >(dc.name, result));
+            ret.item.insert(std::pair< std::string, std::vector<std::string> >(container.name, result));
             continue;
         }
 
         // create a map, for better use
-        std::map <a_elmnt_id_t, device_info_t> dc_devices{};
-        for ( auto &dc_dev: dc_devices_set.item )
+        std::map <a_elmnt_id_t, device_info_t> container_devices{};
+        for ( auto &container_dev: container_devices_set.item )
         {
-            a_elmnt_id_t tmp = std::get<0>(dc_dev);
-            dc_devices.insert(std::pair<a_elmnt_id_t, device_info_t>(tmp, dc_dev));
+            a_elmnt_id_t tmp = std::get<0>(container_dev);
+            container_devices.insert(std::pair<a_elmnt_id_t, device_info_t>(tmp, container_dev));
         }
         
-        auto links = select_links_by_container (conn, dc.id);
+        auto links = select_links_by_container (conn, container.id);
         if ( links.status == 0 )
         {
-            log_warning ("'%s': internal problems in links detecting", dc.name.c_str());
+            log_warning ("'%s': internal problems in links detecting", container.name.c_str());
             // so return an empty set of power devices
-            ret.item.insert(std::pair< std::string, std::vector<std::string> >(dc.name, result));
+            ret.item.insert(std::pair< std::string, std::vector<std::string> >(container.name, result));
             continue;
         }
         
         if ( links.item.empty() )
         {
-            log_warning ("'%s': has no power links", dc.name.c_str());
+            log_warning ("'%s': has no power links", container.name.c_str());
             // so return an empty set of power devices
-            ret.item.insert(std::pair< std::string, std::vector<std::string> >(dc.name, result));
+            ret.item.insert(std::pair< std::string, std::vector<std::string> >(container.name, result));
             continue;
         }
         
@@ -1248,18 +1250,18 @@ db_reply <std::map<std::string, std::vector<std::string> > >
         //  B________|______A__C    |
         //           |              |
         //           +--------------+
-        //   B is out of the DC
-        //   A is in the DC
+        //   B is out of the Container
+        //   A is in the Container
         //   then A is border device
         for ( auto &oneLink : links.item )
         {
             log_debug ("  cur_link: %d->%d", oneLink.first, oneLink.second);
-            auto it = dc_devices.find (oneLink.first);
-            if ( it == dc_devices.end() ) // if in the link first point is out of the DC,
-                                          // the second definitely should be in DC,
-                                          // otherwise it is not a "dc"-link
+            auto it = container_devices.find (oneLink.first);
+            if ( it == container_devices.end() ) // if in the link first point is out of the Container,
+                                          // the second definitely should be in Container,
+                                          // otherwise it is not a "container"-link
             {
-                border_devices.insert(dc_devices.find(oneLink.second)->second);
+                border_devices.insert(container_devices.find(oneLink.second)->second);
             }
             dest_dvcs.insert(oneLink.second);
         }
@@ -1268,21 +1270,35 @@ db_reply <std::map<std::string, std::vector<std::string> > >
         //           |A_____C    |
         //           |           |
         //           +-----------+
-        //   A is in the DC (from)
-        //   C is in the DC (to)
+        //   A is in the Container (from)
+        //   C is in the Container (to)
         //   then A is border device
         //
-        //   Algorithm: from all devices in the DC we will select only those that
+        //   Algorithm: from all devices in the Container we will select only those that
         //   don't have an incoming links (they are not a destination device for any link)
-        for ( auto &oneDevice : dc_devices )
+        for ( auto &oneDevice : container_devices )
         {
             if ( dest_dvcs.find (oneDevice.first) == dest_dvcs.end() )
                 border_devices.insert ( oneDevice.second );
         }
 
-        result = compute_total_dc_power_v2(dc_devices, links.item, border_devices);
-        ret.item.insert(std::pair< std::string, std::vector<std::string> >(dc.name, result));
+        result = compute_total_power_v2(container_devices, links.item, border_devices);
+        ret.item.insert(std::pair< std::string, std::vector<std::string> >(container.name, result));
     }
     LOG_END;
     return ret;
+}
+
+db_reply <std::map<std::string, std::vector<std::string> > >
+    select_devices_total_power_dcs 
+        (tntdb::Connection  &conn)
+{
+    return select_devices_total_power_container (conn, asset_type::DATACENTER);
+}
+
+db_reply <std::map<std::string, std::vector<std::string> > >
+    select_devices_total_power_racks 
+        (tntdb::Connection  &conn)
+{   
+    return select_devices_total_power_container (conn, asset_type::RACK);
 }
