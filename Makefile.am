@@ -1371,7 +1371,6 @@ BASE_DOCS_PLAINTEXT =	AUTHORS COPYING NEWS ChangeLog
 # These two seem to have some markup or similar structuring,
 # but it is not asciidoc so consider them plaintext for now.
 # Note these should have paths relative to project root dir.
-BASE_DOCS_PLAINTEXT +=	README
 BASE_DOCS_PLAINTEXT +=	TODO
 
 # The following files are saved into proper subdirectories, have an
