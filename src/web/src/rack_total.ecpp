@@ -23,6 +23,17 @@ float total_rack_power(tntdb::Connection& conn, a_elmnt_id_t id) {
     return value * pow(10,scale);
 }
 
+static bool s_is_valid_param(const std::string& p) {
+    static const std::vector<std::string> validParams = {
+        "total_power",
+        "avg_power_last_day",
+        "avg_power_last_week",
+        "avg_power_last_month",
+        "avg_power_last_year"
+    };
+    return std::find( validParams.begin(), validParams.end(), p ) != validParams.end();
+}
+
 </%pre>
 <%args>
 std::string arg1;
@@ -43,13 +54,6 @@ tntdb::Connection conn = tntdb::connectCached (url);
     std::vector<std::string> racks; // list of ids of racks from argument string
     std::vector<std::string> rackNames;
     std::vector<std::string> requestedParams;
-    static std::vector<std::string> validParams = {
-        "total_power",
-        "avg_power_last_day",
-        "avg_power_last_week",
-        "avg_power_last_month",
-        "avg_power_last_year"
-    };
     cxxtools::split(",", arg1, std::back_inserter(racks));
     // check that racks exists
 
@@ -90,7 +94,7 @@ tntdb::Connection conn = tntdb::connectCached (url);
     
     cxxtools::split(",", arg2, std::back_inserter(requestedParams));
     for(std::string &param: requestedParams) {
-        if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+        if (! s_is_valid_param(param)) {
 </%cpp>
 { "error":"bad_input", "msg":"invalid_parameter" }
 <%cpp>
