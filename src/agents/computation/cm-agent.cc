@@ -83,9 +83,15 @@ int main (int argc, char **argv) {
         log_error ("%s WILL NOT be able to listen on %s.",BIOS_AGENT_NAME_COMPUTATION, bios_get_stream_main ());
     }
 #endif
-
-    tntdb::Connection conn = tntdb::connectCached (url);
-
+    
+    tntdb::Connection conn;
+    try {
+        conn = tntdb::connectCached (url);
+    }
+    catch (...) { // TODO: std::exception&...
+        log_critical ("tntdb::connnectCached faile.");
+        return EXIT_FAILURE;
+    } 
     // We don't really need a poller. We just have one client (actor/socket)
     while (!zsys_interrupted) {
         log_debug ("WAITING");

@@ -1,3 +1,4 @@
+*.sh.bak
 *.h.bak
 *.c.bak
 *.cc.bak
