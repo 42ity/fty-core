@@ -7,13 +7,7 @@
 #include "upsstatus.h"
 #include "utils_ymsg.h"
 #include "cleanup.h"
-
-// TODO: read this from configuration (once in 5 minutes now (300s))
-#define NUT_MEASUREMENT_REPEAT_AFTER 300
-// TODO: read this from configuration (every hour now (3600s))
-#define NUT_INVENTORY_REPEAT_AFTER 3600
-// TODO: read this from configuration (check with upsd ever 5s)
-#define NUT_POLLING_INTERVAL  5000
+#include "defs.h"
 
 void NUTAgent::onStart( ) {
     _timeout = NUT_POLLING_INTERVAL;
