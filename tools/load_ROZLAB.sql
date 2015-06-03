@@ -85,23 +85,23 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_ups);
 
 
-/* ROZ.ePDU1 */
-insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ROZ.ePDU1", @asset_element_device, @last_rack,"active",1,1);
+/* ROZ.ePDU10 */
+insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ROZ.ePDU10", @asset_element_device, @last_rack,"active",1,1);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU1 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU10 eMAA10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "epdu03", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "epdu03.roz.lab.etn.com", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "epdu10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "epdu10.roz.lab.etn.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Michal Hrušecký", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "michalhrusecky@eaton.com", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "240211151532", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
 
-/* ROZ.ePDU2 */
-insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ROZ.ePDU2", @asset_element_device, @last_rack,"active",1,1);
+/* ROZ.ePDU04 */
+insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ROZ.ePDU04", @asset_element_device, @last_rack,"active",1,1);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU2 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU04 eMAA10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "epdu04", @last_asset_element);
@@ -114,7 +114,7 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 /* GRASSHOPPER */
 insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("GRASSHOPPER",  @asset_element_device, @last_rack,"active",1,1);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "Secondary BIOS server (kvm, OBS)",  @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",        "Secondary BIOS server (kvm)",  @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "24",       @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Dell", @last_asset_element);
@@ -155,12 +155,25 @@ insert into t_bios_asset_element (name , id_type, id_parent) values ("SHERPA", @
 set @last_asset_element = LAST_INSERT_ID();
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","BIOS NAS", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "30",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "26",       @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Synology", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "RackStation RS815RP+", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Aramis", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "aramis@mousquetaires.defense.gouv.fr", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
+insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
+
+/* HP-UX */
+insert into t_bios_asset_element (name , id_type, id_parent) values ("HP-UX", @asset_element_device, @last_rack);
+set @last_asset_element = LAST_INSERT_ID();
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Testing machine with HP-UX", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "2",        @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "22",       @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "HP", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "Integrity rx2088 i2", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Evgeny Klimov", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "evgenyklimov@eaton.com", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+420 221 151 535", @last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_server);
 
 /* BIOS-RC-DEMO */
@@ -210,134 +223,157 @@ values
     @asset_link_powerchain
 );
 
-/* link (ROZ.UPS1, ROZ.ePDU1, 'power chain') */
+/* link (ROZ.UPS1, ROZ.ePDU10, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values 
 (
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.UPS1'),
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     @asset_link_powerchain
 );
 
-/* link (ROZ.UPS1, ROZ.ePDU2, 'power chain') */
+/* link (ROZ.UPS1, ROZ.ePDU04, 'power chain') */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 values 
 (
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.UPS1'),
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     @asset_link_powerchain
 );
 
-/* link (ROZ.ePDU1,GRASSHOPPER, 'power chain', A4, 1) */
+/* link (ROZ.ePDU10, HP-UX, 'power chain', A4, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'HP-UX'),
+    @asset_link_powerchain,
+    "3", 
+    "1"
+);
+/* link (ROZ.ePDU04, HP-UX, 'power chain', A4, 2) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'HP-UX'),
+    @asset_link_powerchain,
+    "3",
+    "2"
+);
+
+/* link (ROZ.ePDU10,GRASSHOPPER, 'power chain', A4, 1) */
+insert into t_bios_asset_link
+    (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
+values 
+(
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'GRASSHOPPER'),
     @asset_link_powerchain,
     "4", 
     "1"
 );
-/* link (ROZ.ePDU2, GRASSHOPPER, 'power chain', A4, 2) */
+/* link (ROZ.ePDU04, GRASSHOPPER, 'power chain', A4, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'GRASSHOPPER'),
     @asset_link_powerchain,
     "4",
     "2"
 );
-/* link (ROZ.ePDU1, SRV13, 'power chain', A5, 1) */
+/* link (ROZ.ePDU10, SRV13, 'power chain', A5, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV13'),
     @asset_link_powerchain,
     "5",
     "1"
 );
-/* link (ROZ.ePDU2, SRV13, 'power chain', A5, 2) */
+/* link (ROZ.ePDU04, SRV13, 'power chain', A5, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SRV13'),
     @asset_link_powerchain,
     "5",
     "2"
 );
 
-/* link (ROZ.ePDU1, HORNET, 'power chain', A6, 1) */
+/* link (ROZ.ePDU10, HORNET, 'power chain', A6, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'HORNET'),
     @asset_link_powerchain,
     "6",
     "1"
 );
-/* link (ROZ.ePDU2, HORNET, 'power chain', A6, 2) */
+/* link (ROZ.ePDU04, HORNET, 'power chain', A6, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'HORNET'),
     @asset_link_powerchain,
     "6",
     "2"
 );
 
-/* link (ROZ.ePDU1, SHERPA, 'power chain', A7, 1) */
+/* link (ROZ.ePDU10, SHERPA, 'power chain', A7, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SHERPA'),
     @asset_link_powerchain,
     "7",
     "1"
 );
-/* link (ROZ.ePDU2, SHERPA, 'power chain', A7, 2) */
+/* link (ROZ.ePDU04, SHERPA, 'power chain', A7, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'SHERPA'),
     @asset_link_powerchain,
     "7",
     "2"
 );
 
-/* link (ROZ.ePDU1, BIOS-RC-DEMO, 'power chain', A8, 1) */
+/* link (ROZ.ePDU10, BIOS-RC-DEMO, 'power chain', A8, 1) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU1'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU10'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'BIOS-RC-DEMO'),
     @asset_link_powerchain,
     "8",
     "1"
 );
-/* link (ROZ.ePDU2, BIOS-RC-DEMO, 'power chain', A8, 2) */
+/* link (ROZ.ePDU04, BIOS-RC-DEMO, 'power chain', A8, 2) */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type, src_out, dest_in)
 values 
 (
-    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU2'),
+    (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'ROZ.ePDU04'),
     (select id_asset_device from t_bios_asset_device as t1 INNER JOIN t_bios_asset_element as t2 ON t1.id_asset_element = t2.id_asset_element where name = 'BIOS-RC-DEMO'),
     @asset_link_powerchain,
     "8",
@@ -355,14 +391,14 @@ INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element
 
 
 /* ePDUs */
-INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ROZ.ePDU1', @device_epdu);
-INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ROZ.ePDU2', @device_epdu);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ROZ.ePDU10', @device_epdu);
+INSERT INTO t_bios_discovered_device (name,id_device_type) VALUES ('ROZ.ePDU04', @device_epdu);
 INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
-    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ROZ.ePDU1'),
-    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ROZ.ePDU1')
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ROZ.ePDU10'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ROZ.ePDU10')
 );
 INSERT INTO t_bios_monitor_asset_relation (id_discovered_device,id_asset_element) VALUES (
-    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ROZ.ePDU2'),
-    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ROZ.ePDU2')
+    (SELECT id_discovered_device FROM t_bios_discovered_device WHERE name = 'ROZ.ePDU04'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'ROZ.ePDU04')
 );
 
