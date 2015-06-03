@@ -72,12 +72,14 @@ enum ipaddr_version {
     IP_VERSION_6
 };
 
-//TODO: Make AGENT_NUT_ values configurable
-// NOTE !!! If you change this value you have to change the following tests as well: TODO
-//! Measurement is sent each AGENT_NUT_REPEAT_INTERVAL_SEC seconds even when there is no change in value. This is done to conserve space and bandwidth.
-#define AGENT_NUT_REPEAT_INTERVAL_SEC 300
-//! Approximate sampling rate of NUT  
-#define AGENT_NUT_SAMPLING_INTERVAL_SEC 5
+// TODO: Make the following 5 values configurable
+#define NUT_MEASUREMENT_REPEAT_AFTER    300     //!< (once in 5 minutes now (300s))
+#define NUT_INVENTORY_REPEAT_AFTER      3600    //!< (every hour now (3600s))
+#define NUT_POLLING_INTERVAL            5000    //!< (check with upsd ever 5s)
+
+// Note !!! If you change this value you have to change the following tests as well: TODO
+#define AGENT_NUT_REPEAT_INTERVAL_SEC       NUT_MEASUREMENT_REPEAT_AFTER     //<! TODO 
+#define AGENT_NUT_SAMPLING_INTERVAL_SEC     5   //!< TODO: We might not need this anymore
 
 #define KEY_REPEAT "repeat"
 #define KEY_STATUS "status"

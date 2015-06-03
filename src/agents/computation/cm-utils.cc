@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*!
- \file   utils.cc
+ \file   cm-utils.cc
  \brief  Implementation of utility functions and helpers for computation module
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
@@ -74,39 +74,54 @@ solve_left_margin
     }
 
     it = samples.lower_bound (extended_start);
-    if (it != samples.end ())
+    if (it != samples.end ()) {
         log_debug ("Lower bound returned timestamp: %" PRId64", value: %f", it->first, it->second);
-    else
-        log_debug ("Lower bound returned samples.end ()");
-    if (it == samples.end () || it->first >= start) {
+    }
+    else if (it == samples.end () || it->first >= start) {
         log_debug ("Lower bound == samples.end () || lower bound >= start");
         samples.erase (samples.cbegin (), it);
         return;
     }
 
-    while (it->first < start) { ++it; }
-    std::map <int64_t, double>::const_iterator i;
-    bool inserted;
-    std::tie (i, inserted) = samples.emplace (std::make_pair (extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC, (--it)->second));
-    if (inserted)
-        log_debug ("emplace ok");
-    else 
-        log_debug ("did NOT emplace");
+    while (it->first < start) {
+        ++it;
+        if (it == samples.end ()) {
+            samples.clear ();
+            return;
+        }
+    }
+    auto prev = it; --prev;
 
-    //cut the beginning
-    samples.erase (samples.cbegin (), i);
+    if (it->first - prev->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+        std::map <int64_t, double>::const_iterator i;
+        bool inserted;
+        std::tie (i, inserted) = samples.emplace (std::make_pair (extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC, prev->second));
+        if (inserted)
+            log_debug ("emplace ok");
+        else 
+            log_debug ("did NOT emplace");
+
+        //cut the beginning
+        samples.erase (samples.cbegin (), i);
+    } else {
+        samples.erase (samples.cbegin (), it);
+    }
 }
 
 int
 calculate
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
     assert (type);
-    if (start >= end || samples.empty ())
+    if (start >= end || samples.empty ()) {
+        log_debug ("start >= end || samples empty");
         return -1;
-
+    }
+    
     auto it1 = samples.lower_bound (start);
-    if (it1->first >= end) // requested interval is empty
+    if (it1->first >= end) { // requested interval is empty
+        log_debug ("Requested interval empty");
         return 1;
+    }
     // TODO: add check from utils.h for validity of type
 
     if (strcmp (type, "min") == 0) {
@@ -146,7 +161,7 @@ calculate_arithmetic_mean
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, double& result) {
     if (start >= end || samples.empty ())
         return -1;
-
+    
     printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) { // requested interval is empty
@@ -204,16 +219,26 @@ check_completeness
     assert (step);
     assert (is_average_step_supported (step));
 
-    int64_t block = 0;
 
     int64_t step_sec = average_step_seconds (step);
-    if (end_timestamp - last_average_timestamp < step_sec) {
+    log_debug ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
+                last_container_timestamp, last_average_timestamp, end_timestamp, step, step_sec);
+    if (end_timestamp - last_container_timestamp < step_sec) {
         return 1;
     }
-    // end_timestamp - last_average_timestamp >= step_sec
-    if (last_average_timestamp <= last_container_timestamp) {
-        new_start = last_container_timestamp + step_sec;
-        return 0;
+    // end_timestamp - last_container_timestamp >= step_sec
+   if (last_average_timestamp > end_timestamp ) {
+       return 1;
+   }
+   else { // last_average_timestamp <= end_timestamp
+        if (last_average_timestamp == last_container_timestamp) {
+            new_start = last_container_timestamp + step_sec;
+            return 0;
+        }
+        else { 
+            log_error ("last average timestamp < last container timestamp OR last container timestamp < last average timestamp <= end timestamp");
+            return -1;
+        }
     }
     return 1;
 }
@@ -229,12 +254,16 @@ request_averages
 
     int return_value = 0;
     std::string message_str;
+    log_debug ("Requesting averages element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
+               " start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
+               element_id, source, type, step, start_timestamp, end_timestamp );
     auto ret = persist::get_measurements_averages
     (conn, element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
     switch (ret.rv) {
         case 0:
         {
             return_value = 1;
+            log_debug ("Ok. Last average timestamp: '%" PRId64"'", last_average_timestamp);
             break;
         }
         case 1:
@@ -275,7 +304,8 @@ request_sampled
 
     int return_value = 0;
     std::string message_str;
-
+    log_debug ("Requesting samples element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
+               element_id, topic, start_timestamp, end_timestamp );
     auto ret = persist::get_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
     switch (ret.rv) {
         case 0:
@@ -316,7 +346,49 @@ request_sampled
 }
 
 
+
+
 } // namespace web
+
+void
+publish_measurement_if
+(bios_agent_t *agent, const char *device_name, const char *source, const char *type, const char *step, const char *unit, double value, int64_t timestamp) {
+    assert (device_name);
+    assert (source);
+    assert (type);
+    assert (step);
+    assert (unit);
+
+    if (strlen (device_name) == 0) {
+        log_info ("Device name empty, measurement not published.");
+        return;
+    }
+    std::string quantity;
+    quantity.assign (source).append ("_").append (type).append ("_").append (step);
+    log_debug ("quantity: '%s'", quantity.c_str ());
+
+    std::string topic;
+    topic.assign ("measurement.").append (quantity).append ("@").append (device_name);
+    log_debug ("topic: '%s'", topic.c_str ());
+
+    // Note: precision is currently hardcoded for 2 floating point places
+    _scoped_ymsg_t *published_measurement =
+        bios_measurement_encode (device_name, quantity.c_str(), unit, (int32_t) (value * 100), -2, timestamp);
+    if (!published_measurement) {
+        log_critical (
+        "bios_measurement_encode (device = '%s', source = '%s', type = '%s', step = '%s', value = '%f', timestamp = '%" PRId64"') failed.",
+        device_name, source, type, step, value, timestamp);
+        return;
+    }
+    std::string formatted_msg;
+    ymsg_format (published_measurement, formatted_msg);
+    int rv = bios_agent_send (agent, topic.c_str (), &published_measurement); // published_measurement destroyed 
+    if (rv == 0) {
+        log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
+    } else {
+        log_critical ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
+    } 
+}
 
 } // namespace computation
 

@@ -83,7 +83,6 @@ process
         } 
 
         std::string json_out (BIOS_WEB_AVERAGE_REPLY_JSON_TMPL); // resulting output json           
-        json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);
         json_out.replace (json_out.find ("##SOURCE##"), strlen ("##SOURCE##"), source);
         json_out.replace (json_out.find ("##STEP##"), strlen ("##STEP##"), step);
         json_out.replace (json_out.find ("##TYPE##"), strlen ("##TYPE##"), type);
@@ -142,8 +141,13 @@ process
             int64_t last_container_ts = it->first;
             int64_t new_start;
             rv = check_completeness (last_container_ts, last_average_ts, end_ts, step, new_start);
+            if (rv == -1) {
+                ymsg_set_status (*message_out, false);
+                ymsg_set_errmsg (*message_out, "Internal error: Extracting data from database failed.");
+                return;
+            }
             if (rv == 0) {
-                log_info ("returned averages NOT complete");
+                log_info ("returned averages NOT complete. New start: '%" PRId64"'", new_start);
                 start_sampled_ts = average_extend_left_margin (new_start, step);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC,
                                       samples, unit, *message_out)) {
@@ -164,54 +168,45 @@ process
             for (const auto &p : samples) {
                 printf ("%" PRId64" => %f\n", p.first, p.second);
             }
+            if (!samples.empty ()) {
+                int64_t first_ts = samples.cbegin()->first;
+                int64_t second_ts = average_first_since (first_ts, step);
+                double comp_result;
 
-            int64_t first_ts = samples.cbegin()->first;
-            int64_t second_ts = average_first_since (first_ts, step);
-            double comp_result;
+                printf ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
+                           first_ts, second_ts, end_ts);
+                while (second_ts <= end_ts) {
+                    std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
+                    printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
+                    rv = calculate (samples, first_ts, second_ts, type, comp_result);
+                    // TODO: better return value check                
+                    if (rv == 0) {
+                        printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
+                        item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
+                        item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
+                        if (comma_counter == 0) 
+                            ++comma_counter;
+                        else
+                            data_str += ",\n";
 
-            printf ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
-                       first_ts, second_ts, end_ts);
-            while (second_ts <= end_ts) {
-                std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
-                rv = calculate (samples, first_ts, second_ts, type, comp_result);
-                // TODO: better return value check
-                if (rv == 0) {
-                    printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
-                    item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
-                    item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
-                    if (comma_counter == 0) 
-                        ++comma_counter;
-                    else
-                        data_str += ",\n";
+                        data_str += item;
 
-                    data_str += item;
-                } else if (rv == -1) {
-                    log_warning ("process_db_measurement_calculate failed"); // TODO
-                }
-                first_ts = second_ts;
-                second_ts += average_step_seconds (step);
+                        publish_measurement_if (agent, device_name.c_str (), source, type, step, unit.c_str (), comp_result, second_ts);
 
-                // TODO: create a fnc in cm-utils
-                if (!device_name.empty ()) {
-                    std::string quantity;
-                    quantity.assign (source).append ("_").append (type).append ("_").append (step);
-                    std::string topic;
-                    topic.assign ("measurement.").append (quantity).append ("@").append (device_name);
-                    _scoped_ymsg_t *published_measurement =
-                        bios_measurement_encode (device_name.c_str (), quantity.c_str(), unit.c_str (), (int32_t) (comp_result * 100), -2, second_ts);
-                    assert (published_measurement);
-                    std::string formatted_msg;
-                    ymsg_format (published_measurement, formatted_msg);
-                    log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
-                    rv = bios_agent_send (agent, topic.c_str (), &published_measurement);
-                    if (rv != 0) {
-                        log_error ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
                     }
+                    else if (rv == -1) {
+                        log_warning ("process_db_measurement_calculate failed"); // TODO
+                    }
+                    else if (rv == 1) {
+                        log_debug ("Requested interval empty");
+                    }
+                    first_ts = second_ts;
+                    second_ts += average_step_seconds (step);
                 }
             }  
         }
                       
+        json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);
         json_out.replace (json_out.find ("##DATA##"), strlen ("##DATA##"), data_str);
         log_debug ("json that goes to output:\n%s", json_out.c_str ());
 
