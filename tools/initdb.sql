@@ -569,14 +569,39 @@ FROM t_bios_measurement t1
     LEFT JOIN t_bios_measurement_topic t2 ON
         (t1.topic_id = t2.id);
 
+/* Selects the last known value regardless of polling interval */
 CREATE VIEW v_bios_measurement_lastdate AS
 SELECT max(p.timestamp) maxdate,
        p.device_id,
        p.topic_id
 FROM v_bios_measurement p
 GROUP BY p.topic_id, p.device_id;
-
 CREATE VIEW v_bios_measurement_last AS
+SELECT  v.id,
+        v.device_id,
+        v.timestamp,
+        v.topic,
+        v.topic_id,
+        v.value,
+        v.scale
+FROM       v_bios_measurement v
+INNER JOIN v_bios_measurement_lastdate grp 
+     ON v.timestamp = grp.maxdate  AND
+        v.topic_id = grp.topic_id;
+
+
+/* Selects the last known value during last 10 = 5*2 minutes  */
+/* 5 minuts is polling interval
+/* TODO: need to be configurable*/
+CREATE VIEW v_web_measurement_lastdate AS
+SELECT max(p.timestamp) maxdate,
+       p.device_id,
+       p.topic_id
+FROM v_bios_measurement p
+WHERE p.timestamp > SUBTIME(UTC_TIMESTAMP(), "0:10:0")
+GROUP BY p.topic_id, p.device_id;
+
+CREATE VIEW v_web_measurement_last AS
 SELECT  v.id,
         v.device_id,
         v.timestamp,
