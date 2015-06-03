@@ -345,7 +345,8 @@ noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 libpriv_db_measurements_la_SOURCES = \
 			src/db/measurements/measurement.cc \
 			src/db/measurements/measurement.h \
-			src/db/measurements.h
+			src/db/measurements.h \
+			src/db/types.h
 
 libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
