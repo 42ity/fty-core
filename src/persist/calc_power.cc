@@ -520,7 +520,7 @@ static rack_power_t
             " SELECT"
             "    v.device_id, v.value, v.scale"
             " FROM"
-            "   v_bios_measurement_last v"
+            "   v_web_measurement_last v"
             " WHERE"
             "   v.device_id IN (" 
                     + s_generate_in_clause(idmap) + ")"  // XXX

@@ -257,7 +257,7 @@ select_measurement_last_web_byElementId (
     try {
         tntdb::Statement statement = conn.prepareCached (
         " SELECT v.value, v.scale FROM"
-        "    v_bios_measurement_last v"
+        "    v_web_measurement_last v"
         " WHERE topic=:topic"
         );
 
