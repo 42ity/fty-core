@@ -470,6 +470,10 @@ common_msg_t* update_device_type(const char* url,
                                  m_dvc_tp_id_t device_type_id, 
                                  common_msg_t** device_type);
 
+db_reply_t
+    select_monitor_device_type_id
+        (tntdb::Connection &conn, 
+         const char *device_type_name);
 
 // ===============================================================
 // DEVICE
