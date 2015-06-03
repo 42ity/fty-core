@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 #include "defs.h"
+#include "str_defs.h"
+#include "utils.h"
 #include "cm-utils.h"
 
 namespace cm = computation;
@@ -38,7 +40,7 @@ TEST_CASE ("cm::web::sample_weight","[agent-cm][computation][average]")
     }
 }
 
-TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
+TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][solve_left_margin]")
 {
 
     SECTION ("bad args") {
@@ -54,18 +56,132 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
     }
 
     SECTION ("correct 1") {
+        // start: 2015-04-27 22:31:39 (1430173899)
         // extended_start                start
         //       <                         <
         //                                      x
         std::map <int64_t, double> samples;
-        samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-28 00:31:40
+        samples.emplace (std::make_pair (1430173900, 12.4)); // 2015-04-27 22:31:40
         std::size_t size = samples.size ();
 
-        cm::web::solve_left_margin (samples, 1430173599); // 2015-04-28 00:26:39 
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
         CHECK ( size == samples.size () );
-    }
 
+        //
+        samples.clear ();
+        samples.emplace (std::make_pair (1430174292, 12.4)); // 2015-04-27 22:38:12
+        size = samples.size ();
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( size == samples.size () );
+
+    }
     SECTION ("correct 2") {
+        // start: 2015-04-27 22:31:39 (1430173899)
+        // extended_start                start
+        //       <                         <
+        //                                 x
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430173899, 12.4)); // 2015-04-27 22:31:39
+        std::size_t size = samples.size ();
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( size == samples.size () );
+
+    }
+    SECTION ("correct 3") {
+        // start: 2015-04-27 22:31:39 (1430173899)
+        // extended_start                start
+        //       <                         <
+        //                             x    
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430173898, 12.4)); // 2015-04-27 22:31:38
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+
+        //
+        samples.clear ();
+        samples.emplace (std::make_pair (1430173899 - (AGENT_NUT_REPEAT_INTERVAL_SEC/2), 12.4));
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+    }
+    SECTION ("correct 4") {
+        // start: 2015-04-27 22:31:39 (1430173899)
+        // extended_start                start
+        //       <                         <
+        //                x                      p (one second after start)
+        std::map <int64_t, double> samples;
+        // x exactly NUT_REPEAT_INTERVAL from p
+        samples.emplace (std::make_pair (1430173900 - AGENT_NUT_REPEAT_INTERVAL_SEC, 15.1));
+        samples.emplace (std::make_pair (1430173900, 12.4)); // p := 2015-04-27 22:31:40 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // start
+        CHECK ( samples.begin ()->second == 15.1 );
+
+        // x somewhere in between (p - NUT_REPEAT_INTERVAL, p) 
+        samples.clear ();
+        samples.emplace (std::make_pair (1430173898, 15.2));
+        samples.emplace (std::make_pair (1430173900, 12.4)); // p :=  2015-04-27 22:31:40 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // 2015-04-27 22:31:39
+        CHECK ( samples.begin ()->second == 15.2 );
+
+        samples.clear ();
+        samples.emplace (std::make_pair (1430173900 - (AGENT_NUT_REPEAT_INTERVAL_SEC/2), 15.3));
+        samples.emplace (std::make_pair (1430173900, 12.4)); // p :=  2015-04-27 22:31:40 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // 2015-04-27 22:31:39
+        CHECK ( samples.begin ()->second == 15.3 );
+    }
+    SECTION ("correct 5") {
+        // start: 2015-04-27 22:31:39 (1430173899)
+        // extended_start                start
+        //       <                         <
+        //                x                      p
+        std::map <int64_t, double> samples;
+        // x exactly NUT_REPEAT_INTERVAL from p
+        samples.emplace (std::make_pair (1430173995 - AGENT_NUT_REPEAT_INTERVAL_SEC, 15.1));
+        samples.emplace (std::make_pair (1430173995, 12.4)); // p := 2015-04-27 22:33:15 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // start
+        CHECK ( samples.begin ()->second == 15.1 );
+
+        // x somewhere in between (p - NUT_REPEAT_INTERVAL, p) 
+        samples.clear ();
+        samples.emplace (std::make_pair (1430173898, 15.2)); // 2015-04-27 22:31:38
+        samples.emplace (std::make_pair (1430173995, 12.4)); // p := 2015-04-27 22:33:15 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // 2015-04-27 22:31:39
+        CHECK ( samples.begin ()->second == 15.2 );
+
+        samples.clear ();
+        samples.emplace (std::make_pair (1430173995 - (AGENT_NUT_REPEAT_INTERVAL_SEC/2) , 15.3));
+        samples.emplace (std::make_pair (1430173995, 12.4)); // p := 2015-04-27 22:33:15 
+
+        cm::web::solve_left_margin (samples, 1430173899 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 2 );
+        CHECK ( samples.begin ()->first == 1430173899 ); // 2015-04-27 22:31:39
+        CHECK ( samples.begin ()->second == 15.3 );
+
+    }
+    // TODO: Until here, test cases done with regard to configurable interval
+    //       Anything below is not guaranteed to work after repeat interval change
+
+    SECTION ("old 2") {
         //  extended_start                start
         //        <                         <
         //   x                                    x
@@ -81,7 +197,7 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
         CHECK ( samples.begin ()->second == 12.4 );
     }
 
-    SECTION ("correct 3") {
+    SECTION ("old 3") {
         //  extended_start                start
         //        <                         <
         //   x                              x
@@ -97,7 +213,7 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
       
     }
 
-    SECTION ("correct 4") {
+    SECTION ("old 4") {
         //  extended_start                start
         //        <                         <
         //   x    x        x    x           x  x
@@ -119,7 +235,7 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
         CHECK ( it->second ==  7.02 );
     }
 
-    SECTION ("correct 5") {
+    SECTION ("old 5") {
         //  extended_start                start
         //        <                         <
         //   x    x        x    x      x        x
@@ -146,7 +262,7 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
         CHECK ( it->second ==  17.1 );       
     }
 
-    SECTION ("correct 6") {
+    SECTION ("old 6") {
         //  extended_start                start
         //        <                         <
         //   x            x    x      x        x
@@ -171,6 +287,81 @@ TEST_CASE ("cm::web::solve_left_margin","[agent-cm][computation][average][db]")
         CHECK ( it->first == 1430174422 );
         CHECK ( it->second ==  17.1 );       
     }
+    SECTION ("correct 7") {
+        // start:  2015-04-27 22:35:05 (1430174105)
+        //  extended_start                start
+        //        <                         <
+        //   x          
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430174105 - (2*AGENT_NUT_REPEAT_INTERVAL_SEC), 1.13)); // 1430173801 == 2015-04-27 22:30:01
+
+        cm::web::solve_left_margin (samples, 1430174105 - AGENT_NUT_REPEAT_INTERVAL_SEC); 
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+    }
+    SECTION ("correct 8") {
+        // start:  2015-04-27 22:35:06 (1430174106)
+        //  extended_start                start
+        //        <                         <
+        //        x     
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC, 1.13));
+
+        cm::web::solve_left_margin (samples, 1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+    }
+    SECTION ("correct 9") {
+        // start:  2015-04-27 22:35:06 (1430174106)
+        //  extended_start                start
+        //        <                         <
+        //   x    x     
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430174106 - (2*AGENT_NUT_REPEAT_INTERVAL_SEC), 1.13));
+        samples.emplace (std::make_pair (1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC, 1.17));
+
+        cm::web::solve_left_margin (samples, 1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+    }
+    SECTION ("correct 10") {
+        // start:  2015-04-27 22:35:06 (1430174106)
+        //  extended_start                start
+        //        <                         <
+        //   x       x     x      x
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430174106 - (2*AGENT_NUT_REPEAT_INTERVAL_SEC), 1.13));
+        samples.emplace (std::make_pair (1430174106 - 50, 1.17));
+        samples.emplace (std::make_pair (1430174106 - 42, 1.18));
+        samples.emplace (std::make_pair (1430174106 - 39, 1.19));
+        samples.emplace (std::make_pair (1430174106 - 10, 1.20));
+        samples.emplace (std::make_pair (1430174106 - 1, 1.21));
+
+        cm::web::solve_left_margin (samples, 1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 0 );
+        CHECK ( samples.empty () );
+
+    }
+    SECTION ("correct 11") {
+        // start:  2015-04-27 22:35:06 (1430174106)
+        //  extended_start                start
+        //        <                         <
+        //   x       x     x      x             p ( > repeat interval from last x)
+        std::map <int64_t, double> samples;
+        samples.emplace (std::make_pair (1430174106 - (2*AGENT_NUT_REPEAT_INTERVAL_SEC), 1.13));
+        samples.emplace (std::make_pair (1430174106 - 50, 1.17));
+        samples.emplace (std::make_pair (1430174106 - 42, 1.18));
+        samples.emplace (std::make_pair (1430174106 - 39, 1.19));
+        samples.emplace (std::make_pair (1430174106 - 10, 1.20));
+        samples.emplace (std::make_pair (1430174106 - 1, 1.21));
+        samples.emplace (std::make_pair (1430174106 + AGENT_NUT_REPEAT_INTERVAL_SEC , 1.22));
+
+        cm::web::solve_left_margin (samples, 1430174106 - AGENT_NUT_REPEAT_INTERVAL_SEC);
+        CHECK ( samples.size () == 1 );
+        CHECK ( samples.begin ()->first == 1430174106 + AGENT_NUT_REPEAT_INTERVAL_SEC );
+        CHECK ( samples.begin ()->second == 1.22 );
+    }
+ 
 }
 
 TEST_CASE ("cm::web::calculate","[agent-cm][computation][average][db]")
@@ -342,10 +533,83 @@ TEST_CASE ("cm::web::calculate","[agent-cm][computation][average][db]")
 
 }
 
-/* TODO:
-TEST_CASE ("cm::web::check_completeness","[agent-cm][computation][average]")
+// check_completeness (int64_t last_container_timestamp, int64_t last_average_timestamp, int64_t end_timestamp, const char *step, int64_t& new_start)
+/* TODO: Tests need to be rewritten
+TEST_CASE ("cm::web::check_completeness","[agent-cm][computation][average][check_completeness]")
 {
-    SECTION ("bad args") {
+    SECTION ("Test cases that can be applied to all average steps (alignment with start of day)") {
+        int i = 0;
+        int64_t new_start = 0;
+        for (i = 0; i < AVG_STEPS_SIZE; i++) {
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp > last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            INFO ("Step is " << AVG_STEPS[i]);
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1435708800, AVG_STEPS[i], new_start) == -1 );
+            
+            // 1433059200 == 2015-05-31 08:00:00 
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1435708800, AVG_STEPS[i], new_start) == -1 );
+
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == -1 );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            // end timestamp == last container timestamp
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, INT64_MIN, 1433116800, AVG_STEPS[i], new_start) == -1 );
+            CHECK ( new_start == 0 );
+            CHECK ( cm::web::check_completeness (1433116800, 1433059200, 1433116800, AVG_STEPS[i], new_start) == 1  );
+            CHECK ( new_start == 0 );
+
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp == last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1435708800, AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 0 );
+            CHECK ( new_start == 1433116800 + average_step_seconds (AVG_STEPS[i]) );
+
+            // end timestamp == last container timestamp
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, 1433116800, 1433116800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            //////////////////////////////////////////////////////////////
+            // CASE: last container timestamp < last average timestamp
+            // 1433116800 == 2015-06-01 00:00:00
+            // 1435708800 == 2015-07-01 00:00:00
+            // 1454284800 == 2016-02-01 00:00:00
+            new_start = 0;
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1435708800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+            // end timestamp == last container timestamp
+            CHECK ( cm::web::check_completeness (1433116800, 1454284800, 1433116800, AVG_STEPS[i], new_start) == 1 );
+            CHECK ( new_start == 0 );
+
+
+            ///////////////////////////////////////////////////////////////////////////////
+            // CASE: simulate erroneous persist::get_measurements_averages return values
+            // 1433116800 == 2015-06-01 00:00:00
+            new_start = 0;
+            CHECK (
+            cm::web::check_completeness
+            (1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), 1433116800 + average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == -1 );
+            CHECK (
+            cm::web::check_completeness
+            (1433116800, 1433116800 + average_step_seconds (AVG_STEPS[i]), 1433116800 + 2*average_step_seconds (AVG_STEPS[i]), AVG_STEPS[i], new_start) == -1 );
+            CHECK ( new_start == 0 );
+        }
+        // TODO: create a few  hand tailored cases for each avg. step
     }
+
 }
 */
+
