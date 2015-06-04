@@ -481,6 +481,20 @@ src/web/src/sysinfo.cpp: src/include/git_details_override.h
 #                        Unit tests
 #----------------------------------------------------------------------
 
+check_PROGRAMS +=	test-utils-plusplus	
+
+test_utils_plusplus_SOURCES = \
+			src/shared/utils++.h \
+			tests/shared/test-utils++.cc
+
+test_utils_plusplus_LDADD = \
+			libpriv-utils-plusplus.la \
+			libpriv-test-run.la
+
+test_utils_plusplus_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/
+
 check_PROGRAMS += 	test-utils
 
 test_utils_SOURCES = 	src/shared/utils.h \
