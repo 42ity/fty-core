@@ -359,9 +359,11 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
-			src/db/assets/assetr.cc \
 			src/db/alerts/alert_basic.h \
-			src/db/alerts.h
+			src/db/alerts.h \
+			src/db/assets/assetr.h \
+			src/db/assets/assetr.cc \
+			src/db/assets.h
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
