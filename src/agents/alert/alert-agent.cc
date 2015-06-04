@@ -48,30 +48,10 @@ void AlertAgent::onReply( ymsg_t **message )
         FREE0(rule);
         FREE0(devices);
     }
-    else if( streq( topic, "get_asset_element" ) ) {
-        char *device = NULL;
-        uint8_t priority;
-        if( bios_asset_extract( *message, &device, NULL, NULL, NULL, &priority) == 0 ) {
-            log_debug( "Device %s priority is %i", device, priority );
-            _model.setPriority( device, (alert_priority_t)priority );
-        }
-        FREE0( device );
-    }
 }
 
 void AlertAgent::onPoll() {
     for( auto al = _model.begin(); al != _model.end() ; ++al ) {
-        if( al->second.priority() == ALERT_PRIORITY_UNKNOWN ) {
-            // hmm, ask for priority
-            ymsg_t * msg = bios_asset_encode( al->second.devices().c_str(), 0, 0, NULL, 0);
-            if( msg ) {
-                ymsg_set_repeat( msg, true ); // FIXME: failed if not used
-                log_debug( "Sending request for device %s priority", al->second.devices().c_str() );
-                sendto( BIOS_AGENT_NAME_DB_MEASUREMENT, "get_asset_element", &msg );
-                ymsg_destroy(&msg);
-            }
-        }
-        else
         if( al->second.timeToPublish() ) {
             _scoped_ymsg_t * msg = bios_alert_encode (
                 al->second.ruleName().c_str(),
