@@ -88,8 +88,8 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 /* ROZ.ePDU05 */
 insert into t_bios_asset_element (name , id_type, id_parent,status,priority,business_crit) values ("ROZ.ePDU05", @asset_element_device, @last_rack,"active",1,1);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU05 eMAA10", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU05 eSWA01", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("model", "Eaton ePDU MA 1P IN:IEC309 10A OUT:21xC13, 3xC19", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "epdu10", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "epdu10.roz.lab.etn.com", @last_asset_element);
