@@ -1097,11 +1097,15 @@ agent_alert_SOURCES = \
 agent_alert_LDADD = \
 			libpriv-utils.la \
 			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
 			libbiosapi.la
 
-agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
 
-agent_alert_CPPFLAGS = $(AM_CPPFLAGS)
+agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
+                       -I$(abs_top_srcdir)/src/persist \
+                       -I$(abs_top_srcdir)/tools
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
