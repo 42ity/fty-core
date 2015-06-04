@@ -97,6 +97,7 @@ test-log
 test-nmap-parse
 test-subprocess
 test-utils
+test-utils-plusplus
 test-dbtopology
 test-totalpower
 test-web
