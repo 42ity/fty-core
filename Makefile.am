@@ -219,6 +219,12 @@ dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
 # Some of our code is arranged into private libraries used during
 # build, but not published or distributed outside the build-tree.
 
+noinst_LTLIBRARIES += 		libpriv-utils-plusplus.la
+
+libpriv_utils_plusplus_la_SOURCES = \
+				src/shared/utils++.cc \
+				src/shared/utils++.h
+
 noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
 libpriv_utils_ymsg_la_SOURCES = \
@@ -1054,7 +1060,8 @@ agent_cm_LDADD = \
 			libpriv-log.la \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la
+			libpriv-db-measurements.la \
+			libpriv-utils-plusplus.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
