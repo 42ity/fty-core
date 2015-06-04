@@ -43,6 +43,7 @@ class AlertModel {
 
     void setPriority( std::string device, alert_priority_t priority );
  protected:
+    alert_priority_t devicePriority(const std::string &deviceName);
     std::map< std::string, Measurement > _last_measurements;
     std::map<std::string, Alert> _alerts;
 };
