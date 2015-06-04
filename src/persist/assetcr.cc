@@ -868,24 +868,38 @@ db_reply_t
         return reply_insert5;
     }
 
-    auto reply_insert6 = insert_into_monitor_device 
-        (conn, asset_device_type_name, element_name);
-    if ( reply_insert6.affected_rows == 0 )
+    auto reply_select = select_monitor_device_type_id (conn, asset_device_type_name);
+    if ( reply_select.status == 1 )
     {
-        trans.rollback();
-        log_info ("end: device was not inserted (fail monitor_device)");
-        return reply_insert6;
-    }
-   
-    auto reply_insert7 = insert_into_monitor_asset_relation 
-        (conn, reply_insert6.rowid, reply_insert1.rowid);
-    if ( reply_insert7.affected_rows == 0 )
-    {
-        trans.rollback();
-        log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
-        return reply_insert7;
-    }
+        auto reply_insert6 = insert_into_monitor_device 
+            (conn, asset_device_type_name, element_name);
+        if ( reply_insert6.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: device was not inserted (fail monitor_device)");
+            return reply_insert6;
+        }
 
+        auto reply_insert7 = insert_into_monitor_asset_relation 
+            (conn, reply_insert6.rowid, reply_insert1.rowid);
+        if ( reply_insert7.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
+            return reply_insert7;
+        }
+    }
+    else if ( reply_select.errsubtype == DB_ERROR_NOTFOUND )
+    {
+        log_debug ("device should not being inserded into monitor part");
+    }
+    else
+    {
+        trans.rollback();
+        log_warning ("end: some error in denoting a ttype of device in monitor part");
+        return reply_select;
+
+    }
     trans.commit();
     LOG_END;
     return reply_insert1;
