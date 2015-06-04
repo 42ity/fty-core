@@ -120,8 +120,6 @@ std::string arg2;
 </%args>
 <%thread scope="global">
 asset_manager asset_mgr;
-// TODO this can throw exceptions!!
-tntdb::Connection conn = tntdb::connectCached (url);
 </%thread>
 <%cpp>
     // Check URL validity
@@ -184,6 +182,8 @@ tntdb::Connection conn = tntdb::connectCached (url);
 
     std::stringstream json;
 try {
+    // TODO this can throw exceptions!!
+    tntdb::Connection conn = tntdb::connectCached (url);
     json << "{\n\t\"datacenter_indicators\": [\n";
     for( size_t D = 0 ; D < DCs.size(); D++ ) {
         json << "\t\t{\n"
