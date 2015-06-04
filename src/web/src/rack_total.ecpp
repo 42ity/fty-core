@@ -52,6 +52,7 @@ std::string arg2;
 </%args>
 <%thread scope="global">
 asset_manager asset_mgr;
+// TODO this can throw exceptions!!
 tntdb::Connection conn = tntdb::connectCached (url);
 </%thread>
 <%cpp>

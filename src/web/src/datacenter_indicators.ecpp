@@ -9,39 +9,85 @@
 #include "calc_power.h"
 #include "dbpath.h"
 #include "cleanup.h"
+#include "db/measurements.h"
 
-float total_datacenter_power(a_elmnt_id_t rack_element_id) {
-    _scoped_zmsg_t *msg = NULL;
-    msg = calc_total_dc_power(url.c_str(),rack_element_id);
-    if( ! msg ) {
-        throw std::runtime_error ("no message");
-    }
-    if( ! is_compute_msg(msg) ) {
-        zmsg_destroy(&msg);
-        throw std::runtime_error ("invalid message type");
-    }
-    _scoped_compute_msg_t* res_compute = compute_msg_decode (&msg);
-    if (!res_compute) {        
-        throw std::runtime_error ("compute_msg_decode() failed.");
-    }
+static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+    {"power", "realpower.default"},
+    {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
+    {"avg_power_last_week", "<zero>"},
+    {"avg_power_last_month", "<zero>"},
 
-    zmsg_destroy(&msg);
-    compute_msg_print (res_compute);
-    _scoped_zhash_t* results = compute_msg_get_results (res_compute);
-    if (!results) {                
-        throw std::runtime_error ("compute_msg_get_results() failed.");
+    {"min_power_last_day", "<zero>"},
+    {"min_power_last_week", "<zero>"},
+    {"min_power_last_month", "<zero>"},
+
+    {"max_power_last_day", "<zero>"},
+    {"max_power_last_week", "<zero>"},
+    {"max_power_last_month", "<zero>"},
+
+    {"trend_power_last_day", "<zero>"},
+    {"trend_power_last_week", "<zero>"},
+    {"trend_power_last_month", "<zero>"},
+
+    {"temperature", "<zero>"},
+    {"avg_temperature_last_day", "<zero>"},
+    {"avg_temperature_last_week", "<zero>"},
+    {"avg_temperature_last_month", "<zero>"},
+
+    {"min_temperature_last_day", "<zero>"},
+    {"min_temperature_last_week", "<zero>"},
+    {"min_temperature_last_month", "<zero>"},
+
+    {"max_temperature_last_day", "<zero>"},
+    {"max_temperature_last_week", "<zero>"},
+    {"max_temperature_last_month", "<zero>"},
+
+    {"trend_temperature_last_day", "<zero>"},
+    {"trend_temperature_last_week", "<zero>"},
+    {"trend_temperature_last_month", "<zero>"},
+
+    {"humidity", "<zero>"},
+    {"avg_humidity_last_day", "<zero>"},
+    {"avg_humidity_last_week", "<zero>"},
+    {"avg_humidity_last_month", "<zero>"},
+
+    {"min_humidity_last_day", "<zero>"},
+    {"min_humidity_last_week", "<zero>"},
+    {"min_humidity_last_month", "<zero>"},
+
+    {"max_humidity_last_day", "<zero>"},
+    {"max_humidity_last_week", "<zero>"},
+    {"max_humidity_last_month", "<zero>"},
+
+    {"trend_humidity_last_day", "<zero>"},
+    {"trend_humidity_last_week", "<zero>"},
+    {"trend_humidity_last_month", "<zero>"}
+};
+
+float
+total_datacenter_power(
+    tntdb::Connection& conn,
+    const std::string& src,
+    a_elmnt_id_t id)
+{
+    if (src == "<zero>") {
+        return 0.0f;
     }
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
-    a_elmnt_id_t num_missed;
-    int rv0 = compute_result_value_get(results, &value);
-    int rv1 = compute_result_scale_get(results, &scale);
-    int rv2 = compute_result_num_missed_get(results, &num_missed);
-    compute_msg_destroy(&res_compute);
-    zhash_destroy(&results);
-    if ( rv0 || rv1 || rv2 ) return 0.0;
+    auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+
+    if (reply.rv != 0)
+        throw std::invalid_argument("Fail to find " + src + " for element" + std::to_string(id));
+
     return value * pow(10,scale);
+}
+
+static bool
+s_is_valid_param(const std::string& p)
+{
+    return PARAM_TO_SRC.count(p) != 0;
 }
 
 
@@ -74,6 +120,8 @@ std::string arg2;
 </%args>
 <%thread scope="global">
 asset_manager asset_mgr;
+// TODO this can throw exceptions!!
+tntdb::Connection conn = tntdb::connectCached (url);
 </%thread>
 <%cpp>
     // Check URL validity
@@ -86,59 +134,6 @@ asset_manager asset_mgr;
     std::vector<std::string> DCs;
     std::vector<std::string> DCNames;
     std::vector<std::string> requestedParams;
-    static std::vector<std::string> validParams = {
-        "power",
-        "avg_power_last_day",
-        "avg_power_last_week",
-        "avg_power_last_month",
-
-        "min_power_last_day",
-        "min_power_last_week",
-        "min_power_last_month",
-
-        "max_power_last_day",
-        "max_power_last_week",
-        "max_power_last_month",
-
-        "trend_power_last_day",
-        "trend_power_last_week",
-        "trend_power_last_month",
-
-        "temperature",
-        "avg_temperature_last_day",
-        "avg_temperature_last_week",
-        "avg_temperature_last_month",
-
-        "min_temperature_last_day",
-        "min_temperature_last_week",
-        "min_temperature_last_month",
-
-        "max_temperature_last_day",
-        "max_temperature_last_week",
-        "max_temperature_last_month",
-
-        "trend_temperature_last_day",
-        "trend_temperature_last_week",
-        "trend_temperature_last_month",
-
-        "humidity",
-        "avg_humidity_last_day",
-        "avg_humidity_last_week",
-        "avg_humidity_last_month",
-
-        "min_humidity_last_day",
-        "min_humidity_last_week",
-        "min_humidity_last_month",
-
-        "max_humidity_last_day",
-        "max_humidity_last_week",
-        "max_humidity_last_month",
-
-        "trend_humidity_last_day",
-        "trend_humidity_last_week",
-        "trend_humidity_last_month"
-        
-    };
     cxxtools::split(",", arg1, std::back_inserter(DCs));
     
     // check that DC exists
@@ -177,16 +172,17 @@ asset_manager asset_mgr;
         }
     }
 
-cxxtools::split(",", arg2, std::back_inserter(requestedParams));
-for(std::string &param: requestedParams) {
-    if( std::find( validParams.begin(), validParams.end(), param ) == validParams.end() ) {
+    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+    for(std::string &param: requestedParams) {
+        if ( !s_is_valid_param(param) ) {
 </%cpp>
 {"error":"bad_input", "msg":"invalid parameter" }
 <%cpp>
-      return HTTP_BAD_REQUEST;
+            return HTTP_BAD_REQUEST;
+        }
     }
-}
-std::stringstream json;
+
+    std::stringstream json;
 try {
     json << "{\n\t\"datacenter_indicators\": [\n";
     for( size_t D = 0 ; D < DCs.size(); D++ ) {
@@ -194,17 +190,21 @@ try {
              << "\t\t\t\"id\": \"" << DCs[D] << "\",\n"
              << "\t\t\t\"name\": \"" << DCNames[D] << "\",\n";
         for(size_t P = 0; P < requestedParams.size(); P++ ) {
-            if( requestedParams[P] == "power" ) {
-                json << "\t\t\t\"power\": " << total_datacenter_power( atoi(DCs[D].c_str()) );
-            } else {
-                json << "\t\t\t\"" << requestedParams[P] << "\": " << random_value( requestedParams[P] );
-            }
-            json << ( ( P < requestedParams.size() - 1 ) ? ",\n" : "\n" ) ;
+           const std::string& key = requestedParams[P];
+           const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
+           json  << "\t\t\t\"" << key << "\": "<< total_datacenter_power(conn, val, atoi( DCs[D].c_str() ) );
+           json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
         }
         json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
     }
     json << "\t]\n}\n";
-} catch ( const std::exception& e ) {
+} catch ( const std::invalid_argument& e ) {
+</%cpp>
+    { "error" : "<$$ e.what()$>" }
+<%cpp>
+      return HTTP_BAD_REQUEST;
+}
+catch ( const std::exception& e ) {
 </%cpp>
     <h1>internal server error</h1>
     <$ e.what() $>

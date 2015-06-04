@@ -708,6 +708,7 @@ db_reply <std::set <std::pair<a_elmnt_id_t ,a_elmnt_id_t>>>
          a_elmnt_id_t element_id)
 {
     LOG_START;
+    log_debug ("  links are selected for element_id = %" PRIi32, element_id);
     a_lnk_tp_id_t linktype = INPUT_POWER_CHAIN;
     
     //      all powerlinks are included into "resultpowers"
@@ -780,7 +781,7 @@ db_reply <std::vector<device_info_t>>
          a_elmnt_id_t element_id)
 {
     LOG_START;
-    log_debug ("element_id = %" PRIi32, element_id);
+    log_debug ("container element_id = %" PRIi32, element_id);
 
     std::vector<device_info_t> item{};
     db_reply <std::vector<device_info_t>> ret = db_reply_new(item);

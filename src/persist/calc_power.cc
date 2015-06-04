@@ -365,7 +365,7 @@ int compute_result_num_missed_get (zhash_t *results, a_elmnt_id_t *num_missed)
     log_debug ("conv num_missed from '%s' to %" PRIu32, value_str, *num_missed);
     return (r == 0 ? 1:0);
 }
-
+/*
 zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
 {
     log_info ("start");
@@ -411,10 +411,10 @@ zmsg_t* calc_total_rack_power (const char *url, a_elmnt_id_t rack_element_id)
     zmsg_t* retmsg = compute_msg_encode_return_computation(result);
     return retmsg;
 }
-
+*/
 /**
  *  \brief add a value with a respect to the scale - downscale all the time
- */
+ *
 static bool s_add_scale(rack_power_t& ret,
                         m_msrmnt_value_t value, m_msrmnt_scale_t scale)
 {
@@ -564,7 +564,8 @@ static rack_power_t
     log_debug ("end: normal");
     return ret;
 }
-
+*/
+/*
 rack_power_t
 compute_total_rack_power_v1(
         const char *url,
@@ -576,14 +577,14 @@ compute_total_rack_power_v1(
     std::time_t date_start = date_end - max_age;
     return compute_total_rack_power_v1(url, rack_devices, date_start, date_end);
 }
-
+*/
 /**
  * FIXME: leave three arguments - one per device type, maybe in the future 
  * we'll use it, or change
  * TODO: ask for id_key/id_subkey, 
  * see measurement_id_t nut_get_measurement_id(const std::string &name) 
  * TODO: quality computation - to be defined, leave with 255
- */
+ *
 rack_power_t
 compute_total_rack_power_v1(
         const char *url,
@@ -676,7 +677,7 @@ compute_total_rack_power_v1(
     log_debug ("end: power = %" PRIi32 ", scale = %" PRIi16, ret.power, ret.scale);
     return ret;
 }
-
+*/
 std::set < a_elmnt_id_t > find_racks (zframe_t* frame, 
                                                 m_dvc_tp_id_t parent_type_id)
 {
@@ -734,7 +735,7 @@ std::set < a_elmnt_id_t > find_racks (zframe_t* frame,
     return result;
 }
 
-
+/*
 // DC POWER
 zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
 {
@@ -843,7 +844,7 @@ zmsg_t* calc_total_dc_power (const char *url, a_elmnt_id_t dc_element_id)
     log_debug("end: normal");
     return retmsg;
 }
-
+*/
 // from to
 std::set<a_elmnt_id_t>
     find_srcs
@@ -1164,6 +1165,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
          int8_t container_type_id)
 {   
     LOG_START;
+    log_debug ("  container_type_id = %" PRIi8, container_type_id);
     // name of the dc is mapped onto the vecrot of names of its power sources 
     std::map<std::string, std::vector<std::string> > item{};
     db_reply <std::map<std::string, std::vector<std::string> > > ret = db_reply_new(item);
