@@ -25,16 +25,15 @@ total_rack_power(
     a_elmnt_id_t id)
 {
 
-    if (src == "<zero>") {
+    if (src == "<zero>")
         return 0.0f;
-    }
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
 
     if (reply.rv != 0)
-        throw std::invalid_argument("Fail to find " + src + " for element" + std::to_string(id));
+        return 0.0f;
 
     return value * pow(10,scale);
 }
