@@ -17,6 +17,9 @@ dockerres_DATA = 	resources/Dockerfile \
 			resources/ePDU2-LAB.dev \
 			resources/UPS1-LAB.dev \
 			resources/UPS2-LAB.dev \
+			resources/ROZ.UPS1.dev \
+			resources/ROZ.ePDU04.dev \
+			resources/ROZ.ePDU05.dev \
 			resources/ups.conf \
 			resources/upsmon.conf
 
