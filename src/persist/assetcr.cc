@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include "defs.h"
 #include "assetcrud.h"
+#include "monitor.h"
 
 //////////////////////////////////////////////////////////////////////////////
 ///                               INSERT API                  ////////////////
@@ -766,6 +767,28 @@ db_reply_t
         return reply_insert3;
     }
 
+    if ( ( element_type_id == asset_type::DATACENTER ) ||
+         ( element_type_id == asset_type::RACK) )
+    {
+        auto reply_insert4 = insert_into_monitor_device 
+            (conn, 1, element_name);
+        if ( reply_insert4.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: \"device\" was not inserted (fail monitor_device)");
+            return reply_insert4;
+        }
+
+        auto reply_insert5 = insert_into_monitor_asset_relation 
+            (conn, reply_insert4.rowid, reply_insert1.rowid);
+        if ( reply_insert5.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
+            return reply_insert5;
+        }
+    }
+
     trans.commit();
     LOG_END;
     return reply_insert1;
@@ -783,6 +806,7 @@ db_reply_t
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
         a_dvc_tp_id_t  asset_device_type_id,
+        const char    *asset_device_type_name,
         const char    *status,
         a_elmnt_pr_t   priority,
         a_elmnt_bc_t   bc)
@@ -844,6 +868,38 @@ db_reply_t
         return reply_insert5;
     }
 
+    auto reply_select = select_monitor_device_type_id (conn, asset_device_type_name);
+    if ( reply_select.status == 1 )
+    {
+        auto reply_insert6 = insert_into_monitor_device 
+            (conn, asset_device_type_name, element_name);
+        if ( reply_insert6.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: device was not inserted (fail monitor_device)");
+            return reply_insert6;
+        }
+
+        auto reply_insert7 = insert_into_monitor_asset_relation 
+            (conn, reply_insert6.rowid, reply_insert1.rowid);
+        if ( reply_insert7.affected_rows == 0 )
+        {
+            trans.rollback();
+            log_info ("end: monitor asset link was not inserted (fail monitor asset relation)");
+            return reply_insert7;
+        }
+    }
+    else if ( reply_select.errsubtype == DB_ERROR_NOTFOUND )
+    {
+        log_debug ("device should not being inserded into monitor part");
+    }
+    else
+    {
+        trans.rollback();
+        log_warning ("end: some error in denoting a ttype of device in monitor part");
+        return reply_select;
+
+    }
     trans.commit();
     LOG_END;
     return reply_insert1;

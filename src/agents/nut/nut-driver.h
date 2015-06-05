@@ -45,6 +45,7 @@ struct NUTInventoryValue {
 struct NUTPhysicalValue {
     bool changed;
     long int value;
+    long int candidate;
 };
  
 /**
@@ -208,7 +209,7 @@ class NUTDevice {
     /**
      * \brief Updates physical or measurement value from vector.
      *
-     * Updates the value with first value from vector (NUT returns vectors of
+     * Calculates the value with first value from vector (NUT returns vectors of
      * values).
      */
     void updatePhysics(const std::string& varName, std::vector<std::string>& values, int threshold = NUT_USE_DEFAULT_THRESHOLD);
@@ -227,6 +228,10 @@ class NUTDevice {
      */
     void update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate = false );
 
+    /**
+     * \brief Commit chages for changed calculated by updatePhysics.
+     */
+    void commitChanges();
     /**
      * \brief map of physical values.
      *

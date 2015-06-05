@@ -6,6 +6,8 @@ Requires=malamute.service
 [Service]
 Type=simple
 ExecStart=@libexecdir@/bios/driver-nmap
+# This service tends to "hang" during shutdown on ARM, so we limit the impact
+TimeoutStopSec=10
 
 [Install]
 WantedBy=multi-user.target

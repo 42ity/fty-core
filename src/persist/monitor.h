@@ -470,6 +470,10 @@ common_msg_t* update_device_type(const char* url,
                                  m_dvc_tp_id_t device_type_id, 
                                  common_msg_t** device_type);
 
+db_reply_t
+    select_monitor_device_type_id
+        (tntdb::Connection &conn, 
+         const char *device_type_name);
 
 // ===============================================================
 // DEVICE
@@ -604,6 +608,19 @@ common_msg_t* select_device (const char* url, const char* device_type_name,
  */
 common_msg_t* insert_disc_device(const char* url, const char* device_type_name, 
                             const char* device_name);
+
+
+db_reply_t 
+    insert_into_monitor_device
+        (tntdb::Connection &conn,
+         m_dvc_tp_id_t device_type_id,
+         const char* device_name);
+
+db_reply_t 
+    insert_into_monitor_device
+        (tntdb::Connection &conn,
+         const char* device_type_name,
+         const char* device_name);
 
 
 // ===============================================================

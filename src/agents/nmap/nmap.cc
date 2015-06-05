@@ -376,7 +376,7 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             // don't care about which socket, only one is being polled            
             zpoller_wait (poller, -1);
             if (zpoller_terminated (poller)) {
-                log_info ("SIGINT received. Quitting.");
+                log_info ("SIGINT received. Quitting (test mode).");
                 break;
             }
             // get the result and print it
@@ -388,6 +388,7 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
             nmap_msg_destroy (&msg);
 
         }
+        log_debug ("Destroying router object...");
         zsock_destroy (&router);        
         assert (router == NULL);
     } else {
@@ -401,13 +402,19 @@ sets the scan type - it accepts two possible values a) '%s' OR b) '%s'.\n",
     		log_info ("zpoller_wait() timed out or was aborted");
             if (zpoller_terminated (poller)) {            
                 log_info ("SIGINT received. Quitting.");
+                break;
             }
         }
     }
 
+    log_info ("Destroying poller and socket objects.");
+    log_debug ("Destroying poller object...");
     zpoller_destroy (&poller);
+    log_debug ("Destroying nmap actor object...");
     zactor_destroy(&nmap);
+    log_debug ("Destroying incoming socket object...");
     zsock_destroy (&incoming);
+    log_debug ("Destroying outgoing socket object...");
     zsock_destroy (&outgoing);
 
     log_info ("nmap daemon stop");

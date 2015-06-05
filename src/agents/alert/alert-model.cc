@@ -2,8 +2,12 @@
 
 #include <ctime>
 #include <iostream>
+#include <tntdb/connect.h>
 
 #include "upsstatus.h"
+#include "assetcrud.h"
+#include "dbpath.h"
+#include "log.h"
 
 /* --------------------------- evaluating functions --------------------------- */
 
@@ -64,6 +68,21 @@ void AlertModel::newMeasurement( const ymsg_t *message )
     newMeasurement( Measurement( message ) );
 }
 
+alert_priority_t AlertModel::devicePriority(const std::string &deviceName) {
+    if( deviceName.empty() ) return ALERT_PRIORITY_UNKNOWN;
+    try {
+        auto connection = tntdb::connect(url);
+        auto element = select_asset_element_by_name(connection, deviceName.c_str() );
+        connection.close();
+        if( element.status ) {
+            log_debug("Device %s priority is %" PRIu8, deviceName.c_str(), element.item.priority );
+            return (alert_priority_t)element.item.priority;
+        }
+    } catch (...) { }
+    log_error("Failed to get priority of %s", deviceName.c_str() );
+    return ALERT_PRIORITY_UNKNOWN;
+}
+
 void AlertModel::newMeasurement( const Measurement &measurement )
 {
     if( isMeasurementInteresting( measurement ) ) {
@@ -71,11 +90,16 @@ void AlertModel::newMeasurement( const Measurement &measurement )
             // this is something new
             if( measurement.source() == "status.ups" ) {
                 // this is ups let's create simple alert configuration
+                // get device priority
+                
+                alert_priority_t P = devicePriority( measurement.deviceName() );
+                if( P == ALERT_PRIORITY_UNKNOWN ) return;
                 Alert A;
                 A.name("upsonbattery");
                 A.addTopic( measurement.topic() );
                 A.setEvaluateFunction( evaluate_on_battery_alert );
                 A.description("UPS is running on battery!");
+                A.priority(P);
                 _alerts[A.ruleName()] = A;
                 
                 Alert B;
@@ -83,6 +107,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 B.addTopic( measurement.topic() );
                 B.setEvaluateFunction( evaluate_low_battery_alert );
                 B.description("Low battery!");
+                B.priority(P);
                 _alerts[B.ruleName()] = B;
 
                 Alert C;
@@ -90,6 +115,7 @@ void AlertModel::newMeasurement( const Measurement &measurement )
                 C.addTopic( measurement.topic() );
                 C.setEvaluateFunction( evaluate_on_bypass_alert );
                 C.description("UPS is on bypass!");
+                C.priority(P);
                 _alerts[C.ruleName()] = C;
             }
         }
