@@ -7,6 +7,8 @@
 #include <cstdlib>
 #include <ctime>
 #include <cxxtools/split.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
 
 #include "utils.h"
 #include "bios_agent.h"
@@ -97,7 +99,7 @@
     }
 
     std::string agent_name (BIOS_AGENT_PREFIX_REST);
-    agent_name.append (std::to_string (static_cast<int> (getpid ())));
+    agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
     _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
     if (agent == NULL) {
 </%cpp>
