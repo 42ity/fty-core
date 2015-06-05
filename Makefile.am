@@ -346,8 +346,7 @@ libpriv_db_measurements_la_SOURCES = \
 			src/db/measurements/measurement.cc \
 			src/db/measurements/measurement.h \
 			src/db/measurements.h \
-			tools/dbpath.h \ 
-			tools/dbpath.cc
+			src/db/types.h
 
 libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
@@ -360,9 +359,11 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
-			src/db/assets/assetr.cc \
 			src/db/alerts/alert_basic.h \
-			src/db/alerts.h
+			src/db/alerts.h \
+			src/db/assets/assetr.h \
+			src/db/assets/assetr.cc \
+			src/db/assets.h
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -1098,11 +1099,15 @@ agent_alert_SOURCES = \
 agent_alert_LDADD = \
 			libpriv-utils.la \
 			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
 			libbiosapi.la
 
-agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
 
-agent_alert_CPPFLAGS = $(AM_CPPFLAGS)
+agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
+                       -I$(abs_top_srcdir)/src/persist \
+                       -I$(abs_top_srcdir)/tools
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1161,7 +1166,8 @@ bios_web_la_LIBADD = \
 			libpriv-git-details-override.la \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -1372,7 +1378,6 @@ BASE_DOCS_PLAINTEXT =	AUTHORS COPYING NEWS ChangeLog
 # These two seem to have some markup or similar structuring,
 # but it is not asciidoc so consider them plaintext for now.
 # Note these should have paths relative to project root dir.
-BASE_DOCS_PLAINTEXT +=	README
 BASE_DOCS_PLAINTEXT +=	TODO
 
 # The following files are saved into proper subdirectories, have an
