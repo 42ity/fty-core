@@ -48,15 +48,15 @@ export LANG LC_ALL
 
 start_delayed() {
 	for C in $CONTAINERS ; do
-		echo "Queuing '$C' container to autoboot in $STARTDELAY..." >&2
-		echo "$CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY"
+		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
+		echo "$CI_RESET_VM -m '$C' --install-dev" | at -M "now + $STARTDELAY"
 	done
 }
 
 start_instant() {
 	for C in $CONTAINERS ; do
-		echo "(Re-)starting '$C' container..." >&2
-		$CI_RESET_VM -m "$C"
+		echo "(Re-)starting and updating '$C' container..." >&2
+		$CI_RESET_VM -m "$C" --install-dev
 	done
 }
 
