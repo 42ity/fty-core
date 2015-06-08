@@ -19,7 +19,7 @@
 #            Tomas Halman <TomasHalman@eaton.com>,
 #            Jim Klimov <EvgenyKlimov@eaton.com>
 #
-# Description: Destroys VM "latest" (or named by -m), deploys a new
+# Description: Destroys VM "latest" (or one named by -m), deploys a new
 # one from image prepared by OBS, and starts it
 
 #
@@ -38,6 +38,20 @@
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
+
+# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
+SCRIPTDIR=$(realpath `dirname $0`)
+SCRIPTPWD="`pwd`"
+[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+[ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
+[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+export CHECKOUTDIR BUILDSUBDIR
+
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
     echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
@@ -69,6 +83,7 @@ usage() {
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+    echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --download-only      end the script after downloading the newest image file"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
@@ -96,6 +111,7 @@ DOTDOMAINNAME=""
 
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
+[ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -126,6 +142,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--download-only)
 	    DOWNLOADONLY=yes
+	    shift
+	    ;;
+	--install-dev|--install-dev-pkgs)
+	    INSTALL_DEV_PKGS=yes
 	    shift
 	    ;;
 	-h|--help)
@@ -355,6 +375,33 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 
 logmsg_info "Start the virtual machine"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
+
+if [ "$INSTALL_DEV_PKGS" = yes ]; then
+	INSTALLER=""
+	if [ -s "$SCRIPTPWD/ci-setup-test-machine.sh" ] ; then
+		INSTALLER="$SCRIPTPWD/ci-setup-test-machine.sh"
+	else
+		if [ -s "$SCRIPTDIR/ci-setup-test-machine.sh" ] ; then
+			INSTALLER="$SCRIPTDIR/ci-setup-test-machine.sh"
+		else
+			[ -n "$CHECKOUTDIR" ] && \
+			[ -s "$CHECKOUTDIR/tests/CI/ci-setup-test-machine.sh" ] && \
+				INSTALLER="$CHECKOUTDIR/tests/CI/ci-setup-test-machine.sh"
+		fi
+	fi
+	if [ -n "$INSTALLER" ] ; then
+		echo "Will now update and install a predefined development package set using $INSTALLER"
+		echo "Sleeping 30 sec to let VM startup settle down first..."
+		sleep 30
+		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
+		chroot ../rootfs/$VM/ /bin/sh < "$INSTALLER"
+		echo "Result of installer script: $?"
+	else
+		echo "WARNING: Got request to update and install a predefined" \
+			"development package set, but got no ci-setup-test-machine.sh" \
+			"around - action skipped"
+	fi
+fi
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
 	"is successfully completed on `date -u` on host" \
