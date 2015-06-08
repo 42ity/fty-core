@@ -107,6 +107,7 @@ check_md5sum() {
 }
 
 ensure_md5sum() {
+	# A destructive wrapper of check_md5sum(), destroys bad downloads
 	if ! check_md5sum "$@" ; then
 		logmsg_warn "Removing broken file: '$IMAGE'"
 		rm -f "$IMAGE" "$IMAGE.md5"
@@ -233,12 +234,12 @@ cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 
 logmsg_info "Get the latest operating environment image prepared for us by OBS"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
+IMAGE="`basename "$IMAGE_URL"`"
 if [ $? = 0 ]; then
 	wget -q -c "$IMAGE_URL.md5" || true
 	wget -c "$IMAGE_URL"
 	WGET_RES=$?
 	logmsg_info "Download completed with exit-code: $WGET_RES"
-	IMAGE="`basename "$IMAGE_URL"`"
 	ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 else
 	logmsg_error "Failed to get the latest image file name from OBS" \
@@ -259,6 +260,7 @@ if [ "$1" ]; then
 	# Should think if anything must be done about picking a particular
 	# image name for a particular VM, though.
 	IMAGE="$1"
+	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
 	# If download failed, we can have a previous image file for this type
@@ -270,8 +272,11 @@ else
 	done
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
 fi
-if [ -z "$IMAGE" ] || [ ! -s "$IMAGE" ]; then
+if [ -z "$IMAGE" ]; then
 	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
+fi
+if [ ! -s "$IMAGE" ]; then
+	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
