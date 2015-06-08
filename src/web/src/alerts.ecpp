@@ -9,13 +9,10 @@
 #include "data.h"
 
 </%pre>
-<%thread scope="global">
-tntdb::Connection conn = tntdb::connectCached(url);
-</%thread>
 <%cpp>
-
     //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
 
+    tntdb::Connection conn = tntdb::connectCached(url);
     auto db_reply = persist::select_alert_all_opened(conn);
     if (db_reply.status == 0) {
 </%cpp>
