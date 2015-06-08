@@ -235,6 +235,31 @@ cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 logmsg_info "Get the latest operating environment image prepared for us by OBS"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 IMAGE="`basename "$IMAGE_URL"`"
+
+NUM=24
+SLEEP=10
+while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
+	if WGET_PID="`cat "$IMAGE.lock"`" ; then
+		if [ -n "$WGET_PID" ] && [ "$WGET_PID" -gt 0 ] && [ -d "/proc/$WGET_PID" ] ; then
+			: #TODO: ps -ef | awk '( $2 == "'"$WGET_PID"'") {print $0}' | grep wget || WGET_PID=""
+		else WGET_PID=""; fi
+		if [ -z "$WGET_PID" ] ; then
+			logmsg_info "Lock-file at '$IMAGE.lock' seems out of date, skipping"
+			NUM=-1
+			rm -f "$IMAGE.lock"
+			continue
+		fi
+	fi
+	[ "`expr $NUM % 3`" = 0 ] && logmsg_warn "Locked out of downloading '$IMAGE', waiting for `expr $NUM \* $SLEEP` more seconds..."
+	NUM="`expr $NUM - 1`" ; sleep $SLEEP
+done
+if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
+	# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
+	die "Still locked out of downloading '$IMAGE', bailing out"
+fi
+trap 'ERRCODE=$?; rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.lock"; exit $ERRCODE;' EXIT
+echo "$$" > "$IMAGE.lock"
+
 if [ $? = 0 ]; then
 	wget -q -c "$IMAGE_URL.md5" || true
 	wget -c "$IMAGE_URL"
@@ -246,6 +271,9 @@ else
 		"(subsequent VM startup can use a previously downloaded image, however)"
 	WGET_RES=127
 fi
+rm -f "$IMAGE.lock"
+trap '-' EXIT
+
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
 		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
