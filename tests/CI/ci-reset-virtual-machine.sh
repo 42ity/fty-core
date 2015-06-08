@@ -207,9 +207,16 @@ cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 
 logmsg_info "Get the latest operating environment image prepared for us by OBS"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
-wget -c "$IMAGE_URL"
-WGET_RES=$?
-logmsg_info "Download completed with exit-code: $WGET_RES"
+if [ $? = 0 ]; then
+	wget -q -c "$IMAGE_URL.md5" || true
+	wget -c "$IMAGE_URL"
+	WGET_RES=$?
+	logmsg_info "Download completed with exit-code: $WGET_RES"
+else
+	logmsg_error "Failed to get the latest image file name from OBS" \
+		"(subsequent VM startup can use a previously downloaded image, however)"
+	WGET_RES=127
+fi
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
 		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
@@ -229,6 +236,9 @@ else
 	# If download failed, we can have a previous image file for this type
 	IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
+fi
+if [ -z "$IMAGE" ] || [ ! -s "$IMAGE" ]; then
+	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
