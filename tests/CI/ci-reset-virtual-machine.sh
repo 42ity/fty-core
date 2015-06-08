@@ -89,6 +89,32 @@ usage() {
     echo "    -h|--help            print this help"
 }
 
+check_md5sum() {
+	# Compares actual checksum of file "$1" with value recorded in file "$2"
+	if [ -s "$1" -a -s "$2" ]; then
+		logmsg_info "Validating OS image file '$1' against its MD5 checksum '$2'..."
+		MD5EXP="`awk '{print $1}' < "$2"`"
+		MD5ACT="`md5sum < "$1" | awk '{print $1}'`" && \
+		if [ x"$MD5EXP" != x"$MD5ACT" ]; then
+			logmsg_error "Checksum validation of '$1' against '$2' FAILED!"
+			return 1
+		fi
+		logmsg_info "Checksum validation of '$1' against '$2' SUCCEEDED!"
+		return 0
+	fi
+	logmsg_warn "Checksum validation of '$1' against '$2' SKIPPED (one of the files is missing)"
+	return 0
+}
+
+ensure_md5sum() {
+	if ! check_md5sum "$@" ; then
+		logmsg_warn "Removing broken file: '$IMAGE'"
+		rm -f "$IMAGE" "$IMAGE.md5"
+		return 1
+	fi
+	return 0
+}
+
 #
 # defaults
 #
@@ -212,6 +238,8 @@ if [ $? = 0 ]; then
 	wget -c "$IMAGE_URL"
 	WGET_RES=$?
 	logmsg_info "Download completed with exit-code: $WGET_RES"
+	IMAGE="`basename "$IMAGE_URL"`"
+	ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 else
 	logmsg_error "Failed to get the latest image file name from OBS" \
 		"(subsequent VM startup can use a previously downloaded image, however)"
@@ -234,7 +262,12 @@ if [ "$1" ]; then
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
 	# If download failed, we can have a previous image file for this type
-	IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+	# Anyhow, select newest (by alphabetic name)
+	IMAGE=""
+	while [ -z "$IMAGE" ]; do
+		IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+		ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
+	done
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
 fi
 if [ -z "$IMAGE" ] || [ ! -s "$IMAGE" ]; then
