@@ -35,7 +35,9 @@
 #       after the host OS is up, so they can pull new images (if any).
 #       Intended for hosts involved in CI and test infrastructure.
 
-[ -z "$CONTAINERS" ] && CONTAINERS="latest"
+[ -n "$CONTAINERS" ] || \
+	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep 'latest|demo|test-debian-'`" || \
+	CONTAINERS="latest"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
 
 # The real script is part of $BIOS CI suite
