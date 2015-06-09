@@ -62,7 +62,7 @@ start_instant() {
 	download
 	for C in $CONTAINERS ; do
 		echo "(Re-)starting and updating '$C' container..." >&2
-		$CI_RESET_VM -m "$C" --install-dev &
+		$CI_RESET_VM -m "$C" --install-dev --attempt-download no &
 	done
 	wait
 }
@@ -81,7 +81,7 @@ restart() {
 
 stop() {
 	for C in $CONTAINERS ; do
-		( $CI_RESET_VM -m "$C" --stop-only || \
+		( $CI_RESET_VM -m "$C" --stop-only --attempt-download no || \
 		  virsh -c lxc:// destroy "$C" 2> /dev/null > /dev/null ) &
 	done >/dev/null 2>&1
 }
