@@ -123,6 +123,11 @@ cleanup_script() {
 	if [ -f "/srv/libvirt/rootfs/$VM.lock" ] ; then
 		rm -f "/srv/libvirt/rootfs/$VM.lock"
 	fi
+
+	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.*` ; do
+		echo "$ERRCODE" > "$F"
+	done
 }
 
 cleanup_wget() {
@@ -280,10 +285,20 @@ if [ -f "$VM.lock" ] ; then
 		if [ x"$OTHERINST_ARGS" = x"${_SCRIPT_ARGS}" ]; then
 			logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID and the same parameters is already running," \
 				"now waiting for it to finish"
+			# Catch exit-code of that invokation, and return if ok
+			# or even better, retry if that exit was a failure
+			settraps "rm -f $VM.wantexitcode.$$;"
+			touch "$VM.wantexitcode.$$"
 			while [ -f "$VM.lock" ] && [ -d "/proc/$OTHERINST_PID" ]; do sleep 1; done
-			logmsg_info "`date`: Wait is complete, finishing script as the requested job is done"
-			# TODO: Catch exit-code of that invokation, and return the same
-			exit 0
+			OTHERINST_EXIT="`cat "$VM.wantexitcode.$$"`" || OTHERINST_EXIT=""
+			[ -n "$OTHERINST_EXIT" ] && [ "$OTHERINST_EXIT" -ge 0 ] 2>/dev/null || OTHERINST_EXIT=""
+			rm -f "$VM.wantexitcode.$$"
+			settraps -
+			if [ "$OTHERINST_EXIT" = 0 ]; then
+				logmsg_info "`date`: Wait is complete, finishing script as the requested job is done OK"
+				exit 0
+			fi
+			logmsg_info "`date`: Wait is complete, the other instance returned code '$OTHERINST_EXIT' so retrying"
 		else
 			# TODO: Flag to choose whether to wait-and-continue
 			# or to abort (with error?) at this point
