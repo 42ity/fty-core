@@ -36,8 +36,9 @@
 #       Intended for hosts involved in CI and test infrastructure.
 
 [ -n "$CONTAINERS" ] || \
-	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep 'latest|demo|test-debian-'`" || \
+	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-'`" || \
 	CONTAINERS="latest"
+[ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
 [ -z "$STARTDELAY" ] && STARTDELAY="3 min"
 
 # The real script is part of $BIOS CI suite
@@ -49,6 +50,8 @@ LC_ALL=C
 export LANG LC_ALL
 
 start_delayed() {
+	echo "Queuing '$0 download' to refresh the images in $STARTDELAY_DL..." >&2
+	echo "$0 download" | at -M "now + $STARTDELAY_DL"
 	for C in $CONTAINERS ; do
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
 		echo "$CI_RESET_VM -m '$C' --install-dev" | at -M "now + $STARTDELAY"
@@ -56,10 +59,12 @@ start_delayed() {
 }
 
 start_instant() {
+	download
 	for C in $CONTAINERS ; do
 		echo "(Re-)starting and updating '$C' container..." >&2
-		$CI_RESET_VM -m "$C" --install-dev
+		$CI_RESET_VM -m "$C" --install-dev &
 	done
+	wait
 }
 
 start() {
@@ -76,8 +81,13 @@ restart() {
 
 stop() {
 	for C in $CONTAINERS ; do
-		$CI_RESET_VM -m "$C" --stop-only
+		( $CI_RESET_VM -m "$C" --stop-only || \
+		  virsh -c lxc:// destroy "$C" 2> /dev/null > /dev/null ) &
 	done >/dev/null 2>&1
+}
+
+download() {
+	$CI_RESET_VM --download-only
 }
 
 refresh() {
@@ -109,7 +119,7 @@ status() {
 }
 
 case "$1" in
-start|start_delayed|start_instant|restart|stop|refresh|status)
+start|start_delayed|start_instant|restart|stop|refresh|download|status)
 	$1
 	return $?
 	;;
