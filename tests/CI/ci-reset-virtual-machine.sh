@@ -245,6 +245,7 @@ cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 # Initial value, aka "file not found"
 WGET_RES=127
 IMAGE=""
+IMAGE_SKIP=""
 
 if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 	logmsg_info "Get the latest operating environment image prepared for us by OBS"
@@ -253,7 +254,7 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 
 	# Set up sleeping
 	MAXSLEEP=240
-	SLEEPONCE=1
+	SLEEPONCE=5
 	NUM="`expr $MAXSLEEP / $SLEEPONCE`"
 
 	while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
@@ -289,8 +290,11 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 		case "$ATTEMPT_DOWNLOAD" in
 			yes) die "Can not download, so bailing out" ;;
 			no) ;;
-			*) logmsg_info "Switching from ATTEMPT_DOWNLOAD value '$ATTEMPT_DOWNLOAD' to 'no'"
+			*) logmsg_info "Switching from ATTEMPT_DOWNLOAD value '$ATTEMPT_DOWNLOAD' to 'no'" \
+				"and skipping OS image '$IMAGE' from candidates to mount"
 			   ATTEMPT_DOWNLOAD=no
+			   IMAGE_SKIP="$IMAGE"
+			   IMAGE=""
 			   ;;
 		esac
 	fi
@@ -352,7 +356,11 @@ else
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
 		while [ -z "$IMAGE" ]; do
-			IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+			if [ -z "$IMAGE_SKIP" ]; then
+				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+			else
+				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+			fi
 			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
 		done
 	fi
