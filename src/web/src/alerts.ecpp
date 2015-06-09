@@ -9,15 +9,10 @@
 #include "data.h"
 
 </%pre>
-<%thread scope="global">
-tntdb::Connection conn = tntdb::connectCached(url);
-</%thread>
-{ "alerts":
-  [
 <%cpp>
-
     //TODO: checking of arguments, atm /alerts == /alerts/all == /alerts/foo/bar/baz
 
+    tntdb::Connection conn = tntdb::connectCached(url);
     auto db_reply = persist::select_alert_all_opened(conn);
     if (db_reply.status == 0) {
 </%cpp>
@@ -27,6 +22,10 @@ tntdb::Connection conn = tntdb::connectCached(url);
 <%cpp>
         return HTTP_INTERNAL_SERVER_ERROR;
     }
+</%cpp>
+{ "alerts":
+  [
+<%cpp>
     size_t cnt = 0;
     for (const auto& i : db_reply.item) {
         cnt ++;
