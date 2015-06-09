@@ -85,6 +85,8 @@ usage() {
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
     echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --download-only      end the script after downloading the newest image file"
+    echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
+    echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
 }
@@ -139,6 +141,7 @@ DOTDOMAINNAME=""
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
+[ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -170,6 +173,13 @@ while [ $# -gt 0 ] ; do
 	--download-only)
 	    DOWNLOADONLY=yes
 	    shift
+	    ;;
+	--attempt-download)
+	    shift
+	    case "$1" in
+		yes|no|auto) ATTEMPT_DOWNLOAD="$1"; shift ;;
+		*) ATTEMPT_DOWNLOAD=yes ;;
+	    esac
 	    ;;
 	--install-dev|--install-dev-pkgs)
 	    INSTALL_DEV_PKGS=yes
@@ -232,72 +242,88 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
 
-logmsg_info "Get the latest operating environment image prepared for us by OBS"
-IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
-IMAGE="`basename "$IMAGE_URL"`"
-
-# Set up sleeping
-MAXSLEEP=240
-SLEEPONCE=1
-NUM="`expr $MAXSLEEP / $SLEEPONCE`"
-
-while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
-	if WGETTER_PID="`cat "$IMAGE.lock"`" ; then
-		# TODO: This locking method is only good on a local system,
-		# not on shared networked storage where fuser, flock() or
-		# tracking metadata changes over time perform more reliably.
-		if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] && [ -d "/proc/$WGETTER_PID" ] ; then
-			ps -ef | \
-			awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename $0`|sh " \
-				|| WGETTER_PID=""
-		else
-			WGETTER_PID=""
-		fi
-
-		if [ -z "$WGETTER_PID" ] ; then
-			logmsg_info "Lock-file at '$IMAGE.lock' seems out of date, skipping"
-			#NUM=-1
-			rm -f "$IMAGE.lock"
-			sleep $SLEEPONCE
-			continue	# Maybe another sleeper grabs the lock
-		fi
-	fi
-	[ "`expr $NUM % 3`" = 0 ] && \
-		logmsg_warn "Locked out of downloading '$IMAGE' by PID '$WGETTER_PID'," \
-			"waiting for `expr $NUM \* $SLEEPONCE` more seconds..."
-	NUM="`expr $NUM - 1`" ; sleep $SLEEPONCE
-done
-if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
-	# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
-	die "Still locked out of downloading '$IMAGE', bailing out"
-fi
-echo "$$" > "$IMAGE.lock"
-
 # Initial value, aka "file not found"
 WGET_RES=127
+IMAGE=""
 
-# Not all trap names are recognized by all shells consistently
-for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
-	trap 'ERRCODE=$?; [ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"; rm -f "$IMAGE.lock"; exit $ERRCODE;' $P$S 2>/dev/null
-done; done
+if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
+	logmsg_info "Get the latest operating environment image prepared for us by OBS"
+	IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE="`basename "$IMAGE_URL"`"
 
-wget -q -c "$IMAGE_URL.md5" || true
-wget -c "$IMAGE_URL"
-WGET_RES=$?
-logmsg_info "Download completed with exit-code: $WGET_RES"
-if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
-	IMAGE=""
-	WGET_RES=127
+	# Set up sleeping
+	MAXSLEEP=240
+	SLEEPONCE=1
+	NUM="`expr $MAXSLEEP / $SLEEPONCE`"
+
+	while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
+		if WGETTER_PID="`cat "$IMAGE.lock"`" ; then
+			# TODO: This locking method is only good on a local system,
+			# not on shared networked storage where fuser, flock() or
+			# tracking metadata changes over time perform more reliably.
+			if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] && [ -d "/proc/$WGETTER_PID" ] ; then
+				ps -ef | \
+				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename $0`|sh " \
+					|| WGETTER_PID=""
+			else
+				WGETTER_PID=""
+			fi
+
+			if [ -z "$WGETTER_PID" ] ; then
+				logmsg_info "Lock-file at '$IMAGE.lock' seems out of date, skipping"
+				#NUM=-1
+				rm -f "$IMAGE.lock"
+				sleep $SLEEPONCE
+				continue	# Maybe another sleeper grabs the lock
+			fi
+		fi
+		[ "`expr $NUM % 3`" = 0 ] && \
+			logmsg_warn "Locked out of downloading '$IMAGE' by PID '$WGETTER_PID'," \
+				"waiting for `expr $NUM \* $SLEEPONCE` more seconds..."
+		NUM="`expr $NUM - 1`" ; sleep $SLEEPONCE
+	done
+
+	if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
+		# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
+		logmsg_error "Still locked out of downloading '$IMAGE'"
+		case "$ATTEMPT_DOWNLOAD" in
+			yes) die "Can not download, so bailing out" ;;
+			no) ;;
+			*) logmsg_info "Switching from ATTEMPT_DOWNLOAD value '$ATTEMPT_DOWNLOAD' to 'no'"
+			   ATTEMPT_DOWNLOAD=no
+			   ;;
+		esac
+	fi
 fi
-[ "$WGET_RES" = 0 ] || \
-	logmsg_error "Failed to get the latest image file name from OBS" \
-		"(subsequent VM startup can use a previously downloaded image, however)"
 
-sync
-rm -f "$IMAGE.lock"
-for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
-	trap '-' $P$S 2>/dev/null
-done; done
+if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
+	echo "$$" > "$IMAGE.lock"
+
+	# Not all trap names are recognized by all shells consistently
+	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+		trap 'ERRCODE=$?; [ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"; rm -f "$IMAGE.lock"; exit $ERRCODE;' $P$S 2>/dev/null
+	done; done
+
+	wget -q -c "$IMAGE_URL.md5" || true
+	wget -c "$IMAGE_URL"
+	WGET_RES=$?
+	logmsg_info "Download completed with exit-code: $WGET_RES"
+	if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+		IMAGE=""
+		WGET_RES=127
+	fi
+	[ "$WGET_RES" = 0 ] || \
+		logmsg_error "Failed to get the latest image file name from OBS" \
+			"(subsequent VM startup can use a previously downloaded image, however)"
+
+	sync
+	rm -f "$IMAGE.lock"
+	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+		trap '-' $P$S 2>/dev/null
+	done; done
+else
+	logmsg_info "Not even trying to download a new OS image at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
+fi
 
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
@@ -312,17 +338,24 @@ if [ "$1" ]; then
 	# (CLI parsing loop above would fail on unrecognized parameter).
 	# Should think if anything must be done about picking a particular
 	# image name for a particular VM, though.
+	logmsg_info "Using pre-downloaded image filename provided by the user"
 	IMAGE="$1"
 	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	# If download failed, we can have a previous image file for this type
-	# Anyhow, select newest (by alphabetic name)
-	IMAGE=""
-	while [ -z "$IMAGE" ]; do
-		IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
-		ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
-	done
+	if [ -n "$IMAGE" ] && [ -s "$IMGTYPE/$ARCH/$IMAGE" ]; then
+		logmsg_info "Recent download succeeded, checksums passed - using this image"
+		IMAGE="$IMGTYPE/$ARCH/$IMAGE"
+	else
+		# If download failed or was skipped, we can have a previous
+		# image file for this type
+		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
+		IMAGE=""
+		while [ -z "$IMAGE" ]; do
+			IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
+		done
+	fi
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
 fi
 if [ -z "$IMAGE" ]; then
