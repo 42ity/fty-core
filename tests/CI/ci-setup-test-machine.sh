@@ -75,24 +75,69 @@ limit_packages_docs() {
     done | dpkg --set-selections
 }
 
-update_system() {
-    # if debian
-    curl http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
-    # curl http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
-    apt-get clean all
-    apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
-    limit_packages_recommends
-    limit_packages_paths
-    apt-get -f -y --force-yes --fix-missing install
-    limit_packages_docs
-    apt-get -f -y --force-yes install devscripts sudo doxygen curl git python-mysqldb \
-        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make
-    mk-build-deps --tool 'apt-get --yes --force-yes' --install $CHECKOUTDIR/obs/core.dsc
-    # and just to be sure about these space-hungry beasts
+limit_packages_forceremove() {
+    echo "INFO: ...and just to be sure - remove some space-hungry beasts..."
     apt-get remove --purge \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc texlive-latex-base-doc texlive-latex-extra-doc \
         texlive-latex-recommended-doc texlive-pictures-doc texlive-pstricks-doc
+}
+
+http_get() {
+    ( which curl >/dev/null 2>&1 && \
+      curl "$1" ) || \
+    ( which wget >/dev/null 2>&1 && \
+      wget -q -O - "$1" )
+}
+
+update_pkg_keys() {
+    echo "INFO: Updating our OBS packaging keys..."
+    # TODO: check if OS is debian... though this applies to all the APT magic
+    http_get http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+    # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
+
+    echo "INFO: Updating upstream-distro packaging keys..."
+    apt-get install debian-keyring debian-archive-keyring
+    apt-key update
+}
+
+update_pkg_metadata() {
+    echo "INFO: Refreshing packaging listst and metadata..."
+    apt-get clean all
+    apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
+}
+
+install_packages_missing() {
+    echo "INFO: Fixing the pre-installed set if any packages are missing..."
+    apt-get -f -y --force-yes --fix-missing install
+}
+
+install_package_set_dev() {
+    echo "INFO: Installing the predefined dev-package set..."
+    apt-get -f -y --force-yes install \
+        devscripts sudo doxygen curl git python-mysqldb \
+        cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make
+}
+
+install_package_set_biosdeps() {
+    if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && [ -s "$CHECKOUTDIR/obs/core.dsc" ]; then
+        echo "INFO: mk-build-deps: Installing dependencies for \$BIOS according to $CHECKOUTDIR/obs/core.dsc"
+        mk-build-deps --tool 'apt-get --yes --force-yes' --install "$CHECKOUTDIR/obs/core.dsc"
+    else
+        echo "SKIPPED: mk-build-deps (CHECKOUTDIR not currently available) - will be done by autogen.sh" >&2
+    fi
+}
+
+update_system() {
+    update_pkg_keys
+    update_pkg_metadata
+    limit_packages_recommends
+    limit_packages_paths
+    install_packages_missing
+    limit_packages_docs
+    install_package_set_dev
+    install_package_set_biosdeps
+    limit_packages_forceremove
 }
 
 update_system
