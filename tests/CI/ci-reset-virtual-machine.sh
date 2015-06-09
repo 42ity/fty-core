@@ -236,47 +236,72 @@ logmsg_info "Get the latest operating environment image prepared for us by OBS"
 IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
 IMAGE="`basename "$IMAGE_URL"`"
 
-NUM=24
-SLEEP=10
+# Set up sleeping
+MAXSLEEP=240
+SLEEPONCE=1
+NUM="`expr $MAXSLEEP / $SLEEPONCE`"
+
 while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
-	if WGET_PID="`cat "$IMAGE.lock"`" ; then
-		if [ -n "$WGET_PID" ] && [ "$WGET_PID" -gt 0 ] && [ -d "/proc/$WGET_PID" ] ; then
-			: #TODO: ps -ef | awk '( $2 == "'"$WGET_PID"'") {print $0}' | grep wget || WGET_PID=""
-		else WGET_PID=""; fi
-		if [ -z "$WGET_PID" ] ; then
+	if WGETTER_PID="`cat "$IMAGE.lock"`" ; then
+		# TODO: This locking method is only good on a local system,
+		# not on shared networked storage where fuser, flock() or
+		# tracking metadata changes over time perform more reliably.
+		if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] && [ -d "/proc/$WGETTER_PID" ] ; then
+			ps -ef | \
+			awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename $0`|sh " \
+				|| WGETTER_PID=""
+		else
+			WGETTER_PID=""
+		fi
+
+		if [ -z "$WGETTER_PID" ] ; then
 			logmsg_info "Lock-file at '$IMAGE.lock' seems out of date, skipping"
-			NUM=-1
+			#NUM=-1
 			rm -f "$IMAGE.lock"
-			continue
+			sleep $SLEEPONCE
+			continue	# Maybe another sleeper grabs the lock
 		fi
 	fi
-	[ "`expr $NUM % 3`" = 0 ] && logmsg_warn "Locked out of downloading '$IMAGE', waiting for `expr $NUM \* $SLEEP` more seconds..."
-	NUM="`expr $NUM - 1`" ; sleep $SLEEP
+	[ "`expr $NUM % 3`" = 0 ] && \
+		logmsg_warn "Locked out of downloading '$IMAGE' by PID '$WGETTER_PID'," \
+			"waiting for `expr $NUM \* $SLEEPONCE` more seconds..."
+	NUM="`expr $NUM - 1`" ; sleep $SLEEPONCE
 done
 if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
 	# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
 	die "Still locked out of downloading '$IMAGE', bailing out"
 fi
-trap 'ERRCODE=$?; rm -f "$IMAGE" "$IMAGE.md5" "$IMAGE.lock"; exit $ERRCODE;' EXIT
 echo "$$" > "$IMAGE.lock"
 
-if [ $? = 0 ]; then
-	wget -q -c "$IMAGE_URL.md5" || true
-	wget -c "$IMAGE_URL"
-	WGET_RES=$?
-	logmsg_info "Download completed with exit-code: $WGET_RES"
-	ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
-else
-	logmsg_error "Failed to get the latest image file name from OBS" \
-		"(subsequent VM startup can use a previously downloaded image, however)"
+# Initial value, aka "file not found"
+WGET_RES=127
+
+# Not all trap names are recognized by all shells consistently
+for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+	trap 'ERRCODE=$?; [ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"; rm -f "$IMAGE.lock"; exit $ERRCODE;' $P$S 2>/dev/null
+done; done
+
+wget -q -c "$IMAGE_URL.md5" || true
+wget -c "$IMAGE_URL"
+WGET_RES=$?
+logmsg_info "Download completed with exit-code: $WGET_RES"
+if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+	IMAGE=""
 	WGET_RES=127
 fi
+[ "$WGET_RES" = 0 ] || \
+	logmsg_error "Failed to get the latest image file name from OBS" \
+		"(subsequent VM startup can use a previously downloaded image, however)"
+
+sync
 rm -f "$IMAGE.lock"
-trap '-' EXIT
+for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+	trap '-' $P$S 2>/dev/null
+done; done
 
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
-		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '$WGET_RES'" >&2
 	exit $WGET_RES
 fi
 
