@@ -18,9 +18,10 @@ ELEMENT_ID="$1"
 SOURCE="$2"
 
 # TODO: Later this may be an UUID - in that future, change accordingly
-[ ! "$ELEMENT_ID" -ge 0 ] && \
-	echo "ERROR: ELEMENT_ID must be a number (uint64)!" >&2 && \
+if ! [ "$ELEMENT_ID" -ge 0 ] ; then
+	echo "ERROR: ELEMENT_ID must be a non-negative number (uint64)!" >&2 && \
 	usage >&2 && exit 1
+fi
 
 mysql -u root -D box_utf8 -N -e "    
 SELECT @id := id FROM t_bios_measurement_topic,
