@@ -29,12 +29,15 @@ namespace shared {
 /**
  * \brief call nut scan over SNMP
  *
- * \param[in] ip address of device
- * \return string with NUT config snippet or nothing
+ * \param[in] name asset name of device
+ * \param[in] ip_address ip address of device
+ * \param[out] out resulted string with NUT config snippet
+ * \return 0 if success, -1 otherwise
  */
-std::string
+int
 nut_scan_snmp(
         const char* name,
-        const char* ip_address);
+        const char* ip_address,
+        std::string& out);
 
 }

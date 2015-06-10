@@ -23,29 +23,29 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace shared {
 
-std::string
+int
 nut_scan_snmp(
         const char* name,
-        const char* ip_address)
+        const char* ip_address,
+        std::string& out)
 {
     Argv args = {"/usr/bin/nut-scanner", "-S", "-s", ip_address, "-e", ip_address};
-    std::string o;
     std::string e;
 
-    int ret = output(args, o, e);
+    int ret = output(args, out, e);
     if (ret != 0)
-        return "";
+        return -1;
 
-    if (o.empty())
-        return "";
+    if (out.empty())
+        return -1;
 
-    auto idx = o.find("[");
+    auto idx = out.find("[");
     if (idx == std::string::npos)
-        return "";
+        return -1;
 
-    o.erase(0, idx-1);
-    o.replace(2, 7, name);
-    return o;
+    out.erase(0, idx-1);
+    out.replace(2, 7, name);
+    return 0;
 }
 
 }

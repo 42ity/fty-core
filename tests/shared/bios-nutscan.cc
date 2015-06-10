@@ -12,7 +12,14 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    auto res = shared::nut_scan_snmp(argv[1], argv[2]);
-    std::cout << res << std::endl;
+    std::string nut_config;
+    auto ret = shared::nut_scan_snmp(argv[1], argv[2], nut_config);
+
+    if (ret != 0) {
+        std::cerr << "fail!" << std::endl;
+        return 1;
+    }
+
+    std::cout << nut_config << std::endl;
     return 0;
 }
