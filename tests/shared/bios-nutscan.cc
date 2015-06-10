@@ -11,11 +11,13 @@ int main(int argc, char** argv) {
         log_error("Usage: ./bios-email name ip");
         return -1;
     }
+	nutscan_init();
 
     std::string nut_config;
     auto ret = shared::nut_scan_snmp(
             argv[1],
             shared::CIDRAddress(argv[2]),
+            NULL,
             nut_config);
 
     if (ret != 0) {

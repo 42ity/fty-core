@@ -20,9 +20,20 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Michal Vyskocil <michalvyskocil@eaton.com>
 
 Example:
+    #include "nutscan.h"
+
+    std::string nut_config;
+    auto ret = shared::nut_scan_snmp(
+            "TEST",
+            shared::CIDRAddress("127.0.0.1"),
+            NULL,
+            nut_config);
+    std::cout << ret << std::endl;
 */
 
 #include<string>
+#include<nut-scan.h>
+
 #include "cidr.h"
 
 namespace shared {
@@ -32,6 +43,7 @@ namespace shared {
  *
  * \param[in] name asset name of device
  * \param[in] ip_address ip address of device
+ * \param[in] snmp_conf additional SNMP related information, can be NULL
  * \param[out] out resulted string with NUT config snippet
  * \return 0 if success, -1 otherwise
  */
@@ -39,6 +51,7 @@ int
 nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
+        nutscan_snmp_t* snmp_conf,
         std::string& out);
 
 }

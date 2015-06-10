@@ -15,37 +15,91 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*
- * nut-scanner wrapper
- */
+#include <sstream>
 
 #include "nutscan.h"
 #include "subprocess.h"
+#include "log.h"
 
 namespace shared {
+
+//MVY: copy&paste from nut/tools/nut-scanner/nutscan-display.c
+//     update to push things to the std::stringstream
+static void
+s_nutscan_display_ups_conf(
+        const std::string& name,
+        nutscan_device_t * device,
+        std::stringstream& out)
+{
+	nutscan_device_t * current_dev = device;
+	nutscan_options_t * opt;
+	static int nutdev_num = 1;
+
+	if(device==NULL) {
+		return;
+	}
+
+	/* Find start of the list */
+	while(current_dev->prev != NULL) {
+		current_dev = current_dev->prev;
+	}
+
+	/* Display each devices */
+	do {
+        out << "["  << name << "]" << std::endl;
+        out << "\tdriver = \"" << current_dev->driver  << "\"" << std::endl;
+        out << "\tport = \""   << current_dev->port    << "\"" << std::endl;
+
+		opt = current_dev->opt;
+
+		while (NULL != opt) {
+			if( opt->option != NULL ) {
+                out << "\t" << opt->option;
+				if( opt->value != NULL ) {
+                    out << " = \"" << opt->value << "\"";
+				}
+				out << std::endl;
+			}
+			opt = opt->next;
+		}
+
+		nutdev_num++;
+
+		current_dev = current_dev->next;
+	}
+	while( current_dev != NULL );
+}
 
 int
 nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
+        nutscan_snmp_t* snmp_conf,
         std::string& out)
 {
-    Argv args = {"/usr/bin/nut-scanner", "-S", "-s", ip_address.toString(), "-e", ip_address.toString()};
-    std::string e;
 
-    int ret = output(args, out, e);
-    if (ret != 0)
-        return -1;
+    static nutscan_snmp_t s_snmp_conf;
+	memset(&s_snmp_conf, 0, sizeof(s_snmp_conf));
+
+    auto sip = ip_address.toString();
+    auto dev = nutscan_scan_snmp(
+            sip.c_str(),
+            sip.c_str(),
+            5000,
+            snmp_conf ? snmp_conf : &s_snmp_conf);
+
+    {
+    std::stringstream buff;
+    s_nutscan_display_ups_conf(name, dev, buff);
+
+    out = buff.str();
+    }
+
+    nutscan_free_device(dev);
 
     if (out.empty())
         return -1;
 
-    auto idx = out.find("[");
-    if (idx == std::string::npos)
-        return -1;
-
-    out.erase(0, idx-1);
-    out.replace(2, 7, name);
     return 0;
 }
 
