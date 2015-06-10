@@ -19,7 +19,7 @@
 #            Tomas Halman <TomasHalman@eaton.com>,
 #            Jim Klimov <EvgenyKlimov@eaton.com>
 #
-# Description: Destroys VM "latest" (or named by -m), deploys a new
+# Description: Destroys VM "latest" (or one named by -m), deploys a new
 # one from image prepared by OBS, and starts it
 
 #
@@ -38,6 +38,20 @@
 [ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
+
+# NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
+SCRIPTDIR=$(realpath `dirname $0`)
+SCRIPTPWD="`pwd`"
+[ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
+[ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
+[ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
+export CHECKOUTDIR BUILDSUBDIR
+
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
     echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
@@ -69,9 +83,39 @@ usage() {
     echo "    -r|--repository URL  OBS image repo ('$OBS_IMAGES')"
     echo "    -hp|--http-proxy URL the http_proxy override to access OBS ('$http_proxy')"
     echo "    -ap|--apt-proxy URL  the http_proxy to access external APT images ('$APT_PROXY')"
+    echo "    --install-dev        run ci-setup-test-machine.sh (if available) to install packages"
     echo "    --download-only      end the script after downloading the newest image file"
+    echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
+    echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
     echo "    -h|--help            print this help"
+}
+
+check_md5sum() {
+	# Compares actual checksum of file "$1" with value recorded in file "$2"
+	if [ -s "$1" -a -s "$2" ]; then
+		logmsg_info "Validating OS image file '$1' against its MD5 checksum '$2'..."
+		MD5EXP="`awk '{print $1}' < "$2"`"
+		MD5ACT="`md5sum < "$1" | awk '{print $1}'`" && \
+		if [ x"$MD5EXP" != x"$MD5ACT" ]; then
+			logmsg_error "Checksum validation of '$1' against '$2' FAILED!"
+			return 1
+		fi
+		logmsg_info "Checksum validation of '$1' against '$2' SUCCEEDED!"
+		return 0
+	fi
+	logmsg_warn "Checksum validation of '$1' against '$2' SKIPPED (one of the files is missing)"
+	return 0
+}
+
+ensure_md5sum() {
+	# A destructive wrapper of check_md5sum(), destroys bad downloads
+	if ! check_md5sum "$@" ; then
+		logmsg_warn "Removing broken file: '$IMAGE'"
+		rm -f "$IMAGE" "$IMAGE.md5"
+		return 1
+	fi
+	return 0
 }
 
 #
@@ -96,6 +140,8 @@ DOTDOMAINNAME=""
 
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
+[ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
+[ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 
 while [ $# -gt 0 ] ; do
     case "$1" in
@@ -126,6 +172,17 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--download-only)
 	    DOWNLOADONLY=yes
+	    shift
+	    ;;
+	--attempt-download)
+	    shift
+	    case "$1" in
+		yes|no|auto) ATTEMPT_DOWNLOAD="$1"; shift ;;
+		*) ATTEMPT_DOWNLOAD=yes ;;
+	    esac
+	    ;;
+	--install-dev|--install-dev-pkgs)
+	    INSTALL_DEV_PKGS=yes
 	    shift
 	    ;;
 	-h|--help)
@@ -185,14 +242,96 @@ mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
 cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
 
-logmsg_info "Get the latest operating environment image prepared for us by OBS"
-IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
-wget -c "$IMAGE_URL"
-WGET_RES=$?
-logmsg_info "Download completed with exit-code: $WGET_RES"
+# Initial value, aka "file not found"
+WGET_RES=127
+IMAGE=""
+IMAGE_SKIP=""
+
+if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
+	logmsg_info "Get the latest operating environment image prepared for us by OBS"
+	IMAGE_URL="`wget -O - $OBS_IMAGES/$IMGTYPE/$ARCH/ 2> /dev/null | sed -n 's|.*href="\(.*simpleimage.*\.'"$EXT"'\)".*|'"$OBS_IMAGES/$IMGTYPE/$ARCH"'/\1|p' | sed 's,\([^:]\)//,\1/,g'`"
+	IMAGE="`basename "$IMAGE_URL"`"
+
+	# Set up sleeping
+	MAXSLEEP=240
+	SLEEPONCE=5
+	NUM="`expr $MAXSLEEP / $SLEEPONCE`"
+
+	while [ -f "$IMAGE.lock" ] && [ "$NUM" -gt 0 ]; do
+		if WGETTER_PID="`cat "$IMAGE.lock"`" ; then
+			# TODO: This locking method is only good on a local system,
+			# not on shared networked storage where fuser, flock() or
+			# tracking metadata changes over time perform more reliably.
+			if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] && [ -d "/proc/$WGETTER_PID" ] ; then
+				ps -ef | \
+				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename $0`|sh " \
+					|| WGETTER_PID=""
+			else
+				WGETTER_PID=""
+			fi
+
+			if [ -z "$WGETTER_PID" ] ; then
+				logmsg_info "Lock-file at '$IMAGE.lock' seems out of date, skipping"
+				#NUM=-1
+				rm -f "$IMAGE.lock"
+				sleep $SLEEPONCE
+				continue	# Maybe another sleeper grabs the lock
+			fi
+		fi
+		[ "`expr $NUM % 3`" = 0 ] && \
+			logmsg_warn "Locked out of downloading '$IMAGE' by PID '$WGETTER_PID'," \
+				"waiting for `expr $NUM \* $SLEEPONCE` more seconds..."
+		NUM="`expr $NUM - 1`" ; sleep $SLEEPONCE
+	done
+
+	if [ "$NUM" = 0 ] || [ -f "$IMAGE.lock" ] ; then
+		# TODO: Skip over $IMAGE.md5 verification and use the second-newest file
+		logmsg_error "Still locked out of downloading '$IMAGE'"
+		case "$ATTEMPT_DOWNLOAD" in
+			yes) die "Can not download, so bailing out" ;;
+			no) ;;
+			*) logmsg_info "Switching from ATTEMPT_DOWNLOAD value '$ATTEMPT_DOWNLOAD' to 'no'" \
+				"and skipping OS image '$IMAGE' from candidates to mount"
+			   ATTEMPT_DOWNLOAD=no
+			   IMAGE_SKIP="$IMAGE"
+			   IMAGE=""
+			   ;;
+		esac
+	fi
+fi
+
+if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
+	echo "$$" > "$IMAGE.lock"
+
+	# Not all trap names are recognized by all shells consistently
+	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+		trap 'ERRCODE=$?; [ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"; rm -f "$IMAGE.lock"; exit $ERRCODE;' $P$S 2>/dev/null
+	done; done
+
+	wget -q -c "$IMAGE_URL.md5" || true
+	wget -c "$IMAGE_URL"
+	WGET_RES=$?
+	logmsg_info "Download completed with exit-code: $WGET_RES"
+	if ! ensure_md5sum "$IMAGE" "$IMAGE.md5" ; then
+		IMAGE=""
+		WGET_RES=127
+	fi
+	[ "$WGET_RES" = 0 ] || \
+		logmsg_error "Failed to get the latest image file name from OBS" \
+			"(subsequent VM startup can use a previously downloaded image, however)"
+
+	sync
+	rm -f "$IMAGE.lock"
+	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+		trap '-' $P$S 2>/dev/null
+	done; done
+else
+	logmsg_info "Not even trying to download a new OS image at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
+fi
+
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
-		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '$WGET_RES'" >&2
 	exit $WGET_RES
 fi
 
@@ -203,12 +342,35 @@ if [ "$1" ]; then
 	# (CLI parsing loop above would fail on unrecognized parameter).
 	# Should think if anything must be done about picking a particular
 	# image name for a particular VM, though.
+	logmsg_info "Using pre-downloaded image filename provided by the user"
 	IMAGE="$1"
+	# IMAGE_FLAT is used as a prefix to directory filenames of mountpoints
 	IMAGE_FLAT="`basename "$IMAGE"`"
 else
-	# If download failed, we can have a previous image file for this type
-	IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+	if [ -n "$IMAGE" ] && [ -s "$IMGTYPE/$ARCH/$IMAGE" ]; then
+		logmsg_info "Recent download succeeded, checksums passed - using this image"
+		IMAGE="$IMGTYPE/$ARCH/$IMAGE"
+	else
+		# If download failed or was skipped, we can have a previous
+		# image file for this type
+		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
+		IMAGE=""
+		while [ -z "$IMAGE" ]; do
+			if [ -z "$IMAGE_SKIP" ]; then
+				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
+			else
+				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | grep -v "$IMAGE_SKIP" | head -n 1`"
+			fi
+			ensure_md5sum "$IMAGE" "$IMAGE.md5" || IMAGE=""
+		done
+	fi
 	IMAGE_FLAT="`basename "$IMAGE" .$EXT`_${IMGTYPE}_${ARCH}.$EXT"
+fi
+if [ -z "$IMAGE" ]; then
+	die "No downloaded image files located in my cache (`pwd`/$IMGTYPE/$ARCH/*.$EXT)!"
+fi
+if [ ! -s "$IMAGE" ]; then
+	die "No downloaded image files located in my cache (`pwd`/$IMAGE)!"
 fi
 logmsg_info "Will use IMAGE='$IMAGE' for further VM set-up (flattened to '$IMAGE_FLAT')"
 
@@ -355,6 +517,33 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 
 logmsg_info "Start the virtual machine"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
+
+if [ "$INSTALL_DEV_PKGS" = yes ]; then
+	INSTALLER=""
+	if [ -s "$SCRIPTPWD/ci-setup-test-machine.sh" ] ; then
+		INSTALLER="$SCRIPTPWD/ci-setup-test-machine.sh"
+	else
+		if [ -s "$SCRIPTDIR/ci-setup-test-machine.sh" ] ; then
+			INSTALLER="$SCRIPTDIR/ci-setup-test-machine.sh"
+		else
+			[ -n "$CHECKOUTDIR" ] && \
+			[ -s "$CHECKOUTDIR/tests/CI/ci-setup-test-machine.sh" ] && \
+				INSTALLER="$CHECKOUTDIR/tests/CI/ci-setup-test-machine.sh"
+		fi
+	fi
+	if [ -n "$INSTALLER" ] ; then
+		echo "Will now update and install a predefined development package set using $INSTALLER"
+		echo "Sleeping 30 sec to let VM startup settle down first..."
+		sleep 30
+		echo "Running $INSTALLER against the VM '$VM' (via chroot)..."
+		chroot ../rootfs/$VM/ /bin/sh < "$INSTALLER"
+		echo "Result of installer script: $?"
+	else
+		echo "WARNING: Got request to update and install a predefined" \
+			"development package set, but got no ci-setup-test-machine.sh" \
+			"around - action skipped"
+	fi
+fi
 
 logmsg_info "Preparation and startup of the virtual machine '$VM'" \
 	"is successfully completed on `date -u` on host" \
