@@ -1,11 +1,28 @@
 #!/bin/bash
 
-# TODO: Check nonempty input, write usage when input bad
+# TODO: Eaton header
 
-ELEMENT_ID=$1
-SOURCE=$2
+usage() {
+        echo "Usage:
+$0 {ELEMENT_ID} {SOURCE}"
+}
 
-ID=$(mysql -u root -D box_utf8 -N -e "    
+[ $# != 2 ] && \
+	echo "ERROR: Wrong amount of arguments!" >&2 && \
+	usage >&2 && exit 1
+[ -z "$1" -o -z "$2" ] && \
+	echo "ERROR: One of arguments is empty!" >&2 && \
+	usage >&2 && exit 1
+
+ELEMENT_ID="$1"
+SOURCE="$2"
+
+# TODO: Later this may be an UUID - in that future, change accordingly
+[ ! "$ELEMENT_ID" -ge 0 ] && \
+	echo "ERROR: ELEMENT_ID must be a number (uint64)!" >&2 && \
+	usage >&2 && exit 1
+
+mysql -u root -D box_utf8 -N -e "    
 SELECT @id := id FROM t_bios_measurement_topic,
     (
     SELECT @device_id := a.id_discovered_device, @name := name
@@ -17,7 +34,5 @@ SELECT @id := id FROM t_bios_measurement_topic,
     ) AS c
 WHERE
     device_id = @device_id AND
-    topic = CONCAT('${2}@', @name)")
-
-echo "$ID"    
+    topic = CONCAT('${2}@', @name)"
 
