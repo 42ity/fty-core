@@ -19,17 +19,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  * nut-scanner wrapper
  */
 
+#include "nutscan.h"
 #include "subprocess.h"
 
 namespace shared {
 
 int
 nut_scan_snmp(
-        const char* name,
-        const char* ip_address,
+        const std::string& name,
+        const CIDRAddress& ip_address,
         std::string& out)
 {
-    Argv args = {"/usr/bin/nut-scanner", "-S", "-s", ip_address, "-e", ip_address};
+    Argv args = {"/usr/bin/nut-scanner", "-S", "-s", ip_address.toString(), "-e", ip_address.toString()};
     std::string e;
 
     int ret = output(args, out, e);

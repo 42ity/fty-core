@@ -857,10 +857,11 @@ bios_nutscan_SOURCES = \
 
 bios_nutscan_LDADD = \
 			libpriv-log.la \
+			libpriv-cidr.la \
 			libpriv-nutscan.la \
 			libpriv-subprocess.la
 
-bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS)
+bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list = $(cibin_programs)

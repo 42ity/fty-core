@@ -23,6 +23,7 @@ Example:
 */
 
 #include<string>
+#include "cidr.h"
 
 namespace shared {
 
@@ -36,8 +37,8 @@ namespace shared {
  */
 int
 nut_scan_snmp(
-        const char* name,
-        const char* ip_address,
+        const std::string& name,
+        const CIDRAddress& ip_address,
         std::string& out);
 
 }

@@ -13,7 +13,10 @@ int main(int argc, char** argv) {
     }
 
     std::string nut_config;
-    auto ret = shared::nut_scan_snmp(argv[1], argv[2], nut_config);
+    auto ret = shared::nut_scan_snmp(
+            argv[1],
+            shared::CIDRAddress(argv[2]),
+            nut_config);
 
     if (ret != 0) {
         std::cerr << "fail!" << std::endl;
