@@ -10,7 +10,7 @@ mysql_DATA	= initdb.sql
 mysqlexdir	= $(datadir)/@PACKAGE@/examples/sql/mysql
 mysqlex_DATA	= \
 		    load_data.sql ci-DC-power-UC1.sql location_topology.sql \
-		    power_topology.sql rack_power.sql
+		    power_topology.sql rack_power.sql load_ROZLAB.sql
 
 malamuteexdir	= $(datadir)/@PACKAGE@/examples/config/malamute
 malamuteex_DATA	= malamute.cfg

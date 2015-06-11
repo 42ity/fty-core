@@ -1,4 +1,4 @@
-
+use box_utf8;
 /* t_bios_asset_element_type */
 select @asset_element_group := id_asset_element_type from t_bios_asset_element_type where name ='group';
 select @asset_element_datacenter := id_asset_element_type from t_bios_asset_element_type where name ='datacenter';
