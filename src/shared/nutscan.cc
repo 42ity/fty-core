@@ -29,7 +29,7 @@ static void
 s_nutscan_display_ups_conf(
         const std::string& name,
         nutscan_device_t * device,
-        std::stringstream& out)
+        std::vector<std::string>& ret)
 {
 	nutscan_device_t * current_dev = device;
 	nutscan_options_t * opt;
@@ -46,6 +46,7 @@ s_nutscan_display_ups_conf(
 
 	/* Display each devices */
 	do {
+        std::stringstream out;
         out << "["  << name << "]" << std::endl;
         out << "\tdriver = \"" << current_dev->driver  << "\"" << std::endl;
         out << "\tport = \""   << current_dev->port    << "\"" << std::endl;
@@ -66,6 +67,7 @@ s_nutscan_display_ups_conf(
 		nutdev_num++;
 
 		current_dev = current_dev->next;
+        ret.push_back(out.str());
 	}
 	while( current_dev != NULL );
 }
@@ -75,7 +77,7 @@ nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
         nutscan_snmp_t* snmp_conf,
-        std::string& out)
+        std::vector<std::string>& out)
 {
 
     static nutscan_snmp_t s_snmp_conf;
@@ -88,13 +90,7 @@ nut_scan_snmp(
             5000,
             snmp_conf ? snmp_conf : &s_snmp_conf);
 
-    {
-    std::stringstream buff;
-    s_nutscan_display_ups_conf(name, dev, buff);
-
-    out = buff.str();
-    }
-
+    s_nutscan_display_ups_conf(name, dev, out);
     nutscan_free_device(dev);
 
     if (out.empty())

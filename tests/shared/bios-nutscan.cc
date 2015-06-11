@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     }
 	nutscan_init();
 
-    std::string nut_config;
+    std::vector<std::string> nut_config;
     auto ret = shared::nut_scan_snmp(
             argv[1],
             shared::CIDRAddress(argv[2]),
@@ -25,6 +25,11 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::cout << nut_config << std::endl;
+    size_t i = 0;
+    for (const auto& s: nut_config) {
+        std::cout << i << ":" << std::endl;
+        i++;
+        std::cout << s << std::endl;
+    }
     return 0;
 }

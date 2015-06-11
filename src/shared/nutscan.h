@@ -32,6 +32,7 @@ Example:
 */
 
 #include<string>
+#include<vector>
 #include<nut-scan.h>
 
 #include "cidr.h"
@@ -44,7 +45,7 @@ namespace shared {
  * \param[in] name asset name of device
  * \param[in] ip_address ip address of device
  * \param[in] snmp_conf additional SNMP related information, can be NULL
- * \param[out] out resulted string with NUT config snippet
+ * \param[out] out resulted string with NUT config snippets
  * \return 0 if success, -1 otherwise
  */
 int
@@ -52,6 +53,6 @@ nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
         nutscan_snmp_t* snmp_conf,
-        std::string& out);
+        std::vector<std::string>& out);
 
 }
