@@ -8,7 +8,7 @@
 int main(int argc, char** argv) {
 
     if (argc != 3) {
-        log_error("Usage: ./bios-email name ip");
+        log_error("Usage: ./bios-nutscan name ip");
         return -1;
     }
 	nutscan_init();
