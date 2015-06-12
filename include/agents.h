@@ -217,6 +217,27 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority);
+BIOS_EXPORT int
+bios_asset_extra_extract(ymsg_t *message,
+                   char **name,
+                   zhash_t **ext_attributes,
+                   uint32_t *type_id,
+                   uint32_t *parent_id,
+                   char **status,
+                   uint8_t *priority,
+                   uint8_t *bc,
+                   int8_t *event_type);
+
+BIOS_EXPORT ymsg_t *
+bios_asset_extra_encode(const char *name,
+zhash_t **ext_attributes,
+                   uint32_t type_id,
+                   uint32_t parent_id,
+                   const char* status,
+                   uint8_t priority,
+                   uint8_t bc,
+                   int8_t event_type);
+
 
 #ifdef __cplusplus
 }
