@@ -40,7 +40,7 @@ _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
 
 # NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
-SCRIPTDIR=$(realpath `dirname $0`)
+SCRIPTDIR=$(realpath `dirname ${_SCRIPT_NAME}`)
 SCRIPTPWD="`pwd`"
 [ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 [ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
@@ -75,7 +75,7 @@ die() {
 }
 
 usage() {
-    echo "Usage: $(basename $0) [options...]"
+    echo "Usage: $(basename ${_SCRIPT_NAME}) [options...]"
     echo "options:"
     echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
     echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
@@ -118,6 +118,34 @@ ensure_md5sum() {
 	return 0
 }
 
+cleanup_script() {
+	[ -z "$VM" ] && return 0
+	if [ -f "/srv/libvirt/rootfs/$VM.lock" ] ; then
+		rm -f "/srv/libvirt/rootfs/$VM.lock"
+	fi
+
+	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.*` ; do
+		echo "$ERRCODE" > "$F"
+	done
+}
+
+cleanup_wget() {
+	[ -z "$IMAGE" ] && return 0
+	[ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"
+	rm -f "$IMAGE.lock"
+}
+
+settraps() {
+	# Not all trap names are recognized by all shells consistently
+	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
+		case "$1" in
+		-|"") trap "$1" $P$S 2>/dev/null ;;
+		*)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null ;;
+		esac
+	done; done
+}
+
 #
 # defaults
 #
@@ -146,7 +174,7 @@ DOTDOMAINNAME=""
 while [ $# -gt 0 ] ; do
     case "$1" in
 	-m|--machine)
-	    VM="$2"
+	    VM="`echo "$2" | tr '/' '\!'`"
 	    shift 2
 	    ;;
 	-b|--baseline)
@@ -200,6 +228,7 @@ done
 #
 # check if VM exists
 #
+[ -z "$VM" ] && die "VM parameter not provided!"
 RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
 if [ $RESULT = 0 ] ; then
     die "VM $VM does not exist"
@@ -207,6 +236,7 @@ fi
 if [ $RESULT -gt 1 ] ; then
     ### Should not get here via CI
     die "VM pattern '$VM' matches too much ($RESULT)"
+    ### TODO: spawn many child-shells with same parameters, for each VM?
 fi
 
 # This should not be hit...
@@ -238,7 +268,54 @@ fi
 [ -z "$ARCH" ] && ARCH="`uname -m`"
 # Note: several hardcoded paths are expected relative to "snapshots", so
 # it is critical that we succeed changing into this directory in the end.
-mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH"
+mkdir -p "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" "/srv/libvirt/rootfs" "/srv/libvirt/overlays"
+cd "/srv/libvirt/rootfs" || \
+	die "Can not 'cd /srv/libvirt/rootfs' to keep container root trees"
+
+# Verify that this script runs once at a time for the given VM
+if [ -f "$VM.lock" ] ; then
+	OTHERINST_PID="`head -1 "$VM.lock"`"
+	OTHERINST_PROG="`head -n +2 "$VM.lock" | tail -1`"
+	OTHERINST_ARGS="`head -n +3 "$VM.lock" | tail -1`"
+	if [ -n "$OTHERINST_PID" ] && \
+	   [ "$OTHERINST_PID" -gt 0 ]  2>/dev/null  && \
+	   [ -d "/proc/$OTHERINST_PID" ] && \
+	   ps -ef | awk '( $2 == "'"$OTHERINST_PID"'") {print $0}' | egrep "`basename ${_SCRIPT_NAME}`|sh " \
+	; then
+		if [ x"$OTHERINST_ARGS" = x"${_SCRIPT_ARGS}" ]; then
+			logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID and the same parameters is already running," \
+				"now waiting for it to finish"
+			# Catch exit-code of that invokation, and return if ok
+			# or even better, retry if that exit was a failure
+			settraps "rm -f $VM.wantexitcode.$$;"
+			touch "$VM.wantexitcode.$$"
+			while [ -f "$VM.lock" ] && [ -d "/proc/$OTHERINST_PID" ]; do sleep 1; done
+			OTHERINST_EXIT="`cat "$VM.wantexitcode.$$"`" || OTHERINST_EXIT=""
+			[ -n "$OTHERINST_EXIT" ] && [ "$OTHERINST_EXIT" -ge 0 ] 2>/dev/null || OTHERINST_EXIT=""
+			rm -f "$VM.wantexitcode.$$"
+			settraps -
+			if [ "$OTHERINST_EXIT" = 0 ]; then
+				logmsg_info "`date`: Wait is complete, finishing script as the requested job is done OK"
+				exit 0
+			fi
+			logmsg_info "`date`: Wait is complete, the other instance returned code '$OTHERINST_EXIT' so retrying"
+		else
+			# TODO: Flag to choose whether to wait-and-continue
+			# or to abort (with error?) at this point
+			logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID and different parameters ($OTHERINST_ARGS) is already running," \
+				"now waiting for it to finish and will continue with my requested task (${_SCRIPT_ARGS})"
+			while [ -f "$VM.lock" ] && [ -d "/proc/$OTHERINST_PID" ]; do sleep 1; done
+			logmsg_info "`date`: Wait is complete, continuing with my task (${_SCRIPT_ARGS})"
+		fi
+	else
+		logmsg_info "Found lock-file `pwd`/$VM.lock, but it is invalid or not up-to-date (ignoring)"
+	fi
+fi
+
+( echo "$$"; echo "${_SCRIPT_NAME}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+settraps 'cleanup_script'
+
+# Proceed to downloads, etc.
 cd "/srv/libvirt/snapshots/$IMGTYPE/$ARCH" || \
 	die "Can not 'cd /srv/libvirt/snapshots/$IMGTYPE/$ARCH' to download image files"
 
@@ -262,9 +339,9 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 			# TODO: This locking method is only good on a local system,
 			# not on shared networked storage where fuser, flock() or
 			# tracking metadata changes over time perform more reliably.
-			if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] && [ -d "/proc/$WGETTER_PID" ] ; then
+			if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] 2>/dev/null && [ -d "/proc/$WGETTER_PID" ] ; then
 				ps -ef | \
-				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename $0`|sh " \
+				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename ${_SCRIPT_NAME}`|sh " \
 					|| WGETTER_PID=""
 			else
 				WGETTER_PID=""
@@ -303,10 +380,7 @@ fi
 if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 	echo "$$" > "$IMAGE.lock"
 
-	# Not all trap names are recognized by all shells consistently
-	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
-		trap 'ERRCODE=$?; [ "$WGET_RES" != 0 ] && rm -f "$IMAGE" "$IMAGE.md5"; rm -f "$IMAGE.lock"; exit $ERRCODE;' $P$S 2>/dev/null
-	done; done
+	settraps 'cleanup_wget; cleanup_script;'
 
 	wget -q -c "$IMAGE_URL.md5" || true
 	wget -c "$IMAGE_URL"
@@ -321,10 +395,8 @@ if [ "$ATTEMPT_DOWNLOAD" = yes ] || [ "$ATTEMPT_DOWNLOAD" = auto ] ; then
 			"(subsequent VM startup can use a previously downloaded image, however)"
 
 	sync
-	rm -f "$IMAGE.lock"
-	for P in "" SIG; do for S in ERR EXIT QUIT TERM HUP INT ; do
-		trap '-' $P$S 2>/dev/null
-	done; done
+	cleanup_wget
+	settraps 'cleanup_script;'
 else
 	logmsg_info "Not even trying to download a new OS image at this moment (ATTEMPT_DOWNLOAD=$ATTEMPT_DOWNLOAD)"
 fi
@@ -549,4 +621,6 @@ logmsg_info "Preparation and startup of the virtual machine '$VM'" \
 	"is successfully completed on `date -u` on host" \
 	"'`hostname`${DOTDOMAINNAME}'"
 
+cleanup_script
+settraps '-'
 exit 0
