@@ -406,6 +406,11 @@ libpriv_email_la_SOURCES = \
 			src/shared/email.h \
 			src/shared/email.cc
 
+noinst_LTLIBRARIES +=	libpriv-nutscan.la
+libpriv_nutscan_la_SOURCES = \
+			src/shared/nutscan.h \
+			src/shared/nutscan.cc
+
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
@@ -843,6 +848,20 @@ bios_email_LDADD = \
 			libpriv-subprocess.la 
 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
+
+cibin_programs +=	bios-nutscan
+
+bios_nutscan_SOURCES = \
+			src/shared/nutscan.h \
+			tests/shared/bios-nutscan.cc
+
+bios_nutscan_LDADD = \
+			libpriv-log.la \
+			libpriv-cidr.la \
+			libpriv-nutscan.la \
+			libpriv-subprocess.la
+
+bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list = $(cibin_programs)
