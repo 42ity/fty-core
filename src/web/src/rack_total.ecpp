@@ -25,16 +25,15 @@ total_rack_power(
     a_elmnt_id_t id)
 {
 
-    if (src == "<zero>") {
+    if (src == "<zero>")
         return 0.0f;
-    }
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
 
     if (reply.rv != 0)
-        throw std::invalid_argument("Fail to find " + src + " for element" + std::to_string(id));
+        return 0.0f;
 
     return value * pow(10,scale);
 }
@@ -52,7 +51,6 @@ std::string arg2;
 </%args>
 <%thread scope="global">
 asset_manager asset_mgr;
-tntdb::Connection conn = tntdb::connectCached (url);
 </%thread>
 <%cpp>
     // Check URL validity
@@ -111,9 +109,10 @@ tntdb::Connection conn = tntdb::connectCached (url);
 <%cpp>
            return HTTP_BAD_REQUEST;
        }
-   }
-   std::stringstream json;
+    }
+    std::stringstream json;
 try {
+    tntdb::Connection conn = tntdb::connectCached (url);
    json << "{\n  \"rack_total\": [\n";
    for( size_t R = 0 ; R < racks.size(); R++ ) {
        json   << "    {\n"

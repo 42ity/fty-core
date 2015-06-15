@@ -157,13 +157,15 @@ get_measurements_averages (
         log_debug ("topic id = %" PRId64, topic_id);
         {
             tntdb::Statement statement = conn.prepareCached (
-            " SELECT UNIX_TIMESTAMP(MAX(timestamp)) FROM v_bios_measurement "
+            " SELECT COALESCE(MAX(UNIX_TIMESTAMP(timestamp)), :cval) FROM v_bios_measurement "
             " WHERE topic_id = :topic_id ");
-            tntdb::Result result = statement.set ("topic_id", topic_id).select ();
+            tntdb::Result result = statement.set ("topic_id", topic_id).set ("cval", INT32_MIN).select ();
             if (result.size () == 0) {
+                log_debug ("Result size == 0. Assigning INT64_MIN to last timestamp.");                
                 last_timestamp = INT64_MIN;
             }
             else if (result.size () == 1) {            
+                log_debug ("Result size == 1");
                 result.getRow (0).getValue (0).get (last_timestamp);
             }
             else {

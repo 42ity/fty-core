@@ -928,6 +928,53 @@ common_msg_t* update_device_type(const char* url,
     }
 }
 
+db_reply_t
+    select_monitor_device_type_id
+        (tntdb::Connection &conn, 
+         const char *device_type_name)
+{
+    LOG_START;
+    
+    log_debug ("  device_type_name = %s", device_type_name);
+
+    db_reply_t ret = db_reply_new();
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id"
+            " FROM"
+            "   v_bios_device_type v"
+            " WHERE v.name = :name"
+        );
+          
+        tntdb::Value val = st.set("name", device_type_name).
+                              selectValue();
+        log_debug ("[t_bios_monitor_device]: was selected 1 rows");
+        
+        val.get(ret.item);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    }
+    catch (const tntdb::NotFound &e){
+        ret.status     = 0; 
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_NOTFOUND;
+        ret.msg        = e.what();
+        log_info ("end: discovered device type was not found with '%s'", e.what());
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status     = 0; 
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL (e);
+        return ret;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////
 /////////////////           DEVICE                   ///////////////////
 ////////////////////////////////////////////////////////////////////////
@@ -1355,7 +1402,7 @@ db_reply_t
     switch (msgid){
         case COMMON_MSG_FAIL:
         {
-            ret.status     = 0; 
+            ret.status     = 0;
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
             ret.msg        = "device type name is unknown";
