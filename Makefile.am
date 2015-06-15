@@ -1012,6 +1012,26 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 		    -I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
 
+client_PROGRAMS +=	agent-alert-smtp
+
+agent_autoconfig_SOURCES = \
+			src/agents/autoconfig/autoconfig.cc \
+			src/agents/autoconfig/config-queue.cc \
+			src/agents/autoconfig/configurator.cc
+
+agent_autoconfig_LDADD = \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-defs.la
+
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+
+agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
+
+client_PROGRAMS +=	agent-autoconfig
+
+
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
