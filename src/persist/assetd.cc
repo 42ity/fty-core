@@ -684,6 +684,102 @@ db_reply_t
         return ret;
     }
 }
+//=============================================================================
+db_reply_t
+    delete_monitor_asset_relation
+        (tntdb::Connection &conn, 
+         ma_rltn_id_t id)
+{
+    LOG_START;
+    log_debug ("  id = %" PRIu32, id);
+   
+    db_reply_t ret = db_reply_new();
+
+    // input parameters control
+    if ( id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of id is not allowed";
+        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        return ret;
+    }
+    log_debug ("input parameters are correct");
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_monitor_asset_relation"
+            " WHERE"
+            "   id_ma_relation = :id"
+        );
+    
+        ret.affected_rows = st.set("id", id).
+                               execute();
+        log_debug("[t_bios_monitor_asset_relation]: was deleted %"
+                                PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
+
+db_reply_t
+    delete_monitor_asset_relation_by_a
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t id)
+{
+    LOG_START;
+    log_debug ("  id = %" PRIu32, id);
+   
+    db_reply_t ret = db_reply_new();
+
+    // input parameters control
+    if ( id == 0 )
+    {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg        = "0 value of id is not allowed";
+        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        return ret;
+    }
+    log_debug ("input parameters are correct");
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM"
+            "   t_bios_monitor_asset_relation"
+            " WHERE"
+            "   id_asset_element = :id"
+        );
+    
+        ret.affected_rows = st.set("id", id).
+                               execute();
+        log_debug("[t_bios_monitor_asset_relation]: was deleted %"
+                                PRIu64 " rows", ret.affected_rows);
+        ret.status = 1;
+        LOG_END;
+        return ret;
+    } 
+    catch (const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+}
 
 //=============================================================================
 db_reply_t
@@ -710,18 +806,27 @@ db_reply_t
         log_info ("end: error occured during removing from groups");
         return reply_delete2;
     }
-
-    auto reply_delete3 = delete_asset_element (conn, element_id);
+    
+    auto reply_delete3 = delete_monitor_asset_relation_by_a 
+                                                (conn, element_id);
     if ( reply_delete3.status == 0 )
     {
         trans.rollback();
-        log_info ("end: error occured during removing element");
+        log_info ("end: error occured during removing ma relation");
         return reply_delete3;
+    }
+
+    auto reply_delete4 = delete_asset_element (conn, element_id);
+    if ( reply_delete4.status == 0 )
+    {
+        trans.rollback();
+        log_info ("end: error occured during removing element");
+        return reply_delete4;
     }
  
     trans.commit();
     LOG_END;
-    return reply_delete3;
+    return reply_delete4;
 }
 
 //=============================================================================
@@ -748,7 +853,7 @@ db_reply_t
         log_info ("end: error occured during removing from groups");
         return reply_delete2;
     }
-
+    
     auto reply_delete3 = delete_asset_element (conn, element_id);
     if ( reply_delete3.status == 0 )
     {
@@ -756,7 +861,7 @@ db_reply_t
         log_info ("end: error occured during removing element");
         return reply_delete3;
     }
- 
+    
     trans.commit();
     LOG_END;
     return reply_delete3;
@@ -806,64 +911,26 @@ db_reply_t
         return reply_delete4;
     }
 
-    auto reply_delete5 = delete_asset_element (conn, element_id);
+    auto reply_delete5 = delete_monitor_asset_relation_by_a 
+                                                (conn, element_id);
     if ( reply_delete5.status == 0 )
     {
         trans.rollback();
-        log_info ("end: error occured during removing element");
+        log_info ("end: error occured during removing ma relation");
         return reply_delete5;
+    }
+
+    auto reply_delete6 = delete_asset_element (conn, element_id);
+    if ( reply_delete6.status == 0 )
+    {
+        trans.rollback();
+        log_info ("end: error occured during removing element");
+        return reply_delete6;
     }
  
     trans.commit();
     LOG_END;
-    return reply_delete5;
+    return reply_delete6;
 }
 
-//=============================================================================
-db_reply_t
-    delete_monitor_asset_relation
-        (tntdb::Connection &conn, 
-         ma_rltn_id_t id)
-{
-    LOG_START;
-    log_debug ("  id = %" PRIu32, id);
-   
-    db_reply_t ret = db_reply_new();
 
-    // input parameters control
-    if ( id == 0 )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "0 value of id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
-        return ret;
-    }
-    log_debug ("input parameters are correct");
-
-    try{
-        tntdb::Statement st = conn.prepareCached(
-            " DELETE FROM"
-            "   t_bios_monitor_asset_relation"
-            " WHERE"
-            "   id_ma_relation = :id"
-        );
-    
-        ret.affected_rows = st.set("id", id).
-                               execute();
-        log_debug("[t_bios_monitor_asset_relation]: was deleted %"
-                                PRIu64 " rows", ret.affected_rows);
-        ret.status = 1;
-        LOG_END;
-        return ret;
-    } 
-    catch (const std::exception &e) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
-        return ret;
-    }
-}
