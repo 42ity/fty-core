@@ -551,3 +551,141 @@ bios_asset_extract(ymsg_t *message,
     return -3;
 }
 
+ymsg_t *
+bios_asset_extra_encode(const char *name,
+                   zhash_t **ext_attributes,
+                   uint32_t type_id,
+                   uint32_t parent_id,
+                   const char* status,
+                   uint8_t priority,
+                   uint8_t bc,
+                   int8_t event_type)
+{
+    if ( !name ) return NULL;
+    if ( !status ) return NULL;
+    
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    app_t *app = app_new(APP_MODULE);
+    app_set_name( app, "ASSET_EXTENDED" );
+    
+    // ext attributes
+    app_set_args (app, ext_attributes);
+    zhash_destroy (ext_attributes);
+
+    app_args_set_string( app, "name", name );
+    if ( type_id ) 
+        app_args_set_uint32( app, "type_id", type_id );
+    if ( parent_id ) 
+        app_args_set_uint32( app, "parent_id", parent_id );
+    if ( status ) 
+        app_args_set_string( app, "status", status );
+    if ( priority ) 
+        app_args_set_uint8( app, "priority", priority );
+    app_args_set_uint8( app, "bc", bc );
+    app_args_set_int8( app, "event_type", event_type );
+
+       
+    ymsg_request_set_app( msg, &app );
+    return msg;
+}
+
+int
+bios_asset_extra_extract(ymsg_t *message,
+                   char **name,
+                   zhash_t **ext_attributes,
+                   uint32_t *type_id,
+                   uint32_t *parent_id,
+                   char **status,
+                   uint8_t *priority,
+                   uint8_t *bc,
+                   int8_t *event_type
+                   )
+{
+    if ( !message || !name ) return -1;
+
+    if ( name )   *name = NULL;
+    if ( status ) *status = NULL;
+
+    app_t *app = NULL;
+    
+    switch ( ymsg_id( message ) ) {
+    case YMSG_REPLY:
+        if ( !ymsg_is_ok(message) ) return -1;
+        app = ymsg_response_app( message );
+        break;
+    case YMSG_SEND:
+        app = ymsg_request_app( message );
+        break;
+    }
+    if( !app || !streq( app_name( app ), "ASSET_EXTENDED" ) )
+    {
+        app_destroy(&app);
+        return -2;
+    }
+
+    if( name ) {
+        const char *p = app_args_string( app, "name", NULL );
+        if ( p )
+            *name = strdup(p);
+        if ( ! *name )
+            goto bios_asset_extract_err;
+    }
+    if( priority ) {
+        *priority = app_args_uint8( app, "priority" );
+        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
+            goto bios_asset_extract_err;
+    }
+    if( bc ) {
+        *bc = app_args_uint8( app, "bc" );
+        if( *bc != 0  && *bc != 1 )
+            goto bios_asset_extract_err;
+    }
+
+    if( type_id ) {
+        *type_id = app_args_uint32( app, "type_id" );
+        if( errno )
+            goto bios_asset_extract_err;
+    }
+    if( parent_id ) {
+        *parent_id = app_args_uint32( app, "parent_id" );
+        if( errno )
+            goto bios_asset_extract_err;
+    }
+    if( status ) {
+        const char *p = app_args_string( app, "status", NULL );
+        if( p )
+            *status = strdup(p);
+        if( ! *status )
+            goto bios_asset_extract_err;
+    }
+    if ( event_type ) {
+        *event_type = app_args_int8 (app, "event_type");
+        if( errno )
+            goto bios_asset_extract_err;
+    }
+
+    if( ext_attributes )
+    {
+        *ext_attributes = app_get_args (app);
+        zhash_delete (*ext_attributes, "name");
+        zhash_delete (*ext_attributes, "priority");
+        zhash_delete (*ext_attributes, "type_id");
+        zhash_delete (*ext_attributes, "bc");
+        zhash_delete (*ext_attributes, "parent_id");
+        zhash_delete (*ext_attributes, "status");
+        zhash_delete (*ext_attributes, "event_type");
+    }
+
+    return 0;
+ bios_asset_extract_err:
+    if ( name )       FREE0( *name );
+    if ( status )     FREE0( *status );
+    if ( type_id )    *type_id = 0;
+    if ( parent_id )  *parent_id = 0;
+    if ( priority )   *priority = 0;
+    if ( bc )         *bc = 0;
+    if ( type_id )    *type_id = 0;
+    if ( parent_id )  *parent_id = 0;
+    if ( event_type ) *event_type = 0;
+    return -3;
+}
