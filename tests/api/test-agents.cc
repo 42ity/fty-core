@@ -23,7 +23,7 @@ TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventor
     _scoped_ymsg_t * ymsg_encoded = bios_inventory_encode (device_name, &ext_attributes, module_name);
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( ext_attributes == NULL );
-    ymsg_print (ymsg_encoded);
+//    ymsg_print (ymsg_encoded);
 
     _scoped_char    *device_name_new = NULL;
     _scoped_zhash_t *ext_attributes_new = NULL;
@@ -328,4 +328,67 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
     FREE0( device );
     FREE0( status );
 }
+
+
+TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api]") 
+{
+    log_open ();
+
+    const char *name = "my_test_device";
+    _scoped_zhash_t *ext_attributes = zhash_new();
+    zhash_autofree (ext_attributes);
+    zhash_insert (ext_attributes, "key1", (char*)"value1");
+    zhash_insert (ext_attributes, "key2", (char*)"value2");
+    zhash_insert (ext_attributes, "key3", (char*)"value3");
+    uint32_t type_id = 1;
+    uint32_t parent_id = 1;
+    const char *status = "active";
+    uint8_t priority = 1;
+    uint8_t bc = 1;
+    int8_t type = 1;
+    _scoped_ymsg_t * ymsg_encoded = bios_asset_extra_encode
+        (name, &ext_attributes, type_id, parent_id, status, priority, bc, type);
+    REQUIRE ( ymsg_encoded != NULL );
+    REQUIRE ( ext_attributes == NULL );
+
+    _scoped_zhash_t *ext_attributes_new = NULL;
+
+    char *name_new = NULL;
+    uint32_t type_id_new = 0;
+    uint32_t parent_id_new = 0;
+    char *status_new = NULL;
+    uint8_t priority_new = 0;
+    uint8_t bc_new = 0;
+    int8_t type_new = 0;
+ 
+    int rv = bios_asset_extra_extract (ymsg_encoded, &name_new, 
+        &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+        &priority_new, &bc_new, &type_new);
+    REQUIRE ( rv == 0 );
+    REQUIRE ( ymsg_encoded != NULL );
+    REQUIRE ( streq (name, name_new) == true );
+    REQUIRE ( type_id == type_id_new );
+    REQUIRE ( parent_id == parent_id_new );
+    REQUIRE ( priority == priority_new );
+    REQUIRE ( bc == bc_new );
+    REQUIRE ( type == type_new );
+    REQUIRE ( streq (status, status_new) == true );
+    REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+    
+    const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+    REQUIRE ( strcmp (value1, "value1") == 0 );
+
+    const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+    REQUIRE ( strcmp (value2, "value2") == 0 );
+
+    const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+    REQUIRE ( strcmp (value3, "value3") == 0 );
+
+    FREE0 (status_new)
+    zhash_destroy(&ext_attributes_new);
+    zhash_destroy(&ext_attributes);
+
+    log_close ();
+}
+
 
