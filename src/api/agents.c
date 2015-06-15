@@ -601,7 +601,7 @@ bios_asset_extra_extract(ymsg_t *message,
                    int8_t *event_type
                    )
 {
-    if ( !message || !name || !status  ) return -1;
+    if ( !message || !name ) return -1;
 
     if ( name )   *name = NULL;
     if ( status ) *status = NULL;

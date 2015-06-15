@@ -217,6 +217,25 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority);
+
+
+/**
+ * \brief extract extended asset message
+ *
+ * \param[in]  message        - asset extended message to decode
+ * \param[out] name           - name of the asset element
+ * \param[out] ext_attributes - a map of extended attributes.
+ * \param[out] type_id        - id of the lement type.
+ * \param[out] parent_id      - id of the parent device (0 if it has no parent device).
+ * \param[out] status         - status of the element
+ * \param[out] priority       - priority of the elemnt.
+ * \param[out] bc             - 1 if element is business critical otherwise 0.
+ * \param[out] event type     - type of action with element 1(insert), 2(update), 3(delete).
+ * 
+ * \return int  0 = success, 
+ *             -1 = invalid/unspecified parameter,
+ *             -3 = malformed message.
+ */
 BIOS_EXPORT int
 bios_asset_extra_extract(ymsg_t *message,
                    char **name,
@@ -228,9 +247,24 @@ bios_asset_extra_extract(ymsg_t *message,
                    uint8_t *bc,
                    int8_t *event_type);
 
+
+/**
+ * \brief extract extended asset message
+ *
+ * \param[in] name           - name of the asset element
+ * \param[in] ext_attributes - a map of extended attributes.
+ * \param[in] type_id        - id of the lement type.
+ * \param[in] parent_id      - id of the parent device (0 if it has no parent device).
+ * \param[in] status         - status of the element
+ * \param[in] priority       - priority of the elemnt.
+ * \param[in] bc             - 1 if element is business critical otherwise 0.
+ * \param[in] event type     - type of action with element 1(insert), 2(update), 3(delete).
+ *
+ * \return ymsg_t * or NULL if failed
+ */
 BIOS_EXPORT ymsg_t *
 bios_asset_extra_encode(const char *name,
-zhash_t **ext_attributes,
+                   zhash_t **ext_attributes,
                    uint32_t type_id,
                    uint32_t parent_id,
                    const char* status,
