@@ -132,13 +132,14 @@ static bool
  * \param cm - already parsed csv file
  * \param row_i - number of row to process
  */
-static void 
+static db_a_elmnt_t
     process_row
         (tntdb::Connection &conn,
          CsvMap cm,
          size_t row_i)
 {
     LOG_START;
+
     log_debug ("row number is %zu", row_i);
     // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
@@ -364,6 +365,7 @@ static void
     if ( type == "group" )
         zhash_insert (extattributes, "sub_type", (void*) subtype.c_str() );
 
+    db_a_elmnt_t m;
     if ( type != "device" )
     {
         // this is a transaction
@@ -374,6 +376,7 @@ static void
         {
             throw std::invalid_argument("insertion was unsuccess");
         }
+        m.id = ret.rowid; 
     }
     else
     {   
@@ -385,9 +388,18 @@ static void
         {
             throw std::invalid_argument("insertion was unsuccess");
         }
-
+        m.id = ret.rowid; 
     }
+    
+    m.name = name;
+    m.status = status;
+    m.parent_id = parent_id;
+    m.priority = priority;
+    m.bc = bc;
+    m.type_id = type_id;
+
     LOG_END;
+    return m;
 }
 
 /*
@@ -421,11 +433,14 @@ static bool
 // TODO, now it returns nothing
 // std::map <  uit64_t , std::tuple (uint64     , std::string) >>
 //            rownumber              element_id   msg
-void
+std::vector <db_a_elmnt_t>
     load_asset_csv
         (std::istream& input)
 {
     LOG_START;
+
+    std::vector <db_a_elmnt_t> res{};
+
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
     // TODO make it configurable
@@ -458,7 +473,8 @@ void
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
-            process_row(conn, cm, row_i);
+            auto ret = process_row(conn, cm, row_i);
+            res.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }
         catch ( const std::invalid_argument &e)
@@ -467,8 +483,9 @@ void
         }
     }
     LOG_END;
+    return res;
     // as we want to have an whole file returned plus additional information, than
-    // we should do it somwhere outside,
+    // we should do it somewhere outside,
     // here we just return information about status of all rows from the input csv
 
     //return infolog;

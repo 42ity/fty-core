@@ -95,6 +95,7 @@ int main (int argc, char *argv []) {
         // Other option is stream aka publish subscribe
         } else {
             // New measurements publish
+            log_debug ("I have smth from strem");
             if(is_ymsg(msg)) {
                 std::string topic = mlm_client_subject(client);
                 persist::process_measurement(topic, &msg);

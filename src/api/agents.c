@@ -468,12 +468,18 @@ bios_alert_extract(ymsg_t *self,
    return 0;
 }
 
+// action type
+// 1 insert
+// 2 delete (the content of the message in this case is not specified)
+// 3 update
+// 4 get
 ymsg_t *
 bios_asset_encode( const char *devicename,
                    uint32_t type_id,
                    uint32_t parent_id,
                    const char* status,
-                   uint8_t priority
+                   uint8_t priority,
+                   uint8_t action_type
                    )
 {
     if( ! devicename ) return NULL;
@@ -486,6 +492,7 @@ bios_asset_encode( const char *devicename,
     if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
     if( status ) app_args_set_string( app, "status", status );
     if( priority ) app_args_set_uint8( app, "priority", priority );
+    if( action_type ) app_args_set_uint8( app, "action_type", action_type );
     ymsg_request_set_app( msg, &app );
     return msg;
 }
@@ -496,7 +503,8 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *type_id,
                    uint32_t *parent_id,
                    char **status,
-                   uint8_t *priority
+                   uint8_t *priority,
+                   uint8_t *action_type
                    )
 {
     if( ! message || ! devicename ) return -1;
@@ -526,6 +534,12 @@ bios_asset_extract(ymsg_t *message,
         if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
             goto bios_asset_extract_err;
     }
+    if( action_type ) {
+        *action_type = app_args_uint8( app, "action_type" );
+        if( *action_type < 1 || *priority > 4 )
+            goto bios_asset_extract_err;
+    }
+
     if( type_id ) {
         *type_id = app_args_uint32( app, "type_id" );
         if( errno ) goto bios_asset_extract_err;
@@ -545,6 +559,7 @@ bios_asset_extract(ymsg_t *message,
     FREE0( *devicename );
     if( status ) FREE0( *status );
     if( type_id ) *type_id = 0;
+    if( action_type ) *action_type = 0;
     if( parent_id ) *parent_id = 0;
     if( priority ) *priority = 0;
     app_destroy( &app );

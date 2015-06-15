@@ -11,7 +11,13 @@
 
 #include "loadcsv.h"
 #include "enc.h"
+#include "log.h"
 #include "subprocess.h"
+#include "bios_agent.h"
+#include "cleanup.h"
+#include "str_defs.h"
+#include "agents.h"
+
 </%pre>
 
 <%cpp>
@@ -47,7 +53,7 @@ if (it == mp.end()) {
 char path[22] = "/tmp/import-csvXXXXXX";
 char new_path[22] = "/tmp/import-csvXXXXXX";
 char* path_p = path;
-
+LOG_START;
 try {
     int r = ::mkstemp(path);
     if (r == -1) {
@@ -92,9 +98,68 @@ try {
 
     //load the file and make the import
     std::ifstream inp(path_p);
-    load_asset_csv(inp);
+    log_debug ("00000000000000000000000000000000000000000000000000000000000000000");
+    auto ret = load_asset_csv(inp);
+    log_debug ("0");
     inp.close();
     ::unlink(path_p);
+
+    log_debug ("1");
+
+    // TODO: vybrat jmeno agenta
+    std::string agent_name("MY_AGENT");
+    log_debug ("11");
+    bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
+    log_debug ("111");
+    if ( agent == NULL )
+    {
+</%cpp>
+        {
+            "msg" : "bios_agent_new () failed."
+        }
+<%cpp>
+        log_debug ("bios_agent_new () fail");
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    log_debug ("1111");
+    // TODO get rid of hardcoded constants
+    uint8_t action_type = 1; 
+    // TODO rename ret, m
+    for ( auto &m : ret )
+    {
+        log_debug ("m.name='%s'", m.name.c_str());
+        ymsg_t *msg = bios_asset_encode (m.name.c_str(), m.type_id, m.parent_id, m.status.c_str(), m.priority, action_type);
+        if ( msg == NULL )
+        {
+</%cpp>
+        {
+            "msg" : "bios_asset_encode () failed."
+        }
+<%cpp>
+            log_debug ("bios_asset_encode () fail");
+            bios_agent_destroy (&agent);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        const std::string topic = "configure@" + m.name;
+        int rv = bios_agent_send (agent, topic.c_str(), &msg);
+        if ( rv != 0 )
+        {
+</%cpp>
+        {
+            "msg" : "bios_agent_send () failed."
+        }
+<%cpp>
+            log_debug ("bios_agent_send () fail");
+            bios_agent_destroy (&agent);
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+    log_debug ("all devices sent1\n");
+    assert (agent != NULL); // TODO (KHR): Remove
+    bios_agent_destroy (&agent);
+    printf ("\n");
+    log_debug ("all devices sent2\n");
 }
 catch (const std::logic_error &e) {
     ::unlink(path);
@@ -116,6 +181,9 @@ catch (const std::runtime_error &e) {
 <%cpp>
     return HTTP_INTERNAL_SERVER_ERROR;
 }
+
+log_debug ("I am at the end of ecpp file");
+log_debug ("I am at the end of ecpp file");
 //FIXME: the output needs to be finalized in regards to web UI
 //       commented out for now
 //std::string output{"There\twill\tbe\toutput\n"};
