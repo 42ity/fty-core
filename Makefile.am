@@ -945,6 +945,16 @@ server_agent_LDADD = \
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
+bin_PROGRAMS += 		generate_measurement
+
+generate_measurement_SOURCES =	tools/generate_measurement.cc
+
+generate_measurement_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+generate_measurement_LDADD = \
+				libpriv-proto.la
+
+generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_SCRIPTS =	tools/db-init
 
