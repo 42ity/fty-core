@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file autoconfig.h
-    \brief 
+    \brief autoconfiguration agent
     \author Tomas Halman <tomashalman@eaton.com>
 */
  
