@@ -70,7 +70,8 @@ void
     ymsg_set_status (out, false);
 
     char *name = NULL;
-    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int8_t operation; 
+    int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
     if ( rv == 0 )
     {
         try{
@@ -93,22 +94,22 @@ void
                 if ( app )
                 {
                     app_set_name (app, "ASSET_EXTENDED");
-
-                    if ( element.item.type_id)
-                        app_args_set_uint32 (app, "type_id", element.item.type_id);
-                    if ( element.item.parent_id )
-                        app_args_set_uint32 (app, "parent_id", element.item.parent_id);
-                    if ( element.item.priority )
-                        app_args_set_uint8  (app, "priority", element.item.priority);
                     if ( ext_attributes )
                     {
                         app_set_args  (app, &ext_attributes);
                         zhash_destroy (&ext_attributes);
                     }
+                    if ( element.item.type_id)
+                        app_args_set_uint32 (app, "__type_id", element.item.type_id);
+                    if ( element.item.parent_id )
+                        app_args_set_uint32 (app, "__parent_id", element.item.parent_id);
+                    if ( element.item.priority )
+                        app_args_set_uint8  (app, "__priority", element.item.priority);
                     if ( !element.item.status.empty() )
-                        app_args_set_string (app, "status", element.item.status.c_str());
-                    app_args_set_string (app, "name", element.item.name.c_str());
-                    app_args_set_uint8  (app, "bc", element.item.bc);
+                        app_args_set_string (app, "__status", element.item.status.c_str());
+                    app_args_set_int8 (app, "__operation", operation );
+                    app_args_set_string (app, "__name", element.item.name.c_str());
+                    app_args_set_uint8  (app, "__bc", element.item.bc);
 
                     ymsg_response_set_app( out, &app );
                     app_destroy( &app );
