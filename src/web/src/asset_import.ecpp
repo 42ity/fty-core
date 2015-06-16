@@ -142,6 +142,7 @@ try {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
         const std::string topic = "configure@" + m.name;
+        bios_agent_set_producer (agent, bios_get_stream_main());
         int rv = bios_agent_send (agent, topic.c_str(), &msg);
         if ( rv != 0 )
         {

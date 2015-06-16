@@ -131,6 +131,7 @@ global:
         bios_db_measurements_read_reply_encode;
         bios_db_measurements_read_reply_extract;
         bios_asset_extra_extract;
+        bios_asset_extra_encode_response;
         bios_asset_extra_encode;
 
         bios_alert_encode;

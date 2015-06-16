@@ -64,7 +64,7 @@ int main (int argc, char *argv []) {
                 }
                 ymsg_set_version(out, ymsg_version(in));
                 ymsg_set_seq(out, ymsg_seq(in));
-                ymsg_set_rep(out, ymsg_seq(in));
+                ymsg_set_rep(out, ymsg_rep(in));
                 if(ymsg_is_repeat(in)) { // default is not to repeat
                     zchunk_t *chunk = ymsg_get_request(in);
                     ymsg_set_request(out, &chunk);
@@ -95,7 +95,6 @@ int main (int argc, char *argv []) {
         // Other option is stream aka publish subscribe
         } else {
             // New measurements publish
-            log_debug ("I have smth from strem");
             if(is_ymsg(msg)) {
                 std::string topic = mlm_client_subject(client);
                 persist::process_measurement(topic, &msg);
