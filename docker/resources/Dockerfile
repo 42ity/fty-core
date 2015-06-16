@@ -68,7 +68,7 @@ RUN adduser --quiet --disabled-password -shell /bin/bash --home /home/admin --ge
 RUN echo "admin\nadmin\n" | passwd admin 
 
 #mysql configuration (assume link mysql:db with other mariadb container)
-RUN mv /etc/mysql/my.cnf /etc/mysql/my.cnf.orig
+#RUN mv /etc/mysql/my.cnf /etc/mysql/my.cnf.orig
 RUN echo "[client]" > /etc/mysql/my.cnf
 RUN echo "host            = db" >> /etc/mysql/my.cnf
 RUN echo "port            = 3306" >> /etc/mysql/my.cnf
@@ -77,6 +77,7 @@ RUN echo "protocol        = TCP" >> /etc/mysql/my.cnf
 #DB init script
 ADD ./usr/local/share/bios/sql/mysql/initdb.sql /usr/local/share/bios/sql/mysql/initdb.sql
 ADD ./usr/local/share/bios/examples/sql/mysql/load_data.sql /usr/local/share/bios/examples/sql/mysql/load_data.sql
+ADD ./usr/local/share/bios/examples/sql/mysql/load_ROZLAB.sql /usr/local/share/bios/examples/sql/mysql/load_ROZLAB.sql
 ADD ./usr/local/share/bios/docker/resources/patch.sql /usr/local/share/bios/docker/resources/patch.sql
 
 #Install NUT dumy drivers and config
@@ -86,6 +87,9 @@ ADD ./usr/local/share/bios/docker/resources/UPS1-LAB.dev /etc/nut/UPS1-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/UPS2-LAB.dev /etc/nut/UPS2-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/ePDU1-LAB.dev /etc/nut/ePDU1-LAB.dev
 ADD ./usr/local/share/bios/docker/resources/ePDU2-LAB.dev /etc/nut/ePDU2-LAB.dev
+ADD ./usr/local/share/bios/docker/resources/ROZ.UPS1.dev /etc/nut/ROZ.UPS1.dev
+ADD ./usr/local/share/bios/docker/resources/ROZ.ePDU04.dev /etc/nut/ROZ.ePDU04.dev
+ADD ./usr/local/share/bios/docker/resources/ROZ.ePDU05.dev /etc/nut/ROZ.ePDU05.dev
 RUN echo "MODE=standalone" > /etc/nut/nut.conf
 RUN chmod 644 /etc/nut/*
 RUN chown root:nut /etc/nut/*
