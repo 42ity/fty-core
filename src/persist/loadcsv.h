@@ -23,6 +23,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_LOADCSV_H
 #define SRC_PERSIST_LOADCSV_H
 
+#include <vector>
+#include "dbhelpers.h"
 /*
  * \brief Processes a csv file
  *
@@ -30,6 +32,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * \param input - input file
  */
-void load_asset_csv(std::istream& input);
+std::vector <db_a_elmnt_t> load_asset_csv(std::istream& input);
 
 #endif
