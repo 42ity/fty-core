@@ -776,6 +776,10 @@ void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj)
         persist::process_get_asset(out, out_subj, in, in_subj);
         return;
     }
+    if( streq(in_subj, "get_asset_extra") ) {
+        persist::process_get_asset_extra (out, out_subj, in, in_subj);
+        return;
+    }
 }
 
 /**

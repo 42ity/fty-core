@@ -308,22 +308,25 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
         1,
         2,
         "ok",
-        3);
+        1,
+        1);
 
     REQUIRE ( msg );
 
     char *device = NULL, *status = NULL;
     uint32_t type_id = 0, parent_id = 0;
     uint8_t priority = 0;
+    uint8_t action_type = 0;
 
-    int x = bios_asset_extract( msg, &device, &type_id, &parent_id, &status, &priority );
+    int x = bios_asset_extract( msg, &device, &type_id, &parent_id, &status, &priority, &action_type);
     REQUIRE( msg );
     REQUIRE ( x == 0 );
     CHECK ( str_eq( device, "device1") );
     CHECK ( type_id == 1 );
     CHECK ( parent_id == 2 );
     CHECK ( str_eq( status, "ok" ) );
-    CHECK ( priority == 3 );
+    CHECK ( priority == 1 );
+    CHECK ( action_type == 1 );
     ymsg_destroy( &msg );
     FREE0( device );
     FREE0( status );
@@ -343,7 +346,7 @@ TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api
     uint32_t type_id = 1;
     uint32_t parent_id = 1;
     const char *status = "active";
-    uint8_t priority = 1;
+    uint8_t priority = 2;
     uint8_t bc = 1;
     int8_t type = 1;
     _scoped_ymsg_t * ymsg_encoded = bios_asset_extra_encode
