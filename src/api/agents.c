@@ -645,7 +645,7 @@ bios_asset_extra_encode_response(const char *name,
     if ( !app )
         return NULL;
 
-    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    ymsg_t *msg = ymsg_new(YMSG_RESPONSE);
     if ( !msg )
     {
         app_destroy (&app);
