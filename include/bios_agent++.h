@@ -54,6 +54,7 @@ class BIOSAgent {
     ymsg_t * content(  ) { return bios_agent_content( _bios_agent ); };
     zactor_t * actor(  ) { return bios_agent_actor( _bios_agent ); };
     zsock_t * msgpipe(  ) { return bios_agent_msgpipe( _bios_agent ); };
+    uint16_t seq(  ) { return bios_agent_seq( _bios_agent ); };
 
     void timeout(const int timeoutms) { _timeout = timeoutms; };
     int timeout() { return _timeout; };
@@ -80,10 +81,11 @@ class BIOSAgent {
                 switch( ymsg_id(message) ) {
                 case YMSG_REPLY:
                     onReply( &message );
+                    break;
                 case YMSG_SEND:
                     onSend( &message );
+                    break;
                 }
-                
                 ymsg_destroy( &message );
             } else {
                 onPoll();

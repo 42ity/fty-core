@@ -62,10 +62,11 @@ class BIOSAgent {
                 switch( ymsg_id(message) ) {
                 case YMSG_REPLY:
                     onReply( &message );
+                    break;
                 case YMSG_SEND:
                     onSend( &message );
+                    break;
                 }
-                
                 ymsg_destroy( &message );
             } else {
                 onPoll();
