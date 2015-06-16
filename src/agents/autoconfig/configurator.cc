@@ -27,7 +27,9 @@ void NUTConfigurator::updateNUTConfig() {
         device.close();
     }
     cfgFile.close();
-    shared::SubProcess systemd({"systemctl", "restart", "nut-driver"});
+    std::vector<std::string> _argv = {"/usr/bin/systemctl", "restart", "nut-driver"};
+    shared::SubProcess systemd( _argv );
+    systemd.run();
     int restart = systemd.wait();
     log_debug("nut-driver restart result: %i (%s)", restart, (restart == 0 ? "ok" : "failed"));
 }
