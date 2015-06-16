@@ -209,7 +209,7 @@ bios_asset_encode( const char *devicename,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t action_type);
+                   int8_t operation);
 
 BIOS_EXPORT int
 bios_asset_extract(ymsg_t *message,
@@ -218,7 +218,7 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
-                   uint8_t *action_type);
+                   int8_t *operation);
 
 
 /**

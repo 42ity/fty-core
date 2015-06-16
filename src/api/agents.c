@@ -479,7 +479,7 @@ bios_asset_encode( const char *devicename,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
-                   uint8_t action_type
+                   int8_t operation
                    )
 {
     if( ! devicename ) return NULL;
@@ -492,7 +492,7 @@ bios_asset_encode( const char *devicename,
     if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
     if( status ) app_args_set_string( app, "status", status );
     if( priority ) app_args_set_uint8( app, "priority", priority );
-    if( action_type ) app_args_set_uint8( app, "action_type", action_type );
+    if( operation ) app_args_set_int8( app, "operation", operation );
     ymsg_request_set_app( msg, &app );
     return msg;
 }
@@ -504,7 +504,7 @@ bios_asset_extract(ymsg_t *message,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
-                   uint8_t *action_type
+                   int8_t *operation
                    )
 {
     if( ! message || ! devicename ) return -1;
@@ -534,9 +534,9 @@ bios_asset_extract(ymsg_t *message,
         if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
             goto bios_asset_extract_err;
     }
-    if( action_type ) {
-        *action_type = app_args_uint8( app, "action_type" );
-        if( *action_type < 1 || *action_type > 4 )
+    if( operation ) {
+        *operation = app_args_uint8( app, "operation" );
+        if( *operation < 1 || *operation > 4 )
             goto bios_asset_extract_err;
     }
 
@@ -559,7 +559,7 @@ bios_asset_extract(ymsg_t *message,
     FREE0( *devicename );
     if( status ) FREE0( *status );
     if( type_id ) *type_id = 0;
-    if( action_type ) *action_type = 0;
+    if( operation ) *operation = 0;
     if( parent_id ) *parent_id = 0;
     if( priority ) *priority = 0;
     app_destroy( &app );
@@ -575,7 +575,7 @@ bios_asset_extra(const char *name,
                  const char* status,
                  uint8_t priority,
                  uint8_t bc,
-                 int8_t event_type)
+                 int8_t operation)
 {
     if ( !name )
         return NULL;
@@ -600,7 +600,7 @@ bios_asset_extra(const char *name,
         app_args_set_string (app, "__status", status);
     app_args_set_string (app, "__name", name);
     app_args_set_uint8  (app, "__bc", bc);
-    app_args_set_int8   (app, "__event_type", event_type);
+    app_args_set_int8   (app, "__operation", operation);
     return app;
 }
 
@@ -613,10 +613,10 @@ bios_asset_extra_encode(const char *name,
                    const char* status,
                    uint8_t priority,
                    uint8_t bc,
-                   int8_t event_type)
+                   int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 parent_id, status, priority, bc, event_type);
+                 parent_id, status, priority, bc, operation);
     if ( !app )
         return NULL;
 
@@ -638,10 +638,10 @@ bios_asset_extra_encode_response(const char *name,
                    const char* status,
                    uint8_t priority,
                    uint8_t bc,
-                   int8_t event_type)
+                   int8_t operation)
 {
     app_t *app = bios_asset_extra(name, ext_attributes, type_id,
-                 parent_id, status, priority, bc, event_type);
+                 parent_id, status, priority, bc, operation);
     if ( !app )
         return NULL;
 
@@ -666,7 +666,7 @@ bios_asset_extra_extract(ymsg_t *message,
                    char **status,
                    uint8_t *priority,
                    uint8_t *bc,
-                   int8_t *event_type
+                   int8_t *operation
                    )
 {
     if ( !message || !name )
@@ -692,44 +692,62 @@ bios_asset_extra_extract(ymsg_t *message,
         app_destroy(&app);
         return -2;
     }
+    int errcode = 0;
     if( name ) {
         const char *p = app_args_string( app, "__name", NULL );
         if ( p )
             *name = strdup(p);
         if ( ! *name )
+        {
+            errcode = -7;
             goto bios_asset_extract_err;
+        }
     }
     if( bc ) {
         *bc = app_args_uint8( app, "__bc" );
         if( *bc != 0  && *bc != 1 )
+        {
+            errcode = -8;
             goto bios_asset_extract_err;
+        }
     }
     if( type_id ) {
         *type_id = app_args_uint32( app, "__type_id" );
-        if( errno )
+        if( errno ){
+            errcode = -9;
             goto bios_asset_extract_err;
+        }
     }
     if( parent_id ) {
         *parent_id = app_args_uint32( app, "__parent_id" );
         if( errno )
+        {
+            errcode = -10;
             goto bios_asset_extract_err;
+        }
     }
     if( status ) {
         const char *p = app_args_string( app, "__status", NULL );
         if( p )
             *status = strdup(p);
-        if( ! *status )
+        if( ! *status ){
+            errcode = -11;
             goto bios_asset_extract_err;
+        }
     }
-    if ( event_type ) {
-        *event_type = app_args_int8 (app, "__event_type");
-        if( errno )
+    if ( operation ) {
+        *operation = app_args_int8 (app, "__operation");
+        if( errno ) {
+            errcode = -12;
             goto bios_asset_extract_err;
+        }
     }
     if( priority ) {
         *priority = app_args_uint8( app, "__priority" );
-        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 )
+        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 ) {
+            errcode = -13;
             goto bios_asset_extract_err;
+        }
     }
     if( ext_attributes )
     {
@@ -740,7 +758,7 @@ bios_asset_extra_extract(ymsg_t *message,
         zhash_delete (*ext_attributes, "__bc");
         zhash_delete (*ext_attributes, "__parent_id");
         zhash_delete (*ext_attributes, "__status");
-        zhash_delete (*ext_attributes, "__event_type");
+        zhash_delete (*ext_attributes, "__operation");
     }
 
     return 0;
@@ -753,6 +771,6 @@ bios_asset_extra_extract(ymsg_t *message,
     if ( bc )         *bc = 0;
     if ( type_id )    *type_id = 0;
     if ( parent_id )  *parent_id = 0;
-    if ( event_type ) *event_type = 0;
-    return -3;
+    if ( operation )  *operation = 0;
+    return errcode;
 }
