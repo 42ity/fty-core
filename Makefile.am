@@ -1075,7 +1075,8 @@ agent_cm_LDADD = \
 			libbiosapi.la \
 			libpriv-utils-ymsg.la \
 			libpriv-db-measurements.la \
-			libpriv-utils-plusplus.la
+			libpriv-utils-plusplus.la \
+			libpriv-defs.la
 
 agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
 
