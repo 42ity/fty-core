@@ -64,7 +64,7 @@ int main (int argc, char *argv []) {
                 }
                 ymsg_set_version(out, ymsg_version(in));
                 ymsg_set_seq(out, ymsg_seq(in));
-                ymsg_set_rep(out, ymsg_seq(in));
+                ymsg_set_rep(out, ymsg_rep(in));
                 if(ymsg_is_repeat(in)) { // default is not to repeat
                     zchunk_t *chunk = ymsg_get_request(in);
                     ymsg_set_request(out, &chunk);
