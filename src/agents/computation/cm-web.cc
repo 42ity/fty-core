@@ -63,6 +63,13 @@ process
             ymsg_set_errmsg (*message_out, "Internal error: Protocol failure.");
             return;       
         }
+        if (!is_average_type_supported (type) || !is_average_step_supported (step)) {
+            log_error ("average type or step no supported.");
+            ymsg_set_status (*message_out, false);
+            ymsg_set_errmsg (*message_out, "Requested average step or average type is not supported.");
+            return;
+        }
+
 
         // Resolve device name from element id        
         std::string device_name;
