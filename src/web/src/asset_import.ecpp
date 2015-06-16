@@ -98,19 +98,13 @@ try {
 
     //load the file and make the import
     std::ifstream inp(path_p);
-    log_debug ("00000000000000000000000000000000000000000000000000000000000000000");
     auto ret = load_asset_csv(inp);
-    log_debug ("0");
     inp.close();
     ::unlink(path_p);
 
-    log_debug ("1");
-
     // TODO: vybrat jmeno agenta
     std::string agent_name("MY_AGENT");
-    log_debug ("11");
     bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
-    log_debug ("111");
     if ( agent == NULL )
     {
 </%cpp>
@@ -118,17 +112,14 @@ try {
             "msg" : "bios_agent_new () failed."
         }
 <%cpp>
-        log_debug ("bios_agent_new () fail");
         return HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    log_debug ("1111");
     // TODO get rid of hardcoded constants
     uint8_t action_type = 1; 
     // TODO rename ret, m
     for ( auto &m : ret )
     {
-        log_debug ("m.name='%s'", m.name.c_str());
         ymsg_t *msg = bios_asset_encode (m.name.c_str(), m.type_id, m.parent_id, m.status.c_str(), m.priority, action_type);
         if ( msg == NULL )
         {
@@ -137,7 +128,6 @@ try {
             "msg" : "bios_asset_encode () failed."
         }
 <%cpp>
-            log_debug ("bios_asset_encode () fail");
             bios_agent_destroy (&agent);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -151,16 +141,12 @@ try {
             "msg" : "bios_agent_send () failed."
         }
 <%cpp>
-            log_debug ("bios_agent_send () fail");
             bios_agent_destroy (&agent);
             return HTTP_INTERNAL_SERVER_ERROR;
         }
     }
-    log_debug ("all devices sent1\n");
     assert (agent != NULL); // TODO (KHR): Remove
     bios_agent_destroy (&agent);
-    printf ("\n");
-    log_debug ("all devices sent2\n");
 }
 catch (const std::logic_error &e) {
     ::unlink(path);
@@ -183,8 +169,6 @@ catch (const std::runtime_error &e) {
     return HTTP_INTERNAL_SERVER_ERROR;
 }
 
-log_debug ("I am at the end of ecpp file");
-log_debug ("I am at the end of ecpp file");
 //FIXME: the output needs to be finalized in regards to web UI
 //       commented out for now
 //std::string output{"There\twill\tbe\toutput\n"};
