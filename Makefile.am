@@ -1037,16 +1037,19 @@ client_PROGRAMS +=	agent-alert-smtp
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/autoconfig.cc \
-			src/agents/autoconfig/config-queue.cc \
 			src/agents/autoconfig/configurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
 			libpriv-proto.la \
 			libbiosapi.la \
-			libpriv-defs.la
+			libpriv-log.la \
+			libpriv-cidr.la \
+			libpriv-nutscan.la \
+			libpriv-defs.la \
+			libpriv-subprocess.la
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} ${LIBNUTSCAN_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 
