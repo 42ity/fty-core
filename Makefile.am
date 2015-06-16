@@ -1057,7 +1057,8 @@ client_PROGRAMS +=	agent-alert-smtp
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/autoconfig.cc \
-			src/agents/autoconfig/configurator.cc
+			src/agents/autoconfig/configurator.cc \
+			src/shared/filesystem.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1067,7 +1068,9 @@ agent_autoconfig_LDADD = \
 			libpriv-cidr.la \
 			libpriv-nutscan.la \
 			libpriv-defs.la \
-			libpriv-subprocess.la
+			libpriv-subprocess.la \
+			libpriv-utils-ymsg.la
+# FIXME remove utils ymsg
 
 agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} ${LIBNUTSCAN_LIBS} -lcidr -lbiosapi
 
