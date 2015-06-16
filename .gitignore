@@ -112,6 +112,7 @@ server-agent
 agent-cm
 bios-email
 agent-tpower
+generate_measurement
 
 tests/junit/
 tests/CI/web/log/
