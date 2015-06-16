@@ -48,21 +48,16 @@ bios_agent_new (const char* endpoint, const char* address) {
 void
 bios_agent_destroy (bios_agent_t **self_p) {
     if (self_p == NULL) {
-        printf ("self_p == NULL\n");
         return;
     }
     if (*self_p) {
-        printf ("self_p != NULL\n");
         bios_agent_t *self = *self_p;
 
         //  Free class properties
-        printf ("pre mlm_client_destrpy ()\n");
         mlm_client_destroy (&self->client);
-        printf ("pre zmq_atomic_counter_destroy ()\n");
         zmq_atomic_counter_destroy (&self->seq);
 
         //  Free object itself
-        printf ("pre free ()\n");
         free (self);
         *self_p = NULL;
     }
