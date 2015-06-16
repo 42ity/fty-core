@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cm-utils.h"
 #include "cm-web.h"
 #include "cleanup.h"
+#include "utils++.h"
 
 namespace computation {
 namespace web {
@@ -62,6 +63,13 @@ process
             ymsg_set_errmsg (*message_out, "Internal error: Protocol failure.");
             return;       
         }
+        if (!is_average_type_supported (type) || !is_average_step_supported (step)) {
+            log_error ("average type or step no supported.");
+            ymsg_set_status (*message_out, false);
+            ymsg_set_errmsg (*message_out, "Requested average step or average type is not supported.");
+            return;
+        }
+
 
         // Resolve device name from element id        
         std::string device_name;
@@ -128,7 +136,9 @@ process
             // put the stored averages into json
             for (const auto &p : averages) {
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (p.second));
+                std::string comp_result_str;
+                utils::math::dtos (p.second, 2, comp_result_str);
+                item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                 item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (p.first));
                 if (comma_counter == 0) 
                     ++comma_counter;
@@ -179,10 +189,12 @@ process
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
                     printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
-                    // TODO: better return value check                
+                    // TODO: better return value check
                     if (rv == 0) {
-                        printf ("%ld\t%f\n", second_ts, comp_result); // TODO: remove when done testing
-                        item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), std::to_string (comp_result));
+                        std::string comp_result_str;
+                        utils::math::dtos (comp_result, 2, comp_result_str);
+                        printf ("%ld\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing
+                        item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                         item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
                         if (comma_counter == 0) 
                             ++comma_counter;
@@ -191,7 +203,7 @@ process
 
                         data_str += item;
 
-                        publish_measurement_if (agent, device_name.c_str (), source, type, step, unit.c_str (), comp_result, second_ts);
+                        publish_measurement (agent, device_name.c_str (), source, type, step, unit.c_str (), comp_result, second_ts);
 
                     }
                     else if (rv == -1) {

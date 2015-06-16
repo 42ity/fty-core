@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <cxxtools/serializationerror.h>
 
 #include "defs.h"
+#include "str_defs.h"
 #include "log.h"
 #include "utils.h"
 #include "utils_ymsg.h"
@@ -112,19 +113,28 @@ int
 calculate
 (std::map <int64_t, double>& samples, int64_t start, int64_t end, const char *type, double& result) {
     assert (type);
-    if (start >= end || samples.empty ()) {
-        log_debug ("start >= end || samples empty");
+    assert (is_average_type_supported (type));
+    if (start >= end) {
+        log_debug ("'start' timestamp >= 'end' timestamp");
         return -1;
+    }
+    if (samples.empty ()) {
+        log_debug ("Supplied samples map is empty.");
+        return 1; 
     }
     
     auto it1 = samples.lower_bound (start);
-    if (it1->first >= end) { // requested interval is empty
-        log_debug ("Requested interval empty");
+    if (it1 == samples.end ()) {
+        log_debug ("There is no sample >= 'start' timestamp.");
         return 1;
     }
-    // TODO: add check from utils.h for validity of type
 
-    if (strcmp (type, "min") == 0) {
+    if (it1->first >= end) {
+        log_debug ("First sample >= 'start' timestamp is >= 'end'. Requested interval empty.");
+        return 1;
+    }
+
+    if (strcmp (type, AVG_TYPES[1]) == 0) { // min
         double minimum = it1->second;
         while (it1 != samples.end () && it1->first < end) {
             if (it1->second < minimum)
@@ -133,7 +143,7 @@ calculate
         }
         result = minimum;
     }
-    else if (strcmp (type, "max") == 0) {
+    else if (strcmp (type, AVG_TYPES[2]) == 0) { // max
         double maximum = it1->second;
         while (it1 != samples.end () && it1->first < end) {
             if (it1->second > maximum)
@@ -142,14 +152,22 @@ calculate
         }
         result = maximum;
     }
-    else if (strcmp (type, "arithmetic_mean") == 0) {
+    else if (strcmp (type, AVG_TYPES[0]) == 0) { // arithmetic_mean
         return calculate_arithmetic_mean (samples, start, end, result);
     }
-    else
+    else {
+        log_debug ("Call `is_average_type_supported ('%s')` returned true; there is probably "
+                   "no if-branch to handle the supported average type.", type);
         return -1;
+    }
+
     if (it1 != samples.end () && it1->first != end) {
-        auto it2 = it1; --it2;
+        auto it2 = std::prev (it1); // TODO: remove --it2;
         if (it1->first - it2->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+            log_debug ("'End' timestamp: '%" PRId64"'; first value _before_ - timestamp: '%" PRId64"', value: '%f'; "
+                       " first value _after_ - timestamp: '%" PRId64"', value: '%f'; "
+                       " Emplacing at 'end' timestamp value '%f'.",
+                       end, it2->first, it2->second, it1->first, it1->second, it2->second);
             samples.emplace (std::make_pair (end, it2->second));
         }
     }
@@ -162,7 +180,7 @@ calculate_arithmetic_mean
     if (start >= end || samples.empty ())
         return -1;
     
-    printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end);
+    printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end); // TODO: remove when done testing
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) { // requested interval is empty
         log_debug ("requested interval empty");
@@ -192,7 +210,7 @@ calculate_arithmetic_mean
             } else {
                 weight = 1;
             }
-            printf ("it1->first: %ld --> end: %ld\tweight: %ld\tit1->second: %f\n", it1->first, end, weight, it1->second);
+            printf ("it1->first: %ld --> end: %ld\tweight: %ld\tit1->second: %f\n", it1->first, end, weight, it1->second); // TODO: Remove when done testing
 
         }
         else { // it2->first < end 
@@ -223,20 +241,26 @@ check_completeness
     int64_t step_sec = average_step_seconds (step);
     log_debug ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
                 last_container_timestamp, last_average_timestamp, end_timestamp, step, step_sec);
+
+    if (last_average_timestamp < last_container_timestamp) {
+        log_error ("last average timestamp < last container timestamp");
+        return -1;
+    }
+
     if (end_timestamp - last_container_timestamp < step_sec) {
         return 1;
     }
     // end_timestamp - last_container_timestamp >= step_sec
-   if (last_average_timestamp > end_timestamp ) {
-       return 1;
-   }
-   else { // last_average_timestamp <= end_timestamp
+    if (last_average_timestamp > end_timestamp ) {
+        return 1;
+    }
+    else { // last_average_timestamp <= end_timestamp
         if (last_average_timestamp == last_container_timestamp) {
             new_start = last_container_timestamp + step_sec;
             return 0;
         }
         else { 
-            log_error ("last average timestamp < last container timestamp OR last container timestamp < last average timestamp <= end timestamp");
+            log_error ("last container timestamp < last average timestamp <= end timestamp");
             return -1;
         }
     }
@@ -351,7 +375,7 @@ request_sampled
 } // namespace web
 
 void
-publish_measurement_if
+publish_measurement
 (bios_agent_t *agent, const char *device_name, const char *source, const char *type, const char *step, const char *unit, double value, int64_t timestamp) {
     assert (device_name);
     assert (source);
@@ -372,8 +396,10 @@ publish_measurement_if
     log_debug ("topic: '%s'", topic.c_str ());
 
     // Note: precision is currently hardcoded for 2 floating point places
+
+
     _scoped_ymsg_t *published_measurement =
-        bios_measurement_encode (device_name, quantity.c_str(), unit, (int32_t) (value * 100), -2, timestamp);
+        bios_measurement_encode (device_name, quantity.c_str(), unit, (int32_t) std::round (value * 100), -2, timestamp); // TODO: propagae this upwards....
     if (!published_measurement) {
         log_critical (
         "bios_measurement_encode (device = '%s', source = '%s', type = '%s', step = '%s', value = '%f', timestamp = '%" PRId64"') failed.",
