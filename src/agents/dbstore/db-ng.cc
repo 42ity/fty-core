@@ -35,6 +35,7 @@ int main (int argc, char *argv []) {
     }
     if(mlm_client_connect(client, addr, 1000, BIOS_AGENT_NAME_DB_MEASUREMENT) != 0) {
         log_error ("agent-dbstore: server not reachable at '%s'", addr);
+        mlm_client_destroy(&client);
         return 1;
     }
 
