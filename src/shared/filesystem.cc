@@ -41,11 +41,11 @@ mode_t file_mode( const char *path ) {
     return st.st_mode;
 }
 
-inline bool is_file( const char  *path ) {
+bool is_file( const char  *path ) {
     return S_ISREG(file_mode( path ));
 }
 
-inline bool is_dir( const char  *path ) {
+bool is_dir( const char  *path ) {
     return S_ISDIR( file_mode( path ) );
 }
 

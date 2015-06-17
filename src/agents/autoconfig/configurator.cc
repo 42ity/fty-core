@@ -36,12 +36,17 @@ Description: Clases for autoconfiguration
 #include "filesystem.h"
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
-#define NUT_CONFIG_DIR "/etc/ups"
 
 void NUTConfigurator::updateNUTConfig() {
     std::ofstream cfgFile;
     std::string spath = NUT_PART_STORE;
     spath += shared::path_separator();
+    const char *NUT_CONFIG_DIR = NULL;
+
+    if( shared::is_dir("/etc/nut") ) { NUT_CONFIG_DIR = "/etc/nut"; }
+    else if( shared::is_dir("/etc/ups") ) { NUT_CONFIG_DIR = "/etc/ups"; }
+
+    if( ! NUT_CONFIG_DIR ) { log_debug("can't find NUT configuration directory"); return; }
 
     cfgFile.open(std::string(NUT_CONFIG_DIR) + shared::path_separator() + "ups.conf");    
     for( auto it : shared::files_in_directory( NUT_PART_STORE ) ) {

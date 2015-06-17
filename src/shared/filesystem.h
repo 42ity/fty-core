@@ -35,9 +35,9 @@ const char *path_separator();
 
 mode_t file_mode( const char *path );
 
-inline bool is_file( const char  *path );
+bool is_file( const char  *path );
 
-inline bool is_dir( const char  *path );
+bool is_dir( const char  *path );
 
 std::vector<std::string> items_in_directory( const char *path );
 
