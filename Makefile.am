@@ -572,8 +572,8 @@ test_agents_LDADD = \
 			libpriv-test-run.la \
 			libpriv-log.la \
 			libpriv-utils.la \
-			libpriv-defs.la
-
+			libpriv-defs.la \
+			libpriv-utils-ymsg.la
 
 test_agents_CPPFLAGS = \
 			$(AM_CPPFLAGS) \

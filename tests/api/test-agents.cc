@@ -5,7 +5,8 @@
 #include "log.h"
 #include "agents.h"
 #include "utils.h"
-
+#include "utils_app.h"
+#include "utils_ymsg.h"
 #include "cleanup.h"
 
 TEST_CASE(" inventory message encode/decode","[db][ENCODE][DECODE][bios_inventory]")
@@ -333,7 +334,7 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
 }
 
 
-TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api]") 
+TEST_CASE ("bios asset extended message encode & decode", "[agents][public_api][asset_extra]") 
 {
     log_open ();
 
@@ -348,9 +349,9 @@ TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api
     const char *status = "active";
     uint8_t priority = 2;
     uint8_t bc = 1;
-    int8_t type = 1;
+    int8_t operation = 1;
     _scoped_ymsg_t * ymsg_encoded = bios_asset_extra_encode
-        (name, &ext_attributes, type_id, parent_id, status, priority, bc, type);
+        (name, &ext_attributes, type_id, parent_id, status, priority, bc, operation);
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( ext_attributes == NULL );
 
@@ -362,11 +363,11 @@ TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api
     char *status_new = NULL;
     uint8_t priority_new = 0;
     uint8_t bc_new = 0;
-    int8_t type_new = 0;
+    int8_t operation_new = 0;
  
     int rv = bios_asset_extra_extract (ymsg_encoded, &name_new, 
         &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
-        &priority_new, &bc_new, &type_new);
+        &priority_new, &bc_new, &operation_new);
     REQUIRE ( rv == 0 );
     REQUIRE ( ymsg_encoded != NULL );
     REQUIRE ( streq (name, name_new) == true );
@@ -374,20 +375,21 @@ TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api
     REQUIRE ( parent_id == parent_id_new );
     REQUIRE ( priority == priority_new );
     REQUIRE ( bc == bc_new );
-    REQUIRE ( type == type_new );
+    REQUIRE ( operation == operation_new );
     REQUIRE ( streq (status, status_new) == true );
     REQUIRE ( zhash_size (ext_attributes_new) == 3 );
     
     const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
-    REQUIRE ( strcmp (value1, "value1") == 0 );
+    REQUIRE ( streq (value1, "value1") == true );
 
     const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
-    REQUIRE ( strcmp (value2, "value2") == 0 );
+    REQUIRE ( streq (value2, "value2") == true );
 
     const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
-    REQUIRE ( strcmp (value3, "value3") == 0 );
+    REQUIRE ( streq (value3, "value3") == true );
 
     FREE0 (status_new)
+    FREE0 (name_new)
     zhash_destroy(&ext_attributes_new);
     zhash_destroy(&ext_attributes);
 
@@ -395,3 +397,432 @@ TEST_CASE ("bios asset extended message encoded & decoded", "[agents][public_api
 }
 
 
+TEST_CASE ("bios asset extended message decode", "[agents][public_api][asset_extra]") 
+{
+    log_open ();
+
+    const char *name = "my_test_device";
+    zhash_t *ext_attributes = zhash_new();
+    zhash_autofree (ext_attributes);
+    zhash_insert (ext_attributes, "key1", (char*)"value1");
+    zhash_insert (ext_attributes, "key2", (char*)"value2");
+    zhash_insert (ext_attributes, "key3", (char*)"value3");
+    
+    uint32_t type_id = 1;
+    uint32_t parent_id = 1;
+    const char *status = "active";
+    uint8_t priority = 2;
+    uint8_t bc = 1;
+    int8_t operation = 1;
+
+    app_t *app = app_new(APP_MODULE);
+    REQUIRE ( app );
+    app_set_name (app, "ASSET_EXTENDED");
+        
+    app_set_args  (app, &ext_attributes);
+    app_args_set_uint32 (app, "__type_id", type_id);
+    app_args_set_uint32 (app, "__parent_id", parent_id);
+    app_args_set_uint8  (app, "__priority", priority);
+    app_args_set_string (app, "__status", status);
+    app_args_set_string (app, "__name", name);
+    app_args_set_uint8  (app, "__bc", bc);
+    app_args_set_int8   (app, "__operation", operation);
+    
+    ymsg_t *msg = ymsg_new(YMSG_SEND);
+    REQUIRE ( msg );
+    ymsg_request_set_app (msg, &app);
+
+    _scoped_zhash_t *ext_attributes_new = NULL;
+    char *name_new = NULL;
+    uint32_t type_id_new = 0;
+    uint32_t parent_id_new = 0;
+    char *status_new = NULL;
+    uint8_t priority_new = 0;
+    uint8_t bc_new = 0;
+    int8_t operation_new = 0;
+ 
+    int rv = bios_asset_extra_extract (msg, &name_new, 
+        &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+        &priority_new, &bc_new, &operation_new);
+    REQUIRE ( rv == 0 );
+    REQUIRE ( msg != NULL );
+    REQUIRE ( streq (name, name_new) == true );
+    REQUIRE ( type_id == type_id_new );
+    REQUIRE ( parent_id == parent_id_new );
+    REQUIRE ( priority == priority_new );
+    REQUIRE ( bc == bc_new );
+    REQUIRE ( operation == operation_new );
+    REQUIRE ( streq (status, status_new) == true );
+    REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+    
+    const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+    REQUIRE ( streq (value1, "value1") == true );
+
+    const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+    REQUIRE ( streq (value2, "value2") == true );
+
+    const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+    REQUIRE ( streq (value3, "value3") == true );
+
+    FREE0 (status_new)
+    FREE0 (name_new)
+    zhash_destroy(&ext_attributes_new);
+    zhash_destroy(&ext_attributes);
+
+    log_close ();
+}
+
+
+TEST_CASE ("bios asset extended message decode, missing keys", "[agents][public_api][asset_extra][1]")
+{
+    log_open ();
+
+    _scoped_zhash_t *ext_attributes = zhash_new();
+    zhash_autofree (ext_attributes);
+    zhash_insert (ext_attributes, "key1", (char*)"value1");
+    zhash_insert (ext_attributes, "key2", (char*)"value2");
+    zhash_insert (ext_attributes, "key3", (char*)"value3");
+    
+    const char *name   = "my_test_device";
+    uint32_t type_id   = 1;
+    uint32_t parent_id = 2;
+    const char *status = "active";
+    uint8_t priority   = 3;
+    uint8_t bc         = 1;
+    int8_t operation   = 1;
+
+    _scoped_zhash_t *ext_attributes_new = NULL;
+    char *name_new         = NULL;
+    uint32_t type_id_new   = 0;
+    uint32_t parent_id_new = 0;
+    char *status_new       = NULL;
+    uint8_t priority_new   = 0;
+    uint8_t bc_new         = 0;
+    int8_t operation_new   = 0;
+
+    SECTION ("__type_id is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == 0 );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+
+    SECTION ("__parent_id is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == 0 );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__priority is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == 0 );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__status is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( status_new == NULL );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__name is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == -7 );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__bc is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == 0 );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__operation is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_set_args        (app, &ext_attributes);
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == 0 );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 3 );
+
+        const char *value1 = (char *) zhash_lookup (ext_attributes_new, "key1");
+        REQUIRE ( streq (value1, "value1") == true );
+
+        const char *value2 = (char*) zhash_lookup (ext_attributes_new, "key2");
+        REQUIRE ( streq (value2, "value2") == true );
+
+        const char *value3 = (char *) zhash_lookup (ext_attributes_new, "key3");
+        REQUIRE ( streq (value3, "value3") == true );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+    SECTION ("__ext_attributes is missing") {
+
+        app_t *app = app_new(APP_MODULE);
+        REQUIRE ( app );
+        app_set_name (app, "ASSET_EXTENDED");
+
+        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint8  (app, "__priority", priority);
+        app_args_set_string (app, "__status", status);
+        app_args_set_string (app, "__name", name);
+        app_args_set_uint8  (app, "__bc", bc);
+        app_args_set_int8   (app, "__operation", operation);
+
+        ymsg_t *msg = ymsg_new(YMSG_SEND);
+        REQUIRE ( msg );
+        ymsg_request_set_app (msg, &app);
+
+        int rv = bios_asset_extra_extract (msg, &name_new, 
+                &ext_attributes_new, &type_id_new, &parent_id_new, &status_new,
+                &priority_new, &bc_new, &operation_new);
+        REQUIRE ( rv == 0 );
+        REQUIRE ( msg != NULL );
+        REQUIRE ( streq (name_new, name) == true );
+        REQUIRE ( type_id_new == type_id );
+        REQUIRE ( parent_id_new == parent_id );
+        REQUIRE ( priority_new == priority );
+        REQUIRE ( bc_new == bc );
+        REQUIRE ( operation_new == operation );
+        REQUIRE ( streq (status_new, status) == true );
+        REQUIRE ( zhash_size (ext_attributes_new) == 0 );
+        ymsg_destroy (&msg);
+        app_destroy (&app);
+    }
+
+    FREE0 (status_new)
+    FREE0 (name_new)
+    zhash_destroy(&ext_attributes_new);
+    zhash_destroy(&ext_attributes);
+
+    log_close ();
+}
