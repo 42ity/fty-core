@@ -137,9 +137,10 @@ void skip_utf8_BOM (std::istream& i) {
 
 char
 findDelimiter(
-        std::istream& i)
+        std::istream& i,
+        std::size_t max_pos)
 {
-    for (auto pos = 0; pos != 60; pos++) {
+    for (auto pos = 0; pos != max_pos; pos++) {
         i.seekg(pos);
         char ret = i.peek();
         if (ret == ',' || ret == ';' || ret == '\t') {

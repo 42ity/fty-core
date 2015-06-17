@@ -137,11 +137,16 @@ void skip_utf8_BOM (std::istream& i);
 /**
  * \brief find the delimiter used in csv file
  *
- * \return ';' or '\t' or '\x0' if nothing found in first 60 bytes
+ * \param i istream, which is analyzed
+ * \param max_pos specifies how many bytes should be investigated before
+ *                \x0 is returned. Defaults to 60.
+ *
+ * \return ';' or '\t' or '\x0' if nothing found in first \max_pos bytes
  */
 char
 findDelimiter(
-        std::istream& i);
+        std::istream& i,
+        std::size_t max_pos = 60);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H
