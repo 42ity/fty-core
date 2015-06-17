@@ -108,6 +108,7 @@ agent-dbstore
 agent-nut
 agent-alert
 agent-alert-smtp
+agent-autoconfig
 server-agent
 agent-cm
 bios-email
@@ -161,6 +162,8 @@ bios-agent-dbstore.service
 bios-server-agent.service
 !tools/bios-agent-tpower.service.in
 bios-agent-tpower.service
+!tools/bios-agent-autoconfig.service.in
+bios-agent-autoconfig.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
