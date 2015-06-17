@@ -135,4 +135,19 @@ void skip_utf8_BOM (std::istream& i) {
     i.putback(c1);
 }
 
+char
+findDelimiter(
+        std::istream& i)
+{
+    for (auto pos = 0; pos != 60; pos++) {
+        i.seekg(pos);
+        char ret = i.peek();
+        if (ret == ',' || ret == ';' || ret == '\t') {
+            i.seekg(0);
+            return ret;
+        }
+    }
+    return '\x0';
+}
+
 } //namespace shared

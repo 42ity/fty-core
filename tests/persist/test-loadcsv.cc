@@ -39,14 +39,24 @@ inline std::string to_utf8(const cxxtools::String& ws) {
 
 TEST_CASE("CSV multiple field names", "[csv]") {
 
-    std::string path{__FILE__};
-    path += ".csv";
-    std::cout << path << std::endl;
-    std::fstream buf{path};
-
-    load_asset_csv(buf);
-    
+    std::string base_path{__FILE__};
+    std::string csv = base_path + ".csv";
+    std::string tsv = base_path + ".tsv";
+    std::string ssv = base_path + ".ssv";
     static std::string exp = to_utf8(cxxtools::String(L"Lab DC(тест)"));
-
     REQUIRE_NOTHROW(get_dc_lab_description() == exp);
+
+    // test coma separated values format
+    std::fstream csv_buf{csv};
+    REQUIRE_NOTHROW(load_asset_csv(csv_buf));
+
+    // test tab separated values
+    std::fstream tsv_buf{tsv};
+    REQUIRE_NOTHROW(load_asset_csv(tsv_buf));
+    
+    // test semicolon separated values
+    std::fstream ssv_buf{ssv};
+    REQUIRE_NOTHROW(load_asset_csv(ssv_buf));
+
+    //TODO: bad file will issue std::invalid_argument
 }

@@ -133,6 +133,15 @@ namespace shared {
 
 //TODO: does not belongs to csv, move somewhere else
 void skip_utf8_BOM (std::istream& i);
+
+/**
+ * \brief find the delimiter used in csv file
+ *
+ * \return ';' or '\t' or '\x0' if nothing found in first 60 bytes
+ */
+char
+findDelimiter(
+        std::istream& i);
 } //namespace shared
 
 #endif // SRC_SHARED_CSV_H
