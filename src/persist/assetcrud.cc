@@ -605,7 +605,7 @@ db_reply <db_a_elmnt_t>
     try {
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id"
+            "   v.name, v.id_parent, v.status, v.priority, v.business_crit, v.id, v.id_type"
             " FROM"
             "   v_bios_asset_element v"
             " WHERE v.name = :name"
@@ -622,6 +622,7 @@ db_reply <db_a_elmnt_t>
         row[3].get(ret.item.priority);
         row[4].get(ret.item.bc);
         row[5].get(ret.item.id);
+        row[6].get(ret.item.type_id);
         
         ret.status = 1;
         LOG_END;
