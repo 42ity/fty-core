@@ -31,18 +31,49 @@ Description: various random C and project wide helpers
 
 namespace shared {
 
+/**
+ * \brief returns "/"
+ */
 const char *path_separator();
 
+/**
+ * \brief get the file mode
+ * \param path to the file
+ */
 mode_t file_mode( const char *path );
 
+/**
+ * \brief return true if path exists and it is a regular file
+ * \param path to the file
+ */
 bool is_file( const char  *path );
 
+/**
+ * \brief return true if path exists and it is a directory
+ * \param path to the directory
+ */
 bool is_dir( const char  *path );
 
+/**
+ * \brief get list of all items in directory
+ * \param path to the directory
+ */
 std::vector<std::string> items_in_directory( const char *path );
 
+/**
+ * \brief get list of all regular files in directory
+ * \param path to the directory
+ */
 std::vector<std::string> files_in_directory( const char *path );
 
+/**
+ * \brief create directory (if not exists
+ * \param path to the newly created directory
+ * \param mode (rights)
+ * \param create parent directories if needed
+ *
+ * In case of failure also errno is set, see "man 3 mkdir" for details. 
+ */
 bool mkdir_if_needed(const char *path, mode_t mode = 0x755, bool create_parent=true );
 
 } // namespace shared
