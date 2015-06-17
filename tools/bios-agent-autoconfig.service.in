@@ -1,0 +1,12 @@
+[Unit]
+Description=Autoconfiguration agent for BIOS project
+After=malamute.service mysql.service
+Requires=malamute.service
+Requisite=mysql.service
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/agent-autoconfig
+
+[Install]
+WantedBy=multi-user.target
