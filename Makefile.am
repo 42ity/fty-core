@@ -1341,7 +1341,8 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
-                        bios-agent-alert-smtp.service bios-agent-tpower.service
+                        bios-agent-alert-smtp.service bios-agent-tpower.service \
+			bios-agent-autoconfig.service
 
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
