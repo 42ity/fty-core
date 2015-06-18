@@ -1321,7 +1321,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
 			$(top_srcdir)/src/web/include/*.h \
-			$(top_srcdir)/tests/shared/test-csv.cc.csv
+			$(top_srcdir)/tests/shared/test-csv.cc.*sv
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
