@@ -677,6 +677,7 @@ test_loadcsv_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
+			libpriv-csv.la \
 			libpriv-test-run.la
 
 test_loadcsv_CPPFLAGS = \
@@ -1320,7 +1321,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
 			$(top_srcdir)/src/web/include/*.h \
-			$(top_srcdir)/tests/shared/test-csv.cc.csv
+			$(top_srcdir)/tests/shared/test-csv.cc.*sv
 
 # add CI tests to dist
 EXTRA_DIST +=		$(top_srcdir)/tests/CI
@@ -1341,7 +1342,8 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
-                        bios-agent-alert-smtp.service bios-agent-tpower.service
+                        bios-agent-alert-smtp.service bios-agent-tpower.service \
+			bios-agent-autoconfig.service
 
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
