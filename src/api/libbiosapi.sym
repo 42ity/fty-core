@@ -61,6 +61,10 @@ global:
         bios_agent_actor;
         bios_agent_msgpipe;
         bios_get_stream_main;
+        bios_get_stream_measurements;
+        bios_get_stream_assets;
+        bios_get_stream_alerts;
+        bios_get_streams;
         bios_agent_seq;
 
         ymsg_is_ok;
