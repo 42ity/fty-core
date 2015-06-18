@@ -116,3 +116,37 @@ TEST_CASE("CSV utf-8 input", "[csv]") {
     REQUIRE(cm.get(3, "field") == to_utf8(cxxtools::String(L"Test")));
 
 }
+
+TEST_CASE("CSV findDelimiter", "[csv]")
+{
+    {
+    std::stringstream buf;
+    buf << "Some;delimiter\n";
+    auto delim = findDelimiter(buf);
+
+    REQUIRE(buf.str().size() == 15);
+    REQUIRE(delim == ';');
+    REQUIRE(buf.str().size() == 15);
+    }
+
+    {
+    std::stringstream buf;
+    buf << "None delimiter\n";
+    auto delim = findDelimiter(buf);
+
+    REQUIRE(buf.str().size() == 15);
+    REQUIRE(delim == '\x0');
+    REQUIRE(buf.str().size() == 15);
+    }
+
+    {
+    std::stringstream buf;
+    buf << "None_delimiter\n";
+    auto delim = findDelimiter(buf);
+
+    REQUIRE(buf.str().size() == 15);
+    REQUIRE(delim == '\x0');
+    REQUIRE(buf.str().size() == 15);
+    }
+
+}

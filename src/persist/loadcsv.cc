@@ -33,30 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace shared;
 
-// check if it is valid location chain
-// valid_location_chain("device", "rack") -> true
-// valid_location_chain("room", "rack") -> false
-static bool
-    is_valid_location_chain
-        (const std::string& type,
-         const std::string& parent_type)
-{
-    // TODO hardcoded constants
-    static const std::vector<std::string> LOCATION_CHAIN = \
-        {"datacenter", "room", "row", "rack", "device"};
-
-    size_t i, ti, pi;
-    i = 0;
-    for (auto &x : LOCATION_CHAIN) {
-        if (x == type)
-            ti = i;
-        if (x == parent_type)
-            pi = i;
-        i++;
-    }
-    return pi < ti;
-}
-
 // convert input '?[1-5]' to 1-5
 static int
     get_priority
@@ -71,18 +47,6 @@ static int
         }
     }
     return 5;
-}
-
-static bool 
-    is_email
-        (const std::string& str)
-{
-    for (char ch : str) {
-        if (ch == '@') {
-            return true;
-        }
-    }
-    return false;
 }
 
 static std::map<std::string,int>
@@ -409,24 +373,25 @@ static db_a_elmnt_t
  *
  * \param cm - already parsed csv file
  *
- * \return true if all mandatory columns are present
+ * \return emtpy string if everything is ok, otherwise the name of missing row
  */
 
-static bool
-    mandatory_present
+static std::string
+mandatory_missing
         (CsvMap cm)
 {
+    static std::vector<std::string> MANDATORY = {
+        "name", "type", "sub_type", "location", "status",
+        "business_critical", "priority"
+    };
+
     auto all_fields = cm.getTitles();
-    if ( (all_fields.count("name") == 0 ) ||
-         (all_fields.count("type") == 0 ) ||
-         (all_fields.count("sub_type") == 0) ||
-         (all_fields.count("location") == 0) ||
-         (all_fields.count("status") == 0) ||
-         (all_fields.count("business_critical") == 0) ||
-         (all_fields.count("priority") == 0) )
-        return false;
-    else
-        return true;
+    for (const auto& s : MANDATORY) {
+        if (all_fields.count(s) == 0)
+            return s;
+    }
+
+    return "";
 }
 
 // function return the log info about csv file
@@ -443,16 +408,25 @@ std::vector <db_a_elmnt_t>
 
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
-    // TODO make it configurable
-    deserializer.delimiter('\t');
+    char delimiter = findDelimiter(input);
+    if (delimiter == '\x0') {
+        std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
+        log_error("%s\n", msg.c_str());
+        LOG_END;
+        throw std::invalid_argument(msg.c_str());
+    }
+    log_debug("Using delimiter '%c'", delimiter);
+    deserializer.delimiter(delimiter);
     deserializer.readTitle(false);
     deserializer.deserialize(data);
     CsvMap cm{data};
     cm.deserialize();
 
-    if ( !mandatory_present(cm) )
+    auto m = mandatory_missing(cm);
+
+    if ( m != "" )
     {
-        std::string msg{"mandatory columns are not present, import is aborted"};
+        std::string msg{"column '" + m + "' is missing, import is aborted"};
         log_error("%s\n", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());
