@@ -33,30 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace shared;
 
-// check if it is valid location chain
-// valid_location_chain("device", "rack") -> true
-// valid_location_chain("room", "rack") -> false
-static bool
-    is_valid_location_chain
-        (const std::string& type,
-         const std::string& parent_type)
-{
-    // TODO hardcoded constants
-    static const std::vector<std::string> LOCATION_CHAIN = \
-        {"datacenter", "room", "row", "rack", "device"};
-
-    size_t i, ti, pi;
-    i = 0;
-    for (auto &x : LOCATION_CHAIN) {
-        if (x == type)
-            ti = i;
-        if (x == parent_type)
-            pi = i;
-        i++;
-    }
-    return pi < ti;
-}
-
 // convert input '?[1-5]' to 1-5
 static int
     get_priority
@@ -71,18 +47,6 @@ static int
         }
     }
     return 5;
-}
-
-static bool 
-    is_email
-        (const std::string& str)
-{
-    for (char ch : str) {
-        if (ch == '@') {
-            return true;
-        }
-    }
-    return false;
 }
 
 static std::map<std::string,int>
