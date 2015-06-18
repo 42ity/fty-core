@@ -446,7 +446,7 @@ std::vector <db_a_elmnt_t>
     cxxtools::CsvDeserializer deserializer(input);
     char delimiter = findDelimiter(input);
     if (delimiter == '\x0') {
-        std::string msg{"Cannot detect the delimiter, use comma (,), semicolon (;) or tabulator"};
+        std::string msg{"Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator"};
         log_error("%s\n", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());

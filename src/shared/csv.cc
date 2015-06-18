@@ -84,7 +84,6 @@ void CsvMap::deserialize() {
 
 const std::string& CsvMap::get(size_t row_i, const std::string& title_name) const {
 
-
     if (row_i >= _data.size()) {
         std::ostringstream buf;
         buf << "row_index " << row_i << " was out of range " << _data.size();
@@ -100,6 +99,12 @@ const std::string& CsvMap::get(size_t row_i, const std::string& title_name) cons
     }
 
     size_t col_i = _title_to_index.at(title);
+    if (col_i >= _data[row_i].size()) {
+        throw std::out_of_range{
+            "On line " + std::to_string(row_i+1) + \
+            ": requested column " + title_name + " (index " + std::to_string(col_i +1) + \
+            ") where maximum is " + std::to_string(_data[row_i].size())};
+    }
     return _data[row_i][col_i];
 }
 
@@ -140,7 +145,7 @@ findDelimiter(
         std::istream& i,
         std::size_t max_pos)
 {
-    for (auto pos = 0; pos != max_pos; pos++) {
+    for (std::size_t pos = 0; i.good() && !i.eof() && pos != max_pos; pos++) {
         i.seekg(pos);
         char ret = i.peek();
         if (ret == ',' || ret == ';' || ret == '\t') {
