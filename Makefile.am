@@ -677,6 +677,7 @@ test_loadcsv_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
+			libpriv-csv.la \
 			libpriv-test-run.la
 
 test_loadcsv_CPPFLAGS = \
