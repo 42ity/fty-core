@@ -141,7 +141,7 @@ TEST_CASE("CSV findDelimiter", "[csv]")
 
     {
     std::stringstream buf;
-    buf << "None,delimiter\n";
+    buf << "None_delimiter\n";
     auto delim = findDelimiter(buf);
 
     REQUIRE(buf.str().size() == 15);
