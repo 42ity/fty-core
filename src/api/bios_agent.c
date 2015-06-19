@@ -10,6 +10,19 @@
 
 #define TIMEOUT 1000
 #define BIOS_MLM_STREAM "bios"
+#define BIOS_MLM_MEASUREMENTS_STREAM "measurements"
+#define BIOS_MLM_ASSETS_STREAM "assets"
+#define BIOS_MLM_ALERTS_STREAM "alerts"
+#define BIOS_MLM_STREAM_COUNT 4
+
+static const char *bios_streams[] = 
+{
+    BIOS_MLM_STREAM,
+    BIOS_MLM_MEASUREMENTS_STREAM,
+    BIOS_MLM_ASSETS_STREAM,
+    BIOS_MLM_ALERTS_STREAM,
+    NULL
+};
 
 struct _bios_agent_t {
     mlm_client_t *client;   // malamute client instance
@@ -267,6 +280,30 @@ bios_agent_msgpipe (bios_agent_t *self) {
 const char *
 bios_get_stream_main () {
     return BIOS_MLM_STREAM;
+}
+
+const char *
+bios_get_stream_measurements () {
+    return BIOS_MLM_MEASUREMENTS_STREAM;
+}
+
+const char *
+bios_get_stream_assets () {
+    return BIOS_MLM_ASSETS_STREAM;
+}
+
+const char *
+bios_get_stream_alerts () {
+    return BIOS_MLM_ALERTS_STREAM;
+}
+
+const char **
+bios_get_streams (uint8_t *count) {
+    if (!count) {
+        return NULL;
+    } 
+    *count = BIOS_MLM_STREAM_COUNT;
+    return bios_streams;
 }
 
 uint16_t
