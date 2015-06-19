@@ -112,6 +112,7 @@ agent-autoconfig
 server-agent
 agent-cm
 bios-email
+bios-nutscan
 agent-tpower
 generate_measurement
 
