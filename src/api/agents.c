@@ -604,7 +604,7 @@ bios_asset_extra(const char *name,
     return app;
 }
 
-
+// encode functions destroy all * arguments
 ymsg_t *
 bios_asset_extra_encode(const char *name,
                    zhash_t **ext_attributes,
@@ -656,7 +656,7 @@ bios_asset_extra_encode_response(const char *name,
     return msg;
 }
 
-
+// name is a mandatory parameter
 int
 bios_asset_extra_extract(ymsg_t *message,
                    char **name,
@@ -666,14 +666,10 @@ bios_asset_extra_extract(ymsg_t *message,
                    char **status,
                    uint8_t *priority,
                    uint8_t *bc,
-                   int8_t *operation
-                   )
+                   int8_t *operation)
 {
     if ( !message || !name )
         return -1;
-
-    if ( name )   *name = NULL;
-    if ( status ) *status = NULL;
 
     app_t *app = NULL;
     
@@ -693,64 +689,67 @@ bios_asset_extra_extract(ymsg_t *message,
         return -2;
     }
     int errcode = 0;
-    if( name ) {
+        
+    {
         const char *p = app_args_string( app, "__name", NULL );
         if ( p )
             *name = strdup(p);
-        if ( ! *name )
+        else
         {
             errcode = -7;
             goto bios_asset_extract_err;
         }
     }
     if( bc ) {
-        *bc = app_args_uint8( app, "__bc" );
-        if( *bc != 0  && *bc != 1 )
-        {
-            errcode = -8;
-            goto bios_asset_extract_err;
-        }
+        uint8_t t = app_args_uint8( app, "__bc" );
+        if ( !errno ) {
+            *bc = t;
+            if( *bc != 0  && *bc != 1 )
+            {
+                errcode = -8;
+                goto bios_asset_extract_err;
+            }
+        } // if key is missingm, then bc wouldn't change
     }
     if( type_id ) {
-        *type_id = app_args_uint32( app, "__type_id" );
-        if( errno ){
-            errcode = -9;
-            goto bios_asset_extract_err;
+        uint32_t t = app_args_uint32( app, "__type_id" );
+        if ( !errno ) { // the key is missing in the message
+            *type_id = t;
         }
     }
     if( parent_id ) {
-        *parent_id = app_args_uint32( app, "__parent_id" );
-        if( errno )
-        {
-            errcode = -10;
-            goto bios_asset_extract_err;
+        uint32_t t = app_args_uint32( app, "__parent_id" );
+        if ( !errno ) {
+            *parent_id = t;
         }
     }
     if( status ) {
+        *status = NULL;
         const char *p = app_args_string( app, "__status", NULL );
-        if( p )
+        if( p ) {
             *status = strdup(p);
-        if( ! *status ){
-            errcode = -11;
-            goto bios_asset_extract_err;
         }
     }
     if ( operation ) {
-        *operation = app_args_int8 (app, "__operation");
-        if( errno ) {
-            errcode = -12;
-            goto bios_asset_extract_err;
+        int8_t t = app_args_int8 (app, "__operation");
+        if ( !errno ) {
+            *operation = t;
         }
     }
     if( priority ) {
-        *priority = app_args_uint8( app, "__priority" );
-        if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 ) {
-            errcode = -13;
-            goto bios_asset_extract_err;
+        uint8_t t = app_args_uint8( app, "__priority" );
+        if ( !errno ){
+            *priority = t;
+            if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 ) {
+                errcode = -11;
+                goto bios_asset_extract_err;
+            }
         }
     }
     if( ext_attributes )
     {
+        if ( *ext_attributes )
+            zhash_destroy(ext_attributes);
         *ext_attributes = app_get_args (app);
         zhash_delete (*ext_attributes, "__name");
         zhash_delete (*ext_attributes, "__priority");
@@ -769,8 +768,6 @@ bios_asset_extra_extract(ymsg_t *message,
     if ( parent_id )  *parent_id = 0;
     if ( priority )   *priority = 0;
     if ( bc )         *bc = 0;
-    if ( type_id )    *type_id = 0;
-    if ( parent_id )  *parent_id = 0;
     if ( operation )  *operation = 0;
     return errcode;
 }
