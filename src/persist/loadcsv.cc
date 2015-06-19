@@ -84,7 +84,6 @@ static bool
 {
     if ( key == "location_u_pos" )
     {
-        log_debug ("---------------------------------------------------------------------------------------------------");
         return check_location_u_pos(value);
     }
     return true;
