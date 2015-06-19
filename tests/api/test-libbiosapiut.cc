@@ -3,11 +3,10 @@
  *
  * Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
  */
+#include <catch.hpp>
+#include <string.h>
 
 #include "cleanup.h"
-
-#include <catch.hpp>
-
 #include "bios_agent.h"
 
 TEST_CASE("Aux setters and getters work","[api][ymsg]") {
@@ -22,3 +21,18 @@ TEST_CASE("Aux setters and getters work","[api][ymsg]") {
     REQUIRE(512 == ymsg_get_int64(msg, "int64"));
     ymsg_destroy(&msg);
 }
+
+TEST_CASE ("stream names", "[api][bios_agent]") {
+    int count = 0;
+    const char **streams = bios_get_streams ((uint8_t *)&count);
+    REQUIRE ( streams != NULL );
+    REQUIRE ( count != 0 );
+    for (int i = 0; i < count; ++i) {
+        CHECK ((strcmp (streams[i], bios_get_stream_main ()) == 0 ||
+            strcmp (streams[i], bios_get_stream_measurements ()) == 0 ||
+            strcmp (streams[i], bios_get_stream_assets ()) == 0 ||
+            strcmp (streams[i], bios_get_stream_alerts ()) == 0));
+    } 
+}
+
+

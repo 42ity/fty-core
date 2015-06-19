@@ -234,9 +234,25 @@ BIOS_EXPORT zactor_t *
 BIOS_EXPORT zsock_t *
     bios_agent_msgpipe (bios_agent_t *self);
 
-//! Get name of the main bios stream
+//! Get name of the ##BIOS## main stream
 BIOS_EXPORT const char *
     bios_get_stream_main ();
+
+//! Get name of the ##BIOS## stream for measurements
+BIOS_EXPORT const char *
+    bios_get_stream_measurements ();
+
+//! Get name of the ##BIOS## stream for assets
+BIOS_EXPORT const char *
+    bios_get_stream_assets ();
+
+//! Get name of the ##BIOS## stream for alerts
+BIOS_EXPORT const char *
+    bios_get_stream_alerts ();
+
+//! Get array of ##BIOS## streams
+BIOS_EXPORT const char **
+    bios_get_streams (uint8_t *count);
 
 //! Get value of client member 'seq' which will be used on next send
 BIOS_EXPORT uint16_t
