@@ -317,11 +317,12 @@ static db_a_elmnt_t
         // try is not needed, because here are keys that are defenitly there
         auto value = cm.get(row_i, key);
         // TODO: on some ext attributes need to have more checks
-        if ( !value.empty() )
+        if ( !value.empty() ) {
             if ( match_ext_attr (value, key) )
                 zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
             else
                 log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
+        }
     }
     // if the row represents group, the subtype represents a type 
     // of the group.
