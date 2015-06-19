@@ -71,7 +71,7 @@ static bool
     check_location_u_pos
         (const std::string &s)
 {
-    cxxtools::Regex regex("^[0-9]+[uU][rR]?$");
+    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]+[uU])?$");
     if ( !regex.match(s) )
         return false;
     else
@@ -320,6 +320,8 @@ static db_a_elmnt_t
         if ( !value.empty() )
             if ( match_ext_attr (value, key) )
                 zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+            else
+                log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
     }
     // if the row represents group, the subtype represents a type 
     // of the group.
