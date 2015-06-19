@@ -81,3 +81,12 @@ TEST_CASE("CSV bug 661 - segfault on csv without mandatory columns", "[csv]") {
     std::fstream csv_buf{csv};
     REQUIRE_THROWS_AS(load_asset_csv(csv_buf), std::invalid_argument);
 }
+
+TEST_CASE("CSV bug 661 - segfault ...", "[csv]") {
+
+    std::string base_path{__FILE__};
+    std::string csv = base_path + ".group3.csv";
+
+    std::fstream csv_buf{csv};
+    REQUIRE_NOTHROW(load_asset_csv(csv_buf));
+}
