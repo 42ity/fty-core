@@ -1251,13 +1251,13 @@ TEST_CASE ("cm::web::calculate","[agent-cm][computation][average][calculate]")
         // and no emplace should happen
 
         std::map <int64_t, double> samples_section;
-        std::size_t size = 0;
+        // std::size_t size = 0;
         double result_prev = 0;
          
         samples_section.emplace (std::make_pair (1420156800 - RI, 327 )); // 2015-01-02 00:00:00 - RI
         samples_section.emplace (std::make_pair (1420156800 - RI, 327 )); // 2015-01-02 00:00:00 - RI
         samples_section.emplace (std::make_pair (1420156801, 456 )); // 2015-01-02 00:00:01
-        size = samples_section.size ();
+        // size = samples_section.size (); // result is not evaluated
 /*
         CHECK ( cm::web::calculate (samples_section, , , "arithmetic_mean", result) == 0 );
         CHECK ( result == Approx (177.711) );
