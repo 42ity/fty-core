@@ -71,7 +71,7 @@ static bool
     check_location_u_pos
         (const std::string &s)
 {
-    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]+[uU])?$");
+    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]|[uU])?$");
     if ( !regex.match(s) )
         return false;
     else
