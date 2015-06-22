@@ -123,6 +123,14 @@ enum ipaddr_version {
 #define WEB_AVERAGE_KEY_ELEMENT_ID  "element_id"
 #define WEB_AVERAGE_KEY_SOURCE      "source"
 
-
+// asset_extra message
+#define KEY_ASSET_TYPE_ID   "__type_id"
+#define KEY_ASSET_PARENT_ID "__parent_id"
+#define KEY_ASSET_PRIORITY  "__priority"
+#define KEY_ASSET_STATUS    "__status"
+#define KEY_ASSET_NAME      "__name"
+#define KEY_ASSET_BC        "__bc"
+#define KEY_OPERATION       "__operation"
+ 
 #endif // SRC_INCLUDE_DEFS_H__
 
