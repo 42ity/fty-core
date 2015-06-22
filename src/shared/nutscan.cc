@@ -87,7 +87,7 @@ nut_scan_snmp(
     auto dev = nutscan_scan_snmp(
             sip.c_str(),
             sip.c_str(),
-            5000,
+            5000000,
             snmp_conf ? snmp_conf : &s_snmp_conf);
 
     s_nutscan_display_ups_conf(name, dev, out);
