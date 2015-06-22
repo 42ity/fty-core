@@ -103,7 +103,9 @@ try {
     load_asset_csv(inp, okRows, failRows);
     inp.close();
     ::unlink(path_p);
-
+    log_critical("ok size is %lu", okRows.size());
+    log_critical("fail size is %lu", failRows.size());
+    
     // TODO: vybrat jmeno agenta
     std::string agent_name("MY_AGENT");
     bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
@@ -147,7 +149,6 @@ try {
             return HTTP_INTERNAL_SERVER_ERROR;
         }
     }
-    assert (agent != NULL); // TODO (KHR): Remove
     bios_agent_destroy (&agent);
 }
 catch (const std::logic_error &e) {

@@ -36,6 +36,6 @@ void
     load_asset_csv
         (std::istream& input, 
          std::vector <db_a_elmnt_t> &okRows, 
-         std::map <int, std::string> failRows);
+         std::map <int, std::string> &failRows);
 
 #endif
