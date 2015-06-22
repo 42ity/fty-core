@@ -71,7 +71,7 @@ static bool
     check_location_u_pos
         (const std::string &s)
 {
-    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]+[uU])?$");
+    cxxtools::Regex regex("^[0-9][0-9]?([uU][rR]|[uU])?$");
     if ( !regex.match(s) )
         return false;
     else
@@ -329,7 +329,7 @@ static db_a_elmnt_t
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
     
-    if ( type == "group" )
+    if ( ( type == "group" ) && ( !subtype.empty() ) )
         zhash_insert (extattributes, "sub_type", (void*) subtype.c_str() );
 
     db_a_elmnt_t m;
