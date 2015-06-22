@@ -103,8 +103,8 @@ try {
     load_asset_csv(inp, okRows, failRows);
     inp.close();
     ::unlink(path_p);
-    log_critical("ok size is %lu", okRows.size());
-    log_critical("fail size is %lu", failRows.size());
+    log_debug ("ok size is %lu", okRows.size());
+    log_debug ("fail size is %lu", failRows.size());
     
     // TODO: vybrat jmeno agenta
     std::string agent_name("MY_AGENT");
