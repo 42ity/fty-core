@@ -98,7 +98,9 @@ try {
 
     //load the file and make the import
     std::ifstream inp(path_p);
-    auto ret = load_asset_csv(inp);
+    std::vector<db_a_elmnt_t> okRows{};
+    std::map<int,std::string> failRows{};
+    load_asset_csv(inp, okRows, failRows);
     inp.close();
     ::unlink(path_p);
 
@@ -117,8 +119,8 @@ try {
 
     // TODO get rid of hardcoded constants
     uint8_t action_type = 1; 
-    // TODO rename ret, m
-    for ( auto &m : ret )
+    // TODO rename  m
+    for ( auto &m : okRows )
     {
         ymsg_t *msg = bios_asset_encode (m.name.c_str(), m.type_id, m.parent_id, m.status.c_str(), m.priority, action_type);
         if ( msg == NULL )

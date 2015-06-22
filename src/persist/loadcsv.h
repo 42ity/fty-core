@@ -32,6 +32,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * \param input - input file
  */
-std::vector <db_a_elmnt_t> load_asset_csv(std::istream& input);
+void
+    load_asset_csv
+        (std::istream& input, 
+         std::vector <db_a_elmnt_t> &okRows, 
+         std::map <int, std::string> failRows);
 
 #endif

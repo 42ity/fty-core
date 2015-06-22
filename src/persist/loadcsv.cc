@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
+#include <map>
 
 #include "loadcsv.h"
 
@@ -401,13 +402,13 @@ mandatory_missing
 // TODO, now it returns nothing
 // std::map <  uit64_t , std::tuple (uint64     , std::string) >>
 //            rownumber              element_id   msg
-std::vector <db_a_elmnt_t>
+void
     load_asset_csv
-        (std::istream& input)
+        (std::istream& input, 
+         std::vector <db_a_elmnt_t> &okRows, 
+         std::map <int, std::string> failRows)
 {
     LOG_START;
-
-    std::vector <db_a_elmnt_t> res{};
 
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
@@ -426,11 +427,12 @@ std::vector <db_a_elmnt_t>
     cm.deserialize();
 
     auto m = mandatory_missing(cm);
+    // TODO: do an apropriate arror handling
 
     if ( m != "" )
     {
         std::string msg{"column '" + m + "' is missing, import is aborted"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());
     }
@@ -442,7 +444,7 @@ std::vector <db_a_elmnt_t>
     catch(...)
     {
         std::string msg{"no connection to database"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::runtime_error(msg.c_str());
     }
@@ -451,16 +453,16 @@ std::vector <db_a_elmnt_t>
     {
         try{
             auto ret = process_row(conn, cm, row_i);
-            res.push_back (ret);
+            okRows.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }
         catch ( const std::invalid_argument &e)
         {
+            failRows.insert(std::make_pair(row_i, e.what()));
             log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }
     LOG_END;
-    return res;
     // as we want to have an whole file returned plus additional information, than
     // we should do it somewhere outside,
     // here we just return information about status of all rows from the input csv
