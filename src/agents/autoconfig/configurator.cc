@@ -28,7 +28,6 @@ Description: Clases for autoconfiguration
 #include <iostream>
 #include <fstream>
 
-#include "nutscan.h"
 #include "log.h"
 #include "subprocess.h"
 #include "asset_types.h"
@@ -66,20 +65,51 @@ void NUTConfigurator::updateNUTConfig() {
 }
 
 bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType ) {
-    std::vector<std::string> configs;
-    log_debug("NUT configurator");
-    if( eventType == 1 || eventType == 2 ) { // TODO: enum? numbers come from agents.h bios_asset_encode/extract
-        log_debug("configuration updating request");
-        const char *IP = (const char *)zhash_lookup( extendedAttributes, "ip.1" );
-        if( ! IP ) {
-            log_debug("device %s has no IP address", name);
-            return false;
+
+    //XXX: I know this is ugly, but this is only one way worked for me
+    //     but this way we at least handle the issue the config structure differs
+    //
+    //     in the future it can get void* param, which will be static_cast'ed to correct type
+    //     inside each labmda call
+    static const std::vector<std::function<int(
+            const std::string&,
+            const shared::CIDRAddress&,
+            std::vector<std::string>&
+            )>> SCAN_FUNCTIONS
+    {
+        [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
+            return shared::nut_scan_xml_http(name, ip , NULL, out);
+        },
+        [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
+            return shared::nut_scan_snmp(name, ip , NULL, out);
         }
-        shared::nut_scan_snmp( name, shared::CIDRAddress(IP), NULL, configs );
+    };
+
+    log_debug("NUT configurator");
+    if( eventType != 1 && eventType == 2 ) {
+        // TODO: enum? numbers come from agents.h bios_asset_encode/extract
+        log_debug("Wrong eventType %d", eventType);
+        return false;
+    }
+
+    const char *IP = (const char *)zhash_lookup( extendedAttributes, "ip.1" );
+    if( ! IP ) {
+        log_debug("device %s has no IP address", name);
+        return false;
+    }
+
+    for (const auto& f : SCAN_FUNCTIONS) {
+
+        std::vector<std::string> configs;
+        int ret = f( name, shared::CIDRAddress(IP), configs );
+
+        if (ret == -1)
+            continue;
+
         auto it = selectBest( configs );
         if( it == configs.end() ) {
             log_debug("nutscanner failed");
-            return false;
+            continue;
         }
         std::string deviceDir = NUT_PART_STORE;
         shared::mkdir_if_needed( deviceDir.c_str() );

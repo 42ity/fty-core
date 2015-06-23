@@ -31,8 +31,12 @@ Example:
     std::cout << ret << std::endl;
 */
 
+#ifndef SRC_SHARED_NUTSCAN_H
+#define SRC_SHARED_NUTSCAN_H
+
 #include<string>
 #include<vector>
+#include<functional>
 #include<nut-scan.h>
 
 #include "cidr.h"
@@ -73,10 +77,12 @@ nut_scan_snmp(
  * \return 0 if success, -1 otherwise
  */
 int
-nut_scan_snmp(
+nut_scan_xml_http(
         const std::string& name,
         const CIDRAddress& ip_address,
-        nutscan_snmp_t* snmp_conf,
+        nutscan_xml_t* snmp_conf,
         std::vector<std::string>& out);
 
-}
+} //namespace shared
+
+#endif //SRC_SHARED_NUTSCAN_H

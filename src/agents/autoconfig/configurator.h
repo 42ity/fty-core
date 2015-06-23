@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "ymsg.h"
 #include "log.h"
+#include "nutscan.h"
 
 class Configurator {
  public:
@@ -41,6 +42,7 @@ class NUTConfigurator : public Configurator {
     std::vector<std::string>::iterator selectBest(std::vector<std::string> &configs) { return configs.begin(); };
     void updateNUTConfig();
     bool configure(  const char *name, zhash_t *extendedAttributes, int8_t eventType );
+
 };
 
 class ConfigFactory {
