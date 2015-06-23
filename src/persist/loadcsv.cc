@@ -16,13 +16,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file  loadcsv.cc
-    \brief Implementation of csv import into bios
+    \brief Implementation of csv import
     \author Michal Vyskocil   <michalvyskocil@eaton.com>
             Alena  Chernikava <alenachernikava@eaton.com>
 */
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
-#include <map>
 
 #include "loadcsv.h"
 
@@ -114,9 +113,9 @@ static db_a_elmnt_t
 
     static auto SUBTYPES = read_device_types (conn);
     
-    // This is used to track, what columns we had already proceeded,
-    // because if we didn't proceed it yet,
-    // then it should be treated as external attribute
+    // This is used to track, which columns had been already processed,
+    // because if they didn't yet,
+    // then they should be treated as external attribute
     auto unused_columns = cm.getTitles();
 
     auto name = cm.get(row_i, "name");
@@ -193,7 +192,7 @@ static db_a_elmnt_t
 
     std::string group;
     
-    // list of element id of all groups, the element belongs to
+    // list of element ids of all groups, the element belongs to
     std::set <a_elmnt_id_t>  groups{};
     for ( int group_index = 1 ; true; group_index++ )
     {
@@ -250,7 +249,6 @@ static db_a_elmnt_t
                     one_link.src = ret.item.id;  // if OK, then take ID
                 else
                 {
-                    // TODO LOG
                     log_warning ("'%s' - the unknown power source, "
                         "all information would be ignored "
                         "(doesn't exist in DB)", link_col_name.c_str());
@@ -306,7 +304,6 @@ static db_a_elmnt_t
             }
             else
             {
-                // TODO LOG
                 log_warning ("information about power sources is ignored for type '%s'", type.c_str());
             }
         }
@@ -317,7 +314,6 @@ static db_a_elmnt_t
     {
         // try is not needed, because here are keys that are defenitly there
         auto value = cm.get(row_i, key);
-        // TODO: on some ext attributes need to have more checks
         if ( !value.empty() ) {
             if ( match_ext_attr (value, key) )
                 zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
@@ -329,7 +325,6 @@ static db_a_elmnt_t
     // of the group.
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
-    
     if ( ( type == "group" ) && ( !subtype.empty() ) )
         zhash_insert (extattributes, "sub_type", (void*) subtype.c_str() );
 
@@ -370,8 +365,9 @@ static db_a_elmnt_t
     return m;
 }
 
+
 /*
- * \brief Checks if mandatory columns are present in csv file
+ * \brief Checks if mandatory columns are missing in csv file
  *
  * This check is implemented according BAM DC010
  *
@@ -379,7 +375,6 @@ static db_a_elmnt_t
  *
  * \return emtpy string if everything is ok, otherwise the name of missing row
  */
-
 static std::string
 mandatory_missing
         (CsvMap cm)
@@ -398,10 +393,7 @@ mandatory_missing
     return "";
 }
 
-// function return the log info about csv file
-// TODO, now it returns nothing
-// std::map <  uit64_t , std::tuple (uint64     , std::string) >>
-//            rownumber              element_id   msg
+
 void
     load_asset_csv
         (std::istream& input, 
@@ -463,9 +455,4 @@ void
         }
     }
     LOG_END;
-    // as we want to have an whole file returned plus additional information, than
-    // we should do it somewhere outside,
-    // here we just return information about status of all rows from the input csv
-
-    //return infolog;
 }

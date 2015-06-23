@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file  loadcsv.h
-    \brief Import of csv into bios
+/*! \file   loadcsv.h
+    \brief  Import of csv
     \author Michal Vyskocil   <michalvyskocil@eaton.com>
             Alena  Chernikava <alenachernikava@eaton.com>
 */
@@ -24,13 +24,17 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define SRC_PERSIST_LOADCSV_H
 
 #include <vector>
+#include <map>
+
 #include "dbhelpers.h"
 /*
  * \brief Processes a csv file
  *
- * Resuls are written in DB and into log
+ * Resuls are written in DB and into log.
  *
- * \param input - input file
+ * \param input[in]     - an input file
+ * \param okRows[out]   - a list of short information about inserted rows
+ * \param failRows[out] - a list of rejected rows with the message
  */
 void
     load_asset_csv
