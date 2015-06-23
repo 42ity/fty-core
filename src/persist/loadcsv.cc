@@ -187,6 +187,10 @@ static db_a_elmnt_t
     {
         log_warning ("'%s' - subtype is ignored", subtype.c_str());
     }
+    if ( ( subtype.empty() ) && ( type == "group" ) )
+        throw std::invalid_argument
+                                ("Subtype is mandatory for the group");
+
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
@@ -325,8 +329,9 @@ static db_a_elmnt_t
     // of the group.
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
-    if ( ( type == "group" ) && ( !subtype.empty() ) )
-        zhash_insert (extattributes, "sub_type", (void*) subtype.c_str() );
+    // this parametr is mandatory according rfc-11
+    if ( type == "group" )
+        zhash_insert (extattributes, "type", (void*) subtype.c_str() );
 
     db_a_elmnt_t m;
     if ( type != "device" )
