@@ -591,16 +591,16 @@ bios_asset_extra(const char *name,
     }
 
     if ( type_id )
-        app_args_set_uint32 (app, "__type_id", type_id);
+        app_args_set_uint32 (app, KEY_ASSET_TYPE_ID, type_id);
     if ( parent_id )
-        app_args_set_uint32 (app, "__parent_id", parent_id);
+        app_args_set_uint32 (app, KEY_ASSET_PARENT_ID, parent_id);
     if( priority )
-        app_args_set_uint8( app, "__priority", priority );
+        app_args_set_uint8( app, KEY_ASSET_PRIORITY, priority );
     if ( status )
-        app_args_set_string (app, "__status", status);
-    app_args_set_string (app, "__name", name);
-    app_args_set_uint8  (app, "__bc", bc);
-    app_args_set_int8   (app, "__operation", operation);
+        app_args_set_string (app, KEY_ASSET_STATUS, status);
+    app_args_set_string (app, KEY_ASSET_NAME, name);
+    app_args_set_uint8  (app, KEY_ASSET_BC, bc);
+    app_args_set_int8   (app, KEY_OPERATION, operation);
     return app;
 }
 
@@ -691,7 +691,7 @@ bios_asset_extra_extract(ymsg_t *message,
     int errcode = 0;
         
     {
-        const char *p = app_args_string( app, "__name", NULL );
+        const char *p = app_args_string( app, KEY_ASSET_NAME, NULL );
         if ( p )
             *name = strdup(p);
         else
@@ -701,7 +701,7 @@ bios_asset_extra_extract(ymsg_t *message,
         }
     }
     if( bc ) {
-        uint8_t t = app_args_uint8( app, "__bc" );
+        uint8_t t = app_args_uint8( app, KEY_ASSET_BC );
         if ( !errno ) {
             *bc = t;
             if( *bc != 0  && *bc != 1 )
@@ -712,32 +712,32 @@ bios_asset_extra_extract(ymsg_t *message,
         } // if key is missingm, then bc wouldn't change
     }
     if( type_id ) {
-        uint32_t t = app_args_uint32( app, "__type_id" );
+        uint32_t t = app_args_uint32( app, KEY_ASSET_TYPE_ID );
         if ( !errno ) { // the key is missing in the message
             *type_id = t;
         }
     }
     if( parent_id ) {
-        uint32_t t = app_args_uint32( app, "__parent_id" );
+        uint32_t t = app_args_uint32( app, KEY_ASSET_PARENT_ID );
         if ( !errno ) {
             *parent_id = t;
         }
     }
     if( status ) {
         *status = NULL;
-        const char *p = app_args_string( app, "__status", NULL );
+        const char *p = app_args_string( app, KEY_ASSET_STATUS, NULL );
         if( p ) {
             *status = strdup(p);
         }
     }
     if ( operation ) {
-        int8_t t = app_args_int8 (app, "__operation");
+        int8_t t = app_args_int8 (app, KEY_OPERATION);
         if ( !errno ) {
             *operation = t;
         }
     }
     if( priority ) {
-        uint8_t t = app_args_uint8( app, "__priority" );
+        uint8_t t = app_args_uint8( app, KEY_ASSET_PRIORITY );
         if ( !errno ){
             *priority = t;
             if( *priority < ALERT_PRIORITY_P1 || *priority > ALERT_PRIORITY_P5 ) {
@@ -751,13 +751,13 @@ bios_asset_extra_extract(ymsg_t *message,
         if ( *ext_attributes )
             zhash_destroy(ext_attributes);
         *ext_attributes = app_get_args (app);
-        zhash_delete (*ext_attributes, "__name");
-        zhash_delete (*ext_attributes, "__priority");
-        zhash_delete (*ext_attributes, "__type_id");
-        zhash_delete (*ext_attributes, "__bc");
-        zhash_delete (*ext_attributes, "__parent_id");
-        zhash_delete (*ext_attributes, "__status");
-        zhash_delete (*ext_attributes, "__operation");
+        zhash_delete (*ext_attributes, KEY_ASSET_NAME);
+        zhash_delete (*ext_attributes, KEY_ASSET_PRIORITY);
+        zhash_delete (*ext_attributes, KEY_ASSET_TYPE_ID);
+        zhash_delete (*ext_attributes, KEY_ASSET_BC);
+        zhash_delete (*ext_attributes, KEY_ASSET_PARENT_ID);
+        zhash_delete (*ext_attributes, KEY_ASSET_STATUS);
+        zhash_delete (*ext_attributes, KEY_OPERATION);
     }
 
     return 0;
