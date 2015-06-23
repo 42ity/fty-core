@@ -16,7 +16,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 /*! \file  loadcsv.cc
-    \brief Implementation of csv import into bios
+    \brief Implementation of csv import
     \author Michal Vyskocil   <michalvyskocil@eaton.com>
             Alena  Chernikava <alenachernikava@eaton.com>
 */
@@ -113,9 +113,9 @@ static db_a_elmnt_t
 
     static auto SUBTYPES = read_device_types (conn);
     
-    // This is used to track, what columns we had already proceeded,
-    // because if we didn't proceed it yet,
-    // then it should be treated as external attribute
+    // This is used to track, which columns had been already processed,
+    // because if they didn't yet,
+    // then they should be treated as external attribute
     auto unused_columns = cm.getTitles();
 
     auto name = cm.get(row_i, "name");
@@ -196,7 +196,7 @@ static db_a_elmnt_t
 
     std::string group;
     
-    // list of element id of all groups, the element belongs to
+    // list of element ids of all groups, the element belongs to
     std::set <a_elmnt_id_t>  groups{};
     for ( int group_index = 1 ; true; group_index++ )
     {
@@ -253,7 +253,6 @@ static db_a_elmnt_t
                     one_link.src = ret.item.id;  // if OK, then take ID
                 else
                 {
-                    // TODO LOG
                     log_warning ("'%s' - the unknown power source, "
                         "all information would be ignored "
                         "(doesn't exist in DB)", link_col_name.c_str());
@@ -309,7 +308,6 @@ static db_a_elmnt_t
             }
             else
             {
-                // TODO LOG
                 log_warning ("information about power sources is ignored for type '%s'", type.c_str());
             }
         }
@@ -320,7 +318,6 @@ static db_a_elmnt_t
     {
         // try is not needed, because here are keys that are defenitly there
         auto value = cm.get(row_i, key);
-        // TODO: on some ext attributes need to have more checks
         if ( !value.empty() ) {
             if ( match_ext_attr (value, key) )
                 zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
@@ -373,8 +370,9 @@ static db_a_elmnt_t
     return m;
 }
 
+
 /*
- * \brief Checks if mandatory columns are present in csv file
+ * \brief Checks if mandatory columns are missing in csv file
  *
  * This check is implemented according BAM DC010
  *
@@ -382,7 +380,6 @@ static db_a_elmnt_t
  *
  * \return emtpy string if everything is ok, otherwise the name of missing row
  */
-
 static std::string
 mandatory_missing
         (CsvMap cm)
@@ -401,17 +398,14 @@ mandatory_missing
     return "";
 }
 
-// function return the log info about csv file
-// TODO, now it returns nothing
-// std::map <  uit64_t , std::tuple (uint64     , std::string) >>
-//            rownumber              element_id   msg
-std::vector <db_a_elmnt_t>
+
+void
     load_asset_csv
-        (std::istream& input)
+        (std::istream& input, 
+         std::vector <db_a_elmnt_t> &okRows, 
+         std::map <int, std::string> &failRows)
 {
     LOG_START;
-
-    std::vector <db_a_elmnt_t> res{};
 
     std::vector <std::vector<cxxtools::String> > data;
     cxxtools::CsvDeserializer deserializer(input);
@@ -430,11 +424,12 @@ std::vector <db_a_elmnt_t>
     cm.deserialize();
 
     auto m = mandatory_missing(cm);
+    // TODO: do an apropriate arror handling
 
     if ( m != "" )
     {
         std::string msg{"column '" + m + "' is missing, import is aborted"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::invalid_argument(msg.c_str());
     }
@@ -446,7 +441,7 @@ std::vector <db_a_elmnt_t>
     catch(...)
     {
         std::string msg{"no connection to database"};
-        log_error("%s\n", msg.c_str());
+        log_error("%s", msg.c_str());
         LOG_END;
         throw std::runtime_error(msg.c_str());
     }
@@ -455,19 +450,14 @@ std::vector <db_a_elmnt_t>
     {
         try{
             auto ret = process_row(conn, cm, row_i);
-            res.push_back (ret);
+            okRows.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }
         catch ( const std::invalid_argument &e)
         {
+            failRows.insert(std::make_pair(row_i, e.what()));
             log_error ("row %zu not imported: %s", row_i, e.what());
         }
     }
     LOG_END;
-    return res;
-    // as we want to have an whole file returned plus additional information, than
-    // we should do it somewhere outside,
-    // here we just return information about status of all rows from the input csv
-
-    //return infolog;
 }
