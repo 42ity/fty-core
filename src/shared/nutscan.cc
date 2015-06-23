@@ -115,7 +115,6 @@ int nut_scan_xml_http(
     auto sip = ip_address.toString();
     auto dev = ETN_nutscan_scan_xml_http(
             sip.c_str(),
-            sip.c_str(),
             5000000,
             xml_conf ? xml_conf : &s_xml_conf);
 
