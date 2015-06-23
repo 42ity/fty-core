@@ -99,4 +99,34 @@ nut_scan_snmp(
     return 0;
 }
 
+int nut_scan_xml_http(
+        const std::string& name,
+        const CIDRAddress& ip_address,
+        nutscan_xml_t * xml_conf,
+        std::vector<std::string>& out)
+{
+#ifndef HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
+    return -1; // not supported
+#else
+
+    static nutscan_xml_t s_xml_conf;
+	memset(&s_xml_conf, 0, sizeof(s_xml_conf));
+
+    auto sip = ip_address.toString();
+    auto dev = ETN_nutscan_scan_xml_http(
+            sip.c_str(),
+            sip.c_str(),
+            5000000,
+            xml_conf ? xml_conf : &s_xml_conf);
+
+    s_nutscan_display_ups_conf(name, dev, out);
+    nutscan_free_device(dev);
+
+    if (out.empty())
+        return -1;
+
+    return 0;
+#endif // HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
+}
+
 }

@@ -36,8 +36,16 @@ Example:
 #include<nut-scan.h>
 
 #include "cidr.h"
+#include "config.h"
 
 namespace shared {
+
+#ifndef HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
+//XXX: The nutscan_xml_t is not a part of standard libnutscan - declare dummy struct to be compatible with patched version
+typedef struct nutscan_xml {
+    int dummy;
+} nutscan_xml_t;
+#endif
 
 /**
  * \brief call nut scan over SNMP
@@ -45,6 +53,22 @@ namespace shared {
  * \param[in] name asset name of device
  * \param[in] ip_address ip address of device
  * \param[in] snmp_conf additional SNMP related information, can be NULL
+ * \param[out] out resulted string with NUT config snippets
+ * \return 0 if success, -1 otherwise
+ */
+int
+nut_scan_snmp(
+        const std::string& name,
+        const CIDRAddress& ip_address,
+        nutscan_snmp_t* snmp_conf,
+        std::vector<std::string>& out);
+
+/**
+ * \brief call nut scan over XML HTTP
+ *
+ * \param[in] name asset name of device
+ * \param[in] ip_address ip address of device
+ * \param[in] xml_conf additional SNMP related information, can be NULL
  * \param[out] out resulted string with NUT config snippets
  * \return 0 if success, -1 otherwise
  */
