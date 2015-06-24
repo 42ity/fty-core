@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sstream>
 #include <vector>
 
+#include "preproc.h"
 #include "nutscan.h"
 #include "subprocess.h"
 #include "log.h"
@@ -112,7 +113,6 @@ int
 s_run_nut_scaner(
         const shared::Argv& args,
         const std::string& name,
-        const CIDRAddress& ip_address,
         std::vector<std::string>& out)
 {
     std::string o;
@@ -144,16 +144,15 @@ nut_scan_snmp(
     return s_run_nut_scaner(
             args,
             name,
-            ip_address,
             out);
 }
 
 
 int
 nut_scan_xml_http(
-        const std::string& name,
-        const CIDRAddress& ip_address,
-        std::vector<std::string>& out)
+        UNUSED_PARAM const std::string& name,
+        UNUSED_PARAM const CIDRAddress& ip_address,
+        UNUSED_PARAM std::vector<std::string>& out)
 {
 #ifndef HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
     return -1; // not supported
@@ -162,7 +161,6 @@ nut_scan_xml_http(
     return s_run_nut_scaner(
             args,
             name,
-            ip_address,
             out);
 #endif // HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
 }
