@@ -30,14 +30,12 @@ int main(int argc, char** argv) {
             ret = shared::nut_scan_snmp(
                 argv[2],
                 shared::CIDRAddress(argv[3]),
-                NULL,
                 nut_config);
         }
         else {
             ret = shared::nut_scan_xml_http(
                 argv[2],
                 shared::CIDRAddress(argv[3]),
-                NULL,
                 nut_config);
         }
 

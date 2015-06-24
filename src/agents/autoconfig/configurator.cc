@@ -67,10 +67,8 @@ void NUTConfigurator::updateNUTConfig() {
 bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType ) {
 
     //XXX: I know this is ugly, but this is only one way worked for me
-    //     but this way we at least handle the issue the config structure differs
-    //
-    //     in the future it can get void* param, which will be static_cast'ed to correct type
-    //     inside each labmda call
+    //     in the future we might want to extend the functions to support more
+    //     arguments like SNMP community string, so the declaration will differ
     static const std::vector<std::function<int(
             const std::string&,
             const shared::CIDRAddress&,
@@ -78,10 +76,10 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
             )>> SCAN_FUNCTIONS
     {
         [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_xml_http(name, ip , NULL, out);
+            return shared::nut_scan_xml_http(name, ip, out);
         },
         [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_snmp(name, ip , NULL, out);
+            return shared::nut_scan_snmp(name, ip, out);
         }
     };
 

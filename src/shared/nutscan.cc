@@ -15,7 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <string>
 #include <sstream>
+#include <vector>
 
 #include "nutscan.h"
 #include "subprocess.h"
@@ -23,108 +25,145 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 namespace shared {
 
-//MVY: copy&paste from nut/tools/nut-scanner/nutscan-display.c
-//     update to push things to the std::stringstream
-static void
-s_nutscan_display_ups_conf(
-        const std::string& name,
-        nutscan_device_t * device,
-        std::vector<std::string>& ret)
+/**
+ * \brief one read line from istream
+ */
+static
+ssize_t
+s_readline(
+        std::istream& inp,
+        std::string& line)
 {
-	nutscan_device_t * current_dev = device;
-	nutscan_options_t * opt;
-	static int nutdev_num = 1;
+    std::ostringstream buf;
+    buf.clear();
+    std::size_t ret;
+    if (!inp.good() || inp.eof()) {
+        return -1;
+    }
 
-	if(device==NULL) {
-		return;
-	}
+    for (ret = 0; inp.good() && inp.peek() != '\n'; ret++) {
+        char ch = static_cast<char>(inp.get());
+        if (inp.eof())
+            break;
+        buf << ch;
+    }
+    if (inp.peek() == '\n') {
+        buf << static_cast<char>(inp.get());
+    }
 
-	/* Find start of the list */
-	while(current_dev->prev != NULL) {
-		current_dev = current_dev->prev;
-	}
+    line.append(buf.str());
+    return ret;
+}
 
-	/* Display each devices */
-	do {
-        std::stringstream out;
-        out << "["  << name << "]" << std::endl;
-        out << "\tdriver = \"" << current_dev->driver  << "\"" << std::endl;
-        out << "\tport = \""   << current_dev->port    << "\"" << std::endl;
+/**
+ * \brief parse an output of nut-scanner
+ *
+ * \param name - name of device in the result
+ * \param inp  - input stream
+ * \param out  - vector of string with output
+ */
+static
+void
+s_parse_nut_scanner_output(
+        const std::string& name,
+        std::istream& inp,
+        std::vector<std::string>& out)
+{
 
-		opt = current_dev->opt;
+    if (!inp.good() || inp.eof())
+        return;
 
-		while (NULL != opt) {
-			if( opt->option != NULL ) {
-                out << "\t" << opt->option;
-				if( opt->value != NULL ) {
-                    out << " = \"" << opt->value << "\"";
-				}
-				out << std::endl;
-			}
-			opt = opt->next;
-		}
+    std::stringstream buf;
 
-		nutdev_num++;
+    while (inp.good() && !inp.eof()) {
+        std::string line;
 
-		current_dev = current_dev->next;
-        ret.push_back(out.str());
-	}
-	while( current_dev != NULL );
+        if (s_readline(inp, line) == -1)
+            break;
+
+        if (line.size() == 0)
+            continue;
+
+        if (line[0] == '[') {
+            if (buf.tellp() > 0) {
+                out.push_back(buf.str());
+                buf.clear();
+                buf.str("");
+            }
+            buf << '[' << name << ']' << std::endl;
+        }
+        else if (buf.tellp() > 0) {
+            buf << line;
+        }
+    }
+
+    if (buf.tellp() > 0) {
+        out.push_back(buf.str());
+        buf.clear();
+        buf.str("");
+    }
+}
+
+/**
+ * \brief run nut-scanner binary and return the output
+ */
+static
+int
+s_run_nut_scaner(
+        const shared::Argv& args,
+        const std::string& name,
+        const CIDRAddress& ip_address,
+        std::vector<std::string>& out)
+{
+    std::string o;
+    std::string e;
+    int ret = shared::output(args, o, e);
+
+    if (ret != 0)
+        return -1;
+
+    std::istringstream inp{o};
+    s_parse_nut_scanner_output(
+            name,
+            inp,
+            out);
+
+    if (out.empty())
+        return -1;
+
+    return 0;
 }
 
 int
 nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
-        nutscan_snmp_t* snmp_conf,
         std::vector<std::string>& out)
 {
-
-    static nutscan_snmp_t s_snmp_conf;
-	memset(&s_snmp_conf, 0, sizeof(s_snmp_conf));
-
-    auto sip = ip_address.toString();
-    auto dev = nutscan_scan_snmp(
-            sip.c_str(),
-            sip.c_str(),
-            5000000,
-            snmp_conf ? snmp_conf : &s_snmp_conf);
-
-    s_nutscan_display_ups_conf(name, dev, out);
-    nutscan_free_device(dev);
-
-    if (out.empty())
-        return -1;
-
-    return 0;
+    shared::Argv args = {"nut-scanner", "-S", "-s", ip_address.toString()};
+    return s_run_nut_scaner(
+            args,
+            name,
+            ip_address,
+            out);
 }
 
-int nut_scan_xml_http(
+
+int
+nut_scan_xml_http(
         const std::string& name,
         const CIDRAddress& ip_address,
-        nutscan_xml_t * xml_conf,
         std::vector<std::string>& out)
 {
 #ifndef HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
     return -1; // not supported
 #else
-
-    static nutscan_xml_t s_xml_conf;
-	memset(&s_xml_conf, 0, sizeof(s_xml_conf));
-
-    auto sip = ip_address.toString();
-    auto dev = ETN_nutscan_scan_xml_http(
-            sip.c_str(),
-            5000000,
-            xml_conf ? xml_conf : &s_xml_conf);
-
-    s_nutscan_display_ups_conf(name, dev, out);
-    nutscan_free_device(dev);
-
-    if (out.empty())
-        return -1;
-
-    return 0;
+    shared::Argv args = {"nut-scanner", "-M", "-s", ip_address.toString()};
+    return s_run_nut_scaner(
+            args,
+            name,
+            ip_address,
+            out);
 #endif // HAVE_ETN_NUTSCAN_SCAN_XML_HTTP
 }
 
