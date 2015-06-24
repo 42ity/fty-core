@@ -133,8 +133,9 @@ bool SubProcess::run() {
             return false;
         }
 
-        // TODO: error checking and reporting to the parent
-        ::execvp(argv[0], argv);
+        int ret = ::execvp(argv[0], argv);
+        if (ret == -1)
+            exit(errno);
 
     }
     // we are in parent
@@ -158,7 +159,11 @@ int SubProcess::wait(bool no_hangup)
         return _return_code;
     }
 
-    ::waitpid(getPid(), &status, options);
+    int ret = ::waitpid(getPid(), &status, options);
+    if (no_hangup && ret == 0) {
+        // state did not change here
+        return _return_code;
+    }
 
     if (WIFEXITED(status)) {
         _state = SubProcessState::FINISHED;
