@@ -1076,8 +1076,8 @@ agent_autoconfig_LDADD = \
 			libpriv-proto.la \
 			libbiosapi.la \
 			libpriv-log.la \
-			libpriv-cidr.la \
 			libpriv-nutscan.la \
+			libpriv-cidr.la \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la
