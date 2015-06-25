@@ -458,6 +458,13 @@ AC_TYPE_UINT8_T
 AC_FUNC_MALLOC
 AC_CHECK_FUNCS([gettimeofday memset socket])
 
+AC_CHECK_LIB(
+             [nutscan],
+             [ETN_nutscan_scan_xml_http],
+             [AC_DEFINE([HAVE_ETN_NUTSCAN_SCAN_XML_HTTP], [1], [Do we have non standard ETN_nutscan_scan_xml_http function or not])],
+             [AC_MSG_WARN([function ETN_nutscan_scan_xml_http is not available, XML HTTP protocol not supported by agent-autoconfig])]
+             )
+
 dnl--- end of the section suggested by autoscan
 
 # Checks for optional programs. 
