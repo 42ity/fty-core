@@ -84,7 +84,7 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
     };
 
     log_debug("NUT configurator");
-    if( eventType != 1 && eventType == 2 ) {
+    if( eventType != 1 && eventType != 2 ) {
         // TODO: enum? numbers come from agents.h bios_asset_encode/extract
         log_debug("Wrong eventType %d", eventType);
         return false;
