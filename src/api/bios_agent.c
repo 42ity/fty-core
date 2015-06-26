@@ -31,31 +31,36 @@ struct _bios_agent_t {
 
 bios_agent_t*
 bios_agent_new (const char* endpoint, const char* address) {
-    if (!endpoint || !address) {
-        return NULL;
-    }
+
+    if (!endpoint || !address)
+        goto end;
 
     bios_agent_t *self = (bios_agent_t *) zmalloc (sizeof (bios_agent_t));
-    if (self) {
-        self->client = mlm_client_new();
-        if (!self->client) {
-            free (self);
-            return NULL;
-        }
-        if(mlm_client_connect(self->client, endpoint, TIMEOUT, address) != 0) {
-            mlm_client_destroy(&self->client);
-            free (self);
-            return NULL;
-        }
-        self->seq = zmq_atomic_counter_new (); // create new && set value to zero
-        if (!self->seq) {
-            mlm_client_destroy (&self->client);
-            free (self);
-            return NULL;
-        }
-        zmq_atomic_counter_set (self->seq, 0);
-    }
+    if (!self)
+        goto end;
+
+    self->client = mlm_client_new();
+    if (!self->client)
+        goto free_self;
+
+    //TODO: adapt the libbiosapi to changes in mlm_client - with this approach you can't estabilish secure connection
+    if(mlm_client_connect(self->client, endpoint, TIMEOUT, address) != 0)
+        goto destroy_client;
+
+    self->seq = zmq_atomic_counter_new (); // create new && set value to zero
+    if (!self->seq)
+        goto destroy_client;
+    zmq_atomic_counter_set (self->seq, 0);
+
     return self;
+
+// error handling
+destroy_client:
+    mlm_client_destroy(&self->client);
+free_self:
+    free(self);
+end:
+    return NULL;
 }
 
 void
