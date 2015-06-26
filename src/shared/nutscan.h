@@ -31,11 +31,16 @@ Example:
     std::cout << ret << std::endl;
 */
 
+#ifndef SRC_SHARED_NUTSCAN_H
+#define SRC_SHARED_NUTSCAN_H
+
 #include<string>
 #include<vector>
+#include<functional>
 #include<nut-scan.h>
 
 #include "cidr.h"
+#include "config.h"
 
 namespace shared {
 
@@ -44,7 +49,6 @@ namespace shared {
  *
  * \param[in] name asset name of device
  * \param[in] ip_address ip address of device
- * \param[in] snmp_conf additional SNMP related information, can be NULL
  * \param[out] out resulted string with NUT config snippets
  * \return 0 if success, -1 otherwise
  */
@@ -52,7 +56,22 @@ int
 nut_scan_snmp(
         const std::string& name,
         const CIDRAddress& ip_address,
-        nutscan_snmp_t* snmp_conf,
         std::vector<std::string>& out);
 
-}
+/**
+ * \brief call nut scan over XML HTTP
+ *
+ * \param[in] name asset name of device
+ * \param[in] ip_address ip address of device
+ * \param[out] out resulted string with NUT config snippets
+ * \return 0 if success, -1 otherwise
+ */
+int
+nut_scan_xml_http(
+        const std::string& name,
+        const CIDRAddress& ip_address,
+        std::vector<std::string>& out);
+
+} //namespace shared
+
+#endif //SRC_SHARED_NUTSCAN_H

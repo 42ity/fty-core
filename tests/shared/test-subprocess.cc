@@ -291,21 +291,25 @@ TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
 
 }
 
-TEST_CASE("subprocess-run-fail", "[subprocess][run]") {
+TEST_CASE("subprocess-run-no-binary", "[subprocess][run]") {
     std::vector<std::string> argv{"/n/o/b/i/n/a/r/y",};
     int ret;
     bool bret;
 
     SubProcess proc(argv);
     bret = proc.run();
-    //XXX: bret reports only serious errors
     CHECK(bret);
-    ret = proc.poll();
-    CHECK(ret == -1);
-    //XXX: we need to call wait to get the right status - it's weird, but you has to explicitly synch with external resources every time
-    proc.wait();
-    //XXX: This got broken in last changes, check why!
-    //CHECK(!proc.isRunning());
+    ret = proc.wait();
+    CHECK(ret != 0);
+}
+
+TEST_CASE("subprocess-call-no-binary", "[subprocess][run]") {
+    std::vector<std::string> argv{"/n/o/b/i/n/a/r/y",};
+    int ret;
+    bool bret;
+
+    ret = call(argv);
+    CHECK(ret != 0);
 }
 
 TEST_CASE("subprocess-proccache", "[subprocess][proccache]") {
