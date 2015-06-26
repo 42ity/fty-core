@@ -17,7 +17,7 @@
 namespace persist {
 
 
-void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj);
+void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj);
 
 /**
  * \brief Processes message of type asset_msg_t

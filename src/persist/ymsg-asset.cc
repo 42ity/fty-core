@@ -17,13 +17,14 @@
 
 namespace persist {
 
-void process_get_asset(ymsg_t* out, char** out_subj,
+void process_get_asset(ymsg_t** out, char** out_subj,
                        ymsg_t* in, const char* in_subj)
 {
     if( ! in || ! out ) return;
+    *out = ymsg_new(YMSG_REPLY);
     LOG_START;
     *out_subj = strdup( in_subj );
-    ymsg_set_status( out, false );
+    ymsg_set_status( *out, false );
     
     tntdb::Connection conn;
     try{
@@ -41,8 +42,8 @@ void process_get_asset(ymsg_t* out, char** out_subj,
                     app_args_set_uint32( app, "parent_id", element.item.parent_id );
                     app_args_set_string( app, "status", element.item.status.c_str() );
                     app_args_set_uint8( app, "priority", element.item.priority );
-                    ymsg_response_set_app( out, &app );
-                    ymsg_set_status( out, true );
+                    ymsg_response_set_app( *out, &app );
+                    ymsg_set_status( *out, true );
                     app_destroy( &app );
                 }
             } else {
@@ -52,7 +53,7 @@ void process_get_asset(ymsg_t* out, char** out_subj,
         FREE0(devname);
     } catch(const std::exception &e) {
         LOG_END_ABNORMAL(e);
-        ymsg_set_status( out, false );
+        ymsg_set_status( *out, false );
     }
     LOG_END;
 }
@@ -60,14 +61,15 @@ void process_get_asset(ymsg_t* out, char** out_subj,
 
 void
     process_get_asset_extra
-        (ymsg_t* out, char** out_subj,
+        (ymsg_t** out, char** out_subj,
          ymsg_t* in, const char* in_subj)
 {
     if ( !in || !out )
         return;
+    *out = ymsg_new(YMSG_REPLY);
     LOG_START;
     *out_subj = strdup (in_subj);
-    ymsg_set_status (out, false);
+    ymsg_set_status (*out, false);
 
     char *name = NULL;
     int8_t operation; 
@@ -111,9 +113,9 @@ void
                     app_args_set_string (app, KEY_ASSET_NAME, element.item.name.c_str());
                     app_args_set_uint8  (app, KEY_ASSET_BC, element.item.bc);
 
-                    ymsg_response_set_app( out, &app );
+                    ymsg_response_set_app( *out, &app );
                     app_destroy( &app );
-                    ymsg_set_status( out, true );
+                    ymsg_set_status( *out, true );
                 }
             }
             else
@@ -123,7 +125,7 @@ void
         }
         catch(const std::exception &e) {
             LOG_END_ABNORMAL(e);
-            ymsg_set_status (out, false);
+            ymsg_set_status (*out, false);
         }
     }
     else
@@ -135,11 +137,11 @@ void
 }
 
 
-void process_alert(ymsg_t* out, char** out_subj,
+void process_alert(ymsg_t** out, char** out_subj,
                    ymsg_t* in, const char* in_subj)
 {
     if( ! in || ! out ) return;
-
+    *out = ymsg_new(YMSG_REPLY);
     LOG_START;
     
     if( in_subj ) { *out_subj = strdup(in_subj); }
@@ -176,7 +178,7 @@ void process_alert(ymsg_t* out, char** out_subj,
                 0,
                 since,
                 devices_v);
-            ymsg_set_status( out, ret.status );
+            ymsg_set_status( *out, ret.status );
             break;
         case ALERT_STATE_NO_ALERT:
             //alarm end
@@ -184,13 +186,13 @@ void process_alert(ymsg_t* out, char** out_subj,
                 conn,
                 since,
                 rule);
-            ymsg_set_status( out, ret.status );
+            ymsg_set_status( *out, ret.status );
             break;
         }
         if(!ret.status) { log_error("Writting alert into the database failed"); }
     } catch(const std::exception &e) {
         LOG_END_ABNORMAL(e);
-        ymsg_set_status( out, false );
+        ymsg_set_status( *out, false );
     }
     FREE0 (rule)
     FREE0 (devices)
