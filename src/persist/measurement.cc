@@ -237,9 +237,10 @@ db_reply_t
     return ret;
 }
 
-void get_measurements(ymsg_t* out, char** out_subj,
+void get_measurements(ymsg_t** out, char** out_subj,
                       ymsg_t* in, const char* in_subj) {
 
+    *out = ymsg_new(YMSG_REPLY);
     (*out_subj) = strdup("return_measurements");
     std::string json;
     try {
@@ -322,19 +323,19 @@ void get_measurements(ymsg_t* out, char** out_subj,
         if (!ch) {
             throw std::invalid_argument ("zchunk_new failed.");
         }
-        ymsg_set_response (out, &ch);
-        ymsg_set_status (out, true);
+        ymsg_set_response (*out, &ch);
+        ymsg_set_status (*out, true);
 
         log_debug ("json:\n%s", json.c_str ());
        
     } catch(const std::exception &e) {
         log_error("Ran into '%s' while getting measurements", e.what());
-        ymsg_set_status (out, false);
-        ymsg_set_errmsg (out, e.what());
+        ymsg_set_status (*out, false);
+        ymsg_set_errmsg (*out, e.what());
         return;
     } catch (...) {
         log_error("unknown exception caught");
-        ymsg_set_status (out, false);
+        ymsg_set_status (*out, false);
         return;
     }
 }

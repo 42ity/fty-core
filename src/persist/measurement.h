@@ -68,7 +68,7 @@ db_reply_t
         m_msrmnt_id_t      id);
 
 //! Process get measurement message and creates an answer
-void get_measurements(ymsg_t* out, char** out_subj,
+void get_measurements(ymsg_t** out, char** out_subj,
                       ymsg_t* in, const char* in_subj);
 
 } //namespace persist

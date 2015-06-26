@@ -55,9 +55,9 @@ int main (int argc, char *argv []) {
                     ymsg_destroy(&in);
                     continue;
                 }
-                _scoped_ymsg_t *out = ymsg_new(YMSG_REPLY);
+                _scoped_ymsg_t *out = NULL;
                 char* out_subj = NULL;
-                persist::process_ymsg(out, &out_subj, in, mlm_client_subject(client));
+                persist::process_ymsg(&out, &out_subj, in, mlm_client_subject(client));
                 if(out_subj == NULL) {
                     ymsg_destroy(&in);
                     ymsg_destroy(&out);
