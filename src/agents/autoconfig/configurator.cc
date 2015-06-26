@@ -76,10 +76,10 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
             )>> SCAN_FUNCTIONS
     {
         [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_xml_http(name, ip, out);
+            return shared::nut_scan_snmp(name, ip, out);
         },
         [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_snmp(name, ip, out);
+            return shared::nut_scan_xml_http(name, ip, out);
         }
     };
 
