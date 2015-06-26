@@ -763,7 +763,7 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
  * Processing of generic ymsg_t and breaking it into particular processing
  * functions for ymsg.
  */
-void process_ymsg(ymsg_t* out, char** out_subj, ymsg_t* in, const char* in_subj) {
+void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
     if(in_subj && strncmp(in_subj, "get_measurements", 17) == 0) {
         persist::get_measurements(out, out_subj, in, in_subj);
         return;
