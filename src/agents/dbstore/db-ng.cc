@@ -15,7 +15,7 @@
 int main (int argc, char *argv []) {
     
     log_open();
-    log_info ("persistence.measurement started");
+    log_info ("## agent: %s started", BIOS_AGENT_NAME_DB_MEASUREMENT);
     
     // Basic settings
     if (argc > 3) {
@@ -30,7 +30,7 @@ int main (int argc, char *argv []) {
     // Create a client
     mlm_client_t *client = mlm_client_new();
     if(!client) {
-        log_error ("agent-dbstore: error mlm_client_new");
+        log_error ("agent-dbstore: error mlm_client_new ()");
         return 1;
     }
     if(mlm_client_connect(client, addr, 1000, BIOS_AGENT_NAME_DB_MEASUREMENT) != 0) {
@@ -39,8 +39,7 @@ int main (int argc, char *argv []) {
         return 1;
     }
 
-    // We are listening for measurements
-    mlm_client_set_consumer(client, bios_get_stream_main (), ".*"); // regex might be "^measurements\..+" 
+    mlm_client_set_consumer(client, bios_get_stream_main (), ".*");
     while(!zsys_interrupted) {
         _scoped_zmsg_t *msg = mlm_client_recv(client);
         if(msg == NULL)
@@ -58,7 +57,7 @@ int main (int argc, char *argv []) {
                 _scoped_ymsg_t *out = NULL;
                 char* out_subj = NULL;
                 persist::process_ymsg(&out, &out_subj, in, mlm_client_subject(client));
-                if(out_subj == NULL) {
+                if ( ( out_subj == NULL ) || ( out == NULL ) ){
                     ymsg_destroy(&in);
                     ymsg_destroy(&out);
                     continue;
