@@ -44,7 +44,7 @@ static const char * NUTConfigCanSnmpPattern = "[[:blank:]]driver[[:blank:]]+=[[:
 
 std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std::vector<std::string> &texts, const char *pattern) {
     log_debug("regex: %s", pattern );
-    cxxtools::Regex reg(pattern);
+    cxxtools::Regex reg( pattern, REG_EXTENDED | REG_ICASE );
     for( auto it = texts.begin(); it != texts.end(); ++it ) {
         if( reg.match( *it ) ) {
             log_debug("regex: match found");
