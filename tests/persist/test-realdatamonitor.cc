@@ -14,8 +14,9 @@
 #include "monitor.h"
 #include "defs.h"
 #include "dbpath.h"
-
+#include <time.h>
 #include "cleanup.h"
+#include "measurement.h"
 
 /* tests for real monitoring assumed, that DB has the following state
  * In case, the initial data should be changed, the following tests should be changed too
@@ -83,31 +84,65 @@ static const std::set<std::string> EXP{"6:1:931:-1", "5:1:17:-1", "4:1:56:-1", "
 
 TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasurements]")
 {
-    //SUCCESS
+    //success
     uint32_t id = SELECT_DEVICE_ID;
-    std::string name;
+    std::string device_name_exp = "select_device";
+
     tntdb::Connection conn;
     REQUIRE_NOTHROW (conn = tntdb::connectCached(url.c_str()));
-    _scoped_zlist_t* measurements = select_last_measurements (conn, id, name);
+
+    // insert measurement we want to select
+    std::vector<int> ids{};
+    
+    std::set <std::string> list_EXP{};
+    int scale = -1;
+    for ( int i = 0 ; i <= 20 ; i++ )
+    {
+        std::string topic = "my_topic" + std::to_string(i);
+        int64_t time = ::time(NULL);
+        int value = 100 + i;
+        std::string list_item = std::to_string(value) + ":" + std::to_string(scale) + ":" + topic;
+        list_EXP.insert (list_item);
+        db_reply_t ret = persist::insert_into_measurement(
+                conn,
+                topic.c_str(),
+                value,
+                scale,
+                time,
+                "W",
+                device_name_exp.c_str());
+        REQUIRE ( ret.status == 1 );
+        ids.push_back(ret.rowid);
+    }
+
+    std::string device_name = "select_device";
+    _scoped_zlist_t *measurements = select_last_measurements (conn, id, device_name);
     REQUIRE ( measurements );
-    CHECK (name == "select_device");
-/*
-    REQUIRE (zlist_size(measurements) == EXP.size());
+    CHECK ( device_name == device_name_exp );
+
+    REQUIRE (zlist_size (measurements) == list_EXP.size());
     std::set<std::string> results;
     for (char* s = (char*) zlist_first(measurements); s != NULL; s = (char*) zlist_next(measurements)) {
         results.insert(s);
     }
-    REQUIRE (results == EXP);
+    REQUIRE (results == list_EXP);
     zlist_destroy (&measurements);
     
     //FAIL
     id = NO_DEVICE_ID;
-    name = "";
-    measurements = select_last_measurements (url.c_str(), id, name);
-    CHECK (name == "");
+    device_name = "";
+    measurements = select_last_measurements (conn, id, device_name);
+    CHECK ( device_name == "" );
     REQUIRE ( measurements );
-    REQUIRE (zlist_size(measurements) == 0 );*/
+    REQUIRE (zlist_size(measurements) == 0 );
     zlist_destroy (&measurements);
+
+    for ( auto id : ids )
+    {
+        auto ret = persist::delete_from_measurement_by_id(conn, id);
+        REQUIRE ( ret.status == 1 );
+    }
+
 }
 
 TEST_CASE("helper functions: convert_asset_to_monitor", "[db][convert_to_monitor]")
