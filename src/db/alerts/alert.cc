@@ -538,7 +538,7 @@ db_reply_t
          ( reply_internal1.affected_rows == 0 ) )
     {
         trans.rollback();
-        log_info ("end: alarm was not inserted (fail in alert");
+        log_info ("end: alert was not inserted (fail in alert");
         return reply_internal1;
     }
     auto alert_id = reply_internal1.rowid;
@@ -546,10 +546,10 @@ db_reply_t
     auto reply_internal2 = insert_into_alert_devices
                                     (conn, alert_id, device_names);
     if ( ( reply_internal2.status == 0 ) ||
-         ( reply_internal2.affected_rows == 0 ) )
+         ( reply_internal2.affected_rows != device_names.size() ) )
     {
         trans.rollback();
-        log_info ("end: alarm was not inserted (fail in alert devices");
+        log_info ("end: alert was not inserted (fail in alert devices");
         return reply_internal2;
     }
     trans.commit();
@@ -568,7 +568,7 @@ db_reply_t
 //
 // The workaround is to call the SELECT with LIMIT and construct the IN clause manually
 //
-static const std::string  sel_alarm_opened_QUERY =
+static const std::string  sel_alert_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
@@ -579,7 +579,7 @@ static const std::string  sel_alarm_opened_QUERY =
     " WHERE v.date_till is NULL"
     " ORDER BY v.id";
 
-static const std::string  sel_alarm_closed_QUERY =
+static const std::string  sel_alert_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
@@ -670,7 +670,7 @@ db_reply <std::vector<db_alert_t>>
     select_alert_all_opened
         (tntdb::Connection  &conn)
 {
-    return select_alert_all_template(conn, sel_alarm_opened_QUERY);
+    return select_alert_all_template(conn, sel_alert_opened_QUERY);
 }
 
 
@@ -679,7 +679,7 @@ db_reply <std::vector<db_alert_t>>
     select_alert_all_closed
         (tntdb::Connection  &conn)
 {
-    return select_alert_all_template(conn, sel_alarm_closed_QUERY);
+    return select_alert_all_template(conn, sel_alert_closed_QUERY);
 }
 
 

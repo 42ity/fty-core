@@ -171,13 +171,13 @@ db_reply_t
 //+
 /*
  * \brief Inserts new records into the table [t_bios_alert_device]
- *        about what devices where used to evaluate an alarm.
+ *        about what devices where used to evaluate an alert.
  *
  *  Trying to insert as mush devices as possible, in case of error returns
  *  the information about first error happend.
  *
  * \param conn          - a connection to the database
- * \param alert_id      - a priority of the alert
+ * \param alert_id      - an id of the alert
  * \param device_names  - a list of devices used to evaluate the alert
  * 
  * \return in case of success: status = 1,
@@ -200,7 +200,7 @@ db_reply_t
  * \brief Inserts a new record into the table [t_bios_alert_device].
  *
  * \param conn          - a connection to the database
- * \param alert_id      - a priority of the alert
+ * \param alert_id      - a id of the alert
  * \param device_names  - a name of the device used to evaluate the alert 
  * 
  * \return in case of success: status = 1,
@@ -218,18 +218,67 @@ db_reply_t
          const char        *device_name);
 
 //+
+/*
+ * \brief Deletes a record from the table [t_bios_alert_device] by id.
+ *
+ * \param conn          - a connection to the database
+ * \param id            - an id of the row to be deleted 
+ * 
+ * \return in case of success: status = 1,
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     delete_from_alert_device
         (tntdb::Connection &conn,
          m_alrtdvc_id_t    id);
 
 //+
+/*
+ * \brief Deletes records from the table [t_bios_alert_device]
+ *          that belongs to one alert specified by its id.
+ *
+ * \param conn          - a connection to the database
+ * \param id            - an id of the alert 
+ * 
+ * \return in case of success: status = 1,
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     delete_from_alert_device_byalert
         (tntdb::Connection &conn,
-         m_alrt_id_t         id);
+         m_alrt_id_t        id);
 
 //+
+/*
+ * \brief Inserts a new record into the table [t_bios_alert_device].
+ *
+ * \param conn          - a connection to the database
+ * \param rule_name     - a rule name that produced this alert
+ * \param priority      - a priority of the alert
+ * \param alert_state   - an alert state
+ * \param description   - a description of the alert (can be NULL)
+ * \param notification  - a bit-vector about notifications already sent 
+ *                        about this alert
+ * \param date_from     - a date+time when system evaluated that 
+ *                        this alert had started
+ * \param device_names  - a name of the device used to evaluate the alert 
+ *
+ * \return in case of success: status = 1,
+ *                             affected_rows is set
+ *                             rowid is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set.
+ */
 db_reply_t
     insert_new_alert 
         (tntdb::Connection  &conn,
