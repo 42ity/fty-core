@@ -349,7 +349,8 @@ db_reply_t
     {
         auto reply_internal = insert_into_alert_device
                                 (conn, alert_id, device_name.c_str());
-        if ( ( reply_internal.status == 1 ) && ( reply_internal.affected_rows == 1 ) )
+        if ( ( reply_internal.status == 1 ) && 
+             ( reply_internal.affected_rows == 1 ) )
             ret.affected_rows++;
         ret.status = ret.status && reply_internal.status;
         if ( ret.errtype == 0 )
@@ -561,12 +562,15 @@ db_reply_t
 //=============================================================================
 
 //
-// TODO: LIMITS - those queries can be potentially HUGE, but our db does not support the queries
-//       with IN and sub select
-// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
-// ERROR 1235 (42000): This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
+// TODO: LIMITS - those queries can be potentially HUGE, but our db does not 
+// support the queries with IN and sub select
+// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN 
+//   (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
+// ERROR 1235 (42000): This version of MariaDB doesn't yet support 
+//          'LIMIT & IN/ALL/ANY/SOME subquery'
 //
-// The workaround is to call the SELECT with LIMIT and construct the IN clause manually
+// The workaround is to call the SELECT with LIMIT and 
+// construct the IN clause manually
 //
 static const std::string  sel_alert_opened_QUERY =
     " SELECT"
@@ -608,10 +612,13 @@ static db_reply <std::vector<db_alert_t>>
         //FIXME: change to dbtypes.h
         uint64_t last_id = 0u;
         uint64_t curr_id = 0u;
-        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "", std::vector<m_dvc_id_t>{}};
-        a_elmnt_id_t element_id = 42; // suppress the compiler may be unitialized warning
-                                      // variable is never used unitialized, but gcc don't understand the r[8].get(element_id) does it
-                                      // 42 is the Answer, so why not? ;-)
+        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "",
+                std::vector<m_dvc_id_t>{}};
+        a_elmnt_id_t element_id = 42; 
+        // suppress the compiler may be unitialized warning
+        // variable is never used unitialized, 
+        // but gcc don't understand the r[8].get(element_id) does it
+        // 42 is the Answer, so why not? ;-)
 
         for ( auto &r : res ) {
 
