@@ -14,7 +14,7 @@ extern sample_agent agent;
 int main (int argc, char *argv []) {
     // Basic settings
     if (argc > 1) {
-        printf ("syntax: server-agent [ ipc://...|tcp://... ]\n");
+        printf ("syntax: %s [ ipc://...|tcp://... ]\n", argv[0]);
         return 0;
     }
 
@@ -31,8 +31,8 @@ int main (int argc, char *argv []) {
 
     // Create client
     _scoped_bios_agent_t *client = bios_agent_new(addr, id.c_str());
-    if (!client) {
-        zsys_error ("server-agent: server not reachable at ipc://@/malamute");
+    if(!client) {
+        log_error("server not reachable at %s", addr);
         return 0;
     }
     log_info("Connected to %s", addr);
