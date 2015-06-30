@@ -39,10 +39,17 @@ class Configurator {
 class NUTConfigurator : public Configurator {
  public:
     virtual ~NUTConfigurator() {};
-    std::vector<std::string>::iterator selectBest(std::vector<std::string> &configs) { return configs.begin(); };
+    std::vector<std::string>::const_iterator selectBest( const std::vector<std::string> &configs);
     void updateNUTConfig();
     bool configure(  const char *name, zhash_t *extendedAttributes, int8_t eventType );
-
+ private:
+    std::vector<std::string>::const_iterator stringMatch( const std::vector<std::string> &texts, const char *pattern);
+    bool match( const std::vector<std::string> &texts, const char *pattern);
+    bool isEpdu( const std::vector<std::string> &texts);
+    bool isUps( const std::vector<std::string> &texts);
+    bool canSnmp( const std::vector<std::string> &texts);
+    bool canXml( const std::vector<std::string> &texts);
+    std::vector<std::string>::const_iterator getBestSnmpMib( const std::vector<std::string> &configs);
 };
 
 class ConfigFactory {

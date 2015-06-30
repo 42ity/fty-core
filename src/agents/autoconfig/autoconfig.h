@@ -33,7 +33,6 @@ class Autoconfig : public BIOSAgent {
 
     void onReply( ymsg_t **message );
     void onSend( ymsg_t **message );
-    void onStart( );
  private:
     ConfigFactory _configurator;
 };
