@@ -66,11 +66,8 @@ void
 {
     if ( !in || !out )
         return;
-    *out = ymsg_new(YMSG_REPLY);
     LOG_START;
     *out_subj = strdup (in_subj);
-    ymsg_set_status (*out, false);
-
     char *name = NULL;
     int8_t operation; 
     int rv = bios_asset_extra_extract (in, &name, NULL, NULL, NULL, NULL, NULL, NULL, &operation);
@@ -90,33 +87,11 @@ void
                 {
                     zhash_insert (ext_attributes, m.first.c_str(), (char*)m.second.first.c_str());
                 }
-                // TODO rework to use bios_asset_extra_encode_reply
-                // problem is, that out is [in] parameter but not [out]
-                app_t *app = app_new(APP_MODULE);
-                if ( app )
-                {
-                    app_set_name (app, "ASSET_EXTENDED");
-                    if ( ext_attributes )
-                    {
-                        app_set_args  (app, &ext_attributes);
-                        zhash_destroy (&ext_attributes);
-                    }
-                    if ( element.item.type_id)
-                        app_args_set_uint32 (app, KEY_ASSET_TYPE_ID, element.item.type_id);
-                    if ( element.item.parent_id )
-                        app_args_set_uint32 (app, KEY_ASSET_PARENT_ID, element.item.parent_id);
-                    if ( element.item.priority )
-                        app_args_set_uint8  (app, KEY_ASSET_PRIORITY, element.item.priority);
-                    if ( !element.item.status.empty() )
-                        app_args_set_string (app, KEY_ASSET_STATUS, element.item.status.c_str());
-                    app_args_set_int8 (app, KEY_OPERATION, operation );
-                    app_args_set_string (app, KEY_ASSET_NAME, element.item.name.c_str());
-                    app_args_set_uint8  (app, KEY_ASSET_BC, element.item.bc);
-
-                    ymsg_response_set_app( *out, &app );
-                    app_destroy( &app );
-                    ymsg_set_status( *out, true );
-                }
+                *out = bios_asset_extra_encode_response (element.item.name.c_str(), 
+                    &ext_attributes, element.item.type_id,
+                    element.item.parent_id, element.item.status.c_str(),
+                    element.item.priority, element.item.bc, operation);
+                ymsg_set_status (*out, true);
             }
             else
             {
