@@ -293,7 +293,6 @@ db_reply_t
    
         ret.affected_rows = st.set("id", id).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
@@ -314,7 +313,7 @@ db_reply_t
 //=============================================================================
 db_reply_t
     insert_into_alert_devices 
-        (tntdb::Connection  &conn,
+        (tntdb::Connection        &conn,
          m_alrt_id_t               alert_id,
          std::vector <std::string> device_names)
 {
@@ -331,19 +330,21 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( device_names.size() == 0 )
     {
-        ret.status  = 1;
-        log_info ("end: %s, %s","ignore insert", "noting to insert");
+        // actually, if there is nothing to insert, then insert was ok
+        ret.status = 1;
+        log_info ("end: ignore insert 'noting to insert'");
         return ret;
     }
-    // actually, if there is nothing to insert, then insert was ok :)
     log_debug ("input parameters are correct");
 
     ret.status = 1;
+    // try to insert all devices
+    // If some erorr occures, then save info about it and continue
     for (auto &device_name : device_names )
     {
         auto reply_internal = insert_into_alert_device
@@ -382,7 +383,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( !is_ok_name(device_name) )
@@ -391,7 +392,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "value of device_name is invalid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     log_debug ("input parameters are correct");
