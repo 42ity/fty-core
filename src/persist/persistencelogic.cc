@@ -59,14 +59,8 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 namespace persist {
 
-void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
+void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg) {
     log_debug("Processing measurement");
-    _scoped_ymsg_t *ymsg = ymsg_decode(msg);
-    
-    if(ymsg == NULL) {
-        log_error("Can't decode the ymsg");
-        return;
-    }
     int64_t tme = 0;
     _scoped_char *device_name = NULL;
     _scoped_char *quantity    = NULL;   // TODO: THA: what does this parameter mean?
@@ -86,14 +80,13 @@ void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
         goto free_mem_toto;
     }
 
-    rv = bios_measurement_decode (&ymsg, &device_name, &quantity, 
+    rv = bios_measurement_decode (ymsg, &device_name, &quantity, 
                                       &units, &value, &scale, &tme);
     if ( rv != 0 ) {
         log_error("Can't decode the ymsg, ignore it");
         goto free_mem_toto;
     }
 
-    // TODO: MVY, why this is here???
     if(tme < 1)
         tme = ::time(NULL);
 
@@ -103,8 +96,8 @@ void process_measurement(UNUSED_PARAM const std::string &topic, zmsg_t **msg) {
             conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
 free_mem_toto:
     //free resources
-    if(ymsg)
-        ymsg_destroy(&ymsg);
+    if(*ymsg)
+        ymsg_destroy(ymsg);
     FREE0 (device_name)
     FREE0 (quantity)
     FREE0 (units)
