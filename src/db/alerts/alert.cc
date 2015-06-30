@@ -142,11 +142,11 @@ db_reply_t
     update_alert_notification_byId 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
     log_debug ("  notification = %" PRIu16, notification);
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  alert_id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
     
@@ -158,7 +158,7 @@ db_reply_t
             " WHERE  id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                set("note", notification).
                                execute();
         log_debug ("[t_bios_alert]: was updated %" 
@@ -168,7 +168,7 @@ db_reply_t
         // use from the paramenter
         if ( ret.affected_rows != 0 )
         {
-            ret.rowid = id;
+            ret.rowid = alert_id;
         }
         LOG_END;
         return ret;
@@ -232,11 +232,11 @@ db_reply_t
     update_alert_tilldate 
         (tntdb::Connection  &conn,
          int64_t             date_till,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
     log_debug ("  tilldate = %" PRIi64, date_till);
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
     
@@ -248,14 +248,14 @@ db_reply_t
             " WHERE  id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                set("till", date_till).
                                execute();
         log_debug ("[t_bios_alert]: was updated %" 
                                     PRIu64 " rows", ret.affected_rows);
         if ( ret.affected_rows != 0 )
         {
-            ret.rowid = id;
+            ret.rowid = alert_id;
         }
         
         ret.status = 1;
@@ -276,10 +276,10 @@ db_reply_t
 db_reply_t
     delete_from_alert
         (tntdb::Connection &conn,
-         m_alrt_id_t id)
+         m_alrt_id_t alert_id)
 {
     LOG_START;
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -291,7 +291,7 @@ db_reply_t
             "   id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                execute();
         log_debug ("[t_bios_alert]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
@@ -484,10 +484,10 @@ db_reply_t
 db_reply_t
     delete_from_alert_device_byalert
         (tntdb::Connection &conn,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -499,7 +499,7 @@ db_reply_t
             "   alert_id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                execute();
         log_debug ("[t_bios_alert_device]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
@@ -558,20 +558,7 @@ db_reply_t
     return reply_internal1;
 }
 
-
 //=============================================================================
-
-//
-// TODO: LIMITS - those queries can be potentially HUGE, but our db does not 
-// support the queries with IN and sub select
-// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN 
-//   (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
-// ERROR 1235 (42000): This version of MariaDB doesn't yet support 
-//          'LIMIT & IN/ALL/ANY/SOME subquery'
-//
-// The workaround is to call the SELECT with LIMIT and 
-// construct the IN clause manually
-//
 static const std::string  sel_alert_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
@@ -594,6 +581,13 @@ static const std::string  sel_alert_closed_QUERY =
     " WHERE v.date_till is not NULL"
     " ORDER BY v.id";
 
+/*
+ * \brief Selects all fields from v_web_alert_all by different 
+ *          conditions specified in query.
+ *
+ * TODO: get rid of ORDER BY in queries. 
+ * Redo a selection of devices that where used in alert evaluation
+ */
 static db_reply <std::vector<db_alert_t>>
     select_alert_all_template
         (tntdb::Connection  &conn,
@@ -658,6 +652,8 @@ static db_reply <std::vector<db_alert_t>>
             ret.item.push_back(m);
         }
         ret.status = 1;
+        LOG_END;
+        return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -667,10 +663,7 @@ static db_reply <std::vector<db_alert_t>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
-    LOG_END;
-    return ret;
 }
-
 
 //=============================================================================
 db_reply <std::vector<db_alert_t>>
@@ -680,7 +673,6 @@ db_reply <std::vector<db_alert_t>>
     return select_alert_all_template(conn, sel_alert_opened_QUERY);
 }
 
-
 //=============================================================================
 db_reply <std::vector<db_alert_t>>
     select_alert_all_closed
@@ -688,7 +680,6 @@ db_reply <std::vector<db_alert_t>>
 {
     return select_alert_all_template(conn, sel_alert_closed_QUERY);
 }
-
 
 //=============================================================================
 db_reply <std::vector<m_dvc_id_t>>
@@ -719,6 +710,8 @@ db_reply <std::vector<m_dvc_id_t>>
             ret.item.push_back(device_id);
         }
         ret.status = 1;
+        LOG_END;
+        return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -728,10 +721,9 @@ db_reply <std::vector<m_dvc_id_t>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
-    LOG_END;
-    return ret;
 }
 
+//=============================================================================
 db_reply <db_alert_t>
     select_alert_last_byRuleName
         (tntdb::Connection &conn,
@@ -808,6 +800,7 @@ db_reply <db_alert_t>
     }
 }
 
+//=============================================================================
 db_reply <db_alert_t>
     select_alert_byRuleNameDateFrom
         (tntdb::Connection &conn,
@@ -878,6 +871,7 @@ db_reply <db_alert_t>
     }
 }
 
+//=============================================================================
 db_reply_t
     update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
