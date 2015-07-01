@@ -142,11 +142,11 @@ db_reply_t
     update_alert_notification_byId 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
     log_debug ("  notification = %" PRIu16, notification);
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  alert_id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
     
@@ -158,7 +158,7 @@ db_reply_t
             " WHERE  id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                set("note", notification).
                                execute();
         log_debug ("[t_bios_alert]: was updated %" 
@@ -168,7 +168,7 @@ db_reply_t
         // use from the paramenter
         if ( ret.affected_rows != 0 )
         {
-            ret.rowid = id;
+            ret.rowid = alert_id;
         }
         LOG_END;
         return ret;
@@ -232,11 +232,11 @@ db_reply_t
     update_alert_tilldate 
         (tntdb::Connection  &conn,
          int64_t             date_till,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
     log_debug ("  tilldate = %" PRIi64, date_till);
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
     
@@ -248,14 +248,14 @@ db_reply_t
             " WHERE  id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                set("till", date_till).
                                execute();
         log_debug ("[t_bios_alert]: was updated %" 
                                     PRIu64 " rows", ret.affected_rows);
         if ( ret.affected_rows != 0 )
         {
-            ret.rowid = id;
+            ret.rowid = alert_id;
         }
         
         ret.status = 1;
@@ -276,10 +276,10 @@ db_reply_t
 db_reply_t
     delete_from_alert
         (tntdb::Connection &conn,
-         m_alrt_id_t id)
+         m_alrt_id_t alert_id)
 {
     LOG_START;
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -291,9 +291,8 @@ db_reply_t
             "   id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                execute();
-        ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
         ret.status = 1;
@@ -314,7 +313,7 @@ db_reply_t
 //=============================================================================
 db_reply_t
     insert_into_alert_devices 
-        (tntdb::Connection  &conn,
+        (tntdb::Connection        &conn,
          m_alrt_id_t               alert_id,
          std::vector <std::string> device_names)
 {
@@ -331,24 +330,27 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( device_names.size() == 0 )
     {
-        ret.status  = 1;
-        log_info ("end: %s, %s","ignore insert", "noting to insert");
+        // actually, if there is nothing to insert, then insert was ok
+        ret.status = 1;
+        log_info ("end: ignore insert 'noting to insert'");
         return ret;
     }
-    // actually, if there is nothing to insert, then insert was ok :)
     log_debug ("input parameters are correct");
 
     ret.status = 1;
+    // try to insert all devices
+    // If some erorr occures, then save info about it and continue
     for (auto &device_name : device_names )
     {
         auto reply_internal = insert_into_alert_device
                                 (conn, alert_id, device_name.c_str());
-        if ( ( reply_internal.status == 1 ) && ( reply_internal.affected_rows == 1 ) )
+        if ( ( reply_internal.status == 1 ) && 
+             ( reply_internal.affected_rows == 1 ) )
             ret.affected_rows++;
         ret.status = ret.status && reply_internal.status;
         if ( ret.errtype == 0 )
@@ -382,7 +384,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     if ( !is_ok_name(device_name) )
@@ -391,7 +393,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "value of device_name is invalid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg);
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -482,10 +484,10 @@ db_reply_t
 db_reply_t
     delete_from_alert_device_byalert
         (tntdb::Connection &conn,
-         m_alrt_id_t         id)
+         m_alrt_id_t         alert_id)
 {
     LOG_START;
-    log_debug ("  id = %" PRIu32, id);
+    log_debug ("  id = %" PRIu32, alert_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -497,7 +499,7 @@ db_reply_t
             "   alert_id = :id"
         );
    
-        ret.affected_rows = st.set("id", id).
+        ret.affected_rows = st.set("id", alert_id).
                                execute();
         log_debug ("[t_bios_alert_device]: was deleted %" 
                                         PRIu64 " rows", ret.affected_rows);
@@ -537,7 +539,7 @@ db_reply_t
          ( reply_internal1.affected_rows == 0 ) )
     {
         trans.rollback();
-        log_info ("end: alarm was not inserted (fail in alert");
+        log_info ("end: alert was not inserted (fail in alert");
         return reply_internal1;
     }
     auto alert_id = reply_internal1.rowid;
@@ -545,10 +547,10 @@ db_reply_t
     auto reply_internal2 = insert_into_alert_devices
                                     (conn, alert_id, device_names);
     if ( ( reply_internal2.status == 0 ) ||
-         ( reply_internal2.affected_rows == 0 ) )
+         ( reply_internal2.affected_rows != device_names.size() ) )
     {
         trans.rollback();
-        log_info ("end: alarm was not inserted (fail in alert devices");
+        log_info ("end: alert was not inserted (fail in alert devices");
         return reply_internal2;
     }
     trans.commit();
@@ -556,18 +558,8 @@ db_reply_t
     return reply_internal1;
 }
 
-
 //=============================================================================
-
-//
-// TODO: LIMITS - those queries can be potentially HUGE, but our db does not support the queries
-//       with IN and sub select
-// MariaDB [box_utf8]> SELECT * FROM v_web_alert_all v WHERE v.id IN (SELECT id FROM v_bios_alert ORDER BY id LIMIT 30);
-// ERROR 1235 (42000): This version of MariaDB doesn't yet support 'LIMIT & IN/ALL/ANY/SOME subquery'
-//
-// The workaround is to call the SELECT with LIMIT and construct the IN clause manually
-//
-static const std::string  sel_alarm_opened_QUERY =
+static const std::string  sel_alert_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
@@ -578,7 +570,7 @@ static const std::string  sel_alarm_opened_QUERY =
     " WHERE v.date_till is NULL"
     " ORDER BY v.id";
 
-static const std::string  sel_alarm_closed_QUERY =
+static const std::string  sel_alert_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
@@ -589,6 +581,13 @@ static const std::string  sel_alarm_closed_QUERY =
     " WHERE v.date_till is not NULL"
     " ORDER BY v.id";
 
+/*
+ * \brief Selects all fields from v_web_alert_all by different 
+ *          conditions specified in query.
+ *
+ * TODO: get rid of ORDER BY in queries. 
+ * Redo a selection of devices that where used in alert evaluation
+ */
 static db_reply <std::vector<db_alert_t>>
     select_alert_all_template
         (tntdb::Connection  &conn,
@@ -607,10 +606,13 @@ static db_reply <std::vector<db_alert_t>>
         //FIXME: change to dbtypes.h
         uint64_t last_id = 0u;
         uint64_t curr_id = 0u;
-        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "", std::vector<m_dvc_id_t>{}};
-        a_elmnt_id_t element_id = 42; // suppress the compiler may be unitialized warning
-                                      // variable is never used unitialized, but gcc don't understand the r[8].get(element_id) does it
-                                      // 42 is the Answer, so why not? ;-)
+        db_alert_t m{0, "", 0, 0, "", 0 , 0, 0, "", "",
+                std::vector<m_dvc_id_t>{}};
+        a_elmnt_id_t element_id = 42; 
+        // suppress the compiler may be unitialized warning
+        // variable is never used unitialized, 
+        // but gcc don't understand the r[8].get(element_id) does it
+        // 42 is the Answer, so why not? ;-)
 
         for ( auto &r : res ) {
 
@@ -650,6 +652,8 @@ static db_reply <std::vector<db_alert_t>>
             ret.item.push_back(m);
         }
         ret.status = 1;
+        LOG_END;
+        return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -659,28 +663,23 @@ static db_reply <std::vector<db_alert_t>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
-    LOG_END;
-    return ret;
 }
-
 
 //=============================================================================
 db_reply <std::vector<db_alert_t>>
     select_alert_all_opened
         (tntdb::Connection  &conn)
 {
-    return select_alert_all_template(conn, sel_alarm_opened_QUERY);
+    return select_alert_all_template(conn, sel_alert_opened_QUERY);
 }
-
 
 //=============================================================================
 db_reply <std::vector<db_alert_t>>
     select_alert_all_closed
         (tntdb::Connection  &conn)
 {
-    return select_alert_all_template(conn, sel_alarm_closed_QUERY);
+    return select_alert_all_template(conn, sel_alert_closed_QUERY);
 }
-
 
 //=============================================================================
 db_reply <std::vector<m_dvc_id_t>>
@@ -711,6 +710,8 @@ db_reply <std::vector<m_dvc_id_t>>
             ret.item.push_back(device_id);
         }
         ret.status = 1;
+        LOG_END;
+        return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -720,10 +721,9 @@ db_reply <std::vector<m_dvc_id_t>>
         LOG_END_ABNORMAL(e);
         return ret;
     }
-    LOG_END;
-    return ret;
 }
 
+//=============================================================================
 db_reply <db_alert_t>
     select_alert_last_byRuleName
         (tntdb::Connection &conn,
@@ -800,6 +800,7 @@ db_reply <db_alert_t>
     }
 }
 
+//=============================================================================
 db_reply <db_alert_t>
     select_alert_byRuleNameDateFrom
         (tntdb::Connection &conn,
@@ -870,6 +871,7 @@ db_reply <db_alert_t>
     }
 }
 
+//=============================================================================
 db_reply_t
     update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
