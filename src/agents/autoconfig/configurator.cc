@@ -27,6 +27,7 @@ Description: Clases for autoconfiguration
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <cxxtools/regex.h>
 
 #include "log.h"
 #include "subprocess.h"
@@ -35,6 +36,78 @@ Description: Clases for autoconfiguration
 #include "filesystem.h"
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
+
+static const char * NUTConfigXMLPattern = "[[:blank:]]driver[[:blank:]]+=[[:blank:]]+\"netxml-ups\"";
+static const char * NUTConfigEpduPattern = "[[:blank:]](mibs[[:blank:]]+=[[:blank:]]+\"(eaton_epdu|aphel_genesisII)\"|"
+                                           "desc[[:blank:]]+=[[:blank:]]+\"[^\"]+ epdu [^\"]+\")";
+static const char * NUTConfigCanSnmpPattern = "[[:blank:]]driver[[:blank:]]+=[[:blank:]]+\"snmp-ups\"";
+
+std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std::vector<std::string> &texts, const char *pattern) {
+    log_debug("regex: %s", pattern );
+    cxxtools::Regex reg( pattern, REG_EXTENDED | REG_ICASE );
+    for( auto it = texts.begin(); it != texts.end(); ++it ) {
+        if( reg.match( *it ) ) {
+            log_debug("regex: match found");
+            return it;
+        }
+    }
+    log_debug("regex: not found");    
+    return texts.end();
+}
+
+
+bool NUTConfigurator::match( const std::vector<std::string> &texts, const char *pattern) {
+    return stringMatch(texts,pattern) != texts.end();
+}
+
+bool NUTConfigurator::isEpdu( const std::vector<std::string> &texts) {
+    return match( texts, NUTConfigEpduPattern );
+}
+
+bool NUTConfigurator::isUps( const std::vector<std::string> &texts) {
+    return ! isEpdu(texts);
+}
+
+bool NUTConfigurator::canSnmp( const std::vector<std::string> &texts) {
+    return match( texts, NUTConfigCanSnmpPattern );
+}
+
+bool NUTConfigurator::canXml( const std::vector<std::string> &texts) {
+    return match( texts, NUTConfigXMLPattern );
+}
+
+std::vector<std::string>::const_iterator NUTConfigurator::getBestSnmpMib(const std::vector<std::string> &configs) {
+    static const std::vector<std::string> snmpMibPriority = {
+        "pw", "mge", ".+"
+    };
+    for( auto mib = snmpMibPriority.begin(); mib != snmpMibPriority.end(); ++mib ) {
+        std::string pattern = ".+[[:blank:]]mibs[[:blank:]]+=[[:blank:]]+\"" + *mib + "\"";
+        auto it = stringMatch( configs, pattern.c_str() );
+        if( it != configs.end() ) return it;
+    }
+    return configs.end();
+}
+
+std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::vector<std::string> &configs) {
+    // don't do any complicated decision on empty/single set
+    if( configs.size() <= 1 ) return configs.begin();
+    
+    std::string result;
+    log_debug("isEpdu: %i; isUps: %i; canSnmp: %i; canXml: %i", isEpdu(configs), isUps(configs), canSnmp(configs), canXml(configs) ); 
+    if( canSnmp( configs ) && isEpdu( configs ) ) {
+        log_debug("SNMP capable EPDU => Use SNMP");
+        return getBestSnmpMib( configs );
+    } else {
+        if( canXml( configs ) ) {
+            log_debug("XML capable device => Use XML");
+            return stringMatch( configs, NUTConfigXMLPattern );
+        } else {
+            log_debug("SNMP capable device => Use SNMP");
+            return getBestSnmpMib( configs );
+        }
+    }
+};
+
 
 void NUTConfigurator::updateNUTConfig() {
     std::ofstream cfgFile;
@@ -65,24 +138,6 @@ void NUTConfigurator::updateNUTConfig() {
 }
 
 bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType ) {
-
-    //XXX: I know this is ugly, but this is only one way worked for me
-    //     in the future we might want to extend the functions to support more
-    //     arguments like SNMP community string, so the declaration will differ
-    static const std::vector<std::function<int(
-            const std::string&,
-            const shared::CIDRAddress&,
-            std::vector<std::string>&
-            )>> SCAN_FUNCTIONS
-    {
-        [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_snmp(name, ip, out);
-        },
-        [&](const std::string& name, const shared::CIDRAddress& ip, std::vector<std::string>& out) -> int {
-            return shared::nut_scan_xml_http(name, ip, out);
-        }
-    };
-
     log_debug("NUT configurator");
     if( eventType != 1 && eventType != 2 ) {
         // TODO: enum? numbers come from agents.h bios_asset_encode/extract
@@ -96,30 +151,24 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
         return false;
     }
 
-    for (const auto& f : SCAN_FUNCTIONS) {
+    std::vector<std::string> configs;
+    shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
+    shared::nut_scan_xml_http( name, shared::CIDRAddress(IP), configs );
 
-        std::vector<std::string> configs;
-        int ret = f( name, shared::CIDRAddress(IP), configs );
-
-        if (ret == -1)
-            continue;
-
-        auto it = selectBest( configs );
-        if( it == configs.end() ) {
-            log_debug("nutscanner failed");
-            continue;
-        }
-        std::string deviceDir = NUT_PART_STORE;
-        shared::mkdir_if_needed( deviceDir.c_str() );
-        std::ofstream cfgFile;
-        log_debug("creating new config file %s/%s", NUT_PART_STORE, name );
-        cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
-        cfgFile << *it;
-        cfgFile.close();
-        updateNUTConfig();
-        return true;
+    auto it = selectBest( configs );
+    if( it == configs.end() ) {
+        log_debug("nut-scanner failed, no suitable configuration found");
+        return false;
     }
-    return false;
+    std::string deviceDir = NUT_PART_STORE;
+    shared::mkdir_if_needed( deviceDir.c_str() );
+    std::ofstream cfgFile;
+    log_debug("creating new config file %s/%s", NUT_PART_STORE, name );
+    cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
+    cfgFile << *it;
+    cfgFile.close();
+    updateNUTConfig();
+    return true;
 }
 
 bool Configurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType )
