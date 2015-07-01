@@ -105,9 +105,7 @@ TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measure
 
 #define GET_MEASUREMENTS_BEGIN \
     { \
-        out = ymsg_new(YMSG_REPLY); \
-        REQUIRE ( out != NULL); \
-        persist::get_measurements(out, &out_s, in, in_s); \
+        persist::get_measurements(&out, &out_s, in, in_s); \
 \
         REQUIRE ( out_s != NULL ); \
         REQUIRE ( str_eq (out_s, "return_measurements") ); \
