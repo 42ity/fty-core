@@ -56,15 +56,7 @@ int main (int argc, char *argv []) {
                 ymsg_destroy(&out);
                 continue;
             }
-            ymsg_set_version(out, ymsg_version(in));
-            ymsg_set_seq(out, ymsg_seq(in));
-            ymsg_set_rep(out, ymsg_rep(in));
-            if(ymsg_is_repeat(in)) { // default is not to repeat
-                zchunk_t *chunk = ymsg_get_request(in);
-                ymsg_set_request(out, &chunk);
-            }
-            bios_agent_sendto(client, (char*)bios_agent_sender(client),
-                        out_subj, &out);
+            bios_agent_replyto(client, (char*)bios_agent_sender(client), out_subj, &out, in );
             ymsg_destroy(&out);
             free(out_subj);
         }
