@@ -18,7 +18,7 @@ int main (int argc, char *argv []) {
         return 0;
     }
 
-    const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
+    const char *addr = (argc == 1) ? MLM_ENDPOINT : argv[1];
     std::map<std::string, std::pair<int, time_t>> cache;
 
     if(agent.init())
@@ -43,11 +43,14 @@ int main (int argc, char *argv []) {
     while(!zsys_interrupted) {
         // Go through all the stuff we monitor
         char **what = agent.variants;
-        while(what != NULL && *what != NULL) {
+        while(what != NULL && *what != NULL && !zsys_interrupted) {
             // Get measurement
             ymsg_t* msg = agent.get_measurement(*what);
-            if(msg == NULL)
+            if(msg == NULL) {
+                zclock_sleep (100);
+                what++;
                 continue;
+            }
             // Check cache to see if updated value needs to be send
             auto cit = cache.find(*what);
             if((cit == cache.end()) ||
@@ -79,7 +82,7 @@ int main (int argc, char *argv []) {
             what++;
         }
         // Hardcoded monitoring interval
-        sleep(5);
+        zclock_sleep(NUT_POLLING_INTERVAL);
     }
 
     bios_agent_destroy(&client);
