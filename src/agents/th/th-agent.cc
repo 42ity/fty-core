@@ -7,51 +7,30 @@
 #include <map>
 #include <string>
 
-int agent_init();
-int agent_close();
 ymsg_t* get_measurement(char* what);
+
+char *vars[] = {
+    "temperature.TH1",
+    "humidity.TH1",
+    "temperature.TH2",
+    "humidity.TH2",
+    "temperature.TH3",
+    "humidity.TH3",
+    "temperature.TH4",
+    "humidity.TH4",
+    NULL
+};
 
 sample_agent agent = {
     "th-agent",
-    agent_init,
-    agent_close,
     NULL,
+    NULL,
+    vars,
     "%s",
     "%s",
     50,
     get_measurement
 };
-
-int agent_init() {
-    agent.variants = (char**)malloc(sizeof(char*) * 9);
-    for(int i = 0; i<4; i++) {
-        agent.variants[i*2]   = strdup("temperature.TH1");
-        agent.variants[i*2][sizeof("temperature.T")] += i;
-        agent.variants[i*2+1] = strdup("humidity.TH1");
-        agent.variants[i*2+1][sizeof("humidity.T")] += i;
-    }
-    agent.variants[8] = NULL;
-    log_info("TH agent initialized");
-    log_info("Monitoring following sensors and values:");
-    char** tmp = agent.variants;
-    while(*tmp != NULL) {
-        log_info("    * %s", *tmp);
-        tmp++;
-    }
-    return 0;
-}
-
-int agent_close() {
-    char **dest = agent.variants;
-    while(*dest) {
-        free(*dest);
-        *dest = NULL;
-        dest++;
-    }
-    free(agent.variants);
-    agent.variants = NULL;
-    return 0;
-}
 
 struct c_item {
     time_t time;

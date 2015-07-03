@@ -17,7 +17,7 @@
 #define RESET        0x1e   //000   1111    0
 
 
-int compensate_humidity(int H, int T, int32_t* out) {
+void compensate_humidity(int H, int T, int32_t* out) {
     double tmp = H;
     // Get linear relative humidity
     tmp = -2.0468 + 0.0367 * tmp - 1.5955E-6 * tmp * tmp;
@@ -27,13 +27,11 @@ int compensate_humidity(int H, int T, int32_t* out) {
     return 0;
 }
 
-int compensate_temp(int in, int32_t *out) {
+void compensate_temp(int in, int32_t *out) {
     // Initial compensation for 5V taken from datasheet
     *out = in - 4010;
     return 0;
 }
-
-int usleep(unsigned int);
 
 void msleep(unsigned int m) {
     usleep(m*1000);
@@ -194,15 +192,21 @@ int get_measurement(int fd, unsigned char what) {
 bool device_connected(int fd) {
     if(fd < 0)
         return false;
-    ioctl(fd, TIOCCBRK);
+    if(ioctl(fd, TIOCCBRK) < 0)
+        goto dev_con_err;
     sleep(1);
-    ioctl(fd, TIOCSBRK);
+    if(ioctl(fd, TIOCSBRK) < 0)
+        goto dev_con_err;
     sleep(1);
     int bytes = 0;
     char buf = 'x';
-    ioctl(fd, TIOCINQ, &bytes);
+    if(ioctl(fd, TIOCINQ, &bytes) < 0)
+        goto dev_con_err;
     if(bytes > 0 && read(fd, &buf, 1) && buf == '\0')
         return true;
+    return false;
+dev_con_err:
+    close(fd);
     return false;
 }
 
