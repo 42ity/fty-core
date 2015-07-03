@@ -142,7 +142,7 @@ int read_byte(int fd, unsigned char *val, int ack) {
     if(ack)
         set_tx(fd, 0);
     else
-        set_tx(fd, 0);
+        set_tx(fd, 1);
     long_tick(fd, 1);
     long_tick(fd, 0);
     set_tx(fd, 1);
