@@ -36,8 +36,8 @@ int main (int argc, char *argv []) {
         return 0;
     }
     log_info("Connected to %s", addr);
-    bios_agent_set_producer(client, bios_get_stream_measurements());
-    log_info("Publishing to %s as %s", bios_get_stream_measurements(), id.c_str());
+    bios_agent_set_producer(client, bios_get_stream_main());
+    log_info("Publishing to %s as %s", bios_get_stream_main(), id.c_str());
 
     // Until interrupted
     while(!zsys_interrupted) {
