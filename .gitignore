@@ -103,6 +103,7 @@ test-totalpower
 test-web
 test-libbiosapiut
 test-db-asset-crud
+test-autoconfig
 agent-inventory
 agent-dbstore
 agent-nut
