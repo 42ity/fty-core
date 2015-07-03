@@ -1,6 +1,8 @@
 #ifndef SRC_INCLUDE_DEFS_H__
 #define SRC_INCLUDE_DEFS_H__
 
+#include "str_defs.h"
+
 //TODO: fix that better - this will work until we'll don't touch the initdb.sql
 #define UI_PROPERTIES_CLIENT_ID 5
 #define DUMMY_DEVICE_ID 1
