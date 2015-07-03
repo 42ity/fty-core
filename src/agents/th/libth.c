@@ -164,7 +164,7 @@ int write_byte(int fd, unsigned char val) {
     return err;
 }
 
-int get_measurement(int fd, unsigned char what) {
+int get_th_data(int fd, unsigned char what) {
     unsigned char tmp[2];
     unsigned char crc;
 

@@ -16,7 +16,7 @@ int open_device(const char* dev);
 //! Check whether sensor is connected
 bool device_connected(int fd);
 //! Read measurement from sensor
-int get_measurement(int fd, unsigned char what);
+int get_th_data(int fd, unsigned char what);
 //! Fix temperature readings from the sensor
 int compensate_temp(int in, int32_t *out);
 //! Fix humidity readings from the sensor

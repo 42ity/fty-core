@@ -64,8 +64,8 @@ ymsg_t* get_measurement(char* what) {
             data.broken = true;
         } else {
             reset_device(fd);
-            data.T = get_measurement(fd, MEASURE_TEMP);
-            data.H = get_measurement(fd, MEASURE_HUMI);
+            data.T = get_th_data(fd, MEASURE_TEMP);
+            data.H = get_th_data(fd, MEASURE_HUMI);
             compensate_temp(data.T, &data.T);
             compensate_humidity(data.H, data.T, &data.H);
             close(fd);
