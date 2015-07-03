@@ -19,9 +19,6 @@
 #
 # Description: starts or stops the $BIOS daemons installed in $HOME
 
-# Names of daemons to (build and) start up for the test
-DAEMONS="agent-dbstore agent-nut agent-cm agent-alert agent-alert-smtp driver-nmap netmon"
-
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -29,6 +26,9 @@ DAEMONS="agent-dbstore agent-nut agent-cm agent-alert agent-alert-smtp driver-nm
 determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+# Names of daemons to (build and) start up for the test
+DAEMONS="`sed -n 's|ExecStart=@libexecdir@/bios/||p' "$CHECKOUTDIR"/tools/*.service.in`"
 
 if [ ! -x "$BUILDSUBDIR/config.status" ]; then
     echo "Cannot find $BUILDSUBDIR/config.status, using preinstalled system binaries..."
