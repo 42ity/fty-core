@@ -641,6 +641,30 @@ test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
 			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
 EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
+### agent autoconfig tests
+
+check_PROGRAMS += 	test-autoconfig
+test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
+                          src/agents/autoconfig/configurator.cc \
+                          src/shared/filesystem.cc
+
+test_autoconfig_LDADD = \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-test-run.la \
+			libpriv-cidr.la \
+			libpriv-subprocess.la \
+			libpriv-nutscan.la \
+			libpriv-utils.la
+
+test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi
+
+test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/autoconfig/ \
+			-DTDIR=$(abs_top_srcdir)/tests/agents/autoconfig/
+
+
 ###
 
 
@@ -942,7 +966,9 @@ server_agent_SOURCES =	src/agents/server-agent/server-agent.cc src/shared/sample
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 server_agent_LDADD = \
-			 libpriv-proto.la libpriv-log.la
+			 libpriv-proto.la \
+			 libpriv-log.la \
+			 libpriv-defs.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
@@ -1094,7 +1120,7 @@ agent_autoconfig_LDADD = \
 			libpriv-utils-ymsg.la
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} ${LIBNUTSCAN_LIBS} -lcidr -lbiosapi
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 

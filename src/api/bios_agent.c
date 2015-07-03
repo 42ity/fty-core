@@ -171,6 +171,8 @@ bios_agent_recv (bios_agent_t *self) {
     if (!zmsg) {
         return NULL;
     }
+    if ( !is_ymsg (zmsg) )
+        printf ("NOT YMSG\n");
     ymsg_t *ymsg = ymsg_decode (&zmsg);
     return ymsg;
 }

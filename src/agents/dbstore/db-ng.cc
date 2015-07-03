@@ -15,7 +15,7 @@
 int main (int argc, char *argv []) {
     
     log_open();
-    log_info ("persistence.measurement started");
+    log_info ("## agent: %s started", BIOS_AGENT_NAME_DB_MEASUREMENT);
     
     // Basic settings
     if (argc > 3) {
@@ -28,14 +28,9 @@ int main (int argc, char *argv []) {
     }
 
     // Create a client
-    mlm_client_t *client = mlm_client_new();
+    bios_agent_t *client = bios_agent_new(addr, BIOS_AGENT_NAME_DB_MEASUREMENT);
     if(!client) {
-        log_error ("agent-dbstore: error mlm_client_new");
-        return 1;
-    }
-    if(mlm_client_connect(client, addr, 1000, BIOS_AGENT_NAME_DB_MEASUREMENT) != 0) {
-        log_error ("agent-dbstore: server not reachable at '%s'", addr);
-        mlm_client_destroy(&client);
+        log_error ("agent-dbstore: error bios_agent_new ()");
         return 1;
     }
 
@@ -43,74 +38,40 @@ int main (int argc, char *argv []) {
     mlm_client_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
     mlm_client_set_consumer(client, bios_get_stream_measurement(), ".*");
     while(!zsys_interrupted) {
-        _scoped_zmsg_t *msg = mlm_client_recv(client);
-        if(msg == NULL)
+        _scoped_ymsg_t *in = bios_agent_recv(client);
+        if ( in == NULL )
             continue;
-        log_info ("Command is '%s'", mlm_client_command(client));
+        log_info ("Command is '%s'", bios_agent_command(client));
         // Mailbox deliver is direct message
-        if(streq (mlm_client_command(client), "MAILBOX DELIVER")) {
-            if(is_ymsg(msg)) {
-                _scoped_ymsg_t *in = ymsg_decode(&msg);
-                if(ymsg_id(in) != YMSG_SEND) {
-                    log_warning("Got REPLY ymsg, that looks weird, discarding!\n");
-                    ymsg_destroy(&in);
-                    continue;
-                }
-                _scoped_ymsg_t *out = NULL;
-                char* out_subj = NULL;
-                persist::process_ymsg(&out, &out_subj, in, mlm_client_subject(client));
-                if(out_subj == NULL) {
-                    ymsg_destroy(&in);
-                    ymsg_destroy(&out);
-                    continue;
-                }
-                ymsg_set_version(out, ymsg_version(in));
-                ymsg_set_seq(out, ymsg_seq(in));
-                ymsg_set_rep(out, ymsg_rep(in));
-                if(ymsg_is_repeat(in)) { // default is not to repeat
-                    zchunk_t *chunk = ymsg_get_request(in);
-                    ymsg_set_request(out, &chunk);
-                }
-                _scoped_zmsg_t *out_z = ymsg_encode(&out);
-                if(out_z != NULL)
-                mlm_client_sendto(client, (char*)mlm_client_sender(client),
-                                          out_subj, NULL, 0, &out_z);
+        if(streq (bios_agent_command(client), "MAILBOX DELIVER"))
+        {
+            if(ymsg_id(in) != YMSG_SEND) {
+                log_warning("Got REPLY ymsg, that looks weird, discarding!\n");
+                ymsg_destroy(&in);
+                continue;
+            }
+            _scoped_ymsg_t *out = NULL;
+            char* out_subj = NULL;
+            persist::process_ymsg(&out, &out_subj, in, bios_agent_subject(client));
+            if ( ( out_subj == NULL ) || ( out == NULL ) ){
                 ymsg_destroy(&in);
                 ymsg_destroy(&out);
-                zmsg_destroy(&out_z);
-                free(out_subj);
-            } else {
-                // Verify it is for us
-                if(!streq(mlm_client_subject(client), "persistence")) {
-                    log_warning("Got direct message with wrong subject, discarding!\n");
-                    continue;
-                }
-
-                _scoped_zmsg_t *rep = persist::process_message(&msg);
-                if(rep != NULL) {
-                    // Send a reply back
-                    mlm_client_sendto(client, (char*)mlm_client_sender(client),
-                                            "persistence", NULL, 0, &rep);
-                } else
-                    continue;
+                continue;
             }
-        // Other option is stream aka publish subscribe
-        } else {
-            // New measurements publish
-            if(is_ymsg(msg)) {
-                std::string topic = mlm_client_subject(client);
-                persist::process_measurement(topic, &msg);
-            // Legacy stuff
-            } else {
-                _scoped_zmsg_t *rep = persist::process_message(&msg);
-                if(rep != NULL)
-                    zmsg_destroy(&rep);
-            }
+            bios_agent_replyto(client, (char*)bios_agent_sender(client), out_subj, &out, in );
+            ymsg_destroy(&out);
+            free(out_subj);
         }
-        zmsg_destroy(&msg);
+        // Other option is stream aka publish subscribe
+        else {
+            // New measurements publish
+            std::string topic = bios_agent_subject(client);
+            persist::process_measurement(topic, &in);
+        }
+        ymsg_destroy (&in);
     }
 
-    mlm_client_destroy (&client);
+    bios_agent_destroy (&client);
     log_close();
     return 0;
 }

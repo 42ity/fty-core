@@ -27,12 +27,7 @@ Description: autoconfiguration agent
 #include "utils.h"
 #include "asset_types.h"
 #include "utils_ymsg.h"
-#include "nutscan.h"
 
-void Autoconfig::onStart() {
-    nutscan_init();
-}
-    
 void Autoconfig::onReply( ymsg_t **message )
 {
     if( ! message || ! *message ) return;
