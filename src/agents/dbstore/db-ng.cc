@@ -35,8 +35,8 @@ int main (int argc, char *argv []) {
     }
 
     // We are listening for measurements
-    mlm_client_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
-    mlm_client_set_consumer(client, bios_get_stream_measurements(), ".*");
+    bios_agent_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
+    bios_agent_set_consumer(client, bios_get_stream_measurements(), ".*");
     while(!zsys_interrupted) {
         _scoped_ymsg_t *in = bios_agent_recv(client);
         if ( in == NULL )
