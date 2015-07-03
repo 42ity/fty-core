@@ -972,6 +972,17 @@ server_agent_LDADD = \
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
+client_PROGRAMS += 	th-agent
+
+th_agent_SOURCES =	src/agents/th/th-agent.cc src/shared/sample_agent.cc src/agents/th/libth.c
+
+th_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+th_agent_LDADD = \
+			 libpriv-proto.la libpriv-log.la
+
+th_agent_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
+
 bin_PROGRAMS += 		generate_measurement
 
 generate_measurement_SOURCES =	tools/generate_measurement.cc
@@ -1369,7 +1380,7 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
-			bios-agent-autoconfig.service
+			bios-agent-autoconfig.service bios-agent-th.service
 
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
