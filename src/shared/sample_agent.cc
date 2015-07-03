@@ -18,10 +18,10 @@ int main (int argc, char *argv []) {
         return 0;
     }
 
-    const char *addr = (argc == 1) ? MLM_ENDPOINT : argv[1];
+    const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
     std::map<std::string, std::pair<int, time_t>> cache;
 
-    if(agent.init())
+    if(agent.init != NULL && agent.init())
         return -1;
 
     // Form ID from hostname and agent name
@@ -37,7 +37,7 @@ int main (int argc, char *argv []) {
     }
     log_info("Connected to %s", addr);
     bios_agent_set_producer(client, bios_get_stream_main());
-    log_info("Publishing to %s as %s",bios_get_stream_main(), id.c_str());
+    log_info("Publishing to %s as %s", bios_get_stream_main(), id.c_str());
 
     // Until interrupted
     while(!zsys_interrupted) {
@@ -65,9 +65,9 @@ int main (int argc, char *argv []) {
                                             strlen(hostname) +
                                             strlen(*what) + 5);
                 sprintf(topic, agent.at, hostname);
-                ymsg_set_string(msg, "quantity", topic);
-                sprintf(topic, agent.measurement, *what);
                 ymsg_set_string(msg, "device", topic);
+                sprintf(topic, agent.measurement, *what);
+                ymsg_set_string(msg, "quantity", topic);
                 strcat(topic, "@");
                 sprintf(topic + strlen(topic), agent.at, hostname);
                 log_info("Sending new measurement '%s' with value %" PRIi32 " * 10^%" PRIi32,
@@ -86,5 +86,7 @@ int main (int argc, char *argv []) {
     }
 
     bios_agent_destroy(&client);
+    if(agent.close != NULL && agent.close())
+        return -1;
     return 0;
 }
