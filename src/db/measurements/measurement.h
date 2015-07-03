@@ -84,6 +84,13 @@ select_measurement_last_web_byElementId (
         m_msrmnt_value_t& value,
         m_msrmnt_scale_t& scale);
 
+reply_t
+select_measurement_last_web_byTopicLike (
+        tntdb::Connection &conn,
+        const std::string& topic,
+        m_msrmnt_value_t& value,
+        m_msrmnt_scale_t& scale);
+
 } // namespace persist
 
 #endif // SRC_DB_MEASUREMENTS_MEASUREMENT_H__

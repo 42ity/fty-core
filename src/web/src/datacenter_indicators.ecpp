@@ -29,7 +29,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"trend_power_last_week", "<zero>"},
     {"trend_power_last_month", "<zero>"},
 
-    {"temperature", "<zero>"},
+    {"temperature", "temperature.TH%"},
     {"avg_temperature_last_day", "<zero>"},
     {"avg_temperature_last_week", "<zero>"},
     {"avg_temperature_last_month", "<zero>"},
@@ -46,7 +46,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"trend_temperature_last_week", "<zero>"},
     {"trend_temperature_last_month", "<zero>"},
 
-    {"humidity", "<zero>"},
+    {"humidity", "humidity.TH%"},
     {"avg_humidity_last_day", "<zero>"},
     {"avg_humidity_last_week", "<zero>"},
     {"avg_humidity_last_month", "<zero>"},
@@ -76,7 +76,13 @@ total_datacenter_power(
 
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
-    auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+    reply_t reply;
+    if (src.find('%') != std::string::npos) {
+        reply = persist::select_measurement_last_web_byTopicLike(conn, src, value, scale);
+    }
+    else {
+        reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+    }
 
     if (reply.rv != 0)
         return 0.0f;
