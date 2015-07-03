@@ -966,7 +966,9 @@ server_agent_SOURCES =	src/agents/server-agent/server-agent.cc src/shared/sample
 server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 server_agent_LDADD = \
-			 libpriv-proto.la libpriv-log.la
+			 libpriv-proto.la \
+			 libpriv-log.la \
+			 libpriv-defs.la
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
