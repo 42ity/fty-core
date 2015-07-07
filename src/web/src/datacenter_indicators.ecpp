@@ -65,7 +65,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
 };
 
 float
-total_datacenter_power(
+get_dc_indicator(
     tntdb::Connection& conn,
     const std::string& src,
     a_elmnt_id_t id)
@@ -198,7 +198,7 @@ try {
         for(size_t P = 0; P < requestedParams.size(); P++ ) {
            const std::string& key = requestedParams[P];
            const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
-           json  << "\t\t\t\"" << key << "\": "<< total_datacenter_power(conn, val, atoi( DCs[D].c_str() ) );
+           json  << "\t\t\t\"" << key << "\": "<< get_dc_indicator(conn, val, atoi( DCs[D].c_str() ) );
            json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
         }
         json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
