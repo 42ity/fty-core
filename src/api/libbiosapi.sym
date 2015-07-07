@@ -64,6 +64,7 @@ global:
         bios_get_stream_measurements;
         bios_get_stream_assets;
         bios_get_stream_alerts;
+        bios_get_stream_networks;
         bios_get_streams;
         bios_agent_seq;
 

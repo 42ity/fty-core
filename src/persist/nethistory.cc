@@ -321,9 +321,7 @@ void
 NetHistory::
 setAddress(const shared::CIDRAddress& cidr_address)
 {
-    // We are not sure, if the passed address is in a network format, so convert it now
-    shared::CIDRAddress newaddr = cidr_address.network();  
-    if ( ( _address != newaddr ) && ( this->getState() != ObjectState::OS_DELETED ) 
+    if ( ( this->getState() != ObjectState::OS_DELETED )
         && ( this->getState() != ObjectState::OS_INSERTED ) )
     {
         switch (this->getState()){
@@ -331,7 +329,7 @@ setAddress(const shared::CIDRAddress& cidr_address)
                 this->setState(ObjectState::OS_UPDATED);
             case ObjectState::OS_UPDATED:
             case ObjectState::OS_NEW:
-                 _address = newaddr;
+                 _address = cidr_address;
                  break;
             default:
                 // TODO log this should never happen

@@ -37,22 +37,26 @@ int main (int argc, char *argv []) {
     // We are listening for measurements
     bios_agent_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
     bios_agent_set_consumer(client, bios_get_stream_measurements(), ".*");
+    bios_agent_set_consumer(client, bios_get_stream_networks(), ".*");
     while(!zsys_interrupted) {
+
         _scoped_ymsg_t *in = bios_agent_recv(client);
         if ( in == NULL )
             continue;
-        log_info ("Command is '%s'", bios_agent_command(client));
+        log_debug ("Command is '%s'", bios_agent_command(client));
+
+        const char *command = bios_agent_command(client);
+
         // Mailbox deliver is direct message
-        if(streq (bios_agent_command(client), "MAILBOX DELIVER"))
-        {
-            if(ymsg_id(in) != YMSG_SEND) {
+        if (streq (command, "MAILBOX DELIVER")) {
+            if (ymsg_id(in) != YMSG_SEND) {
                 log_warning("Got REPLY ymsg, that looks weird, discarding!\n");
                 ymsg_destroy(&in);
                 continue;
             }
             _scoped_ymsg_t *out = NULL;
             char* out_subj = NULL;
-            persist::process_ymsg(&out, &out_subj, in, bios_agent_subject(client));
+            persist::process_mailbox_deliver(&out, &out_subj, in, bios_agent_subject(client));
             if ( ( out_subj == NULL ) || ( out == NULL ) ){
                 ymsg_destroy(&in);
                 ymsg_destroy(&out);
@@ -62,11 +66,25 @@ int main (int argc, char *argv []) {
             ymsg_destroy(&out);
             free(out_subj);
         }
-        // Other option is stream aka publish subscribe
+        // stream deliver
+        else if (streq (command, "STREAM DELIVER")) {
+
+            const char *stream = bios_agent_address(client);
+            if (streq (stream, bios_get_stream_measurements())) {
+                // New measurements publish
+                std::string topic = bios_agent_subject(client);
+                persist::process_measurement(topic, &in);
+            }
+            else if (streq (stream, bios_get_stream_networks())) {
+                persist::process_networks(&in);
+            }
+            else {
+                log_warning("Unsupported stream '%s' for STREAM DELIVER", stream);
+            }
+        }
+
         else {
-            // New measurements publish
-            std::string topic = bios_agent_subject(client);
-            persist::process_measurement(topic, &in);
+                log_warning("Unsupported command '%s'", command);
         }
         ymsg_destroy (&in);
     }

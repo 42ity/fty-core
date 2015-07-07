@@ -5,7 +5,7 @@ Requires=malamute.service
 
 [Service]
 Type=simple
-ExecStart=@libexecdir@/bios/netmon
+ExecStart=@libexecdir@/bios/agent-netmon
 
 [Install]
 WantedBy=multi-user.target
