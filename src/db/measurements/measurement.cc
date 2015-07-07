@@ -284,5 +284,44 @@ select_measurement_last_web_byElementId (
     return ret;
 }
 
+    reply_t
+select_measurement_last_web_byTopicLike (
+        tntdb::Connection &conn,
+        const std::string& topic,
+        m_msrmnt_value_t& value,
+        m_msrmnt_scale_t& scale)
+{
+    LOG_START;
+    log_debug("topic = %s", topic.c_str());
+
+    reply_t ret;
+    try {
+        tntdb::Statement statement = conn.prepareCached (
+        " SELECT v.value, v.scale FROM"
+        "    v_web_measurement_last v"
+        " WHERE topic LIKE :topic"
+        );
+
+        tntdb::Row row = statement.set ("topic", topic).selectRow();
+        log_debug("[v_bios_measurement_last]: were selected %" PRIu32 " rows", 1);
+
+        row[0].get(value);
+        row[1].get(scale);
+    }
+    catch (const std::exception &e) {
+        ret.rv = -1;
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    catch (...) {
+        log_error("Unknown exception caught!");
+        ret.rv = -1;
+        return ret;
+    }
+    ret.rv = 0;
+    LOG_END;
+    return ret;
+}
+
 } // namespace persist
 
