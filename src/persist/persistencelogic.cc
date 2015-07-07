@@ -757,21 +757,27 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
  * functions for ymsg.
  */
 void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
-    if(in_subj && strncmp(in_subj, "get_measurements", 17) == 0) {
+    if (!in_subj)
+        return;
+
+    if (strncmp(in_subj, "get_measurements", 17) == 0) {
         persist::get_measurements(out, out_subj, in, in_subj);
         return;
     }
-    if( in_subj &&  ( strncmp(in_subj, "alert.", 6) == 0 ) ) {
+    else if (strncmp(in_subj, "alert.", 6) == 0 ) {
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
-    if( streq(in_subj, "get_asset_element") ) {
+    else if (streq(in_subj, "get_asset_element") ) {
         persist::process_get_asset(out, out_subj, in, in_subj);
         return;
     }
-    if( streq(in_subj, "get_asset_extra") ) {
+    else if (streq(in_subj, "get_asset_extra") ) {
         persist::process_get_asset_extra (out, out_subj, in, in_subj);
         return;
+    }
+    else {
+        log_debug("Unknown subject '%s', skipping", in_subj);
     }
 }
 
