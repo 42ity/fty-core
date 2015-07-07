@@ -23,6 +23,16 @@ bool TPUnit::realpowerIsUnknown() const
     return false;
 }
 
+std::vector<std::string> TPUnit::devicesInUnknownState() const
+{
+    std::vector<std::string> result;
+    time_t now = std::time(NULL);
+    for( auto &it : _powerdevices ) {
+        if( now - it.second.time() > TPOWER_MEASUREMENT_REPEAT_AFTER * 2 ) result.push_back( it.first );
+    }
+    return result;
+}
+
 void TPUnit::addPowerDevice(const std::string &device)
 {
     _powerdevices[device] = Measurement();

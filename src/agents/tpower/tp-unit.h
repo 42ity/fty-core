@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <map>
 #include <string>
+#include <vector>
 #include <ctime>
 
 #include "alert-measurement.h"
@@ -45,7 +46,10 @@ class TPUnit {
     bool realpowerIsUnknown() const;
     //\! \brief returns true if totalpower can be calculated.
     bool realpowerIsKnown() const { return ! realpowerIsUnknown(); }
-    
+
+    //\! \brief returns list of devices in unknown state
+    std::vector<std::string> devicesInUnknownState() const;
+
     //\! \brief add powerdevice to unit 
     void addPowerDevice(const std::string &device);
 
