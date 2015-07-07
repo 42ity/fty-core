@@ -107,7 +107,7 @@ check_completeness
 (int64_t last_container_timestamp, int64_t last_average_timestamp, int64_t end_timestamp, const char *step, int64_t& new_start);
 
 /*!
- \brief Wrapper function for persist::get_measurements_averages
+ \brief Wrapper function for persist::select_measurements_averages
 
  Performs the call and takes proper care of the return values
 
@@ -132,7 +132,7 @@ request_averages
  std::map<int64_t, double>& averages, std::string& unit, int64_t& last_average_timestamp, ymsg_t *message_out);
 
 /*!
- \brief Wrapper function for persist::get_measurements_sampled
+ \brief Wrapper function for persist::select_measurements_sampled
 
  Performs the call and takes proper care of the return values
 

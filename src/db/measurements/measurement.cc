@@ -12,7 +12,7 @@
 namespace persist {
 
 reply_t
-get_measurements (
+select_measurements (
         tntdb::Connection &conn,
         uint64_t element_id,
         const char *topic,
@@ -104,7 +104,7 @@ get_measurements (
 }
 
 reply_t
-get_measurements_averages (
+select_measurements_averages (
         tntdb::Connection &conn,
         uint64_t element_id,
         const char *source,
@@ -187,11 +187,11 @@ get_measurements_averages (
         ret.rv = -1;
         return ret;    
     }
-    return get_measurements (conn, element_id, topic.c_str (), start_timestamp, end_timestamp, true, true, measurements, unit);
+    return select_measurements (conn, element_id, topic.c_str (), start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
 reply_t
-get_measurements_sampled (
+select_measurements_sampled (
         tntdb::Connection &conn,
         uint64_t element_id,
         const char *topic,
@@ -201,11 +201,11 @@ get_measurements_sampled (
         std::string& unit)
 {
     assert (topic);
-    return get_measurements (conn, element_id, topic, start_timestamp, end_timestamp, true, true, measurements, unit);
+    return select_measurements (conn, element_id, topic, start_timestamp, end_timestamp, true, true, measurements, unit);
 }
 
 reply_t
-get_device_name_from_element_id (
+select_device_name_from_element_id (
         tntdb::Connection &conn,
         uint64_t element_id,
         std::string& device_name)
@@ -250,7 +250,7 @@ select_measurement_last_web_byElementId (
     log_debug("id = %" PRIu32, id);
 
     std::string name;
-    auto rep = get_device_name_from_element_id(conn, id, name);
+    auto rep = select_device_name_from_element_id(conn, id, name);
     if (rep.rv != 0)
         return rep;
 
