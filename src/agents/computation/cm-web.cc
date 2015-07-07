@@ -74,7 +74,7 @@ process
         // Resolve device name from element id        
         std::string device_name;
         {
-            auto ret = persist::get_device_name_from_element_id (conn, element_id, device_name);
+            auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
             if (ret.rv == -1)
                 log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
             else
