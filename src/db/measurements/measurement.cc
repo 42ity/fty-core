@@ -299,11 +299,11 @@ select_measurement_last_web_byTopicLike (
         tntdb::Statement statement = conn.prepareCached (
         " SELECT v.value, v.scale FROM"
         "    v_web_measurement_last v"
-        " WHERE topic LIKE :topic LIMIT 1"
+        " WHERE topic LIKE :topic"
         );
 
         tntdb::Row row = statement.set ("topic", topic).selectRow();
-        log_debug("[v_bios_measurement]: were selected %" PRIu32 " rows", 1);
+        log_debug("[v_bios_measurement_last]: were selected %" PRIu32 " rows", 1);
 
         row[0].get(value);
         row[1].get(scale);
