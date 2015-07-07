@@ -390,8 +390,6 @@ libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
 			src/msg/common_msg.h \
-			src/msg/netdisc_msg.c \
-			src/msg/netdisc_msg.h \
 			src/msg/nmap_msg.c \
 			src/msg/nmap_msg.h \
 			src/msg/compute_msg.c \
@@ -941,23 +939,21 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-client_PROGRAMS += 	netmon
-netmon_SOURCES = \
+client_PROGRAMS += 	agent-netmon
+agent_netmon_SOURCES = \
 			src/agents/netmon/linux \
-			src/agents/netmon/netmon.c \
-			src/agents/netmon/msg_send.cc \
-			src/agents/netmon/msg_send.h
+			src/agents/netmon/netmon.c
 
-netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
+agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/netmon
 
-netmon_LDADD = \
+agent_netmon_LDADD = \
 			libpriv-defs.la \
 			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-utils.la
+			libpriv-utils.la \
+			libbiosapi.la
 
-netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
+agent_netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
 
 client_PROGRAMS += 	server-agent
 
@@ -1375,7 +1371,7 @@ autopathedit = sed \
 	-e 's|@libdir[@]|$(libdir)|g'
 
 # Here we list the actual service-definition files that should be compiled
-SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
+SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
