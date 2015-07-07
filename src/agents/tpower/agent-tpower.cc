@@ -127,7 +127,7 @@ void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements
                 for( auto &it: devices ) {
                     devicesText += it + " ";
                 }
-                log_debug("Devices preventing total power calculation for %s are: %s", element.first.c_str(), devicesText.c_str() );
+                log_error("Devices preventing total power calculation for %s are: %s", element.first.c_str(), devicesText.c_str() );
             }
         }
     }
