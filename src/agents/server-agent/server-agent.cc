@@ -17,7 +17,7 @@ sample_agent agent = {
     agent_init,
     agent_close,
     NULL,
-    "temperature.%s",
+    "temperature.sys.%s",
     "%s",
     1,
     get_measurement
