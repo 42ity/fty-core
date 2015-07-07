@@ -119,6 +119,16 @@ void  TotalPowerAgent::sendMeasurement(std::map< std::string, TPUnit > &elements
                 send( topic.c_str(), &message );
                 element.second.advertised();
             }
+        } else {
+            // log something from time to time if device power is unknown
+            auto devices = element.second.devicesInUnknownState();
+            if( ! devices.empty() ) {
+                std::string devicesText;
+                for( auto &it: devices ) {
+                    devicesText += it + " ";
+                }
+                log_error("Devices preventing total power calculation for %s are: %s", element.first.c_str(), devicesText.c_str() );
+            }
         }
     }
 }
