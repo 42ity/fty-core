@@ -42,7 +42,7 @@ struct c_item {
 ymsg_t* get_measurement(char* what) {
     static std::map<std::string, c_item> cache;
     ymsg_t* ret = NULL;
-    char *th = what + strlen(what) - 3;
+    char *th = strdup(what + (strlen(what) - 3));
     c_item data, *data_p = NULL;
     log_debug("Measuring %s", what);
 
@@ -87,6 +87,7 @@ ymsg_t* get_measurement(char* what) {
         data_p = &(it->second);
     }
 
+    free(th);
     if((data_p == NULL) || data_p->broken)
         return NULL;
 
