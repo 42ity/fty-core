@@ -24,13 +24,13 @@ void compensate_humidity(int H, int T, int32_t* out) {
     // Temperature compensation
     tmp = ((double)T/100 - 25.0)*(0.01 + 0.00008 * (double)H) + tmp;
     *out = tmp * 100;
-    return 0;
+    return;
 }
 
 void compensate_temp(int in, int32_t *out) {
     // Initial compensation for 5V taken from datasheet
     *out = in - 4010;
-    return 0;
+    return;
 }
 
 void msleep(unsigned int m) {
