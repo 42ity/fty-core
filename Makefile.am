@@ -328,6 +328,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
+			src/db/calculation.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -344,7 +345,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
-						libpriv-csv.la
+						libpriv-csv.la \
+						libpriv-db-measurements.la
 
 noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 
@@ -720,7 +722,8 @@ test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
 			tests/persist/test-monitor-clientinfo.cc \
 			tests/persist/test-measurement.cc \
-			tests/persist/test-realdatamonitor.cc
+			tests/persist/test-realdatamonitor.cc \
+			tests/persist/test-outage.cc
 
 test_db2_LDADD = \
 			libpriv-log.la \
@@ -737,7 +740,8 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
