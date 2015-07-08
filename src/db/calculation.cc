@@ -139,6 +139,7 @@ int
          a_elmnt_id_t dc_id,
          int64_t &outage) // outage in seconds
 {
+    LOG_START;
     std::vector <int64_t> s{};
     std::vector <int64_t> e{};
     reply_t ret = select_alertDates_byRuleName_byInterval_byDcId
@@ -163,14 +164,19 @@ int
     // 'end date' = )
     // timeline = ((()()())) () (()())
     // outage   = ((()()()))+()+(()())
+    std::string parenthesis = "";
     for ( auto &element : timeline )
     {
         // if it is start date, then add to the stack
         // if it is end date, then remove the last start date from the stack
         if ( element.second == true )
+        {
+            parenthesis = parenthesis +"(";
             st.push_back(element);
+        }
         else
         {
+            parenthesis = parenthesis +")";
             if ( st.size() == 0 )
                 return -6;  // this should never happen, but if we do, then end correctly
             // get last element
@@ -180,10 +186,12 @@ int
             // if it was the "biggest" paranthesis then calc time
             if  ( st.empty() )
             {
-                outage += (element.first - last.first);
+                parenthesis = parenthesis + "+";
+                outage = outage + (element.first - last.first);
             }
         }
     }
+    log_debug (" chain: %s", parenthesis.c_str());
     if ( st.size() != 0 )
         return -5;  // this should never happen, but if we do, then end correctly
     else
@@ -316,7 +324,7 @@ reply_t
     // time, value
     std::string unit{};
 
-    reply_t ret = get_measurements (
+    reply_t ret = select_measurements (
         conn,
         dc_id,
         "outage",

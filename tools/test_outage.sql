@@ -329,3 +329,17 @@ INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, d
 (  'upsonbattery@outage.UPS5', '2015-06-09 23:58:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-06-10 11:59:08' ,            0 , @last_datacenter ),
 (  'upsonbattery@outage.UPS1', '2015-06-11 09:37:59' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-06-11 09:43:35' ,            0 , @last_datacenter ),
 (  'upsonbattery@outage.UPS1', '2015-06-11 09:45:32' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-06-11 09:46:31' ,            0 , @last_datacenter );
+
+INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES
+(  'upsonbattery@outage.UPS1', '2015-07-08 13:23:03' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-08 13:57:12' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-08 23:56:51' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 01:58:22' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-09 06:56:51' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 06:58:22' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-09 11:38:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:40:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS2', '2015-07-09 11:39:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:42:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS3', '2015-07-09 11:40:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:50:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-09 11:49:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:55:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS3', '2015-07-09 11:56:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:57:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS2', '2015-07-09 11:58:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-09 11:59:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS5', '2015-07-09 23:58:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-10 11:59:08' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-11 09:37:59' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-11 09:43:35' ,            0 , @last_datacenter ),
+(  'upsonbattery@outage.UPS1', '2015-07-11 09:45:32' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-11 09:46:31' ,            0 , @last_datacenter );
