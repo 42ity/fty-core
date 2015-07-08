@@ -345,8 +345,7 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
-						libpriv-csv.la \
-						libpriv-db-measurements.la
+						libpriv-csv.la
 
 noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 
@@ -728,6 +727,7 @@ test_db2_SOURCES = \
 test_db2_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
+			libpriv-db-measurements.la \
 			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
