@@ -1248,6 +1248,26 @@ agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
                        -I$(abs_top_srcdir)/src/persist \
                        -I$(abs_top_srcdir)/tools
 
+client_PROGRAMS += 	outage
+outage_SOURCES = \
+			src/outage/outage.cc
+
+outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/persist
+
+outage_LDADD = \
+			libpriv-defs.la \
+			libpriv-db.la \
+			libpriv-db-measurements.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-proto.la \
+			libpriv-utils-ymsg.la
+
+
+outage_LDFLAGS =	-lnetlink -ltntdb
+
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
