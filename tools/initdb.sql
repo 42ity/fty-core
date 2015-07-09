@@ -132,7 +132,7 @@ CREATE TABLE t_bios_net_history(
     command         CHAR(1)             NOT NULL,
     mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
-    ip              CHAR(19)            NOT NULL,
+    ip              CHAR(45)            NOT NULL,
     name            VARCHAR(50),
     timestamp       datetime            NOT NULL,
 
