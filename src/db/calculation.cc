@@ -116,19 +116,6 @@ reply_t
 }
 
 
-static
-bool
-    myfunction
-        (std::pair<int64_t, bool> i,
-         std::pair<int64_t, bool> j)
-{
-    if ( i.first == j.first )
-        return ( i.second == true );
-    else
-        return ( i.first < j.first );
-}
-
-
 int
     calculate_outage_byInerval_byDcId
         (tntdb::Connection &conn,
@@ -152,7 +139,11 @@ int
         timeline.push_back(std::make_pair(one, true));
     for ( auto &one : e )
         timeline.push_back(std::make_pair(one, false));
-    std::sort (timeline.begin(), timeline.end(), myfunction);
+    std::sort (timeline.begin(), timeline.end(), 
+            [&] (std::pair<int64_t, bool>i,std::pair<int64_t, bool> j) -> bool { return i.first == j.first ? 
+                                        (i.second == true) : 
+                                        (i.first < j.first); }
+         );
 
     std::vector <std::pair<int64_t, bool>> st{};
     outage = 0;
