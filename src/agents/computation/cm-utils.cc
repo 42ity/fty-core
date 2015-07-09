@@ -281,7 +281,7 @@ request_averages
     log_debug ("Requesting averages element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
                " start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
                element_id, source, type, step, start_timestamp, end_timestamp );
-    auto ret = persist::get_measurements_averages
+    auto ret = persist::select_measurements_averages
     (conn, element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
     switch (ret.rv) {
         case 0:
@@ -308,7 +308,7 @@ request_averages
         case -1:
         default:
         {
-            log_error ("persist::get_measurements_averages ('%" PRIu64"', %s, %s, %s, %" PRId64 ", %" PRId64", ...) failed",
+            log_error ("persist::select_measurements_averages ('%" PRIu64"', %s, %s, %s, %" PRId64 ", %" PRId64", ...) failed",
                     element_id, source, type, step, start_timestamp, end_timestamp);
             ymsg_set_status (message_out, false);
             ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
@@ -330,7 +330,7 @@ request_sampled
     std::string message_str;
     log_debug ("Requesting samples element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
                element_id, topic, start_timestamp, end_timestamp );
-    auto ret = persist::get_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
+    auto ret = persist::select_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
     switch (ret.rv) {
         case 0:
         {
@@ -358,7 +358,7 @@ request_sampled
         case -1:
         default:
         {
-            log_error ("persist::get_measurements_sampled ('%" PRIu64"', %s, %" PRId64 ", %" PRId64", ...) failed",
+            log_error ("persist::select_measurements_sampled ('%" PRIu64"', %s, %" PRId64 ", %" PRId64", ...) failed",
                     element_id, topic, start_timestamp, end_timestamp);
             ymsg_set_status (message_out, false);
             ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
