@@ -140,7 +140,8 @@ int
     for ( auto &one : e )
         timeline.push_back(std::make_pair(one, false));
     std::sort (timeline.begin(), timeline.end(), 
-            [&] (std::pair<int64_t, bool>i,std::pair<int64_t, bool> j) -> bool { return i.first == j.first ? 
+            [&] (std::pair<int64_t, bool>i,std::pair<int64_t, bool> j) 
+                -> bool { return i.first == j.first ? 
                                         (i.second == true) : 
                                         (i.first < j.first); }
          );
@@ -338,7 +339,7 @@ int
     calculate_total_outage_byDcId
         (tntdb::Connection &conn,
          a_elmnt_id_t dc_id,
-         double &sum)
+         int64_t &sum)
 {
     // ASSUMPTION: start_date should be stored in ext_attrubutes for the DC
     // with the key "dc_start_date"
@@ -363,9 +364,40 @@ int
     sum = 0;
     for ( auto &one_outage : measurements )
     {
-        sum +=one_outage.second;
+        sum += one_outage.second;
     }
     return 0;
 }
+
+static
+int
+    calculate_total_running_time 
+        (tntdb::Connection &conn,
+         a_elmnt_id_t dc_id,
+         int64_t &sum)
+{
+    sum = time (NULL) -  1435708800; // NOW  - 01.07.2015 in seconds
+    return 0;
+}
+
+int
+    calculate_uptime_total_byDcId
+        (tntdb::Connection &conn,
+         a_elmnt_id_t dc_id,
+         int64_t &uptime,
+         int64_t &total)
+{
+    int64_t outage = 0;
+    int rv = calculate_total_outage_byDcId
+        (conn, dc_id, outage);
+    if ( rv )
+        return rv;
+    rv = calculate_total_running_time 
+        (conn, dc_id, total);
+    uptime = total - outage;
+    return rv;
+}
+
+
 
 } // end namespace

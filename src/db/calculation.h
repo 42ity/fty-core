@@ -74,6 +74,13 @@ int
     calculate_total_outage_byDcId
         (tntdb::Connection &conn,
          a_elmnt_id_t dc_id,
-         double &sum);
+         int64_t &sum);
+
+int
+    calculate_uptime_total_byDcId
+        (tntdb::Connection &conn,
+         a_elmnt_id_t dc_id,
+         int64_t &uptime,
+         int64_t &total);
 
 } // end namespace
