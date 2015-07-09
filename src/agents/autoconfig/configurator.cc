@@ -127,14 +127,18 @@ void NUTConfigurator::updateNUTConfig() {
         device.close();
     }
     cfgFile.close();
-    std::vector<std::string> _argv = {"systemctl", "restart", "nut-driver"};
-    shared::SubProcess systemd( _argv );
-    if( systemd.run() ) {
-        int restart = systemd.wait();
-        log_debug("nut-driver restart result: %i (%s)", restart, (restart == 0 ? "ok" : "failed"));
-    } else {
-        log_debug("can't run systemctl command");
-    }        
+    
+    std::vector<std::string> services = {"nut-driver","nut-server"};
+    for( auto &service : services ) {
+        std::vector<std::string> _argv = {"systemctl", "restart", service };
+        shared::SubProcess systemd( _argv );
+        if( systemd.run() ) {
+            int restart = systemd.wait();
+            log_debug("%s restart result: %i (%s)", service.c_str(), restart, (restart == 0 ? "ok" : "failed"));
+        } else {
+            log_debug("can't run systemctl command");
+        }
+    }
 }
 
 bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType ) {
