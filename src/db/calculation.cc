@@ -55,7 +55,7 @@ reply_t
 {
     LOG_START;
     reply_t ret;
-    // input parameters control 
+    // input parameters control
     if ( start_date >= end_date )
     {
         log_debug ("start_date >= end_date");
@@ -71,17 +71,23 @@ reply_t
 
     try{
         tntdb::Statement st = conn.prepareCached(
-            " SELECT GREATEST(UNIX_TIMESTAMP(date_from), :A) a, LEAST(UNIX_TIMESTAMP(date_till), :B) b"
-            "   FROM t_bios_alert"
+            " SELECT"
+            "   GREATEST(UNIX_TIMESTAMP(date_from), :A) a,"
+            "   LEAST(UNIX_TIMESTAMP(date_till), :B) b"
+            " FROM t_bios_alert"
             " WHERE"
-            "   NOT ( ( UNIX_TIMESTAMP(date_from) < :A AND UNIX_TIMESTAMP(date_till) <= :A ) OR"
-            "         ( UNIX_TIMESTAMP(date_from) > :B AND UNIX_TIMESTAMP(date_till) >= :B )"
+            "   NOT ( ( UNIX_TIMESTAMP(date_from) < :A AND"
+            "           UNIX_TIMESTAMP(date_till) <= :A"
+            "         ) OR"
+            "         ( UNIX_TIMESTAMP(date_from) > :B AND"
+            "           UNIX_TIMESTAMP(date_till) >= :B"
+            "         )"
             "       ) AND"
             "   rule_name LIKE :rn AND"
             "   dc_id = :id"
             " ORDER BY a"
         );
-   
+
         tntdb::Result res = st.set("A", start_date).
                                set("B", end_date).
                                set("rn", rule_name).
@@ -125,7 +131,7 @@ bool
          std::pair<int64_t, bool> j)
 {
     if ( i.first == j.first )
-        return ( i.second == true ); // TODO nu ili =='e'
+        return ( i.second == true );
     else
         return ( i.first < j.first );
 }
@@ -178,7 +184,8 @@ int
         {
             parenthesis = parenthesis +")";
             if ( st.size() == 0 )
-                return -6;  // this should never happen, but if we do, then end correctly
+                // this should never happen, but if we do, then end correctly
+                return -6;  
             // get last element
             auto last = st.back();
             //delete it from stack
@@ -193,7 +200,8 @@ int
     }
     log_debug (" chain: %s", parenthesis.c_str());
     if ( st.size() != 0 )
-        return -5;  // this should never happen, but if we do, then end correctly
+        // this should never happen, but if we do, then end correctly
+        return -5;
     else
         return 0;
 }
@@ -214,6 +222,8 @@ reply_t
     // TODO: get rid of this after refactoring
     reply_t r;
     r.affected_rows = ret.affected_rows;
+    r.row_id = ret.rowid;
+
     if ( ret.status == 1 )
         r.rv = 0;
     else
@@ -279,19 +289,23 @@ int
                 // period 18.01.2015 00:00:00 - 19.01.2015 00:00:00
                 // is a measuement at the ned date 19.01.2015 00:00:00
                 // insert new value
-                reply_t ret = insert_outage (conn, dc.name.c_str(), outage, end_date);
+                reply_t ret = insert_outage
+                        (conn, dc.name.c_str(), outage, end_date);
                 if ( ret.rv != 0 )
-                    log_debug ("FAIL: outage %" PRIi64 " for dc ( %" PRIi32 ") "\
-                            " was not inserted for the period from %" PRIi64 \
-                            " to %" PRIi64, outage, dc.id, start_date, end_date);
+                    log_debug ("FAIL: outage %" PRIi64 " for dc " \
+                            "( %" PRIi32 ") was not inserted for "\
+                            "the period from %" PRIi64 " to %" PRIi64,
+                            outage, dc.id, start_date, end_date);
                 else
-                    log_debug ("SUCCESS: outage %" PRIi32 " for dc ( %" PRIi32 ") "\
-                            " was inserted for the period from %" PRIi64 \
-                            " to %" PRIi64, outage, dc.id, start_date, end_date);
+                    log_debug ("SUCCESS: outage %" PRIi32 " for dc " \
+                            "( %" PRIi32 ")  was inserted for " \
+                            "the period from %" PRIi64 " to %" PRIi64,
+                            outage, dc.id, start_date, end_date);
             }
             else
-                log_error ("FAIL: outage for dc ( %" PRIi32 ") was not calculated"\
-                        " for the period from %" PRIi64 " to %" PRIi64, dc.id,
+                log_error ("FAIL: outage for dc ( %" PRIi32 ") " \
+                        "was not calculated for the period " \
+                        "from %" PRIi64 " to %" PRIi64, dc.id,
                         start_date, end_date);
         }
     }
@@ -318,9 +332,8 @@ reply_t
          std::map <int64_t, double> &measurements)
 {
     LOG_START;
-    
     log_debug ("  dc_id = %" PRIi32, dc_id);
-    
+
     // time, value
     std::string unit{};
 
@@ -337,7 +350,6 @@ reply_t
     return ret;
 }
 
-    
 
 int
     calculate_total_outage_byDcId
@@ -349,7 +361,7 @@ int
     // with the key "dc_start_date"
     // TODO: implement it
     // current implementation: hardcoded value
-    time_t start_date = 1420066800; //01.01.2015
+    time_t start_date = 1435708800; //01.07.2015
 
 
     // select start_date
@@ -359,7 +371,8 @@ int
 
     // get values, that we are going to sum up
     std::map <int64_t, double> measurements{};
-    reply_t ret = select_outage_byDC_byInterval (conn, dc_id, start_date, end_date, measurements);
+    reply_t ret = select_outage_byDC_byInterval 
+        (conn, dc_id, start_date, end_date, measurements);
     if ( ret.rv != 0 )
         return ret.rv;
 
