@@ -239,15 +239,14 @@ for i in $element_ids; do
     #echo -e "\tsources:"
 
     # 4. Try to get distinct sources from all the topics of a given device id
-    sources=$(sources_from_device_id $device_id)
+    SOURCES=$(sources_from_device_id $device_id)
     if [ $? -eq 1 ]; then   # no sources/topics exist for given device id
         continue
     elif [ $? -gt 1 ]; then # error
         exit 1
     fi
-    read -a SOURCES <<<${sources}
     # 5. Generate curl request for each combination of source, step, type for the given element id
-    for s in ${SOURCES[@]}; do
+    for s in $SOURCES; do
         for stype in ${TYPE[@]}; do
             for sstep in ${STEP[@]}; do
                 # TODO: change this to a command instead of echo
