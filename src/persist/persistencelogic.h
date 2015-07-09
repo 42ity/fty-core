@@ -5,7 +5,6 @@
 #include <zmq.h>
 
 // To be deleted - we should be fine with just zmsg_t
-#include "netdisc_msg.h"
 #include "powerdev_msg.h"
 #include "common_msg.h"
 #include "nmap_msg.h"
@@ -17,7 +16,7 @@
 namespace persist {
 
 
-void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj);
+void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj);
 
 /**
  * \brief Processes message of type asset_msg_t
@@ -28,6 +27,13 @@ void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj
 zmsg_t *asset_msg_process(zmsg_t **msg);
 
 void process_measurement(const std::string &topic, ymsg_t **ymsg);
+
+/* \brief process message on networks stream
+ * */
+void
+process_networks(
+        ymsg_t** in_p);
+
 
 /**
  * \brief Basic message processing function
@@ -43,8 +49,6 @@ zmsg_t* process_message(zmsg_t** msg);
 // List of obsolete functions deemed to die
 bool
 process_message(const std::string &url, zmsg_t *msg);
-
-zmsg_t* netdisc_msg_process(zmsg_t** msg);
 
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);

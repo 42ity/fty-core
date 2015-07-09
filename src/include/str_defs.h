@@ -8,6 +8,9 @@ extern const char* DRIVER_NMAP_REPLY;
 // bios malamute endpoint
 extern const char* MLM_ENDPOINT;
 
+// agent netmon name and subject
+extern const char* BIOS_AGENT_NAME_NETMON;
+
 // names of malamute clients (== bios agents)
 extern const char* BIOS_AGENT_NAME_COMPUTATION;
 extern const char* BIOS_AGENT_PREFIX_REST; // each client created inside tntnet is suffixed by it's pid (getpid ()).
