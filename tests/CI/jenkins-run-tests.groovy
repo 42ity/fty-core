@@ -35,8 +35,8 @@ def doJob(name,params) {
     while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
-    println "* Job duration: " + job.getLastBuild().getDurationString();
-    return job.getLastBuild();
+    println "* Job duration: " + job.getLastCompletedBuild().getDurationString();
+    result = job.getLastCompletedBuild();
 }
 
 
