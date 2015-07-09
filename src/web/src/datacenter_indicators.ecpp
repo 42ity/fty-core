@@ -81,8 +81,7 @@ get_dc_trend(
     m_msrmnt_scale_t avg_scale;
     m_msrmnt_value_t actual;
     m_msrmnt_scale_t actual_scale;
-    // FIXME: replace with function developed by Miska
-    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale);
+    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale, 48*60);
     auto reply = persist::select_measurement_last_web_byElementId(conn, items.at(1), id, actual, actual_scale);
 
     if (reply.rv != 0 || reply_avg.rv != 0)
