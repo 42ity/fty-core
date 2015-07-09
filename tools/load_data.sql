@@ -84,68 +84,68 @@ SELECT @test_topic_s_d_voltage_output := id FROM t_bios_measurement_topic WHERE 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 50, 0, @test_topic_m_a_m_realpower_outlet_2 );
+    (NULL, NOW(), 50, 0, @test_topic_m_a_m_realpower_outlet_2 );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:58", 2405, -1, @test_topic_m_a_m_realpower_outlet_1 );
+    (NULL, NOW(), 2405, -1, @test_topic_m_a_m_realpower_outlet_1 );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:57", 2405, -1, @test_topic_m_a_m_realpower_outlet );
+    (NULL, NOW(), 2405, -1, @test_topic_m_a_m_realpower_outlet );
 
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 2, 0, @test_topic_s_d_status_ups );
+    (NULL, NOW(), 2, 0, @test_topic_s_d_status_ups );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:58", 9310, -2, @test_topic_s_d_charge_battery );
+    (NULL, NOW(), 9310, -2, @test_topic_s_d_charge_battery );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:58", 3600, 0, @test_topic_s_d_runtime_battery );
+    (NULL, NOW(), 3600, 0, @test_topic_s_d_runtime_battery );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:57", 17, -1, @test_topic_s_d_load_default );
+    (NULL, NOW(), 17, -1, @test_topic_s_d_load_default );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 56, -1, @test_topic_s_d_temperature_default );
+    (NULL, NOW(), 56, -1, @test_topic_s_d_temperature_default );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:59", 1000, -4, @test_topic_s_d_realpower_default );
+    (NULL, NOW(), 1000, -4, @test_topic_s_d_realpower_default );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:58", 12, -1, @test_topic_s_d_current_output_L1 );
+    (NULL, NOW(), 12, -1, @test_topic_s_d_current_output_L1 );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:57", 31, -1, @test_topic_s_d_current_output );
+    (NULL, NOW(), 31, -1, @test_topic_s_d_current_output );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:58", 10, -2, @test_topic_s_d_voltage_otput_L1_N );
+    (NULL, NOW(), 10, -2, @test_topic_s_d_voltage_otput_L1_N );
 
 insert into t_bios_measurement 
     (id, timestamp, value, scale, topic_id)
 values 
-    (NULL, "2014-11-12 09:59:57", 3, -1, @test_topic_s_d_voltage_output );
+    (NULL, NOW(), 3, -1, @test_topic_s_d_voltage_output );
 
 /*
 -{"current":[{"id":"6","name":"monitor_asset_measure","realpower.outlet.2":50.0,"realpower.outlet.1":240.5,"realpower.outlet":240.5}]}
