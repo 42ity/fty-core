@@ -84,6 +84,7 @@ CREATE TABLE t_bios_alert(
     description VARCHAR(255),
     date_till    DATETIME,
     notification TINYINT         NOT NULL DEFAULT 0,
+    dc_id       INT UNSIGNED     , /*NOT NULL,*/
 
     PRIMARY KEY(id),
 

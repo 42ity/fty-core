@@ -328,6 +328,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
+			src/db/calculation.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -737,10 +738,33 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+cibin_programs += 	test-outage
+
+test_outage_SOURCES = \
+			tests/persist/test-outage.cc
+
+test_outage_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-db-measurements.la \
+			libpriv-defs.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
+
+test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
+
+test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
 
 cibin_programs += 	test-dbtopology
 
