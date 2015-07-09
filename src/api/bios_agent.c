@@ -15,7 +15,7 @@
 #define BIOS_MLM_ASSETS_STREAM "assets"
 #define BIOS_MLM_ALERTS_STREAM "alerts"
 #define BIOS_MLM_NETWORKS_STREAM "networks"
-#define BIOS_MLM_STREAM_COUNT 4
+#define BIOS_MLM_STREAM_COUNT 5
 
 static const char *bios_streams[] = 
 {
