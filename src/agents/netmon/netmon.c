@@ -302,8 +302,9 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
         return 0;
     }
 
-    log_debug("sending msg");
-    ymsg_print(msg);
+    // send msg only if stderr connected to tty - this help debugging!
+    if (isatty(STDERR_FILENO))
+        ymsg_print(msg);
     // XXX: we encode type of operation in message itself, so
     //      subject name can be a simple constant
     if (bios_agent_send ((bios_agent_t*) agent, bios_get_stream_networks(), &msg) != 0)
@@ -506,18 +507,9 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
-    // TODO: Is this message for users still valid?
-    // Did anything take place of "simple" here (e.g. "agent-dbstore")?
-    if (isatty(STDERR_FILENO)) {
-        fprintf(stderr, "%s", "WARNING: netmon agent communicates through malamute server, so it does not print\n");
-        fprintf(stderr, "%s", "         anything to stdout. Please use dshell to monitor the passing messages.\n");
-        //fprintf(stderr, "%s", "         Old advice was to start simple, which will autospawn netmon internally.\n");
-        //fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
-        //fprintf(stderr, "%s", "         use kill -9 for now\n");
-    }
-
     // Do not let zeromq take away our signals
     setenv("ZSYS_SIGHANDLER", "false", 1);
+    zsys_set_logstream(stderr);
 
     unsigned groups = ~RTMGRP_TC;
 
