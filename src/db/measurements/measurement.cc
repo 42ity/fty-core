@@ -244,7 +244,8 @@ select_measurement_last_web_byElementId (
         const std::string& src,
         a_elmnt_id_t id,
         m_msrmnt_value_t& value,
-        m_msrmnt_scale_t& scale)
+        m_msrmnt_scale_t& scale,
+        int minutes_back)
 {
     LOG_START;
     log_debug("id = %" PRIu32, id);
@@ -255,54 +256,48 @@ select_measurement_last_web_byElementId (
         return rep;
 
     std::string topic = src + "@" + name;
-    reply_t ret;
-    try {
-        tntdb::Statement statement = conn.prepareCached (
-        " SELECT v.value, v.scale FROM"
-        "    v_web_measurement_last v"
-        " WHERE topic=:topic"
-        );
-
-        tntdb::Row row = statement.set ("topic", topic).selectRow();
-        log_debug("[v_bios_measurement]: were selected %" PRIu32 " rows", 1);
-
-        row[0].get(value);
-        row[1].get(scale);
-    }
-    catch (const std::exception &e) {
-        ret.rv = -1;
-        LOG_END_ABNORMAL(e);
-        return ret;
-    }
-    catch (...) {
-        log_error("Unknown exception caught!");
-        ret.rv = -1;
-        return ret;
-    }
-    ret.rv = 0;
     LOG_END;
-    return ret;
+    return select_measurement_last_web_byTopic(conn, topic, value, scale, minutes_back, false);
 }
 
-    reply_t
+reply_t
 select_measurement_last_web_byTopicLike (
         tntdb::Connection &conn,
         const std::string& topic,
         m_msrmnt_value_t& value,
-        m_msrmnt_scale_t& scale)
+        m_msrmnt_scale_t& scale,
+        int minutes_back) {
+    return select_measurement_last_web_byTopic(conn, topic, value, scale, minutes_back, true);
+}
+
+
+reply_t
+select_measurement_last_web_byTopic (
+        tntdb::Connection &conn,
+        const std::string& topic,
+        m_msrmnt_value_t& value,
+        m_msrmnt_scale_t& scale,
+        int minutes_back,
+        bool fuzzy)
 {
     LOG_START;
     log_debug("topic = %s", topic.c_str());
 
     reply_t ret;
     try {
-        tntdb::Statement statement = conn.prepareCached (
-        " SELECT v.value, v.scale FROM"
-        "    v_web_measurement_last v"
-        " WHERE topic LIKE :topic"
-        );
+        std::string query =
+        " SELECT value, scale FROM"
+        "    v_bios_measurement"
+        " WHERE topic ";
+        query += fuzzy ? "LIKE" : "=";
+        query +=                    " :topic AND"
+        "       timestamp > FROM_UNIXTIME(:time) ORDER BY timestamp DESC LIMIT 1";
 
-        tntdb::Row row = statement.set ("topic", topic).selectRow();
+        tntdb::Statement statement = conn.prepareCached(query);
+
+        tntdb::Row row = statement.set("topic", topic).
+                                   set("time", time(NULL) - 60 * minutes_back).
+                                   selectRow();
         log_debug("[v_bios_measurement_last]: were selected %" PRIu32 " rows", 1);
 
         row[0].get(value);
