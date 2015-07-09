@@ -21,24 +21,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#include <tntdb/row.h>
 #include <tntdb/result.h>
-#include <tntdb/error.h>
-#include <tntdb/transaction.h>
 #include <algorithm>
 #include "log.h"
-#include "defs.h"
 #include "db/alerts/alert_basic.h"
-#include "agents.h"
 #include "dbpath.h"
-#include "bios_agent.h"
-#include "cleanup.h"
-#include "utils.h"
-#include "types.h"
 #include "measurement.h"
 #include "db/measurements.h"
 #include "asset_types.h"
 #include "assetcrud.h"
+#include "dbhelpers.h"
 
 namespace persist {
 

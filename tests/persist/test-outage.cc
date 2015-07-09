@@ -2,6 +2,7 @@
 #include "db/calculation.h"
 #include "log.h"
 #include "dbpath.h"
+#include "measurement.h"
 
 TEST_CASE("f:select_alertDates_byRuleName_byInterval_byDcId #1","[db][outage][select][test_outage.sql]")
 {

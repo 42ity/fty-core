@@ -25,8 +25,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "defs.h"
 #include "utils.h"
 #include "types.h" // reply_t
-#include "measurement.h"
-#include "db/measurements.h"
+#include "dbtypes.h" //a_elmnt_id_t
+#include "dbhelpers.h"
 
 namespace persist {
 

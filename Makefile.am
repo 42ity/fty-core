@@ -721,13 +721,11 @@ test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
 			tests/persist/test-monitor-clientinfo.cc \
 			tests/persist/test-measurement.cc \
-			tests/persist/test-realdatamonitor.cc \
-			tests/persist/test-outage.cc
+			tests/persist/test-realdatamonitor.cc
 
 test_db2_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
-			libpriv-db-measurements.la \
 			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
@@ -745,6 +743,28 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+cibin_programs += 	test-outage
+
+test_outage_SOURCES = \
+			tests/persist/test-outage.cc
+
+test_outage_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-db-measurements.la \
+			libpriv-defs.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
+
+test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
+
+test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
 
 cibin_programs += 	test-dbtopology
 
