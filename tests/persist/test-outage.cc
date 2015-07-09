@@ -70,3 +70,35 @@ TEST_CASE("f:calculate_outage_byInerval_byDcId #3","[db][calculate][outage][test
     log_close();
 }
 
+
+TEST_CASE("f:insert_outage  select_outage_byDC_byInterval #4","[db][insert][select][outage][test_outage.sql][4]")
+{
+    log_open ();
+    log_info ("=============== OUTAGE #4 ==================");
+
+    tntdb::Connection conn;
+    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
+ 
+    int64_t date = 19400000;
+    const char *dc_name = "DC-outage";
+    a_elmnt_id_t dc_id = 1;
+
+    int64_t value = 12345;
+    reply_t r = persist::insert_outage (conn, dc_name, value, date);
+
+    REQUIRE ( r.rv == 0 );
+    REQUIRE ( r.row_id > 0 );
+    uint64_t rowid = r.row_id;
+    REQUIRE ( r.affected_rows == 1 );
+
+    std::map <int64_t, double> measurements;
+    r =  persist::select_outage_byDC_byInterval (conn, dc_id, 19400000 -24*60*60 , 19400000 + 24*60*60, measurements);
+    REQUIRE ( r.rv == 0 );
+    REQUIRE ( measurements.size() == 1 );
+
+    db_reply_t ret = persist::delete_from_measurement_by_id (conn, rowid);
+
+    REQUIRE ( ret.status == 1 );
+    REQUIRE ( ret.affected_rows == 1 );
+    log_close();
+}
