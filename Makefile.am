@@ -1413,6 +1413,8 @@ if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
 autopathedit = sed \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
@@ -1424,10 +1426,10 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
 			bios-agent-autoconfig.service bios-agent-th.service
 
-SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service
+SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
 
 # These files need no processing, delivered verbatim
-SYSTEMD_TIMERS += biostimer-outage.timer
+SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
 
 # This file is generated
 SYSTEMD_PRESETS += 42-bios-systemd.preset
