@@ -1426,14 +1426,16 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
 
 SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service
 
+# These files need no processing, delivered verbatim
 SYSTEMD_TIMERS += biostimer-outage.timer
 
+# This file is generated
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
@@ -1451,12 +1453,14 @@ $(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_TIMERS))
-systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
-EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
+CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
 endif
 
 #----------------------------------------------------------------------
