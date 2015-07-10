@@ -27,10 +27,13 @@ TEST_CASE ("stream names", "[api][bios_agent]") {
     const char **streams = bios_get_streams ((uint8_t *)&count);
     REQUIRE ( streams != NULL );
     REQUIRE ( count != 0 );
+/* The expected streams are defined in /include/bios_agent.h
+* and currently we have 5 of them -- all must be expected here: */
     for (int i = 0; i < count; ++i) {
         CHECK ((strcmp (streams[i], bios_get_stream_main ()) == 0 ||
             strcmp (streams[i], bios_get_stream_measurements ()) == 0 ||
             strcmp (streams[i], bios_get_stream_assets ()) == 0 ||
+            strcmp (streams[i], bios_get_stream_networks ()) == 0 ||
             strcmp (streams[i], bios_get_stream_alerts ()) == 0));
     } 
 }
