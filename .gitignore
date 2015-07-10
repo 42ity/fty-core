@@ -117,6 +117,7 @@ bios-email
 bios-nutscan
 agent-tpower
 generate_measurement
+outage
 
 tests/junit/
 tests/CI/web/log/
