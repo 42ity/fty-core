@@ -74,7 +74,7 @@ trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
     test-db test-db2 test-database test-db-alert \
-    test-db-asset-crud test-dbtopology test-totalpower \
+    test-db-asset-crud test-dbtopology test-outage test-totalpower \
     || FAILED="compilation"
 sleep 1
 
