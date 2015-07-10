@@ -187,7 +187,8 @@ sources_from_device_id () {
 [ -f $LOCKFILE ] && exit 0
 
 trap "{ rm -f $LOCKFILE ; exit 255; }" EXIT # TODO add
-touch $LOCKFILE
+mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
+touch $LOCKFILE || exit $?
 
 end_timestamp=$(date +%Y%m%d%H%M%S)
 declare -r END_TIMESTAMP="${end_timestamp}Z"
