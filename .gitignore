@@ -203,6 +203,7 @@ tntnet.xml
 !src/agents/nut
 !src/agents/server-agent
 !src/agents/th
+!src/outage
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
