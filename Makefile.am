@@ -994,14 +994,14 @@ server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
 client_PROGRAMS += 	agent-th
 
-th_agent_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
+agent_th_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
 
-th_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
+agent_th_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-th_agent_LDADD = \
+agent_th_LDADD = \
 			 libpriv-proto.la libpriv-log.la
 
-th_agent_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
+agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
 
 bin_PROGRAMS += 		generate_measurement
 
