@@ -84,14 +84,6 @@ int main (int argc, char **argv) {
     }
 #endif
     
-    tntdb::Connection conn;
-    try {
-        conn = tntdb::connectCached (url);
-    }
-    catch (...) { // TODO: std::exception&...
-        log_critical ("tntdb::connnectCached faile.");
-        return EXIT_FAILURE;
-    } 
     // We don't really need a poller. We just have one client (actor/socket)
     while (!zsys_interrupted) {
         log_debug ("WAITING");
@@ -118,6 +110,15 @@ int main (int argc, char **argv) {
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
             _scoped_ymsg_t *msg_out = NULL;
+            tntdb::Connection conn;
+            try {
+                conn = tntdb::connectCached (url);
+            }
+            catch (...) { // TODO: std::exception&...
+                log_critical ("tntdb::connnectCached fail.");
+                return EXIT_FAILURE;
+            } 
+
             needle->second (conn, agent, msg_recv, sender, &msg_out);
             if (msg_out != NULL) {
                 ymsg_format (msg_out, msg_print);                
