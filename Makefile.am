@@ -1118,10 +1118,11 @@ agent_alert_smtp_LDADD = \
 agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
-		    -I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
 
-client_PROGRAMS +=	agent-alert-smtp
+
+client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/autoconfig.cc \
@@ -1144,7 +1145,6 @@ agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS +=	agent-autoconfig
 
 
 client_PROGRAMS +=	agent-inventory
