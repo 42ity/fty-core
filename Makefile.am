@@ -1405,6 +1405,8 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_UNITS_TIMERIMPL =
+SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
@@ -1422,6 +1424,10 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
 			bios-agent-autoconfig.service bios-agent-th.service
 
+SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service
+
+SYSTEMD_TIMERS += biostimer-outage.timer
+
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
@@ -1430,22 +1436,22 @@ $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
-$(SYSTEMD_UNITS): Makefile
+$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
 	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
 # Explicit path desired by dependencies in systemdsystemunit_DATA below
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL) $(SYSTEMD_TIMERS))
 systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
 
 # auto-cleanup and dist targets
