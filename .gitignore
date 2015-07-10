@@ -118,6 +118,7 @@ bios-nutscan
 agent-tpower
 generate_measurement
 outage
+test-outage
 
 tests/junit/
 tests/CI/web/log/
