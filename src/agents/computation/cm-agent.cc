@@ -23,11 +23,13 @@
 #include "cleanup.h"
 #include "dbpath.h"
 
+#include "preproc.h"
+
 #define DEFAULT_LOG_LEVEL LOG_INFO
 
 namespace cm = computation;
 
-int main (int argc, char **argv) {
+int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
     int log_level = DEFAULT_LOG_LEVEL;
     
