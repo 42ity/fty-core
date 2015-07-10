@@ -992,9 +992,9 @@ server_agent_LDADD = \
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS += 	th-agent
+client_PROGRAMS += 	agent-th
 
-th_agent_SOURCES =	src/agents/th/th-agent.cc src/shared/sample_agent.cc src/agents/th/libth.c
+th_agent_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
 
 th_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 

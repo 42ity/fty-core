@@ -112,7 +112,7 @@ agent-alert-smtp
 agent-autoconfig
 server-agent
 agent-cm
-th-agent
+agent-th
 bios-email
 bios-nutscan
 agent-tpower

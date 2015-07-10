@@ -22,7 +22,7 @@ char *vars[] = {
 };
 
 sample_agent agent = {
-    "th-agent",
+    "agent-th",
     NULL,
     NULL,
     vars,
