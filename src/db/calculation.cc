@@ -281,7 +281,7 @@ int
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
                 else
-                    log_debug ("SUCCESS: outage %" PRIi32 " for dc " \
+                    log_debug ("SUCCESS: outage %" PRIi64 " for dc " \
                             "( %" PRIi32 ")  was inserted for " \
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
