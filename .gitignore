@@ -41,7 +41,7 @@ Makefile.in
 Makefile
 !Makefile.am
 driver-nmap
-netmon
+agent-netmon
 bios_web.la
 dshell
 !tools/dshell
@@ -155,8 +155,8 @@ bios-agent-cm.service
 bios-agent-inventory.service
 !tools/bios-agent-nut.service.in
 bios-agent-nut.service
-!tools/bios-driver-netmon.service.in
-bios-driver-netmon.service
+!tools/bios-agent-netmon.service.in
+bios-agent-netmon.service
 !tools/bios-driver-nmap.service.in
 bios-driver-nmap.service
 !tools/bios-agent-dbstore.service.in
@@ -201,6 +201,7 @@ tntnet.xml
 !src/agents/nmap
 !src/agents/nut
 !src/agents/server-agent
+!src/agents/th
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
