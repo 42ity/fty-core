@@ -338,5 +338,95 @@ db_reply <std::map <uint32_t, std::string> >
     }
 }
 
+reply_t
+    select_dc_of_asset_element
+        (tntdb::Connection &conn,
+         a_elmnt_id_t  element_id,
+         a_elmnt_id_t &dc_id)
+{
+    LOG_START;
+    log_debug (" element_id = %" PRIi32, element_id);
 
+    reply_t rep;
+    
+    try{
+        // Find last parent
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id_parent4, v.id_parent3, v.id_parent2, v.id_parent1"
+            " FROM"
+            "   v_bios_asset_element_super_parent v"
+            " WHERE v.id_asset_element = :id"
+        );
+    
+        tntdb::Row row = st.set("id", element_id).
+                            selectRow();
+        log_debug("[v_bios_asset_element_super_parent]: were selected" \
+                     "%" PRIu32 " rows",  1);
+        bool isNotNull = row[0].get(dc_id);
+        if ( !isNotNull )
+        {
+            isNotNull = row[1].get(dc_id);
+            if ( !isNotNull )
+            {
+                isNotNull = row[2].get(dc_id);
+                if ( !isNotNull )
+                {
+                    isNotNull = row[3].get(dc_id);
+                    if ( !isNotNull )
+                    {
+                        log_debug ("this element has no parent");
+                        dc_id = 0;
+                        rep.rv = 0;
+                        return rep;
+                    }
+                }
+            }
+        }
+
+        // need to check, if last parent is DC
+        db_reply <db_web_basic_element_t> ret = select_asset_element_web_byId
+                                            (conn, dc_id);
+        if ( ret.status == 1 )
+        {
+            if ( ret.item.type_name == "datacenter" )
+            {
+                rep.rv = 0;
+                LOG_END;
+                return rep;
+            }
+            else
+            {
+                rep.rv = 2;
+                log_debug ("last parent is not a datacenter");
+                return rep;
+            }
+        }
+        else
+        {
+            rep.rv = ret.errsubtype;
+            dc_id = 0;
+            log_debug ("could not check the type of last element");
+            return rep;
+        }
+    }
+    catch (const tntdb::NotFound &e) {
+        rep.rv = 3;
+        dc_id = 0;
+        LOG_END_ABNORMAL(e);
+        return rep;
+    }
+    catch (const std::exception &e) {
+        rep.rv = -1;
+        dc_id = 0;
+        LOG_END_ABNORMAL(e);
+        return rep;
+    }
+    catch (...) {
+        log_error ("Uncknown exception caught!");
+        rep.rv = -2;
+        dc_id = 0;
+        return rep;
+    }
+}
 } // namespace end
