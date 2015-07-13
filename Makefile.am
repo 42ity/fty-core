@@ -822,8 +822,8 @@ test_db_alert_SOURCES = \
 			tests/persist/test-alert.cc
 
 test_db_alert_LDADD = \
-			libpriv-db.la \
 			libpriv-db-alerts.la \
+			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
