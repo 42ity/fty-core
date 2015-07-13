@@ -45,6 +45,12 @@
 [ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
 [ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
 
+# Run apt-get to set up packages which we need?
+# Needs "ci-setup-test-machine.sh" in same dir as $CI_RESET_VM
+[ -z "$INSTALL_DEV_PKGS" ] && \
+[ -x "`dirname "$CI_RESET_VM"`/ci-setup-test-machine.sh" ] && \
+    INSTALL_DEV_PKGS=yes
+
 LANG=C
 LC_ALL=C
 export LANG LC_ALL
