@@ -76,6 +76,8 @@ unusedFunction:src/api/*
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     ls -la cppcheck.xml
     /bin/rm -f cppcheck.supp
+else
+    echo "WARNING: cppcheck binary not found" >&2
 fi
 
 sort_warnings() {
