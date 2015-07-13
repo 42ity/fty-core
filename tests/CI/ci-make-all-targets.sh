@@ -55,6 +55,8 @@ unusedFunction:src/api/*
             "but we consider it not fatal" ; }
     sed -i 's%\(<location file="\)%\1project/%' cppcheck.xml
     /bin/rm -f cppcheck.supp
+else
+    echo "WARNING: cppcheck binary not found" >&2
 fi
 
 echo "======================== make check ========================="
