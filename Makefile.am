@@ -1176,7 +1176,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
-			src/agents/computation/cm-agent.cc \
+			src/agents/computation/agent-cm.cc \
 			src/agents/computation/cm-web.cc \
 			src/agents/computation/cm-web.h \
 			src/agents/computation/cm-utils.h \
