@@ -1,0 +1,83 @@
+#!/bin/sh -x
+
+PATH="/bin:/usr/bin:/sbin:/usr/sbin"
+
+[ -n "$VARIANT" ] || VARIANT="deploy"
+
+echo "Getting '$VARIANT' image..."
+
+IMG="`wget -O - http://obs.roz.lab.etn.com/images/$VARIANT/x86_64/ 2> /dev/null | sed -n 's|.*href="\(simple[^"]*gz\)".*|\1|p'`"
+
+virsh -c lxc:/// destroy demo
+umount /srv/libvirt/rootfs/demo/lib/modules
+umount /srv/libvirt/rootfs/demo/root/.ccache
+umount /srv/libvirt/rootfs/demo/proc
+rm -rf /srv/libvirt/rootfs/demo/
+mkdir /srv/libvirt/rootfs/demo/
+cd /srv/libvirt/rootfs/demo/
+wget -O - http://obs.roz.lab.etn.com/images/$VARIANT/x86_64/$IMG 2> /dev/null | gzip -cd - | tar -xf -
+cp -r /root/.ssh root
+#
+# copy resolv.conf
+#
+cp -f /etc/resolv.conf ./etc/
+#
+# create NUT config
+#
+cp /root/nut/* ./etc/nut
+[ -z "`ssh bios@bios-rc-demo.roz.lab.etn.com echo ahoj`" ] || ssh bios@bios-rc-demo.roz.lab.etn.com mysqldump -u root box_utf8 > mysqldump
+echo bios-demo.roz.lab.etn.com > ./etc/hostname
+cat >./etc/nut/ups.conf.new << EOF
+maxretry = 3
+
+[ROZ.ePDU05]
+	driver = snmp-ups
+	port =  epdu05.roz.lab.etn.com
+	synchronous = yes
+
+[ROZ.ePDU04]
+	driver = snmp-ups
+	port = epdu04.roz.lab.etn.com
+	synchronous = yes
+
+[ROZ.UPS1]
+	driver = netxml-ups
+	port = http://nmc03.roz.lab.etn.com
+
+[UPS1-LAB]
+        driver =  dummy-ups
+        port =  UPS1-LAB.dev
+        desc = "9PX-31-xml"
+
+[UPS2-LAB]
+        driver =  dummy-ups
+        port =  UPS2-LAB.dev
+        desc = "9PX-31-xml"
+
+[ePDU1-LAB]
+        driver =  dummy-ups
+        port = ePDU1-LAB.dev
+        desc = "epdu-marlin-ma-snmp"
+
+[ePDU2-LAB]
+        driver =  dummy-ups
+        port = ePDU2-LAB.dev
+        desc = "epdu-marlin-ma-snmp"
+EOF
+
+cat << EOF | chroot . /bin/bash
+/usr/lib/mysql/rcmysql start
+wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/initdb.sql;hb=HEAD" |  mysql -u root
+# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_data.sql;hb=HEAD" | mysql -u root box_utf8
+# wget -O - "http://tomcat.roz.lab.etn.com/git-web/?p=core.git;a=blob_plain;f=tools/load_ROZLAB.sql;hb=HEAD" | mysql -u root box_utf8
+cat /mysqldump | mysql -u root box_utf8
+rm /mysqldump
+/usr/lib/mysql/rcmysql stop
+EOF
+
+sed -i 's|exit.*|systemctl restart ssh|' etc/rc.local
+
+# mv /srv/libvirt/rootfs/demo/usr/share/bios-web /srv/libvirt/rootfs/demo/usr/share/bios-web.x.$$; rsync -avPHK bios-backup:/export/DUMP/manual/test-debian/fullroot/srv/libvirt/.zfs/snapshot/20150212-0000/rootfs/demo/usr/share/bios-web/ /srv/libvirt/rootfs/demo/usr/share/bios-web/
+
+virsh -c lxc:/// start demo
+
