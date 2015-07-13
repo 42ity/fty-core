@@ -1125,7 +1125,7 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/autoconfig.cc \
+			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/configurator.cc \
 			src/shared/filesystem.cc
 
