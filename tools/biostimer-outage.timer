@@ -7,7 +7,7 @@ OnBootSec=10min
 ### Time between running each consecutive time
 ### OnUnitActiveSec=1h
 # Run every midnight
-OnCalendar=*-*-* 00:00:00
+OnCalendar=*-*-* 00:10:00
 # Run instantly if last run was skipped (e.g. system powered off)
 Persistent=true
 # Which unit to trigger:
