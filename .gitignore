@@ -112,7 +112,7 @@ agent-alert-smtp
 agent-autoconfig
 server-agent
 agent-cm
-th-agent
+agent-th
 bios-email
 bios-nutscan
 agent-tpower
@@ -197,6 +197,7 @@ src/web/src/rack_total.cpp
 src/web/src/sysinfo.cpp
 src/web/src/ui_properties.cpp
 src/web/src/alerts.cpp
+src/web/src/uptime.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
@@ -208,6 +209,7 @@ tntnet.xml
 !src/agents/nut
 !src/agents/server-agent
 !src/agents/th
+!src/outage
 
 src/api/libbiosapi.pc
 !src/api/libbiosapi.pc.in
