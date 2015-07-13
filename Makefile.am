@@ -1087,7 +1087,7 @@ client_PROGRAMS +=	agent-nut
 
 agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
-			src/agents/nut/nut-agent.cc \
+			src/agents/nut/agent-nut.cc \
 			src/shared/upsstatus.cc
 
 agent_nut_LDADD = \
