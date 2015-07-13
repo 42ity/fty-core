@@ -281,7 +281,7 @@ int
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
                 else
-                    log_debug ("SUCCESS: outage %" PRIi32 " for dc " \
+                    log_debug ("SUCCESS: outage %" PRIi64 " for dc " \
                             "( %" PRIi32 ")  was inserted for " \
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
@@ -331,6 +331,8 @@ reply_t
         true,
         measurements,
         unit);
+    log_debug (" selected %u", measurements.size());
+    LOG_END;
     return ret;
 }
 
@@ -341,12 +343,13 @@ int
          a_elmnt_id_t dc_id,
          int64_t &sum)
 {
+    LOG_START;
+    sum = 0;
     // ASSUMPTION: start_date should be stored in ext_attrubutes for the DC
     // with the key "dc_start_date"
     // TODO: implement it
     // current implementation: hardcoded value
     time_t start_date = 1435708800; //01.07.2015
-
 
     // select start_date
 
@@ -357,8 +360,14 @@ int
     std::map <int64_t, double> measurements{};
     reply_t ret = select_outage_byDC_byInterval 
         (conn, dc_id, start_date, end_date, measurements);
-    if ( ret.rv != 0 )
+    // rv = 0 everything is fine
+    // rv = 2 no topic -> no measurements were found -> no outage
+    if  ( ( ret.rv != 0 ) && ( ret.rv != 2 ) )
+    {
+        log_debug (" problems with selecting outage_by_interval" \
+                     " rv = %" PRIi32, ret.rv);
         return ret.rv;
+    }
 
     // if values were selected, then sum up them
     sum = 0;
@@ -366,6 +375,8 @@ int
     {
         sum += one_outage.second;
     }
+    log_debug (" outage = %" PRIi64, sum);
+    LOG_END;
     return 0;
 }
 
@@ -377,6 +388,7 @@ int
          int64_t &sum)
 {
     sum = time (NULL) -  1435708800; // NOW  - 01.07.2015 in seconds
+    log_debug (" total_time = %" PRIi64, sum);
     return 0;
 }
 
