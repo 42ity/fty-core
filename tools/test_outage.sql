@@ -343,3 +343,24 @@ INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, d
 (  'upsonbattery@outage.UPS5', '2015-07-09 23:58:29' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-10 11:59:08' ,            0 , @last_datacenter ),
 (  'upsonbattery@outage.UPS1', '2015-07-11 09:37:59' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-11 09:43:35' ,            0 , @last_datacenter ),
 (  'upsonbattery@outage.UPS1', '2015-07-11 09:45:32' ,        1 ,     1 , 'UPS is running on battery!    ', '2015-07-11 09:46:31' ,            0 , @last_datacenter );
+
+
+/*
+ insert into t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) value (30,1);
+Query OK, 1 row affected (0.00 sec)
+
+MariaDB [box_utf8]> insert into t_bios_monitor_asset_relation (id_discovered_device, id_asset_element) value (30,1);
+Query OK, 1 row affected (0.01 sec)
+
+MariaDB [box_utf8]> insert into t_bios_measurement ( timestamp, value, scale, topic_id ) values ('2015-07-07 00:00:00', 30, 0, 17),  ('2015-07-08 00:00:00',40,0,17), ('2015-07-09 00:00:00',50,0,17), ('2015-07-10 00:00:00',60,0,17);
+Query OK, 4 rows affected (0.00 sec)
+Records: 4  Duplicates: 0  Warnings: 0
+
+MariaDB [box_utf8]> insert into t_bios_measurement_topic (topic, device_id, units) values ( "outage@DC1", 30, "s");
+ERROR 1062 (23000): Duplicate entry '30-s-outage@DC1' for key 'UI_t_bios_measurement_topic'
+MariaDB [box_utf8]> insert into t_bios_discovered_device (name, id_device_type) value ("DC1", 1);
+*/
+
+/* no topic*/
+/* no measurements */
+
