@@ -18,12 +18,23 @@ declare -r PORT="8000"
 LOCKFILE=/var/lib/bios/agent-cm/cron_average.lock
 TIMEFILE=/var/lib/bios/agent-cm/cron_average.time
 
+FETCHER=fetch_curl
+( which curl 2>/dev/null ) || FETCHER=fetch_wget
+
 # TODO: rely on (and include in distro) the scriptlib.sh library
 # Helper echo to stderr function
 echoerr() { echo "$@" 1>&2; }
 
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
+
+fetch_wget() {
+    wget -O - "$@"
+}
+
+fetch_curl() {
+    curl "$@"
+}
 
 # Converts asset element id to (discovered) device element id
 #
@@ -254,7 +265,7 @@ generate_curl_strings() {
             for stype in ${TYPE[@]}; do
                 for sstep in ${STEP[@]}; do
                     # TODO: change this to a command instead of echo
-                    echo "curl 'http://${SERVER}:${PORT}/api/v1/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    echo "$FETCHER 'http://${SERVER}:${PORT}/api/v1/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     # TODO: Does it make sense to check for 404/500? What can we do?
                 done
             done
@@ -271,7 +282,7 @@ case "$1" in
         ;;
     -h|--help) echo "$0 [-n]"
         echo "  -n    Dry-run"
-        echo "If not dry-running, actually run the curl callouts"
+        echo "If not dry-running, actually run the $FETCHER callouts"
         ;;
     "") start_lock
         generate_curl_strings | while IFS="" read LINE; do
