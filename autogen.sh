@@ -186,12 +186,14 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
         { echo "apt-get: Retrying su..."
           su - -c "apt-get update || { echo 'Wipe metadata and retry'; rm -rf /var/lib/apt/lists/*; apt-get update; } "; }
 
-        { echo "mk-build-deps: Trying direct invokation..."
-          mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "mk-build-deps: Retrying sudo..."
-          sudo mk-build-deps --tool 'apt-get --yes --force-yes' --install "$MKBD_DSC"; } || \
-        { echo "mk-build-deps: Retrying su..."
-          su - -c "mk-build-deps --tool 'apt-get --yes --force-yes' --install '$MKBD_DSC'"; }
+        echo "mk-build-deps: generate package file" && \
+        mk-build-deps "$MKBD_DSC" && [ -s "$MKBD_DEB" ] && \
+        { echo "mk-build-deps install: Trying direct invokation..."
+          dpkg -i "$MKBD_DEB" && apt-get --yes --force-yes -f install; } || \
+        { echo "mk-build-deps install: Retrying sudo..."
+          sudo "dpkg -i '$MKBD_DEB' && apt-get --yes --force-yes -f install"; } || \
+        { echo "mk-build-deps install: Retrying su..."
+          su - -c "dpkg -i '$MKBD_DEB' && apt-get --yes --force-yes -f install"; }
         RES=$?
         if [ $RES -ne 0 ]; then
             echo "autogen.sh: error: mk-build-deps exited with status $RES" 1>&2
