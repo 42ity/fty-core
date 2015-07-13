@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <exception>
 #include <errno.h>
 #include <tntdb/connect.h>
 
@@ -46,7 +47,10 @@ bool TotalPowerAgent::configuration( )
         }
         connection.close();
         return true;
+    } catch (const std::exception& e) {
+        log_error ("Excepton caught: '%s'.", e.what ());
     } catch(...) {
+        log_error ("Unknown exception caught.");
         return false;
     }
 }
