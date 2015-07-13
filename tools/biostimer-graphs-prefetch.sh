@@ -266,8 +266,6 @@ generate_getrestapi_strings() {
 
     # 2. Go over them and ...
     for i in $element_ids; do
-
-        # TODO: Remove the following block or convert to logmsg_debug
         logmsg_debug $CI_DEBUGLEVEL_DEBUG "-> $i" >&2
 
         # 3. Try to get corresponding device id from given element id
@@ -278,7 +276,6 @@ generate_getrestapi_strings() {
             return 1
         fi
 
-        # TODO: Remove the following block or convert to logmsg_debug
         logmsg_debug $CI_DEBUGLEVEL_DEBUG "$i" "device id: '$device_id'" " sources:" >&2
 
         # 4. Try to get distinct sources from all the topics of a given device id
