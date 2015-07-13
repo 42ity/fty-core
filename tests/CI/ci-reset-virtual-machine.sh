@@ -206,8 +206,8 @@ while [ $# -gt 0 ] ; do
 	    DOWNLOADONLY=yes
 	    shift
 	    ;;
-        --deploy-only)
-            DEPLOYONLY=yes
+	--deploy-only)
+	    DEPLOYONLY=yes
 	    shift
 	    ;;
 	--attempt-download)
@@ -465,9 +465,10 @@ sleep 5
 # Cleanup of the rootfs
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
-	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
@@ -602,8 +603,8 @@ logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
 		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
-        [ "$INSTALL_DEV_PKGS" = yes ] && \
-                logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
+	[ "$INSTALL_DEV_PKGS" = yes ] && \
+		logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
 	exit 0
 fi
 
