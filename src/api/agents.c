@@ -54,6 +54,8 @@ bios_netmon_extract
     if (!self || !event || !interface_name || !ip_version || !ip_address || !prefix_length || !mac_address || ymsg_id (self) != YMSG_SEND)
         return -1;
 
+    *interface_name = *ip_address = *mac_address = NULL;
+
     int rv = ymsg_aux_int32 (self, NETMON_KEY_EVENT, event);
     if (rv != 0)
         goto bios_netmon_extract_err;
@@ -71,9 +73,9 @@ bios_netmon_extract
     return 0;
         
 bios_netmon_extract_err:
-    FREE0 (interface_name);
-    FREE0 (ip_address);
-    FREE0 (mac_address);
+    FREE0 (*interface_name);
+    FREE0 (*ip_address);
+    FREE0 (*mac_address);
     return -1; 
 }
 
