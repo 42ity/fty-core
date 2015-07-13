@@ -107,9 +107,14 @@ LOCKFILE="`echo "/tmp/ci-test-netmon-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT
 
 # ***** FUNCTIONS *****
     # *** stop  dshell process and delete LOCKFILE ***
-function cleanup {
+function stopdaemons() (
     set +e
     sut_run "killall dshell lt-dshell"
+)
+
+function cleanup {
+    set +e
+    stopdaemons
     sut_run "rm -f '$DSH_FILE_REMOTE'"
     ### TODO: Should systemd-managed BIOS and other services be stopped?
     #sut_run "killall -9 agent-netmon lt-agent-netmon"
@@ -183,6 +188,7 @@ sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
 logmsg_info "Done with IP addressing changes..."
+stopdaemons
 sleep 7
 
 # ***** GET THE DATA SNIFFERED WITH dshell FROM SUT TO MS. *****

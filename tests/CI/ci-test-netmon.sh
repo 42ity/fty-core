@@ -42,6 +42,13 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the agent-netmon service"
 
+function stopdaemons() (
+    set +e
+    killall malamute
+    killall dshell lt-dshell
+    killall -KILL agent-netmon lt-agent-netmon
+)
+
 ### Section: actual steps being performed
 function cleanup {
     # Capture the exit code first, if any was set by an exit() or "set -e".
@@ -49,9 +56,7 @@ function cleanup {
     TRAP_RESULT=$?
 
     set +e
-    killall malamute
-    killall dshell lt-dshell
-    killall -KILL agent-netmon lt-agent-netmon
+    stopdaemons
     rm -f "$LOCKFILE"
     [ -n "$DEBUG" ] || rm -f "$dsh_file"
 
@@ -130,6 +135,7 @@ sudo ip addr del 20.13.5.4/32 dev lo
 
 [ -n "$DEBUG" ] && \
     echo "DEBUG: Done with IP addressing changes..." >&2
+stopdaemons
 sleep 7
 
 file="`cat "$dsh_file"`"
