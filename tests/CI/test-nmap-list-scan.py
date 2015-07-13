@@ -136,7 +136,7 @@ def compare(nmap, dbres):
 try:
     DAEMON_CWD=sys.argv[1]
 except IndexError:
-    print("FATAL: expects path to deamon's working directory", file=sys.stderr)
+    print("FATAL: expects path to daemon's working directory", file=sys.stderr)
     sys.exit(1)
 
 if not os.path.isdir(DAEMON_CWD):

@@ -992,16 +992,16 @@ server_agent_LDADD = \
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS += 	th-agent
+client_PROGRAMS += 	agent-th
 
-th_agent_SOURCES =	src/agents/th/th-agent.cc src/shared/sample_agent.cc src/agents/th/libth.c
+agent_th_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
 
-th_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
+agent_th_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-th_agent_LDADD = \
+agent_th_LDADD = \
 			 libpriv-proto.la libpriv-log.la
 
-th_agent_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
+agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
 
 bin_PROGRAMS += 		generate_measurement
 
@@ -1118,10 +1118,11 @@ agent_alert_smtp_LDADD = \
 agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
-		    -I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
 
-client_PROGRAMS +=	agent-alert-smtp
+
+client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/autoconfig.cc \
@@ -1144,7 +1145,6 @@ agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS +=	agent-autoconfig
 
 
 client_PROGRAMS +=	agent-inventory
@@ -1284,7 +1284,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp
+                      src/web/src/alerts.cpp \
+                      src/web/src/uptime.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
