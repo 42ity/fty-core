@@ -18,8 +18,13 @@ declare -r PORT="8000"
 LOCKFILE=/var/lib/bios/agent-cm/cron_average.lock
 TIMEFILE=/var/lib/bios/agent-cm/cron_average.time
 
-FETCHER=fetch_curl
-( which curl 2>/dev/null ) || FETCHER=fetch_wget
+FETCHER=
+( which curl 2>/dev/null ) && FETCHER=fetch_curl
+( which wget 2>/dev/null ) && FETCHER=fetch_wget
+
+[ -z "$FETCHER" ] && \
+        echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
+        FETCHER=curl
 
 # TODO: rely on (and include in distro) the scriptlib.sh library
 # Helper echo to stderr function
@@ -29,7 +34,7 @@ echoerr() { echo "$@" 1>&2; }
 function join { local IFS="$1"; shift; echo "$*"; }
 
 fetch_wget() {
-    wget -O - "$@"
+    wget -q -O - "$@"
 }
 
 fetch_curl() {
@@ -54,7 +59,7 @@ element_to_device_id() {
         echoerr "element_to_device_id(): argument empty or '0' which is not a valid asset element identifier."
         return 2
     fi
-    
+
     local __element_id="$1"
     local __result=$(mysql -s -u root -D box_utf8 -N -e "    
         SELECT a.id_discovered_device
@@ -72,11 +77,11 @@ element_to_device_id() {
     else
         echo "$__result"
         return 0
-    fi    
+    fi
 }
 
 # Retrieve asset element id's for datacenter, rack, ups. Output parameter contains whitespace delimited id's.
-#   
+#
 # Returns:
 #   2 - error
 #   1 - no asset element identifiers of requested type found
@@ -127,7 +132,7 @@ get_elements() {
 }
 
 # Retrieve sources of a specific device id. Output parameter contains whitespace delimited id's.
-#   
+#
 # Returns:
 #   2 - error
 #   1 - on error
@@ -146,7 +151,7 @@ sources_from_device_id() {
     fi
 
     local __device_id="$1"
-    local __mysql=$(mysql -s -u root -D box_utf8 -N -e "    
+    local __mysql=$(mysql -s -u root -D box_utf8 -N -e "
         SELECT topic
         FROM v_bios_measurement_topic
         WHERE device_id = '${__device_id}'
@@ -205,17 +210,18 @@ start_lock() {
 }
 
 generate_curl_strings() {
-    end_timestamp=$(date +%Y%m%d%H%M%S)
+    end_timestamp=$(date -u +%Y%m%d%H%M%S)
     declare -r END_TIMESTAMP="${end_timestamp}Z"
 
-    if [ -f "$TIMEFILE" ] && [ -s "$TIMEFILE" ]; then
-        read -r firstline < "$TIMEFILE"
-        if [ -z "$firstline" ]; then
-            start_timestamp="19700101000000Z"
+    start_timestamp=""
+    if [ -s "$TIMEFILE" ]; then
+        firstline="`head -1 $TIMEFILE`"
+        if [ -n "$firstline" ]; then
+            # TODO: check format of the read line
+            start_timestamp="$firstline"
         fi
-        # TODO: check format of the read line
-        start_timestamp="$firstline"
-    else
+    fi
+    if [ -z "$start_timestamp" ]; then
         start_timestamp="19700101000000Z"
     fi
 
