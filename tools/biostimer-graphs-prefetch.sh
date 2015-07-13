@@ -209,7 +209,8 @@ start_lock() {
     touch "$LOCKFILE" || exit $?
 }
 
-generate_curl_strings() {
+generate_getrestapi_strings() {
+    # This is a read-only operation
     end_timestamp=$(date -u +%Y%m%d%H%M%S)
     declare -r END_TIMESTAMP="${end_timestamp}Z"
 
@@ -281,25 +282,35 @@ generate_curl_strings() {
     return 0
 }
 
+run_getrestapi_strings() {
+    # This is a write-possible operation that updates timestamp files
+    start_lock
+    generate_getrestapi_strings | while IFS="" read LINE; do
+        # TODO: logmsg_debug this:
+        echo "Running: $LINE"
+        $LINE &
+    done
+    wait
+    RES=$?
+    [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    return $RES
+}
+
 ### script starts here ###
 case "$1" in
-    -n) generate_curl_strings
+    -n) generate_getrestapi_strings
         exit $?
         ;;
-    -h|--help) echo "$0 [-n]"
-        echo "  -n    Dry-run"
-        echo "If not dry-running, actually run the $FETCHER callouts"
+    -v) run_getrestapi_strings
+        exit $?
         ;;
-    "") start_lock
-        generate_curl_strings | while IFS="" read LINE; do
-            # TODO: logmsg_debug this:
-            echo "Running: $LINE"
-            $LINE &
-        done
-        wait
-        RES=$?
-        [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
-        exit $RES
+    ""|-q) run_getrestapi_strings >/dev/null
+        exit $?
+        ;;
+    -h|--help) echo "$0 [-n | -v]"
+        echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
+        echo "  -v    Wet-run with output posted to stdout"
+        echo "If not dry-running, actually run the $FETCHER callouts quietly dumped to /dev/null"
         ;;
     *) echo "Unknown params : $@";;
 esac
