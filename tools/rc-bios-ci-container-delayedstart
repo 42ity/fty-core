@@ -103,11 +103,12 @@ stop() {
 }
 
 download() {
-	$CI_RESET_VM --download-only
+	$CI_RESET_VM --download-only -b devel
+	$CI_RESET_VM --download-only -b deploy
 }
 
 refresh() {
-	$CI_RESET_VM --download-only 2>&1 | \
+	download 2>&1 | \
 	grep 'The file is already fully retrieved; nothing to do' || \
 	restart
 }
