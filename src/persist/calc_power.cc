@@ -176,7 +176,7 @@ static std::vector<std::string>
 
 
 /**
- *  \brief For any container returns a list of its power sources
+ *  \brief For every container returns a list of its power sources
  */
 static db_reply <std::map<std::string, std::vector<std::string> > >
     select_devices_total_power_container
@@ -185,13 +185,13 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
 {
     LOG_START;
     log_debug ("  container_type_id = %" PRIi8, container_type_id);
-    // name of the dc is mapped onto the vecrot of names of its power sources
+    // name of the container is mapped onto the vector of names of its power sources
     std::map<std::string, std::vector<std::string> > item{};
     db_reply <std::map<std::string, std::vector<std::string> > > ret =
                 db_reply_new(item);
 
     // there is no need to do all in one select, so let's do it by steps
-    // select all containers
+    // select all containers by type
     auto allContainers = select_asset_elements_by_type 
                                     (conn, container_type_id);
 
@@ -208,10 +208,10 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
     if  ( allContainers.item.empty() )
     {
         ret.status     = 0;
-        ret.msg        = "there is no containers at all";
+        ret.msg        = "there is no containers of requested type";
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_NOTFOUND;
-        log_error (ret.msg);
+        log_warning (ret.msg);
         return ret;
     }
 
@@ -222,7 +222,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
         auto container_devices_set = select_asset_device_by_container
                                                         (conn, container.id);
 
-        // here would be name of devices to summ up
+        // here would be placed names of devices to summ up
         std::vector<std::string> result(0);
         
         if ( container_devices_set.status == 0 )
