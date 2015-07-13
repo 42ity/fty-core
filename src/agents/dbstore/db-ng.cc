@@ -70,7 +70,8 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             const char *stream = bios_agent_address(client);
-            if (streq (stream, bios_get_stream_measurements())) {
+            if ( ( streq (stream, bios_get_stream_measurements())) ||
+                 ( streq (stream, bios_get_stream_main()) ) ) {
                 // New measurements publish
                 std::string topic = bios_agent_subject(client);
                 persist::process_measurement(topic, &in);
