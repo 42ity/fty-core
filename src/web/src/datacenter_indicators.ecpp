@@ -88,7 +88,10 @@ get_dc_trend(
         return 0.0f;
 
     if( avg == 0 ) return 0.0f;
-    return (actual * pow(10,actual_scale) - avg * pow(10,avg_scale) ) / ( avg * pow(10,avg_scale) );
+    // TODO: remove it afterdemo
+    return   ( (int) ((actual * pow(10,actual_scale) - avg * pow(10,avg_scale) ) *1000 / ( avg * pow(10,avg_scale) ))) / 1000;
+    // this is correct variant
+    //return (actual * pow(10,actual_scale) - avg * pow(10,avg_scale) ) / ( avg * pow(10,avg_scale) );
 }
 
 float
