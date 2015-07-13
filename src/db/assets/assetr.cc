@@ -364,24 +364,13 @@ reply_t
         log_debug("[v_bios_asset_element_super_parent]: were selected" \
                      "%" PRIu32 " rows",  1);
         bool isNotNull = row[0].get(dc_id);
-        if ( !isNotNull )
+        if ( !row[0].get(dc_id) && !row[1].get(dc_id) && 
+             !row[2].get(dc_id) && !row[3].get(dc_id) )
         {
-            isNotNull = row[1].get(dc_id);
-            if ( !isNotNull )
-            {
-                isNotNull = row[2].get(dc_id);
-                if ( !isNotNull )
-                {
-                    isNotNull = row[3].get(dc_id);
-                    if ( !isNotNull )
-                    {
-                        log_debug ("this element has no parent");
-                        dc_id = 0;
-                        rep.rv = 0;
-                        return rep;
-                    }
-                }
-            }
+            log_debug ("this element has no parent");
+            dc_id = 0;
+            rep.rv = 0;
+            return rep;
         }
 
         // need to check, if last parent is DC
