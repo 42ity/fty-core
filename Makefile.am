@@ -1225,7 +1225,7 @@ client_PROGRAMS +=      agent-alert
 agent_alert_SOURCES = \
 			src/agents/alert/alert-entity.cc \
 			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/alert-agent.cc \
+			src/agents/alert/agent-alert.cc \
 			src/agents/alert/alert-model.cc \
 			src/shared/utils_app.c \
 			src/shared/utils_ymsg.c \

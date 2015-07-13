@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file alert-agent.h
+/*! \file agent-alert.h
     \brief 
     \author Tomas Halman <tomashalman@eaton.com>
 */
