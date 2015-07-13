@@ -5,6 +5,11 @@ Requires=malamute.service mysql.service
 
 [Service]
 Type=simple
+#
+# - BIOS_LOG_LEVEL set bios log level
+#
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios
 ExecStart=@libexecdir@/bios/agent-cm
 
 [Install]
