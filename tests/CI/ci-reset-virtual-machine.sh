@@ -69,7 +69,7 @@ die() {
     CODE="${CODE-1}"
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+	echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -119,13 +119,14 @@ ensure_md5sum() {
 }
 
 cleanup_script() {
+	# Note that by default we currently have VM=latest
 	[ -z "$VM" ] && return 0
 	if [ -f "/srv/libvirt/rootfs/$VM.lock" ] ; then
 		rm -f "/srv/libvirt/rootfs/$VM.lock"
 	fi
 
 	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
-	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.*` ; do
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null` ; do
 		echo "$ERRCODE" > "$F"
 	done
 }
@@ -149,6 +150,7 @@ settraps() {
 #
 # defaults
 #
+### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
@@ -228,6 +230,7 @@ done
 #
 # check if VM exists
 #
+### TODO: Actions dependent on a particular "$VM" begin after image downloads
 [ -z "$VM" ] && die "VM parameter not provided!"
 RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
 if [ $RESULT = 0 ] ; then
@@ -427,6 +430,8 @@ else
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
+		ls -1 $IMGTYPE/$ARCH/*.$EXT >/dev/null || \
+			die "No downloaded image of type $IMGTYPE/$ARCH was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
 				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
