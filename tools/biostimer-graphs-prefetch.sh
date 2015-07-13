@@ -14,9 +14,11 @@ declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
 declare -r SERVER="127.0.0.1"
 declare -r PORT="8000"
 
+# TODO: set path via standard autoconf prefix-vars and .in conversions
 LOCKFILE=/var/lib/bios/agent-cm/cron_average.lock
 TIMEFILE=/var/lib/bios/agent-cm/cron_average.time
 
+# TODO: rely on (and include in distro) the scriptlib.sh library
 # Helper echo to stderr function
 echoerr() { echo "$@" 1>&2; }
 
@@ -31,7 +33,7 @@ function join { local IFS="$1"; shift; echo "$*"; }
 #   0 - success
 # Arguments:
 #   $1 - asset element id
-element_to_device_id () {
+element_to_device_id() {
     # arguments check
     if [ $# -lt 1 ]; then
         echoerr "element_to_device_id(): argument required."
@@ -70,7 +72,7 @@ element_to_device_id () {
 #   0 - success
 # Arguments:
 #   None
-get_elements () {
+get_elements() {
     local __result=$(mysql -s -u root -D box_utf8 -N -e "    
         SELECT id FROM v_web_element
         WHERE
@@ -121,7 +123,7 @@ get_elements () {
 #   0 - success
 # Arguments:
 #   $1 - device identifier
-sources_from_device_id () {
+sources_from_device_id() {
     # arguments check
     if [ $# -lt 1 ]; then
         echoerr "sources_from_device_id(): argument required."
@@ -181,83 +183,90 @@ sources_from_device_id () {
     return 0
 }
 
-### script starts here ###
+start_lock() {
+    # Previous cron_average.sh should execute successfully
+    # TODO: see flock command
+    [ -f "$LOCKFILE" ] && exit 0
 
-# Previous cron_average.sh should execute successfully
-[ -f $LOCKFILE ] && exit 0
+    trap '{ EXITCODE=$?; rm -f "$LOCKFILE" ; exit $EXITCODE; }' EXIT # TODO add other signals
+    mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
+    touch "$LOCKFILE" || exit $?
+}
 
-trap "{ rm -f $LOCKFILE ; exit 255; }" EXIT # TODO add
-mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
-touch $LOCKFILE || exit $?
+generate_curl_strings() {
+    end_timestamp=$(date +%Y%m%d%H%M%S)
+    declare -r END_TIMESTAMP="${end_timestamp}Z"
 
-end_timestamp=$(date +%Y%m%d%H%M%S)
-declare -r END_TIMESTAMP="${end_timestamp}Z"
-
-if [ -f "$TIMEFILE" ] && [ -s "$TIMEFILE" ]; then
-    read -r firstline < "$TIMEFILE"
-    if [ -z "$firstline" ]; then
+    if [ -f "$TIMEFILE" ] && [ -s "$TIMEFILE" ]; then
+        read -r firstline < "$TIMEFILE"
+        if [ -z "$firstline" ]; then
+            start_timestamp="19700101000000Z"
+        fi
+        # TODO: check format of the read line
+        start_timestamp="$firstline"
+    else
         start_timestamp="19700101000000Z"
     fi
-    # TODO: check format of the read line
-    start_timestamp="$firstline"
-else
-    start_timestamp="19700101000000Z"
-fi
 
-declare -r START_TIMESTAMP="$start_timestamp"
+    declare -r START_TIMESTAMP="$start_timestamp"
 
-# TODO: remove
-#echo "START_TIMESTAMP=$START_TIMESTAMP"
-#echo "END_TIMESTAMP=$END_TIMESTAMP"
+    # TODO: remove or convert to logmsg_debug
+    #echo "START_TIMESTAMP=$START_TIMESTAMP"
+    #echo "END_TIMESTAMP=$END_TIMESTAMP"
 
-# 1. Get asset element identifiers
-element_ids=$(get_elements)
-if [ $? -eq 1 ]; then   # no element ids for DC, rack, ups
-    exit 0
-elif [ $? -gt 1 ]; then # error
-    exit 1
-fi
-#read -a ELEMENTS <<<${element_ids}
-
-# 2. Go over them and ...
-for i in $element_ids; do
-
-    # TODO: Remove the following block
-    #echo "-> $i"
-
-
-    # 3. Try to get corresponding device id from given element id
-    device_id=$(element_to_device_id $i)    
-    if [ $? -eq 1 ]; then   # device id not found for this element id
-        continue
+    # 1. Get asset element identifiers
+    element_ids=$(get_elements)
+    if [ $? -eq 1 ]; then   # no element ids for DC, rack, ups
+        return 0
     elif [ $? -gt 1 ]; then # error
-        exit 1
+        return 1
     fi
+    #read -a ELEMENTS <<<${element_ids}
 
-    # TODO: Remove the following block
-    #echo "$i"
-    #echo "device id: '$device_id'"
-    #echo -e "\tsources:"
+    # 2. Go over them and ...
+    for i in $element_ids; do
 
-    # 4. Try to get distinct sources from all the topics of a given device id
-    SOURCES=$(sources_from_device_id $device_id)
-    if [ $? -eq 1 ]; then   # no sources/topics exist for given device id
-        continue
-    elif [ $? -gt 1 ]; then # error
-        exit 1
-    fi
-    # 5. Generate curl request for each combination of source, step, type for the given element id
-    for s in $SOURCES; do
-        for stype in ${TYPE[@]}; do
-            for sstep in ${STEP[@]}; do
-                # TODO: change this to a command instead of echo
-                echo "curl 'http://${SERVER}:${PORT}/api/v1/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
-                # TODO: Does it make sense to check for 404/500? What can we do?
+        # TODO: Remove the following block or convert to logmsg_debug
+        #echo "-> $i"
+
+        # 3. Try to get corresponding device id from given element id
+        device_id=$(element_to_device_id $i)    
+        if [ $? -eq 1 ]; then   # device id not found for this element id
+            continue
+        elif [ $? -gt 1 ]; then # error
+            return 1
+        fi
+
+        # TODO: Remove the following block or convert to logmsg_debug
+        #echo "$i"
+        #echo "device id: '$device_id'"
+        #echo -e "\tsources:"
+
+        # 4. Try to get distinct sources from all the topics of a given device id
+        SOURCES=$(sources_from_device_id $device_id)
+        if [ $? -eq 1 ]; then   # no sources/topics exist for given device id
+            continue
+        elif [ $? -gt 1 ]; then # error
+            return 1
+        fi
+        # 5. Generate curl request for each combination of source, step, type for the given element id
+        for s in $SOURCES; do
+            for stype in ${TYPE[@]}; do
+                for sstep in ${STEP[@]}; do
+                    # TODO: change this to a command instead of echo
+                    echo "curl 'http://${SERVER}:${PORT}/api/v1/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    # TODO: Does it make sense to check for 404/500? What can we do?
+                done
             done
         done
     done
-done
 
-echo "$END_TIMESTAMP" > "$TIMEFILE"
+    echo "$END_TIMESTAMP" > "$TIMEFILE"
+    return 0
+}
 
-exit 0
+### script starts here ###
+# TODO: add a mode to run the generated strings
+start_lock
+generate_curl_strings
+exit $?
