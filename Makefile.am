@@ -1150,7 +1150,7 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
-			src/agents/inventory/inventory-actor.cc \
+			src/agents/inventory/agent-inventory.cc \
 			tools/dbpath.h
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
