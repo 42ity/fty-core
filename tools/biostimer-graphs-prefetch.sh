@@ -14,15 +14,17 @@
 declare -ar TYPE=("arithmetic_mean" "min" "max")
 declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
 
-[ -z "$SERVER" ] && \
-declare -r SERVER="127.0.0.1"
+[ -z "$SUT_HOST" ] && \
+declare -r SUT_HOST="127.0.0.1"
 
-[ -z "$PORT" ] && \
+[ -z "$SUT_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare -r PORT="8000"
+        declare -r SUT_PORT="8000"
 else
-        declare -r PORT="80"
+        declare -r SUT_PORT="80"
 fi
+
+[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 # TODO: Set paths via standard autoconf prefix-vars and .in conversions
 # TODO: Run as non-root, and use paths writable by that user (bios?)
@@ -283,7 +285,7 @@ generate_getrestapi_strings() {
             for stype in ${TYPE[@]}; do
                 for sstep in ${STEP[@]}; do
                     # TODO: change this to a command instead of echo
-                    echo "$FETCHER 'http://${SERVER}:${PORT}/api/v1/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     # TODO: Does it make sense to check for 404/500? What can we do?
                 done
             done
