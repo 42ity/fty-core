@@ -1,26 +1,37 @@
 #!/bin/bash
 
 # USAGE
-# cron_average 
-# At the moment script only outputs curl requests
+# biostimer-graphs-prefetch.sh
+# Script finds assets with power-average data and triggers pre-calculation
+# of the averages needed for graphs, thus speeding them up in web-GUI.
+# At the moment script only outputs curl requests in dry-run mode (-n)
+# and can execute them quietly (-q/default) or verbosely (-v).
 #
 # PURPOSE:
-# Have cron job periodically call this script 
+# Have cron job periodically call this script
 
 # supported average types and steps
 declare -ar TYPE=("arithmetic_mean" "min" "max")
 declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
 
+[ -z "$SERVER" ] && \
 declare -r SERVER="127.0.0.1"
-declare -r PORT="8000"
 
-# TODO: set path via standard autoconf prefix-vars and .in conversions
-LOCKFILE=/var/lib/bios/agent-cm/cron_average.lock
-TIMEFILE=/var/lib/bios/agent-cm/cron_average.time
+[ -z "$PORT" ] && \
+if [ -n "$CHECKOUTDIR" ] ; then
+        declare -r PORT="8000"
+else
+        declare -r PORT="80"
+fi
+
+# TODO: Set paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?)
+LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
+TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
 FETCHER=
-( which curl 2>/dev/null ) && FETCHER=fetch_curl
 ( which wget 2>/dev/null ) && FETCHER=fetch_wget
+( which curl 2>/dev/null ) && FETCHER=fetch_curl
 
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
@@ -200,7 +211,7 @@ sources_from_device_id() {
 }
 
 start_lock() {
-    # Previous cron_average.sh should execute successfully
+    # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && exit 0
 
