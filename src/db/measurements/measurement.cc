@@ -281,9 +281,6 @@ select_measurement_last_web_byTopic (
         int minutes_back,
         bool fuzzy)
 {
-    LOG_START;
-    log_debug("topic = %s", topic.c_str());
-
     reply_t ret;
     try {
         std::string query =
@@ -299,13 +296,17 @@ select_measurement_last_web_byTopic (
         tntdb::Row row = statement.set("topic", topic).
                                    set("time", time(NULL) - 60 * minutes_back).
                                    selectRow();
-        log_debug("[v_bios_measurement_last]: were selected %" PRIu32 " rows", 1);
+        log_debug("[v_bios_measurement]: were selected %" PRIu32 " rows,"\
+                  " topic = %s, minutes_back %i", 1, topic.c_str(), minutes_back);
 
         row[0].get(value);
         row[1].get(scale);
+        ret.rv = 0;
+        return ret;
     }
     catch (const std::exception &e) {
         ret.rv = -1;
+        log_debug("topic = %s", topic.c_str());
         LOG_END_ABNORMAL(e);
         return ret;
     }
@@ -314,9 +315,6 @@ select_measurement_last_web_byTopic (
         ret.rv = -1;
         return ret;
     }
-    ret.rv = 0;
-    LOG_END;
-    return ret;
 }
 
 } // namespace persist

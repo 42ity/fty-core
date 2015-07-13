@@ -111,13 +111,14 @@ float
 get_dc_measurement(
     tntdb::Connection& conn,
     const std::string& src,
-    a_elmnt_id_t id)
+    a_elmnt_id_t id,
+    int minutes_back)
 {
     reply_t reply;
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     
-    reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+    reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale, minutes_back);
     if (reply.rv != 0)
         return 0.0f;
     return value * pow(10,scale);
@@ -140,7 +141,8 @@ get_dc_indicator(
     reply_t reply;
     if (key.substr(0,5) == "trend") return get_dc_trend(conn, src, id);
     if (src.find('%') != std::string::npos) return get_dc_percentage(conn, src, id);
-    return get_dc_measurement(conn, src, id);
+    if (src.find("24h") != std::string::npos) return get_dc_measurement(conn, src, id, 24*60+5);
+    return get_dc_measurement(conn, src, id, 10);
 }
 
 static bool
