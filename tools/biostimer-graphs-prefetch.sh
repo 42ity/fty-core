@@ -287,8 +287,12 @@ run_getrestapi_strings() {
     start_lock
     generate_getrestapi_strings | while IFS="" read LINE; do
         # TODO: logmsg_debug this:
-        echo "Running: $LINE"
-        $LINE &
+        ( [ "$1" = -v ] && echo "Running: $LINE" >&2
+          $LINE
+          RESLINE=$?
+          [ "$1" = -v ] && echo "Result ($RESLINE) of: $LINE" >&2
+          exit $RESLINE
+        ) &
     done
     wait
     RES=$?
@@ -298,13 +302,13 @@ run_getrestapi_strings() {
 
 ### script starts here ###
 case "$1" in
-    -n) generate_getrestapi_strings
+    -n) generate_getrestapi_strings "$@"
         exit $?
         ;;
-    -v) run_getrestapi_strings
+    -v) run_getrestapi_strings "$@"
         exit $?
         ;;
-    ""|-q) run_getrestapi_strings >/dev/null
+    ""|-q) run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
     -h|--help) echo "$0 [-n | -v]"
