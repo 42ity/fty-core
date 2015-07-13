@@ -346,10 +346,11 @@ do_select() {
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "do_select(): $1 ;" >&2
-    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
-    DB_RES=$?
-    echo "$DB_OUT" | tail -n +2
-    [ $? = 0 -a "$DB_RES" = 0 ]
+    echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
+#    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+#    DB_RES=$?
+#    echo "$DB_OUT" | tail -n +2
+#    [ $? = 0 -a "$DB_RES" = 0 ]
     return $?
 }
 
