@@ -77,7 +77,7 @@ limit_packages_docs() {
 
 limit_packages_forceremove() {
     echo "INFO: ...and just to be sure - remove some space-hungry beasts..."
-    apt-get remove --purge \
+    apt-get -f -y --force-yes remove --purge \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc texlive-latex-base-doc texlive-latex-extra-doc \
         texlive-latex-recommended-doc texlive-pictures-doc texlive-pstricks-doc
@@ -97,7 +97,8 @@ update_pkg_keys() {
     # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
 
     echo "INFO: Updating upstream-distro packaging keys..."
-    apt-get install debian-keyring debian-archive-keyring
+    apt-get -f -y --force-yes install \
+        debian-keyring debian-archive-keyring
     apt-key update
 }
 
