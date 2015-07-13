@@ -227,7 +227,7 @@ start_lock() {
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && exit 0
 
-    trap '{ EXITCODE=$?; rm -f "$LOCKFILE" ; exit $EXITCODE; }' EXIT # TODO add other signals
+    settraps 'rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
     touch "$LOCKFILE" || exit $?
 }
