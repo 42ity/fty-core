@@ -36,13 +36,6 @@ echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 
 echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 
-### Should the test suite break upon first failed test?
-if  [ -z "$WEBLIB_QUICKFAIL" ] ; then
-    [ x"$CITEST_QUICKFAIL" = xno -o x"$CITEST_QUICKFAIL" = xyes ] && \
-        WEBLIB_QUICKFAIL="$CITEST_QUICKFAIL" || \
-        WEBLIB_QUICKFAIL=no
-fi
-
 # Should the test suite abort if "curl" errors out?
 [ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes
 
@@ -99,90 +92,40 @@ if [ -z "$CHECKOUTDIR" ]; then
     esac
 fi
 
+if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
+        . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
+else
+        . "$SCRIPTDIR"/testlib.sh || exit
+fi
+
+### Should the test suite break upon first failed test?
+### Legacy weblib value (may be set by caller/includer)
+### overrides the common testlib variable
+[ x"$WEBLIB_QUICKFAIL" = xno -o x"$WEBLIB_QUICKFAIL" = xyes ] && \
+        echo "CI-WEBLIB-INFO: Overriding CITEST_QUICKFAIL with WEBLIB_QUICKFAIL='$WEBLIB_QUICKFAIL'" && \
+        CITEST_QUICKFAIL="$WEBLIB_QUICKFAIL"
+
 [ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
 
 _TOKEN_=""
-WEBLIB_FORCEABORT=no
-_weblib_result_printed=notest
-
-print_result() {
-    [ "$_weblib_result_printed" = yes ] && return 0
-    _weblib_result_printed=yes
-    _ret="$1"
-    ### Is this a valid number? if not - it may be some comment about the error
-    [ "$_ret" -ge 0 ] 2>/dev/null || \
-        _ret=255
-    TOTAL="`expr $TOTAL + 1`"
-    if [ "$_ret" -eq 0 ]; then
-        echo " * PASSED"
-        PASS="`expr $PASS + 1`"
-    else
-        [ x"$_ret" = x"$1" ] && \
-            echo " * FAILED ($_ret)" || \
-            echo " * FAILED ($_ret, $1)"
-	if [ "$TNAME" = "$NAME" ]; then
-            LASTFAILED="`echo "$NAME(${_ret})" | sed 's, ,__,g'`"
-	else
-            LASTFAILED="`echo "$NAME::$TNAME(${_ret})" | sed 's, ,__,g'`"
-	fi
-        FAILED="$FAILED $LASTFAILED"
-
-	# This optional envvar can be set by the caller
-	if [ "$WEBLIB_QUICKFAIL" = yes ]; then
-	    echo ""
-	    echo "$PASS previous tests have succeeded"
-	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
-		"WEBLIB_QUICKFAIL=$WEBLIB_QUICKFAIL" \
-		"after first failure with test $LASTFAILED"
-	    exit $_ret
-	fi >&2
-
-	# This optional envvar can be set by CURL() and trap_*() below
-	if [ "$WEBLIB_FORCEABORT" = yes ]; then
-	    echo ""
-	    echo "$PASS previous tests have succeeded"
-	    echo "CI-WEBLIB-FATAL-ABORT[$$]: Testing aborted due to" \
-		"WEBLIB_FORCEABORT=$WEBLIB_FORCEABORT" \
-		"after forced abortion in test $LASTFAILED"
-	    exit $_ret
-	fi >&2
-    fi
-    echo
-    return $_ret
-}
-
-test_it() {
-    _weblib_result_printed=notyet
-    [ -n "$TNAME" ] || TNAME="$NAME"
-    if [ "$1" ]; then
-        TNAME="$1"
-    fi
-    [ -n "$TNAME" ] || TNAME="$0"
-    TNAME="`basename "$TNAME" .sh | sed 's, ,__,g'`"
-    if [ "$TNAME" = "`basename $NAME .sh`" ]; then
-        echo "Running test $TNAME :"
-    else
-        echo "Running test $NAME::$TNAME :"
-    fi
-}
 
 ### This is what we will sig-kill if needed
-_PID_TESTER=$$
+_PID_TESTER_WEBLIB=$$
 RES_CURL=0
-trap_break() {
+trap_break_weblib() {
     ### This SIGUSR1 handler is reserved for CURL failures
 #    set +e
     [ "$RES_CURL" = 0 ] && \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2 || \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed ($RES_CURL), aborting test suite" >&2
-    echo "CI-WEBLIB-FATAL-BREAK: Got forced interruption signal" >&2
-    WEBLIB_FORCEABORT=yes
+    TESTLIB_FORCEABORT=yes
+    kill -SIGUSR2 $_PID_TESTER $$ >/dev/null 2>&1
 
 ### Just cause the loop to break at a proper moment in print_result()
 #    exit $1
     return 1
 }
-trap "trap_break" SIGUSR1
+trap "trap_break_weblib" SIGUSR1
 
 STACKED_HTTPERRORS_ACTIONS=""
 STACKED_HTTPERRORS_REGEX=""
@@ -389,7 +332,7 @@ CURL() {
     fi >&3
 
     if [ $RES_CURL != 0 -a x"$WEBLIB_CURLFAIL" = xyes ]; then
-        kill -SIGUSR1 $_PID_TESTER $$ >/dev/null 2>&1
+        kill -SIGUSR1 $_PID_TESTER_WEBLIB $$ >/dev/null 2>&1
         # exit $RES_CURL
     fi
 
@@ -636,53 +579,4 @@ api_post_json_cmp() {
     else
         return 0
     fi
-}
-
-# common testing function which compares outputs to a pattern
-# Usage:
-# do_test $test_name $api_call $url $regexp
-# do_test $test_name $api_call $url $url_args $regexp
-do_test_match() {
-    local test_name api_call url api_args regexp out err
-
-    case $# in
-        0|1|2|3)
-            echo "CI-WEBLIB-ERROR: do_test_match(): insuficient number of arguments" >&2
-            return 1
-            ;;
-        4)
-            test_name=${1}
-            api_call=${2}
-            url=${3}
-            api_args=""
-            regexp=${4}
-            ;;
-        5)
-            test_name=${1}
-            api_call=${2}
-            url=${3}
-            api_args=${4}
-            regexp=${5}
-            ;;
-        *)
-            echo "CI-WEBLIB-ERROR: do_test_match(): too many arguments: $#" >&2
-            return 1
-            ;;
-    esac
-
-    out="../log/${test_name}.stdout.$$.log"
-    err="../log/${test_name}.stderr.$$.log"
-
-    test_it "${test_name}"
-    ${api_call} ${url} "${api_args}" > "${out}"  2> "${err}"
-    if ! egrep -q "${regexp}" "${out}"; then
-        echo "    >>>>> DEBUG: ${out} <<<<"
-        cat "${out}"
-        echo "    >>>>> DEBUG: ${err} <<<<"
-        cat "${err}"
-        echo "    >>>>> \\DEBUG: ${test_name} <<<<"
-        return 1
-    fi
-    rm -f "${err}" "${out}"
-    return 0
 }
