@@ -180,20 +180,26 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
     if [ x"$FORCE_MKBUILDDEPS" = xyes -o x"$FORCE_MKBUILDDEPS" = xyesauto ]; then
         echo "autogen.sh: info: Making sure all needed packages are installed (note: may try to elevate privileges)."
         { echo "apt-get: Trying direct invokation..."
-          apt-get update; } || \
+          apt-get update -q; } || \
         { echo "apt-get: Retrying sudo..."
-          sudo apt-get update || { echo "Wipe metadata and retry"; sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update; } ; } || \
+          sudo apt-get update -q || { echo "Wipe metadata and retry"; sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update -q; } ; } || \
         { echo "apt-get: Retrying su..."
-          su - -c "apt-get update || { echo 'Wipe metadata and retry'; rm -rf /var/lib/apt/lists/*; apt-get update; } "; }
+          su - -c "apt-get update -q || { echo 'Wipe metadata and retry'; rm -rf /var/lib/apt/lists/*; apt-get update -q; } "; }
 
         echo "mk-build-deps: generate package file" && \
         mk-build-deps "$MKBD_DSC" && [ -s "$MKBD_DEB" ] && \
         { echo "mk-build-deps install: Trying direct invokation..."
-          dpkg -i "$MKBD_DEB" && apt-get --yes --force-yes -f install; } || \
+          export DEBIAN_FRONTEND=noninteractive
+          dpkg -i "$MKBD_DEB" && \
+          dpkg --configure -a && \
+          apt-get --yes --force-yes -f -q \
+                -o Dpkg::Options::="--force-confdef" \
+                -o Dpkg::Options::="--force-confold" \
+                install; } || \
         { echo "mk-build-deps install: Retrying sudo..."
-          sudo "dpkg -i '$MKBD_DEB' && apt-get --yes --force-yes -f install"; } || \
+          sudo "export DEBIAN_FRONTEND=noninteractive ; dpkg -i '$MKBD_DEB' && dpkg --configure -a && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install"; } || \
         { echo "mk-build-deps install: Retrying su..."
-          su - -c "dpkg -i '$MKBD_DEB' && apt-get --yes --force-yes -f install"; }
+          su - -c "export DEBIAN_FRONTEND=noninteractive ; dpkg -i '$MKBD_DEB' && dpkg --configure -a && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install"; }
         RES=$?
         if [ $RES -ne 0 ]; then
             echo "autogen.sh: error: mk-build-deps exited with status $RES" 1>&2
