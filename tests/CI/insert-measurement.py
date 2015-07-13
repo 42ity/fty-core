@@ -130,10 +130,14 @@ def usage():
     print "  -d|--date \"YYYY-MM-DD hh:mm:ss\" You can specify hh:mm:ss part only -"
     print "             actual date will be used then. if date option is not present"
     print "             at all, current date-time is used." 
+    print "  -h|--host address - mysql server address [127.0.0.1]"
+    print "  -p|--port port - mysql server port [3306]"
 
 topic = ""
 value = ""
 date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S");
+host = "127.0.0.1"
+port = 3306
 
 i = 1;
 while i < len(sys.argv) - 1 :
@@ -142,6 +146,12 @@ while i < len(sys.argv) - 1 :
         i += 1
     elif sys.argv[i] == "--value" or sys.argv[i] == "-v" :
         value = float(sys.argv[i+1])
+        i += 1
+    elif sys.argv[i] == "--host" or sys.argv[i] == "-h" :
+        host = sys.argv[i+1]
+        i += 1
+    elif sys.argv[i] == "--port" or sys.argv[i] == "-p" :
+        port = int(sys.argv[i+1])
         i += 1
     elif sys.argv[i] == "--date" or sys.argv[i] == "-d" :
         try:
@@ -165,7 +175,12 @@ if topic == "" or value == "":
     usage()
     sys.exit(1)
 
-conn = db.connect( host="127.0.0.1", user="root", db="box_utf8")
+conn=1
+try:
+    conn = db.connect( host=host, port=port, user="root", db="box_utf8")
+except:
+    print "Connection failed"
+    sys.exit(1)
 measurement = Measurement(conn);
 measurement.insert(topic, value, date);
 conn.commit()
