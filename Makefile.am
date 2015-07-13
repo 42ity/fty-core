@@ -1103,8 +1103,8 @@ agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-alert-smtp
 
 agent_alert_smtp_SOURCES = \
-			src/agents/alert-smtp/alert-smtp-agent.h \
-			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/agent-alert-smtp.h \
+			src/agents/alert-smtp/agent-alert-smtp.cc \
 			src/agents/alert-smtp/alert-basic.h
 
 
