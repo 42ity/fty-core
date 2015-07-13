@@ -1018,7 +1018,7 @@ client_SCRIPTS =	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
-agent_dbstore_SOURCES =		src/agents/dbstore/db-ng.cc \
+agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
 agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
