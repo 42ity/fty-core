@@ -47,6 +47,7 @@ namespace persist {
  *                        about this alert
  * \param date_from     - a date+time when system evaluated that 
  *                        this alert had started
+ * \param dc_id         - a datacenter id 
  * 
  * \return in case of success: status = 1,
  *                             rowid is set,
@@ -64,7 +65,8 @@ db_reply_t
          m_alrt_state_t      alert_state,
          const char         *description,
          m_alrt_ntfctn_t     notification,
-         int64_t             date_from);
+         int64_t             date_from,
+         a_elmnt_id_t        dc_id);
 
 //+
 /*

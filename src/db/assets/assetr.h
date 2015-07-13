@@ -25,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <vector>
 #include "dbtypes.h"
 #include "dbhelpers.h"
+#include "db/types.h"
 
 /**
  * \brief helper structure for results of v_web_element
@@ -90,5 +91,11 @@ db_reply <std::map <uint32_t, std::string> >
     select_short_elements
         (tntdb::Connection &conn, 
          a_elmnt_tp_id_t type_id);
+
+reply_t
+    select_dc_of_asset_element
+        (tntdb::Connection &conn,
+         a_elmnt_id_t  element_id,
+         a_elmnt_id_t &dc_id);
 
 } //namespace end
