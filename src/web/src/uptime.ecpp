@@ -79,7 +79,7 @@ asset_manager asset_mgr;
     try {
         tntdb::Connection conn = tntdb::connectCached (url);
 
-        json << "{\n\t\"datacenter_indicators\": [\n";
+        json << "{\n\t\"outage\": [\n";
 
         for ( size_t D = 0 ; D < DCs.size(); D++ ) 
         {
@@ -90,24 +90,28 @@ asset_manager asset_mgr;
                 (conn, atoi(DCs[D].c_str()), uptime, total);
 
             json << "\t\t{\n"
-                 << "\t\t\t\"id\": \""   << DCs[D]     << "\",\n"
-                 << "\t\t\t\"name\": \"" << DCNames[D] << "\",\n"
-                 << "\t\t\t\"uptime\" : "<<  uptime    <<   ",\n"
-                 << "\t\t\t\"total\" : " <<  total     <<    "\n";
+                 << "\t\t\t\"id\": \""   << DCs[D]           << "\",\n"
+                 << "\t\t\t\"name\": \"" << DCNames[D]       << "\",\n"
+                 << "\t\t\t\"outage\" : "<<  total - uptime  <<   ",\n"
+                 << "\t\t\t\"total\" : " <<  total           <<    "\n";
             json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
         }
         json << "\t]\n}\n";
     }
     catch ( const std::invalid_argument& e ) {
 </%cpp>
-    { "error" : "<$$ e.what()$>" }
+{ 
+    "error" : "<$$ e.what()$>"
+}
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
     catch ( const std::exception& e ) {
 </%cpp>
-    <h1>internal server error</h1>
-    <$$ e.what() $>
+{
+    "error" : "internal server error",
+    "msg" : <$$ e.what() $>
+}
 <%cpp>      
         return HTTP_INTERNAL_SERVER_ERROR;   
     }
