@@ -19,14 +19,14 @@
 # Karol Hrdina <karolhrdina@eaton.com>
 # Radomir Vrajik <radomirvrajik@eaton.com>
 #
-# Description: tests netmon module
+# Description: tests agent-netmon module
 # ***** ABBREVIATIONS *****
     # *** abbreviation SUT - System Under Test - remote server with BIOS ***
     # *** abbreviation MS - Management Station - local server with this script ***
 # ***** PREREQUISITES *****
     # ***   project is built ***
     # ***   script is ran as root ***
-    # ***   BIOS processes (malamut, agent-dbstore, nut, netmon) are running on SUT ***
+    # ***   BIOS processes (malamute, agent-dbstore, nut, agent-netmon) are running on SUT ***
 
 # TODO (nice to have, if there is nothing to do):
 # - grep second iface and do a couple add/del on it as well (lo is special)
@@ -111,7 +111,7 @@ function cleanup {
     sut_run "killall dshell lt-dshell"
     sut_run "rm -f '$DSH_FILE_REMOTE'"
     ### TODO: Should systemd-managed BIOS and other services be stopped?
-    #sut_run "killall -9 netmon lt-netmon"
+    #sut_run "killall -9 agent-netmon lt-agent-netmon"
     rm -f "$LOCKFILE" #"$DSH_FILE"
 }
 
@@ -145,9 +145,9 @@ if [ -n "$DEBUG" ]; then
 fi
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
     # ***  start dshell on SUT ***
