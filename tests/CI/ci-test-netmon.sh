@@ -17,7 +17,7 @@
 #
 # Author(s): Karol Hrdina <karolhrdina@eaton.com>
 #
-# Description: tests netmon module
+# Description: tests agent-netmon module
 #
 # Requirements:
 #   project is built
@@ -40,7 +40,7 @@ LOCKFILE=/tmp/ci-test-netmon.lock
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the agent-netmon service"
 
 ### Section: actual steps being performed
 function cleanup {
@@ -51,7 +51,7 @@ function cleanup {
     set +e
     killall malamute
     killall dshell lt-dshell
-    killall -KILL netmon lt-netmon
+    killall -KILL agent-netmon lt-agent-netmon
     rm -f "$LOCKFILE" #"$dsh_file"
 
     exit $TRAP_RESULT
@@ -78,7 +78,7 @@ if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG} || exit
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 netmon dshell || exit
+./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 agent-netmon dshell || exit
 
 mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
 dsh_file=$(mktemp -p "$BUILDSUBDIR/tests/CI/")
@@ -99,9 +99,9 @@ if [[ $? -ne 0 ]]; then
     echo "dshell didn't start properly" >&2
     exit 1
 fi
-$BUILDSUBDIR/netmon &
+$BUILDSUBDIR/agent-netmon &
 if [[ $? -ne 0 ]]; then
-    echo "netmon didn't start properly" >&2
+    echo "agent-netmon didn't start properly" >&2
     exit 1
 fi
 sleep 2
