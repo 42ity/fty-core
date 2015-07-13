@@ -84,7 +84,7 @@ element_to_device_id() {
     fi
 
     local __element_id="$1"
-    local __result=$(mysql -s -u root -D box_utf8 -N -e "    
+    local __result=$(do_select "
         SELECT a.id_discovered_device
         FROM
             t_bios_discovered_device AS a LEFT JOIN t_bios_monitor_asset_relation AS b
@@ -112,16 +112,16 @@ element_to_device_id() {
 # Arguments:
 #   None
 get_elements() {
-    local __result=$(mysql -s -u root -D box_utf8 -N -e "    
+    local __result=$(do_select "
         SELECT id FROM v_web_element
         WHERE
-            id_type = 
+            id_type =
             (
                 SELECT id_asset_element_type
                 FROM t_bios_asset_element_type
                 WHERE name = 'datacenter'
             ) OR
-            id_type = 
+            id_type =
             (
                 SELECT id_asset_element_type
                 FROM t_bios_asset_element_type
@@ -135,7 +135,7 @@ get_elements() {
                     WHERE name = 'device'
 
                 ) AND
-                subtype_id = 
+                subtype_id =
                 (
                     SELECT id_asset_device_type
                     FROM t_bios_asset_device_type
@@ -174,7 +174,7 @@ sources_from_device_id() {
     fi
 
     local __device_id="$1"
-    local __mysql=$(mysql -s -u root -D box_utf8 -N -e "
+    local __mysql=$(do_select "
         SELECT topic
         FROM v_bios_measurement_topic
         WHERE device_id = '${__device_id}'
