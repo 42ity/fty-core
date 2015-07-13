@@ -261,12 +261,30 @@ generate_curl_strings() {
         done
     done
 
-    echo "$END_TIMESTAMP" > "$TIMEFILE"
     return 0
 }
 
 ### script starts here ###
-# TODO: add a mode to run the generated strings
-start_lock
-generate_curl_strings
-exit $?
+case "$1" in
+    -n) generate_curl_strings
+        exit $?
+        ;;
+    -h|--help) echo "$0 [-n]"
+        echo "  -n    Dry-run"
+        echo "If not dry-running, actually run the curl callouts"
+        ;;
+    "") start_lock
+        generate_curl_strings | while IFS="" read LINE; do
+            # TODO: logmsg_debug this:
+            echo "Running: $LINE"
+            $LINE &
+        done
+        wait
+        RES=$?
+        [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+        exit $RES
+        ;;
+    *) echo "Unknown params : $@";;
+esac
+
+exit 1
