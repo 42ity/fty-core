@@ -1,5 +1,9 @@
 #!/bin/sh -x
 
+# For crontab:
+### Update bios demo
+### 0 1 * * * bash /root/update_demo > /root/update_demo.log 2>&1
+
 PATH="/bin:/usr/bin:/sbin:/usr/sbin"
 
 [ -n "$VARIANT" ] || VARIANT="deploy"
