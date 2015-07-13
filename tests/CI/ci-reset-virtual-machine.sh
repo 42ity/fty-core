@@ -577,7 +577,7 @@ mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
-logmsg_info "Put virtual hostname in resolv.conf"
+logmsg_info "Put virtual hostname in /etc/hosts"
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
