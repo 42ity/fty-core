@@ -26,22 +26,32 @@ fi
 
 [ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
+[ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
+        SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname "$0"`" || \
+        SCRIPTDIR="`dirname "$0"`"
+
+# Include our standard routines for CI scripts
+[ -s "$SCRIPTDIR/scriptlib.sh" ] &&
+        . "$SCRIPTDIR"/scriptlib.sh || \
+{ [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
+        . "$SCRIPTDIR"/../tests/CI/scriptlib.sh ; } || \
+{ echo "FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
+LOGMSG_PREFIX="BIOS-TIMER-"
+
 # TODO: Set paths via standard autoconf prefix-vars and .in conversions
 # TODO: Run as non-root, and use paths writable by that user (bios?)
 LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
 FETCHER=
-( which wget 2>/dev/null ) && FETCHER=fetch_wget
-( which curl 2>/dev/null ) && FETCHER=fetch_curl
+( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
+( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
-
-# TODO: rely on (and include in distro) the scriptlib.sh library
-# Helper echo to stderr function
-echoerr() { echo "$@" 1>&2; }
 
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
@@ -65,11 +75,11 @@ fetch_curl() {
 element_to_device_id() {
     # arguments check
     if [ $# -lt 1 ]; then
-        echoerr "element_to_device_id(): argument required."
+        logmsg_error "element_to_device_id(): argument required."
         return 2
     fi
     if [ -z "$1" -o "$1" == "0" ]; then
-        echoerr "element_to_device_id(): argument empty or '0' which is not a valid asset element identifier."
+        logmsg_error "element_to_device_id(): argument empty or '0' which is not a valid asset element identifier."
         return 2
     fi
 
@@ -155,11 +165,11 @@ get_elements() {
 sources_from_device_id() {
     # arguments check
     if [ $# -lt 1 ]; then
-        echoerr "sources_from_device_id(): argument required."
+        logmsg_error "sources_from_device_id(): argument required."
         return 2
     fi
     if [ -z "$1" -o "$1" == "0" ]; then
-        echoerr "sources_from_device_id(): argument empty or '0' which is not a valid device identifier."
+        logmsg_error "sources_from_device_id(): argument empty or '0' which is not a valid device identifier."
         return 2
     fi
 
@@ -241,9 +251,9 @@ generate_getrestapi_strings() {
 
     declare -r START_TIMESTAMP="$start_timestamp"
 
-    # TODO: remove or convert to logmsg_debug
-    #echo "START_TIMESTAMP=$START_TIMESTAMP"
-    #echo "END_TIMESTAMP=$END_TIMESTAMP"
+    logmsg_debug $CI_DEBUGLEVEL_DEBUG \
+        "START_TIMESTAMP=$START_TIMESTAMP" \
+        "END_TIMESTAMP=$END_TIMESTAMP" >&2
 
     # 1. Get asset element identifiers
     element_ids=$(get_elements)
@@ -258,7 +268,7 @@ generate_getrestapi_strings() {
     for i in $element_ids; do
 
         # TODO: Remove the following block or convert to logmsg_debug
-        #echo "-> $i"
+        logmsg_debug $CI_DEBUGLEVEL_DEBUG "-> $i" >&2
 
         # 3. Try to get corresponding device id from given element id
         device_id=$(element_to_device_id $i)    
@@ -269,9 +279,7 @@ generate_getrestapi_strings() {
         fi
 
         # TODO: Remove the following block or convert to logmsg_debug
-        #echo "$i"
-        #echo "device id: '$device_id'"
-        #echo -e "\tsources:"
+        logmsg_debug $CI_DEBUGLEVEL_DEBUG "$i" "device id: '$device_id'" " sources:" >&2
 
         # 4. Try to get distinct sources from all the topics of a given device id
         SOURCES=$(sources_from_device_id $device_id)
@@ -284,7 +292,7 @@ generate_getrestapi_strings() {
         for s in $SOURCES; do
             for stype in ${TYPE[@]}; do
                 for sstep in ${STEP[@]}; do
-                    # TODO: change this to a command instead of echo
+                    # TODO: change this to api_get with related checks?
                     echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     # TODO: Does it make sense to check for 404/500? What can we do?
                 done
@@ -299,11 +307,10 @@ run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
     start_lock
     generate_getrestapi_strings | while IFS="" read LINE; do
-        # TODO: logmsg_debug this:
-        ( [ "$1" = -v ] && echo "Running: $LINE" >&2
+        ( [ "$1" = -v ] && logmsg_debug 0 "Running: $LINE" >&2
           $LINE
           RESLINE=$?
-          [ "$1" = -v ] && echo "Result ($RESLINE) of: $LINE" >&2
+          [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $LINE" >&2
           exit $RESLINE
         ) &
     done
@@ -329,7 +336,7 @@ case "$1" in
         echo "  -v    Wet-run with output posted to stdout"
         echo "If not dry-running, actually run the $FETCHER callouts quietly dumped to /dev/null"
         ;;
-    *) echo "Unknown params : $@";;
+    *) die "Unknown params : $@";;
 esac
 
 exit 1
