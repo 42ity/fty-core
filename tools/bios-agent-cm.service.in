@@ -1,7 +1,7 @@
 [Unit]
 Description=Computation Module agent for BIOS project
-After=malamute.service mysql.service
-Requires=malamute.service mysql.service
+After=malamute.service bios-db-init.service
+Requires=malamute.service bios-db-init.service
 
 [Service]
 Type=simple
