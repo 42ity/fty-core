@@ -92,6 +92,8 @@ if [ -z "$CHECKOUTDIR" ]; then
     esac
 fi
 
+# TODO: Support delivery of weblib.sh into distro so that paths are different
+# and testlib may be not available (avoid kill $_PID_TESTER in traps below)
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
         . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
 else
@@ -114,16 +116,15 @@ _PID_TESTER_WEBLIB=$$
 RES_CURL=0
 trap_break_weblib() {
     ### This SIGUSR1 handler is reserved for CURL failures
-#    set +e
+    set +e
     [ "$RES_CURL" = 0 ] && \
-        echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2 || \
+        echo "CI-WEBLIB-ERROR-WEB: curl program failed, aborting test suite" >&2 && RES_CURL=126 || \
         echo "CI-WEBLIB-ERROR-WEB: curl program failed ($RES_CURL), aborting test suite" >&2
     TESTLIB_FORCEABORT=yes
+    [ -n "$_PID_TESTER" ] && \
     kill -SIGUSR2 $_PID_TESTER $$ >/dev/null 2>&1
 
-### Just cause the loop to break at a proper moment in print_result()
-#    exit $1
-    return 1
+    exit $RES_CURL
 }
 trap "trap_break_weblib" SIGUSR1
 
