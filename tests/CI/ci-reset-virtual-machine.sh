@@ -69,7 +69,7 @@ die() {
     CODE="${CODE-1}"
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+	echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -88,6 +88,7 @@ usage() {
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
+    echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
     echo "    -h|--help            print this help"
 }
 
@@ -119,13 +120,14 @@ ensure_md5sum() {
 }
 
 cleanup_script() {
+	# Note that by default we currently have VM=latest
 	[ -z "$VM" ] && return 0
 	if [ -f "/srv/libvirt/rootfs/$VM.lock" ] ; then
 		rm -f "/srv/libvirt/rootfs/$VM.lock"
 	fi
 
 	[ "$ERRCODE" -ge 0 ] 2>/dev/null && \
-	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.*` ; do
+	for F in `ls -1 /srv/libvirt/rootfs/$VM.wantexitcode.* 2>/dev/null` ; do
 		echo "$ERRCODE" > "$F"
 	done
 }
@@ -149,6 +151,7 @@ settraps() {
 #
 # defaults
 #
+### TODO: Assign this default later in the script, after downloads
 VM="latest"
 [ -z "$IMGTYPE" ] && IMGTYPE="devel"
 [ -z "$OBS_IMAGES" ] && OBS_IMAGES="http://obs.roz.lab.etn.com/images/"
@@ -168,6 +171,7 @@ DOTDOMAINNAME=""
 
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
+[ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 
@@ -202,6 +206,10 @@ while [ $# -gt 0 ] ; do
 	    DOWNLOADONLY=yes
 	    shift
 	    ;;
+	--deploy-only)
+	    DEPLOYONLY=yes
+	    shift
+	    ;;
 	--attempt-download)
 	    shift
 	    case "$1" in
@@ -228,6 +236,7 @@ done
 #
 # check if VM exists
 #
+### TODO: Actions dependent on a particular "$VM" begin after image downloads
 [ -z "$VM" ] && die "VM parameter not provided!"
 RESULT=$(virsh -c lxc:// list --all | awk '/^ *[0-9-]+ +'"$VM"' / {print $2}' | wc -l)
 if [ $RESULT = 0 ] ; then
@@ -427,6 +436,8 @@ else
 		# image file for this type
 		logmsg_info "Selecting newest image (as sorted by alphabetic name)"
 		IMAGE=""
+		ls -1 $IMGTYPE/$ARCH/*.$EXT >/dev/null || \
+			die "No downloaded image of type $IMGTYPE/$ARCH was found!"
 		while [ -z "$IMAGE" ]; do
 			if [ -z "$IMAGE_SKIP" ]; then
 				IMAGE="`ls -1 $IMGTYPE/$ARCH/*.$EXT | sort -r | head -n 1`"
@@ -454,9 +465,10 @@ sleep 5
 # Cleanup of the rootfs
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
-	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
@@ -566,7 +578,7 @@ mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
-logmsg_info "Put virtual hostname in resolv.conf"
+logmsg_info "Put virtual hostname in /etc/hosts"
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
@@ -586,6 +598,15 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+
+logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
+if [ x"$DEPLOYONLY" = xyes ]; then
+	logmsg_info "DEPLOYONLY was requested, so ending" \
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
+	[ "$INSTALL_DEV_PKGS" = yes ] && \
+		logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
+	exit 0
+fi
 
 logmsg_info "Start the virtual machine"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
