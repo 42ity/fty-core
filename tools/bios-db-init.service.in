@@ -1,0 +1,11 @@
+[Unit]
+Description=Ensure database schema exists for BIOS services
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+Type=oneshot
+ExecStart=@libexecdir@/bios/db-init
+
+[Install]
+WantedBy=multi-user.target
