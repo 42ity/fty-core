@@ -966,7 +966,7 @@ TESTS += $(check_SCRIPTS)
 client_PROGRAMS += 	agent-netmon
 agent_netmon_SOURCES = \
 			src/agents/netmon/linux \
-			src/agents/netmon/netmon.c
+			src/agents/netmon/agent-netmon.c
 
 agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/netmon
