@@ -1392,7 +1392,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/netmon/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*/*.h \
 			$(top_srcdir)/src/agents/*/*.h \
