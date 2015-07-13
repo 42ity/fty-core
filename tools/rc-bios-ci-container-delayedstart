@@ -62,9 +62,9 @@ start_delayed() {
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
                 case "$C" in
                     test-debian-[6789]) # VTEs need only the default image
-        		echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -i deploy" | at -M "now + $STARTDELAY" ;;
+        		echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
                     *) # By default we do updates
-        		echo "$CI_RESET_VM -m '$C' -i devel --install-dev" | at -M "now + $STARTDELAY" ;;
+        		echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
                 esac
 	done
 }
@@ -75,9 +75,9 @@ start_instant() {
 		echo "(Re-)starting and updating '$C' container..." >&2
                 case "$C" in
                     test-debian-[6789]) # VTEs need only the default image
-        		INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -i deploy --attempt-download no & ;;
+        		INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
                     *) # By default we do updates
-        		$CI_RESET_VM -m "$C" -i devel --install-dev --attempt-download no & ;;
+        		$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
                 esac
 	done
 	wait
