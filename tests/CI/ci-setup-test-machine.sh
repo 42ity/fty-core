@@ -25,6 +25,8 @@ SCRIPTDIR=$(dirname $0)
 [ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 export CHECKOUTDIR BUILDSUBDIR
 
+[ -z "$MKBD_DEB" ] && MKBD_DEB="core-build-deps_0.1_all.deb"
+
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
 [ -z "$LC_ALL" ] && LC_ALL=C
@@ -123,7 +125,7 @@ install_package_set_dev() {
 install_package_set_biosdeps() {
     if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && [ -s "$CHECKOUTDIR/obs/core.dsc" ]; then
         echo "INFO: mk-build-deps: Installing dependencies for \$BIOS according to $CHECKOUTDIR/obs/core.dsc"
-        mk-build-deps --tool 'apt-get --yes --force-yes' --install "$CHECKOUTDIR/obs/core.dsc"
+        ( cd "$CHECKOUTDIR" && mk-build-deps "./obs/core.dsc" && dpkg -i "$MKBD_DEB" && apt-get -f -y --force-yes install )
     else
         echo "SKIPPED: mk-build-deps (CHECKOUTDIR not currently available) - will be done by autogen.sh" >&2
     fi
