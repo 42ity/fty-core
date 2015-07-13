@@ -1425,7 +1425,8 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
-			bios-agent-autoconfig.service bios-agent-th.service
+                        bios-agent-autoconfig.service bios-agent-th.service \
+                        bios-db-init.service
 
 SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
 
