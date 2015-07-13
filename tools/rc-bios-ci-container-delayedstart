@@ -60,7 +60,12 @@ start_delayed() {
 	echo "$0 download" | at -M "now + $STARTDELAY_DL"
 	for C in $CONTAINERS ; do
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
-		echo "$CI_RESET_VM -m '$C' --install-dev" | at -M "now + $STARTDELAY"
+                case "$C" in
+                    test-debian-[6789]) # VTEs need only the default image
+        		echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C'" | at -M "now + $STARTDELAY" ;;
+                    *) # By default we do updates
+        		echo "$CI_RESET_VM -m '$C' --install-dev" | at -M "now + $STARTDELAY" ;;
+                esac
 	done
 }
 
@@ -68,7 +73,12 @@ start_instant() {
 	download
 	for C in $CONTAINERS ; do
 		echo "(Re-)starting and updating '$C' container..." >&2
-		$CI_RESET_VM -m "$C" --install-dev --attempt-download no &
+                case "$C" in
+                    test-debian-[6789]) # VTEs need only the default image
+        		INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" --attempt-download no & ;;
+                    *) # By default we do updates
+        		$CI_RESET_VM -m "$C" --install-dev --attempt-download no & ;;
+                esac
 	done
 	wait
 }
