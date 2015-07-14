@@ -317,9 +317,6 @@ generate_getrestapi_strings() {
 run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
 
-    # If user did not ask for debug shut it:
-    [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
-
     start_lock
     generate_getrestapi_strings | while IFS="" read LINE; do
         ( [ "$1" = -v ] && logmsg_debug 0 "Running: $LINE" >&2
@@ -344,6 +341,8 @@ case "$1" in
         exit $?
         ;;
     ""|-q) # default / quiet mode for timed runs
+        # If user did not ask for debug shut it:
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
