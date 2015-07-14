@@ -187,7 +187,7 @@ process
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
+                    printf ("calling calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
                     // TODO: better return value check
                     if (rv == 0) {

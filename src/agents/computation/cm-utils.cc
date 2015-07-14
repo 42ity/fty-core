@@ -202,8 +202,9 @@ calculate_arithmetic_mean
             printf ("it2 == samples.end ()\n"); // TODO: Remove when done testing
             weight = 1;    
         }
-        else if (it2->first >= end) {                       
-            if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+        else if (it2->first >= end) {
+            // WIP (leave until tested): if (it2->first != end && (it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) { 
+            if ((it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
                 weight = sample_weight (it1->first, end);
                 samples.emplace (std::make_pair (end, it1->second));
                 printf ("emplacing value '%ld' with timestamp '%f'\n", end, it1->second); // TODO: Remove when done testing
