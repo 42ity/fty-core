@@ -19,7 +19,7 @@ int main (int argc, char *argv []) {
     }
 
     const char *addr = (argc == 1) ? "ipc://@/malamute" : argv[1];
-    std::map<std::string, std::pair<int, time_t>> cache;
+    std::map<std::string, std::pair<int32_t, time_t>> cache;
 
     if(agent.init != NULL && agent.init())
         return -1;
@@ -56,9 +56,7 @@ int main (int argc, char *argv []) {
             if((cit == cache.end()) ||
                (abs(cit->second.first - ymsg_get_int32(msg, "value")) > agent.diff) ||
                (time(NULL) - cit->second.second > AGENT_NUT_REPEAT_INTERVAL_SEC)) {
-                if(cit == cache.end())
-                    cache.insert(std::make_pair(*what,
-                        std::make_pair(ymsg_get_int32(msg, "value"), time(NULL))));
+
                 // Prepare topic from templates
                 char* topic = (char*)malloc(strlen(agent.at) +
                                             strlen(agent.measurement) + 
@@ -73,8 +71,19 @@ int main (int argc, char *argv []) {
                 log_info("Sending new measurement '%s' with value %" PRIi32 " * 10^%" PRIi32,
                          topic, ymsg_get_int32(msg, "value"),
                                 ymsg_get_int32(msg, "scale"));
+
+                // Put it in the cache
+                if(cit == cache.end()) {
+                    cache.insert(std::make_pair(*what,
+                        std::make_pair(ymsg_get_int32(msg, "value"), time(NULL))));
+                } else {
+                    cit->second.first = ymsg_get_int32(msg, "value");
+                    cit->second.second = time(NULL);
+                }
+
                 // Send it
                 bios_agent_send(client, topic, &msg);
+
                 zclock_sleep (100);
             } else {
                 ymsg_destroy(&msg);
