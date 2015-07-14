@@ -1041,8 +1041,9 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-EXTRA_DIST += $(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/db/calculation.h
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
