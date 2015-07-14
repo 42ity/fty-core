@@ -42,6 +42,13 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the agent-netmon service"
 
+function stopdaemons() (
+    set +e
+    killall malamute
+    killall dshell lt-dshell
+    killall -KILL agent-netmon lt-agent-netmon
+)
+
 ### Section: actual steps being performed
 function cleanup {
     # Capture the exit code first, if any was set by an exit() or "set -e".
@@ -49,10 +56,9 @@ function cleanup {
     TRAP_RESULT=$?
 
     set +e
-    killall malamute
-    killall dshell lt-dshell
-    killall -KILL agent-netmon lt-agent-netmon
-    rm -f "$LOCKFILE" #"$dsh_file"
+    stopdaemons
+    rm -f "$LOCKFILE"
+    [ -n "$DEBUG" ] || rm -f "$dsh_file"
 
     exit $TRAP_RESULT
 }
@@ -129,9 +135,14 @@ sudo ip addr del 20.13.5.4/32 dev lo
 
 [ -n "$DEBUG" ] && \
     echo "DEBUG: Done with IP addressing changes..." >&2
+stopdaemons
 sleep 7
 
-file=$(<$dsh_file) # `cat file` for non-bash shell
+file="`cat "$dsh_file"`"
+if [ $? != 0 ] || [ -z "$file" ]; then
+    echo "FATAL: The dshell capture file '$dsh_file' could not be read or is empty" >&2
+    exit 200
+fi
 if [ -n "$DEBUG" ]; then
     echo "DEBUG: The dshell capture file contents are:"
     echo "$file"
