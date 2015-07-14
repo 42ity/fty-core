@@ -337,7 +337,9 @@ case "$1" in
     -n) generate_getrestapi_strings "$@"
         exit $?
         ;;
-    -v) run_getrestapi_strings "$@"
+    -v) # production run with verbose output
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
+        run_getrestapi_strings "$@"
         exit $?
         ;;
     ""|-q) # default / quiet mode for timed runs
