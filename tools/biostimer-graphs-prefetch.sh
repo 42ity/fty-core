@@ -303,13 +303,16 @@ generate_getrestapi_strings() {
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
-    for source in "temperature.TH" "humidity.TH"; do
-        for thi in $(seq 1 4); do
-            s=${source}${thi}
-            echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+    if [ $? = 0 ] && [ -n "$i" ] ; then
+        for source in "temperature.TH" "humidity.TH"; do
+             for thi in $(seq 1 4); do
+                s=${source}${thi}
+                echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+            done
         done
-    done
-
+    else
+        logmsg_error "Could not select id_asset_element for host name '${hostname}', skipping T&H"
+    fi
 
     return 0
 }
