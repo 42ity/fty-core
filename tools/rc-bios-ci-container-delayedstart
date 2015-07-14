@@ -60,12 +60,17 @@ start_delayed() {
 	echo "$0 download" | at -M "now + $STARTDELAY_DL"
 	for C in $CONTAINERS ; do
 		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
-                case "$C" in
-                    test-debian-[6789]) # VTEs need only the default image
-        		echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
-                    *) # By default we do updates
-        		echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
-                esac
+		case "$C" in
+		    demo)
+			[ -x /root/update_demo ] && \
+			    echo "/root/update_demo"  | at -M "now + $STARTDELAY" || \
+			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY"
+			;;
+		    test-debian-[6789]) # VTEs need only the default image
+			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
+		    *) # By default we do updates
+			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
+		esac
 	done
 }
 
@@ -73,12 +78,17 @@ start_instant() {
 	download
 	for C in $CONTAINERS ; do
 		echo "(Re-)starting and updating '$C' container..." >&2
-                case "$C" in
-                    test-debian-[6789]) # VTEs need only the default image
-        		INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
-                    *) # By default we do updates
-        		$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
-                esac
+		case "$C" in
+		    demo)
+			( [ -x /root/update_demo ] && \
+			    /root/update_demo || \
+			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy --attempt-download no ) &
+			;;
+		    test-debian-[6789]) # VTEs need only the default image
+			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
+		    *) # By default we do updates
+			$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
+		esac
 	done
 	wait
 }

@@ -25,6 +25,8 @@ SCRIPTDIR=$(dirname $0)
 [ -z "$BUILDSUBDIR" ] && BUILDSUBDIR="$CHECKOUTDIR"
 export CHECKOUTDIR BUILDSUBDIR
 
+[ -z "$MKBD_DEB" ] && MKBD_DEB="core-build-deps_0.1_all.deb"
+
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
 [ -z "$LC_ALL" ] && LC_ALL=C
@@ -78,6 +80,7 @@ limit_packages_docs() {
 limit_packages_forceremove() {
     echo "INFO: ...and just to be sure - remove some space-hungry beasts..."
     apt-get -f -y --force-yes remove --purge \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
         docutils-doc libssl-doc python-docutils \
         texlive-fonts-recommended-doc texlive-latex-base-doc texlive-latex-extra-doc \
         texlive-latex-recommended-doc texlive-pictures-doc texlive-pstricks-doc
@@ -97,7 +100,9 @@ update_pkg_keys() {
     # http_get http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | apt-key add -
 
     echo "INFO: Updating upstream-distro packaging keys..."
-    apt-get -f -y --force-yes install \
+    apt-get -f -y --force-yes \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+        install \
         debian-keyring debian-archive-keyring
     apt-key update
 }
@@ -106,16 +111,21 @@ update_pkg_metadata() {
     echo "INFO: Refreshing packaging listst and metadata..."
     apt-get clean all
     apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update; }
+    dpkg --configure -a
 }
 
 install_packages_missing() {
     echo "INFO: Fixing the pre-installed set if any packages are missing..."
-    apt-get -f -y --force-yes --fix-missing install
+    apt-get -f -y --force-yes --fix-missing \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+        install
 }
 
 install_package_set_dev() {
     echo "INFO: Installing the predefined dev-package set..."
-    apt-get -f -y --force-yes install \
+    apt-get -f -y --force-yes \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+        install \
         devscripts sudo doxygen curl git python-mysqldb \
         cppcheck msmtp libtool cpp gcc autoconf automake m4 pkg-config equivs dh-make
 }
@@ -123,7 +133,11 @@ install_package_set_dev() {
 install_package_set_biosdeps() {
     if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR" ] && [ -s "$CHECKOUTDIR/obs/core.dsc" ]; then
         echo "INFO: mk-build-deps: Installing dependencies for \$BIOS according to $CHECKOUTDIR/obs/core.dsc"
-        mk-build-deps --tool 'apt-get --yes --force-yes' --install "$CHECKOUTDIR/obs/core.dsc"
+        ( cd "$CHECKOUTDIR" && mk-build-deps "./obs/core.dsc" && \
+          dpkg -i "$MKBD_DEB" && \
+          apt-get -f -y --force-yes \
+                -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+                install )
     else
         echo "SKIPPED: mk-build-deps (CHECKOUTDIR not currently available) - will be done by autogen.sh" >&2
     fi
@@ -141,4 +155,5 @@ update_system() {
     limit_packages_forceremove
 }
 
+export DEBIAN_FRONTEND=noninteractive
 update_system

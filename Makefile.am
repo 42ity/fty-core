@@ -1041,8 +1041,9 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-EXTRA_DIST += $(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/src/db/calculation.h
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1392,7 +1393,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/netmon/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*/*.h \
 			$(top_srcdir)/src/agents/*/*.h \
@@ -1406,12 +1406,16 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_UNITS_TIMERIMPL =
+SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
 autopathedit = sed \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
@@ -1424,35 +1428,43 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service
 
+SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
+
+# These files need no processing, delivered verbatim
+SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
+
+# This file is generated
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
-$(SYSTEMD_UNITS): Makefile
+$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
 	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
 # Explicit path desired by dependencies in systemdsystemunit_DATA below
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
-systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
-EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
+CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
 endif
 
 #----------------------------------------------------------------------
