@@ -299,7 +299,7 @@ generate_getrestapi_strings() {
 
     #6 Generate temperature and humidity averages
     stype="arithmetic_mean"
-    sstep="15m"
+    sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
     for source in "temperature.TH" "humidity.TH"; do
