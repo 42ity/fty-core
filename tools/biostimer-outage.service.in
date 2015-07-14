@@ -1,0 +1,12 @@
+[Unit]
+Description=BIOS-Timer service that re-counts outage statistics (implementation)
+# This service only relies on database directly
+After=mysql.service
+Requires=mysql.service
+
+[Service]
+Type=simple
+ExecStart=@libexecdir@/bios/outage
+
+[Install]
+WantedBy=multi-user.target
