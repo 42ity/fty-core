@@ -296,7 +296,7 @@ select_measurement_last_web_byTopic (
             view +
         " WHERE topic ";
         query += fuzzy ? "LIKE" : "=";
-        query += " :topic AND";
+        query += " :topic";
 
         tntdb::Statement statement = conn.prepareCached(query);
 
