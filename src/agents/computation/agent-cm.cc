@@ -116,8 +116,12 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
             try {
                 conn = tntdb::connectCached (url);
             }
-            catch (...) { // TODO: std::exception&...
-                log_critical ("tntdb::connnectCached fail.");
+            catch (const std::exception& e) {
+                log_critical ("Exception caught: '%s'.", e.what ());
+                return EXIT_FAILURE;
+            }
+            catch (...) {
+                log_critical ("Unknown exception caught.");
                 return EXIT_FAILURE;
             } 
 
