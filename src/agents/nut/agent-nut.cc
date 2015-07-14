@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "nut-agent.h"
+#include "agent-nut.h"
 #include "ymsg.h"
 #include "log.h"
 #include "agents.h"
