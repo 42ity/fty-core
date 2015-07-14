@@ -282,22 +282,28 @@ select_measurement_last_web_byTopic (
         bool fuzzy)
 {
     reply_t ret;
+
+    std::string view;
+    if ( minutes_back <= 10 )
+        view = "v_web_measurement_last_10m";
+    // TODO fix longer time period after demo
+    else // if ( minutes_back <= 60*24 )
+        view = "v_web_measurement_last_24h";
+
     try {
         std::string query =
-        " SELECT value, scale FROM"
-        "    v_bios_measurement"
+        " SELECT value, scale FROM" +
+            view +
         " WHERE topic ";
         query += fuzzy ? "LIKE" : "=";
-        query +=                    " :topic AND"
-        "       timestamp > FROM_UNIXTIME(:time) ORDER BY timestamp DESC LIMIT 1";
+        query += " :topic";
 
         tntdb::Statement statement = conn.prepareCached(query);
 
         tntdb::Row row = statement.set("topic", topic).
-                                   set("time", time(NULL) - 60 * minutes_back).
                                    selectRow();
-        log_debug("[v_bios_measurement]: were selected %" PRIu32 " rows,"\
-                  " topic = %s, minutes_back %i", 1, topic.c_str(), minutes_back);
+        log_debug("[%s]: were selected %" PRIu32 " rows,"\
+                  " topic = %s, minutes_back %i", view.c_str(), 1, topic.c_str(), minutes_back);
 
         row[0].get(value);
         row[1].get(scale);
