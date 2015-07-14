@@ -81,7 +81,7 @@ get_dc_trend(
     m_msrmnt_scale_t avg_scale;
     m_msrmnt_value_t actual;
     m_msrmnt_scale_t actual_scale;
-    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale, 48*60);
+    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale, 24*60);
     auto reply = persist::select_measurement_last_web_byElementId(conn, items.at(1), id, actual, actual_scale);
 
     if (reply.rv != 0 || reply_avg.rv != 0)
@@ -143,7 +143,7 @@ get_dc_indicator(
     reply_t reply;
     if (key.substr(0,5) == "trend") return get_dc_trend(conn, src, id);
     if (src.find('%') != std::string::npos) return get_dc_percentage(conn, src, id);
-    if (src.find("24h") != std::string::npos) return get_dc_measurement(conn, src, id, 24*60+5);
+    if (src.find("24h") != std::string::npos) return get_dc_measurement(conn, src, id, 24*60);
     return get_dc_measurement(conn, src, id, 10);
 }
 
