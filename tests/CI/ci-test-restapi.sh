@@ -6,7 +6,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -76,14 +76,14 @@ while [ $# -gt 0 ] ; do
             BIOS_PASSWD="$2"
             shift
             ;;
-	--help|-h)
+        --help|-h)
             usage
             exit 1
             ;;
         *)  # Assume that list of test names follows
-    	    # (positive or negative, see test_web.sh)
+                # (positive or negative, see test_web.sh)
             break
-    	    ;;
+                ;;
     esac
     shift
 done
@@ -99,11 +99,11 @@ test_web_process() {
     [ -z "$MAKEPID" ] && return 0
 
     if [ ! -d /proc/$MAKEPID ]; then
-	logmsg_error "Web-server process seems to have died!" >&2
-	# Ensure it is dead though, since we abort the tests now
-	kill $MAKEPID >/dev/null 2>&1
-	wait $MAKEPID >/dev/null 2>&1
-	return
+        logmsg_error "Web-server process seems to have died!" >&2
+        # Ensure it is dead though, since we abort the tests now
+        kill $MAKEPID >/dev/null 2>&1
+        wait $MAKEPID >/dev/null 2>&1
+        return
     fi
     return 0
 }
@@ -111,7 +111,7 @@ test_web_process() {
 wait_for_web() {
     for a in $(seq 60) ; do
         sleep 5
-	test_web_process || exit
+        test_web_process || exit
         if ( test_web_port ) ; then
             return 0
         fi
@@ -268,31 +268,31 @@ if [ $# = 0 ]; then
     fi
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
-	test_web_topo_p topology_power
-	RESULT=$?
+        test_web_topo_p topology_power
+        RESULT=$?
     fi
     test_web_process || exit
     if [ "$RESULT" -eq 0 ]; then
-	test_web_topo_l topology_location
-	RESULT=$?
+        test_web_topo_l topology_location
+        RESULT=$?
     fi
     test_web_process || exit
 else
     # selective test routine
     while [ $# -gt 0 ]; do
-	case "$1" in
-	    topology_location*)
-		test_web_topo_l "$1"
-		RESULT=$? ;;
-	    topology_power*)
-		test_web_topo_p "$1"
-		RESULT=$? ;;
-	    *)	test_web_default "$1"
-		RESULT=$? ;;
-	esac
-	shift
-	test_web_process || exit
-	[ "$RESULT" != 0 ] && break
+        case "$1" in
+            topology_location*)
+                test_web_topo_l "$1"
+                RESULT=$? ;;
+            topology_power*)
+                test_web_topo_p "$1"
+                RESULT=$? ;;
+            *)        test_web_default "$1"
+                RESULT=$? ;;
+        esac
+        shift
+        test_web_process || exit
+        [ "$RESULT" != 0 ] && break
     done
 fi
 loaddb_default
