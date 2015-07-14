@@ -1043,7 +1043,7 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
 			$(top_srcdir)/tools/db-init.in \
-			$(top_srcdir)/db/calculation.h
+			$(top_srcdir)/src/db/calculation.h
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
