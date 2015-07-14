@@ -26,6 +26,9 @@ fi
 
 [ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
+# How many requests can fire at once? Throttle when we reach this amount...
+[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=32
+
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
@@ -228,7 +231,7 @@ start_lock() {
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && exit 0
 
-    settraps 'rm -f "$LOCKFILE"'
+    settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
     touch "$LOCKFILE" || exit $?
 }
@@ -321,17 +324,50 @@ run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
 
     start_lock
-    generate_getrestapi_strings | while IFS="" read CMDLINE; do
+    COUNT_TOTAL=0
+    COUNT_SUCCESS=0
+    COUNT_BATCH=0
+    FIRED_BATCH=""
+    RES=-1
+    while IFS="" read CMDLINE; do
+        COUNT_TOTAL=$(($COUNT_TOTAL+1))
+        COUNT_BATCH=$(($COUNT_BATCH+1))
         ( [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
           eval $CMDLINE
           RESLINE=$?
           [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $CMDLINE" >&2
           exit $RESLINE
         ) &
+        FIRED_BATCH="$FIRED_BATCH $!"
+        if [ "$COUNT_BATCH" -ge "$MAX_CHILDREN" ]; then
+            [ "$1" = -v ] && logmsg_debug 0 \
+                "Reached $COUNT_BATCH requests running at once ($COUNT_TOTAL overall), throttling down..." >&2
+            for F in $FIRED_BATCH ; do
+                wait $F
+                RESLINE=$?
+                [ "$RESLINE" = 0 ] && \
+                    COUNT_SUCCESS=$(($COUNT_SUCCESS+1)) || \
+                    RES=$RESLINE
+            done
+            COUNT_BATCH=0
+            FIRED_BATCH=""
+        fi
+    done < <(generate_getrestapi_strings)
+    # Special bash syntax to avoid forking and thus hiding of variables
+
+    for F in $FIRED_BATCH ; do
+        wait $F
+        RESLINE=$?
+        [ "$RESLINE" = 0 ] && \
+             COUNT_SUCCESS=$(($COUNT_SUCCESS+1)) || \
+             RES=$RESLINE
     done
-    wait
-    RES=$?
+    FIRED_BATCH=""
+
+    [ "$1" = -v ] && logmsg_debug 0 \
+        "Ran $COUNT_TOTAL overall requests, done now" >&2
     [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    [ $RES -le 0 ] && return 0
     return $RES
 }
 
