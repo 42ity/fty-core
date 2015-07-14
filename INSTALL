@@ -404,7 +404,7 @@ anyway, and they will pull in their modern base packages as needed.
 
 Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
- * Install NUT project parts needed for compilatoin and linking:
+ * Install NUT project parts needed for compilation and linking:
 ----
 :; apt-get install -y libupsclient-dev libnutclient-dev libnutscan-dev
 ----
