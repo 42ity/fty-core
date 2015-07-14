@@ -183,11 +183,11 @@ process
                 int64_t second_ts = average_first_since (first_ts, step);
                 double comp_result;
 
-                log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
+                log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%" PRId64,
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    log_debug ("calling calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
+                    log_debug ("calling calculate (%" PRId64", %" PRId64")\n", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
                     // TODO: better return value check
                     if (rv == 0) {
@@ -197,7 +197,7 @@ process
                             log_critical ("comp_result_str.c_str () is NULL AAARGHG GET to tha CHOPAA!!!#$&^#^%"); 
                             log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
                         } else {
-                            log_debug ("%ld\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
+                            log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
                             item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                         }
                         item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
