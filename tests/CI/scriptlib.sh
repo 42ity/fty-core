@@ -324,12 +324,18 @@ sut_run() {
     ### not one token aka "$1"
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
-        REMCMD="sh -x -c \"$@\""
+        [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
+            REMCMD="sh -x -c \"$@\"" ||
+            REMCMD="sh -c \"$@\""
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         logmsg_info "sut_run()::local: $@" >&2
-        sh -x -c "$@"
+        if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
+            sh -x -c "$@"
+        else
+            sh -c "$@"
+        fi
         return $?
     fi
 }
