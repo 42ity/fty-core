@@ -321,11 +321,11 @@ run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
 
     start_lock
-    generate_getrestapi_strings | while IFS="" read LINE; do
-        ( [ "$1" = -v ] && logmsg_debug 0 "Running: $LINE" >&2
-          $LINE
+    generate_getrestapi_strings | while IFS="" read CMDLINE; do
+        ( [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
+          eval $CMDLINE
           RESLINE=$?
-          [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $LINE" >&2
+          [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $CMDLINE" >&2
           exit $RESLINE
         ) &
     done
