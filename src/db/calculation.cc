@@ -331,7 +331,7 @@ reply_t
         true,
         measurements,
         unit);
-    log_debug (" selected %" PRIu64, (long unsigned int)(measurements.size()) );
+    log_debug (" selected %zu", measurements.size() );
     LOG_END;
     return ret;
 }
