@@ -966,7 +966,7 @@ TESTS += $(check_SCRIPTS)
 client_PROGRAMS += 	agent-netmon
 agent_netmon_SOURCES = \
 			src/agents/netmon/linux \
-			src/agents/netmon/netmon.c
+			src/agents/netmon/agent-netmon.c
 
 agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/netmon
@@ -1018,7 +1018,7 @@ client_SCRIPTS =	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
-agent_dbstore_SOURCES =		src/agents/dbstore/db-ng.cc \
+agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
 agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -1088,7 +1088,7 @@ client_PROGRAMS +=	agent-nut
 
 agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
-			src/agents/nut/nut-agent.cc \
+			src/agents/nut/agent-nut.cc \
 			src/shared/upsstatus.cc
 
 agent_nut_LDADD = \
@@ -1104,8 +1104,8 @@ agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-alert-smtp
 
 agent_alert_smtp_SOURCES = \
-			src/agents/alert-smtp/alert-smtp-agent.h \
-			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/agent-alert-smtp.h \
+			src/agents/alert-smtp/agent-alert-smtp.cc \
 			src/agents/alert-smtp/alert-basic.h
 
 
@@ -1126,7 +1126,7 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/autoconfig.cc \
+			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/configurator.cc \
 			src/shared/filesystem.cc
 
@@ -1151,7 +1151,7 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
-			src/agents/inventory/inventory-actor.cc \
+			src/agents/inventory/agent-inventory.cc \
 			tools/dbpath.h
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
@@ -1177,7 +1177,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
-			src/agents/computation/cm-agent.cc \
+			src/agents/computation/agent-cm.cc \
 			src/agents/computation/cm-web.cc \
 			src/agents/computation/cm-web.h \
 			src/agents/computation/cm-utils.h \
@@ -1226,7 +1226,7 @@ client_PROGRAMS +=      agent-alert
 agent_alert_SOURCES = \
 			src/agents/alert/alert-entity.cc \
 			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/alert-agent.cc \
+			src/agents/alert/agent-alert.cc \
 			src/agents/alert/alert-model.cc \
 			src/shared/utils_app.c \
 			src/shared/utils_ymsg.c \
