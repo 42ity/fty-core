@@ -378,11 +378,11 @@ loaddb_file() {
 
 settraps() {
         # Not all trap names are recognized by all shells consistently
-        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="ERR EXIT QUIT TERM HUP INT"
+        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
         for P in "" SIG; do for S in $TRAP_SIGNALS ; do
                 case "$1" in
-                -|"") trap "$1" $P$S 2>/dev/null ;;
-                *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null ;;
+                -|"") trap "$1" $P$S 2>/dev/null || true ;;
+                *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
                 esac
         done; done
 }
