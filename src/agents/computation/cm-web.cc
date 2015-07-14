@@ -75,7 +75,7 @@ process
         std::string device_name;
         {
             auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
-            if (ret.rv == -1)
+            if (ret.rv != 0)
                 log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
             else
                 log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'", element_id, device_name.c_str ());
@@ -112,10 +112,11 @@ process
             if (last_average_ts < start_ts) {
                 // requesting stored averages returned an empty set + last stored averages timestamp's < start of requested interval
                 // => we need to compute the whole requested interval
-                log_info ("last average timestamp < start timestamp");
+                log_info ("last average timestamp < start timestamp => compute it!");
                 start_sampled_ts = average_extend_left_margin (start_ts, step);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
+                    log_warning (" resuest sumpled failed!!");
                     return;
                 }
             }

@@ -57,7 +57,7 @@ select_measurements (
             tntdb::Result result = statement.set ("id", element_id).set ("topic", query_topic).select ();
             if (result.size () != 1) {
                 ret.rv = 2;
-                log_debug ("topic was not found");
+                log_debug ("topic '%s' was found %u times", query_topic.c_str(), result.size());
                 return ret;
             }
             result.getRow (0).getValue (0).get (topic_id);
