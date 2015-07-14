@@ -49,6 +49,7 @@ bool TotalPowerAgent::configuration( )
         return true;
     } catch (const std::exception& e) {
         log_error ("Excepton caught: '%s'.", e.what ());
+        return false;
     } catch(...) {
         log_error ("Unknown exception caught.");
         return false;

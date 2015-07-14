@@ -88,6 +88,7 @@ usage() {
     echo "    --attempt-download [auto|yes|no] Should an OS image download be attempted at all?"
     echo "                         (default: auto; default if only the option is specified: yes)"
     echo "    --stop-only          end the script after stopping the VM and cleaning up"
+    echo "    --deploy-only        end the script just before it would start the VM (skips apt-get too)"
     echo "    -h|--help            print this help"
 }
 
@@ -170,6 +171,7 @@ DOTDOMAINNAME=""
 
 [ -z "$STOPONLY" ] && STOPONLY=no
 [ -z "$DOWNLOADONLY" ] && DOWNLOADONLY=no
+[ -z "$DEPLOYONLY" ] && DEPLOYONLY=no
 [ -z "$INSTALL_DEV_PKGS" ] && INSTALL_DEV_PKGS=no
 [ -z "$ATTEMPT_DOWNLOAD" ] && ATTEMPT_DOWNLOAD=auto
 
@@ -202,6 +204,10 @@ while [ $# -gt 0 ] ; do
 	    ;;
 	--download-only)
 	    DOWNLOADONLY=yes
+	    shift
+	    ;;
+	--deploy-only)
+	    DEPLOYONLY=yes
 	    shift
 	    ;;
 	--attempt-download)
@@ -459,9 +465,10 @@ sleep 5
 # Cleanup of the rootfs
 logmsg_info "Unmounting paths related to VM '$VM':" \
 	"'`pwd`/../rootfs/$VM/lib/modules', '`pwd`../rootfs/$VM/root/.ccache'" \
-	"'`pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
+	"'`pwd`/../rootfs/$VM'/proc, `pwd`/../rootfs/$VM', '`pwd`/../rootfs/${IMAGE_FLAT}-ro'"
 umount -fl "../rootfs/$VM/lib/modules" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM/root/.ccache" 2> /dev/null > /dev/null
+umount -fl "../rootfs/$VM/proc" 2> /dev/null > /dev/null
 umount -fl "../rootfs/$VM" 2> /dev/null > /dev/null
 fusermount -u -z  "../rootfs/$VM" 2> /dev/null > /dev/null
 
@@ -571,7 +578,7 @@ mount -o remount,ro,rbind "../rootfs/$VM/lib/modules"
 
 logmsg_info "Setup virtual hostname"
 echo "$VM" > "../rootfs/$VM/etc/hostname"
-logmsg_info "Put virtual hostname in resolv.conf"
+logmsg_info "Put virtual hostname in /etc/hosts"
 sed -r -i "s/^127\.0\.0\.1/127.0.0.1 $VM /" "../rootfs/$VM/etc/hosts"
 
 logmsg_info "Copy root's ~/.ssh from the host OS"
@@ -591,6 +598,15 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 	logmsg_info "Set up APT proxy configuration" && \
 	echo 'Acquire::http::Proxy "'"$APT_PROXY"'";' > \
 		"../rootfs/$VM/etc/apt/apt.conf.d/01proxy-apt-cacher"
+
+logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
+if [ x"$DEPLOYONLY" = xyes ]; then
+	logmsg_info "DEPLOYONLY was requested, so ending" \
+		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
+	[ "$INSTALL_DEV_PKGS" = yes ] && \
+		logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
+	exit 0
+fi
 
 logmsg_info "Start the virtual machine"
 virsh -c lxc:// start "$VM" || die "Can't start the virtual machine"
