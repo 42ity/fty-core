@@ -389,7 +389,7 @@ loaddb_file() {
 
 settraps() {
         # Not all trap names are recognized by all shells consistently
-        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT ERR"
+        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT"
         for P in "" SIG; do for S in $TRAP_SIGNALS ; do
                 case "$1" in
                 -|"") trap "$1" $P$S 2>/dev/null || true ;;
