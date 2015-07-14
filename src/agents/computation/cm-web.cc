@@ -169,31 +169,31 @@ process
         }
 
         if (!samples.empty ()) {
-            printf ("samples directly from db:\n"); // TODO: remove when done testing
+            log_debug ("samples directly from db:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                printf ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f\n", p.first, p.second);
             }
             solve_left_margin (samples, start_sampled_ts);
-            printf ("samples after solving left margin:\n"); // TODO: remove when done testing
+            log_debug ("samples after solving left margin:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                printf ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f\n", p.first, p.second);
             }
             if (!samples.empty ()) {
                 int64_t first_ts = samples.cbegin()->first;
                 int64_t second_ts = average_first_since (first_ts, step);
                 double comp_result;
 
-                printf ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
+                log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    printf ("calling calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
+                    log_debug ("calling calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
                     // TODO: better return value check
                     if (rv == 0) {
                         std::string comp_result_str;
                         utils::math::dtos (comp_result, 2, comp_result_str);
-                        printf ("%ld\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing
+                        log_debug ("%ld\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing
                         item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                         item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
                         if (comma_counter == 0) 

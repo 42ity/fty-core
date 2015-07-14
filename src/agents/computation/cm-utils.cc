@@ -180,7 +180,7 @@ calculate_arithmetic_mean
     if (start >= end || samples.empty ())
         return -1;
     
-    printf ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end); // TODO: remove when done testing
+    log_debug ("Inside _calculate_arithmetic_mean (%ld, %ld)\n", start, end); // TODO: remove when done testing
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) { // requested interval is empty
         log_debug ("requested interval empty");
@@ -199,7 +199,7 @@ calculate_arithmetic_mean
         int64_t weight = 0;
 
         if (it2 == samples.end ()) {
-            printf ("it2 == samples.end ()\n"); // TODO: Remove when done testing
+            log_debug ("it2 == samples.end ()\n"); // TODO: Remove when done testing
             weight = 1;    
         }
         else if (it2->first >= end) {
@@ -207,16 +207,16 @@ calculate_arithmetic_mean
             if ((it2->first - it1->first) <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
                 weight = sample_weight (it1->first, end);
                 samples.emplace (std::make_pair (end, it1->second));
-                printf ("emplacing value '%ld' with timestamp '%f'\n", end, it1->second); // TODO: Remove when done testing
+                log_debug ("emplacing value '%ld' with timestamp '%f'\n", end, it1->second); // TODO: Remove when done testing
             } else {
                 weight = 1;
             }
-            printf ("it1->first: %ld --> end: %ld\tweight: %ld\tit1->second: %f\n", it1->first, end, weight, it1->second); // TODO: Remove when done testing
+            log_debug ("it1->first: %ld --> end: %ld\tweight: %ld\tit1->second: %f\n", it1->first, end, weight, it1->second); // TODO: Remove when done testing
 
         }
         else { // it2->first < end 
             weight = sample_weight (it1->first, it2->first);
-            printf ("it1->first: %ld --> it2->first: %ld\tweight: %ld\tit1->second: %f\n", it1->first, it2->first, weight, it1->second); // TODO: Remove when done testing
+            log_debug ("it1->first: %ld --> it2->first: %ld\tweight: %ld\tit1->second: %f\n", it1->first, it2->first, weight, it1->second); // TODO: Remove when done testing
         }
 
         if (weight <= 0) {
