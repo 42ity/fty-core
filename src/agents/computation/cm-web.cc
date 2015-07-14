@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \brief  Implementation of functions for processing logic of rest api request 
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
+#include <stdexcept>
+#include <tntdb/connect.h>
 
 #include "bios_agent.h"
 #include "agents.h"
@@ -35,13 +37,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cm-web.h"
 #include "cleanup.h"
 #include "utils++.h"
+#include "dbpath.h"
 
 namespace computation {
 namespace web {
 
 void
 process
-(tntdb::Connection& conn, bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
+(bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
     assert (agent);
     assert (message_in);
     assert (sender);
@@ -51,7 +54,12 @@ process
     char *type = NULL, *step = NULL, *source = NULL;
     uint64_t element_id = 0;
 
-    try {                
+    try {
+        tntdb::Connection conn = tntdb::connectCached (url);
+        if (!conn || !conn.ping ()) {
+            throw std::runtime_error ("tntdb::connectCached () failed.");
+        }
+
         *message_out = ymsg_new (YMSG_REPLY);
         assert (*message_out);
 
