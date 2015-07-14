@@ -346,10 +346,11 @@ do_select() {
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "do_select(): $1 ;" >&2
-    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
-    DB_RES=$?
-    echo "$DB_OUT" | tail -n +2
-    [ $? = 0 -a "$DB_RES" = 0 ]
+    echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
+#    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+#    DB_RES=$?
+#    echo "$DB_OUT" | tail -n +2
+#    [ $? = 0 -a "$DB_RES" = 0 ]
     return $?
 }
 
@@ -373,4 +374,15 @@ loaddb_file() {
             CODE=$? die "Could not load database file: $DBFILE"
     fi
     return 0
+}
+
+settraps() {
+        # Not all trap names are recognized by all shells consistently
+        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="ERR EXIT QUIT TERM HUP INT"
+        for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+                case "$1" in
+                -|"") trap "$1" $P$S 2>/dev/null ;;
+                *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null ;;
+                esac
+        done; done
 }

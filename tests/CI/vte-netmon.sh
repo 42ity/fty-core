@@ -68,6 +68,7 @@ while [ $# -gt 0 ]; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
+        -d) DEBUG=1 ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
             break
             ;;
@@ -106,13 +107,19 @@ LOCKFILE="`echo "/tmp/ci-test-netmon-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT
 
 # ***** FUNCTIONS *****
     # *** stop  dshell process and delete LOCKFILE ***
-function cleanup {
+function stopdaemons() (
     set +e
     sut_run "killall dshell lt-dshell"
+)
+
+function cleanup {
+    set +e
+    stopdaemons
     sut_run "rm -f '$DSH_FILE_REMOTE'"
     ### TODO: Should systemd-managed BIOS and other services be stopped?
     #sut_run "killall -9 agent-netmon lt-agent-netmon"
-    rm -f "$LOCKFILE" #"$DSH_FILE"
+    rm -f "$LOCKFILE"
+    [ -z "$DEBUG" ] && rm -f "$DSH_FILE"
 }
 
 # Include our standard routines for CI scripts
@@ -181,12 +188,17 @@ sut_run "sudo ip addr del 103.15.3.0/24 dev lo"
 sut_run "sudo ip addr del 20.13.5.4/32 dev lo"
 
 logmsg_info "Done with IP addressing changes..."
+stopdaemons
 sleep 7
 
 # ***** GET THE DATA SNIFFERED WITH dshell FROM SUT TO MS. *****
     # *** read the data to variable FILE_DATA ***
 sut_run "cat $DSH_FILE_REMOTE" > "$DSH_FILE"
 FILE_DATA=$(cat "$DSH_FILE")
+if [ $? != 0 ] || [ -z "$FILE_DATA" ]; then
+    echo "FATAL: The dshell capture file '$DSH_FILE' could not be read or is empty" >&2
+    exit 200
+fi
 
 # See at the dshell output format:
 #sender=NETMON subject=add content=
