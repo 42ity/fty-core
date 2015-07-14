@@ -12,3 +12,13 @@ Depends: ${misc:Depends}, ${shlibs:Depends} , tntdb-mysql4, libcidr0, tntnet-run
 Recommends: msmtp
 Description: BIOS core
  Core functionality implemented for BIOS.
+
+Package: core-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+    core (= ${binary:Version}),
+    ${misc:Depends}
+Description: debugging symbols for BIOS core
+ This package contains the debugging symbols for core.
