@@ -1,8 +1,8 @@
 [Unit]
 Description=BIOS-Timer service that prefetches average computations for quicker graphs (implementation)
 # This service only relies on REST API server directly
-After=tntnet@bios.service
-Requires=tntnet@bios.service
+After=tntnet@bios.service bios-db-init.service
+Requires=tntnet@bios.service bios-db-init.service
 
 [Service]
 Type=simple
