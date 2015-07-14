@@ -116,6 +116,7 @@ RESULT=0
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
+DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 
@@ -177,7 +178,8 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA"
+    loaddb_file "$DB_LOADDIR/$DB_DATA" && \
+    loaddb_file "$DB_LOADDIR/$DB_DATA_TESTREST"
 }
     # *** start the default set of TC
 test_web_default() {
