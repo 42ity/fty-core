@@ -173,6 +173,10 @@ bios-agent-tpower.service
 bios-agent-autoconfig.service
 !tools/bios-agent-th.service.in
 bios-agent-th.service
+!tools/biostimer-graphs-prefetch.service.in
+biostimer-graphs-prefetch.service
+!tools/biostimer-outage.service.in
+biostimer-outage.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
