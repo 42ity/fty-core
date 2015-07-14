@@ -103,7 +103,7 @@ get_dc_percentage(
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     
-    reply = persist::select_measurement_last_web_byTopic(conn, src, value, scale);
+    reply = persist::select_measurement_last_web_byTopic(conn, src, value, scale, true);
     if (reply.rv != 0)
         return 0.0f;
     return value * pow(10,scale);
