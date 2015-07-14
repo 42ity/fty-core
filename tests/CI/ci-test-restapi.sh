@@ -47,7 +47,7 @@ export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL SKIP_
 
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
-DB_DATA="load_data.sql"
+DB_DATA="load_data.sql load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 
@@ -230,7 +230,9 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA"
+    for data in $DB_DATA ; do
+        loaddb_file "$DB_LOADDIR/$data"
+    done
 }
 
 test_web_default() {
