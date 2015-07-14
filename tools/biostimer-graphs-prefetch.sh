@@ -17,11 +17,11 @@ declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
 [ -z "$SUT_HOST" ] && \
 declare -r SUT_HOST="127.0.0.1"
 
-[ -z "$SUT_PORT" ] && \
+[ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare -r SUT_PORT="8000"
+        declare -r SUT_WEB_PORT="8000"
 else
-        declare -r SUT_PORT="80"
+        declare -r SUT_WEB_PORT="80"
 fi
 
 [ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
