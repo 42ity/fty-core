@@ -246,7 +246,7 @@ generate_getrestapi_strings() {
         fi
     fi
     if [ -z "$start_timestamp" ]; then
-        start_timestamp="19700101000000Z"
+        start_timestamp="19900101000000Z"
     fi
 
     declare -r START_TIMESTAMP="$start_timestamp"
@@ -296,6 +296,19 @@ generate_getrestapi_strings() {
             done
         done
     done
+
+    #6 Generate temperature and humidity averages
+    stype="${TYPE[0]}"
+    sstep="24h"
+    hostname=$(hostname | tr [:lower:] [:upper:])
+    i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
+    for source in "temperature.TH" "humidity.TH"; do
+        for thi in $(seq 1 4); do
+            s=${source}${thi}
+            echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+        done
+    done
+
 
     return 0
 }
