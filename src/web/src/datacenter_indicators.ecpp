@@ -103,7 +103,7 @@ get_dc_percentage(
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     
-    reply = persist::select_measurement_last_web_byTopic(conn, src, value, scale, true);
+    reply = persist::select_measurement_last_web_byTopicLike(conn, src, value, scale);
     if (reply.rv != 0)
         return 0.0f;
     return value * pow(10,scale);
@@ -141,9 +141,20 @@ get_dc_indicator(
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     reply_t reply;
-    if (key.substr(0,5) == "trend") return get_dc_trend(conn, src, id);
-    if (src.find('%') != std::string::npos) return get_dc_percentage(conn, src, id);
-    if (src.find("24h") != std::string::npos) return get_dc_measurement(conn, src, id, 24*60);
+    std::cout << "key: " << key << "src: " << src << std::endl;
+    if (key.substr(0,5) == "trend") {
+        std::cout << "get_dc_trend" << std::endl;
+         return get_dc_trend(conn, src, id);
+    }
+    if (src.find('%') != std::string::npos) {
+        std::cout << "get_dc_percentage" << std::endl;
+        return get_dc_percentage(conn, src, id);
+    }
+    if (src.find("24h") != std::string::npos) {
+        std::cout << "get_dc_measurement + 24h" << std::endl;
+         return get_dc_measurement(conn, src, id, 24*60);
+    }
+        std::cout << "DEFAULT get_dc_measurement " << std::endl;
     return get_dc_measurement(conn, src, id, 10);
 }
 
