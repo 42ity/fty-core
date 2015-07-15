@@ -1465,6 +1465,7 @@ systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 # auto-cleanup and dist targets
 CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
 EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
 
 #----------------------------------------------------------------------
