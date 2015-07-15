@@ -44,6 +44,8 @@ ymsg_t* get_measurement(char* what) {
     ymsg_t* ret = NULL;
     char *th = strdup(what + (strlen(what) - 3));
     c_item data, *data_p = NULL;
+    memset( &data, 0, sizeof(data) );
+
     log_debug("Measuring %s", what);
 
     // Get data from cache and maybe update the cache
