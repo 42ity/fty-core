@@ -91,9 +91,17 @@ reply_t
         {
             int64_t a = 0;
             row[0].get(a);
-            start.push_back(a);
-            row[1].get(a);
-            end.push_back(a);
+            int64_t b = 0;
+            row[1].get(b);
+            if ( a < b )
+            {
+                start.push_back(a);
+                end.push_back(b);
+            }
+            else
+                log_warning ("alert ignored: rulename = '%s',"\
+                    " start_date > end_date ( %" PRIi64 " >  %" PRIi64 ")",
+                    rule_name.c_str(), start_date, end_date);
         }
         ret.rv = 0;
         LOG_END;
@@ -224,17 +232,9 @@ void
 {
     // get current date
     time_t sec = time (NULL);
-    struct tm *new_time = gmtime ( &sec );
 
-    // date 00:00:00
-    new_time->tm_hour = 0;
-    new_time->tm_min  = 0;
-    new_time->tm_sec  = 0;
-    end_date = mktime (new_time);
-
-    // date-1day 00:00:00
-    new_time->tm_mday--;
-    start_date = mktime (new_time);
+    end_date = ( sec / (60*60*24) ) * (60*60*24);
+    start_date = end_date - 60*60*24;
 }
 
 
@@ -250,6 +250,8 @@ int
     int64_t start_date = 0;
     int64_t end_date = 0;
     get_interval (start_date, end_date);
+    log_debug ( "start_date %" PRIi64, start_date);
+    log_debug ( "end_date %" PRIi64, end_date);
 
     try{
         // open a connection to db
