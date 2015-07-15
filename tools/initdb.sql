@@ -84,6 +84,7 @@ CREATE TABLE t_bios_alert(
     description VARCHAR(255),
     date_till    DATETIME,
     notification TINYINT         NOT NULL DEFAULT 0,
+    dc_id       INT UNSIGNED     , /*NOT NULL,*/
 
     PRIMARY KEY(id),
 
@@ -131,7 +132,7 @@ CREATE TABLE t_bios_net_history(
     command         CHAR(1)             NOT NULL,
     mac             CHAR(17),
     mask            TINYINT UNSIGNED    NOT NULL,
-    ip              CHAR(19)            NOT NULL,
+    ip              CHAR(45)            NOT NULL,
     name            VARCHAR(50),
     timestamp       datetime            NOT NULL,
 
@@ -573,11 +574,17 @@ FROM t_bios_measurement t1
 /* Selects the last known value during last 10 = 5*2 minutes  */
 /* 5 minuts is polling interval
 /* TODO: need to be configurable*/
-DROP VIEW IF EXISTS v_web_measurement_last;
-DROP VIEW IF EXISTS v_web_measurement_lastdate;
-DROP VIEW IF EXISTS v_web_measurement_10;
+DROP VIEW IF EXISTS v_web_measurement_last_10m;
+DROP VIEW IF EXISTS v_web_measurement_lastdate_10m;
+DROP VIEW IF EXISTS v_web_measurement_10m;
 
-CREATE VIEW v_web_measurement_10 AS
+DROP VIEW IF EXISTS v_web_measurement_last_24h;
+DROP VIEW IF EXISTS v_web_measurement_lastdate_24h;
+DROP VIEW IF EXISTS v_web_measurement_24h;
+
+/* ========================================================= */
+
+CREATE VIEW v_web_measurement_10m AS
 SELECT v.id,
         v.device_id,
         v.timestamp,
@@ -588,14 +595,14 @@ SELECT v.id,
 FROM v_bios_measurement v
 WHERE v.timestamp > SUBTIME(UTC_TIMESTAMP(), "0:10:0");
 
-CREATE VIEW v_web_measurement_lastdate AS
+CREATE VIEW v_web_measurement_lastdate_10m AS
 SELECT max(p.timestamp) maxdate,
        p.device_id,
        p.topic_id
-FROM v_web_measurement_10 p
+FROM v_web_measurement_10m p
 GROUP BY p.topic_id, p.device_id;
 
-CREATE VIEW v_web_measurement_last AS
+CREATE VIEW v_web_measurement_last_10m AS
 SELECT  v.id,
         v.device_id,
         v.timestamp,
@@ -603,10 +610,44 @@ SELECT  v.id,
         v.topic_id,
         v.value,
         v.scale
-FROM       v_web_measurement_10 v
-INNER JOIN v_web_measurement_lastdate grp 
+FROM       v_web_measurement_10m v
+INNER JOIN v_web_measurement_lastdate_10m grp 
      ON ( v.timestamp = grp.maxdate  AND
         v.topic_id = grp.topic_id );
+
+
+CREATE VIEW v_web_measurement_24h AS
+SELECT v.id,
+        v.device_id,
+        v.timestamp,
+        v.topic,
+        v.topic_id,
+        v.value,
+        v.scale
+FROM v_bios_measurement v
+WHERE v.timestamp > SUBTIME(UTC_TIMESTAMP(), "24:25:0");
+
+CREATE VIEW v_web_measurement_lastdate_24h AS
+SELECT max(p.timestamp) maxdate,
+       p.device_id,
+       p.topic_id
+FROM v_web_measurement_24h p
+GROUP BY p.topic_id, p.device_id;
+
+CREATE VIEW v_web_measurement_last_24h AS
+SELECT  v.id,
+        v.device_id,
+        v.timestamp,
+        v.topic,
+        v.topic_id,
+        v.value,
+        v.scale
+FROM       v_web_measurement_24h v
+INNER JOIN v_web_measurement_lastdate_24h grp 
+     ON ( v.timestamp = grp.maxdate  AND
+        v.topic_id = grp.topic_id );
+
+/* ========================================================= */
 
 CREATE VIEW v_bios_measurement_topic AS
 SELECT *

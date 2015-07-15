@@ -17,7 +17,7 @@
 #
 # Author(s): Karol Hrdina <karolhrdina@eaton.com>
 #
-# Description: tests netmon module
+# Description: tests agent-netmon module
 #
 # Requirements:
 #   project is built
@@ -40,7 +40,14 @@ LOCKFILE=/tmp/ci-test-netmon.lock
 NEED_BUILDSUBDIR=yes determineDirs_default || true
 cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the netmon service"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the agent-netmon service"
+
+function stopdaemons() (
+    set +e
+    killall malamute
+    killall dshell lt-dshell
+    killall -KILL agent-netmon lt-agent-netmon
+)
 
 ### Section: actual steps being performed
 function cleanup {
@@ -49,10 +56,9 @@ function cleanup {
     TRAP_RESULT=$?
 
     set +e
-    killall malamute
-    killall dshell lt-dshell
-    killall -KILL netmon lt-netmon
-    rm -f "$LOCKFILE" #"$dsh_file"
+    stopdaemons
+    rm -f "$LOCKFILE"
+    [ -n "$DEBUG" ] || rm -f "$dsh_file"
 
     exit $TRAP_RESULT
 }
@@ -78,7 +84,7 @@ if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG} || exit
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 netmon dshell || exit
+./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 agent-netmon dshell || exit
 
 mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
 dsh_file=$(mktemp -p "$BUILDSUBDIR/tests/CI/")
@@ -99,9 +105,9 @@ if [[ $? -ne 0 ]]; then
     echo "dshell didn't start properly" >&2
     exit 1
 fi
-$BUILDSUBDIR/netmon &
+$BUILDSUBDIR/agent-netmon &
 if [[ $? -ne 0 ]]; then
-    echo "netmon didn't start properly" >&2
+    echo "agent-netmon didn't start properly" >&2
     exit 1
 fi
 sleep 2
@@ -129,9 +135,14 @@ sudo ip addr del 20.13.5.4/32 dev lo
 
 [ -n "$DEBUG" ] && \
     echo "DEBUG: Done with IP addressing changes..." >&2
+stopdaemons
 sleep 7
 
-file=$(<$dsh_file) # `cat file` for non-bash shell
+file="`cat "$dsh_file"`"
+if [ $? != 0 ] || [ -z "$file" ]; then
+    echo "FATAL: The dshell capture file '$dsh_file' could not be read or is empty" >&2
+    exit 200
+fi
 if [ -n "$DEBUG" ]; then
     echo "DEBUG: The dshell capture file contents are:"
     echo "$file"
