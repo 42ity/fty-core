@@ -289,37 +289,105 @@ select_measurement_last_web_byTopic (
     // TODO fix longer time period after demo
     else // if ( minutes_back <= 60*24 )
         view = "v_web_measurement_last_24h";
-
+    log_debug ("fuzzy %s", fuzzy ? " true " : " false ");
+    int64_t max_time = 0 ;
     try {
-        std::string query =
-        " SELECT value, scale FROM" +
-            view +
-        " WHERE topic ";
-        query += fuzzy ? "LIKE" : "=";
-        query += " :topic";
-        log_debug("%s", query.c_str());
+        std::string query_max_time =
+        " SELECT max(UNIX_TIMESTAMP(timestamp)) "
+        " FROM " +
+            view + " v " +
+        " WHERE " +
+        "   v.topic ";
+        query_max_time += fuzzy ? " LIKE " : " = ";
+        query_max_time += " :topic ";
+        log_debug("%s", query_max_time.c_str());
 
-        tntdb::Statement statement = conn.prepareCached(query);
-
+        tntdb::Statement statement = conn.prepareCached(query_max_time);
         tntdb::Row row = statement.set("topic", topic).
                                    selectRow();
-        log_debug("[%s]: were selected %" PRIu32 " rows,"\
-                  " topic = %s, minutes_back %i", view.c_str(), 1, topic.c_str(), minutes_back);
 
-        row[0].get(value);
-        row[1].get(scale);
-        ret.rv = 0;
+        log_debug("[%s]: were selected %" PRIu32 " rows," \
+                  " topic %s '%s', selecting maxtime", 
+                  view.c_str(), 1, fuzzy ? " LIKE " : " = ", topic.c_str());
+        row[0].get(max_time);
+        log_debug ( "maxtime = %" PRIi64 , max_time);
+    }
+    catch (const tntdb::NotFound &e) {
+        ret.rv = 1;
+        log_debug ("maxtime was not found (there is no "\
+                   "measurement records) with topic %s '%s'", 
+                   fuzzy ? " LIKE " : " = ", topic.c_str());
         return ret;
     }
     catch (const std::exception &e) {
         ret.rv = -1;
-        log_debug("topic = %s", topic.c_str());
+        log_debug("maxtime: topic %s '%s'", fuzzy ? " LIKE " : " = ", topic.c_str());
         LOG_END_ABNORMAL(e);
         return ret;
     }
     catch (...) {
-        log_error("Unknown exception caught!");
+        log_error("maxtime: Unknown exception caught!");
+        ret.rv = -2;
+        return ret;
+    }
+
+    try{
+        std::string query =
+        " SELECT value, scale FROM " +
+            view +
+        " WHERE topic ";
+        query += fuzzy ? " LIKE " : " = ";
+        query += " :topic AND ";
+        query += " UNIX_TIMESTAMP(timestamp) = :maxtime ";
+        log_debug("%s", query.c_str());
+
+        tntdb::Statement statement = conn.prepareCached(query);
+        tntdb::Result res = statement.set("topic", topic).
+                                      set("maxtime", max_time).
+                                      select();
+        log_debug("[%s]: were selected %u rows,"\
+                  " topic %s '%s'", view.c_str(), res.size(), 
+                  fuzzy ? " LIKE " : " = ", topic.c_str());
+        switch ( res.size() )
+        {
+            case 0:
+            {
+                log_error (" This should never happen: "\
+                           " row with max %" PRIi64 " timestamp " \
+                           " and topic %s '%s'" \
+                           " disappeared", max_time, fuzzy ? " LIKE " : " = ", topic.c_str());
+                ret.rv = 2;
+                break;
+            }
+            case 1:
+            {
+                tntdb::Row row = *res.begin();
+                row[0].get(value);
+                row[1].get(scale);
+                ret.rv = 0;
+                break;
+            }
+            default:
+            {
+                ret.rv = 3;
+                log_error (" Unexpected number of rows returned: " \
+                           " (timestamp, topic_id) not unique"
+                           " timestamp = %" PRIi64 " and topic %s '%s'", 
+                           max_time, fuzzy ? " LIKE " : " = ", topic.c_str());
+                break;
+            }
+        }
+        return ret;
+    }
+    catch (const std::exception &e) {
         ret.rv = -1;
+        log_debug("valuescale: topic = %s", topic.c_str());
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    catch (...) {
+        log_error("valuescale: Unknown exception caught!");
+        ret.rv = -2;
         return ret;
     }
 }
