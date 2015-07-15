@@ -19,7 +19,7 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #   Description: Script to generate eaton/bios container
-export build_dir=..
+export build_dir=../build/
 export temp_dir=./temp 
 
 echo "preparing $temp_dir .. "
