@@ -30,7 +30,7 @@ RUN sed -i 's/usr\/local\/share\/bios\/web/usr\/share\/bios-web/' /etc/tntnet/tn
 RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
 ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
 ADD ./usr/local/libexec/bios/agent-dbstore /usr/local/libexec/bios/agent-dbstore
-ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
+ADD ./usr/local/libexec/bios/agent-netmon /usr/local/libexec/bios/agent-netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut
 ADD ./usr/local/libexec/bios/agent-inventory /usr/local/libexec/bios/agent-inventory
