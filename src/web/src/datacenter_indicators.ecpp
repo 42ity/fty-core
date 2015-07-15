@@ -85,10 +85,10 @@ get_dc_percentage(
         reply_t reply = persist::select_measurement_last_web_byTopicLike(conn, src, value, scale, minutes_back);
         if ( reply.rv == 0 )
             val = value * pow (10, scale);
+        key_value.insert(std::make_pair(src, val));
     }
     else
         val = it->second;
-    key_value.insert(std::make_pair(src, val));
     return val;
 }
 
@@ -110,10 +110,10 @@ get_dc_measurement(
         reply_t reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale, minutes_back);
         if (reply.rv == 0)
             val = value * pow(10,scale);
+        key_value.insert(std::make_pair(src, val));
     }
     else
         val = it->second;
-    key_value.insert(std::make_pair(src, val));
     return val;
 }
 
