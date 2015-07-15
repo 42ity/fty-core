@@ -93,7 +93,6 @@ insert_into_measurement_again:
                 " WHERE topic=:topic AND"
                 "       units=:units"
         );
-        log_debug("[t_bios_measurement]: inserting %" PRIi32 " * 10^%" PRIi16 " %s", value, scale, units);
         ret.affected_rows = st.set("topic", topic)
                               .set("time",  time)
                               .set("value", value)
@@ -101,7 +100,10 @@ insert_into_measurement_again:
                               .set("units", units)
                               .execute();
 
-        log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows ", ret.affected_rows);
+        log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
+                   "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                   "topic = '%s' time = " PRIi64, 
+                   ret.affected_rows, value, scale, units, topic, time);
 
         if( ret.affected_rows == 0 && device_name != NULL && device_name[0] != 0 ) {
             // probably device doesn't exist in t_bios_discovered_device. Let's fill it.
@@ -140,16 +142,19 @@ insert_into_measurement_again:
         
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
+        LOG_END;
+        return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg        = e.what();
+        log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
+                   "topic = '%s' time = " PRIi64, 
+                   ret.affected_rows, value, scale, units, topic, time);
         LOG_END_ABNORMAL(e);
         return ret;
     }
-    LOG_END;
-    return ret;
 }
 
 db_reply <std::vector<db_msrmnt_t>>
