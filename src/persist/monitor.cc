@@ -1523,7 +1523,7 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
             " SELECT"
             "   v.value, v.scale, v.topic, v1.name"
             " FROM"
-            "   v_web_measurement_last v,"
+            "   v_web_measurement_last_10m v,"
             "   t_bios_discovered_device v1"
             " WHERE v.device_id = :deviceid AND"
             "       v1.id_discovered_device = :deviceid"
