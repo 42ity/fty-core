@@ -1,4 +1,5 @@
 use box_utf8
+
 DROP PROCEDURE IF EXISTS insert_measurement;
 DELIMITER $$
 CREATE procedure insert_measurement(IN topic INT, IN day INT)

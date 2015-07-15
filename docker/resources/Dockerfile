@@ -3,46 +3,30 @@ MAINTAINER gguillaume "geraldguillaume@eaton.com"
 RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
 ENV http_proxy http://proxy.eur.etn.com:8080 
-RUN apt-get update || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/* && apt-get update; }
+RUN apt-get update && apt-get install -y --force-yes \
+  nut-server nut-client nut \
+  tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 \
+  libsasl2-2 sasl2-bin \
+  libpgm-5.1-0 libsodium13 \
+  mysql-client \
+  sudo \
+  vim-tiny \
+  libmagic1 \
+  libcidr0 \
+  libzmq4 \
+  libczmq1 \
+  libmlm1 \
+  malamute \
+  libnutclient0
+  
 #RUN apt-get install -y apt-utils
-RUN apt-get install -y --force-yes nut-server nut-client nut 
-RUN apt-get install -y --force-yes tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 
-RUN apt-get install -y libsasl2-2 sasl2-bin
-RUN apt-get install -y libpgm-5.1-0 libsodium13
-RUN apt-get install -y nmap
-RUN apt-get install -y mysql-client 
-RUN apt-get install -y sudo
-RUN apt-get install -y vim-tiny
-RUN apt-get install libmagic1
+#RUN apt-get install -y nmap
 RUN apt-get clean
-
-#RUN apt-get install -y --force-yes libcidr0
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libcidr0_1.2.3-1_amd64.deb /tmp/libcidr0_1.2.3-1_amd64.deb
-RUN dpkg -i /tmp/libcidr0_1.2.3-1_amd64.deb
-
-#RUN apt-get install -y --force-yes libzmq4
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
-RUN dpkg -i /tmp/libzmq4_4.2.0~20150120be23e699c9-1_amd64.deb
-
-#RUN apt-get install -y --force-yes libczmq1
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb  /tmp/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb 
-RUN dpkg -i /tmp/libczmq1_3.0.0~20150309gitb4a83f1069c-1_amd64.deb 
-
-#RUN apt-get install -y --force-yes libmlm1
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb /tmp/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb  
-RUN dpkg -i /tmp/libmlm1_0.1.0~20150309git2964bb19-1_amd64.deb 
-
-#RUN apt-get install -y --force-yes malamute
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/malamute_0.1.0~20150309git2964bb19-1_amd64.deb  /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb  
-RUN dpkg -i /tmp/malamute_0.1.0~20150309git2964bb19-1_amd64.deb 
-   
-#RUN apt-get install -y --force-yes libnutclient0
-ADD http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/amd64/libnutclient0_2.7.3-2_amd64.deb /tmp/libnutclient0_2.7.3-2_amd64.deb  
-RUN dpkg -i /tmp/libnutclient0_2.7.3-2_amd64.deb
 
 #Install BIOS binaries & config files
 RUN mv /etc/tntnet/tntnet.xml /etc/tntnet/tntnet.xml.orig
 ADD ./usr/local/share/bios/examples/tntnet.xml.example /etc/tntnet/tntnet.xml
+RUN sed -i 's/usr\/local\/share\/bios\/web/usr\/share\/bios-web/' /etc/tntnet/tntnet.xml
 RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
 ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
 ADD ./usr/local/libexec/bios/agent-dbstore /usr/local/libexec/bios/agent-dbstore
@@ -59,7 +43,9 @@ ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
 RUN ln -s /usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0
 RUN ln -s /usr/local/lib/libbiosapi.so.0 /usr/local/lib/libbiosapi.so
 RUN mkdir -p /usr/local/share/bios/web
-
+ADD ./usr/share/compiled-webapp.tar /usr/share/
+RUN mv /usr/share/compiled-webapp /usr/share/bios-web
+#RUN mkdir /usr/share/bios-web
 ENV LD_LIBRARY_PATH /usr/local/lib/
 
 #User PAM
