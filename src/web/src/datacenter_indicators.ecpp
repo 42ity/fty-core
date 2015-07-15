@@ -30,7 +30,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"trend_power_last_month", "<zero>"},
 
     {"temperature", "temperature.TH%"},
-    {"avg_temperature_last_day", "<zero>"},
+    {"avg_temperature_last_day", "temperature.TH%_arithmetic_mean_24h%"},
     {"avg_temperature_last_week", "<zero>"},
     {"avg_temperature_last_month", "<zero>"},
 
@@ -47,7 +47,7 @@ static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
     {"trend_temperature_last_month", "<zero>"},
 
     {"humidity", "humidity.TH%"},
-    {"avg_humidity_last_day", "<zero>"},
+    {"avg_humidity_last_day", "humidity.TH%_arithmetic_mean_24h%"},
     {"avg_humidity_last_week", "<zero>"},
     {"avg_humidity_last_month", "<zero>"},
 
