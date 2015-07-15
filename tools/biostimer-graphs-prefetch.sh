@@ -17,14 +17,17 @@ declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
 [ -z "$SUT_HOST" ] && \
 declare -r SUT_HOST="127.0.0.1"
 
-[ -z "$SUT_PORT" ] && \
+[ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare -r SUT_PORT="8000"
+        declare -r SUT_WEB_PORT="8000"
 else
-        declare -r SUT_PORT="80"
+        declare -r SUT_WEB_PORT="80"
 fi
 
 [ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+
+# How many requests can fire at once? Throttle when we reach this amount...
+[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=32
 
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
@@ -32,6 +35,7 @@ fi
         SCRIPTDIR="`dirname "$0"`"
 
 # Include our standard routines for CI scripts
+CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
 [ -s "$SCRIPTDIR/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/scriptlib.sh || \
 { [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
@@ -227,7 +231,7 @@ start_lock() {
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && exit 0
 
-    settraps 'rm -f "$LOCKFILE"'
+    settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
     touch "$LOCKFILE" || exit $?
 }
@@ -302,31 +306,68 @@ generate_getrestapi_strings() {
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
-    for source in "temperature.TH" "humidity.TH"; do
-        for thi in $(seq 1 4); do
-            s=${source}${thi}
-            echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+    if [ $? = 0 ] && [ -n "$i" ] ; then
+        for source in "temperature.TH" "humidity.TH"; do
+             for thi in $(seq 1 4); do
+                s=${source}${thi}
+                echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+            done
         done
-    done
-
+    else
+        logmsg_error "Could not select id_asset_element for host name '${hostname}', skipping T&H"
+    fi
 
     return 0
 }
 
 run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
+
     start_lock
-    generate_getrestapi_strings | while IFS="" read LINE; do
-        ( [ "$1" = -v ] && logmsg_debug 0 "Running: $LINE" >&2
-          $LINE
+    COUNT_TOTAL=0
+    COUNT_SUCCESS=0
+    COUNT_BATCH=0
+    FIRED_BATCH=""
+    RES=-1
+    while IFS="" read CMDLINE; do
+        COUNT_TOTAL=$(($COUNT_TOTAL+1))
+        COUNT_BATCH=$(($COUNT_BATCH+1))
+        ( [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
+          eval $CMDLINE
           RESLINE=$?
-          [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $LINE" >&2
+          [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $CMDLINE" >&2
           exit $RESLINE
         ) &
+        FIRED_BATCH="$FIRED_BATCH $!"
+        if [ "$COUNT_BATCH" -ge "$MAX_CHILDREN" ]; then
+            [ "$1" = -v ] && logmsg_debug 0 \
+                "Reached $COUNT_BATCH requests running at once ($COUNT_TOTAL overall), throttling down..." >&2
+            for F in $FIRED_BATCH ; do
+                wait $F
+                RESLINE=$?
+                [ "$RESLINE" = 0 ] && \
+                    COUNT_SUCCESS=$(($COUNT_SUCCESS+1)) || \
+                    RES=$RESLINE
+            done
+            COUNT_BATCH=0
+            FIRED_BATCH=""
+        fi
+    done < <(generate_getrestapi_strings)
+    # Special bash syntax to avoid forking and thus hiding of variables
+
+    for F in $FIRED_BATCH ; do
+        wait $F
+        RESLINE=$?
+        [ "$RESLINE" = 0 ] && \
+             COUNT_SUCCESS=$(($COUNT_SUCCESS+1)) || \
+             RES=$RESLINE
     done
-    wait
-    RES=$?
+    FIRED_BATCH=""
+
+    [ "$1" = -v ] && logmsg_debug 0 \
+        "Ran $COUNT_TOTAL overall requests, done now" >&2
     [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    [ $RES -le 0 ] && return 0
     return $RES
 }
 
@@ -335,10 +376,15 @@ case "$1" in
     -n) generate_getrestapi_strings "$@"
         exit $?
         ;;
-    -v) run_getrestapi_strings "$@"
+    -v) # production run with verbose output
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
+        run_getrestapi_strings "$@"
         exit $?
         ;;
-    ""|-q) run_getrestapi_strings "$@" >/dev/null
+    ""|-q) # default / quiet mode for timed runs
+        # If user did not ask for debug shut it:
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
+        run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
     -h|--help) echo "$0 [-n | -v]"
