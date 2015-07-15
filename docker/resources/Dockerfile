@@ -1,8 +1,8 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
-RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
+#RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
-ENV http_proxy http://proxy.eur.etn.com:8080 
+#ENV http_proxy http://proxy.eur.etn.com:8080 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \
   tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 \
@@ -38,6 +38,7 @@ ADD ./usr/local/libexec/bios/agent-alert /usr/local/libexec/bios/agent-alert
 ADD ./usr/local/libexec/bios/agent-cm /usr/local/libexec/bios/agent-cm
 ADD ./usr/local/libexec/bios/agent-tpower /usr/local/libexec/bios/agent-tpower
 ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
+ADD ./usr/local/libexec/bios/outage /usr/local/libexec/bios/outage
 RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
 ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
 RUN ln -s /usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0
