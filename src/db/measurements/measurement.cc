@@ -285,10 +285,10 @@ select_measurement_last_web_byTopic (
 
     std::string view;
     if ( minutes_back <= 10 )
-        view = "v_web_measurement_last_10m";
+        view = "v_web_measurement_10m";
     // TODO fix longer time period after demo
     else // if ( minutes_back <= 60*24 )
-        view = "v_web_measurement_last_24h";
+        view = "v_web_measurement_24h";
     log_debug ("fuzzy %s", fuzzy ? " true " : " false ");
     int64_t max_time = 0 ;
     try {
