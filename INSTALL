@@ -404,14 +404,16 @@ anyway, and they will pull in their modern base packages as needed.
 
 Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
- * Install NUT project parts needed for linking:
+ * Install NUT project parts needed for compilation and linking:
 ----
-:; apt-get install -y libupsclient-dev libnutclient-dev
+:; apt-get install -y libupsclient-dev libnutclient-dev libnutscan-dev
 ----
  ** Note: specifically the $BIOS core project needs 'libnutclient' version
 0.27 or newer, which is provided either by recent source of the Network
 UPS Tools, or by its very recent packaging (numbered 2.7.2-2 on OBS for
 Debian).
+ ** Note: These packages should be delivered from OBS at the moment because
+they include patches not served by the upstream projects and distro builds.
  ** If you need more of NUT (actual programs -- drivers, server and client
 daemons and utilities), consider adding these packages:
 ----

@@ -3,7 +3,7 @@
 curlfail_push "warn" ""
 test_it "GET_ui_properties_1"
 api_get /ui/properties | grep -q '{"key1" : "value1", "key2" : "value2"'
-WEBLIB_QUICKFAIL=no print_result $?
+TESTLIB_QUICKFAIL=no print_result $?
 curlfail_pop
 
 test_it "PUT_ui_properties_1"
