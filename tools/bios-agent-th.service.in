@@ -1,11 +1,11 @@
 [Unit]
-Description=Temperature and humidity agent for BIOS project
+Description=Temperature and Humidity agent for BIOS project
 After=malamute.service
 Requires=malamute.service
 
 [Service]
 Type=simple
-ExecStart=@libexecdir@/bios/th-agent
+ExecStart=@libexecdir@/bios/agent-th
 
 [Install]
 WantedBy=multi-user.target

@@ -48,6 +48,7 @@ DB_TOPO1="location_topology.sql"
 DB_RACK_POWER="rack_power.sql"
 DB_DC_POWER="dc_power.sql"
 DB_CRUD="crud_test.sql"
+DB_OUTAGE="test_outage.sql"
 
 RESULT=0
 FAILED=""
@@ -73,7 +74,7 @@ trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
     test-db test-db2 test-database test-db-alert \
-    test-db-asset-crud test-dbtopology test-totalpower \
+    test-db-asset-crud test-dbtopology test-outage test-totalpower \
     || FAILED="compilation"
 sleep 1
 
@@ -204,6 +205,20 @@ if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
     RESULT=1
     FAILED="$FAILED test-totalpower::dc"
+    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
+fi
+sleep 1
+
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_OUTAGE"
+echo "-------------------- test-db-outage --------------------"
+"$BUILDSUBDIR"/test-outage
+if [ "$?" != 0 ] ; then
+    echo "----------------------------------------"
+    echo "ERROR: test-outage failed"
+    echo "----------------------------------------"
+    RESULT=1
+    FAILED="$FAILED test-outage"
     [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1

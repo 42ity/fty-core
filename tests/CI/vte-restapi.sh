@@ -6,7 +6,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -72,7 +72,7 @@ while [ $# -gt 0 ]; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
-	--help|-h)
+        --help|-h)
             usage
             exit 1
             ;;
@@ -116,6 +116,7 @@ RESULT=0
 DB_LOADDIR="$CHECKOUTDIR/tools"
 DB_BASE="initdb.sql"
 DB_DATA="load_data.sql"
+DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
 
@@ -150,9 +151,9 @@ fi
 # konec vynechavky **********************************
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-driver-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** AUTHENTICATION ISSUES *****
@@ -177,7 +178,8 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_DATA"
+    loaddb_file "$DB_LOADDIR/$DB_DATA" && \
+    loaddb_file "$DB_LOADDIR/$DB_DATA_TESTREST"
 }
     # *** start the default set of TC
 test_web_default() {
