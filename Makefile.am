@@ -966,7 +966,7 @@ TESTS += $(check_SCRIPTS)
 client_PROGRAMS += 	agent-netmon
 agent_netmon_SOURCES = \
 			src/agents/netmon/linux \
-			src/agents/netmon/netmon.c
+			src/agents/netmon/agent-netmon.c
 
 agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/netmon
@@ -1018,7 +1018,7 @@ client_SCRIPTS =	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
-agent_dbstore_SOURCES =		src/agents/dbstore/db-ng.cc \
+agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
 agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -1041,8 +1041,9 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-EXTRA_DIST += $(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/src/db/calculation.h
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1087,7 +1088,7 @@ client_PROGRAMS +=	agent-nut
 
 agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
-			src/agents/nut/nut-agent.cc \
+			src/agents/nut/agent-nut.cc \
 			src/shared/upsstatus.cc
 
 agent_nut_LDADD = \
@@ -1103,8 +1104,8 @@ agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-alert-smtp
 
 agent_alert_smtp_SOURCES = \
-			src/agents/alert-smtp/alert-smtp-agent.h \
-			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/agent-alert-smtp.h \
+			src/agents/alert-smtp/agent-alert-smtp.cc \
 			src/agents/alert-smtp/alert-basic.h
 
 
@@ -1125,7 +1126,7 @@ agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/autoconfig.cc \
+			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/configurator.cc \
 			src/shared/filesystem.cc
 
@@ -1150,7 +1151,7 @@ agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
-			src/agents/inventory/inventory-actor.cc \
+			src/agents/inventory/agent-inventory.cc \
 			tools/dbpath.h
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
@@ -1176,7 +1177,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
-			src/agents/computation/cm-agent.cc \
+			src/agents/computation/agent-cm.cc \
 			src/agents/computation/cm-web.cc \
 			src/agents/computation/cm-web.h \
 			src/agents/computation/cm-utils.h \
@@ -1225,7 +1226,7 @@ client_PROGRAMS +=      agent-alert
 agent_alert_SOURCES = \
 			src/agents/alert/alert-entity.cc \
 			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/alert-agent.cc \
+			src/agents/alert/agent-alert.cc \
 			src/agents/alert/alert-model.cc \
 			src/shared/utils_app.c \
 			src/shared/utils_ymsg.c \
@@ -1405,12 +1406,16 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_UNITS_TIMERIMPL =
+SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
 autopathedit = sed \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
@@ -1423,35 +1428,44 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service
 
+SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
+
+# These files need no processing, delivered verbatim
+SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
+
+# This file is generated
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
-$(SYSTEMD_UNITS): Makefile
+$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
 	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
 # Explicit path desired by dependencies in systemdsystemunit_DATA below
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
-systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
-EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
+CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
 
 #----------------------------------------------------------------------

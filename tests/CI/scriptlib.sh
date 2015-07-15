@@ -168,11 +168,11 @@ default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
 logmsg_echo() {
     ### Optionally echoes a message, based on current debug-level
     ### Does not add any headers to the output line
+    WANT_DEBUG_LEVEL=$CI_DEBUGLEVEL_ECHO
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
-    else
-        WANT_DEBUG_LEVEL=0      
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo -E "$@"
@@ -184,6 +184,7 @@ logmsg_info() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
@@ -195,6 +196,7 @@ logmsg_warn() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
@@ -206,6 +208,7 @@ logmsg_error() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
     echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
@@ -219,6 +222,7 @@ logmsg_debug() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         WANT_DEBUG_LEVEL="$1"
         shift
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
 
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
@@ -253,6 +257,7 @@ die() {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         CODE="$1"
         shift
+    else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
@@ -324,12 +329,18 @@ sut_run() {
     ### not one token aka "$1"
     if isRemoteSUT ; then
         logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
-        REMCMD="sh -x -c \"$@\""
+        [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
+            REMCMD="sh -x -c \"$@\"" ||
+            REMCMD="sh -c \"$@\""
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
         logmsg_info "sut_run()::local: $@" >&2
-        sh -x -c "$@"
+        if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
+            sh -x -c "$@"
+        else
+            sh -c "$@"
+        fi
         return $?
     fi
 }
@@ -346,10 +357,11 @@ do_select() {
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
     logmsg_info "do_select(): $1 ;" >&2
-    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
-    DB_RES=$?
-    echo "$DB_OUT" | tail -n +2
-    [ $? = 0 -a "$DB_RES" = 0 ]
+    echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
+#    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
+#    DB_RES=$?
+#    echo "$DB_OUT" | tail -n +2
+#    [ $? = 0 -a "$DB_RES" = 0 ]
     return $?
 }
 
@@ -373,4 +385,15 @@ loaddb_file() {
             CODE=$? die "Could not load database file: $DBFILE"
     fi
     return 0
+}
+
+settraps() {
+        # Not all trap names are recognized by all shells consistently
+        [ -z "$TRAP_SIGNALS" ] && TRAP_SIGNALS="EXIT QUIT TERM HUP INT"
+        for P in "" SIG; do for S in $TRAP_SIGNALS ; do
+                case "$1" in
+                -|"") trap "$1" $P$S 2>/dev/null || true ;;
+                *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
+                esac
+        done; done
 }
