@@ -164,7 +164,6 @@ int main(int argc, char *argv[]){
     
     int result = 1;
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("tpower agent started");
     TotalPowerAgent agent("TPOWER");
     if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^measurement\\.realpower\\.default@") ) {

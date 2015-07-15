@@ -121,7 +121,6 @@ int main(int argc, char *argv[]){
     
     int result = 1;
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("nut agent started");
     NUTAgent agent("NUT");
     if( agent.connect("ipc://@/malamute", bios_get_stream_main(), NULL) ) {
