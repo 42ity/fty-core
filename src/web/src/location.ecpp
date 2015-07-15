@@ -23,7 +23,6 @@ std::string filter;
 </%args>
 <%cpp>    
     log_open ();
-    log_set_level (LOG_DEBUG);
     // GET requests only
     if (request.isMethodGET() == false) {
         return HTTP_BAD_REQUEST;
