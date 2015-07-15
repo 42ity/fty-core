@@ -28,7 +28,6 @@ db_reply_t
         const char        *units,
         const char        *device_name)
 {
-    LOG_START;
     db_reply_t ret = db_reply_new();
 
     if ( !units ) {
@@ -142,7 +141,6 @@ insert_into_measurement_again:
         
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
-        LOG_END;
         return ret;
     } catch(const std::exception &e) {
         ret.status     = 0;
