@@ -31,27 +31,7 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
     int log_level = DEFAULT_LOG_LEVEL;
     
-    char *ev_log_level = getenv (EV_BIOS_LOG_LEVEL);
-
-    if (ev_log_level) {
-        if (strcmp (ev_log_level, STR (LOG_DEBUG)) == 0) {
-            log_level = LOG_DEBUG;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_INFO)) == 0) {
-            log_level = LOG_INFO;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_WARNING)) == 0) {
-            log_level = LOG_WARNING;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_ERR)) == 0) {
-            log_level = LOG_ERR;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_CRIT)) == 0) {
-            log_level = LOG_CRIT;
-        }
-    }
     log_open ();
-    log_set_level (log_level);
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
     std::map <std::string, std::function<void (bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;

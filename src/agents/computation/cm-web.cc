@@ -31,7 +31,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils.h"
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
-
 #include "db/measurements.h"
 #include "cm-utils.h"
 #include "cm-web.h"
@@ -82,7 +81,7 @@ process
         std::string device_name;
         {
             auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
-            if (ret.rv == -1)
+            if (ret.rv != 0)
                 log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
             else
                 log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
@@ -142,6 +141,7 @@ process
                           last_average_ts, start_ts, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
+                    log_warning ("request_sampled () failed!");
                     return;
                 }
             }

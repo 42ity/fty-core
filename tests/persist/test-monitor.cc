@@ -303,7 +303,7 @@ TEST_CASE("Common messages: update_client2 fail","[common][update][client][db]")
 
     // this row should not be updated
     REQUIRE ( common_msg_id (response) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errorno (response) == DB_ERROR_INTERNAL );
+    REQUIRE ( common_msg_rowid(response) == 0 );
     
     common_msg_destroy (&response);
     common_msg_destroy (&client);

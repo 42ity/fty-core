@@ -15,7 +15,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file   alert-smtp-agent.h
+/*! \file   agent-alert-smtp.cc
     \brief  Agent that sends notifications through smtp
     \author Alena Chernikava <AlenaChernikava@eaton.com>
 */
@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include "agents.h"
 #include "utils_ymsg.h"
-#include "alert-smtp-agent.h"
+#include "agent-alert-smtp.h"
 #include "email.h"
 #include "str_defs.h"
 #include <sys/types.h>
@@ -250,7 +250,6 @@ int main(int argc, char **argv){
     
     int result = 1;
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("Alert Smtp Agent started");
     AlertSmtpAgent agent("alert-smtp");
     if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^alert\\.") ) {

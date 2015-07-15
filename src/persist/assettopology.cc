@@ -53,7 +53,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 zmsg_t *process_assettopology (const char *database_url,
                         asset_msg_t **message_p) {
     log_open ();
-    log_set_level (LOG_DEBUG);
 
     assert (message_p);
     assert (database_url);

@@ -21,7 +21,7 @@ Author(s): Tomas Halman <tomashalman@eaton.com>
 Description: autoconfiguration agent
 */
 
-#include "autoconfig.h"
+#include "agent-autoconfig.h"
 #include "str_defs.h"
 #include "log.h"
 #include "utils.h"

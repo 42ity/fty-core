@@ -81,16 +81,14 @@ get_dc_trend(
     m_msrmnt_scale_t avg_scale;
     m_msrmnt_value_t actual;
     m_msrmnt_scale_t actual_scale;
-    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale, 48*60);
+    auto reply_avg = persist::select_measurement_last_web_byElementId(conn, items.at(0), id, avg, avg_scale, 24*60);
     auto reply = persist::select_measurement_last_web_byElementId(conn, items.at(1), id, actual, actual_scale);
 
     if (reply.rv != 0 || reply_avg.rv != 0)
         return 0.0f;
 
     if( avg == 0 ) return 0.0f;
-    auto ret = (actual * pow(10,actual_scale) - avg * pow(10,avg_scale) ) / ( avg * pow(10,avg_scale) );
-    // TODO: remove after the demo!
-    return ((int) ret * 1000) / 1000.0f;
+    return round( (actual * pow(10,actual_scale) - avg * pow(10,avg_scale) ) / ( avg * pow(10,avg_scale) ) * 1000.0f ) / 10.0f ;
 }
 
 float
@@ -103,7 +101,7 @@ get_dc_percentage(
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     
-    reply = persist::select_measurement_last_web_byTopic(conn, src, value, scale);
+    reply = persist::select_measurement_last_web_byTopicLike(conn, src, value, scale);
     if (reply.rv != 0)
         return 0.0f;
     return value * pow(10,scale);
@@ -141,9 +139,20 @@ get_dc_indicator(
     m_msrmnt_value_t value;
     m_msrmnt_scale_t scale;
     reply_t reply;
-    if (key.substr(0,5) == "trend") return get_dc_trend(conn, src, id);
-    if (src.find('%') != std::string::npos) return get_dc_percentage(conn, src, id);
-    if (src.find("24h") != std::string::npos) return get_dc_measurement(conn, src, id, 24*60+5);
+    std::cout << "key: " << key << "src: " << src << std::endl;
+    if (key.substr(0,5) == "trend") {
+        std::cout << "get_dc_trend" << std::endl;
+         return get_dc_trend(conn, src, id);
+    }
+    if (src.find('%') != std::string::npos) {
+        std::cout << "get_dc_percentage" << std::endl;
+        return get_dc_percentage(conn, src, id);
+    }
+    if (src.find("24h") != std::string::npos) {
+        std::cout << "get_dc_measurement + 24h" << std::endl;
+         return get_dc_measurement(conn, src, id, 24*60);
+    }
+        std::cout << "DEFAULT get_dc_measurement " << std::endl;
     return get_dc_measurement(conn, src, id, 10);
 }
 

@@ -22,6 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <errno.h>
 
 #include "log.h"
+#include "utils.h"
 
 #define ASSERT_LEVEL \
     assert(level == LOG_DEBUG   || \
@@ -93,6 +94,30 @@ void log_open() {
         log_syslog_level = LOG_ERR;
     }
     log_set_syslog_level(log_syslog_level);
+
+    char *ev_log_level = getenv("BIOS_LOG_LEVEL");
+    int log_level;
+
+    if (ev_log_level) {
+        if (strcmp(ev_log_level, STR(LOG_DEBUG)) == 0) {
+            log_level = LOG_DEBUG;
+        }
+        else if (strcmp(ev_log_level, STR(LOG_INFO)) == 0) {
+            log_level = LOG_INFO;
+        }
+        else if (strcmp(ev_log_level, STR(LOG_WARNING)) == 0) {
+            log_level = LOG_WARNING;
+        }
+        else if (strcmp(ev_log_level, STR(LOG_ERR)) == 0) {
+            log_level = LOG_ERR;
+        }
+        else if (strcmp(ev_log_level, STR(LOG_CRIT)) == 0) {
+            log_level = LOG_CRIT;
+        } else {
+            return;
+        }
+        log_set_level(log_level);
+    }
 }
 
 void log_close() {
