@@ -9,11 +9,13 @@
 #include "cleanup.h"
 
 #define TIMEOUT 1000
+//TODO: THIS DOES NOT BELONG TO bios_agent!!! This is protocol and belongs to agents.h!!
 #define BIOS_MLM_STREAM "bios"
 #define BIOS_MLM_MEASUREMENTS_STREAM "measurements"
 #define BIOS_MLM_ASSETS_STREAM "assets"
 #define BIOS_MLM_ALERTS_STREAM "alerts"
-#define BIOS_MLM_STREAM_COUNT 4
+#define BIOS_MLM_NETWORKS_STREAM "networks"
+#define BIOS_MLM_STREAM_COUNT 5
 
 static const char *bios_streams[] = 
 {
@@ -21,6 +23,7 @@ static const char *bios_streams[] =
     BIOS_MLM_MEASUREMENTS_STREAM,
     BIOS_MLM_ASSETS_STREAM,
     BIOS_MLM_ALERTS_STREAM,
+    BIOS_MLM_NETWORKS_STREAM,
     NULL
 };
 
@@ -302,6 +305,11 @@ bios_get_stream_assets () {
 const char *
 bios_get_stream_alerts () {
     return BIOS_MLM_ALERTS_STREAM;
+}
+
+const char *
+bios_get_stream_networks () {
+    return BIOS_MLM_NETWORKS_STREAM;
 }
 
 const char **

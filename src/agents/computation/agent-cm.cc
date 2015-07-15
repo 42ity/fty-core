@@ -23,35 +23,17 @@
 #include "cleanup.h"
 #include "dbpath.h"
 
+#include "preproc.h"
+
 #define DEFAULT_LOG_LEVEL LOG_INFO
 
 namespace cm = computation;
 
-int main (int argc, char **argv) {
+int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
     int log_level = DEFAULT_LOG_LEVEL;
     
-    char *ev_log_level = getenv (EV_BIOS_LOG_LEVEL);
-
-    if (ev_log_level) {
-        if (strcmp (ev_log_level, STR (LOG_DEBUG)) == 0) {
-            log_level = LOG_DEBUG;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_INFO)) == 0) {
-            log_level = LOG_INFO;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_WARNING)) == 0) {
-            log_level = LOG_WARNING;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_ERR)) == 0) {
-            log_level = LOG_ERR;
-        }
-        else if (strcmp (ev_log_level, STR (LOG_CRIT)) == 0) {
-            log_level = LOG_CRIT;
-        }
-    }
     log_open ();
-    log_set_level (log_level);
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
     std::map <std::string, std::function<void(tntdb::Connection& conn, bios_agent_t*, ymsg_t *, const char*, ymsg_t **)>> rules;
@@ -84,14 +66,6 @@ int main (int argc, char **argv) {
     }
 #endif
     
-    tntdb::Connection conn;
-    try {
-        conn = tntdb::connectCached (url);
-    }
-    catch (...) { // TODO: std::exception&...
-        log_critical ("tntdb::connnectCached faile.");
-        return EXIT_FAILURE;
-    } 
     // We don't really need a poller. We just have one client (actor/socket)
     while (!zsys_interrupted) {
         log_debug ("WAITING");
@@ -118,6 +92,19 @@ int main (int argc, char **argv) {
         auto needle = rules.find (subject);
         if (needle != rules.cend()) {
             _scoped_ymsg_t *msg_out = NULL;
+            tntdb::Connection conn;
+            try {
+                conn = tntdb::connectCached (url);
+            }
+            catch (const std::exception& e) {
+                log_critical ("Exception caught: '%s'.", e.what ());
+                return EXIT_FAILURE;
+            }
+            catch (...) {
+                log_critical ("Unknown exception caught.");
+                return EXIT_FAILURE;
+            } 
+
             needle->second (conn, agent, msg_recv, sender, &msg_out);
             if (msg_out != NULL) {
                 ymsg_format (msg_out, msg_print);                

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <string>
+#include <exception>
 #include <errno.h>
 #include <tntdb/connect.h>
 
@@ -46,7 +47,11 @@ bool TotalPowerAgent::configuration( )
         }
         connection.close();
         return true;
+    } catch (const std::exception& e) {
+        log_error ("Excepton caught: '%s'.", e.what ());
+        return false;
     } catch(...) {
+        log_error ("Unknown exception caught.");
         return false;
     }
 }
@@ -159,7 +164,6 @@ int main(int argc, char *argv[]){
     
     int result = 1;
     log_open();
-    log_set_level(LOG_DEBUG);
     log_info ("tpower agent started");
     TotalPowerAgent agent("TPOWER");
     if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^measurement\\.realpower\\.default@") ) {

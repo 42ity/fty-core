@@ -234,6 +234,7 @@ BIOS_EXPORT zactor_t *
 BIOS_EXPORT zsock_t *
     bios_agent_msgpipe (bios_agent_t *self);
 
+//TODO: move out of bios_agent - this is our specific protocol
 //! Get name of the ##BIOS## main stream
 BIOS_EXPORT const char *
     bios_get_stream_main ();
@@ -249,6 +250,10 @@ BIOS_EXPORT const char *
 //! Get name of the ##BIOS## stream for alerts
 BIOS_EXPORT const char *
     bios_get_stream_alerts ();
+
+//! Get name of the ##BIOS## stream for networks
+BIOS_EXPORT const char *
+bios_get_stream_networks ();
 
 //! Get array of ##BIOS## streams
 BIOS_EXPORT const char **

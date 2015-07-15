@@ -22,7 +22,7 @@ char *vars[] = {
 };
 
 sample_agent agent = {
-    "th-agent",
+    "agent-th",
     NULL,
     NULL,
     vars,
@@ -93,11 +93,11 @@ ymsg_t* get_measurement(char* what) {
 
     // Formulate a response
     if(what[0] == 't') {
-        ret = bios_measurement_encode("", "", "C", data_p->T, 2, data_p->time);
+        ret = bios_measurement_encode("", "", "C", data_p->T, -2, data_p->time);
         log_debug("Returning T = %" PRId32 ".%02" PRId32 " C",
                   data_p->T/100, data_p->T%100);
     } else {
-        ret = bios_measurement_encode("", "", "%", data_p->H, 2, data_p->time);
+        ret = bios_measurement_encode("", "", "%", data_p->H, -2, data_p->time);
         log_debug("Returning H = %" PRId32 ".%02" PRId32 " %%",
                   data_p->H/100, data_p->H%100);
     }

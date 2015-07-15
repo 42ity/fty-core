@@ -16,7 +16,6 @@ FUTURE:
 
 #include "asset_msg.h"
 #include "common_msg.h"
-#include "netdisc_msg.h"
 #include "nmap_msg.h"
 #include "powerdev_msg.h"
 
@@ -79,13 +78,7 @@ int main (int argc, char *argv [])
         printf ("sender=%s subject=%s content=",
                 mlm_client_sender (client), mlm_client_subject (client));
         
-        if (is_netdisc_msg (msg)) {
-            printf ("\n");
-            _scoped_netdisc_msg_t *netdisc_msg = netdisc_msg_decode (&msg);
-            netdisc_msg_print (netdisc_msg);
-            netdisc_msg_destroy (&netdisc_msg);
-        }
-        else if (is_common_msg (msg)) {
+        if (is_common_msg (msg)) {
             printf ("\n");
             _scoped_common_msg_t *common_msg = common_msg_decode (&msg);
             common_msg_print (common_msg); // TODO: For some common messages it might make sense not use generic _print function

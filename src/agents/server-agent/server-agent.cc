@@ -19,7 +19,7 @@ sample_agent agent = {
     NULL,
     "temperature.sys.%s",
     "%s",
-    1,
+    10,
     get_measurement
 };
 

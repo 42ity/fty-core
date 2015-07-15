@@ -119,6 +119,13 @@
       <target>datacenter_indicators@bios_web</target>
       <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
     </mapping>
+    
+    <!-- uptime -->
+    <mapping>
+      <target>uptime@bios_web</target>
+      <url>^/api/v1/metric/computed/uptime.*$</url>
+    </mapping>
+
 
     <!-- Network list -->
     <mapping>

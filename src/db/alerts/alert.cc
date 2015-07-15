@@ -33,6 +33,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "bios_agent.h"
 #include "cleanup.h"
 #include "utils.h"
+#include "db/types.h"
+#include "assetcrud.h"
+#include "db/assets.h"
 
 namespace persist {
 
@@ -45,7 +48,8 @@ db_reply_t
          m_alrt_state_t      alert_state,
          const char         *description,
          m_alrt_ntfctn_t     notification,
-         int64_t             date_from)
+         int64_t             date_from,
+         a_elmnt_id_t        dc_id)
 {
     LOG_START;
     log_debug ("  rule_name = '%s'", rule_name);
@@ -54,6 +58,7 @@ db_reply_t
     log_debug ("  description = '%s'", description);
     log_debug ("  date_from = %" PRIi64, date_from);
     log_debug ("  notification = %" PRIu16, notification);
+    log_debug ("  dc_id = %" PRIu32, dc_id);
 
     db_reply_t ret = db_reply_new();
 
@@ -95,9 +100,9 @@ db_reply_t
             " INSERT INTO"
             "   t_bios_alert"
             "   (rule_name, priority, state, description,"
-            "   notification, date_from)"
+            "   notification, date_from, dc_id)"
             " SELECT"
-            "    :rule, :priority, :state, :desc, :note, FROM_UNIXTIME(:from)"
+            "    :rule, :priority, :state, :desc, :note, FROM_UNIXTIME(:from), :dc_id"
             " FROM"
             "   t_empty"
             " WHERE NOT EXISTS"
@@ -118,6 +123,7 @@ db_reply_t
                                set("desc", description).
                                set("note", notification).
                                set("from", date_from).
+                               set("dc_id", dc_id).
                                execute();
         ret.rowid = conn.lastInsertId();
         log_debug ("[t_bios_alert]: was inserted %" 
@@ -532,9 +538,44 @@ db_reply_t
     LOG_START;
  
     tntdb::Transaction trans(conn);
+
+    // Assumption: devices are in the same DC, so
+    // we can take a random one
+    
+    // find a DC alert belongs to
+    a_elmnt_id_t dc_id = 0;
+    if ( !device_names.empty() )
+    {
+        db_reply <db_a_elmnt_t> rep = select_asset_element_by_name 
+            (conn, device_names.at(0).c_str());
+        if ( rep.status != 1 )
+        {
+            trans.rollback();
+            log_info ("end: alert was not inserted (fail in determining DC");
+            db_reply_t ret;
+            ret.msg = rep.msg;
+            ret.errtype = rep.errtype;
+            ret.errsubtype = rep.errsubtype;
+            ret.status = rep.status;
+            return ret;
+        }
+        else
+        {
+            reply_t r = select_dc_of_asset_element (conn, rep.item.id, dc_id);
+            if ( r.rv != 0 )
+            {
+                db_reply_t ret;
+                ret.status = 0;
+                ret.errsubtype = r.rv;
+                log_debug ("problems with selecting DC");
+                return ret;
+            }
+        }
+    }
+
     auto reply_internal1 = insert_into_alert
         (conn, rule_name, priority, alert_state, description,
-         notification, date_from);
+         notification, date_from, dc_id);
     if ( ( reply_internal1.status == 0 ) ||
          ( reply_internal1.affected_rows == 0 ) )
     {

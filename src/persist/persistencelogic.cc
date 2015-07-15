@@ -156,50 +156,26 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
 
 
 char nethistory_id_cmd (int id) {
-    assert (id != 0);
     switch (id)
     {
-        case NETDISC_MSG_AUTO_ADD:
-        case NETDISC_MSG_AUTO_DEL:
+        case NETWORK_EVENT_AUTO_ADD:
+        case NETWORK_EVENT_AUTO_DEL:
         {
             return NETHISTORY_AUTO_CMD;
         }
-        case NETDISC_MSG_MAN_ADD:
-        case NETDISC_MSG_MAN_DEL:
+        case NETWORK_EVENT_MAN_ADD:
+        case NETWORK_EVENT_MAN_DEL:
         {
             return NETHISTORY_MAN_CMD;
         }
-        case NETDISC_MSG_EXCL_ADD:
-        case NETDISC_MSG_EXCL_DEL:
+        case NETWORK_EVENT_EXCL_ADD:
+        case NETWORK_EVENT_EXCL_DEL:
         {
             return NETHISTORY_EXCL_CMD;
         }
         default:
         {
-            return 0;
-        }
-    }
-}
-
-int nethistory_cmd_id (char cmd) {
-    assert (static_cast<int> (cmd) != 0);
-    switch (cmd)
-    {
-        case NETHISTORY_AUTO_CMD:
-        {
-            return NETHISTORY_AUTO_CMD;
-        }
-        case NETHISTORY_MAN_CMD:
-        {
-            return NETHISTORY_MAN_CMD;
-        }
-        case NETHISTORY_EXCL_CMD:
-        {
-            return NETHISTORY_EXCL_CMD;
-        }
-        default:
-        {
-            return 0;
+            return '\x0';
         }
     }
 }
@@ -311,81 +287,81 @@ zmsg_t* nmap_msg_process(zmsg_t **msg) {
     return common_msg_encode_db_ok(0, NULL);
 }
 
-zmsg_t* netdisc_msg_process(zmsg_t** msg) {
+void
+process_networks(
+        ymsg_t** in_p)
+{
+    if( ! in_p || !*in_p ) return;
+    ymsg_t* in = *in_p;
+    LOG_START;
+    log_debug("processing networks");
 
-    // cast away the const - zproto generated methods dont' have const
-    _scoped_netdisc_msg_t* msg_nc = netdisc_msg_decode(msg);
-    if(msg_nc == NULL) {
-        log_warning ("Malformed netdisc message received!");
-        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                        "Malformed netdisc message message received!", NULL);
+    int event, ipver;
+    uint8_t prefixlen;
+    _scoped_char *name, *ipaddr, *mac;
+    if (bios_netmon_extract(in, &event, &name, &ipver, &ipaddr, &prefixlen, &mac) != 0) {
+        log_error("can't decode netmon message");
+        LOG_END;
+        ymsg_destroy(in_p);
+        return;
     }
-
-    int msg_id          = netdisc_msg_id (msg_nc);
-    const char *name    = netdisc_msg_name (msg_nc);
-    const int ipver     = static_cast<int>(netdisc_msg_ipver (msg_nc));
-    const char *ipaddr  = netdisc_msg_ipaddr (msg_nc);
-    int prefixlen       = static_cast<int>(netdisc_msg_prefixlen (msg_nc));
-    std::string mac (netdisc_msg_mac (msg_nc));
-    char command        = nethistory_id_cmd (netdisc_msg_id (msg_nc));
-    if((command == 0) || (ipver!=0 && ipver!=1)) {
-        log_warning ("Malformed insides of netdisc message received!");
-        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                              "Malformed insides of netdisc message message received!", NULL);
-    }
-    shared::CIDRAddress address (ipaddr, prefixlen);
 
     unsigned int rows_affected = 0;
-
+    shared::CIDRAddress address (ipaddr, prefixlen);
     persist::NetHistory nethistory(url);
     nethistory.setAddress(address);
-    nethistory.setCommand(command);
+    nethistory.setCommand(nethistory_id_cmd (event));
     nethistory.setName(name);
     nethistory.setMac(mac);
 
     int id_unique = nethistory.checkUnique();
-    if(id_unique == -1) {
-        log_warning("Nethistory ID is not unique");
-        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                              "Nethistory ID is not unique!", NULL);
+    if(id_unique != -1) {
+        log_info ("Nethistory ID is not unique, skipping!");
+        LOG_END;
+        ymsg_destroy(in_p);
+        return;
     }
 
-    switch (msg_id) {
-        case NETDISC_MSG_AUTO_ADD: {
-            rows_affected = nethistory.dbsave();
-            break;
-        }
-        case NETDISC_MSG_AUTO_DEL: {
-            rows_affected = nethistory.deleteById (id_unique);
-            break;
-        }
-        case NETDISC_MSG_MAN_ADD: {
-            rows_affected = nethistory.dbsave();
-            break;
-        }
-        case NETDISC_MSG_MAN_DEL: {
-            rows_affected = nethistory.deleteById(id_unique);
-            break;
-        }
-        case NETDISC_MSG_EXCL_ADD: {
-            rows_affected = nethistory.dbsave();
-            break;
-        }
-        case NETDISC_MSG_EXCL_DEL: {
-            rows_affected = nethistory.deleteById(id_unique);
-            break;
-        }
-        default: {
-            log_warning ("Unexpected message type received; message id = '%d'", msg_id);
-            return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                  "Unexpected message type received!", NULL);
-            break;
+    try {
+        switch (event) {
+            case NETWORK_EVENT_AUTO_ADD: {
+                rows_affected = nethistory.dbsave();
+                break;
+            }
+            case NETWORK_EVENT_AUTO_DEL: {
+                rows_affected = nethistory.deleteById (id_unique);
+                break;
+            }
+            case NETWORK_EVENT_MAN_ADD: {
+                rows_affected = nethistory.dbsave();
+                break;
+            }
+            case NETWORK_EVENT_MAN_DEL: {
+                rows_affected = nethistory.deleteById(id_unique);
+                break;
+            }
+            case NETWORK_EVENT_EXCL_ADD: {
+                rows_affected = nethistory.dbsave();
+                break;
+            }
+            case NETWORK_EVENT_EXCL_DEL: {
+                rows_affected = nethistory.deleteById(id_unique);
+                break;
+            }
+            default: {
+                log_warning ("Unexpected message type received; message id = '%d'", event);
+                break;
+            }
         }
     }
+    catch (const std::exception& e) {
+        log_error("Exception when inserting networks message: %s", e.what());
+    }
+
     if(rows_affected != 1) {
-        log_warning ("Unexpected number of rows '%u' affected", rows_affected);
+        log_error ("Unexpected number of rows '%u' affected", rows_affected);
     }
-    return common_msg_encode_db_ok(nethistory.getId(), NULL);
+    ymsg_destroy(in_p);
 };
 
 // * \brief processes the powerdev_msg message
@@ -751,12 +727,12 @@ zmsg_t* common_msg_process(zmsg_t **msg) {
 }
 
 /**
- * \brief Processes message of type ymsg_t
+ * \brief Processes message of type ymsg_t delivered as MAILBOX DELIVER
  *
  * Processing of generic ymsg_t and breaking it into particular processing
  * functions for ymsg.
  */
-void process_ymsg(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
+void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
     if (!in_subj)
         return;
 
@@ -793,8 +769,6 @@ zmsg_t* process_message(zmsg_t** msg) {
         return common_msg_process(msg);
     } else if(is_asset_msg(*msg)) {
         return asset_msg_process(msg);
-    } else if(is_netdisc_msg(*msg)) {
-        return netdisc_msg_process(msg);
     } else if(is_nmap_msg(*msg)) {
         return nmap_msg_process(msg);
     } else {

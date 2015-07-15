@@ -47,13 +47,13 @@ TODO: Resolve ctrl-c unresponsiveness
 #include <linux/rtnetlink.h>
 #include <linux/netdevice.h>
 
-#include <czmq.h>
-#include <malamute.h>
+#include <bios_agent.h>
+#include <agents.h>
 
 #include "log.h"
+#include "defs.h"
 #include "str_defs.h"
 #include "preproc.h"
-#include "msg_send.h"
 
 // include/utils.h
 #define SPRINT_BSIZE 64
@@ -222,7 +222,7 @@ const char *qd_mac(const char* ethname) {
 static int
 print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
                 struct nlmsghdr *n,
-                void *requester) {
+                void *agent) {
     struct ifaddrmsg *ifa = NLMSG_DATA(n);
     //struct ifinfomsg *ifi = NLMSG_DATA(n);
     int len = n->nlmsg_len;
@@ -243,8 +243,8 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
     if (n->nlmsg_type != RTM_NEWADDR && n->nlmsg_type != RTM_DELADDR)
 		return 0;
 
-    const char *type = n->nlmsg_type == RTM_NEWADDR ?
-        NETMON_EVENT_ADD : NETMON_EVENT_DEL;
+    int event = n->nlmsg_type == RTM_NEWADDR ?
+        NETWORK_EVENT_AUTO_ADD: NETWORK_EVENT_AUTO_DEL;
 	
     len -= NLMSG_LENGTH(sizeof(*ifa));
 	if (len < 0) {
@@ -254,10 +254,10 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
 
     switch (ifa->ifa_family) {
         case AF_INET:
-            ipfamily = NETDISC_IPVER_IPV4; // inet
+            ipfamily = IP_VERSION_4; // inet
             break;
         case AF_INET6:
-            ipfamily = NETDISC_IPVER_IPV6; //inet6
+            ipfamily = IP_VERSION_6; //inet6
             break;
         default:
             log_warning("unsupported family: %d", ifa->ifa_family);
@@ -296,7 +296,19 @@ print_addrinfo (UNUSED_PARAM const struct sockaddr_nl *who,
     }
     */
 
-    netmon_msg_send (type, ethname, ipfamily, ipaddress, prefixlen, mac, requester);
+    ymsg_t* msg = bios_netmon_encode(event, ethname, ipfamily, ipaddress, prefixlen, mac);
+    if (!msg) {
+        log_error("Can't encode netmon message");
+        return 0;
+    }
+
+    // send msg only if stderr connected to tty - this help debugging!
+    if (isatty(STDERR_FILENO))
+        ymsg_print(msg);
+    // XXX: we encode type of operation in message itself, so
+    //      subject name can be a simple constant
+    if (bios_agent_send ((bios_agent_t*) agent, bios_get_stream_networks(), &msg) != 0)
+        log_error("Can't send netmon message");
     return 0;
 }
 
@@ -377,7 +389,7 @@ static void free_nlmsg_chain(struct nlmsg_chain *info)
 	}
 }
 
-static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *requester)
+static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *agent)
 {
 	for ( ;ainfo ;  ainfo = ainfo->next) {
 		struct nlmsghdr *n = &ainfo->h;
@@ -393,7 +405,7 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *
 			continue;
         }
 
-		print_addrinfo(NULL, n, requester);
+		print_addrinfo(NULL, n, agent);
 	}
 	return 0;
 }
@@ -407,7 +419,7 @@ static int print_selected_addrinfo(int ifindex, struct nlmsg_list *ainfo, void *
  *
  * BTW: the printing is done in callback print_selected_addrinfo/print_addrinfo
  */
-static int ipaddr_list(void* requester)
+static int ipaddr_list(void* agent)
 {
 	struct nlmsg_chain linfo = { NULL, NULL};
 	struct nlmsg_chain ainfo = { NULL, NULL};
@@ -445,7 +457,7 @@ static int ipaddr_list(void* requester)
         struct ifinfomsg *ifi = NLMSG_DATA(&l->h);
         if (filter_family != AF_PACKET)
             print_selected_addrinfo(ifi->ifi_index,
-                        ainfo.head, requester);
+                        ainfo.head, agent);
 	}
 	free_nlmsg_chain(&ainfo);
 	free_nlmsg_chain(&linfo);
@@ -454,13 +466,13 @@ static int ipaddr_list(void* requester)
 }
 
 static int accept_msg(const struct sockaddr_nl *who,
-		      struct nlmsghdr *n, void *requester)
+		      struct nlmsghdr *n, void *agent)
 {
     switch (n->nlmsg_type) {
 
         case RTM_NEWADDR:
         case RTM_DELADDR:
-            print_addrinfo(who, n, requester);
+            print_addrinfo(who, n, agent);
             break;
 
         case RTM_NEWROUTE:
@@ -495,28 +507,18 @@ static int accept_msg(const struct sockaddr_nl *who,
 
 int main(int argc, char **argv) {
 
-    // TODO: Is this message for users still valid?
-    // Did anything take place of "simple" here (e.g. "agent-dbstore")?
-    if (isatty(STDERR_FILENO)) {
-        fprintf(stderr, "%s", "WARNING: netmon agent communicates through malamute server, so it does not print\n");
-        fprintf(stderr, "%s", "         anything to stdout. Please use dshell to monitor the passing messages.\n");
-        //fprintf(stderr, "%s", "         Old advice was to start simple, which will autospawn netmon internally.\n");
-        //fprintf(stderr, "%s", "WARNING: correct SIGTERM handling (CTRL+C) is not yet implemented,\n");
-        //fprintf(stderr, "%s", "         use kill -9 for now\n");
-    }
-
     // Do not let zeromq take away our signals
     setenv("ZSYS_SIGHANDLER", "false", 1);
+    zsys_set_logstream(stderr);
 
     unsigned groups = ~RTMGRP_TC;
 
-    mlm_client_t *broadcast = mlm_client_new();
-    // Note: it might make sense to timeout retry a few times
-    if(!broadcast || mlm_client_connect(broadcast, MLM_ENDPOINT, 1000, "NETMON")) {
+    bios_agent_t *agent = bios_agent_new(MLM_ENDPOINT, BIOS_AGENT_NAME_NETMON);
+    if(!agent) {
         fprintf (stderr, "malamute server not reachable at %s\n", MLM_ENDPOINT);
-        exit (3);
+        exit (EXIT_FAILURE);
     }
-    mlm_client_set_producer (broadcast, "networks");
+    bios_agent_set_producer (agent, bios_get_stream_networks());
 
     rtnl_close(&rth);
     argc--;	argv++;
@@ -527,12 +529,11 @@ int main(int argc, char **argv) {
     if (rtnl_open(&rth, groups) < 0)
 		exit(1);
 
-    ipaddr_list (broadcast);
-	if (rtnl_listen(&rth, accept_msg, broadcast) < 0)
+    ipaddr_list (agent);
+	if (rtnl_listen(&rth, accept_msg, agent) < 0)
 		exit(2);
 
-    mlm_client_destroy (&broadcast);
-    assert (broadcast == NULL);
+    bios_agent_destroy (&agent);
 
     return 0;
 }

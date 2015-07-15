@@ -328,6 +328,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
+			src/db/calculation.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -390,8 +391,6 @@ libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
 			src/msg/common_msg.h \
-			src/msg/netdisc_msg.c \
-			src/msg/netdisc_msg.h \
 			src/msg/nmap_msg.c \
 			src/msg/nmap_msg.h \
 			src/msg/compute_msg.c \
@@ -737,10 +736,33 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
 
+cibin_programs += 	test-outage
+
+test_outage_SOURCES = \
+			tests/persist/test-outage.cc
+
+test_outage_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-db-measurements.la \
+			libpriv-defs.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
+
+test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
+
+test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
 
 cibin_programs += 	test-dbtopology
 
@@ -800,8 +822,8 @@ test_db_alert_SOURCES = \
 			tests/persist/test-alert.cc
 
 test_db_alert_LDADD = \
-			libpriv-db.la \
 			libpriv-db-alerts.la \
+			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -941,23 +963,21 @@ TESTS += $(check_SCRIPTS)
 #                        binaries
 #----------------------------------------------------------------------
 
-client_PROGRAMS += 	netmon
-netmon_SOURCES = \
+client_PROGRAMS += 	agent-netmon
+agent_netmon_SOURCES = \
 			src/agents/netmon/linux \
-			src/agents/netmon/netmon.c \
-			src/agents/netmon/msg_send.cc \
-			src/agents/netmon/msg_send.h
+			src/agents/netmon/agent-netmon.c
 
-netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
+agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/netmon
 
-netmon_LDADD = \
+agent_netmon_LDADD = \
 			libpriv-defs.la \
 			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-utils.la
+			libpriv-utils.la \
+			libbiosapi.la
 
-netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS) -lmlm
+agent_netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
 
 client_PROGRAMS += 	server-agent
 
@@ -972,16 +992,16 @@ server_agent_LDADD = \
 
 server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS += 	th-agent
+client_PROGRAMS += 	agent-th
 
-th_agent_SOURCES =	src/agents/th/th-agent.cc src/shared/sample_agent.cc src/agents/th/libth.c
+agent_th_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
 
-th_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
+agent_th_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-th_agent_LDADD = \
+agent_th_LDADD = \
 			 libpriv-proto.la libpriv-log.la
 
-th_agent_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
+agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
 
 bin_PROGRAMS += 		generate_measurement
 
@@ -998,7 +1018,7 @@ client_SCRIPTS =	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
-agent_dbstore_SOURCES =		src/agents/dbstore/db-ng.cc \
+agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
 agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
@@ -1021,8 +1041,9 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
-EXTRA_DIST += $(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/src/db/calculation.h
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1067,7 +1088,7 @@ client_PROGRAMS +=	agent-nut
 
 agent_nut_SOURCES = \
 			src/agents/nut/nut-driver.cc \
-			src/agents/nut/nut-agent.cc \
+			src/agents/nut/agent-nut.cc \
 			src/shared/upsstatus.cc
 
 agent_nut_LDADD = \
@@ -1083,8 +1104,8 @@ agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
 client_PROGRAMS +=	agent-alert-smtp
 
 agent_alert_smtp_SOURCES = \
-			src/agents/alert-smtp/alert-smtp-agent.h \
-			src/agents/alert-smtp/alert-smtp-agent.cc \
+			src/agents/alert-smtp/agent-alert-smtp.h \
+			src/agents/alert-smtp/agent-alert-smtp.cc \
 			src/agents/alert-smtp/alert-basic.h
 
 
@@ -1098,13 +1119,14 @@ agent_alert_smtp_LDADD = \
 agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
 agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
-		    -I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_builddir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/agents/alert
 
-client_PROGRAMS +=	agent-alert-smtp
+
+client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
-			src/agents/autoconfig/autoconfig.cc \
+			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/configurator.cc \
 			src/shared/filesystem.cc
 
@@ -1124,13 +1146,12 @@ agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
 
 agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_PROGRAMS +=	agent-autoconfig
 
 
 client_PROGRAMS +=	agent-inventory
 
 agent_inventory_SOURCES = \
-			src/agents/inventory/inventory-actor.cc \
+			src/agents/inventory/agent-inventory.cc \
 			tools/dbpath.h
 
 agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
@@ -1156,7 +1177,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 client_PROGRAMS +=	agent-cm
 
 agent_cm_SOURCES = \
-			src/agents/computation/cm-agent.cc \
+			src/agents/computation/agent-cm.cc \
 			src/agents/computation/cm-web.cc \
 			src/agents/computation/cm-web.h \
 			src/agents/computation/cm-utils.h \
@@ -1205,7 +1226,7 @@ client_PROGRAMS +=      agent-alert
 agent_alert_SOURCES = \
 			src/agents/alert/alert-entity.cc \
 			src/agents/alert/alert-measurement.cc \
-			src/agents/alert/alert-agent.cc \
+			src/agents/alert/agent-alert.cc \
 			src/agents/alert/alert-model.cc \
 			src/shared/utils_app.c \
 			src/shared/utils_ymsg.c \
@@ -1223,6 +1244,26 @@ agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -
 agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
                        -I$(abs_top_srcdir)/src/persist \
                        -I$(abs_top_srcdir)/tools
+
+client_PROGRAMS += 	outage
+outage_SOURCES = \
+			src/outage/outage.cc
+
+outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/persist
+
+outage_LDADD = \
+			libpriv-defs.la \
+			libpriv-db.la \
+			libpriv-db-measurements.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-proto.la \
+			libpriv-utils-ymsg.la
+
+
+outage_LDFLAGS =	-lnetlink -ltntdb
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1244,7 +1285,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp
+                      src/web/src/alerts.cpp \
+                      src/web/src/uptime.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
@@ -1351,7 +1393,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/netmon/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*.h \
 			$(top_srcdir)/src/agents/netmon/*/*/*.h \
 			$(top_srcdir)/src/agents/*/*.h \
@@ -1365,52 +1406,66 @@ EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
 
 SYSTEMD_UNITS =
+SYSTEMD_UNITS_TIMERIMPL =
+SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 # systemd integration
 if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
 autopathedit = sed \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
 # Here we list the actual service-definition files that should be compiled
-SYSTEMD_UNITS += bios-agent-nut.service bios-driver-netmon.service \
+SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service bios-driver-nmap.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
-			bios-agent-autoconfig.service bios-agent-th.service
+                        bios-agent-autoconfig.service bios-agent-th.service \
+                        bios-db-init.service
 
+SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
+
+# These files need no processing, delivered verbatim
+SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
+
+# This file is generated
 SYSTEMD_PRESETS += 42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 	@( echo "### This is a generated file with a list of all BIOS services"; \
-	  for F in $(SYSTEMD_UNITS) ; do echo "enable $$F" ; done ) > $@
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
 
 # The rule to actually "compile" the service definition files
-$(SYSTEMD_UNITS): Makefile
+$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
 	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
 
 # Explicit path desired by dependencies in systemdsystemunit_DATA below
-$(foreach m,$(SYSTEMD_UNITS), \
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
 	$(eval $(abs_top_builddir)/${m}: ${m} ))
 
 # $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
 # externally by automake/autoconf; otherwise they are empty and should
 # effectively resolve to the top_builddir
-systemdsystemunit_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
-systemdsystempreset_DATA =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystemunit_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystempreset_DATA =	$(systemdsystempreset_generated)
 
 # auto-cleanup and dist targets
-CLEANFILES += $(systemdsystemunit_DATA) $(systemdsystempreset_DATA)
-EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS)))
+CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
 
 #----------------------------------------------------------------------

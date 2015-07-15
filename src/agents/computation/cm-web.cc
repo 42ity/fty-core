@@ -29,7 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils.h"
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
-
 #include "db/measurements.h"
 #include "cm-utils.h"
 #include "cm-web.h"
@@ -75,7 +74,7 @@ process
         std::string device_name;
         {
             auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
-            if (ret.rv == -1)
+            if (ret.rv != 0)
                 log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
             else
                 log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'", element_id, device_name.c_str ());
@@ -112,10 +111,11 @@ process
             if (last_average_ts < start_ts) {
                 // requesting stored averages returned an empty set + last stored averages timestamp's < start of requested interval
                 // => we need to compute the whole requested interval
-                log_info ("last average timestamp < start timestamp");
+                log_info ("last average timestamp < start timestamp => compute it!");
                 start_sampled_ts = average_extend_left_margin (start_ts, step);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
+                    log_warning (" resuest_sampled failed!");
                     return;
                 }
             }
@@ -169,32 +169,37 @@ process
         }
 
         if (!samples.empty ()) {
-            printf ("samples directly from db:\n"); // TODO: remove when done testing
+            log_debug ("samples directly from db:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                printf ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f\n", p.first, p.second);
             }
             solve_left_margin (samples, start_sampled_ts);
-            printf ("samples after solving left margin:\n"); // TODO: remove when done testing
+            log_debug ("samples after solving left margin:\n"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                printf ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f\n", p.first, p.second);
             }
             if (!samples.empty ()) {
                 int64_t first_ts = samples.cbegin()->first;
                 int64_t second_ts = average_first_since (first_ts, step);
                 double comp_result;
 
-                printf ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%ld",
+                log_debug ("Starting computation from sampled data. first_ts: %" PRId64"\tsecond_ts: %" PRId64"\tend_ts:%" PRId64,
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    printf ("calling process_db_measurement_calculate (%ld, %ld)\n", first_ts, second_ts); // TODO: remove when done testing
+                    log_debug ("calling calculate (%" PRId64", %" PRId64")\n", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
                     // TODO: better return value check
                     if (rv == 0) {
                         std::string comp_result_str;
                         utils::math::dtos (comp_result, 2, comp_result_str);
-                        printf ("%ld\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing
-                        item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
+                        if (comp_result_str.c_str () == NULL) { // TODO: Remove this testing/debugging code
+                            log_critical ("comp_result_str.c_str () is NULL AAARGHG GET to tha CHOPAA!!!#$&^#^%"); 
+                            log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
+                        } else {
+                            log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
+                            item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
+                        }
                         item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
                         if (comma_counter == 0) 
                             ++comma_counter;
