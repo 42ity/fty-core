@@ -29,7 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "utils.h"
 #include "utils_ymsg.h"
 #include "utils_ymsg++.h"
-
 #include "db/measurements.h"
 #include "cm-utils.h"
 #include "cm-web.h"
@@ -116,7 +115,7 @@ process
                 start_sampled_ts = average_extend_left_margin (start_ts, step);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
-                    log_warning (" resuest sumpled failed!!");
+                    log_warning (" resuest_sampled failed!");
                     return;
                 }
             }
