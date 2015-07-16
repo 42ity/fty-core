@@ -15,7 +15,7 @@ declare -a TYPE=("arithmetic_mean" "min" "max")
 declare -a STEP=("15m" "30m" "1h" "8h" "24h")
 
 [ -z "$SUT_HOST" ] && \
-declare -r SUT_HOST="127.0.0.1"
+declare SUT_HOST="127.0.0.1"
 
 [ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
@@ -23,8 +23,6 @@ if [ -n "$CHECKOUTDIR" ] ; then
 else
         declare SUT_WEB_PORT="80"
 fi
-
-[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 # How many requests can fire at once? Throttle when we reach this amount...
 [ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=32
@@ -36,6 +34,7 @@ fi
 
 # Include our standard routines for CI scripts
 CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
+BASE_URL_CALLER="$BASE_URL" # may be empty
 [ -s "$SCRIPTDIR/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/scriptlib.sh || \
 { [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
@@ -78,6 +77,8 @@ usage() {
     echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
+    echo "  --host hostname     Where to place the REST API request"
+    echo "  --port portnum         (default http://$SUT_HOST:$SUT_WEB_PORT)"
 }
 
 ACTION="generate"
@@ -93,6 +94,10 @@ while [ $# -gt 0 ]; do
             shift ;;
         --lockfile) LOCKFILE="$2"; shift ;;
         --timefile) TIMEFILE="$2"; shift ;;
+        --host|--sut-web-host|--sut-host)
+            SUT_HOST="$2"; shift ;;
+        --port|--sut-web-port|--sut-port)
+            SUT_WEB_PORT="$2"; shift ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
@@ -100,6 +105,10 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+[ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
+    logmsg_info "Using BASE_URL='$BASE_URL' passed to us via envvars"
 
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
