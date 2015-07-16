@@ -330,7 +330,9 @@ generate_getrestapi_strings() {
 }
 
 run_getrestapi_strings() {
-    # This is a write-possible operation that updates timestamp files
+    # This is a write-possible operation that updates timestamp files.
+    # Executes a series of fetch-lines from generate_getrestapi_strings()
+    # called inside this routine.
 
     start_lock
     TS_START="`date -u +%s 2>/dev/null`" || TS_START=""
