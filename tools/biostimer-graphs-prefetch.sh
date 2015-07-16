@@ -237,7 +237,8 @@ sources_from_device_id() {
 start_lock() {
     # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
-    [ -f "$LOCKFILE" ] && exit 0
+    [ -f "$LOCKFILE" ] && \
+        die 0 "A copy of the script seems already running:" "`cat "$LOCKFILE"`"
 
     settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
