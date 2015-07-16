@@ -65,6 +65,29 @@ done
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
 
+# Different CLI parameters may be added later on...
+usage() {
+    echo "Usage: $0 [-n | -v | -q]"
+    echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
+    echo "  -v    Wet-run with output posted to stdout"
+    echo "  -q    (default) If not dry-running, actually run the $FETCHER"
+    echo "        callouts with results quietly dumped to /dev/null"
+}
+
+ACTION="generate"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -n) ACTION="generate" ;;
+        -v) ACTION="request-verbose" ;;
+        -q|"") ACTION="request-quiet" ;;
+        -h|--help)
+            usage; exit 1 ;;
+        *) die "Unknown param(s) follow: '$@'
+`usage`" ;;
+    esac
+    shift
+done
+
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
 
@@ -394,27 +417,23 @@ run_getrestapi_strings() {
 }
 
 ### script starts here ###
-case "$1" in
-    -n) generate_getrestapi_strings "$@"
+case "$ACTION" in
+    generate)
+        generate_getrestapi_strings "$@"
         exit $?
         ;;
-    -v) # production run with verbose output
+    request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
         run_getrestapi_strings "$@"
         exit $?
         ;;
-    ""|-q) # default / quiet mode for timed runs
+    request-quiet) # default / quiet mode for timed runs
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
-    -h|--help) echo "$0 [-n | -v]"
-        echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
-        echo "  -v    Wet-run with output posted to stdout"
-        echo "If not dry-running, actually run the $FETCHER callouts quietly dumped to /dev/null"
-        ;;
-    *) die "Unknown params : $@";;
 esac
 
+# Should not get here
 exit 1
