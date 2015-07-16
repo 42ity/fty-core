@@ -11,17 +11,21 @@
 # Have cron job periodically call this script
 
 # supported average types and steps
-declare -a TYPE=("arithmetic_mean" "min" "max")
-declare -a STEP=("15m" "30m" "1h" "8h" "24h")
+TYPE_AVG=arithmetic_mean
+TYPE_MIN=min
+TYPE_MAX=max
+
+[ -z "$TYPES" ] && TYPES="$TYPE_AVG $TYPE_MIN $TYPE_MAX"
+[ -z "$STEPS" ] && STEPS="15m 30m 1h 8h 24h"
 
 [ -z "$SUT_HOST" ] && \
-declare SUT_HOST="127.0.0.1"
+        SUT_HOST="127.0.0.1"
 
 [ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare SUT_WEB_PORT="8000"
+        SUT_WEB_PORT="8000"
 else
-        declare SUT_WEB_PORT="80"
+        SUT_WEB_PORT="80"
 fi
 
 # How many requests can fire at once? Throttle when we reach this amount...
@@ -79,6 +83,8 @@ usage() {
     echo "  --timefile file     Filename used to save last request end-timestamp"
     echo "  --host hostname     Where to place the REST API request"
     echo "  --port portnum         (default http://$SUT_HOST:$SUT_WEB_PORT)"
+    echo "  --steps '15m 24h'   A space-separated string of (supported!) time steps"
+    echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
 }
 
 ACTION="generate"
@@ -98,6 +104,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"; shift ;;
         --port|--sut-web-port|--sut-port)
             SUT_WEB_PORT="$2"; shift ;;
+        --types) TYPES="$2"; shift ;;
+        --steps) STEPS="$2"; shift ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
@@ -252,12 +260,12 @@ sources_from_device_id() {
         __item=${__item%%@*}
 
         local __step
-        for __step in ${STEP[@]}; do
+        for __step in $STEPS; do
             __item=${__item%%_$__step}
         done
 
         local __type
-        for __type in ${TYPE[@]}; do
+        for __type in $TYPES; do
             __item=${__item%%_$__type}
         done
 
@@ -290,8 +298,9 @@ start_lock() {
     touch "$LOCKFILE" || exit $?
 }
 
-generate_getrestapi_strings() {
-    # This is a read-only operation
+prepare_timestamps() {
+    [ -n "$END_TIMESTAMP" ] && [ -n "$START_TIMESTAMP" ] && return 0
+
     [ -n "$end_timestamp" ] && \
         logmsg_debug "Using caller-provided end_timestamp='$end_timestamp'" || \
         end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
@@ -314,6 +323,15 @@ generate_getrestapi_strings() {
     logmsg_debug $CI_DEBUGLEVEL_DEBUG \
         "START_TIMESTAMP=$START_TIMESTAMP" \
         "END_TIMESTAMP=$END_TIMESTAMP" >&2
+}
+
+generate_getrestapi_strings() {
+    generate_getrestapi_strings_sources
+    generate_getrestapi_strings_temphum
+}
+
+generate_getrestapi_strings_sources() {
+    # This is a read-only operation
 
     # 1. Get asset element identifiers
     element_ids=$(get_elements)
@@ -347,8 +365,8 @@ generate_getrestapi_strings() {
         fi
         # 5. Generate curl request for each combination of source, step, type for the given element id
         for s in $SOURCES; do
-            for stype in ${TYPE[@]}; do
-                for sstep in ${STEP[@]}; do
+            for stype in $TYPES; do
+                for sstep in $STEPS; do
                     # TODO: change this to api_get with related checks?
                     echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     # TODO: Does it make sense to check for 404/500? What can we do?
@@ -356,9 +374,12 @@ generate_getrestapi_strings() {
             done
         done
     done
+}
 
-    #6 Generate temperature and humidity averages
-    stype="${TYPE[0]}"
+generate_getrestapi_strings_temphum() {
+    # This is a read-only operation
+    # Generate temperature and humidity averages
+    stype="$TYPE_AVG"
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
@@ -439,6 +460,7 @@ run_getrestapi_strings() {
 }
 
 ### script starts here ###
+prepare_timestamps
 case "$ACTION" in
     generate)
         generate_getrestapi_strings "$@"
