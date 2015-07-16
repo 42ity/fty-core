@@ -11,17 +11,17 @@
 # Have cron job periodically call this script
 
 # supported average types and steps
-declare -ar TYPE=("arithmetic_mean" "min" "max")
-declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
+declare -a TYPE=("arithmetic_mean" "min" "max")
+declare -a STEP=("15m" "30m" "1h" "8h" "24h")
 
 [ -z "$SUT_HOST" ] && \
 declare -r SUT_HOST="127.0.0.1"
 
 [ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare -r SUT_WEB_PORT="8000"
+        declare SUT_WEB_PORT="8000"
 else
-        declare -r SUT_WEB_PORT="80"
+        declare SUT_WEB_PORT="80"
 fi
 
 [ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
@@ -246,8 +246,8 @@ start_lock() {
 
 generate_getrestapi_strings() {
     # This is a read-only operation
-    end_timestamp=$(date -u +%Y%m%d%H%M%S)
-    declare -r END_TIMESTAMP="${end_timestamp}Z"
+    end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
+    declare -r END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
     if [ -s "$TIMEFILE" ]; then
