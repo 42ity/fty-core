@@ -247,7 +247,9 @@ start_lock() {
 
 generate_getrestapi_strings() {
     # This is a read-only operation
-    end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
+    [ -n "$end_timestamp" ] && \
+        logmsg_debug "Using caller-provided end_timestamp='$end_timestamp'" || \
+        end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
     declare -r END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
