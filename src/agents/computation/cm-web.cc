@@ -194,7 +194,7 @@ process
                         std::string comp_result_str;
                         utils::math::dtos (comp_result, 2, comp_result_str);
                         if (comp_result_str.c_str () == NULL) { // TODO: Remove this testing/debugging code
-                            log_critical ("comp_result_str.c_str () is NULL AAARGHG GET to tha CHOPAA!!!#$&^#^%"); 
+                            log_critical ("comp_result_str.c_str () is NULL AAARGHG GET to tha CHOPAA!!!#$&^#^%%");
                             log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
                         } else {
                             log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        

@@ -43,7 +43,8 @@ ymsg_t* get_measurement(char* what) {
     static std::map<std::string, c_item> cache;
     ymsg_t* ret = NULL;
     char *th = strdup(what + (strlen(what) - 3));
-    c_item data, *data_p = NULL;
+    c_item data = { 0, false, 0, 0 }, *data_p = NULL;
+
     log_debug("Measuring %s", what);
 
     // Get data from cache and maybe update the cache
