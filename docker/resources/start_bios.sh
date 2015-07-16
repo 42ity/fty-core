@@ -49,7 +49,7 @@ echo "starting BIOS .."
 /usr/local/libexec/bios/agent-cm &
 /usr/local/libexec/bios/agent-tpower &
 # this is one shot program
-/use/local/libexec/bios/outage
+/usr/local/libexec/bios/outage
 /usr/local/libexec/bios/agent-nut 
 
  
