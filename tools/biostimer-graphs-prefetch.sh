@@ -324,6 +324,8 @@ run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files
 
     start_lock
+    TS_START="`date -u +%s 2>/dev/null`" || TS_START=""
+
     COUNT_TOTAL=0
     COUNT_SUCCESS=0
     COUNT_BATCH=0
@@ -364,8 +366,15 @@ run_getrestapi_strings() {
     done
     FIRED_BATCH=""
 
-    [ "$1" = -v ] && logmsg_debug 0 \
-        "Ran $COUNT_TOTAL overall requests, done now" >&2
+    TS_ENDED="`date -u +%s 2>/dev/null`" || TS_ENDED=""
+
+    TS_STRING=""
+    [ -n "$TS_START" -a -n "$TS_ENDED" ] && \
+    [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
+        TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
+
+    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+
     [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
     [ $RES -le 0 ] && return 0
     return $RES
