@@ -69,12 +69,15 @@ for F in /etc/bios/biostimer-graphs-prefetch.conf \
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [-C file.conf] [-n | -v | -q]"
+    echo "Usage: $0 [-C file.conf] [-j N] [-n | -v | -q]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -q    (default) If not dry-running, actually run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
     echo "  -C file     Include a configuration file to override this run"
+    echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
+    echo "  --lockfile file     Filename used to block against multiple runs"
+    echo "  --timefile file     Filename used to save last request end-timestamp"
 }
 
 ACTION="generate"
@@ -85,6 +88,11 @@ while [ $# -gt 0 ]; do
         -q|"") ACTION="request-quiet" ;;
         -C) include_cfg "$2" || die 127 "Can not use config file '$2'"
             shift ;;
+        -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
+            MAX_CHILDREN="$2"
+            shift ;;
+        --lockfile) LOCKFILE="$2"; shift ;;
+        --timefile) TIMEFILE="$2"; shift ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
