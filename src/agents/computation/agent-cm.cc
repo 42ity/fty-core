@@ -31,8 +31,6 @@ namespace cm = computation;
 
 int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
 
-    int log_level = DEFAULT_LOG_LEVEL;
-    
     log_open ();
     log_info ("%s started.", BIOS_AGENT_NAME_COMPUTATION);
 
