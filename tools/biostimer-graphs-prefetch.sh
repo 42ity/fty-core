@@ -15,8 +15,11 @@ TYPE_AVG=arithmetic_mean
 TYPE_MIN=min
 TYPE_MAX=max
 
-[ -z "$TYPES" ] && TYPES="$TYPE_AVG $TYPE_MIN $TYPE_MAX"
-[ -z "$STEPS" ] && STEPS="15m 30m 1h 8h 24h"
+TYPES_SUPPORTED="$TYPE_AVG $TYPE_MIN $TYPE_MAX"
+STEPS_SUPPORTED="15m 30m 1h 8h 24h"
+
+[ -z "$TYPES" ] && TYPES="$TYPES_SUPPORTED"
+[ -z "$STEPS" ] && STEPS="$STEPS_SUPPORTED"
 
 [ -z "$SUT_HOST" ] && \
         SUT_HOST="127.0.0.1"
@@ -84,7 +87,9 @@ usage() {
     echo "  --host hostname     Where to place the REST API request"
     echo "  --port portnum         (default http://$SUT_HOST:$SUT_WEB_PORT)"
     echo "  --steps '15m 24h'   A space-separated string of (supported!) time steps"
+    echo "                         (among '$STEPS_SUPPORTED')"
     echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
+    echo "                         (among '$TYPES_SUPPORTED')"
 }
 
 ACTION="generate"
@@ -104,8 +109,8 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"; shift ;;
         --port|--sut-web-port|--sut-port)
             SUT_WEB_PORT="$2"; shift ;;
-        --types) TYPES="$2"; shift ;;
-        --steps) STEPS="$2"; shift ;;
+        --types) TYPES="$2"; shift ;; # No sanity check against TYPES_SUPPORTED
+        --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
