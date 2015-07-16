@@ -56,7 +56,7 @@ FETCHER=
 for F in /etc/bios/biostimer-graphs-prefetch.conf \
          /etc/bios/biostimer-graphs-prefetch.conf.local \
 ; do
-        [ -s "$F" && -r "$F" ] && \
+        [ -s "$F" ] && [ -r "$F" ] && \
                 logmsg_info "Using configuration file '$F'..." && \
                 . "$F"
 done
