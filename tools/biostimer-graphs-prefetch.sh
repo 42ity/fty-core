@@ -21,6 +21,9 @@ STEPS_SUPPORTED="15m 30m 1h 8h 24h"
 [ -z "$TYPES" ] && TYPES="$TYPES_SUPPORTED"
 [ -z "$STEPS" ] && STEPS="$STEPS_SUPPORTED"
 
+# Regexp wrapped into "^(...)$" when used, so it must describe the whole string
+[ -z "$SOURCES_ALLOWED" ] && SOURCES_ALLOWED=""
+
 [ -z "$SUT_HOST" ] && \
         SUT_HOST="127.0.0.1"
 
@@ -80,6 +83,7 @@ usage() {
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -q    (default) If not dry-running, actually run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
+    echo "  -d    Bump up the debugging level, disregarding defaults and envvars"
     echo "  -C file     Include a configuration file to override this run"
     echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
@@ -90,6 +94,7 @@ usage() {
     echo "                         (among '$STEPS_SUPPORTED')"
     echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
     echo "                         (among '$TYPES_SUPPORTED')"
+    echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
 }
 
 ACTION="generate"
@@ -111,6 +116,8 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"; shift ;;
         --types) TYPES="$2"; shift ;; # No sanity check against TYPES_SUPPORTED
         --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
+        --src-allow) SOURCES_ALLOWED="$2"; shift ;;
+        -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
@@ -368,8 +375,14 @@ generate_getrestapi_strings_sources() {
         elif [ $? -gt 1 ]; then # error
             return 1
         fi
+
         # 5. Generate curl request for each combination of source, step, type for the given element id
         for s in $SOURCES; do
+            if [ -n "$SOURCES_ALLOWED" ] && \
+                echo "$s" | egrep -vi "^($SOURCES_ALLOWED$)" > /dev/null ; then
+                    logmsg_debug "Source type '$s' did not match SOURCES_ALLOWED filter, skipped" >&2
+                    continue
+            fi
             for stype in $TYPES; do
                 for sstep in $STEPS; do
                     # TODO: change this to api_get with related checks?
@@ -383,7 +396,7 @@ generate_getrestapi_strings_sources() {
 
 generate_getrestapi_strings_temphum() {
     # This is a read-only operation
-    # Generate temperature and humidity averages
+    # Generate temperature and humidity averages for 4*TH ports of this box
     stype="$TYPE_AVG"
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
