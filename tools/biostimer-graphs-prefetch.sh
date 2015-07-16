@@ -53,6 +53,14 @@ FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
+for F in /etc/bios/biostimer-graphs-prefetch.conf \
+         /etc/bios/biostimer-graphs-prefetch.conf.local \
+; do
+        [ -s "$F" && -r "$F" ] && \
+                logmsg_info "Using configuration file '$F'..." && \
+                . "$F"
+done
+
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
