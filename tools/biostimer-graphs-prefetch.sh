@@ -53,13 +53,15 @@ FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
+include_cfg() {
+    [ -s "$1" ] && [ -r "$1" ] && \
+        logmsg_info "Using configuration file '$1'..." && \
+        . "$1"
+}
+
 for F in /etc/bios/biostimer-graphs-prefetch.conf \
          /etc/bios/biostimer-graphs-prefetch.conf.local \
-; do
-        [ -s "$F" ] && [ -r "$F" ] && \
-                logmsg_info "Using configuration file '$F'..." && \
-                . "$F"
-done
+; do include_cfg "$F"; done
 
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
@@ -67,11 +69,12 @@ done
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [-n | -v | -q]"
+    echo "Usage: $0 [-C file.conf] [-n | -v | -q]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -q    (default) If not dry-running, actually run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
+    echo "  -C file     Include a configuration file to override this run"
 }
 
 ACTION="generate"
@@ -80,6 +83,8 @@ while [ $# -gt 0 ]; do
         -n) ACTION="generate" ;;
         -v) ACTION="request-verbose" ;;
         -q|"") ACTION="request-quiet" ;;
+        -C) include_cfg "$2" || die 127 "Can not use config file '$2'"
+            shift ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$@'
