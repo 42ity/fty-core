@@ -101,7 +101,7 @@ insert_into_measurement_again:
 
         log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "\
                    "value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                   "topic = '%s' time = " PRIi64, 
+                   "topic = '%s' time = %" PRIi64, 
                    ret.affected_rows, value, scale, units, topic, time);
 
         if( ret.affected_rows == 0 && device_name != NULL && device_name[0] != 0 ) {
@@ -148,7 +148,7 @@ insert_into_measurement_again:
         ret.errsubtype = DB_ERROR_INTERNAL;
         ret.msg        = e.what();
         log_error ("NOT INSERTED: value:%" PRIi32 " * 10^%" PRIi16 " %s "\
-                   "topic = '%s' time = " PRIi64, 
+                   "topic = '%s' time = %" PRIi64, 
                    ret.affected_rows, value, scale, units, topic, time);
         LOG_END_ABNORMAL(e);
         return ret;
