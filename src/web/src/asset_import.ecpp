@@ -153,18 +153,17 @@ try {
 </%cpp>
 {
     "imported_lines" : <$$ okRows.size() $>,
-    "notimported_lines" : [
+    "errors" : [
 <%cpp>
     size_t cnt = 0;
     for ( auto &m : failRows )
     {
         cnt++;
 </%cpp>
-            "on the line <$$ m.first$> occured an error with the message '<$$ m.second.c_str()$>'"<$ cnt != failRows.size() ? ',' : ' ' $>
+            [ <$$ m.first$>, "<$$ m.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
 %   }
     ]
 }
-
 <%cpp>
 }
 catch (const std::logic_error &e) {
