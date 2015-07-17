@@ -108,7 +108,7 @@ while [ $# -gt 0 ]; do
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -h|--help)
             usage; exit 1 ;;
-        *) die "Unknown param(s) follow: '$@'
+        *) die "Unknown param(s) follow: '$*'
 `usage`" ;;
     esac
     shift
