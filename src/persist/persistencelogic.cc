@@ -59,7 +59,7 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 
 namespace persist {
 
-void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg) {
+void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg, TopicCache& c) {
     log_debug("Processing measurement");
     int64_t tme = 0;
     _scoped_char *device_name = NULL;
@@ -93,7 +93,7 @@ void process_measurement(UNUSED_PARAM const std::string &topic, ymsg_t **ymsg) {
     db_topic = std::string (quantity) + "@" + device_name; 
     _time = (time_t) tme;
     persist::insert_into_measurement(
-            conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name);
+            conn, db_topic.c_str(), value, (m_msrmnt_scale_t) scale, _time, units, device_name, c);
 free_mem_toto:
     //free resources
     if(*ymsg)
