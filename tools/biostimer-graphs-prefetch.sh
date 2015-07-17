@@ -53,8 +53,9 @@ BASE_URL_CALLER="$BASE_URL" # may be empty
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-# TODO: Set paths via standard autoconf prefix-vars and .in conversions
-# TODO: Run as non-root, and use paths writable by that user (bios?)
+# TODO: Set default paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?) -- this
+#       may need separate service to create the /var/run subdirectory as root.
 LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
@@ -62,29 +63,18 @@ FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
-include_cfg() {
-    [ -s "$1" ] && [ -r "$1" ] && \
-        logmsg_info "Using configuration file '$1'..." && \
-        . "$1"
-}
-
-for F in /etc/bios/biostimer-graphs-prefetch.conf \
-         /etc/bios/biostimer-graphs-prefetch.conf.local \
-; do include_cfg "$F"; done
-
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [-C file.conf] [-j N] [-n | -v | -q]"
+    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -q]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -q    (default) If not dry-running, actually run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
     echo "  -d    Bump up the debugging level, disregarding defaults and envvars"
-    echo "  -C file     Include a configuration file to override this run"
     echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
@@ -103,8 +93,6 @@ while [ $# -gt 0 ]; do
         -n) ACTION="generate" ;;
         -v) ACTION="request-verbose" ;;
         -q|"") ACTION="request-quiet" ;;
-        -C) include_cfg "$2" || die 127 "Can not use config file '$2'"
-            shift ;;
         -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
             MAX_CHILDREN="$2"
             shift ;;
