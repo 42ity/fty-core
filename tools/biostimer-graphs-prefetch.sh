@@ -75,7 +75,7 @@ usage() {
     echo "  -q    (default) If not dry-running, actually run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
     echo "  -d    Bump up the debugging level, disregarding defaults and envvars"
-    echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
+    echo "  -j N                Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
     echo "  --host hostname     Where to place the REST API request"
@@ -87,7 +87,7 @@ usage() {
     echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
 }
 
-ACTION="generate"
+ACTION="request-quiet"
 while [ $# -gt 0 ]; do
     case "$1" in
         -n) ACTION="generate" ;;
@@ -298,13 +298,16 @@ start_lock() {
     touch "$LOCKFILE" || exit $?
 }
 
+# Ultimate values that we use in script
+END_TIMESTAMP=""
+START_TIMESTAMP=""
 prepare_timestamps() {
     [ -n "$END_TIMESTAMP" ] && [ -n "$START_TIMESTAMP" ] && return 0
 
     [ -n "$end_timestamp" ] && \
         logmsg_debug "Using caller-provided end_timestamp='$end_timestamp'" || \
         end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
-    declare -r END_TIMESTAMP="${end_timestamp}"
+    END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
     if [ -s "$TIMEFILE" ]; then
@@ -318,11 +321,13 @@ prepare_timestamps() {
         start_timestamp="19900101000000Z"
     fi
 
-    declare -r START_TIMESTAMP="$start_timestamp"
+    START_TIMESTAMP="$start_timestamp"
 
     logmsg_debug $CI_DEBUGLEVEL_DEBUG \
         "START_TIMESTAMP=$START_TIMESTAMP" \
         "END_TIMESTAMP=$END_TIMESTAMP" >&2
+
+    export START_TIMESTAMP END_TIMESTAMP
 }
 
 generate_getrestapi_strings() {
@@ -403,6 +408,8 @@ generate_getrestapi_strings_temphum() {
     return 0
 }
 
+# Background processes (if any) listed here for killer-trap
+FIRED_BATCH=""
 run_getrestapi_strings() {
     # This is a write-possible operation that updates timestamp files.
     # Executes a series of fetch-lines from generate_getrestapi_strings()
@@ -414,8 +421,45 @@ run_getrestapi_strings() {
     COUNT_TOTAL=0
     COUNT_SUCCESS=0
     COUNT_BATCH=0
-    FIRED_BATCH=""
     RES=-1
+    if [ "$MAX_CHILDREN" -gt 1 ] 2>/dev/null; then
+        run_getrestapi_strings_parallel "$@"
+    else
+        run_getrestapi_strings_sequential "$@"
+    fi < <(generate_getrestapi_strings)
+    # Special bash syntax to avoid forking and thus hiding of variables
+
+    TS_ENDED="`date -u +%s 2>/dev/null`" || TS_ENDED=""
+
+    TS_STRING=""
+    [ -n "$TS_START" -a -n "$TS_ENDED" ] && \
+    [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
+        TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
+
+    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+
+    [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    [ $RES -le 0 ] && return 0
+    return $RES
+}
+
+run_getrestapi_strings_sequential() {
+    # Internal detail for run_getrestapi_strings()
+    logmsg_info 0 "`date`: Using sequential foreground REST API requests" >&2
+    while IFS="" read CMDLINE; do
+        COUNT_TOTAL=$(($COUNT_TOTAL+1))
+        eval $CMDLINE
+        RESLINE=$?
+        [ "$1" = -v ] && logmsg_debug 0 "Result ($RESLINE) of: $CMDLINE" >&2
+        [ "$RESLINE" = 0 ] && \
+             COUNT_SUCCESS=$(($COUNT_SUCCESS+1)) || \
+             RES=$RESLINE
+    done
+}
+
+run_getrestapi_strings_parallel() {
+    # Internal detail for run_getrestapi_strings()
+    logmsg_info 0 "`date`: Using parallel background REST API requests (at most $MAX_CHILDREN at once)" >&2
     while IFS="" read CMDLINE; do
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
         COUNT_BATCH=$(($COUNT_BATCH+1))
@@ -439,8 +483,7 @@ run_getrestapi_strings() {
             COUNT_BATCH=0
             FIRED_BATCH=""
         fi
-    done < <(generate_getrestapi_strings)
-    # Special bash syntax to avoid forking and thus hiding of variables
+    done
 
     for F in $FIRED_BATCH ; do
         wait $F
@@ -450,19 +493,6 @@ run_getrestapi_strings() {
              RES=$RESLINE
     done
     FIRED_BATCH=""
-
-    TS_ENDED="`date -u +%s 2>/dev/null`" || TS_ENDED=""
-
-    TS_STRING=""
-    [ -n "$TS_START" -a -n "$TS_ENDED" ] && \
-    [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
-        TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
-
-    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
-
-    [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
-    [ $RES -le 0 ] && return 0
-    return $RES
 }
 
 ### script starts here ###
