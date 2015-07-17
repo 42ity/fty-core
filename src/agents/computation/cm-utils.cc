@@ -287,8 +287,8 @@ request_averages
     switch (ret.rv) {
         case 0:
         {
-            return_value = 1;
             log_debug ("Success. Last average timestamp: '%" PRId64"'.", last_average_timestamp);
+            return_value = 1;
             break;
         }
         case 1:

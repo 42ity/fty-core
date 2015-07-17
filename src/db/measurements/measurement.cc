@@ -146,7 +146,7 @@ select_measurements_averages (
                 result.getRow (0).getValue (0).get (topic_id);
             }
             else if (result.size () == 0) {
-                last_timestamp = INT64_MIN;
+                last_timestamp = INT32_MIN;
                 ret.rv = 2;
                 return ret;
             }
