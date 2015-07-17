@@ -11,20 +11,28 @@
 # Have cron job periodically call this script
 
 # supported average types and steps
-declare -ar TYPE=("arithmetic_mean" "min" "max")
-declare -ar STEP=("15m" "30m" "1h" "8h" "24h")
+TYPE_AVG=arithmetic_mean
+TYPE_MIN=min
+TYPE_MAX=max
+
+TYPES_SUPPORTED="$TYPE_AVG $TYPE_MIN $TYPE_MAX"
+STEPS_SUPPORTED="15m 30m 1h 8h 24h"
+
+[ -z "$TYPES" ] && TYPES="$TYPES_SUPPORTED"
+[ -z "$STEPS" ] && STEPS="$STEPS_SUPPORTED"
+
+# Regexp wrapped into "^(...)$" when used, so it must describe the whole string
+[ -z "$SOURCES_ALLOWED" ] && SOURCES_ALLOWED=""
 
 [ -z "$SUT_HOST" ] && \
-declare -r SUT_HOST="127.0.0.1"
+        SUT_HOST="127.0.0.1"
 
 [ -z "$SUT_WEB_PORT" ] && \
 if [ -n "$CHECKOUTDIR" ] ; then
-        declare -r SUT_WEB_PORT="8000"
+        SUT_WEB_PORT="8000"
 else
-        declare -r SUT_WEB_PORT="80"
+        SUT_WEB_PORT="80"
 fi
-
-[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 
 # How many requests can fire at once? Throttle when we reach this amount...
 [ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=32
@@ -36,6 +44,7 @@ fi
 
 # Include our standard routines for CI scripts
 CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
+BASE_URL_CALLER="$BASE_URL" # may be empty
 [ -s "$SCRIPTDIR/scriptlib.sh" ] &&
         . "$SCRIPTDIR"/scriptlib.sh || \
 { [ -s "$SCRIPTDIR/../tests/CI/scriptlib.sh" ] &&
@@ -44,8 +53,9 @@ CI_DEBUG_CALLER="$CI_DEBUG" # may be empty
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-# TODO: Set paths via standard autoconf prefix-vars and .in conversions
-# TODO: Run as non-root, and use paths writable by that user (bios?)
+# TODO: Set default paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?) -- this
+#       may need separate service to create the /var/run subdirectory as root.
 LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
@@ -56,6 +66,57 @@ FETCHER=
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
+
+# Different CLI parameters may be added later on...
+usage() {
+    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -q]"
+    echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
+    echo "  -v    Wet-run with output posted to stdout"
+    echo "  -q    (default) If not dry-running, actually run the $FETCHER"
+    echo "        callouts with results quietly dumped to /dev/null"
+    echo "  -d    Bump up the debugging level, disregarding defaults and envvars"
+    echo "  -j N        Max parallel fetchers to launch (default $MAX_CHILDREN)"
+    echo "  --lockfile file     Filename used to block against multiple runs"
+    echo "  --timefile file     Filename used to save last request end-timestamp"
+    echo "  --host hostname     Where to place the REST API request"
+    echo "  --port portnum         (default http://$SUT_HOST:$SUT_WEB_PORT)"
+    echo "  --steps '15m 24h'   A space-separated string of (supported!) time steps"
+    echo "                         (among '$STEPS_SUPPORTED')"
+    echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
+    echo "                         (among '$TYPES_SUPPORTED')"
+    echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
+}
+
+ACTION="generate"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -n) ACTION="generate" ;;
+        -v) ACTION="request-verbose" ;;
+        -q|"") ACTION="request-quiet" ;;
+        -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
+            MAX_CHILDREN="$2"
+            shift ;;
+        --lockfile) LOCKFILE="$2"; shift ;;
+        --timefile) TIMEFILE="$2"; shift ;;
+        --host|--sut-web-host|--sut-host)
+            SUT_HOST="$2"; shift ;;
+        --port|--sut-web-port|--sut-port)
+            SUT_WEB_PORT="$2"; shift ;;
+        --types) TYPES="$2"; shift ;; # No sanity check against TYPES_SUPPORTED
+        --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
+        --src-allow) SOURCES_ALLOWED="$2"; shift ;;
+        -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
+        -h|--help)
+            usage; exit 1 ;;
+        *) die "Unknown param(s) follow: '$@'
+`usage`" ;;
+    esac
+    shift
+done
+
+BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+[ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
+    logmsg_info "Using BASE_URL='$BASE_URL' passed to us via envvars"
 
 # Helper join array function
 function join { local IFS="$1"; shift; echo "$*"; }
@@ -199,12 +260,12 @@ sources_from_device_id() {
         __item=${__item%%@*}
 
         local __step
-        for __step in ${STEP[@]}; do
+        for __step in $STEPS; do
             __item=${__item%%_$__step}
         done
 
         local __type
-        for __type in ${TYPE[@]}; do
+        for __type in $TYPES; do
             __item=${__item%%_$__type}
         done
 
@@ -229,17 +290,21 @@ sources_from_device_id() {
 start_lock() {
     # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
-    [ -f "$LOCKFILE" ] && exit 0
+    [ -f "$LOCKFILE" ] && \
+        die 0 "A copy of the script seems already running:" "`cat "$LOCKFILE"`"
 
     settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
     touch "$LOCKFILE" || exit $?
 }
 
-generate_getrestapi_strings() {
-    # This is a read-only operation
-    end_timestamp=$(date -u +%Y%m%d%H%M%S)
-    declare -r END_TIMESTAMP="${end_timestamp}Z"
+prepare_timestamps() {
+    [ -n "$END_TIMESTAMP" ] && [ -n "$START_TIMESTAMP" ] && return 0
+
+    [ -n "$end_timestamp" ] && \
+        logmsg_debug "Using caller-provided end_timestamp='$end_timestamp'" || \
+        end_timestamp=$(date -u +%Y%m%d%H%M%SZ)
+    declare -r END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
     if [ -s "$TIMEFILE" ]; then
@@ -258,6 +323,15 @@ generate_getrestapi_strings() {
     logmsg_debug $CI_DEBUGLEVEL_DEBUG \
         "START_TIMESTAMP=$START_TIMESTAMP" \
         "END_TIMESTAMP=$END_TIMESTAMP" >&2
+}
+
+generate_getrestapi_strings() {
+    generate_getrestapi_strings_sources
+    generate_getrestapi_strings_temphum
+}
+
+generate_getrestapi_strings_sources() {
+    # This is a read-only operation
 
     # 1. Get asset element identifiers
     element_ids=$(get_elements)
@@ -289,10 +363,16 @@ generate_getrestapi_strings() {
         elif [ $? -gt 1 ]; then # error
             return 1
         fi
+
         # 5. Generate curl request for each combination of source, step, type for the given element id
         for s in $SOURCES; do
-            for stype in ${TYPE[@]}; do
-                for sstep in ${STEP[@]}; do
+            if [ -n "$SOURCES_ALLOWED" ] && \
+                echo "$s" | egrep -vi "^($SOURCES_ALLOWED$)" > /dev/null ; then
+                    logmsg_debug "Source type '$s' did not match SOURCES_ALLOWED filter, skipped" >&2
+                    continue
+            fi
+            for stype in $TYPES; do
+                for sstep in $STEPS; do
                     # TODO: change this to api_get with related checks?
                     echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
                     # TODO: Does it make sense to check for 404/500? What can we do?
@@ -300,9 +380,12 @@ generate_getrestapi_strings() {
             done
         done
     done
+}
 
-    #6 Generate temperature and humidity averages
-    stype="${TYPE[0]}"
+generate_getrestapi_strings_temphum() {
+    # This is a read-only operation
+    # Generate temperature and humidity averages for 4*TH ports of this box
+    stype="$TYPE_AVG"
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
     i=$(do_select "SELECT id_asset_element FROM t_bios_asset_element WHERE name = '${hostname}'")
@@ -321,9 +404,13 @@ generate_getrestapi_strings() {
 }
 
 run_getrestapi_strings() {
-    # This is a write-possible operation that updates timestamp files
+    # This is a write-possible operation that updates timestamp files.
+    # Executes a series of fetch-lines from generate_getrestapi_strings()
+    # called inside this routine.
 
     start_lock
+    TS_START="`date -u +%s 2>/dev/null`" || TS_START=""
+
     COUNT_TOTAL=0
     COUNT_SUCCESS=0
     COUNT_BATCH=0
@@ -364,35 +451,39 @@ run_getrestapi_strings() {
     done
     FIRED_BATCH=""
 
-    [ "$1" = -v ] && logmsg_debug 0 \
-        "Ran $COUNT_TOTAL overall requests, done now" >&2
+    TS_ENDED="`date -u +%s 2>/dev/null`" || TS_ENDED=""
+
+    TS_STRING=""
+    [ -n "$TS_START" -a -n "$TS_ENDED" ] && \
+    [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
+        TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
+
+    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+
     [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
     [ $RES -le 0 ] && return 0
     return $RES
 }
 
 ### script starts here ###
-case "$1" in
-    -n) generate_getrestapi_strings "$@"
+prepare_timestamps
+case "$ACTION" in
+    generate)
+        generate_getrestapi_strings "$@"
         exit $?
         ;;
-    -v) # production run with verbose output
+    request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
         run_getrestapi_strings "$@"
         exit $?
         ;;
-    ""|-q) # default / quiet mode for timed runs
+    request-quiet) # default / quiet mode for timed runs
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
-    -h|--help) echo "$0 [-n | -v]"
-        echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
-        echo "  -v    Wet-run with output posted to stdout"
-        echo "If not dry-running, actually run the $FETCHER callouts quietly dumped to /dev/null"
-        ;;
-    *) die "Unknown params : $@";;
 esac
 
+# Should not get here
 exit 1
