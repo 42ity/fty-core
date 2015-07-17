@@ -30,6 +30,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "assetcrud.h"
 #include "dbpath.h"
 #include "cleanup.h"
+#include "db/assets.h"
 
 using namespace shared;
 
@@ -79,6 +80,16 @@ static bool
 }
 
 static bool
+    check_location_w_pos
+        (const std::string &s)
+{
+    if ( ( s == "left" ) || ( s == "right" ) )
+        return true;
+    else
+        return false;
+}
+
+static bool
     match_ext_attr
         (std::string value, std::string key)
 {
@@ -86,7 +97,45 @@ static bool
     {
         return check_location_u_pos(value);
     }
-    return true;
+    if ( key == "location_w_pos" )
+    {
+        log_debug ("222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222");
+        return check_location_w_pos(value);
+    }
+    return ( !value.empty() );
+}
+
+int
+    get_pdu_epdu_info
+        (tntdb::Connection &conn, 
+         a_elmnt_id_t parent_id, 
+         int &pdu_epdu_count, 
+         std::string &last_position)
+{
+    LOG_START;
+    db_reply <std::vector<device_info_t>> devices =
+        select_asset_device_by_container
+         (conn, parent_id);
+    pdu_epdu_count = 0;
+    for ( auto &adevice : devices.item )
+    {
+        if ( ( std::get<2>(adevice) == "pdu" ) || ( std::get<2>(adevice) == "epdu" ) )
+        {
+            pdu_epdu_count++;
+            db_reply <std::map <std::string, std::pair<std::string, bool> >> 
+                ext_attributes = persist::select_ext_attributes (conn, std::get<0>(adevice));
+            auto it = ext_attributes.item.find("location_w_pos");
+            if ( it != ext_attributes.item.cend() )
+                last_position = it->second.first;
+            else
+            {
+                log_warning ("inconsistent state: epdu/pdu without location_w_pos, use 'right'");
+                last_position = "left"; 
+            }
+        }
+    }
+    LOG_END;
+    return 0;
 }
 
 /*
@@ -193,6 +242,22 @@ static db_a_elmnt_t
 
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
+
+    // BIOS-991 --start
+    int pdu_epdu_count = 0;
+    std::string last_position = "";
+    if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
+    {
+        // find a number of pdu/epdu in the rack
+        int ret = get_pdu_epdu_info (conn, parent_id, pdu_epdu_count, last_position);
+        if ( ret )
+            throw std::invalid_argument
+                                ("some problem with db, see log for more details");
+        if ( pdu_epdu_count > 1 )
+            throw std::invalid_argument
+                                ("more than 2 PDU is not supported");
+    }
+    // BIOS-991 --end
 
     std::string group;
     
@@ -316,13 +381,46 @@ static db_a_elmnt_t
     zhash_autofree(extattributes);
     for ( auto &key: unused_columns )
     {
-        // try is not needed, because here are keys that are defenitly there
+        // try is not needed, because here are keys that are definitely there
         auto value = cm.get(row_i, key);
-        if ( !value.empty() ) {
-            if ( match_ext_attr (value, key) )
-                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+
+        if ( match_ext_attr (value, key) )
+        {
+            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
+            {
+                log_debug (" I AM HERE =====================================================================================");
+                // BIOS-991 --start
+                switch ( pdu_epdu_count ) {
+                    case 0: { 
+                                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+                                break;
+                            }
+                    case 1: {
+                                std::string new_value = ( last_position == "left" ) ? "right" : "left";
+                                if ( new_value != value )
+                                    log_warning (" location_w_pow changed to '%s'", new_value.c_str());
+                                zhash_insert (extattributes, key.c_str(), (void*)new_value.c_str());
+                                break;
+                            }
+                    default:
+                            {
+                                throw std::invalid_argument
+                                    ("this should never happen: position of pdu/epdu");
+                            }
+                }
+                // BIOS-991 --end
+            }
             else
-                log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
+                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+        }
+        else
+        {
+            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
+            {
+                throw std::invalid_argument
+                    ("location_w_pos should be set. Possible variants 'left'/'right'");
+            }
+            log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
         }
     }
     // if the row represents group, the subtype represents a type 
