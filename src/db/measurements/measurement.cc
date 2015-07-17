@@ -133,6 +133,7 @@ select_measurements_averages (
             std::string query_topic (topic);
             query_topic.append ("@%");
 
+            // find topic id
             tntdb::Statement statement = conn.prepareCached (
             " SELECT t.id FROM t_bios_measurement_topic AS t, "
             "            t_bios_monitor_asset_relation AS rel "
@@ -145,46 +146,46 @@ select_measurements_averages (
                 result.getRow (0).getValue (0).get (topic_id);
             }
             else if (result.size () == 0) {
-                last_timestamp = INT64_MIN;
+                last_timestamp = INT32_MIN;
                 ret.rv = 2;
                 return ret;
             }
             else {
-                log_critical ("Query returned %d rows.", result.size ());
+                log_critical ("Query returned '%d' rows. Exactly one row was expected!", result.size ());
                 ret.rv = -1;
                 return ret;
             }
         }
-        log_debug ("topic id = %" PRId64, topic_id);
+        log_debug ("topic id: '%" PRId64"'", topic_id);
         {
             tntdb::Statement statement = conn.prepareCached (
             " SELECT COALESCE(MAX(UNIX_TIMESTAMP(timestamp)), :cval) FROM v_bios_measurement "
             " WHERE topic_id = :topic_id ");
             tntdb::Result result = statement.set ("topic_id", topic_id).set ("cval", INT32_MIN).select ();
             if (result.size () == 0) {
-                log_debug ("Result size == 0. Assigning INT64_MIN to last timestamp.");                
-                last_timestamp = INT64_MIN;
+                log_debug ("result size: '0'. Assigning 'INT32_MIN' as timestamp of last average.");                
+                last_timestamp = INT32_MIN;
             }
             else if (result.size () == 1) {            
-                log_debug ("Result size == 1");
+                log_debug ("result size: 1");
                 result.getRow (0).getValue (0).get (last_timestamp);
             }
             else {
-                log_critical ("Query returned %d rows.", result.size ());
+                log_critical ("Query returned '%d' rows. Exactly one row was expected!", result.size ());
                 ret.rv = -1;
                 return ret;
             }
         }
-        log_debug ("last timestamp: '%" PRId64"'", last_timestamp);
+        log_debug ("Timestamp of the last average: '%" PRId64"'", last_timestamp);
 
     }
     catch (const std::exception &e) {
-        log_error("Exception caught: %s", e.what());
+        log_error("Exception caught: '%s'.", e.what ());
         ret.rv = -1;
         return ret;
     }
     catch (...) {
-        log_error("Unknown exception caught!");
+        log_error("Unknown exception caught.");
         ret.rv = -1;
         return ret;    
     }
