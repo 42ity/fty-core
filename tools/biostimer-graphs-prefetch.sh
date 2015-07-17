@@ -297,7 +297,7 @@ start_lock() {
 
     settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
-    touch "$LOCKFILE" || exit $?
+    echo "$$" > "$LOCKFILE" || exit $?
 }
 
 # Ultimate values that we use in script
