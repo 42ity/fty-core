@@ -99,7 +99,6 @@ static bool
     }
     if ( key == "location_w_pos" )
     {
-        log_debug ("222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222");
         return check_location_w_pos(value);
     }
     return ( !value.empty() );
@@ -388,7 +387,6 @@ static db_a_elmnt_t
         {
             if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
             {
-                log_debug (" I AM HERE =====================================================================================");
                 // BIOS-991 --start
                 switch ( pdu_epdu_count ) {
                     case 0: { 
