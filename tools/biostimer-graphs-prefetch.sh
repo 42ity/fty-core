@@ -69,12 +69,13 @@ FETCHER=
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -q]"
+    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -w]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
-    echo "  -q    (default) If not dry-running, actually run the $FETCHER"
+    echo "  -w    (default) If not dry-running, actually wet-run the $FETCHER"
     echo "        callouts with results quietly dumped to /dev/null"
-    echo "  -d    Bump up the debugging level, disregarding defaults and envvars"
+    echo "  -q    Suppress the debugging level to 0, disregarding defaults and envvars"
+    echo "  -d    Bump up the debugging level to 99, disregarding defaults and envvars"
     echo "  -j N                Max parallel fetchers to launch (default $MAX_CHILDREN)"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
@@ -92,7 +93,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -n) ACTION="generate" ;;
         -v) ACTION="request-verbose" ;;
-        -q|"") ACTION="request-quiet" ;;
+        -w|"") ACTION="request-quiet" ;;
         -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
             MAX_CHILDREN="$2"
             shift ;;
@@ -106,6 +107,7 @@ while [ $# -gt 0 ]; do
         --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
         --src-allow) SOURCES_ALLOWED="$2"; shift ;;
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
+        -q) CI_DEBUG=0 ; CI_DEBUG_CALLER=0 ;;
         -h|--help)
             usage; exit 1 ;;
         *) die "Unknown param(s) follow: '$*'
