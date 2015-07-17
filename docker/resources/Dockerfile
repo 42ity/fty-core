@@ -1,8 +1,8 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
-RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
+#RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
-ENV http_proxy http://proxy.eur.etn.com:8080 
+#ENV http_proxy http://proxy.eur.etn.com:8080 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \
   tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 \
@@ -30,7 +30,7 @@ RUN sed -i 's/usr\/local\/share\/bios\/web/usr\/share\/bios-web/' /etc/tntnet/tn
 RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
 ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
 ADD ./usr/local/libexec/bios/agent-dbstore /usr/local/libexec/bios/agent-dbstore
-ADD ./usr/local/libexec/bios/netmon /usr/local/libexec/bios/netmon
+ADD ./usr/local/libexec/bios/agent-netmon /usr/local/libexec/bios/agent-netmon
 ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut
 ADD ./usr/local/libexec/bios/agent-inventory /usr/local/libexec/bios/agent-inventory
@@ -38,6 +38,7 @@ ADD ./usr/local/libexec/bios/agent-alert /usr/local/libexec/bios/agent-alert
 ADD ./usr/local/libexec/bios/agent-cm /usr/local/libexec/bios/agent-cm
 ADD ./usr/local/libexec/bios/agent-tpower /usr/local/libexec/bios/agent-tpower
 ADD ./usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so.0.0.0
+ADD ./usr/local/libexec/bios/outage /usr/local/libexec/bios/outage
 RUN ln -s /usr/local/lib/bios/bios_web.so.0.0.0 /usr/local/lib/bios/bios_web.so
 ADD ./usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0.0.0
 RUN ln -s /usr/local/lib/libbiosapi.so.0.0.0 /usr/local/lib/libbiosapi.so.0
