@@ -318,13 +318,32 @@ sources_from_device_id() {
     return 0
 }
 
+trap_exit() {
+    # Wrapped by settraps, so we do not have nor pass the exit code
+    [ -n "$FIRED_BATCH" ] && \
+        logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && \
+        kill -SIGTERM $FIRED_BATCH 2>/dev/null
+
+    rm -f "$LOCKFILE"
+}
+
+trap_abort() {
+    logmsg_error 0 "Script aborted by external circumstances!"
+    [ -n "$COUNT_TOTAL" ] && [ "$COUNT_TOTAL" != 0 ] && \
+        logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful) by now" >&2
+    trap_exit
+}
+
 start_lock() {
     # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && \
         die 0 "A copy of the script seems already running:" "`cat "$LOCKFILE"`"
 
-    settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
+    # Set a default handler for default signal list, and then a custom one
+    settraps 'trap_abort'
+    TRAP_SIGNALS="EXIT" settraps 'trap_exit'
+
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
     echo "$$" > "$LOCKFILE" || exit $?
 }
@@ -467,7 +486,7 @@ run_getrestapi_strings() {
     [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
         TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
 
-    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+    logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
 
     [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
     [ $RES -le 0 ] && return 0
