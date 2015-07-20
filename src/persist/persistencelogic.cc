@@ -103,58 +103,6 @@ free_mem_toto:
     FREE0 (units)
 }
 
-zmsg_t* asset_msg_process(zmsg_t **msg) {
-    log_debug("Processing asset message in persistence layer");
-    zmsg_t *result = NULL;
-
-    _scoped_asset_msg_t *amsg = asset_msg_decode(msg);
-    if(amsg == NULL) {
-        log_warning ("Malformed asset message received!");
-        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                        "Malformed asset message message received!", NULL);
-    }
-
-    int msg_id = asset_msg_id (amsg);
-    
-    switch (msg_id) {
-
-        case ASSET_MSG_GET_ELEMENT: {
-            // datacenter|room|row|rack|group|device
-            // THIS SHOULD NEVER BE USED
-            log_critical ("This shoul be never used");
-            result = NULL;
-            break;
-        }
-        case ASSET_MSG_UPDATE_ELEMENT:
-        case ASSET_MSG_INSERT_ELEMENT:
-        case ASSET_MSG_DELETE_ELEMENT: {
-            //not implemented yet
-            break;
-        }
-        case ASSET_MSG_GET_ELEMENTS: {
-            // datacenters|rooms|rows|racks|groups
-            log_error ("THIS SHOULD never happen as asset msg should never be send");
-            break;
-        }
-        case ASSET_MSG_ELEMENT:
-        case ASSET_MSG_RETURN_ELEMENT:
-        case ASSET_MSG_OK:
-        case ASSET_MSG_FAIL:
-        case ASSET_MSG_RETURN_ELEMENTS:
-        default: {
-            log_warning ("Wrong asset message (id %d) received!", msg_id);
-            result = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                            "Wrong asset message message received!", NULL);
-
-            break;
-        }
-    }
-
-    asset_msg_destroy(&amsg);
-    return result;
-};
-
-
 char nethistory_id_cmd (int id) {
     switch (id)
     {
