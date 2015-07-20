@@ -29,6 +29,15 @@ bool TopicCache::has(const std::string& topic) {
     return false;
 }
 
+void TopicCache::erase(const std::string& topic) {
+    if (_cache.count(topic) == 0)
+        return;
+
+    _cache.erase(topic);
+}
+
+//Notice for future developers - this functions is ugly and better to split to smaller
+//functions doing only one thing. Please try to avoid adding even more logic here, thanks
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,
@@ -97,9 +106,6 @@ insert_into_measurement_again:
 
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
         }
-        else {
-            log_debug("topic %s already in cache, skipping", topic);
-        }
 
         st = conn.prepareCached(
                 " INSERT INTO"
@@ -163,6 +169,8 @@ insert_into_measurement_again:
         ret.status = 1;
         return ret;
     } catch(const std::exception &e) {
+        //something failed, remove topic from cache for sure
+        c.erase(topic);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;

@@ -45,8 +45,11 @@ class TopicCache {
         TopicCache& operator=(TopicCache& other) = delete;
         TopicCache& operator=(TopicCache&& other) = delete;
 
-        /*\brief check if value is in cache or not*/
+        //\brief check if value is in cache or not
         bool has(const std::string& topic);
+
+        //\brief erase key from cache (in case of failure)
+        void erase(const std::string& topic);
     private:
         std::set<std::string> _cache;
         size_t _max;
