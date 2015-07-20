@@ -68,6 +68,19 @@ include_cfg() {
         . "$1"
 }
 
+check_in_list() {
+    # Tests that tokens listed in "$1" are among
+    # the other "$*" space-separated parameters
+    local HAYSTACK="$1"
+    shift
+    for HAY in $HAYSTACK ; do
+    for NEEDLE in $* ; do
+        [ x"$NEEDLE" = x"$HAY" ] && return 0
+    done
+    done
+    return 1
+}
+
 # Different CLI parameters may be added later on...
 usage() {
     echo "Usage: $0 [--opt 'arg'] [-C file.conf] [-j N] [-n | -v | -w]"
@@ -111,8 +124,11 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"; shift ;;
         --port|--sut-web-port|--sut-port)
             SUT_WEB_PORT="$2"; shift ;;
-        --types) TYPES="$2"; shift ;; # No sanity check against TYPES_SUPPORTED
-        --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
+        # No sanity check enforced against STEPS_SUPPORTED and TYPES_SUPPORTED
+        # at the moment, to allow testing of other values as well. However, we
+        # do test and issue a sanity-check note below. Can become fatal later.
+        --types) TYPES="$2"; shift ;;
+        --steps) STEPS="$2"; shift ;;
         --src-allow) SOURCES_ALLOWED="$2"; shift ;;
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -q) CI_DEBUG=0 ; CI_DEBUG_CALLER=0 ;;
@@ -123,6 +139,11 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+check_in_list "$TYPES" "$TYPES_SUPPORTED" || \
+    logmsg_warn "Invalid TYPES requested (a value in '$TYPES' is not among known '$TYPES_SUPPORTED')"
+check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
+    logmsg_warn "Invalid STEPS requested (a value in '$STEPS' is not among known '$STEPS_SUPPORTED')"
 
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 [ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
