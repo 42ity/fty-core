@@ -7,7 +7,6 @@
 // To be deleted - we should be fine with just zmsg_t
 #include "powerdev_msg.h"
 #include "common_msg.h"
-#include "nmap_msg.h"
 #include "ymsg.h"
 #include "app.h"
 #include "measurement.h"
@@ -53,8 +52,6 @@ process_message(const std::string &url, zmsg_t *msg);
 
 bool
 powerdev_msg_process(const std::string& url, const powerdev_msg_t& msg);
-
-zmsg_t* nmap_msg_process(zmsg_t **msg);
 
 bool
 common_msg_process(const std::string& url, const common_msg_t& msg);
