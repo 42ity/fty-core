@@ -328,7 +328,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
-			src/db/calculation.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -359,6 +358,18 @@ libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_builddir)/tools
+
+noinst_LTLIBRARIES +=		libpriv-db-calculations.la
+
+libpriv_db_calculations_la_SOURCES = \
+			src/db/calculation.h \
+			src/db/calculation.cc
+
+libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/persist/
 
 
 #####
@@ -749,8 +760,9 @@ test_outage_SOURCES = \
 
 test_outage_LDADD = \
 			libpriv-log.la \
-			libpriv-db.la \
+			libpriv-db-calculations.la \
 			libpriv-db-measurements.la \
+			libpriv-db.la \
 			libpriv-defs.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
@@ -1043,8 +1055,7 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in \
-			$(top_srcdir)/src/db/calculation.h
+			$(top_srcdir)/tools/db-init.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1256,8 +1267,9 @@ outage_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 outage_LDADD = \
 			libpriv-defs.la \
-			libpriv-db.la \
+			libpriv-db-calculations.la \
 			libpriv-db-measurements.la \
+			libpriv-db.la \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-proto.la \
@@ -1322,6 +1334,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
+			libpriv-db-calculations.la \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
