@@ -133,7 +133,7 @@ zmsg_t* asset_msg_process(zmsg_t **msg) {
         }
         case ASSET_MSG_GET_ELEMENTS: {
             // datacenters|rooms|rows|racks|groups
-            result = get_asset_elements(url.c_str(), amsg);
+            log_error ("THIS SHOULD never happen as asset msg should never be send");
             break;
         }
         case ASSET_MSG_ELEMENT:
@@ -768,7 +768,8 @@ zmsg_t* process_message(zmsg_t** msg) {
     if(is_common_msg(*msg)) {
         return common_msg_process(msg);
     } else if(is_asset_msg(*msg)) {
-        return asset_msg_process(msg);
+        log_error ("THIS SHOULD never happen as asset msg should never be sent");
+        return NULL;
     } else if(is_nmap_msg(*msg)) {
         return nmap_msg_process(msg);
     } else {
