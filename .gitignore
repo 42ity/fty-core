@@ -192,6 +192,7 @@ src/web/src/average.cpp
 src/web/src/item.cpp
 src/web/src/json.cpp
 src/web/src/list.cpp
+src/web/src/netcfg.cpp
 src/web/src/time.cpp
 src/web/src/network.cpp
 src/web/src/networks.cpp

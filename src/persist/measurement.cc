@@ -18,6 +18,26 @@
 
 namespace persist {
 
+bool TopicCache::has(const std::string& topic) {
+    if (_cache.count(topic) == 1)
+        return true;
+
+    if (_max >= _cache.size())
+        _cache.clear();
+
+    _cache.emplace(topic);
+    return false;
+}
+
+void TopicCache::erase(const std::string& topic) {
+    if (_cache.count(topic) == 0)
+        return;
+
+    _cache.erase(topic);
+}
+
+//Notice for future developers - this functions is ugly and better to split to smaller
+//functions doing only one thing. Please try to avoid adding even more logic here, thanks
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,
@@ -26,7 +46,8 @@ db_reply_t
         m_msrmnt_scale_t   scale,
         int64_t            time,
         const char        *units,
-        const char        *device_name)
+        const char        *device_name,
+        TopicCache& c)
 {
     db_reply_t ret = db_reply_new();
 
@@ -60,26 +81,31 @@ db_reply_t
 
     try {
 insert_into_measurement_again:
-        tntdb::Statement st = conn.prepareCached(
-                " INSERT INTO"
-                "   t_bios_measurement_topic"
-                "    (topic, units, device_id)"
-                " SELECT"
-                "   :topic, :units, v.id_discovered_device"
-                " FROM"
-                "   t_bios_discovered_device v"
-                " WHERE"
-                "   v.name = :name"
-                " ON DUPLICATE KEY"
-                "   UPDATE"
-                "      id = LAST_INSERT_ID(id)"
-        );
-        uint32_t n = st.set("topic", topic)
-                       .set("units", units)
-                       .set("name", device_name)
-                       .execute();
+        tntdb::Statement st;
 
-        log_debug("[t_bios_measurement_topic]: inserted %" PRIu32 " rows ", n);
+        if (! c.has(topic))
+        {
+            st = conn.prepareCached(
+                    " INSERT INTO"
+                    "   t_bios_measurement_topic"
+                    "    (topic, units, device_id)"
+                    " SELECT"
+                    "   :topic, :units, v.id_discovered_device"
+                    " FROM"
+                    "   t_bios_discovered_device v"
+                    " WHERE"
+                    "   v.name = :name"
+                    " ON DUPLICATE KEY"
+                    "   UPDATE"
+                    "      id = LAST_INSERT_ID(id)"
+            );
+            uint32_t n = st.set("topic", topic)
+                           .set("units", units)
+                           .set("name", device_name)
+                           .execute();
+
+            log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
+        }
 
         st = conn.prepareCached(
                 " INSERT INTO"
@@ -143,6 +169,8 @@ insert_into_measurement_again:
         ret.status = 1;
         return ret;
     } catch(const std::exception &e) {
+        //something failed, remove topic from cache for sure
+        c.erase(topic);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;
@@ -153,6 +181,22 @@ insert_into_measurement_again:
         LOG_END_ABNORMAL(e);
         return ret;
     }
+}
+
+
+// backward compatible function for a case where no cache is required
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name)
+{
+    TopicCache c{};
+    return insert_into_measurement(conn, topic, value, scale, time, units, device_name, c);
 }
 
 db_reply <std::vector<db_msrmnt_t>>

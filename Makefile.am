@@ -328,7 +328,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/ymsg-asset.cc \
 			src/persist/loadcsv.h \
 			src/persist/loadcsv.cc \
-			src/db/calculation.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -359,6 +358,18 @@ libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_builddir)/tools
+
+noinst_LTLIBRARIES +=		libpriv-db-calculations.la
+
+libpriv_db_calculations_la_SOURCES = \
+			src/db/calculation.h \
+			src/db/calculation.cc
+
+libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/persist/
 
 
 #####
@@ -698,6 +709,7 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 test_loadcsv_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
@@ -748,8 +760,9 @@ test_outage_SOURCES = \
 
 test_outage_LDADD = \
 			libpriv-log.la \
-			libpriv-db.la \
+			libpriv-db-calculations.la \
 			libpriv-db-measurements.la \
+			libpriv-db.la \
 			libpriv-defs.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
@@ -931,7 +944,7 @@ bios_nutscan_LDADD = \
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
 
 # Do we build and install CI programs by default? (see configure)
-cibin_programs_list = $(cibin_programs)
+cibin_programs_list := $(cibin_programs)
 cibindir = ${pkgbindir}
 if ENABLE_CI_TESTS
 cibin_PROGRAMS = $(cibin_programs)
@@ -1042,8 +1055,7 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in \
-			$(top_srcdir)/src/db/calculation.h
+			$(top_srcdir)/tools/db-init.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1255,8 +1267,9 @@ outage_CPPFLAGS =	$(AM_CPPFLAGS) \
 
 outage_LDADD = \
 			libpriv-defs.la \
-			libpriv-db.la \
+			libpriv-db-calculations.la \
 			libpriv-db-measurements.la \
+			libpriv-db.la \
 			libpriv-log.la \
 			libpriv-utils.la \
 			libpriv-proto.la \
@@ -1285,7 +1298,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
                       src/web/src/uptime.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
@@ -1321,6 +1334,7 @@ bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
+			libpriv-db-calculations.la \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
@@ -1354,7 +1368,7 @@ exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
 dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 
-CLEANFILES +=		tntnet.xml tntnet.xml.example
+CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
 web-test-deps: tntnet.xml bios_web.la web-link-test

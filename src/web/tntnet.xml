@@ -65,6 +65,14 @@
       <url>^/api/v1/topology/power.*$</url>
     </mapping>
 
+    <!-- Network configuration -->
+    <mapping>
+      <target>netcfg@bios_web</target>
+      <url>^/api/v1/afmin/netcfg/(.*)$</url>
+      <args>
+        <iface>$1</iface>
+      </args>
+    </mapping>
 
     <!-- Time settings -->
     <mapping>

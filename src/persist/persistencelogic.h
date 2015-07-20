@@ -10,6 +10,7 @@
 #include "nmap_msg.h"
 #include "ymsg.h"
 #include "app.h"
+#include "measurement.h"
 
 #include <string>
 
@@ -26,7 +27,7 @@ void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const ch
  */
 zmsg_t *asset_msg_process(zmsg_t **msg);
 
-void process_measurement(const std::string &topic, ymsg_t **ymsg);
+void process_measurement(const std::string &topic, ymsg_t **ymsg, TopicCache& c);
 
 /* \brief process message on networks stream
  * */
