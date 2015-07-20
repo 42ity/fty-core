@@ -68,10 +68,6 @@ include_cfg() {
         . "$1"
 }
 
-[ -z "$FETCHER" ] && \
-        echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
-        FETCHER=curl
-
 # Different CLI parameters may be added later on...
 usage() {
     echo "Usage: $0 [--opt 'arg'] [-C file.conf] [-j N] [-n | -v | -w]"
@@ -93,6 +89,10 @@ usage() {
     echo "                         (among '$TYPES_SUPPORTED')"
     echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
 }
+
+[ -z "$FETCHER" ] && \
+        echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
+        FETCHER=curl
 
 ACTION="request-quiet"
 while [ $# -gt 0 ]; do
