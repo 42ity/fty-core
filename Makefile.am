@@ -1416,6 +1416,7 @@ if HAVE_SYSTEMD
 autopathedit = sed \
 	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
