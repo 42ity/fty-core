@@ -1487,6 +1487,12 @@ EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) 
 EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
 
+# Quick links to build the systemd files (if enabled)
+systemd-units: systemd-daemons systemd-timers systemd-presets
+systemd-daemons: $(SYSTEMD_UNITS)
+systemd-timers: $(SYSTEMD_TIMERS) $(SYSTEMD_UNITS_TIMERIMPL)
+systemd-presets: $(SYSTEMD_PRESETS)
+
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
 # Note that the basic filenames in these variables are relative to the
