@@ -759,9 +759,9 @@ test_outage_SOURCES = \
 
 test_outage_LDADD = \
 			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-db-measurements.la \
 			libpriv-db-calculations.la \
+			libpriv-db-measurements.la \
+			libpriv-db.la \
 			libpriv-defs.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
