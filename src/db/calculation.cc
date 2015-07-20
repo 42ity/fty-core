@@ -15,8 +15,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file 
-    \brief 
+/*! \file calculation.cc
+    \brief Computation of outage/uptime/totaltime
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
@@ -91,9 +91,17 @@ reply_t
         {
             int64_t a = 0;
             row[0].get(a);
-            start.push_back(a);
-            row[1].get(a);
-            end.push_back(a);
+            int64_t b = 0;
+            row[1].get(b);
+            if ( a < b )
+            {
+                start.push_back(a);
+                end.push_back(b);
+            }
+            else
+                log_warning ("alert ignored: rulename = '%s',"
+                    " start_date > end_date ( %" PRIi64 " >  %" PRIi64 ")",
+                    rule_name.c_str(), start_date, end_date);
         }
         ret.rv = 0;
         LOG_END;
@@ -224,17 +232,9 @@ void
 {
     // get current date
     time_t sec = time (NULL);
-    struct tm *new_time = gmtime ( &sec );
 
-    // date 00:00:00
-    new_time->tm_hour = 0;
-    new_time->tm_min  = 0;
-    new_time->tm_sec  = 0;
-    end_date = mktime (new_time);
-
-    // date-1day 00:00:00
-    new_time->tm_mday--;
-    start_date = mktime (new_time);
+    end_date = ( sec / (60*60*24) ) * (60*60*24);
+    start_date = end_date - 60*60*24;
 }
 
 
@@ -250,6 +250,8 @@ int
     int64_t start_date = 0;
     int64_t end_date = 0;
     get_interval (start_date, end_date);
+    log_debug ( "start_date %" PRIi64, start_date);
+    log_debug ( "end_date %" PRIi64, end_date);
 
     try{
         // open a connection to db
@@ -276,19 +278,19 @@ int
                 reply_t ret = insert_outage
                         (conn, dc.name.c_str(), outage, end_date);
                 if ( ret.rv != 0 )
-                    log_debug ("FAIL: outage %" PRIi64 " for dc " \
-                            "( %" PRIi32 ") was not inserted for "\
+                    log_debug ("FAIL: outage %" PRIi64 " for dc "
+                            "( %" PRIi32 ") was not inserted for "
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
                 else
-                    log_debug ("SUCCESS: outage %" PRIi64 " for dc " \
-                            "( %" PRIi32 ")  was inserted for " \
+                    log_debug ("SUCCESS: outage %" PRIi64 " for dc "
+                            "( %" PRIi32 ")  was inserted for "
                             "the period from %" PRIi64 " to %" PRIi64,
                             outage, dc.id, start_date, end_date);
             }
             else
-                log_error ("FAIL: outage for dc ( %" PRIi32 ") " \
-                        "was not calculated for the period " \
+                log_error ("FAIL: outage for dc ( %" PRIi32 ") "
+                        "was not calculated for the period "
                         "from %" PRIi64 " to %" PRIi64, dc.id,
                         start_date, end_date);
         }
@@ -364,7 +366,7 @@ int
     // rv = 2 no topic -> no measurements were found -> no outage
     if  ( ( ret.rv != 0 ) && ( ret.rv != 2 ) )
     {
-        log_debug (" problems with selecting outage_by_interval" \
+        log_debug (" problems with selecting outage_by_interval"
                      " rv = %" PRIi32, ret.rv);
         return ret.rv;
     }

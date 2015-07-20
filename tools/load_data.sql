@@ -774,12 +774,13 @@ INSERT INTO t_bios_measurement_topic (device_id, units,topic)
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id2 = LAST_INSERT_ID();
 
+/*
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
     SELECT r.id_discovered_device,'C','temperature.thermal_zone0_arithmetic_mean_15m@KAROL-LAB' 
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id3 = LAST_INSERT_ID();
-
+*/
 
 
 /* Expected continuous data */

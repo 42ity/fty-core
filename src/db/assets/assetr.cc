@@ -363,7 +363,6 @@ reply_t
                             selectRow();
         log_debug("[v_bios_asset_element_super_parent]: were selected" \
                      "%" PRIu32 " rows",  1);
-        bool isNotNull = row[0].get(dc_id);
         if ( !row[0].get(dc_id) && !row[1].get(dc_id) && 
              !row[2].get(dc_id) && !row[3].get(dc_id) )
         {

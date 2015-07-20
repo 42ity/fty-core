@@ -4,6 +4,7 @@
 #include "ymsg.h"
 #include "bios_agent.h"
 #include "persistencelogic.h"
+#include "src/persist/measurement.h"
 #include "dbpath.h"
 #include "log.h"
 #include "defs.h"
@@ -33,6 +34,8 @@ int main (int argc, char *argv []) {
         log_error ("agent-dbstore: error bios_agent_new ()");
         return 1;
     }
+
+    persist::TopicCache c{256};
 
     // We are listening for measurements
     bios_agent_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
@@ -74,7 +77,7 @@ int main (int argc, char *argv []) {
                  ( streq (stream, bios_get_stream_main()) ) ) {
                 // New measurements publish
                 std::string topic = bios_agent_subject(client);
-                persist::process_measurement(topic, &in);
+                persist::process_measurement(topic, &in, c);
             }
             else if (streq (stream, bios_get_stream_networks())) {
                 persist::process_networks(&in);
