@@ -530,6 +530,8 @@ run_getrestapi_strings_parallel() {
 prepare_timestamps
 case "$ACTION" in
     generate)
+        # Moderate logging - ERROR and WARN - by default
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=2
         generate_getrestapi_strings "$@"
         exit $?
         ;;
