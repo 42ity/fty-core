@@ -698,6 +698,7 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 test_loadcsv_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
+			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
