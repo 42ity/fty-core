@@ -1429,13 +1429,17 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service
 
-SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
+SYSTEMD_UNITS_TIMERIMPL += \
+                        biostimer-outage.service \
+                        biostimer-graphs-prefetch__realpower.default@.service
 
 # These files need no processing, delivered verbatim
-SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
+SYSTEMD_TIMERS +=       biostimer-outage.timer \
+                        biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@24h.timer
 
 # This file is generated
-SYSTEMD_PRESETS += 42-bios-systemd.preset
+SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
