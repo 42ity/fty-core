@@ -213,80 +213,6 @@ process_message(const std::string& url, zmsg_t *msg) {
     return false;
 }
 
-/*!
-\brief stores the supplied nmap message
-
-\author Karol Hrdina <karolhrdina@eaton.com>
-\todo better exception handling granularity
-*/
-
-zmsg_t* nmap_msg_process(zmsg_t **msg) {
-    _scoped_nmap_msg_t *nmsg = nmap_msg_decode(msg);
-    zmsg_t *ret = NULL;
-
-    if(nmsg == NULL) {
-        log_warning ("Malformed nmap message received!");
-        return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                        "Malformed nmap message message received!", NULL);
-    }
-
-    int msg_id = nmap_msg_id(nmsg);
-    switch (msg_id) {
-        case NMAP_MSG_LIST_SCAN:
-        {
-            // data checks
-            const char *ip = nmap_msg_addr (nmsg);
-            if (ip == NULL) {
-                log_error ("empty 'addr' field of NMAP_MSG_LIST_SCAN received");
-                ret =  common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                        "empty 'addr' field of NMAP_MSG_LIST_SCAN received", NULL);
-                break;
-            }
-
-            // establish connection && execute
-            try
-            {
-                tntdb::Connection connection = tntdb::connectCached (url);
-                tntdb::Statement st = connection.prepare(
-                    "INSERT INTO t_bios_discovered_ip (timestamp, ip) VALUES (UTC_TIMESTAMP(), :v1)");
-                st.setString("v1", ip).execute();
-            }
-            catch (const std::exception& e)
-            {
-                log_error ("exception caught: %s", e.what ());
-                ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_INTERNAL,
-                        e.what(), NULL);
-            }
-            catch (...)
-            {
-                log_error ("tntdb::connectCached(%s) failed: Unknown exception caught.", url.c_str());
-                ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_INTERNAL,
-                        "NMAP: Unknown exception", NULL);
-            }
-            break;
-        }
-
-        case NMAP_MSG_DEV_SCAN:
-        {
-            log_info ("NMAP_MSG_DEV_SCAN not implemented at the moment.");
-            ret =  common_msg_encode_fail(DB_ERR, DB_ERROR_NOTIMPLEMENTED,
-                        "NMAP_MSG_DEV_SCAN not implemented", NULL);
-            break;
-        }
-
-        default: {
-            log_warning ("Unexpected message type received; message id = '%d'", msg_id);
-            ret = common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
-                                  "Unexpected message type received!", NULL);
-            break;
-        }
-    }
-    nmap_msg_destroy(&nmsg);
-    if(ret != NULL)
-        return ret;
-    return common_msg_encode_db_ok(0, NULL);
-}
-
 void
 process_networks(
         ymsg_t** in_p)
@@ -769,8 +695,6 @@ zmsg_t* process_message(zmsg_t** msg) {
         return common_msg_process(msg);
     } else if(is_asset_msg(*msg)) {
         return asset_msg_process(msg);
-    } else if(is_nmap_msg(*msg)) {
-        return nmap_msg_process(msg);
     } else {
         log_warning("Got wrong message!");
         return common_msg_encode_fail(BAD_INPUT, BAD_INPUT_WRONG_INPUT,
