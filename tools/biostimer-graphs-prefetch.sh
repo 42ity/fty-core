@@ -68,10 +68,6 @@ include_cfg() {
         . "$1"
 }
 
-for F in /etc/bios/biostimer-graphs-prefetch.conf \
-         /etc/bios/biostimer-graphs-prefetch.conf.local \
-; do include_cfg "$F"; done
-
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
