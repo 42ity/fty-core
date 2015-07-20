@@ -1423,17 +1423,17 @@ SYSTEMD_UNITS =
 SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
-# systemd integration
-if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
-autopathedit = sed \
+autopathedit = ${SED} \
 	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
 	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
+# systemd integration enabled?
+if HAVE_SYSTEMD
 # Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
@@ -1463,7 +1463,7 @@ $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
-	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	rm -f $@; $(autopathedit) < '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
