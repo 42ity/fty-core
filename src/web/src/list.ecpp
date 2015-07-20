@@ -1,9 +1,4 @@
 <%pre>
-#include "cleanup.h"
-#include <czmq.h>
-
-#include "asset_msg.h"
-#include "common_msg.h"
 #include "data.h"
 #include "assetcrud.h"
 </%pre>

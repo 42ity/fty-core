@@ -19,14 +19,6 @@ namespace persist {
 
 void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj);
 
-/**
- * \brief Processes message of type asset_msg_t
- *
- * Broken down processing of generic database zmsg_t, this time asset message
- * case.
- */
-zmsg_t *asset_msg_process(zmsg_t **msg);
-
 void process_measurement(const std::string &topic, ymsg_t **ymsg, TopicCache& c);
 
 /* \brief process message on networks stream

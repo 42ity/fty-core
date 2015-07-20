@@ -43,29 +43,6 @@ typedef struct _asset_link
 
 
 // ===============================================================
-// Functions for processing a special message type
-// ===============================================================
-
-
-/**
- * \brief This function processes the ASSET_MSG_GET_ELEMENTS message.
- *
- * In case of success it generates ASSET_MSG_RETURN_ELEMENTS message.
- * In case of failure returns COMMON_MSG_FAIL message.
- *
- * Message msg left unchanged.
- * 
- * \param url - the connection to database.
- * \param msg - the message of the type ASSET_MSG_GET_ELEMENTS 
- *                  we would like to process.
- *
- * \return zmsg_t - an encoded COMMON_MSG_FAIL or ASSET_MSG_RETURN_ELEMENTS
- *                  message.
- */
-zmsg_t* get_asset_elements(const char *url, asset_msg_t *msg);
-
-
-// ===============================================================
 // Helper functions for direct interacting with database
 // ===============================================================
 
