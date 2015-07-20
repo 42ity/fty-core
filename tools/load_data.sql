@@ -27,7 +27,6 @@ select @asset_element_device := id_asset_element_type from t_bios_asset_element_
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
 
 /* t_bios_client */
-select @client_nmap := id_client from t_bios_client where name = 'nmap';
 select @client_mymodule := id_client from t_bios_client where name = 'mymodule';
 select @client_admin := id_client from t_bios_client where name = 'admin';
 select @client_nut := id_client from t_bios_client where name = 'NUT';
