@@ -6,7 +6,7 @@ Requires=tntnet@bios.service bios-db-init.service
 
 [Service]
 Type=simple
-ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh --src-allow 'realpower.default' --steps "%I"
+ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh --src-allow 'realpower.default' --steps "%I" --lockfile "/var/run/biostimer-graphs-prefetch__realpower.default@%I.lock" --timefile /var/lib/bios/agent-cm/biostimer-graphs-prefetch__realpower.default@%I.time
 
 [Install]
 WantedBy=multi-user.target
