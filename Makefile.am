@@ -1489,9 +1489,10 @@ endif
 
 # Quick links to build the systemd files (if enabled)
 systemd-units: systemd-daemons systemd-timers systemd-presets
-systemd-daemons: $(SYSTEMD_UNITS)
-systemd-timers: $(SYSTEMD_TIMERS) $(SYSTEMD_UNITS_TIMERIMPL)
-systemd-presets: $(SYSTEMD_PRESETS)
+systemd-daemons: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemd-timers:  $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS_TIMERIMPL))
+	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do cp -pf "$$F" $(abs_top_builddir)/ || exit $$?; done
+systemd-presets: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
 
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)
