@@ -40,7 +40,6 @@ CONTRIB*.html
 Makefile.in
 Makefile
 !Makefile.am
-driver-nmap
 agent-netmon
 bios_web.la
 dshell
@@ -94,7 +93,6 @@ test-db-alert
 test-db
 test-db2
 test-log
-test-nmap-parse
 test-subprocess
 test-utils
 test-utils-plusplus
@@ -161,8 +159,6 @@ bios-agent-inventory.service
 bios-agent-nut.service
 !tools/bios-agent-netmon.service.in
 bios-agent-netmon.service
-!tools/bios-driver-nmap.service.in
-bios-driver-nmap.service
 !tools/bios-agent-dbstore.service.in
 bios-agent-dbstore.service
 !tools/bios-server-agent.service.in
@@ -207,7 +203,6 @@ tntnet.xml
 !src/agents
 !src/agents/dbstore
 !src/agents/netmon
-!src/agents/nmap
 !src/agents/nut
 !src/agents/server-agent
 !src/agents/th
