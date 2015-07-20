@@ -105,7 +105,7 @@ static bool
 }
 
 int
-    get_pdu_epdu_info
+    get_pdu_epdu_info_locatio_w_pos
         (tntdb::Connection &conn, 
          a_elmnt_id_t parent_id, 
          int &pdu_epdu_count, 
@@ -248,7 +248,7 @@ static db_a_elmnt_t
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
         // find a number of pdu/epdu in the rack
-        int ret = get_pdu_epdu_info (conn, parent_id, pdu_epdu_count, last_position);
+        int ret = get_pdu_epdu_info_locatio_w_pos (conn, parent_id, pdu_epdu_count, last_position);
         if ( ret )
             throw std::invalid_argument
                                 ("some problem with db, see log for more details");
