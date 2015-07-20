@@ -1,0 +1,75 @@
+<%pre>
+#include <subprocess.h>
+#include <cxxtools/split.h>
+#include <vector>
+#include <string>
+</%pre>
+<%cpp>
+std::string iface = request.getArg("iface");
+std::string nil;
+std::string address;
+</%cpp>
+<%cpp>
+{
+	std::vector<std::string> command;
+	command.push_back("augtool");
+	command.push_back("match");
+	command.push_back("/files/etc/network/interfaces/iface[*] ");
+	command.push_back(iface);
+	shared::output(command, address, nil);
+}
+if(address.empty()) {
+</%cpp>
+{ "error": "No configuration for interface <$ iface $> found" }
+<%cpp>
+	return HTTP_NOT_FOUND;
+}
+if(request.getMethod() == "GET") {
+	std::string method, ip, netmask, gateway;
+	std::vector<std::string> lines;
+	{
+    	std::string tmp;
+		std::vector<std::string> command;
+		command.push_back("augtool");
+		command.push_back("print");
+		command.push_back(address);
+    	shared::output(command, tmp, nil);
+		cxxtools::split("\n", tmp, std::back_inserter(lines));
+	}
+	for(auto i : lines) {
+		if(i.length() > address.length()) {
+			if(i.compare(address.length(), 6, "method") == 0) {
+				method = i.substr(address.length() + 10);
+				method.pop_back();
+			} else if(i.compare(address.length(), 7, "address") == 0) {
+				ip = i.substr(address.length() + 11);
+				ip.pop_back();
+			} else if(i.compare(address.length(), 7, "netmask") == 0) {
+				netmask = i.substr(address.length() + 11);
+				netmask.pop_back();
+			} else if(i.compare(address.length(), 7, "gateway") == 0) {
+				gateway = i.substr(address.length() + 11);
+				gateway.pop_back();
+			}
+		}
+	}
+</%cpp>
+{ "<$ iface $>":
+    {
+        "method": "<$ method $>"
+% if(!ip.empty()) {
+      , "address": "<$ ip $>"
+% }
+% if(!netmask.empty()) {
+      , "netmask": "<$ netmask $>"
+% }
+% if(!gateway.empty()) {
+      , "gateway": "<$ gateway $>"
+% }
+    }
+}
+<%cpp>
+} else {
+</%cpp>
+{ "error": "Not implemented yet" }
+% }
