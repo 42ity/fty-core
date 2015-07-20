@@ -50,6 +50,9 @@ class TopicCache {
 
         //\brief erase key from cache (in case of failure)
         void erase(const std::string& topic);
+         //\brief add a key to cache
+        void add(const std::string& topic);
+
     private:
         std::set<std::string> _cache;
         size_t _max;

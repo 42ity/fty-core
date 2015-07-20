@@ -25,7 +25,6 @@ bool TopicCache::has(const std::string& topic) {
     if (_max >= _cache.size())
         _cache.clear();
 
-    _cache.emplace(topic);
     return false;
 }
 
@@ -34,6 +33,13 @@ void TopicCache::erase(const std::string& topic) {
         return;
 
     _cache.erase(topic);
+}
+
+void TopicCache::add(const std::string& topic) {
+    if (_cache.count(topic) == 0)
+        return;
+
+    _cache.insert(topic);
 }
 
 //Notice for future developers - this functions is ugly and better to split to smaller
@@ -105,6 +111,8 @@ insert_into_measurement_again:
                            .execute();
 
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
+            if ( n != 0 )
+                c.add(topic);
         }
 
         st = conn.prepareCached(
@@ -144,7 +152,7 @@ insert_into_measurement_again:
                 " WHERE :name NOT IN (SELECT name FROM t_bios_discovered_device )"
              );
             uint32_t n = st.set("name", device_name).execute();
-            log_debug("[t_bios_measurement_topic]: new discovered device '%s' inserted %" PRIu32 " rows ",
+            log_debug("[t_discovered_device]: device '%s' inserted %" PRIu32 " rows ",
                       device_name ? device_name : "null", n);
             if( n == 1 ) {
                 // update also relation table
@@ -160,7 +168,7 @@ insert_into_measurement_again:
                     "   DD.id_discovered_device NOT IN ( SELECT id_discovered_device FROM t_bios_monitor_asset_relation )"
                 );
                 n = st.set("name", device_name).execute();
-                log_debug("[t_bios_measurement_topic]: t_bios_monitor_asset_relation inserted %" PRIu32 " rows ", n);
+                log_debug("[t_bios_monitor_asset_relation]: inserted %" PRIu32 " rows ", n);
                 goto insert_into_measurement_again; // successfully inserted into _discovered_device, save measurement one more time
             }
         }
