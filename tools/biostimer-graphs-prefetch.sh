@@ -53,9 +53,8 @@ BASE_URL_CALLER="$BASE_URL" # may be empty
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-# TODO: Set default paths via standard autoconf prefix-vars and .in conversions
-# TODO: Run as non-root, and use paths writable by that user (bios?) -- this
-#       may need separate service to create the /var/run subdirectory as root.
+# TODO: Set paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?)
 LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
@@ -63,13 +62,23 @@ FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
+include_cfg() {
+    [ -s "$1" ] && [ -r "$1" ] && \
+        logmsg_info "Using configuration file '$1'..." && \
+        . "$1"
+}
+
+for F in /etc/bios/biostimer-graphs-prefetch.conf \
+         /etc/bios/biostimer-graphs-prefetch.conf.local \
+; do include_cfg "$F"; done
+
 [ -z "$FETCHER" ] && \
         echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
         FETCHER=curl
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -w]"
+    echo "Usage: $0 [--opt 'arg'] [-C file.conf] [-j N] [-n | -v | -w]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -w    (default) If not dry-running, actually wet-run the $FETCHER"
@@ -77,6 +86,7 @@ usage() {
     echo "  -q    Suppress the debugging level to 0, disregarding defaults and envvars"
     echo "  -d    Bump up the debugging level to 99, disregarding defaults and envvars"
     echo "  -j N                Max parallel fetchers to launch (default $MAX_CHILDREN)"
+    echo "  -C file             Include a configuration file to override this run"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
     echo "  --host hostname     Where to place the REST API request"
@@ -94,6 +104,8 @@ while [ $# -gt 0 ]; do
         -n) ACTION="generate" ;;
         -v) ACTION="request-verbose" ;;
         -w|"") ACTION="request-quiet" ;;
+        -C) include_cfg "$2" || die 127 "Can not use config file '$2'"
+            shift ;;
         -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
             MAX_CHILDREN="$2"
             shift ;;
