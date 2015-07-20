@@ -1298,7 +1298,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
                       src/web/src/uptime.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
