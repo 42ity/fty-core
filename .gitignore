@@ -88,7 +88,6 @@ test-cidr
 test-computation
 test-csv
 test-loadcsv
-test-database
 test-db-alert
 test-db
 test-db2
