@@ -126,8 +126,8 @@ start_daemon(){
     fi
 
     if [ -x "${prefix}/${1}" ] ; then
-        /bin/rm -rf ~/${1}.log
-        nohup "${prefix}/${1}" >~/${1}.log 2>&1 &
+        /bin/rm -rf ${$BUILDSUBDIR}/${1}.log
+        nohup "${prefix}/${1}" > ${$BUILDSUBDIR}/${1}.log 2>&1 &
         sleep 5
         echo -n "${prefix}/$1 "
         pidof ${1} lt-${1}
