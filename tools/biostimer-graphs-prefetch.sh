@@ -132,6 +132,7 @@ while [ $# -gt 0 ]; do
                 LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
             [ -z "$TIMEFILE" ] && \
                 TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch${TAG}.time
+            unset S T A TAG
             shift ;;
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -q) CI_DEBUG=0 ; CI_DEBUG_CALLER=0 ;;
@@ -384,10 +385,6 @@ prepare_timestamps() {
 
     START_TIMESTAMP="$start_timestamp"
 
-    logmsg_debug $CI_DEBUGLEVEL_DEBUG \
-        "START_TIMESTAMP=$START_TIMESTAMP" \
-        "END_TIMESTAMP=$END_TIMESTAMP" >&2
-
     export START_TIMESTAMP END_TIMESTAMP
 }
 
@@ -558,6 +555,22 @@ run_getrestapi_strings_parallel() {
 
 ### script starts here ###
 prepare_timestamps
+
+logmsg_info 0 "`date`: ${_SCRIPT_NAME} ${_SCRIPT_ARGS}
+Active settings:
+  ACTION        $ACTION
+  LOCKFILE      $LOCKFILE
+  TIMEFILE      $TIMEFILE
+  STEPS         $STEPS
+  TYPES         $TYPES
+  CI_DEBUG      $CI_DEBUG
+  MAX_CHILDREN  $MAX_CHILDREN
+  FETCHER       $FETCHER
+  SOURCES_ALLOWED '$SOURCES_ALLOWED'
+  START_TIMESTAMP $START_TIMESTAMP
+  END_TIMESTAMP   $END_TIMESTAMP
+" >&2
+
 case "$ACTION" in
     generate)
         # Moderate logging - ERROR and WARN - by default
