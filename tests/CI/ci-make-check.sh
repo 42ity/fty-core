@@ -33,13 +33,13 @@ if [ -s "${MAKELOG}" ] ; then
     # Just in case, we still provide consistent configure flags
     echo "=========== auto-make (refresh) and install ================="
     ./autogen.sh --install-dir / --no-distclean --configure-flags \
-        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux --enable-ci-tests" \
         ${AUTOGEN_ACTION_MAKE} install 2>&1 | tee -a ${MAKELOG}
 else
     # Newly checked-out branch, rebuild
     echo "========= auto-configure, rebuild and install ==============="
     ./autogen.sh --install-dir / --configure-flags \
-        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+        "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux --enable-ci-tests" \
         ${AUTOGEN_ACTION_INSTALL} 2>&1 | tee ${MAKELOG}
 fi
 
