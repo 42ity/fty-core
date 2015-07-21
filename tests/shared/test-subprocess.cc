@@ -243,7 +243,7 @@ TEST_CASE("subprocess-terminate", "[subprocess][kill]") {
 }
 
 TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
-    std::vector<std::string> argv{"/bin/sleep", "2"};
+    std::vector<std::string> argv{"/bin/sleep", "20"};
     time_t start, stop;
     bool bret;
 
@@ -256,7 +256,7 @@ TEST_CASE("subprocess-destructor", "[subprocess][wait]") {
     } // destructor called here!
     stop = time(NULL);
     REQUIRE(stop != -1);
-    CHECK((stop - start) > 1);
+    CHECK((stop - start) < 20);
 }
 
 TEST_CASE("subprocess-external-kill", "[subprocess][wait]") {
