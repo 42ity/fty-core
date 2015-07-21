@@ -1519,6 +1519,28 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
     zlist_autofree(measurements);
 
     try{
+        tntdb::Statement st_name = conn.prepareCached(
+            " SELECT"
+            "   v1.name"
+            " FROM"
+            "   t_bios_discovered_device v1"
+            " WHERE v1.id_discovered_device = :deviceid"
+        );
+    
+        tntdb::Row row = st_name.set("deviceid", device_id).
+                                 selectRow();
+        log_debug ("[t_discovered_device] was %u rows selected", 1);
+
+
+        row[0].get(device_name);
+    }
+    catch (const std::exception &e) {
+        device_name = "";
+        zlist_destroy (&measurements);
+        LOG_END_ABNORMAL(e);
+        return NULL;
+    }
+    try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
             "   v.value, v.scale, v.topic"
@@ -1556,20 +1578,6 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
                              ).c_str());
         }
         
-        tntdb::Statement st_name = conn.prepareCached(
-            " SELECT"
-            "   v1.name"
-            " FROM"
-            "   t_bios_discovered_device v1"
-            " WHERE v1.id_discovered_device = :deviceid"
-        );
-    
-        tntdb::Row row = st_name.set("deviceid", device_id).
-                                 selectRow();
-        log_debug ("was %u rows selected", 1);
-
-
-        row[0].get(device_name);
 
     }
     catch (const std::exception &e) {

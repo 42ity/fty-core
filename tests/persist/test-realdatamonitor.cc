@@ -127,21 +127,20 @@ TEST_CASE("real_measurements: select_last_measurements", "[db][select][lastmeasu
     }
     REQUIRE (results == list_EXP);
     zlist_destroy (&measurements);
-    
-    //FAIL
-    id = NO_DEVICE_ID;
-    device_name = "";
-    measurements = select_last_measurements (conn, id, device_name);
-    CHECK ( device_name == "" );
-    REQUIRE ( measurements );
-    REQUIRE (zlist_size(measurements) == 0 );
-    zlist_destroy (&measurements);
 
     for ( auto id : ids )
     {
         auto ret = persist::delete_from_measurement_by_id(conn, id);
         REQUIRE ( ret.status == 1 );
     }
+ 
+    //FAIL
+    id = NO_DEVICE_ID;
+    device_name = "";
+    measurements = select_last_measurements (conn, id, device_name);
+    CHECK ( device_name == "" );
+    REQUIRE ( measurements == NULL );
+
 
 }
 
