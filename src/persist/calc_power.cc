@@ -144,7 +144,7 @@ static std::vector<std::string>
 
     std::vector <std::string> dvc{};
 
-    if ( border_devices.size() == 0 )
+    if ( border_devices.empty() )
         return dvc;
     // it is not a good idea to delete from collection while iterating it
     std::set <device_info_t> todelete{};

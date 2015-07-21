@@ -27,6 +27,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <sys/types.h>
 #include <signal.h>
 #include <time.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
 
 namespace shared {
 
@@ -65,9 +68,15 @@ SubProcess::SubProcess(Argv cxx_argv, int flags) :
 
 SubProcess::~SubProcess() {
     int _saved_errno = errno;
-    
-    //XXX: copy from cxxutils's Fork::~fork()
+   
+    // Graceful shutdown
+    if (isRunning())
+        kill(SIGTERM);
+    for (int i = 0; i<20 && isRunning(); i++) {
+        usleep(100);
+    }
     if (isRunning()) {
+        terminate();
         wait();
     }
 
@@ -116,6 +125,9 @@ bool SubProcess::run() {
     if (_fork.child()) {
 
         if (_inpair[0] != PIPE_DISABLED) {
+            int o_flags = fcntl(_inpair[0], F_GETFL);
+            int n_flags = o_flags & (~O_NONBLOCK);
+            fcntl(_inpair[0], F_SETFL, n_flags);
             ::dup2(_inpair[0], STDIN_FILENO);
             ::close(_inpair[1]);
         }
@@ -358,7 +370,7 @@ void ProcCacheMap::_push_cstr(pid_t pid, const char* str, bool push_stdout) {
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
@@ -371,7 +383,7 @@ void ProcCacheMap::_push_str(pid_t pid, const std::string& str, bool push_stdout
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
@@ -398,6 +410,47 @@ std::string read_all(int fd) {
         }
         sbuf.sputn(buf, strlen(buf));
     }
+    return sbuf.str();
+}
+
+std::string wait_read_all(int fd) {
+    static size_t BUF_SIZE = 4096;
+    char buf[BUF_SIZE+1];
+    ssize_t r;
+    int exit = 0;
+
+    int o_flags = fcntl(fd, F_GETFL);
+    int n_flags = o_flags | O_NONBLOCK;
+    fcntl(fd, F_SETFL, n_flags);
+
+    std::stringbuf sbuf;
+    memset(buf, '\0', BUF_SIZE+1);
+    errno = 0;
+    while (::read(fd, buf, BUF_SIZE) <= 0 &&
+           (errno == EAGAIN || errno == EWOULDBLOCK) && exit < 5000) {
+        usleep(1000);
+        errno = 0;
+        exit++;
+    }
+
+    sbuf.sputn(buf, strlen(buf));
+
+    exit = 0;
+    while (true) {
+        memset(buf, '\0', BUF_SIZE+1);
+        errno = 0;
+        r = ::read(fd, buf, BUF_SIZE);
+        if (r <= 0) {
+            if(exit > 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
+                break;
+            usleep(1000);
+            exit = 1;
+        } else {
+            exit = 0;
+        }
+        sbuf.sputn(buf, strlen(buf));
+    }
+    fcntl(fd, F_SETFL, o_flags);
     return sbuf.str();
 }
 

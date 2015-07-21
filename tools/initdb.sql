@@ -671,7 +671,7 @@ INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type
 SELECT @dummy_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "DUMMY_DEVICE";
 
 /* t_bios_client */
-INSERT INTO t_bios_client (name) VALUES ("nmap");
+INSERT INTO t_bios_client (name) VALUES ("nmap"); /* remove this ONLY if you are sure noone uses hard coded contast and it won't break ;-)*/
 INSERT INTO t_bios_client (name) VALUES ("mymodule");
 INSERT INTO t_bios_client (name) VALUES ("admin");
 INSERT INTO t_bios_client (name) VALUES ("NUT");
