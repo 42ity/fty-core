@@ -163,8 +163,8 @@ do_test_match() {
             ;;
     esac
 
-    out="/tmp/${test_name}.stdout.$$.log"
-    err="/tmp/${test_name}.stderr.$$.log"
+    out="${BUILDSUBDIR}/${test_name}.stdout.$$.log"
+    err="${BUILDSUBDIR}/${test_name}.stderr.$$.log"
 
     test_it "${test_name}"
     ${api_call} ${url} "${api_args}" > "${out}"  2> "${err}"
