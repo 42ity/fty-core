@@ -28,13 +28,6 @@ bool TopicCache::has(const std::string& topic) {
     return false;
 }
 
-void TopicCache::erase(const std::string& topic) {
-    if (_cache.count(topic) == 0)
-        return;
-
-    _cache.erase(topic);
-}
-
 void TopicCache::add(const std::string& topic) {
     if (_cache.count(topic) == 0)
         return;
@@ -177,8 +170,6 @@ insert_into_measurement_again:
         ret.status = 1;
         return ret;
     } catch(const std::exception &e) {
-        //something failed, remove topic from cache for sure
-        c.erase(topic);
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_INTERNAL;

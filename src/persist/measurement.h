@@ -48,8 +48,6 @@ class TopicCache {
         //\brief check if value is in cache or not
         bool has(const std::string& topic);
 
-        //\brief erase key from cache (in case of failure)
-        void erase(const std::string& topic);
          //\brief add a key to cache
         void add(const std::string& topic);
 
