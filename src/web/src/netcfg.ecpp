@@ -1,8 +1,10 @@
 <%pre>
-#include <subprocess.h>
 #include <cxxtools/split.h>
+#include <cxxtools/jsondeserializer.h>
 #include <vector>
 #include <string>
+
+#include "subprocess.h"
 
 using namespace shared;
 
@@ -24,7 +26,7 @@ std::string real_out(std::string in, bool key_value = true) {
 </%pre>
 <%thread scope="global">
 // TODO: Figure out how to make it work without -e
-Argv exe = { "augtool", "-e" };
+Argv exe = { "sudo", "augtool", "-e" };
 SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 </%thread>
 <%cpp>
@@ -50,20 +52,50 @@ if(address.empty()) {
 <%cpp>
     return HTTP_NOT_FOUND;
 }
-if(request.getMethod() == "GET") {
-    std::string method, ip, netmask, gateway;
-    command = "get " + address + "/method\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    method = real_out(wait_read_all(augtool.getStdout()));
-    command = "get " + address + "/address\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    ip = real_out(wait_read_all(augtool.getStdout()));
-    command = "get " + address + "/netmask\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    netmask = real_out(wait_read_all(augtool.getStdout()));
-    command = "get " + address + "/gateway\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    gateway = real_out(wait_read_all(augtool.getStdout()));
+if(request.getMethod() == "PUT") {
+    std::stringstream input(request.getBody(), std::ios_base::in);
+    cxxtools::SerializationInfo si;
+    cxxtools::SerializationInfo rsi;
+    cxxtools::JsonDeserializer deserializer(input);
+    deserializer.deserialize(si);
+    cxxtools::SerializationInfo* it = NULL;
+    std::string val;
+    rsi = si.getMember(iface);
+
+#define AUG_SET(NAME) \
+    printf("Searching for " NAME " in %s\n",rsi.name().c_str()); \
+    it = rsi.findMember(NAME); \
+    if(it != NULL) { \
+        printf("Found " NAME "\n"); \
+        it->getValue(val); \
+        command = "set " + address + "/" NAME " " + val + "\n"; \
+        not_interested = write(augtool.getStdin(), command.c_str(), command.length()); \
+        nil = wait_read_all(augtool.getStdout()); \
+        printf("%s", nil.c_str()); \
+    }
+
+    AUG_SET("method");
+    AUG_SET("address");
+    AUG_SET("netmask");
+    AUG_SET("gateway");
+    command = "save\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    printf("%s", nil.c_str());
+}
+
+std::string method, ip, netmask, gateway;
+
+#define AUG_GET(NAME, VAL) \
+    command = "get " + address + "/" NAME "\n"; \
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length()); \
+    VAL = real_out(wait_read_all(augtool.getStdout()));
+
+AUG_GET("method", method);
+AUG_GET("address", ip);
+AUG_GET("netmask", netmask);
+AUG_GET("gateway", gateway);
+
 </%cpp>
 { "<$ iface $>":
     {
@@ -79,8 +111,3 @@ if(request.getMethod() == "GET") {
 % }
     }
 }
-<%cpp>
-} else {
-</%cpp>
-{ "error": "Not implemented yet" }
-% }

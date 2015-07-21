@@ -54,7 +54,7 @@ zmsg_t *asset_manager::get_items(std::string type) {
     }
 
     _scoped_zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
-    zmsg_t *ret = persist::process_message(&get_elements);
+    zmsg_t *ret = persist::asset_msg_process(&get_elements);
     zmsg_destroy(&get_elements);
 
     return ret;
