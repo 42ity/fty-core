@@ -3,56 +3,68 @@
 #include <cxxtools/split.h>
 #include <vector>
 #include <string>
-</%pre>
-<%cpp>
-std::string iface = request.getArg("iface");
-std::string nil;
-std::string address;
-</%cpp>
-<%cpp>
-{
-	std::vector<std::string> command;
-	command.push_back("augtool");
-	command.push_back("match");
-	command.push_back("/files/etc/network/interfaces/iface[*] ");
-	command.push_back(iface);
-	shared::output(command, address, nil);
+
+using namespace shared;
+
+std::string real_out(std::string in, bool key_value = true) {
+    std::vector<std::string> spl;
+    printf("%s\n", in.c_str());
+    cxxtools::split("\n", in, std::back_inserter(spl));
+    if(spl.size() != 3)
+        return "";
+    auto pos = spl[1].find_first_of("=");
+    if(pos == std::string::npos) {
+        if(key_value)
+            return "";
+        return spl[1];
+    }
+    return spl[1].substr(pos + 2);
 }
+
+</%pre>
+<%thread scope="global">
+// TODO: Figure out how to make it work without -e
+Argv exe = { "augtool", "-e" };
+SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
+</%thread>
+<%cpp>
+std::string command;
+std::string nil;
+std::string iface = request.getArg("iface");
+int not_interested;
+augtool.run();
+command = "help\n";
+not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+nil = wait_read_all(augtool.getStdout());
+if(!augtool.isRunning()) {
+</%cpp>
+{ "error": "Can't start augtool" }
+<%cpp>
+}
+std::string address;
+command = "match /files/etc/network/interfaces/iface[*] " + iface + "\n";
+not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+address = real_out(wait_read_all(augtool.getStdout()), false);
 if(address.empty()) {
 </%cpp>
 { "error": "No configuration for interface <$ iface $> found" }
 <%cpp>
-	return HTTP_NOT_FOUND;
+    return HTTP_NOT_FOUND;
 }
 if(request.getMethod() == "GET") {
-	std::string method, ip, netmask, gateway;
-	std::vector<std::string> lines;
-	{
-    	std::string tmp;
-		std::vector<std::string> command;
-		command.push_back("augtool");
-		command.push_back("print");
-		command.push_back(address);
-    	shared::output(command, tmp, nil);
-		cxxtools::split("\n", tmp, std::back_inserter(lines));
-	}
-	for(auto i : lines) {
-		if(i.length() > address.length()) {
-			if(i.compare(address.length(), 6, "method") == 0) {
-				method = i.substr(address.length() + 10);
-				method.pop_back();
-			} else if(i.compare(address.length(), 7, "address") == 0) {
-				ip = i.substr(address.length() + 11);
-				ip.pop_back();
-			} else if(i.compare(address.length(), 7, "netmask") == 0) {
-				netmask = i.substr(address.length() + 11);
-				netmask.pop_back();
-			} else if(i.compare(address.length(), 7, "gateway") == 0) {
-				gateway = i.substr(address.length() + 11);
-				gateway.pop_back();
-			}
-		}
-	}
+    std::string method, ip, netmask, gateway;
+    command = "get " + address + "/method\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    method = real_out(wait_read_all(augtool.getStdout()));
+    command = "get " + address + "/address\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    ip = real_out(wait_read_all(augtool.getStdout()));
+    command = "get " + address + "/netmask\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    netmask = real_out(wait_read_all(augtool.getStdout()));
+    command = "get " + address + "/gateway\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    gateway = real_out(wait_read_all(augtool.getStdout()));
 </%cpp>
 { "<$ iface $>":
     {
