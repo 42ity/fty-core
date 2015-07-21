@@ -5,6 +5,8 @@ Requires=mysql.service
 
 [Service]
 Type=oneshot
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios
 ExecStart=@libexecdir@/bios/db-init
 
 [Install]

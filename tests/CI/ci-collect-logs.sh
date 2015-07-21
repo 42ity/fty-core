@@ -77,7 +77,7 @@ if [ ! "$SUT_HOST" ] ; then
 fi
 
 log_list() {
-    REMCMD='find . -type f -name '"'"'*.log'"'"
+    REMCMD='find . -type f -name '"'"'*.log'"'"' -o -name '"'"'*.trs'"'"' -o -name '"'"'*.xml'"'"' -o -name '"'"'*.out*'"'"' -o -name '"'"'*.err*'"'"' | grep -v cppcheck.xml'
     sut_run "$REMCMD"
 }
 
