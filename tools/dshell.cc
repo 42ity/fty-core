@@ -16,7 +16,6 @@ FUTURE:
 
 #include "asset_msg.h"
 #include "common_msg.h"
-#include "powerdev_msg.h"
 
 #include "cleanup.h"
 
@@ -88,13 +87,6 @@ int main (int argc, char *argv [])
             _scoped_asset_msg_t *asset_msg = asset_msg_decode (&msg);
             asset_msg_print (asset_msg);
             asset_msg_destroy (&asset_msg);
-            // TODO: For some messages it makes sense to not use generic _print function
-        }
-        else if (is_powerdev_msg (msg)) {
-            printf ("\n");
-            _scoped_powerdev_msg_t *powerdev_msg = powerdev_msg_decode (&msg);
-            powerdev_msg_print (powerdev_msg);
-            powerdev_msg_destroy (&powerdev_msg);
             // TODO: For some messages it makes sense to not use generic _print function
         }
         else { // assume string
