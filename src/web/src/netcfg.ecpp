@@ -31,10 +31,9 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 std::string command;
 std::string nil;
 std::string iface = request.getArg("iface");
-int not_interested;
 augtool.run();
 command = "help\n";
-not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+write(augtool.getStdin(), command.c_str(), command.length());
 nil = wait_read_all(augtool.getStdout());
 if(!augtool.isRunning()) {
 </%cpp>
@@ -43,7 +42,7 @@ if(!augtool.isRunning()) {
 }
 std::string address;
 command = "match /files/etc/network/interfaces/iface[*] " + iface + "\n";
-not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+write(augtool.getStdin(), command.c_str(), command.length());
 address = real_out(wait_read_all(augtool.getStdout()), false);
 if(address.empty()) {
 </%cpp>
@@ -54,16 +53,16 @@ if(address.empty()) {
 if(request.getMethod() == "GET") {
     std::string method, ip, netmask, gateway;
     command = "get " + address + "/method\n";
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    write(augtool.getStdin(), command.c_str(), command.length());
     method = real_out(wait_read_all(augtool.getStdout()));
     command = "get " + address + "/address\n";
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    write(augtool.getStdin(), command.c_str(), command.length());
     ip = real_out(wait_read_all(augtool.getStdout()));
     command = "get " + address + "/netmask\n";
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    write(augtool.getStdin(), command.c_str(), command.length());
     netmask = real_out(wait_read_all(augtool.getStdout()));
     command = "get " + address + "/gateway\n";
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    write(augtool.getStdin(), command.c_str(), command.length());
     gateway = real_out(wait_read_all(augtool.getStdout()));
 </%cpp>
 { "<$ iface $>":
