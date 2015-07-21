@@ -103,7 +103,6 @@ process
         json_out.replace (json_out.find ("##END_TS##"), strlen ("##END_TS##"), std::to_string (end_ts));
 
         std::map <int64_t, double> samples;
-        assert (samples.empty ());
 
         int64_t start_sampled_ts = 0;
         std::string data_str; // json; member 'data'

@@ -46,6 +46,19 @@ byte asset_manager::type_to_byte(std::string type) {
     return ret;
 }
 
+zmsg_t *asset_manager::get_items(std::string type) {
+    log_debug("Trying to get elements of type %s", type.c_str());
+    byte real_type = asset_manager::type_to_byte(type);
+    if ( real_type == (byte)asset_type::UNKNOWN ) {
+        return NULL;
+    }
+
+    _scoped_zmsg_t *get_elements = asset_msg_encode_get_elements(real_type);
+    zmsg_t *ret = persist::asset_msg_process(&get_elements);
+    zmsg_destroy(&get_elements);
+
+    return ret;
+}
 
 std::string asset_manager::byte_to_type(byte type) {
     switch(type) {

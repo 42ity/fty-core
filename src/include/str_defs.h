@@ -1,10 +1,6 @@
 #ifndef SRC_INCLUDE_STR_DEFS_H__
 #define SRC_INCLUDE_STR_DEFS_H__
 
-// Archaisms, to be removed
-extern const char* DRIVER_NMAP_SOCK;
-extern const char* DRIVER_NMAP_REPLY;
-
 // bios malamute endpoint
 extern const char* MLM_ENDPOINT;
 
