@@ -84,13 +84,6 @@ int main (int argc, char *argv [])
             common_msg_print (common_msg); // TODO: For some common messages it might make sense not use generic _print function
             common_msg_destroy (&common_msg);
         }
-        else if (is_asset_msg (msg)) {
-            printf ("\n");
-            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&msg);
-            asset_msg_print (asset_msg);
-            asset_msg_destroy (&asset_msg);
-            // TODO: For some messages it makes sense to not use generic _print function
-        }
         else if (is_nmap_msg (msg)) {
             printf ("\n");
             _scoped_nmap_msg_t *nmap_msg = nmap_msg_decode (&msg);
