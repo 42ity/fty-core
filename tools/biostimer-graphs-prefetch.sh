@@ -104,7 +104,8 @@ usage() {
 }
 
 [ -z "$FETCHER" ] && \
-        echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
+        logmsg_error "WARNING: Neither curl nor wget were found, wet-run mode would fail"
+[ -z "$FETCHER" ] && \
         FETCHER=curl
 
 ACTION="request-quiet"
@@ -551,17 +552,23 @@ case "$ACTION" in
     generate)
         # Moderate logging - ERROR and WARN - by default
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=2
+        [ -z "$FETCHER" ] && \
+                FETCHER=curl
         generate_getrestapi_strings "$@"
         exit $?
         ;;
     request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
+        [ -z "$FETCHER" ] && \
+                die "No usable FETCHER was detected on tis system"
         run_getrestapi_strings "$@"
         exit $?
         ;;
     request-quiet) # default / quiet mode for timed runs
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
+        [ -z "$FETCHER" ] && \
+                die "No usable FETCHER was detected on tis system"
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
