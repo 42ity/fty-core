@@ -33,6 +33,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 std::string command;
 std::string nil;
 std::string iface = request.getArg("iface");
+
 augtool.run();
 command = "help\n";
 write(augtool.getStdin(), command.c_str(), command.length());
@@ -69,7 +70,7 @@ if(request.getMethod() == "PUT") {
         printf("Found " NAME "\n"); \
         it->getValue(val); \
         command = "set " + address + "/" NAME " " + val + "\n"; \
-        not_interested = write(augtool.getStdin(), command.c_str(), command.length()); \
+        write(augtool.getStdin(), command.c_str(), command.length()); \
         nil = wait_read_all(augtool.getStdout()); \
         printf("%s", nil.c_str()); \
     }
@@ -79,7 +80,7 @@ if(request.getMethod() == "PUT") {
     AUG_SET("netmask");
     AUG_SET("gateway");
     command = "save\n";
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
     printf("%s", nil.c_str());
 }
@@ -88,7 +89,7 @@ std::string method, ip, netmask, gateway;
 
 #define AUG_GET(NAME, VAL) \
     command = "get " + address + "/" NAME "\n"; \
-    not_interested = write(augtool.getStdin(), command.c_str(), command.length()); \
+    write(augtool.getStdin(), command.c_str(), command.length()); \
     VAL = real_out(wait_read_all(augtool.getStdout()));
 
 AUG_GET("method", method);
