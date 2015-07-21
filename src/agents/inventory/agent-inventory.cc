@@ -1,7 +1,6 @@
 #include <string>
 #include <ctime>
 #include "bios_agent.h"
-#include "powerdev_msg.h"
 #include "common_msg.h"
 #include "defs.h"
 #include "log.h"

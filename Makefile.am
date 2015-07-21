@@ -401,11 +401,7 @@ libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.c \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
-			src/msg/common_msg.h \
-			src/msg/compute_msg.c \
-			src/msg/compute_msg.h \
-			src/msg/powerdev_msg.c \
-			src/msg/powerdev_msg.h
+			src/msg/common_msg.h
 
 libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
 
@@ -1014,7 +1010,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
 			src/shared/asset_types.h \
-			src/msg/powerdev_msg.h \
 			src/agents/nut/nut-driver.h
 
 #FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
