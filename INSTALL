@@ -124,7 +124,7 @@ build-results repositories, including the following Linux OS releases:
  * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
 These packages include such build and/or run-time dependencies as
-libvariant, iproute2, mariadb, zeromq, nmap and so on.
+libvariant, iproute2, mariadb, zeromq and so on.
 
 [NOTE]
 *NOTE*: See the document 'INSTALL-referenceOS-debian8' (or its derivative
@@ -572,13 +572,6 @@ Beside the setup discussed above, no extra configuration for SASL and PAM
 is needed on the target Debian 8 platform -- everything is pre-integrated
 by the OS.
 
-
-
-Other packages
-~~~~~~~~~~~~~~
-----
-:; apt-get install -y nmap msmtp
-----
 
 
 Configure and build the $BIOS project sources
