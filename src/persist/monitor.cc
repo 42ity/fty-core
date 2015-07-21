@@ -1521,12 +1521,10 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.value, v.scale, v.topic, v1.name"
+            "   v.value, v.scale, v.topic"
             " FROM"
-            "   v_web_measurement_last_10m v,"
-            "   t_bios_discovered_device v1"
-            " WHERE v.device_id = :deviceid AND"
-            "       v1.id_discovered_device = :deviceid"
+            "   v_web_measurement_last_10m v"
+            " WHERE v.device_id = :deviceid"
         );
     
         tntdb::Result result = st.set("deviceid", device_id).
@@ -1552,14 +1550,27 @@ zlist_t* select_last_measurements (tntdb::Connection &conn, m_dvc_id_t device_id
             row[2].get(topic);
             assert ( !topic.empty() );   // database is corrupted
             
-            // TODO this field would be updated a lot of time with the same value
-            row[3].get (device_name);
-            
             zlist_push (measurements, (char *)( 
                              std::to_string (value) + ":" +
                              std::to_string (scale) + ":" + topic
                              ).c_str());
         }
+        
+        tntdb::Statement st_name = conn.prepareCached(
+            " SELECT"
+            "   v1.name"
+            " FROM"
+            "   t_bios_discovered_device v1"
+            " WHERE v1.id_discovered_device = :deviceid"
+        );
+    
+        tntdb::Row row = st_name.set("deviceid", device_id).
+                                 selectRow();
+        log_debug ("was %u rows selected", 1);
+
+
+        row[0].get(device_name);
+
     }
     catch (const std::exception &e) {
         zlist_destroy (&measurements);
@@ -1611,7 +1622,7 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_BADINPUT, 
                                                         e.what(), NULL);
     }
-    std::string device_name = "NOT IMPLEMENTED";
+    std::string device_name = "";
     _scoped_zlist_t* last_measurements = 
             select_last_measurements(conn, device_id_monitor, device_name);
     // TODO take care about it
@@ -1620,13 +1631,6 @@ zmsg_t* _get_last_measurements(const char* url, common_msg_t* getmsg)
         log_warning ("end: abnormal");
         return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_INTERNAL, 
             "error during selecting last measurements occured" , NULL);
-    }
-    else if ( zlist_size (last_measurements) == 0 )
-    {
-        zlist_destroy (&last_measurements);
-        log_info ("end: notfound");
-        return  common_msg_encode_fail (BIOS_ERROR_DB, DB_ERROR_NOTFOUND, 
-                "there is no measurement for the specified device" , NULL);
     }
     else
     {
