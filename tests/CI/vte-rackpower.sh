@@ -167,7 +167,7 @@ set -o pipefail 2>/dev/null || true
 set -e
 { loaddb_file ./tools/initdb.sql && \
   loaddb_file ./tools/rack_power.sql \
-; } 2>&1 | tee /tmp/ci-rackpower-vte.log
+; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
 set +e
 
 # ***** COMMON FUNCTIONS ***
@@ -182,7 +182,7 @@ rem_copy_file() {
     # *** rem_cmd()
 #Send remote command from MS to be performed in SUT
 rem_cmd() {
-    sut_run "$@" | tee -a /tmp/ci-rackpower-vte.log
+    sut_run "$@" | tee -a $CHECKOUTDIR/ci-rackpower-vte.log
 }
     # *** set_values_in_ups()
 set_values_in_ups() {
