@@ -26,7 +26,7 @@ std::string real_out(std::string in, bool key_value = true) {
 </%pre>
 <%thread scope="global">
 // TODO: Figure out how to make it work without -e
-Argv exe = { "augtool", "-e" };
+Argv exe = { "sudo", "augtool", "-e" };
 SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 </%thread>
 <%cpp>
@@ -79,6 +79,10 @@ if(request.getMethod() == "PUT") {
     AUG_SET("address");
     AUG_SET("netmask");
     AUG_SET("gateway");
+    command = "save\n";
+    not_interested = write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    printf("%s", nil.c_str());
 }
 
 std::string method, ip, netmask, gateway;
