@@ -143,7 +143,7 @@ trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
     # *** temporary dsh file ***
-DSH_FILE_REMOTE="/tmp/temp-ci-netmon-vte-dshell-$$.log"
+DSH_FILE_REMOTE="$BUILDSUBDIR/temp-ci-netmon-vte-dshell-$$.log"
 
 mkdir -p "$BUILDSUBDIR/tests/CI" || die "Can't create '$BUILDSUBDIR/tests/CI/'"
 DSH_FILE=$(mktemp -p "$BUILDSUBDIR/tests/CI/")
