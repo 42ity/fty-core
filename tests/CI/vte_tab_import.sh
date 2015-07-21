@@ -1,4 +1,4 @@
-#/!bin/sh
+#!/bin/bash
 
 # Copyright (C) 2014 Eaton
 #
@@ -10,7 +10,7 @@
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.right
+# GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
@@ -34,7 +34,7 @@
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
-    # *** tools directory containing tools/initdb.sql tools/bam_import_16_tab_008.csv present on MS 
+    # *** tools directory containing tools/initdb.sql tools/bam_vte_tab_import.csv present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh and scriptlib.sh library files
 
 # ***** GLOBAL VARIABLES *****
@@ -105,9 +105,6 @@ SUT_IS_REMOTE=yes
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
-ERRORS=0
-SUCCESSES=0
-
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
@@ -127,7 +124,7 @@ set +e
 # ***** POST THE CSV FILE *****
 ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 
-# Import the tests/persist/test-loadcsv.cc.csv file
+# Import the bam_vte_tab_import.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/DC008.log >&1)
 
 grep -q '"imported_lines" : 19' /tmp/DC008.log || die "ERROR : 'Test of the number of imported lines FAILED'"
