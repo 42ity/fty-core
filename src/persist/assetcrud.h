@@ -23,7 +23,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_PERSIST_ASSETCRUD_H_
 #define SRC_PERSIST_ASSETCRUD_H_
 
-#include "asset_msg.h"
 #include "dbtypes.h"
 #include "defs.h"
 #include "dbhelpers.h"
