@@ -402,8 +402,6 @@ libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
 			src/msg/common_msg.h \
-			src/msg/compute_msg.c \
-			src/msg/compute_msg.h \
 			src/msg/powerdev_msg.c \
 			src/msg/powerdev_msg.h
 
