@@ -5,6 +5,8 @@ Requires=malamute.service
 
 [Service]
 Type=simple
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios
 ExecStart=@libexecdir@/bios/server-agent
 
 [Install]
