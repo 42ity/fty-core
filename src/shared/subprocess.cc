@@ -370,7 +370,7 @@ void ProcCacheMap::_push_cstr(pid_t pid, const char* str, bool push_stdout) {
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
@@ -383,7 +383,7 @@ void ProcCacheMap::_push_str(pid_t pid, const std::string& str, bool push_stdout
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
