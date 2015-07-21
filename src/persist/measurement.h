@@ -46,7 +46,7 @@ class TopicCache {
         TopicCache& operator=(TopicCache&& other) = delete;
 
         //\brief check if value is in cache or not
-        bool has(const std::string& topic);
+        bool has(const std::string& topic) const;
 
          //\brief add a key to cache
         void add(const std::string& topic);
