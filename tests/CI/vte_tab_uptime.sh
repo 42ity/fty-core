@@ -122,7 +122,7 @@ loaddb_file ./tools/initdb.sql 2>&1 | tee /tmp/vte-tab.log
 set +e
 
 # ***** POST THE CSV FILE *****
-ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_total_power_2_DC.csv"
+ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_uptime_2_DC.csv"
 
 # Import the bam_import_16_vte_total_power_2_DC.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import_TP.log >&1)
