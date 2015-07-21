@@ -44,28 +44,6 @@ BIOS-354 :
 Upcoming CLEANUP-UP cycle :
 ------------------------
 
-==== src/drivers/nmap/nmap-parse.cc ====
--> move the file into a namespace, suggestion: drivers::nmap
--> "hoststate" constants (currently string literals & integers) - expose in
-   a namespace; probably as static consts
--> hoststate_byte(), byte_hoststate - namespace; rename
--> state2str; str2state - namespace; ?rename; rework uint8_t; constants 
--> str2method doesn't have a conterpart - namespace; constants
--> matryoshka2frame - unit test; namespace, suggestion: shared::zmq
--> there is some code duplication - at least take a look and make a comment
-
-==== src/drivers/nmap/nmap-parse.h ====
--> bad header guard name
--> namespace
-
-==== src/drivers/nmap/nmap-driver.h ====
--> bad header guard name
--> namespace;
--> take a moment to think about what and how to expose 
-
-==== src/drivers/nmap/nmap.cc  ====
--> namespace
-
 ==== src/drivers/nut/nut-driver.h  ====
 -> bad header guard
 -> namespace

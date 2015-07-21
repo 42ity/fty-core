@@ -64,9 +64,9 @@ if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut driver-nmap agent-netmon
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-netmon
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
-    >/tmp/web-test.log 2>&1 &
+    >> ${BUILDSUBDIR}/web-test.log 2>&1 &
 WEBTESTPID=$!
 
 # TODO: this requirement should later become the REST AGENT
