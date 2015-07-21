@@ -192,15 +192,6 @@ process_message(const std::string& url, zmsg_t *msg) {
     msg2 = zmsg_dup(msg);
     zmsg_pop(msg2);
     assert(msg2);
-    _scoped_powerdev_msg_t *powerdev_msg = powerdev_msg_decode(&msg2);
-    if (powerdev_msg) {
-        //TODO: check the log level!
-        powerdev_msg_print(powerdev_msg);
-        return powerdev_msg_process(url, *powerdev_msg);
-    }
-    msg2 = zmsg_dup(msg);
-    zmsg_pop(msg2);
-    assert(msg2);
     _scoped_common_msg_t *common_msg = common_msg_decode(&msg2);
     if (common_msg) {
         //TODO: check the log level!
@@ -290,7 +281,7 @@ process_networks(
     ymsg_destroy(in_p);
 };
 
-// * \brief processes the powerdev_msg message
+// * \brief processes the common_msg message
 /**
  * ASSUMPTION: different drivers should provide a consistent information:
  * DriverA reads voltageA as key="voltage", subkey = 1;
@@ -456,135 +447,6 @@ bool insert_new_client_info(const char* url, common_msg_t* msg)
     return result;
 };
 
-
-/**
- * \brief processes the powerdev_msg
- *
- * \param url - a connection to the database
- * \param msg - a message to be processed
- *
- * \return  true  - if message was processed successfully
- *          false - if message was ignored
- */
-bool
-powerdev_msg_process (const std::string& url, const powerdev_msg_t& msg)
-{
-    powerdev_msg_t& msg_c = const_cast<powerdev_msg_t&>(msg);
-    int msg_id            = powerdev_msg_id (&msg_c);
-
-    bool result = false;
-    switch (msg_id) {
-
-        case POWERDEV_MSG_POWERDEV_STATUS:
-        {
-            const char* devicename = powerdev_msg_deviceid (&msg_c);
-            const char* devicetype = powerdev_msg_type (&msg_c);
-
-            const char* clientname = "NUT";
-
-            // look for a client
-            _scoped_common_msg_t* retClient = select_client(url.c_str(), clientname);
-
-            m_clnt_id_t client_id = 0;
-            int msgid = common_msg_id (retClient);
-
-            if ( msgid  == COMMON_MSG_FAIL )
-                // the client was not found
-                log_error("client with name='%s' was not found, message was ignored", clientname);
-            else if ( msgid == COMMON_MSG_RETURN_CLIENT )
-            {
-                client_id = common_msg_rowid (retClient); // the client was found
-
-                // look for a device
-                // device is indicated by devicename and devicetype
-                _scoped_common_msg_t* retDevice = select_device(url.c_str(), devicetype, devicename);
-
-                m_dvc_id_t device_id = 0;
-                msgid = common_msg_id (retDevice);
-
-                if ( msgid == COMMON_MSG_FAIL )
-                {
-                    // the device was not found, then insert new device
-                    _scoped_common_msg_t* newDevice = insert_disc_device(url.c_str(), devicetype, devicename);
-
-                    int newmsgid = common_msg_id (newDevice);
-
-                    if ( newmsgid  == COMMON_MSG_FAIL )
-                        // the device was not inserted
-                        log_info("device with name='%s' and type='%s' was not inserted,"
-                            "message was ignored", devicename, devicetype);
-                    else if ( newmsgid == COMMON_MSG_DB_OK )
-                        device_id = common_msg_rowid ( newDevice ); // the device was inserted
-                    else
-                        assert (false); // unknown response
-                    common_msg_destroy (&newDevice);
-                }
-                else if ( msgid == COMMON_MSG_RETURN_DEVICE )
-                    // the device was found
-                    device_id = common_msg_rowid (retDevice);
-                else
-                    assert (false); // unknown response
-
-                common_msg_destroy (&retDevice);
-
-                if (device_id != 0 ) // device was found or inserted
-                {
-                     // create blob information
-                     _scoped_zmsg_t *zmsg = powerdev_msg_encode_powerdev_status (
-                         powerdev_msg_deviceid(&msg_c),
-                         powerdev_msg_model(&msg_c),
-                         powerdev_msg_manufacturer(&msg_c),
-                         powerdev_msg_serial(&msg_c),
-                         powerdev_msg_type(&msg_c),
-                         powerdev_msg_status(&msg_c),
-                         powerdev_msg_otherproperties(&msg_c)
-                    );
-                    assert (zmsg);
-                    _scoped_byte *encoded = NULL;
-                    size_t infolen = zmsg_encode (zmsg, &encoded);
-                    assert (encoded);
-                    // inserting into client_info
-                    _scoped_common_msg_t* newClientInfo = insert_client_info
-                                    (url.c_str(), device_id, client_id, encoded, infolen);
-                    assert (newClientInfo);
-                    msgid = common_msg_id (newClientInfo);
-                    if ( msgid == COMMON_MSG_FAIL )
-                        log_info("information about device name='%s' and type='%s' from the client='%s'"
-                            "was not inserted into v_bios_client_info", devicename,devicetype,clientname);
-                        // the info was not inserted
-                    else if ( msgid == COMMON_MSG_DB_OK )
-                    {
-                        // some code for testing
-                        // common_msg_t* nn = select_client_info(url.c_str(), common_msg_rowid(newClientInfo));
-                        // assert (nn);
-                        // zmsg_t* nnmsg = common_msg_msg(nn);
-                        // assert (nnmsg);
-                        // common_msg_t* newClientInfo1 = common_msg_decode (&nnmsg);
-                        // assert (newClientInfo1);
-                        // zchunk_t* ch = common_msg_info(newClientInfo1);
-                        // assert(ch);
-                        // size_t ss = zchunk_size(ch);
-                        // zmsg_t* nm = zmsg_decode (zchunk_data(ch), ss);
-                        // powerdev_msg_t* mm = powerdev_msg_decode (&nm);
-                        // powerdev_msg_print(mm);
-                        result = true;
-                    }
-                    else
-                        assert (false); // unknown response
-                    common_msg_destroy (&newClientInfo);
-                    FREE0 (encoded)
-                    zmsg_destroy (&zmsg);
-                }
-            }
-            else
-                assert (false); // unknown response
-            common_msg_destroy (&retClient);
-        }   // end case
-
-    } // end switch
-
-    return result;
-}
 
 /**
  * \brief Processes message of type common_msg_t

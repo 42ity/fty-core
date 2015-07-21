@@ -13,7 +13,6 @@
 #ifdef LEGACY_PROTOCOL
 #include "asset_msg.h"
 #include "common_msg.h"
-#include "powerdev_msg.h"
 #endif
 
 #ifndef __GNUC__
@@ -44,9 +43,6 @@ static inline void _destroy_common_msg (common_msg_t **self_p) {
     common_msg_destroy (self_p);
 }
 
-static inline void _destroy_powerdev_msg (powerdev_msg_t **self_p) {
-    powerdev_msg_destroy (self_p);
-}
 #endif
 
 static inline void _destroy_zactor (zactor_t **self_p) {
@@ -109,7 +105,6 @@ static inline void _destroy_mlm_client (mlm_client_t **self_p) {
 #ifdef LEGACY_PROTOCOL
 #define _scoped_asset_msg_t     _cleanup_(_destroy_asset_msg) asset_msg_t
 #define _scoped_common_msg_t    _cleanup_(_destroy_common_msg) common_msg_t
-#define _scoped_powerdev_msg_t  _cleanup_(_destroy_powerdev_msg) powerdev_msg_t
 #endif
 
 #define _scoped_zactor_t    _cleanup_(_destroy_zactor) zactor_t
