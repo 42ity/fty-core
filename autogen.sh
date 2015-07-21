@@ -190,16 +190,16 @@ if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DS
         mk-build-deps "$MKBD_DSC" && [ -s "$MKBD_DEB" ] && \
         { echo "mk-build-deps install: Trying direct invokation..."
           export DEBIAN_FRONTEND=noninteractive
-          dpkg -i "$MKBD_DEB" && \
-          dpkg --configure -a && \
+          dpkg --force-all -i "$MKBD_DEB" && \
           apt-get --yes --force-yes -f -q \
                 -o Dpkg::Options::="--force-confdef" \
                 -o Dpkg::Options::="--force-confold" \
-                install; } || \
+                install && \
+          dpkg --configure -a ; } || \
         { echo "mk-build-deps install: Retrying sudo..."
-          sudo "export DEBIAN_FRONTEND=noninteractive ; dpkg -i '$MKBD_DEB' && dpkg --configure -a && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install"; } || \
+          sudo sh -c "export DEBIAN_FRONTEND=noninteractive ; dpkg --force-all -i '$MKBD_DEB' && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install && dpkg --configure -a"; } || \
         { echo "mk-build-deps install: Retrying su..."
-          su - -c "export DEBIAN_FRONTEND=noninteractive ; dpkg -i '$MKBD_DEB' && dpkg --configure -a && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install"; }
+          su - -c "export DEBIAN_FRONTEND=noninteractive ; dpkg --force-all -i '$MKBD_DEB' && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install && dpkg --configure -a"; }
         RES=$?
         if [ $RES -ne 0 ]; then
             echo "autogen.sh: error: mk-build-deps exited with status $RES" 1>&2
