@@ -279,21 +279,21 @@ request_averages
 
     int return_value = 0;
     std::string message_str;
-    log_debug ("Requesting averages element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
-               " start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
+    log_debug ("Requesting _averages_ <- element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
+               " start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'.",
                element_id, source, type, step, start_timestamp, end_timestamp );
     auto ret = persist::select_measurements_averages
     (conn, element_id, source, type, step, start_timestamp, end_timestamp, averages, unit, last_average_timestamp);
     switch (ret.rv) {
         case 0:
         {
+            log_debug ("Success. Last average timestamp: '%" PRId64"'.", last_average_timestamp);
             return_value = 1;
-            log_debug ("Ok. Last average timestamp: '%" PRId64"'", last_average_timestamp);
             break;
         }
         case 1:
         {
-            log_info ("Element id: %" PRIu64" does not exist in persistence.", element_id);
+            log_info ("Element id '%" PRIu64"' does not exist in persistence.", element_id);
             ymsg_set_status (message_out, false);
             message_str.assign ("Element id '").append (std::to_string (element_id)).append ("' does not exist.");
             ymsg_set_errmsg (message_out, message_str.c_str ());
@@ -309,7 +309,7 @@ request_averages
         case -1:
         default:
         {
-            log_error ("persist::select_measurements_averages ('%" PRIu64"', %s, %s, %s, %" PRId64 ", %" PRId64", ...) failed",
+            log_error ("persist::select_measurements_averages ('%" PRIu64"', '%s', '%s', '%s', '%" PRId64 "', '%" PRId64"', ...) failed.",
                     element_id, source, type, step, start_timestamp, end_timestamp);
             ymsg_set_status (message_out, false);
             ymsg_set_errmsg (message_out, "Internal error: Extracting data from database failed.");
@@ -329,7 +329,7 @@ request_sampled
 
     int return_value = 0;
     std::string message_str;
-    log_debug ("Requesting samples element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
+    log_debug ("Requesting _samples_ <- element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
                element_id, topic, start_timestamp, end_timestamp );
     auto ret = persist::select_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
     switch (ret.rv) {

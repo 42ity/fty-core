@@ -27,7 +27,6 @@ select @asset_element_device := id_asset_element_type from t_bios_asset_element_
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
 
 /* t_bios_client */
-select @client_nmap := id_client from t_bios_client where name = 'nmap';
 select @client_mymodule := id_client from t_bios_client where name = 'mymodule';
 select @client_admin := id_client from t_bios_client where name = 'admin';
 select @client_nut := id_client from t_bios_client where name = 'NUT';
@@ -774,12 +773,13 @@ INSERT INTO t_bios_measurement_topic (device_id, units,topic)
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id2 = LAST_INSERT_ID();
 
+/*
 INSERT INTO t_bios_measurement_topic (device_id, units,topic) 
     SELECT r.id_discovered_device,'C','temperature.thermal_zone0_arithmetic_mean_15m@KAROL-LAB' 
     FROM t_bios_asset_element AS e,t_bios_monitor_asset_relation AS r WHERE
     e.name = 'KAROL-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id3 = LAST_INSERT_ID();
-
+*/
 
 
 /* Expected continuous data */

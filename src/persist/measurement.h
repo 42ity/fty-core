@@ -25,12 +25,36 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 #define SRC_PERSIST_MEASUREMENT_H_
 
 #include <tntdb/connect.h>
+#include <set>
 
 #include "defs.h"
 #include "dbhelpers.h"
 #include "ymsg.h"
 
 namespace persist {
+
+class TopicCache {
+    public:
+        explicit TopicCache(size_t max = 1024):
+            _cache{},
+            _max{max}
+        {};
+
+        TopicCache (const TopicCache& other) = delete;
+        TopicCache (const TopicCache&& other) = delete;
+        TopicCache& operator=(TopicCache& other) = delete;
+        TopicCache& operator=(TopicCache&& other) = delete;
+
+        //\brief check if value is in cache or not
+        bool has(const std::string& topic) const;
+
+         //\brief add a key to cache
+        void add(const std::string& topic);
+
+    private:
+        std::set<std::string> _cache;
+        size_t _max;
+};
 
 /**
  * \brief Inserts measurements data into t_bios_measurement_topic, t_bios_measurement
@@ -43,10 +67,23 @@ namespace persist {
  * \param scale       - in which scale value exists
  * \param time        - the unix time where value has been measured
  * \param units       - the physical unit of value
+ * \param cache       - (optional) the cache of already inserted topics
  *
  * \return db_reply_t with affected rows from t_bios_measurement insertion
  *                    or info about an error
  */
+db_reply_t
+    insert_into_measurement(
+        tntdb::Connection &conn,
+        const char        *topic,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        int64_t            time,
+        const char        *units,
+        const char        *device_name,
+        TopicCache        &c);
+
+// backward compatible function for a case where no cache is required
 db_reply_t
     insert_into_measurement(
         tntdb::Connection &conn,

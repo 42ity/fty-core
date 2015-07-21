@@ -258,7 +258,7 @@ std::string filter;
                 int indent = 0;
                 std::string json = "{\n";
 
-                while (stack.size() > 0) {
+                while ( !stack.empty() ) {
                     // <element_id, type, contains, name, type_name>
                     std::tuple<int, int, std::string, std::string, std::string> row = stack.top();
                     stack.pop();

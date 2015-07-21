@@ -20,6 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
  \brief  Implementation of functions for processing logic of rest api request 
  \author Karol Hrdina <KarolHrdina@eaton.com>
 */
+#include <stdexcept>
+#include <tntdb/connect.h>
 
 #include "bios_agent.h"
 #include "agents.h"
@@ -34,13 +36,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cm-web.h"
 #include "cleanup.h"
 #include "utils++.h"
+#include "dbpath.h"
 
 namespace computation {
 namespace web {
 
 void
 process
-(tntdb::Connection& conn, bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
+(bios_agent_t *agent, ymsg_t *message_in, const char *sender, ymsg_t **message_out) {
     assert (agent);
     assert (message_in);
     assert (sender);
@@ -50,7 +53,12 @@ process
     char *type = NULL, *step = NULL, *source = NULL;
     uint64_t element_id = 0;
 
-    try {                
+    try {
+        tntdb::Connection conn = tntdb::connectCached (url);
+        if (!conn || !conn.ping ()) {
+            throw std::runtime_error ("tntdb::connectCached () failed.");
+        }
+
         *message_out = ymsg_new (YMSG_REPLY);
         assert (*message_out);
 
@@ -63,23 +71,21 @@ process
             return;       
         }
         if (!is_average_type_supported (type) || !is_average_step_supported (step)) {
-            log_error ("average type or step no supported.");
+            log_error ("Requested average 'type' or 'step' not supported.");
             ymsg_set_status (*message_out, false);
-            ymsg_set_errmsg (*message_out, "Requested average step or average type is not supported.");
+            ymsg_set_errmsg (*message_out, "Requested average 'type' or 'step' not supported.");
             return;
         }
-
 
         // Resolve device name from element id        
         std::string device_name;
         {
             auto ret = persist::select_device_name_from_element_id (conn, element_id, device_name);
             if (ret.rv != 0)
-                log_error ("Could not resolve device name from element id: %" PRId64". Can not publish computed values on stream.", element_id);
+                log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
             else
-                log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'", element_id, device_name.c_str ());
+                log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
         }
-
         
         // First, try to request the averages
         std::string unit;
@@ -88,7 +94,6 @@ process
         if (!request_averages (conn, element_id, source, type, step, start_ts, end_ts, averages, unit, last_average_ts, *message_out)) {
             return;
         } 
-
         std::string json_out (BIOS_WEB_AVERAGE_REPLY_JSON_TMPL); // resulting output json           
         json_out.replace (json_out.find ("##SOURCE##"), strlen ("##SOURCE##"), source);
         json_out.replace (json_out.find ("##STEP##"), strlen ("##STEP##"), step);
@@ -96,10 +101,8 @@ process
         json_out.replace (json_out.find ("##ELEMENT_ID##"), strlen ("##ELEMENT_ID##"), std::to_string (element_id));
         json_out.replace (json_out.find ("##START_TS##"), strlen ("##START_TS##"), std::to_string (start_ts));
         json_out.replace (json_out.find ("##END_TS##"), strlen ("##END_TS##"), std::to_string (end_ts));
-   
 
         std::map <int64_t, double> samples;
-        assert (samples.empty ());
 
         int64_t start_sampled_ts = 0;
         std::string data_str; // json; member 'data'
@@ -107,15 +110,37 @@ process
 
         // Check if returned averages are complete
         if (averages.empty ()) {
-            log_info ("averages empty");
+            log_info ("Requested averages: Empty");
             if (last_average_ts < start_ts) {
-                // requesting stored averages returned an empty set + last stored averages timestamp's < start of requested interval
-                // => we need to compute the whole requested interval
-                log_info ("last average timestamp < start timestamp => compute it!");
-                start_sampled_ts = average_extend_left_margin (start_ts, step);
+                // requesting stored averages returned an empty set && last stored average's timestamp < start of requested interval
+                // => we need to extend compute everything from the last stored average's timestamp 
+
+                // NOTE (current persistence limitation):
+                // Timestamp is stored as DATETIME, function FROM_UNIXTIMESTAMP () can't handle negative values,
+                // the lowest possible unixtime representable as datetime is '0'.
+                if (last_average_ts == INT32_MIN) {
+                    log_info ("There is no average stored yet (for given topic). Assigning timestamp of start of sampled data request value of '0'.");
+                    start_sampled_ts = 0;
+                }
+                else {
+                    // WIP: start_sampled_ts = average_extend_left_margin (start_ts, step);
+                    // Assumption: last_average_ts (returned from db) is never going to be anything even remotely near 1970-01-01
+                    start_sampled_ts = average_extend_left_margin (last_average_ts + average_step_seconds (step), step);
+                }
+
+                if (start_sampled_ts < 0) {
+                    log_warning ("While timestamp in persistence is of type DATETIME, variable 'start_sampled_ts' should not be negative.");
+                }
+                log_debug ("last_average_ts: '%" PRId64"', start_sampled_ts: '%" PRId64"'.", last_average_ts, start_sampled_ts);
+
+                log_info ("Timestamp of last stored average: '%" PRId64"' <<  start_timestamp: '%" PRId64"'. "
+                          "Therefore we need to compute averages from following sampled data interval: "
+                          "<Timestamp of last stored average, end_timestamp + nut_repeat_interval> which is "
+                          "<%" PRId64", %" PRId64">.",
+                          last_average_ts, start_ts, start_sampled_ts, end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC);
                 if (!request_sampled (conn, element_id, source, start_sampled_ts,
                                       end_ts + AGENT_NUT_REPEAT_INTERVAL_SEC, samples, unit, *message_out)) {
-                    log_warning (" resuest_sampled failed!");
+                    log_warning ("request_sampled () failed!");
                     return;
                 }
             }
@@ -129,10 +154,12 @@ process
                 return; 
             }
             else // untreated case is end_ts < last_average_ts -> nothing to do
-                log_info ("last average timestamp > end timestamp");
+                log_info ("Timestamp of last stored average >> end_timestamp. End of requested interval falls into "
+                          "the past that was already computed and since there are no average returned there is a gap "
+                          "of sampled data.");
         }
         else {
-            log_info ("averages NOT empty");
+            log_info ("Requested averages: '%" PRIu64"'", averages.size ());
             // put the stored averages into json
             for (const auto &p : averages) {
                 std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
@@ -169,14 +196,14 @@ process
         }
 
         if (!samples.empty ()) {
-            log_debug ("samples directly from db:\n"); // TODO: remove when done testing
+            log_debug ("samples directly from db:"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                log_debug ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f", p.first, p.second);
             }
             solve_left_margin (samples, start_sampled_ts);
-            log_debug ("samples after solving left margin:\n"); // TODO: remove when done testing
+            log_debug ("samples after solving left margin:"); // TODO: remove when done testing
             for (const auto &p : samples) {
-                log_debug ("%" PRId64" => %f\n", p.first, p.second);
+                log_debug ("%" PRId64" => %f", p.first, p.second);
             }
             if (!samples.empty ()) {
                 int64_t first_ts = samples.cbegin()->first;
@@ -187,29 +214,31 @@ process
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    log_debug ("calling calculate (%" PRId64", %" PRId64")\n", first_ts, second_ts); // TODO: remove when done testing
+                    log_debug ("calling calculate (%" PRId64", %" PRId64")", first_ts, second_ts); // TODO: remove when done testing
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
                     // TODO: better return value check
                     if (rv == 0) {
-                        std::string comp_result_str;
-                        utils::math::dtos (comp_result, 2, comp_result_str);
-                        if (comp_result_str.c_str () == NULL) { // TODO: Remove this testing/debugging code
-                            log_critical ("comp_result_str.c_str () is NULL AAARGHG GET to tha CHOPAA!!!#$&^#^%%");
-                            log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
-                        } else {
-                            log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
-                            item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
-                        }
-                        item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
-                        if (comma_counter == 0) 
-                            ++comma_counter;
-                        else
-                            data_str += ",\n";
+                        if (second_ts >= start_ts) {
+                            std::string comp_result_str;
+                            utils::math::dtos (comp_result, 2, comp_result_str);
+                            if (comp_result_str.c_str () == NULL) { // TODO: Remove this testing/debugging code
+                                log_critical ("comp_result_str.c_str () is NULL"); 
+                                log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
+                            } else {
+                                log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
+                                item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
+                            }
+                            // 
+                            item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
+                            if (comma_counter == 0) 
+                                ++comma_counter;
+                            else
+                                data_str += ",\n";
 
-                        data_str += item;
+                            data_str += item;
+                        }
 
                         publish_measurement (agent, device_name.c_str (), source, type, step, unit.c_str (), comp_result, second_ts);
-
                     }
                     else if (rv == -1) {
                         log_warning ("process_db_measurement_calculate failed"); // TODO
@@ -221,6 +250,9 @@ process
                     second_ts += average_step_seconds (step);
                 }
             }  
+        }
+        else {
+            log_debug ("_samples_ empty.");
         }
                       
         json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);

@@ -20,7 +20,6 @@ RUN apt-get update && apt-get install -y --force-yes \
   libnutclient0
   
 #RUN apt-get install -y apt-utils
-#RUN apt-get install -y nmap
 RUN apt-get clean
 
 #Install BIOS binaries & config files
@@ -31,7 +30,6 @@ RUN mv /etc/malamute/malamute.cfg /etc/malamute/malamute.cfg.orig
 ADD ./usr/local/share/bios/examples/config/malamute/malamute.cfg /etc/malamute/malamute.cfg
 ADD ./usr/local/libexec/bios/agent-dbstore /usr/local/libexec/bios/agent-dbstore
 ADD ./usr/local/libexec/bios/agent-netmon /usr/local/libexec/bios/agent-netmon
-ADD ./usr/local/libexec/bios/driver-nmap /usr/local/libexec/bios/driver-nmap
 ADD ./usr/local/libexec/bios/agent-nut /usr/local/libexec/bios/agent-nut
 ADD ./usr/local/libexec/bios/agent-inventory /usr/local/libexec/bios/agent-inventory
 ADD ./usr/local/libexec/bios/agent-alert /usr/local/libexec/bios/agent-alert

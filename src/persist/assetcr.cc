@@ -597,7 +597,7 @@ db_reply_t
     db_reply_t ret = db_reply_new();
     
     // input parameters control 
-    if ( links.size() == 0 )
+    if ( links.empty() )
     {
         log_debug ("nothing to insert");
         ret.status = 1;
