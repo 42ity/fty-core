@@ -97,8 +97,8 @@ class SubProcess {
 
         // \brief close all pipes, waits on process termination
         //
-        // \warning destructor calls wait, so can hand your program in a case
-        //          child process never ends. Better to call terminate() manually.
+        // \warning destructor calls terminate() so it is better to handle
+        // graceful shutdown by youself.
         //
         virtual ~SubProcess();
 
@@ -337,6 +337,13 @@ class ProcCacheMap {
 //
 // try to read as much as possible from file descriptor and return it as std::string
 std::string read_all(int fd);
+
+// \brief read all things from file descriptor while compensating for dealys
+//
+// Try to read as much as possible from file descriptor and return it as
+// std::string. But waits for the first string to appear (5s max) and reads
+// till the input stops for more than 1ms
+std::string wait_read_all(int fd);
 
 // \brief Run command with arguments.  Wait for complete and return the return value.
 //
