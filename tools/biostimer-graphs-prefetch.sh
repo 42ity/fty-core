@@ -35,7 +35,7 @@ else
 fi
 
 # How many requests can fire at once? Throttle when we reach this amount...
-[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=2
+[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=1
 
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
