@@ -1380,7 +1380,7 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
 
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
-                        biostimer-graphs-prefetch__realpower.default@.service
+                        biostimer-graphs-prefetch@.service
 
 # These files need no processing, delivered verbatim
 SYSTEMD_TIMERS +=       biostimer-outage.timer \

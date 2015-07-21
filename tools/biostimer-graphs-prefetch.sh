@@ -53,20 +53,9 @@ BASE_URL_CALLER="$BASE_URL" # may be empty
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-# TODO: Set paths via standard autoconf prefix-vars and .in conversions
-# TODO: Run as non-root, and use paths writable by that user (bios?)
-LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
-TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
-
 FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
-
-include_cfg() {
-    [ -s "$1" ] && [ -r "$1" ] && \
-        logmsg_info "Using configuration file '$1'..." && \
-        . "$1"
-}
 
 check_in_list() {
     # Tests that tokens listed in "$1" are among
@@ -83,7 +72,7 @@ check_in_list() {
 
 # Different CLI parameters may be added later on...
 usage() {
-    echo "Usage: $0 [--opt 'arg'] [-C file.conf] [-j N] [-n | -v | -w]"
+    echo "Usage: $0 [--opt 'arg'] [-j N] [-n | -v | -w]"
     echo "  -n    Dry-run (outputs strings that would be executed otherwise)"
     echo "  -v    Wet-run with output posted to stdout"
     echo "  -w    (default) If not dry-running, actually wet-run the $FETCHER"
@@ -91,7 +80,6 @@ usage() {
     echo "  -q    Suppress the debugging level to 0, disregarding defaults and envvars"
     echo "  -d    Bump up the debugging level to 99, disregarding defaults and envvars"
     echo "  -j N                Max parallel fetchers to launch (default $MAX_CHILDREN)"
-    echo "  -C file             Include a configuration file to override this run"
     echo "  --lockfile file     Filename used to block against multiple runs"
     echo "  --timefile file     Filename used to save last request end-timestamp"
     echo "  --host hostname     Where to place the REST API request"
@@ -101,6 +89,9 @@ usage() {
     echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
     echo "                         (among '$TYPES_SUPPORTED')"
     echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
+    echo "  --STA 'step:type:allow'  Single argument for one step, type and regex"
+    echo "                      these parts may be empty; will also generate"
+    echo "                      lockfile and timefile strings to match"
 }
 
 [ -z "$FETCHER" ] && \
@@ -114,8 +105,6 @@ while [ $# -gt 0 ]; do
         -n) ACTION="generate" ;;
         -v) ACTION="request-verbose" ;;
         -w|"") ACTION="request-quiet" ;;
-        -C) include_cfg "$2" || die 127 "Can not use config file '$2'"
-            shift ;;
         -j) [ "$2" -ge 1 ] 2>/dev/null || die "Invalid number: '$2'"
             MAX_CHILDREN="$2"
             shift ;;
@@ -131,6 +120,19 @@ while [ $# -gt 0 ]; do
         --types) TYPES="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         --src-allow) SOURCES_ALLOWED="$2"; shift ;;
+        --STA) # Parse the single-argument input
+            S="`echo "$2" | { IFS=: read _S _T _A; echo "$_S"; }`"
+            T="`echo "$2" | { IFS=: read _S _T _A; echo "$_T"; }`"
+            A="`echo "$2" | { IFS=: read _S _T _A; echo "$_A"; }`"
+            [ -n "$S" ] && STEPS="$S"
+            [ -n "$T" ] && TYPES="$T"
+            SOURCES_ALLOWED="`echo -e "$A" | sed -e 's,\\\\x2a,\\*,g' -e 's,\\\\x2b,\\+,g' -e 's,\\\\x2e,\\.,g' -e 's,\\\\x7b,\\{,g' -e 's,\\\\x7d,\\},g' -e 's,\\\\x28,\\(,g' -e 's,\\\\x29,\\),g' -e 's,\\\\x3f,\\?,g' -e 's,\\\\x5b,\\[,g' -e 's,\\\\x5d,\\],g' -e 's/\\\\x2c/,/g'`"
+            TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S%$T" | sed 's, ,_,g'`"
+            [ -z "$LOCKFILE" ] && \
+                LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
+            [ -z "$TIMEFILE" ] && \
+                TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch${TAG}.time
+            shift ;;
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -q) CI_DEBUG=0 ; CI_DEBUG_CALLER=0 ;;
         -h|--help)
@@ -141,10 +143,18 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+# TODO: This may become a die() check later
 check_in_list "$TYPES" "$TYPES_SUPPORTED" || \
     logmsg_warn "Invalid TYPES requested (a value in '$TYPES' is not among known '$TYPES_SUPPORTED')"
 check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
     logmsg_warn "Invalid STEPS requested (a value in '$STEPS' is not among known '$STEPS_SUPPORTED')"
+
+# TODO: Set paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?)
+[ -z "$LOCKFILE" ] && \
+    LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
+[ -z "$TIMEFILE" ] && \
+    TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 [ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
