@@ -11,7 +11,7 @@ OnCalendar=*-*-* 00:20:00
 # Do not record last-execution times
 Persistent=false
 # Which unit to trigger:
-Unit=biostimer-graphs-prefetch__realpower.default@24h.service
+Unit=biostimer-graphs-prefetch@24h::realpower.default.service
 
 [Install]
 WantedBy=multi-user.target
