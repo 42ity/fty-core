@@ -11,7 +11,7 @@ OnUnitInactiveSec=15min
 # Do not record last-execution times
 Persistent=false
 # Which unit to trigger:
-Unit=biostimer-graphs-prefetch__realpower.default@15m.service
+Unit=biostimer-graphs-prefetch@15m::realpower.default.service
 
 [Install]
 WantedBy=multi-user.target
