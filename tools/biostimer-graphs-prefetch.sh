@@ -497,8 +497,11 @@ run_getrestapi_strings() {
 
     logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now (RES=$RES)" >&2
 
-    # We care about success of the runs which actually requested something and succeeded
-    [ $RES = 0 ] && [ "$COUNT_SUCCESS" -gt 0 ] && [ -n "$TIMEFILE" ] && \
+    # To push the clock forward, we care about success of those runs which
+    # actually requested something and succeeded in all requests
+    [ -n "$TIMEFILE" ] && \
+    [ $RES = 0 ] && [ "$COUNT_SUCCESS" -gt 0 ] && \
+    [ "$COUNT_SUCCESS" = "$COUNT_TOTAL" ] && \
         echo "$END_TIMESTAMP" > "$TIMEFILE"
 
     [ $RES -le 0 ] && return 0
