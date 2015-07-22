@@ -53,12 +53,12 @@ systemctl restart mysql bios-db-init malamute tntnet@bios.service 'biostimer*.ti
 
 sleep 5
 
-echo "Status check:"
-systemctl list-units -a '*bios*' '*tntnet*' '*malamute*' '*mysql*'
-
 echo "Restarting prefetchers..."
 systemctl restart \
 	biostimer-graphs-prefetch@15m::realpower.default.service \
 	biostimer-graphs-prefetch@24h::realpower.default.service \
 	biostimer-outage.service
+
+echo "Status check:"
+systemctl list-units -a '*bios*' '*tntnet*' '*malamute*' '*mysql*' | cat
 
