@@ -401,21 +401,9 @@ libpriv_proto_la_SOURCES = \
 			src/msg/asset_msg.c \
 			src/msg/asset_msg.h \
 			src/msg/common_msg.c \
-			src/msg/common_msg.h \
-			src/msg/nmap_msg.c \
-			src/msg/nmap_msg.h \
-			src/msg/compute_msg.c \
-			src/msg/compute_msg.h \
-			src/msg/powerdev_msg.c \
-			src/msg/powerdev_msg.h
+			src/msg/common_msg.h
 
 libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
-
-noinst_LTLIBRARIES +=	libpriv-nmap-parse.la
-libpriv_nmap_parse_la_SOURCES = \
-			src/agents/nmap/nmap-parse.h \
-			src/agents/nmap/nmap-parse.cc \
-			src/include/cleanup.h
 
 noinst_LTLIBRARIES +=	libpriv-email.la
 libpriv_email_la_SOURCES = \
@@ -634,22 +622,6 @@ test_libbiosapiut_DEPENDENCIES = \
 				libpriv-test-run.la \
 				libpriv-proto.la \
 				libbiosapi.la
-
-###
-check_PROGRAMS += 	test-nmap-parse
-test_nmap_parse_SOURCES = tests/agents/nmap/test-nmap-parse.cc
-test_nmap_parse_LDADD = \
-			libpriv-nmap-parse.la \
-			libpriv-defs.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-test-run.la
-test_nmap_parse_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS)
-test_nmap_parse_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/agents/nmap/ \
-			-DTDIR=$(abs_top_srcdir)/tests/agents/nmap/
-EXTRA_DIST +=		tests/agents/nmap/mbt-lab.xml
 
 ### agent autoconfig tests
 
@@ -879,28 +851,6 @@ test_totalpower_LDFLAGS = \
 
 
 ###
-cibin_programs += 	test-database
-
-test_database_SOURCES = tests/persist/test-database.cc \
-			tools/dbpath.h
-
-test_database_LDADD = 	libpriv-db.la \
-			libpriv-proto.la \
-			libpriv-db-alerts.la \
-			libpriv-cidr.la \
-			libpriv-test-run.la \
-			libpriv-log.la \
-			libpriv-utils-ymsg.la
-
-test_database_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_srcdir)/tools
-
-test_database_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS) -lmlm
-
-###
 cibin_programs +=	test-web
 
 test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
@@ -944,7 +894,7 @@ bios_nutscan_LDADD = \
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
 
 # Do we build and install CI programs by default? (see configure)
-cibin_programs_list = $(cibin_programs)
+cibin_programs_list := $(cibin_programs)
 cibindir = ${pkgbindir}
 if ENABLE_CI_TESTS
 cibin_PROGRAMS = $(cibin_programs)
@@ -1060,27 +1010,7 @@ EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
 			src/shared/asset_types.h \
-			src/msg/powerdev_msg.h \
 			src/agents/nut/nut-driver.h
-
-
-client_PROGRAMS +=	driver-nmap
-
-driver_nmap_SOURCES = \
-			src/agents/nmap/nmap-driver.h \
-			src/agents/nmap/nmap.cc
-
-driver_nmap_LDADD = \
-			libpriv-defs.la \
-			libpriv-cidr.la \
-			libpriv-log.la \
-			libpriv-proto.la \
-			libpriv-nmap-parse.la \
-			libpriv-subprocess.la
-
-driver_nmap_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
-
-driver_nmap_CPPFLAGS =	$(AM_CPPFLAGS)
 
 #FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
 bin_PROGRAMS += 	dshell
@@ -1298,7 +1228,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
                       src/web/src/uptime.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
@@ -1368,7 +1298,7 @@ exampleconf_DATA =	tntnet.xml.example
 EXTRA_DIST +=		$(exampleconf_DATA)
 dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
 
-CLEANFILES +=		tntnet.xml tntnet.xml.example
+CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
 
 # Make sure needed files are up-to-date to test web-server for $BIOS REST API
 web-test-deps: tntnet.xml bios_web.la web-link-test
@@ -1437,7 +1367,7 @@ autopathedit = sed \
 SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
-                        bios-agent-alert.service bios-driver-nmap.service \
+                        bios-agent-alert.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service

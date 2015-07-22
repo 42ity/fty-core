@@ -46,7 +46,6 @@ byte asset_manager::type_to_byte(std::string type) {
     return ret;
 }
 
-
 std::string asset_manager::byte_to_type(byte type) {
     switch(type) {
         case asset_type::DATACENTER:
