@@ -127,20 +127,15 @@ ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 # Import the bam_vte_tab_import.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the number of imported lines FAILED'"
-echo "Test of the number of imported lines 			PASSED"
-grep -q "\[ 9," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line   9 	FAILED'"
-echo "Test of the line  9 					PASSED"
-grep -q "\[ 10," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line 10 	FAILED'"
-echo "Test of the line 10 					PASSED"
-grep -q "\[ 17," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line 17 	FAILED'"
-echo "Test of the line 17 					PASSED"
-grep -q "\[ 21," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line 21 	FAILED'"
-echo "Test of the line 21 					PASSED"
-grep -q "\[ 22," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line 22 	FAILED'"
-echo "Test of the line 22 					PASSED"
-grep -q "\[ 23," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || die "ERROR : 'Test of the line 23 	FAILED'"
-echo "Test of the line 23 					PASSED"
+grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+    die "ERROR : 'Test of the number of imported lines			FAILED'"
+echo "Test of the number of imported lines 				PASSED"
+
+for NUM in 9 10 17 21 22 23 ; do
+    grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+        die "ERROR : 'Test of the line   $NUM 				FAILED'"
+    echo "Test of the line  $NUM  					PASSED"
+done
 
 #ELEMENT="\([0123456789]*,'DC-LAB1',2,NULL,'active',1,1\),\([0123456789]*,'ROOM-01',3,1,'active',2,0\),\([0123456789]*,'ANNEX-01',3,1,'active',3,1\),\([0123456789]*,'CAGE-01',1,2,'active',4,1\),\([0123456789]*,'ROW-01',4,2,'active',5,1\),\([0123456789]*,'ROW-02',4,2,'active',5,1\),\([0123456789]*,'RACK-01',5,5,'active',5,1\),\([0123456789]*,'RACK1-LAB',5,5,'active',5,0\),\([0123456789]*,'CUSTOMER_02',1,1,'nonactive',2,1\),\([0123456789]*,'MAIN_LAB',6,1,'nonactive',3,1\),\([0123456789]*,'MAIN3P_LAB',6,1,'nonactive',4,0\),\([0123456789]*,'GENSET_01',6,3,'spare',5,1\),\([0123456789]*,'GENSET_02',6,3,'retired',5,1\),\([0123456789]*,'GENSET_03',6,3,'nonactive',5,1\),\([0123456789]*,'ATS_01',6,2,'active',5,1\),\([0123456789]*,'UPS1-MAIN',6,2,'active',1,1\),\([0123456789]*,'ePDU1-LAB',6,8,'active',5,1\),\([0123456789]*,'SRV1_LAB',6,8,'active',5,1\),\([0123456789]*,'SRV2_LAB',6,8,'active',5,1\)"
 
@@ -185,8 +180,8 @@ I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_group_relation|grep INSERT 
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_group_relation FAILED'"
 echo 'Test of the table t_bios_asset_ext_group_relation       PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
-echo "Finish time is "$TIME
+echo "Finish time is $TIME"
 TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasts "$TEST_LAST" second."
+echo "Test lasted $TEST_LAST second."
 exit 0
