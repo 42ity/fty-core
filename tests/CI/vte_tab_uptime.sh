@@ -1,4 +1,4 @@
-#/!bin/sh
+#!/bin/sh
 
 # Copyright (C) 2014 Eaton
 #
@@ -118,20 +118,21 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file ./tools/initdb.sql 2>&1 | tee /tmp/vte-tab.log
+loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 set +e
 
 # ***** POST THE CSV FILE *****
 ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_uptime_2_DC.csv"
 
 # Import the bam_import_16_vte_total_power_2_DC.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import_TP.log >&1)
+api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
 
-grep -q '"imported_lines" : 16' /tmp/import_TP.log || die "ERROR : 'Test of the number of imported lines FAILED'"
+grep -q '"imported_lines" : 16' $CHECKOUTDIR/import_TP.log || die "ERROR : 'Test of the number of imported lines FAILED'"
 echo "Test of the number of imported lines 			PASSED"
 
 # create sql file
-echo "use box_utf8;"> /tmp/tmp_uptime.sql
+settraps 'rm -f $CHECKOUTDIR/tmp_uptime.sql'
+echo "use box_utf8;"> $CHECKOUTDIR/tmp_uptime.sql
 
 # dates formats
 # UPS101_1
@@ -160,25 +161,25 @@ date_to_2_2=`date -d "1 day ago" '+%F '`;date_to_2_2=$date_to_2_2`echo 02:00:00`
 
 #insert line for UPS101_1
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_1', '$date_from_1_1_1' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_1_1_1' ,            0 , 1);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_1', '$date_from_2_1_1' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_2_1_1' ,            0 , 1);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 
 #insert line for UPS101_2
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_2', '$date_from_1_1_2' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_1_1_2' ,            0 , 1);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS101_2', '$date_from_1_1_2' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_1_1_2' ,            0 , 1);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 
 
 #insert line for UPS201_1
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_1', '$date_from_2_1' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_2_1' ,            0 , 9);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 #insert line for UPS201_2
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_2', '$date_from_2_2' ,        1 ,     1 , 'UPS is running on battery!    ', '$date_to_2_2' ,            0 , 9);"
-echo $sqlline >> /tmp/tmp_uptime.sql
+echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 
-loaddb_file /tmp/tmp_uptime.sql 2>&1 | tee /tmp/vte-tab.log
+loaddb_file $CHECKOUTDIR/tmp_uptime.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 
 sut_run 'systemctl restart biostimer-outage.service'
 
