@@ -30,22 +30,33 @@ if ! ssh "$REFFQDN" "mysqldump --databases ${DBNAME} | gzip" > ${TMPFILE} ; then
     exit 2
 fi
 
+echo "INFO: Got the database dump, starting destructive actions"
+
+echo "Stopping services..."
 systemctl stop bios-db-init malamute tntnet@bios.service mysql
 rm -f /var/lib/bios/agent-cm/biostimer-graphs-prefetch*.time
 
+echo "Stopping mysql..."
 systemctl start mysql 
+
+echo "Dropping old database (if any)..."
 mysql -u root -e "drop database ${DBNAME}"
+
+echo "Importing database..."
 gzip -cd < ${TMPFILE} | mysql || \
     { echo "FATAL: Oops, we killed old DB but could not import new one" >&2 ; exit 3; }
 rm -f ${TMPFILE}
 trap - EXIT
 
+echo "Restarting services so they pick up dependencies well"
 systemctl restart mysql bios-db-init malamute tntnet@bios.service
 
 sleep 5
 
+echo "Status check:"
 systemctl list-units -a '*bios*' '*tntnet*' '*malamute*' '*mysql*'
 
+echo "Restarting prefetchers..."
 systemctl restart \
 	biostimer-graphs-prefetch@15m::realpower.default.service \
 	biostimer-graphs-prefetch@24h::realpower.default.service \
