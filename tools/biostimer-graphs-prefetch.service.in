@@ -8,6 +8,8 @@ Requires=tntnet@bios.service bios-db-init.service
 Type=simple
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios__%n.conf
 ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh
 
 [Install]
