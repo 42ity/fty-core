@@ -120,21 +120,20 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     die "Some required services are not running on the VTE"
 
 subtest() {
-# ***** INIT DB *****
+    # ***** INIT DB *****
     # *** write power rack base test data to DB on SUT
-set -o pipefail 2>/dev/null || true
-set -e
-loaddb_file ./tools/initdb.sql 2>&1 | tee /tmp/vte-tab.log
+    set -o pipefail 2>/dev/null || true
+    set -e
+    loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    set +e
 
-set +e
-
-# ***** POST THE CSV FILE *****
-ASSET="$CHECKOUTDIR/tools/$1"
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import_TP.log >&1)
+    # ***** POST THE CSV FILE *****
+    ASSET="$CHECKOUTDIR/tools/$1"
+    api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
 
     case "$1" in
         bam_import_16_wpos1.csv)
-            N_EXPECT=`cat /tmp/import_TP.log|grep "more than 2 PDU is not supported"|wc -l`
+            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "more than 2 PDU is not supported"|wc -l`
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 1 PASSED."
 	    else
@@ -142,7 +141,7 @@ api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import
 	    fi  
             ;;
         bam_import_16_wpos2.csv)
-            N_EXPECT=`cat /tmp/import_TP.log|grep "location_w_pos should be set"|wc -l`
+            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep "location_w_pos should be set"|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "4" ];then
                 echo "Subtest 2 PASSED."
@@ -151,7 +150,7 @@ api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import
             fi
             ;;
         bam_import_16_wpos3.csv)
-            N_EXPECT=`cat /tmp/import_TP.log|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep '"imported_lines" : 7'|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 3 PASSED."
@@ -160,7 +159,7 @@ api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee /tmp/import
 	    fi  
             ;;
         bam_import_16_wpos4.csv)
-            N_EXPECT=`cat /tmp/import_TP.log|grep '"imported_lines" : 7'|wc -l`
+            N_EXPECT=`cat $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log|grep '"imported_lines" : 7'|wc -l`
             echo "N_EXPECT = $N_EXPECT"
             if [ "$N_EXPECT" = "1" ];then
                 echo "Subtest 4 PASSED."
