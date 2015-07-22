@@ -34,7 +34,8 @@ fi
 set +u
 
 ### Store some important CLI values
-[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
+[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
 
@@ -75,10 +76,10 @@ export LANG LANGUAGE LC_ALL TZ
 determineDirs() {
     ### Note: a set, but invalid, value will cause an error to the caller
     [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
-        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
-        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
-        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_NAME}`")" || \
-        SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_PATH}`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_PATH}`" || \
+        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_PATH}`")" || \
+        SCRIPTDIR="`dirname ${_SCRIPT_PATH}`"
 
     if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
@@ -190,7 +191,7 @@ logmsg_info() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
     :
 }
 
@@ -202,7 +203,7 @@ logmsg_warn() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -214,7 +215,7 @@ logmsg_error() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -264,7 +265,7 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -275,9 +276,9 @@ determineDirs_default() {
 
     [ "$NEED_CHECKOUTDIR" = no ] || \
     if [ -n "$CHECKOUTDIR" -a -d "$CHECKOUTDIR" ]; then
-        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_TYPE} '${_SCRIPT_PATH} ${_SCRIPT_ARGS}' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
     else
-        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' can not detect a CHECKOUTDIR value..." >&2
+        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_TYPE} '${_SCRIPT_PATH} ${_SCRIPT_ARGS}' can not detect a CHECKOUTDIR value..." >&2
         RES=1
         if [ "$NEED_CHECKOUTDIR" = yes ]; then
             exit $RES
