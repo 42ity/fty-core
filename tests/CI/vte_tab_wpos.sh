@@ -179,8 +179,8 @@ subtest "bam_import_16_wpos3.csv"
 subtest "bam_import_16_wpos4.csv"
 
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
-echo "Finish time is "$TIME
+echo "Finish time is $TIME"
 TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasts "$TEST_LAST" second."
+echo "Test lasted $TEST_LAST second."
 exit 0
