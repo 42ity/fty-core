@@ -7,7 +7,7 @@
 
 REFHOST="bios-rc-demo"
 REFFQDN="$REFHOST.roz.lab.etn.com"
-TMPFILE="/tmp/mysqldump-rc-demo.sql"
+TMPFILE="/tmp/mysqldump-rc-demo.sql.gz"
 DBNAME="box_utf8"
 
 case "`hostname`" in
@@ -23,7 +23,7 @@ set -o pipefail
 
 trap 'rm -f ${TMPFILE}' EXIT
 
-if ! ssh "$REFFQDN" "mysqldump --databases ${DBNAME}" > ${TMPFILE} ; then
+if ! ssh "$REFFQDN" "mysqldump --databases ${DBNAME} | gzip" > ${TMPFILE} ; then
     echo "Could not get a dumpo of database ${DBNAME} from $REFFQDN into ${TMPFILE}" >&2
     rm -f ${TMPFILE}
     trap - EXIT
@@ -35,7 +35,8 @@ rm -f /var/lib/bios/agent-cm/biostimer-graphs-prefetch*.time
 
 systemctl start mysql 
 mysql -u root -e "drop database ${DBNAME}"
-mysql < ${TMPFILE} || { echo "FATAL: Oops, we killed old DB but could not import new one" >&2 ; exit 3; }
+gzip -cd < ${TMPFILE} | mysql || \
+    { echo "FATAL: Oops, we killed old DB but could not import new one" >&2 ; exit 3; }
 rm -f ${TMPFILE}
 trap - EXIT
 
