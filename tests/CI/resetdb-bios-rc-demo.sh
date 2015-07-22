@@ -33,7 +33,7 @@ fi
 echo "INFO: Got the database dump, starting destructive actions"
 
 echo "Stopping services..."
-systemctl stop bios-db-init malamute tntnet@bios.service mysql
+systemctl stop bios-db-init malamute tntnet@bios.service mysql 'biostimer*.timer'
 rm -f /var/lib/bios/agent-cm/biostimer-graphs-prefetch*.time
 
 echo "Stopping mysql..."
@@ -49,7 +49,7 @@ rm -f ${TMPFILE}
 trap - EXIT
 
 echo "Restarting services so they pick up dependencies well"
-systemctl restart mysql bios-db-init malamute tntnet@bios.service
+systemctl restart mysql bios-db-init malamute tntnet@bios.service 'biostimer*.timer'
 
 sleep 5
 
