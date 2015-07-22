@@ -129,7 +129,7 @@ api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/
 
 grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
     die "ERROR : 'Test of the number of imported lines			FAILED'"
-echo "Test of the number of imported lines 				PASSED"
+echo "Test of the number of imported lines      			PASSED"
 
 for NUM in 9 10 17 21 22 23 ; do
     grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
