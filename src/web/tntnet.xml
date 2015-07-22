@@ -67,8 +67,12 @@
 
     <!-- Network configuration -->
     <mapping>
+      <target>netcfg-list@bios_web</target>
+      <url>^/api/v1/admin/netcfgs$</url>
+    </mapping>
+    <mapping>
       <target>netcfg@bios_web</target>
-      <url>^/api/v1/afmin/netcfg/(.*)$</url>
+      <url>^/api/v1/admin/netcfg/(.*)$</url>
       <args>
         <iface>$1</iface>
       </args>
