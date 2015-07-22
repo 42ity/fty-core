@@ -170,6 +170,10 @@ bios-agent-autoconfig.service
 bios-agent-th.service
 !tools/biostimer-graphs-prefetch.service.in
 biostimer-graphs-prefetch.service
+!tools/biostimer-graphs-prefetch@.service.in
+biostimer-graphs-prefetch@.service
+!tools/biostimer-graphs-prefetch__realpower.default@.service.in
+biostimer-graphs-prefetch__realpower.default@.service
 !tools/biostimer-outage.service.in
 biostimer-outage.service
 
