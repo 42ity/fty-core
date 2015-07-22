@@ -120,14 +120,15 @@ while [ $# -gt 0 ]; do
         --types) TYPES="$2"; shift ;;
         --steps) STEPS="$2"; shift ;;
         --src-allow) SOURCES_ALLOWED="$2"; shift ;;
-        --STA) # Parse the single-argument input
+        --STA) # Parse the single-argument input: Steps:Types:Allowed
             S="`echo "$2" | { IFS=: read _S _T _A; echo "$_S"; }`"
             T="`echo "$2" | { IFS=: read _S _T _A; echo "$_T"; }`"
             A="`echo "$2" | { IFS=: read _S _T _A; echo "$_A"; }`"
             [ -n "$S" ] && STEPS="$S"
             [ -n "$T" ] && TYPES="$T"
             SOURCES_ALLOWED="`echo -e "$A" | sed -e 's,\\\\x2a,\\*,g' -e 's,\\\\x2b,\\+,g' -e 's,\\\\x2e,\\.,g' -e 's,\\\\x7b,\\{,g' -e 's,\\\\x7d,\\},g' -e 's,\\\\x28,\\(,g' -e 's,\\\\x29,\\),g' -e 's,\\\\x3f,\\?,g' -e 's,\\\\x5b,\\[,g' -e 's,\\\\x5d,\\],g' -e 's/\\\\x2c/,/g'`"
-            TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S%$T" | sed 's, ,_,g'`"
+            TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S" | sed 's, ,_,g'`"
+            [ -n "$T" ] && TAG="$TAG`echo ":$T" | sed 's, ,_,g'`"
             [ -z "$LOCKFILE" ] && \
                 LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
             [ -z "$TIMEFILE" ] && \
@@ -372,8 +373,8 @@ prepare_timestamps() {
     END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
-    if [ -s "$TIMEFILE" ]; then
-        firstline="`head -1 $TIMEFILE`"
+    if [ -n "$TIMEFILE" ] && [ -s "$TIMEFILE" ]; then
+        firstline="`head -1 "$TIMEFILE"`"
         if [ -n "$firstline" ]; then
             # TODO: check format of the read line
             start_timestamp="$firstline"
@@ -494,9 +495,12 @@ run_getrestapi_strings() {
     [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
         TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
 
-    logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+    logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now (RES=$RES)" >&2
 
-    [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    # We care about success of the runs which actually requested something and succeeded
+    [ $RES = 0 ] && [ "$COUNT_SUCCESS" -gt 0 ] && [ -n "$TIMEFILE" ] && \
+        echo "$END_TIMESTAMP" > "$TIMEFILE"
+
     [ $RES -le 0 ] && return 0
     return $RES
 }
@@ -505,6 +509,7 @@ run_getrestapi_strings_sequential() {
     # Internal detail for run_getrestapi_strings()
     logmsg_info 0 "`date`: Using sequential foreground REST API requests" >&2
     while IFS="" read CMDLINE; do
+        [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
         eval $CMDLINE
         RESLINE=$?
@@ -519,6 +524,7 @@ run_getrestapi_strings_parallel() {
     # Internal detail for run_getrestapi_strings()
     logmsg_info 0 "`date`: Using parallel background REST API requests (at most $MAX_CHILDREN at once)" >&2
     while IFS="" read CMDLINE; do
+        [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
         COUNT_BATCH=$(($COUNT_BATCH+1))
         ( [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
