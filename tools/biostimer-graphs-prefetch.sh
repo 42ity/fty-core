@@ -556,7 +556,7 @@ run_getrestapi_strings_parallel() {
 ### script starts here ###
 prepare_timestamps
 
-logmsg_info 0 "`date`: ${_SCRIPT_NAME} ${_SCRIPT_ARGS}
+logmsg_info 0 "`date`: ${_SCRIPT_PATH} ${_SCRIPT_ARGS}
 Active settings:
   ACTION        $ACTION
   LOCKFILE      $LOCKFILE
