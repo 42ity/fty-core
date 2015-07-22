@@ -10,6 +10,8 @@ Requisite=bios-db-init.service
 Type=simple
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/default/bios__%n.conf
 ExecStart=@libexecdir@/bios/agent-tpower
 
 [Install]
