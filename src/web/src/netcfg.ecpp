@@ -14,7 +14,6 @@ std::string real_out(std::string in, bool key_value = true, std::string sep = ""
     std::vector<std::string> spl;
     bool not_first = false;
     std::string out;
-    printf("%s\n", in.c_str());
     cxxtools::split("\n", in, std::back_inserter(spl));
     if(spl.size() >= 3) {
         spl.erase(spl.end());
@@ -127,10 +126,8 @@ if(request.getMethod() == "PUT") {
 
 // Gets configuration from json and sets it in config while verifying it matches regexp
 #define AUG_SET(NAME, REGEX) \
-    printf("Searching for " NAME " in %s\n",rsi.name().c_str()); \
     it = rsi.findMember(NAME); \
     if(it != NULL) { \
-        printf("Found " NAME "\n"); \
         rex = REGEX; \
         it->getValue(val); \
         if(!std::regex_match(val, match, rex)) { \
@@ -141,7 +138,6 @@ if(request.getMethod() == "PUT") {
         command = "set " + address + "/" NAME " " + val + "\n"; \
         write(augtool.getStdin(), command.c_str(), command.length()); \
         nil = wait_read_all(augtool.getStdout()); \
-        printf("%s", nil.c_str()); \
     }
 
     // All the things we need to set
@@ -152,10 +148,9 @@ if(request.getMethod() == "PUT") {
     command = "save\n";
     write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
-    printf("%s", nil.c_str());
 }
 
-std::string method, ip, netmask, gateway;
+std::string method, ip, netmask, gateway, dns;
 #define AUG_GET(NAME, VAL) \
     command = "get " + address + "/" NAME "\n"; \
     write(augtool.getStdin(), command.c_str(), command.length()); \
@@ -165,6 +160,9 @@ AUG_GET("method", method);
 AUG_GET("address", ip);
 AUG_GET("netmask", netmask);
 AUG_GET("gateway", gateway);
+command = "match /files/etc/resolv.conf/nameserver\n";
+write(augtool.getStdin(), command.c_str(), command.length()); \
+dns = real_out(wait_read_all(augtool.getStdout()), true, "\", \"");
 
 </%cpp>
 { "<$ iface $>":
@@ -178,6 +176,9 @@ AUG_GET("gateway", gateway);
 % }
 % if(!gateway.empty()) {
       , "gateway": "<$ gateway $>"
+% }
+% if(!dns.empty()) {
+      , "nameservers": [ "<$$ dns $>" ]
 % }
     }
 }
