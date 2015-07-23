@@ -199,7 +199,7 @@ for UPS in $UPS1 $UPS2 ; do
         for i in $(seq 0 $PARAMSCNT ); do
             PARAM=${PARAMS[$i]}
             NEWVALUE=${SAMPLES[$SAMPLECURSOR+$i]}
-            SELECT="select count(*) from t_bios_measurement where timestamp >= '$TIME' and value = $(expected_db_value $PARAM $NEWVALUE);"
+            SELECT="select count(*) from t_bios_measurement where timestamp >= UNIX_TIMESTAMP('$TIME') and value = $(expected_db_value $PARAM $NEWVALUE);"
             #echo $SELECT
             if [ $(do_select "$SELECT") = 1 ]; then
                 echo "Looking for $PARAM: $NEWVALUE OK."

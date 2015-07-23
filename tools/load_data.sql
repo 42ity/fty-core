@@ -756,14 +756,14 @@ INSERT INTO t_bios_measurement_topic (device_id, units,topic)
     e.name = 'SRV1-LAB' AND e.id_asset_element = r.id_asset_element;
 set @topic_id = LAST_INSERT_ID();
 /*INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:02:41", 12, -1, @topic_id);*/
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:42:13", 560, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-12 23:51:28", 580, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:00:13", 500, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:01:22", 420, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:08:00", 480, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:16:00", 510, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 00:55:00", 100, -1, @topic_id);
-INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015-03-13 01:20:00", 200, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-12 23:42:13"), 560, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-12 23:51:28"), 580, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 00:00:13"), 500, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 00:01:22"), 420, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 00:08:00"), 480, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 00:16:00"), 510, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 00:55:00"), 100, -1, @topic_id);
+INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES (UNIX_TIMESTAMP("2015-03-13 01:20:00"), 200, -1, @topic_id);
 
 /* KAROL-LAB */
 
@@ -1110,10 +1110,10 @@ INSERT INTO t_bios_measurement (timestamp, value, scale, topic_id) VALUES ("2015
 */
 
 /* Example alerts */
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (2, "upsonbypass@UPS2-LAB", "2015-03-28 06:41:10", 2, 1, "UPS is on battery");
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (3, "upsonbattery@UPS1-LAB", "2015-03-27 16:30:12", 2, 1, "UPS is on battery");
-INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (4, "pebkac@admin01", "2015-03-27 17:30:12", 1, 1, "admin01 login failed");
-INSERT INTO t_bios_alert (id, rule_name, date_from, date_till, priority, state, description) VALUES (5, "upsonbattery@UPS1-LAB", "2015-03-27 17:30:12", "2015-03-27 22:00:00", 1, 1, "TO TEST ALREADY PASSED ALERTS");
+INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (2, "upsonbypass@UPS2-LAB", UNIX_TIMESTAMP("2015-03-28 06:41:10"), 2, 1, "UPS is on battery");
+INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (3, "upsonbattery@UPS1-LAB", UNIX_TIMESTAMP("2015-03-27 16:30:12"), 2, 1, "UPS is on battery");
+INSERT INTO t_bios_alert (id, rule_name, date_from, priority, state, description) VALUES (4, "pebkac@admin01", UNIX_TIMESTAMP("2015-03-27 17:30:12"), 1, 1, "admin01 login failed");
+INSERT INTO t_bios_alert (id, rule_name, date_from, date_till, priority, state, description) VALUES (5, "upsonbattery@UPS1-LAB", UNIX_TIMESTAMP("2015-03-27 17:30:12"), UNIX_TIMESTAMP("2015-03-27 22:00:00"), 1, 1, "TO TEST ALREADY PASSED ALERTS");
 
 /* Example alert devices*/
 INSERT INTO t_bios_alert_device (alert_id, device_id) VALUES(2, 8);

@@ -1353,16 +1353,17 @@ SYSTEMD_UNITS =
 SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
-# systemd integration
-if HAVE_SYSTEMD
 
 # copy from autoconf manual, note single suffix rules can't be used there!!
-autopathedit = sed \
+autopathedit = ${SED} \
 	-e 's|@datadir[@]|$(datadir)|g' \
 	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
 	-e 's|@libexecdir[@]|$(libexecdir)|g' \
 	-e 's|@libdir[@]|$(libdir)|g'
 
+# systemd integration enabled?
+if HAVE_SYSTEMD
 # Here we list the actual service-definition files that should be compiled
 SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-dbstore.service bios-server-agent.service \
@@ -1372,13 +1373,17 @@ SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
                         bios-db-init.service
 
-SYSTEMD_UNITS_TIMERIMPL += biostimer-outage.service biostimer-graphs-prefetch.service
+SYSTEMD_UNITS_TIMERIMPL += \
+                        biostimer-outage.service \
+                        biostimer-graphs-prefetch@.service
 
 # These files need no processing, delivered verbatim
-SYSTEMD_TIMERS += biostimer-outage.timer biostimer-graphs-prefetch.timer
+SYSTEMD_TIMERS +=       biostimer-outage.timer \
+                        biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@24h.timer
 
 # This file is generated
-SYSTEMD_PRESETS += 42-bios-systemd.preset
+SYSTEMD_PRESETS +=      42-bios-systemd.preset
 
 ### TODO? Add the build info (git commit, timestamp) to the header comment?
 $(abs_top_builddir)/42-bios-systemd.preset: Makefile
@@ -1388,7 +1393,7 @@ $(abs_top_builddir)/42-bios-systemd.preset: Makefile
 # The rule to actually "compile" the service definition files
 $(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
 	@echo "  SED      $@"
-	rm -f $@; $(autopathedit) '$(abs_top_srcdir)/tools/$@.in' > $@
+	rm -f $@; $(autopathedit) < '$(abs_top_srcdir)/tools/$@.in' > $@
 
 # Per-file dependency definitions are semi-identical
 $(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
@@ -1411,6 +1416,13 @@ CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
 EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
 EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
+
+# Quick links to build the systemd files (if enabled)
+systemd-units: systemd-daemons systemd-timers systemd-presets
+systemd-daemons: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemd-timers:  $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS_TIMERIMPL))
+	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do cp -pf "$$F" $(abs_top_builddir)/ || exit $$?; done
+systemd-presets: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
 
 #----------------------------------------------------------------------
 #           list of text-based documentation files (rules below)

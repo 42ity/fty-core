@@ -163,6 +163,9 @@ default_posval CI_DEBUGLEVEL_ECHO       0
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
+default_posval CI_DEBUGLEVEL_LOADDB     3
+default_posval CI_DEBUGLEVEL_SELECT     3
+default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
 default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
 
@@ -329,14 +332,16 @@ sut_run() {
     ### NOTE: By current construction this may fail for parameters that are
     ### not one token aka "$1"
     if isRemoteSUT ; then
-        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
+        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+            "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
             REMCMD="sh -x -c \"$@\"" ||
             REMCMD="sh -c \"$@\""
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
-        logmsg_info "sut_run()::local: $@" >&2
+        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+            "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
             sh -x -c "$@"
         else
@@ -357,7 +362,8 @@ do_select() {
     ### followed by results, as our tail is chopped below).
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
-    logmsg_info "do_select(): $1 ;" >&2
+    logmsg_info "$CI_DEBUGLEVEL_SELECT" \
+        "do_select(): $1 ;" >&2
     echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
 #    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
 #    DB_RES=$?
@@ -374,14 +380,16 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        logmsg_info "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
+        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+            "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
-        logmsg_info "loaddb_file()::local: $DBFILE" >&2
+        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+            "loaddb_file()::local: $DBFILE" >&2
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"
     fi
