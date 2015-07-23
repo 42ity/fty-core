@@ -91,7 +91,6 @@ for(
         "test_compilation_warnings",
         "start_bios",
         "test_db_tests",
-        "test_netmon",
         "test_restapi",
         "test_NUT",
         "test_rackpower",

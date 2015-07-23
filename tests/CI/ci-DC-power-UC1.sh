@@ -121,11 +121,11 @@ fill_database(){
 # start built daemons as a subprocess
 start_bios_daemons(){
     # Kill existing process
-    for d in agent-dbstore agent-nut agent-netmon; do
+    for d in agent-dbstore agent-nut ; do
         killall -KILL $d lt-$d || true
     done
     # start agent-dbstore
-    for d in agent-dbstore agent-nut agent-netmon; do
+    for d in agent-dbstore agent-nut ; do
     if [ -x $INSTALLDIR/usr/local/bin/$d ] ; then
         $INSTALLDIR/usr/local/bin/$d &
     else
@@ -163,7 +163,7 @@ start_tntnet(){
 
 # stop all processes launched in the script
 stop_processes(){
-    for d in agent-dbstore agent-nut agent-netmon ; do
+    for d in agent-dbstore agent-nut  ; do
         killall -KILL $d lt-$d || true
     done
     killall -KILL tntnet || true
