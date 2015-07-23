@@ -35,7 +35,7 @@ else
 fi
 
 # How many requests can fire at once? Throttle when we reach this amount...
-[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=32
+[ -z "$MAX_CHILDREN" ] && MAX_CHILDREN=1
 
 [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
@@ -53,19 +53,22 @@ BASE_URL_CALLER="$BASE_URL" # may be empty
 NEED_CHECKOUTDIR=no NEED_BUILDSUBDIR=no determineDirs_default || true
 LOGMSG_PREFIX="BIOS-TIMER-"
 
-# TODO: Set default paths via standard autoconf prefix-vars and .in conversions
-# TODO: Run as non-root, and use paths writable by that user (bios?) -- this
-#       may need separate service to create the /var/run subdirectory as root.
-LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
-TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
-
 FETCHER=
 ( which wget >/dev/null 2>&1 ) && FETCHER=fetch_wget
 ( which curl >/dev/null 2>&1 ) && FETCHER=fetch_curl
 
-[ -z "$FETCHER" ] && \
-        echo "WARNING: Neither curl nor wget were found, wet-run mode would fail" && \
-        FETCHER=curl
+check_in_list() {
+    # Tests that tokens listed in "$1" are among
+    # the other "$*" space-separated parameters
+    local HAYSTACK="$1"
+    shift
+    for HAY in $HAYSTACK ; do
+    for NEEDLE in $* ; do
+        [ x"$NEEDLE" = x"$HAY" ] && return 0
+    done
+    done
+    return 1
+}
 
 # Different CLI parameters may be added later on...
 usage() {
@@ -86,7 +89,15 @@ usage() {
     echo "  --types 'min max'   A space-separated string of (supported!) precalc types"
     echo "                         (among '$TYPES_SUPPORTED')"
     echo "  --src-allow 'regex' A filter for allowed data sources (used if not empty)"
+    echo "  --STA 'step:type:allow'  Single argument for one step, type and regex"
+    echo "                      these parts may be empty; will also generate"
+    echo "                      lockfile and timefile strings to match"
 }
+
+[ -z "$FETCHER" ] && \
+        logmsg_error "WARNING: Neither curl nor wget were found, wet-run mode would fail"
+[ -z "$FETCHER" ] && \
+        FETCHER=curl
 
 ACTION="request-quiet"
 while [ $# -gt 0 ]; do
@@ -103,9 +114,27 @@ while [ $# -gt 0 ]; do
             SUT_HOST="$2"; shift ;;
         --port|--sut-web-port|--sut-port)
             SUT_WEB_PORT="$2"; shift ;;
-        --types) TYPES="$2"; shift ;; # No sanity check against TYPES_SUPPORTED
-        --steps) STEPS="$2"; shift ;; # to allow testing of other values as well
+        # No sanity check enforced against STEPS_SUPPORTED and TYPES_SUPPORTED
+        # at the moment, to allow testing of other values as well. However, we
+        # do test and issue a sanity-check note below. Can become fatal later.
+        --types) TYPES="$2"; shift ;;
+        --steps) STEPS="$2"; shift ;;
         --src-allow) SOURCES_ALLOWED="$2"; shift ;;
+        --STA) # Parse the single-argument input: Steps:Types:Allowed
+            S="`echo "$2" | { IFS=: read _S _T _A; echo "$_S"; }`"
+            T="`echo "$2" | { IFS=: read _S _T _A; echo "$_T"; }`"
+            A="`echo "$2" | { IFS=: read _S _T _A; echo "$_A"; }`"
+            [ -n "$S" ] && STEPS="$S"
+            [ -n "$T" ] && TYPES="$T"
+            SOURCES_ALLOWED="`echo -e "$A" | sed -e 's,\\\\x2a,\\*,g' -e 's,\\\\x2b,\\+,g' -e 's,\\\\x2e,\\.,g' -e 's,\\\\x7b,\\{,g' -e 's,\\\\x7d,\\},g' -e 's,\\\\x28,\\(,g' -e 's,\\\\x29,\\),g' -e 's,\\\\x3f,\\?,g' -e 's,\\\\x5b,\\[,g' -e 's,\\\\x5d,\\],g' -e 's/\\\\x2c/,/g'`"
+            TAG="__`echo -e "$SOURCES_ALLOWED" | sed 's,[\*\?\^\$\(\)\[\]{\}\/\\]*,,g'`@`echo "$S" | sed 's, ,_,g'`"
+            [ -n "$T" ] && TAG="$TAG`echo ":$T" | sed 's, ,_,g'`"
+            [ -z "$LOCKFILE" ] && \
+                LOCKFILE=/var/run/biostimer-graphs-prefetch${TAG}.lock
+            [ -z "$TIMEFILE" ] && \
+                TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch${TAG}.time
+            unset S T A TAG
+            shift ;;
         -d) CI_DEBUG=99 ; CI_DEBUG_CALLER=99 ;;
         -q) CI_DEBUG=0 ; CI_DEBUG_CALLER=0 ;;
         -h|--help)
@@ -115,6 +144,19 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
+
+# TODO: This may become a die() check later
+check_in_list "$TYPES" "$TYPES_SUPPORTED" || \
+    logmsg_warn "Invalid TYPES requested (a value in '$TYPES' is not among known '$TYPES_SUPPORTED')"
+check_in_list "$STEPS" "$STEPS_SUPPORTED" || \
+    logmsg_warn "Invalid STEPS requested (a value in '$STEPS' is not among known '$STEPS_SUPPORTED')"
+
+# TODO: Set paths via standard autoconf prefix-vars and .in conversions
+# TODO: Run as non-root, and use paths writable by that user (bios?)
+[ -z "$LOCKFILE" ] && \
+    LOCKFILE=/var/run/biostimer-graphs-prefetch.lock
+[ -z "$TIMEFILE" ] && \
+    TIMEFILE=/var/lib/bios/agent-cm/biostimer-graphs-prefetch.time
 
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 [ -n "$BASE_URL_CALLER" ] && BASE_URL="$BASE_URL_CALLER" && \
@@ -289,15 +331,34 @@ sources_from_device_id() {
     return 0
 }
 
+trap_exit() {
+    # Wrapped by settraps, so we do not have nor pass the exit code
+    [ -n "$FIRED_BATCH" ] && \
+        logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && \
+        kill -SIGTERM $FIRED_BATCH 2>/dev/null
+
+    rm -f "$LOCKFILE"
+}
+
+trap_abort() {
+    logmsg_error 0 "Script aborted by external circumstances!"
+    [ -n "$COUNT_TOTAL" ] && [ "$COUNT_TOTAL" != 0 ] && \
+        logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful) by now" >&2
+    trap_exit
+}
+
 start_lock() {
     # Previous biostimer-graphs-prefetch.sh should execute successfully
     # TODO: see flock command
     [ -f "$LOCKFILE" ] && \
         die 0 "A copy of the script seems already running:" "`cat "$LOCKFILE"`"
 
-    settraps '[ -n "$FIRED_BATCH" ] && logmsg_debug "Killing fired fetchers: $FIRED_BATCH" && kill -SIGTERM $FIRED_BATCH 2>/dev/null; rm -f "$LOCKFILE"'
+    # Set a default handler for default signal list, and then a custom one
+    settraps 'trap_abort'
+    TRAP_SIGNALS="EXIT" settraps 'trap_exit'
+
     mkdir -p "`dirname "$LOCKFILE"`" "`dirname "$TIMEFILE"`" && \
-    touch "$LOCKFILE" || exit $?
+    echo "$$" > "$LOCKFILE" || exit $?
 }
 
 # Ultimate values that we use in script
@@ -312,8 +373,8 @@ prepare_timestamps() {
     END_TIMESTAMP="${end_timestamp}"
 
     start_timestamp=""
-    if [ -s "$TIMEFILE" ]; then
-        firstline="`head -1 $TIMEFILE`"
+    if [ -n "$TIMEFILE" ] && [ -s "$TIMEFILE" ]; then
+        firstline="`head -1 "$TIMEFILE"`"
         if [ -n "$firstline" ]; then
             # TODO: check format of the read line
             start_timestamp="$firstline"
@@ -324,10 +385,6 @@ prepare_timestamps() {
     fi
 
     START_TIMESTAMP="$start_timestamp"
-
-    logmsg_debug $CI_DEBUGLEVEL_DEBUG \
-        "START_TIMESTAMP=$START_TIMESTAMP" \
-        "END_TIMESTAMP=$END_TIMESTAMP" >&2
 
     export START_TIMESTAMP END_TIMESTAMP
 }
@@ -438,9 +495,15 @@ run_getrestapi_strings() {
     [ "$TS_ENDED" -ge "$TS_START" ] 2>/dev/null && \
         TS_STRING=", took $(($TS_ENDED-$TS_START)) seconds"
 
-    logmsg_info 0 "`date`: Completed $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now" >&2
+    logmsg_info 0 "`date`: Issued $COUNT_TOTAL overall requests (of them $COUNT_SUCCESS successful)${TS_STRING}, done now (RES=$RES)" >&2
 
-    [ $RES = 0 ] && echo "$END_TIMESTAMP" > "$TIMEFILE"
+    # To push the clock forward, we care about success of those runs which
+    # actually requested something and succeeded in all requests
+    [ -n "$TIMEFILE" ] && \
+    [ $RES = 0 ] && [ "$COUNT_SUCCESS" -gt 0 ] && \
+    [ "$COUNT_SUCCESS" = "$COUNT_TOTAL" ] && \
+        echo "$END_TIMESTAMP" > "$TIMEFILE"
+
     [ $RES -le 0 ] && return 0
     return $RES
 }
@@ -449,6 +512,7 @@ run_getrestapi_strings_sequential() {
     # Internal detail for run_getrestapi_strings()
     logmsg_info 0 "`date`: Using sequential foreground REST API requests" >&2
     while IFS="" read CMDLINE; do
+        [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
         eval $CMDLINE
         RESLINE=$?
@@ -463,6 +527,7 @@ run_getrestapi_strings_parallel() {
     # Internal detail for run_getrestapi_strings()
     logmsg_info 0 "`date`: Using parallel background REST API requests (at most $MAX_CHILDREN at once)" >&2
     while IFS="" read CMDLINE; do
+        [ "$RES" -lt 0 ] && RES=0
         COUNT_TOTAL=$(($COUNT_TOTAL+1))
         COUNT_BATCH=$(($COUNT_BATCH+1))
         ( [ "$1" = -v ] && logmsg_debug 0 "Running: $CMDLINE" >&2
@@ -499,19 +564,43 @@ run_getrestapi_strings_parallel() {
 
 ### script starts here ###
 prepare_timestamps
+
+logmsg_info 0 "`date`: ${_SCRIPT_PATH} ${_SCRIPT_ARGS}
+Active settings:
+  ACTION        $ACTION
+  LOCKFILE      $LOCKFILE
+  TIMEFILE      $TIMEFILE
+  STEPS         $STEPS
+  TYPES         $TYPES
+  CI_DEBUG      $CI_DEBUG
+  MAX_CHILDREN  $MAX_CHILDREN
+  FETCHER       $FETCHER
+  SOURCES_ALLOWED '$SOURCES_ALLOWED'
+  START_TIMESTAMP $START_TIMESTAMP
+  END_TIMESTAMP   $END_TIMESTAMP
+" >&2
+
 case "$ACTION" in
     generate)
+        # Moderate logging - ERROR and WARN - by default
+        [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=2
+        [ -z "$FETCHER" ] && \
+                FETCHER=curl
         generate_getrestapi_strings "$@"
         exit $?
         ;;
     request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
+        [ -z "$FETCHER" ] && \
+                die "No usable FETCHER was detected on tis system"
         run_getrestapi_strings "$@"
         exit $?
         ;;
     request-quiet) # default / quiet mode for timed runs
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
+        [ -z "$FETCHER" ] && \
+                die "No usable FETCHER was detected on tis system"
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;

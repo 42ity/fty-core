@@ -35,12 +35,13 @@
 ### This is prefixed before ERROR, WARN, INFO tags in the logged messages
 [ -z "$LOGMSG_PREFIX" ] && LOGMSG_PREFIX="CI-RESETVM-"
 ### Store some important CLI values
-[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
+[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
 
 # NOTE: This script may be standalone, so we do not depend it on scriptlib.sh
-SCRIPTDIR=$(realpath `dirname ${_SCRIPT_NAME}`)
+SCRIPTDIR=$(realpath `dirname ${_SCRIPT_PATH}`)
 SCRIPTPWD="`pwd`"
 [ -z "$CHECKOUTDIR" ] && CHECKOUTDIR=$(realpath $SCRIPTDIR/../..)
 [ "$CHECKOUTDIR" = / -o ! -d "$CHECKOUTDIR/tests/CI" ] && CHECKOUTDIR=""
@@ -54,28 +55,28 @@ export CHECKOUTDIR BUILDSUBDIR
 export LANG LANGUAGE LC_ALL TZ
 
 logmsg_info() {
-    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+    echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
 }
 
 logmsg_warn() {
-    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
 }
 
 logmsg_error() {
-    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+    echo "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
 }
 
 die() {
     CODE="${CODE-1}"
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-	echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+	echo "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
     done
     exit $CODE
 }
 
 usage() {
-    echo "Usage: $(basename ${_SCRIPT_NAME}) [options...]"
+    echo "Usage: ${_SCRIPT_NAME} [options...]"
     echo "options:"
     echo "    -m|--machine name    virtual machine libvirt-name (Default: '$VM')"
     echo "    -b|--baseline type   basic image type to use (Default: '$IMGTYPE')"
@@ -289,7 +290,7 @@ if [ -f "$VM.lock" ] ; then
 	if [ -n "$OTHERINST_PID" ] && \
 	   [ "$OTHERINST_PID" -gt 0 ]  2>/dev/null  && \
 	   [ -d "/proc/$OTHERINST_PID" ] && \
-	   ps -ef | awk '( $2 == "'"$OTHERINST_PID"'") {print $0}' | egrep "`basename ${_SCRIPT_NAME}`|sh " \
+	   ps -ef | awk '( $2 == "'"$OTHERINST_PID"'") {print $0}' | egrep "${_SCRIPT_NAME}|sh " \
 	; then
 		if [ x"$OTHERINST_ARGS" = x"${_SCRIPT_ARGS}" ]; then
 			logmsg_info "`date`: An instance of this script with PID $OTHERINST_PID and the same parameters is already running," \
@@ -321,7 +322,7 @@ if [ -f "$VM.lock" ] ; then
 	fi
 fi
 
-( echo "$$"; echo "${_SCRIPT_NAME}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
+( echo "$$"; echo "${_SCRIPT_PATH}"; echo "${_SCRIPT_ARGS}" ) > "$VM.lock"
 settraps 'cleanup_script'
 
 # Proceed to downloads, etc.
@@ -350,7 +351,7 @@ if [ "$ATTEMPT_DOWNLOAD" != no ] ; then
 			# tracking metadata changes over time perform more reliably.
 			if [ -n "$WGETTER_PID" ] && [ "$WGETTER_PID" -gt 0 ] 2>/dev/null && [ -d "/proc/$WGETTER_PID" ] ; then
 				ps -ef | \
-				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "`basename ${_SCRIPT_NAME}`|sh " \
+				awk '( $2 == "'"$WGETTER_PID"'") {print $0}' | egrep "${_SCRIPT_NAME}|sh " \
 					|| WGETTER_PID=""
 			else
 				WGETTER_PID=""
@@ -412,7 +413,7 @@ fi
 
 if [ x"$DOWNLOADONLY" = xyes ]; then
 	logmsg_info "DOWNLOADONLY was requested, so ending" \
-		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '$WGET_RES'" >&2
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '$WGET_RES'" >&2
 	exit $WGET_RES
 fi
 
@@ -542,7 +543,7 @@ logmsg_info "Removing VM rootfs from '`pwd`/../rootfs/$VM'"
 
 if [ x"$STOPONLY" = xyes ]; then
 	logmsg_info "STOPONLY was requested, so ending" \
-		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now" >&2
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now" >&2
 	exit 0
 fi
 
@@ -602,7 +603,7 @@ mkdir -p "../rootfs/$VM/etc/apt/apt.conf.d/"
 logmsg_info "Pre-configuration of VM '$VM' ($IMGTYPE/$ARCH) is completed"
 if [ x"$DEPLOYONLY" = xyes ]; then
 	logmsg_info "DEPLOYONLY was requested, so ending" \
-		"'${_SCRIPT_NAME} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
+		"'${_SCRIPT_PATH} ${_SCRIPT_ARGS}' now with exit-code '0'" >&2
 	[ "$INSTALL_DEV_PKGS" = yes ] && \
 		logmsg_info "Note that INSTALL_DEV_PKGS was requested - it is hereby skipped" >&2
 	exit 0

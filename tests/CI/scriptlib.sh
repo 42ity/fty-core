@@ -34,7 +34,8 @@ fi
 set +u
 
 ### Store some important CLI values
-[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="$0"
+[ -z "$_SCRIPT_PATH" ] && _SCRIPT_PATH="$0"
+[ -z "$_SCRIPT_NAME" ] && _SCRIPT_NAME="`basename "${_SCRIPT_PATH}"`"
 _SCRIPT_ARGS="$*"
 _SCRIPT_ARGC="$#"
 
@@ -75,10 +76,10 @@ export LANG LANGUAGE LC_ALL TZ
 determineDirs() {
     ### Note: a set, but invalid, value will cause an error to the caller
     [ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
-        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_NAME}`" && pwd)" || \
-        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_NAME}`" || \
-        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_NAME}`")" || \
-        SCRIPTDIR="`dirname ${_SCRIPT_NAME}`"
+        SCRIPTDIR="$(cd "`dirname ${_SCRIPT_PATH}`" && pwd)" || \
+        SCRIPTDIR="`pwd`/`dirname ${_SCRIPT_PATH}`" || \
+        SCRIPTDIR="$(realpath "`dirname ${_SCRIPT_PATH}`")" || \
+        SCRIPTDIR="`dirname ${_SCRIPT_PATH}`"
 
     if [ -z "$CHECKOUTDIR" ]; then
         case "$SCRIPTDIR" in
@@ -162,6 +163,9 @@ default_posval CI_DEBUGLEVEL_ECHO       0
 default_posval CI_DEBUGLEVEL_ERROR      1
 default_posval CI_DEBUGLEVEL_WARN       2
 default_posval CI_DEBUGLEVEL_INFO       3
+default_posval CI_DEBUGLEVEL_LOADDB     3
+default_posval CI_DEBUGLEVEL_SELECT     3
+default_posval CI_DEBUGLEVEL_RUN        4
 default_posval CI_DEBUGLEVEL_DEBUG      5
 default_posval CI_DEBUGLEVEL_PIPESNIFFER 5
 
@@ -187,7 +191,7 @@ logmsg_info() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_NAME}:" "$@"
+    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
     :
 }
 
@@ -199,7 +203,7 @@ logmsg_warn() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -211,7 +215,7 @@ logmsg_error() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_NAME}:" "$@" >&2
+    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -261,7 +265,7 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_NAME}:" "$LINE" >&2
+        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
     done
     exit $CODE
 }
@@ -272,9 +276,9 @@ determineDirs_default() {
 
     [ "$NEED_CHECKOUTDIR" = no ] || \
     if [ -n "$CHECKOUTDIR" -a -d "$CHECKOUTDIR" ]; then
-        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+        echo "${LOGMSG_PREFIX}INFO: ${_SCRIPT_TYPE} '${_SCRIPT_PATH} ${_SCRIPT_ARGS}' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
     else
-        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_TYPE} '${_SCRIPT_NAME} ${_SCRIPT_ARGS}' can not detect a CHECKOUTDIR value..." >&2
+        echo "${LOGMSG_PREFIX}WARN: ${_SCRIPT_TYPE} '${_SCRIPT_PATH} ${_SCRIPT_ARGS}' can not detect a CHECKOUTDIR value..." >&2
         RES=1
         if [ "$NEED_CHECKOUTDIR" = yes ]; then
             exit $RES
@@ -328,14 +332,16 @@ sut_run() {
     ### NOTE: By current construction this may fail for parameters that are
     ### not one token aka "$1"
     if isRemoteSUT ; then
-        logmsg_info "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
+        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+            "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
             REMCMD="sh -x -c \"$@\"" ||
             REMCMD="sh -c \"$@\""
         ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
-        logmsg_info "sut_run()::local: $@" >&2
+        logmsg_info "$CI_DEBUGLEVEL_RUN" \
+            "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
             sh -x -c "$@"
         else
@@ -356,7 +362,8 @@ do_select() {
     ### followed by results, as our tail is chopped below).
     ### Note2: As verified on version 10.0.17-MariaDB, the amount of trailing
     ### semicolons does not matter for such non-interactive mysql client use.
-    logmsg_info "do_select(): $1 ;" >&2
+    logmsg_info "$CI_DEBUGLEVEL_SELECT" \
+        "do_select(): $1 ;" >&2
     echo "$1" | sut_run "mysql -u ${DBUSER} -D ${DATABASE} -N -s"
 #    DB_OUT="$(echo "$1" | sut_run "mysql -u ${DBUSER} ${DATABASE}")"
 #    DB_RES=$?
@@ -373,14 +380,16 @@ loaddb_file() {
     ### Due to comments currently don't converge to sut_run(), maybe TODO later
     if isRemoteSUT ; then
         ### Push local SQL file contents to remote system and sleep a bit
-        logmsg_info "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
+        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+            "loaddb_file()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $DBFILE" >&2
         ( sut_run "systemctl start mysql"
           REMCMD="mysql -u ${DBUSER}"
           eval sut_run "${REMCMD}" "<$DBFILE" && \
           sleep 20 && echo "Updated DB on remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE" ) || \
           CODE=$? die "Could not load database file to remote system $SUT_HOST:$SUT_SSH_PORT: $DBFILE"
     else
-        logmsg_info "loaddb_file()::local: $DBFILE" >&2
+        logmsg_info "$CI_DEBUGLEVEL_LOADDB" \
+            "loaddb_file()::local: $DBFILE" >&2
         eval mysql -u "${DBUSER}" "<$DBFILE" > /dev/null || \
             CODE=$? die "Could not load database file: $DBFILE"
     fi
