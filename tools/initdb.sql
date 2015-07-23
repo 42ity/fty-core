@@ -35,7 +35,7 @@ CREATE TABLE t_bios_measurement_topic(
 
 CREATE TABLE t_bios_measurement (
     id            BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    timestamp     DATETIME            NOT NULL,
+    timestamp     BIGINT              NOT NULL,
     value         INTEGER             NOT NULL,
     scale         SMALLINT            NOT NULL,
     topic_id      INTEGER UNSIGNED    NOT NULL,
@@ -76,15 +76,15 @@ CREATE TABLE t_bios_discovered_device(
 );
 
 CREATE TABLE t_bios_alert(
-    id          INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    rule_name   VARCHAR(50)      NOT NULL,
-    date_from   DATETIME         NOT NULL,
-    priority    TINYINT UNSIGNED NOT NULL,
-    state       TINYINT UNSIGNED NOT NULL,
-    description VARCHAR(255),
-    date_till    DATETIME,
+    id           INT UNSIGNED     NOT NULL AUTO_INCREMENT,
+    rule_name    VARCHAR(50)      NOT NULL,
+    date_from    BIGINT         NOT NULL,
+    priority     TINYINT UNSIGNED NOT NULL,
+    state        TINYINT UNSIGNED NOT NULL,
+    description  VARCHAR(255),
+    date_till    BIGINT,
     notification TINYINT         NOT NULL DEFAULT 0,
-    dc_id       INT UNSIGNED     , /*NOT NULL,*/
+    dc_id        INT UNSIGNED     , /*NOT NULL,*/
 
     PRIMARY KEY(id),
 
@@ -116,7 +116,7 @@ CREATE TABLE t_bios_alert_device(
 CREATE TABLE t_bios_discovered_ip(
     id_ip                   INT UNSIGNED        NOT NULL  AUTO_INCREMENT,
     id_discovered_device    SMALLINT UNSIGNED,
-    timestamp               datetime            NOT NULL,
+    timestamp               BIGINT              NOT NULL,
     ip                      char(45)            NOT NULL,
     PRIMARY KEY(id_ip),
 
@@ -134,7 +134,7 @@ CREATE TABLE t_bios_net_history(
     mask            TINYINT UNSIGNED    NOT NULL,
     ip              CHAR(45)            NOT NULL,
     name            VARCHAR(50),
-    timestamp       datetime            NOT NULL,
+    timestamp       BIGINT              NOT NULL,
 
     PRIMARY KEY(id_net_history)
 );
@@ -152,7 +152,7 @@ CREATE TABLE t_bios_client_info(
     id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
     id_client               TINYINT UNSIGNED    NOT NULL,
     id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
-    timestamp               datetime            NOT NULL,
+    timestamp               BIGINT              NOT NULL,
     ext                     BLOB                NOT NULL,
 
     PRIMARY KEY(id_client_info),
@@ -593,7 +593,7 @@ SELECT v.id,
         v.value,
         v.scale
 FROM v_bios_measurement v
-WHERE v.timestamp > SUBTIME(UTC_TIMESTAMP(), "0:10:0");
+WHERE v.timestamp > UNIX_TIMESTAMP() - 10*60;
 
 CREATE VIEW v_web_measurement_lastdate_10m AS
 SELECT max(p.timestamp) maxdate,
@@ -625,7 +625,7 @@ SELECT v.id,
         v.value,
         v.scale
 FROM v_bios_measurement v
-WHERE v.timestamp > SUBTIME(UTC_TIMESTAMP(), "24:25:0");
+WHERE v.timestamp > UNIX_TIMESTAMP() - 24*60*60 - 25*60;
 
 CREATE VIEW v_web_measurement_lastdate_24h AS
 SELECT max(p.timestamp) maxdate,
@@ -699,4 +699,4 @@ INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* ui/properties are somewhat special */
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, NOW(), "{}");
+INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, UNIX_TIMESTAMP(), "{}");
