@@ -54,6 +54,8 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+    echo "  --host NAME       REST API service host name [$SUT_HOST]"
+    echo "  --port-web PORT   REST API service HTTP port [$SUT_WEB_PORT]"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
 }
@@ -61,13 +63,21 @@ usage(){
 RELATIVE_URL=""
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --user|-u)
-            BIOS_USER="$2"
-            shift
+        --port-web|--sut-port-web|-wp)
+            SUT_WEB_PORT="$2"
+            shift 2
             ;;
-        --passwd|-p)
+        --host|--machine|-s|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift 2
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift 2
+            ;;
+        -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
-            shift
+            shift 2
             ;;
         -m|--method)
             WEBLIB_FUNC="$2"
