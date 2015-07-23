@@ -135,29 +135,6 @@
     </mapping>
 
 
-    <!-- Network list -->
-    <mapping>
-      <target>networks@bios_web</target>
-      <url>^/api/v1/admin/networks.*$</url>
-    </mapping>
-
-    <!-- Network POST -->
-    <mapping>
-      <target>network@bios_web</target>
-      <method>POST</method>
-      <url>^/api/v1/admin/network.*$</url>
-    </mapping>
-    
-    <!-- Network DELETE -->
-    <mapping>
-      <target>network@bios_web</target>
-      <method>DELETE</method>
-      <url>^/api/v1/admin/network/([0-9]+)$</url>
-      <args>
-        <id>$1</id>
-      </args>
-    </mapping>
-
     <!-- UI/properties -->
     <mapping>
       <target>ui_properties@bios_web</target>

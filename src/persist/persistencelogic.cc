@@ -41,7 +41,6 @@ Author: Alena Chernikava <alenachernikava@eaton.com>
 #include "preproc.h"
 #include "assetcrud.h"
 #include "cidr.h"
-#include "persistence.h"
 #include "persistencelogic.h"
 #include "monitor.h"
 #include "log.h"
@@ -103,110 +102,6 @@ free_mem_toto:
     FREE0 (quantity)
     FREE0 (units)
 }
-
-static char
-s_nethistory_id_cmd (int id) {
-    switch (id)
-    {
-        case NETWORK_EVENT_AUTO_ADD:
-        case NETWORK_EVENT_AUTO_DEL:
-        {
-            return NETHISTORY_AUTO_CMD;
-        }
-        case NETWORK_EVENT_MAN_ADD:
-        case NETWORK_EVENT_MAN_DEL:
-        {
-            return NETHISTORY_MAN_CMD;
-        }
-        case NETWORK_EVENT_EXCL_ADD:
-        case NETWORK_EVENT_EXCL_DEL:
-        {
-            return NETHISTORY_EXCL_CMD;
-        }
-        default:
-        {
-            return '\x0';
-        }
-    }
-}
-
-// used by src/agents/dbstore
-void
-process_networks(
-        ymsg_t** in_p)
-{
-    if( ! in_p || !*in_p ) return;
-    ymsg_t* in = *in_p;
-    LOG_START;
-    log_debug("processing networks");
-
-    int event, ipver;
-    uint8_t prefixlen;
-    _scoped_char *name, *ipaddr, *mac;
-    if (bios_netmon_extract(in, &event, &name, &ipver, &ipaddr, &prefixlen, &mac) != 0) {
-        log_error("can't decode netmon message");
-        LOG_END;
-        ymsg_destroy(in_p);
-        return;
-    }
-
-    unsigned int rows_affected = 0;
-    shared::CIDRAddress address (ipaddr, prefixlen);
-    persist::NetHistory nethistory(url);
-    nethistory.setAddress(address);
-    nethistory.setCommand(s_nethistory_id_cmd (event));
-    nethistory.setName(name);
-    nethistory.setMac(mac);
-
-    int id_unique = nethistory.checkUnique();
-    if(id_unique != -1) {
-        log_info ("Nethistory ID is not unique, skipping!");
-        LOG_END;
-        ymsg_destroy(in_p);
-        return;
-    }
-
-    try {
-        switch (event) {
-            case NETWORK_EVENT_AUTO_ADD: {
-                rows_affected = nethistory.dbsave();
-                break;
-            }
-            case NETWORK_EVENT_AUTO_DEL: {
-                rows_affected = nethistory.deleteById (id_unique);
-                break;
-            }
-            case NETWORK_EVENT_MAN_ADD: {
-                rows_affected = nethistory.dbsave();
-                break;
-            }
-            case NETWORK_EVENT_MAN_DEL: {
-                rows_affected = nethistory.deleteById(id_unique);
-                break;
-            }
-            case NETWORK_EVENT_EXCL_ADD: {
-                rows_affected = nethistory.dbsave();
-                break;
-            }
-            case NETWORK_EVENT_EXCL_DEL: {
-                rows_affected = nethistory.deleteById(id_unique);
-                break;
-            }
-            default: {
-                log_warning ("Unexpected message type received; message id = '%d'", event);
-                break;
-            }
-        }
-    }
-    catch (const std::exception& e) {
-        log_error("Exception when inserting networks message: %s", e.what());
-    }
-
-    if(rows_affected != 1) {
-        log_error ("Unexpected number of rows '%u' affected", rows_affected);
-    }
-    ymsg_destroy(in_p);
-};
 
 
 /**

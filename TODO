@@ -63,10 +63,6 @@ I propose to drop this directory with its contents entirely
 ==== src/cli ====
 I propose not to drop this directory yet; it's been removed from build
 
-==== src/netmon  ==== 
--> remove jsonf.*
--> namespace; suggestion: drivers::netmon
-
 ==== src/utils/<everything persistence related>  ====
 -> move to src/persistence
 -> namespace; suggestion: db

@@ -57,17 +57,6 @@ enum internal_err {
 };
 
 
-//! netmon (rtnetlink(7)) events 
-enum network_event {
-    NETWORK_EVENT_AUTO_ADD,
-    NETWORK_EVENT_AUTO_DEL,
-    NETWORK_EVENT_MAN_ADD,
-    NETWORK_EVENT_MAN_DEL,
-    NETWORK_EVENT_EXCL_ADD,
-    NETWORK_EVENT_EXCL_DEL,
-    NETWORK_EVENT_TERMINATOR
-};
-
 //! ip address version
 enum ipaddr_version {
     IP_VERSION_4,
@@ -97,24 +86,6 @@ enum ipaddr_version {
 #define KEY_ERROR_SUBTYPE  "error_subtype"
 #define KEY_ERROR_MSG      "error_msg"
 #define KEY_ROWID          "rowid"
-
-// netmon agent
-#define NETMON_KEY_EVENT        "event"
-#define NETMON_KEY_IFNAME       "interface name"
-#define NETMON_KEY_IPVER        "ip version"
-#define NETMON_KEY_IPADDR       "ip address"
-#define NETMON_KEY_PREFIXLEN    "prefix length"
-#define NETMON_KEY_MACADDR      "mac address"
-
-#define NETMON_VAL_AUTO_ADD     "automatic addition"
-#define NETMON_VAL_AUTO_DEL     "automatic deletion"
-#define NETMON_VAL_MAN_ADD      "manual addition"
-#define NETMON_VAL_MAN_DEL      "manual deletion"
-#define NETMON_VAL_EXCL_ADD     "exclusion addition"
-#define NETMON_VAL_EXCL_DEL     "exclusion deletion"
-
-#define NETMON_VAL_IPV4     "ip version 4"
-#define NETMON_VAL_IPV6     "ip version 6"
 
 // web component
 // average.ecpp

@@ -14,16 +14,14 @@
 #define BIOS_MLM_MEASUREMENTS_STREAM "measurements"
 #define BIOS_MLM_ASSETS_STREAM "assets"
 #define BIOS_MLM_ALERTS_STREAM "alerts"
-#define BIOS_MLM_NETWORKS_STREAM "networks"
-#define BIOS_MLM_STREAM_COUNT 5
+#define BIOS_MLM_STREAM_COUNT 4
 
-static const char *bios_streams[] = 
+static const char *bios_streams[BIOS_MLM_STREAM_COUNT+1] = 
 {
     BIOS_MLM_STREAM,
     BIOS_MLM_MEASUREMENTS_STREAM,
     BIOS_MLM_ASSETS_STREAM,
     BIOS_MLM_ALERTS_STREAM,
-    BIOS_MLM_NETWORKS_STREAM,
     NULL
 };
 
@@ -305,11 +303,6 @@ bios_get_stream_assets () {
 const char *
 bios_get_stream_alerts () {
     return BIOS_MLM_ALERTS_STREAM;
-}
-
-const char *
-bios_get_stream_networks () {
-    return BIOS_MLM_NETWORKS_STREAM;
 }
 
 const char **
