@@ -1,7 +1,8 @@
 [Unit]
 Description=Autoconfiguration agent for BIOS project
 After=malamute.service bios-db-init.service
-Requires=malamute.service bios-db-init.service
+Requires=malamute.service
+Requisite=bios-db-init.service
 
 [Service]
 Type=simple
