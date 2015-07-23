@@ -66,7 +66,7 @@ void Alert::addEvaluateFunctionParameter( const std::string &param, const std::s
     _evaluateParameters[param] = value;
 }
 
-void Alert::addTopic( const std::string topic )
+void Alert::addTopic( const std::string &topic )
 {
     _measurementTopics.push_back( topic );
     size_t pos = topic.find("@");

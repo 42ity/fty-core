@@ -94,7 +94,7 @@ public:
         _till = till;
     };
 
-    std::string toString(){
+    std::string toString() const{
         return "rulename= "+ruleName() + "; devices=" + devices() + "; since = " 
             + std::to_string(since()) + ";till=" + std::to_string(till());
     }

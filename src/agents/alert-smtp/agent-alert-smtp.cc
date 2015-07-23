@@ -80,7 +80,7 @@ std::string AlertSmtpAgent::replaceTokens( const std::string &text, const std::s
     return result;
 }
 
-std::string AlertSmtpAgent::replaceTokens( const std::string text, alertIterator_t it ) const
+std::string AlertSmtpAgent::replaceTokens( const std::string &text, alertIterator_t it ) const
 {
     std::string result = replaceTokens(text, "${rulename}", it->first );
     return replaceTokens(result, "${priority}", std::to_string( it->second.priority() ) );

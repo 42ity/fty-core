@@ -34,7 +34,7 @@ class AlertModel {
     bool isMeasurementInteresting( const Measurement &measurement ) const;
     void newMeasurement( const ymsg_t *message );
     void newMeasurement( const Measurement &Measurement );
-    void addAlert( const Alert alert );
+    void addAlert( const Alert &alert );
     void print() const;
 
     std::map<std::string, Alert>::iterator alertByRule(std::string ruleName);
