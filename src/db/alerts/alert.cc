@@ -102,7 +102,7 @@ db_reply_t
             "   (rule_name, priority, state, description,"
             "   notification, date_from, dc_id)"
             " SELECT"
-            "    :rule, :priority, :state, :desc, :note, FROM_UNIXTIME(:from), :dc_id"
+            "    :rule, :priority, :state, :desc, :note, :from, :dc_id"
             " FROM"
             "   t_empty"
             " WHERE NOT EXISTS"
@@ -206,7 +206,7 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " UPDATE"
             "   t_bios_alert"
-            " SET date_till = FROM_UNIXTIME(:till),"
+            " SET date_till = :till,"
             "     id=LAST_INSERT_ID(id)"
             " WHERE rule_name = :rule AND"
             "   date_till is NULL"
@@ -250,7 +250,7 @@ db_reply_t
         tntdb::Statement st = conn.prepareCached(
             " UPDATE"
             "   t_bios_alert"
-            " SET date_till = FROM_UNIXTIME(:till)"
+            " SET date_till = :till"
             " WHERE  id = :id"
         );
    
@@ -604,7 +604,7 @@ static const std::string  sel_alert_opened_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
-    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
+    "    v.date_from, v.date_till,"
     "    v.id_asset_element, v.type_name, v.subtype_name"
     " FROM"
     "   v_web_alert_all v"
@@ -615,7 +615,7 @@ static const std::string  sel_alert_closed_QUERY =
     " SELECT"
     "    v.id, v.rule_name, v.priority, v.state,"
     "    v.description, v.notification,"
-    "    UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till),"
+    "    v.date_from, v.date_till,"
     "    v.id_asset_element, v.type_name, v.subtype_name"
     " FROM"
     "   v_web_alert_all v"
@@ -781,7 +781,7 @@ db_reply <db_alert_t>
                 " SELECT"
                 "   v.id, v.rule_name, v.priority, v.state,"
                 "   v.descriprion, v.notification,"
-                "   UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+                "   v.date_from, v.date_till"
                 " FROM"
                 "   v_bios_alert v"
                 " INNER JOIN"
@@ -859,11 +859,11 @@ db_reply <db_alert_t>
                 " SELECT"
                 "   v.id, v.rule_name, v.priority, v.state,"
                 "   v.descriprion, v.notification,"
-                "   UNIX_TIMESTAMP(v.date_from), UNIX_TIMESTAMP(v.date_till)"
+                "   v.date_from, v.date_till"
                 " FROM"
                 "   v_bios_alert v"
                 " WHERE v.rule_name = :rule AND"
-                "   v.date_from = FROM_UNIXTIME(:date)"
+                "   v.date_from = :date"
         );
         tntdb::Row res = st.set("rule", rule_name).
                             set("date", date_from).

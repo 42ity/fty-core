@@ -135,7 +135,7 @@ db_insert()
     tntdb::Statement st = conn.prepareCached(
         " insert into"
         " v_bios_net_history (id,command,mask,mac,timestamp,ip,name)"
-        " values (NULL,:command,:mask, :mac, UTC_TIMESTAMP(),:ip, :name)"
+        " values (NULL,:command,:mask, :mac, UNIX_TIMESTAMP(),:ip, :name)"
         );
     
     // Insert one row or nothing
@@ -247,10 +247,10 @@ selectById(int id)
         row[3].get(_command);
 
         //timestamp
-        tntdb::Datetime mydatetime;
+        int64_t mydatetime;
         bool isNotNull = row[4].get(mydatetime);
         if (isNotNull)
-            this->setTimestamp(persist::convertToCTime(mydatetime));
+            this->setTimestamp(mydatetime);
         else
         {
             //TODO
@@ -556,12 +556,11 @@ getHistory(const std::string& url)
             row[5].get(tmp_c);
             newNetHistory->setCommand(tmp_c);
 
-
             //timestamp
-            tntdb::Datetime mydatetime;
+            int64_t mydatetime;
             bool isNotNull = row[6].get(mydatetime);
             if (isNotNull)
-                newNetHistory->setTimestamp(persist::convertToCTime(mydatetime));
+                newNetHistory->setTimestamp(mydatetime);
             else
             {
                 //TODO
