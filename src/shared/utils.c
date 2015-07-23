@@ -348,19 +348,17 @@ get_mac(
     char *path;
     int r = asprintf(&path, "/sys/class/net/%s/address", ethname);
     if (!r) {
-        //log_error("can't allocate path string: %m");
         goto fail;
     }
 
     int fd = open(path, O_RDONLY);
     if (!fd) {
-        //log_error("can't open /sys/class/net/%s/address: %m", ethname);
         goto fail;
     }
 
     r = read(fd, buf, MAC_SIZEA);
     if (r != MAC_SIZEA) {
-        //log_error("read on %s failed: %m", path);
+        buf[0] = '\0';
         goto close;
     }
     buf[r-1] = '\0'; // kill \n
