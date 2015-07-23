@@ -124,8 +124,7 @@ public:
 
   /**
    * \brief Creates new object from in_addr.
-   * \param addr_in struct with ip address
-   * \param unsigned int network prefix
+   * \param structure with ip address
    *
    * The address is set to accorting the parameter.
    */
