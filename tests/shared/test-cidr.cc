@@ -18,6 +18,19 @@ TEST_CASE("CIDR Operators","[cidr][operators]") {
   a6small--;
   REQUIRE( a6small < a6big );
   REQUIRE( a6small != a6big );
+  struct in_addr a = { 0x0200007F }; // ugly, this can fail on big-endian machine
+  REQUIRE( CIDRAddress(&a) == "127.0.0.2" );
+  a = { 0x0000007F };
+  REQUIRE( CIDRAddress(&a).prefix() == 32 );
+  struct sockaddr_in6 a6 = {
+      .sin6_family = AF_INET6,
+      .sin6_port = 0,
+      .sin6_flowinfo = 0,
+      .sin6_addr = { '\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x00',
+                     '\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x42' },
+      .sin6_scope_id = 0
+  };
+  REQUIRE( CIDRAddress( (struct sockaddr *)&a6 ) == "::42" );  
 }
 
 TEST_CASE("CIDR string manipulation","[cidr][operators]") {

@@ -123,6 +123,17 @@ public:
   CIDRAddress(const std::string address, const unsigned int prefix);
 
   /**
+   * \brief Creates new object from in_addr.
+   * \param addr_in struct with ip address
+   * \param unsigned int network prefix
+   *
+   * The address is set to accorting the parameter.
+   */
+  CIDRAddress(const struct in_addr* address);
+  CIDRAddress(const struct in6_addr* address);
+  CIDRAddress(const struct sockaddr* address);
+
+  /**
    * \brief Creates new object with specified network.
    * \param reference to other CIDRAddress object.
    */
@@ -331,9 +342,12 @@ public:
 
   /**
    * \brief set address according parameter
-   * \return true when from.valid()
+   * \return true when address is valid
    */
   bool set(const CIDRAddress& from);
+  bool set(const struct in_addr* address);
+  bool set(const struct in6_addr* address);
+  bool set(const struct sockaddr* address);
 
   /**
    * \brief converts address to string

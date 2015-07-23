@@ -23,6 +23,21 @@ CIDRAddress::CIDRAddress(const std::string address, const unsigned int prefix) {
   set(address + "/" + std::to_string( prefix ) );
 }
 
+CIDRAddress::CIDRAddress(const struct in_addr* address) {
+  _cidr = NULL;
+  set(address);
+}
+
+CIDRAddress::CIDRAddress(const struct in6_addr* address) {
+  _cidr = NULL;
+  set(address);
+}
+
+CIDRAddress::CIDRAddress(const struct sockaddr* address) {
+  _cidr = NULL;
+  set(address);
+}
+
 CIDRAddress::CIDRAddress(const CIDRAddress& address) {
   _cidr = NULL;
   set(address);
@@ -234,6 +249,30 @@ bool CIDRAddress::set(const std::string text) {
 bool CIDRAddress::set(const CIDRAddress& from) {
   setCidrPtr(from._cidr ? cidr_dup(from._cidr) : NULL);
   return ( _cidr != NULL );
+}
+
+bool CIDRAddress::set(const struct in_addr* address) {
+    CIDR *newcidr = cidr_from_inaddr(address);
+    setCidrPtr(newcidr);
+    return (_cidr != NULL);
+}
+
+bool CIDRAddress::set(const struct in6_addr* address) {
+    CIDR *newcidr = cidr_from_in6addr(address);
+    setCidrPtr(newcidr);
+    return (_cidr != NULL);
+}
+
+bool CIDRAddress::set(const struct sockaddr* address) {
+    setCidrPtr(NULL);
+    if( ! address ) return false;
+    switch( address->sa_family ) {
+    case AF_INET:
+        return set( &( ((struct sockaddr_in *)address)->sin_addr ) );
+    case AF_INET6:
+        return set( &( ((struct sockaddr_in6 *)address)->sin6_addr ) );            
+    }
+    return false;
 }
 
 std::string CIDRAddress::toString() const {
