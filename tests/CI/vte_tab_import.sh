@@ -1,4 +1,4 @@
-#/!bin/sh
+#!/bin/bash
 
 # Copyright (C) 2014 Eaton
 #
@@ -34,7 +34,7 @@
     # *** it is currently from interval <2206;2209>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
-    # *** tools directory containing tools/initdb.sql tools/bam_import_16_tab_008.csv present on MS 
+    # *** tools directory containing tools/initdb.sql tools/bam_vte_tab_import.csv present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh and scriptlib.sh library files
 
 # ***** GLOBAL VARIABLES *****
@@ -105,9 +105,6 @@ SUT_IS_REMOTE=yes
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
-ERRORS=0
-SUCCESSES=0
-
 determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
@@ -121,29 +118,24 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
     # *** write power rack base test data to DB on SUT
 set -o pipefail 2>/dev/null || true
 set -e
-loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab.log
+loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 set +e
 
 # ***** POST THE CSV FILE *****
-ASSET="$CHECKOUTDIR/tools/bam_import_16_tab_008.csv"
+ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 
-# Import the tests/persist/test-loadcsv.cc.csv file
-api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" > >(tee $CHECKOUTDIR/DC008.log >&1)
+# Import the bam_vte_tab_import.csv file
+api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the number of imported lines FAILED'"
-echo "Test of the number of imported lines 			PASSED"
-grep -q "\[ 9," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line   9 	FAILED'"
-echo "Test of the line  9 					PASSED"
-grep -q "\[ 10," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line 10 	FAILED'"
-echo "Test of the line 10 					PASSED"
-grep -q "\[ 17," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line 17 	FAILED'"
-echo "Test of the line 17 					PASSED"
-grep -q "\[ 21," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line 21 	FAILED'"
-echo "Test of the line 21 					PASSED"
-grep -q "\[ 22," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line 22 	FAILED'"
-echo "Test of the line 22 					PASSED"
-grep -q "\[ 23," $CHECKOUTDIR/DC008.log || die "ERROR : 'Test of the line 23 	FAILED'"
-echo "Test of the line 23 					PASSED"
+grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+    die "ERROR : 'Test of the number of imported lines			FAILED'"
+echo "Test of the number of imported lines			PASSED"
+
+for NUM in 9 10 17 21 22 23 ; do
+    grep -q "\[ $NUM," $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+        die "ERROR : 'Test of the line   $NUM 				FAILED'"
+    echo "Test of the line  $NUM  					PASSED"
+done
 
 #ELEMENT="\([0123456789]*,'DC-LAB1',2,NULL,'active',1,1\),\([0123456789]*,'ROOM-01',3,1,'active',2,0\),\([0123456789]*,'ANNEX-01',3,1,'active',3,1\),\([0123456789]*,'CAGE-01',1,2,'active',4,1\),\([0123456789]*,'ROW-01',4,2,'active',5,1\),\([0123456789]*,'ROW-02',4,2,'active',5,1\),\([0123456789]*,'RACK-01',5,5,'active',5,1\),\([0123456789]*,'RACK1-LAB',5,5,'active',5,0\),\([0123456789]*,'CUSTOMER_02',1,1,'nonactive',2,1\),\([0123456789]*,'MAIN_LAB',6,1,'nonactive',3,1\),\([0123456789]*,'MAIN3P_LAB',6,1,'nonactive',4,0\),\([0123456789]*,'GENSET_01',6,3,'spare',5,1\),\([0123456789]*,'GENSET_02',6,3,'retired',5,1\),\([0123456789]*,'GENSET_03',6,3,'nonactive',5,1\),\([0123456789]*,'ATS_01',6,2,'active',5,1\),\([0123456789]*,'UPS1-MAIN',6,2,'active',1,1\),\([0123456789]*,'ePDU1-LAB',6,8,'active',5,1\),\([0123456789]*,'SRV1_LAB',6,8,'active',5,1\),\([0123456789]*,'SRV2_LAB',6,8,'active',5,1\)"
 
@@ -151,45 +143,45 @@ ELEMENT="\(1,'DC-LAB1',2,NULL,'active',1,1\),\(2,'ROOM-01',3,1,'active',2,0\),\(
 
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_element|awk "/INSERT/ && /ROOM-01/" | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_element FAILED'"
-echo 'Test of the table t_bios_asset_element 			PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_element 			PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(2,'datacenter'\),\(6,'device'\),\(1,'group'\),\(5,'rack'\),\(3,'room'\),\(4,'row'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_element_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_element_type FAILED'"
-echo 'Test of the table t_bios_asset_element_type 		PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_element_type 		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-ELEMENT="VALUES \(1,'company','EATON',1,0\),\(2,'description','Lab DC',1,0\),\(3,'site_name','Eaton DC 1',1,0\),\(4,'address','Place de la Gare',1,0\),\(5,'contact_name',' 1345 Le Lieu',1,0\),\(6,'region','EMEA',1,0\),\(7,'contact_email','John Smith',1,0\),\(8,'maximum_number_racks','476010203',1,0\),\(9,'country','Switzerland',1,0\),\(10,'contact_phone','john.smith@company.com',1,0\),\(11,'description','main room',2,0\),\(12,'description','Annex',3,0\),\(13,'description','cage 01',4,0\),\(14,'type','cage',4,0\),\(15,'description','row in a cage',5,0\),\(16,'maximum_number_racks','10',5,0\),\(17,'description','row in a room',6,0\),\(18,'maximum_number_racks','10',6,0\),\(19,'description','rack 01',7,0\),\(20,'u_size','42U',7,0\),\(21,'serial_no','21545212HGFV2',7,0\),\(22,'asset_tag','EATON123455',7,0\),\(23,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',7,0\),\(24,'manufacturerbrand','Cooper',7,0\),\(25,'description','rack Lab',8,0\),\(26,'u_size','42U',8,0\),\(27,'serial_no','21545212HGFV2',8,0\),\(28,'asset_tag','EATON123456',8,0\),\(29,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',8,0\),\(30,'manufacturerbrand','Cooper',8,0\),\(32,'description','customer X \(IT\)',10,0\),\(33,'type','customer',10,0\),\(34,'description','MAIN 240V',11,0\),\(35,'description','MAIN 380V 3Ph',12,0\),\(36,'address','1G/',12,0\),\(37,'phasefeeds','3',12,0\),\(38,'description','Genset',13,0\),\(39,'maintenance_date','4-Jun-14',13,0\),\(40,'service_contact_name','Bob Jones',13,0\),\(41,'serial_no','G789456',13,0\),\(42,'maintenance_due','4-Sep-14',13,0\),\(43,'runtimeautonomy','8',13,0\),\(44,'asset_tag','EATON123457',13,0\),\(45,'installation_date','4-Jun-14',13,0\),\(46,'model','45kW NG/LG 240V 3 Phase',13,0\),\(47,'service_contact_mail','Bob.Jones@company.com',13,0\),\(48,'service_contact_phone','476010203',13,0\),\(49,'manufacturerbrand','Generac',13,0\),\(50,'description','Genset',14,0\),\(51,'maintenance_date','4-Jun-14',14,0\),\(52,'service_contact_name','Bob Jones',14,0\),\(53,'serial_no','G789456',14,0\),\(54,'maintenance_due','4-Sep-14',14,0\),\(55,'runtimeautonomy','8',14,0\),\(56,'asset_tag','EATON123457',14,0\),\(57,'installation_date','4-Jun-14',14,0\),\(58,'model','45kW NG/LG 240V 3 Phase',14,0\),\(59,'service_contact_mail','Bob.Jones@company.com',14,0\),\(60,'service_contact_phone','476010203',14,0\),\(61,'manufacturerbrand','Generac',14,0\),\(62,'description','Genset',15,0\),\(63,'maintenance_date','4-Jun-14',15,0\),\(64,'service_contact_name','Bob Jones',15,0\),\(65,'serial_no','G789456',15,0\),\(66,'maintenance_due','4-Sep-14',15,0\),\(67,'runtimeautonomy','8',15,0\),\(68,'asset_tag','EATON123457',15,0\),\(69,'installation_date','4-Jun-14',15,0\),\(70,'model','45kW NG/LG 240V 3 Phase',15,0\),\(71,'service_contact_mail','Bob.Jones@company.com',15,0\),\(72,'service_contact_phone','476010203',15,0\),\(73,'manufacturerbrand','Generac',15,0\),\(74,'description','Automatic transfer switch',16,0\),\(75,'serial_no','ATC1235',16,0\),\(76,'asset_tag','EATON123458',16,0\),\(77,'model','ATC-100',16,0\),\(78,'manufacturerbrand','eaton',16,0\),\(79,'description','UPS somehow',17,0\),\(80,'battery_maintenance_date','4-Jun-14',17,0\),\(81,'u_size','3U',17,0\),\(82,'maintenance_date','4-Jun-14',17,0\),\(83,'battery_installation_date','4-Jun-14',17,0\),\(84,'serial_no','G214D17012',17,0\),\(85,'end_warranty_date','4-Jun-14',17,0\),\(86,'battery_type','4-Jun-14',17,0\),\(87,'asset_tag','EATON123459',17,0\),\(88,'installation_date','4-Jun-14',17,0\),\(89,'model','9PX 6kVA',17,0\),\(90,'manufacturerbrand','EATON',17,0\),\(91,'description','ePDU1 eMAA10',18,0\),\(92,'maintenance_date','4-Jun-14',18,0\),\(93,'serial_no','EATON123460',18,0\),\(94,'hostname.1hostname','10.130.32.15',18,0\),\(95,'runtimeautonomy','U051B43007',18,0\),\(96,'battery_type','4-Jun-14',18,0\),\(97,'asset_tag',' 3xC19',18,0\),\(98,'http_link.1','MApdu-BiosLeft.Bios.Labo.Kalif.com',18,0\),\(99,'model','Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13',18,0\),\(100,'manufacturerbrand','EATON',18,0\),\(111,'description','SRV1 PRIMERGY RX100 G8',20,0\),\(112,'ip.1ip','10.130.32.16',20,0\),\(113,'location_u_pos','6',20,0\),\(114,'u_size','1U',20,0\),\(115,'serial_no','G789456',20,0\),\(116,'hostname.1hostname','srv1.Bios.Labo.Kalif.com',20,0\),\(117,'end_warranty_date','4-Jun-14',20,0\),\(118,'asset_tag','EATON123461',20,0\),\(119,'installation_date','4-Jun-14',20,0\),\(120,'http_link.1','htps://srv1.Bios.Labo.Kalif.com',20,0\),\(121,'model','RX100 G8',20,0\),\(122,'manufacturerbrand','Fujisu',20,0\),\(123,'description','SRV1 PRIMERGY RX100 G8',21,0\),\(124,'ip.1ip','10.130.32.16',21,0\),\(125,'location_u_pos','6',21,0\),\(126,'u_size','1U',21,0\),\(127,'serial_no','G789456',21,0\),\(128,'hostname.1hostname','srv1.Bios.Labo.Kalif.com',21,0\),\(129,'end_warranty_date','4-Jun-14',21,0\),\(130,'asset_tag','EATON123461',21,0\),\(131,'installation_date','4-Jun-14',21,0\),\(132,'http_link.1','htps://srv1.Bios.Labo.Kalif.com',21,0\),\(133,'model','RX100 G8',21,0\),\(134,'manufacturerbrand','Fujisu',21,0\)"
+ELEMENT="VALUES \(1,'company','EATON',1,0\),\(2,'description','Lab DC',1,0\),\(3,'site_name','Eaton DC 1',1,0\),\(4,'address','Place de la Gare',1,0\),\(5,'contact_name',' 1345 Le Lieu',1,0\),\(6,'region','EMEA',1,0\),\(7,'contact_email','John Smith',1,0\),\(8,'maximum_number_racks','476010203',1,0\),\(9,'country','Switzerland',1,0\),\(10,'contact_phone','john.smith@company.com',1,0\),\(11,'description','main room',2,0\),\(12,'description','Annex',3,0\),\(13,'description','cage 01',4,0\),\(14,'type','cage',4,0\),\(15,'description','row in a cage',5,0\),\(16,'maximum_number_racks','10',5,0\),\(17,'description','row in a room',6,0\),\(18,'maximum_number_racks','10',6,0\),\(19,'description','rack 01',7,0\),\(20,'u_size','42U',7,0\),\(21,'serial_no','21545212HGFV2',7,0\),\(22,'asset_tag','EATON123455',7,0\),\(23,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',7,0\),\(24,'manufacturerbrand','Cooper',7,0\),\(25,'description','rack Lab',8,0\),\(26,'u_size','42U',8,0\),\(27,'serial_no','21545212HGFV2',8,0\),\(28,'asset_tag','EATON123456',8,0\),\(29,'model','RESSPU4210KB 600mm x 1000mm - 42U Rack',8,0\),\(30,'manufacturerbrand','Cooper',8,0\),\(32,'description','customer X \(IT\)',10,0\),\(33,'type','customer',10,0\),\(34,'description','MAIN 240V',11,0\),\(35,'description','MAIN 380V 3Ph',12,0\),\(36,'phasefeeds','3',12,0\),\(37,'description','Genset',13,0\),\(38,'maintenance_date','4-Jun-14',13,0\),\(39,'service_contact_name','Bob Jones',13,0\),\(40,'serial_no','G789456',13,0\),\(41,'maintenance_due','4-Sep-14',13,0\),\(42,'runtimeautonomy','8',13,0\),\(43,'asset_tag','EATON123457',13,0\),\(44,'installation_date','4-Jun-14',13,0\),\(45,'model','45kW NG/LG 240V 3 Phase',13,0\),\(46,'service_contact_mail','Bob.Jones@company.com',13,0\),\(47,'service_contact_phone','476010203',13,0\),\(48,'manufacturerbrand','Generac',13,0\),\(49,'description','Genset',14,0\),\(50,'maintenance_date','4-Jun-14',14,0\),\(51,'service_contact_name','Bob Jones',14,0\),\(52,'serial_no','G789456',14,0\),\(53,'maintenance_due','4-Sep-14',14,0\),\(54,'runtimeautonomy','8',14,0\),\(55,'asset_tag','EATON123457',14,0\),\(56,'installation_date','4-Jun-14',14,0\),\(57,'model','45kW NG/LG 240V 3 Phase',14,0\),\(58,'service_contact_mail','Bob.Jones@company.com',14,0\),\(59,'service_contact_phone','476010203',14,0\),\(60,'manufacturerbrand','Generac',14,0\),\(61,'description','Genset',15,0\),\(62,'maintenance_date','4-Jun-14',15,0\),\(63,'service_contact_name','Bob Jones',15,0\),\(64,'location_w_pos','left',15,0\),\(65,'serial_no','G789456',15,0\),\(66,'maintenance_due','4-Sep-14',15,0\),\(67,'runtimeautonomy','8',15,0\),\(68,'asset_tag','EATON123457',15,0\),\(69,'installation_date','4-Jun-14',15,0\),\(70,'model','45kW NG/LG 240V 3 Phase',15,0\),\(71,'service_contact_mail','Bob.Jones@company.com',15,0\),\(72,'service_contact_phone','476010203',15,0\),\(73,'manufacturerbrand','Generac',15,0\),\(74,'description','Automatic transfer switch',16,0\),\(75,'serial_no','ATC1235',16,0\),\(76,'asset_tag','EATON123458',16,0\),\(77,'model','ATC-100',16,0\),\(78,'manufacturerbrand','eaton',16,0\),\(79,'description','UPS somehow',17,0\),\(80,'battery_maintenance_date','4-Jun-14',17,0\),\(81,'u_size','3U',17,0\),\(82,'maintenance_date','4-Jun-14',17,0\),\(83,'battery_installation_date','4-Jun-14',17,0\),\(84,'serial_no','G214D17012',17,0\),\(85,'end_warranty_date','4-Jun-14',17,0\),\(86,'battery_type','4-Jun-14',17,0\),\(87,'asset_tag','EATON123459',17,0\),\(88,'installation_date','4-Jun-14',17,0\),\(89,'model','9PX 6kVA',17,0\),\(90,'manufacturerbrand','EATON',17,0\),\(91,'description','ePDU1 eMAA10',18,0\),\(92,'maintenance_date','4-Jun-14',18,0\),\(93,'location_w_pos','left',18,0\),\(94,'serial_no','EATON123460',18,0\),\(95,'hostname.1hostname','10.130.32.15',18,0\),\(96,'runtimeautonomy','U051B43007',18,0\),\(97,'battery_type','4-Jun-14',18,0\),\(98,'asset_tag',' 3xC19',18,0\),\(99,'http_link.1','MApdu-BiosLeft.Bios.Labo.Kalif.com',18,0\),\(100,'model','Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13',18,0\),\(101,'manufacturerbrand','EATON',18,0\),\(113,'description','SRV1 PRIMERGY RX100 G8',20,0\),\(114,'ip.1ip','10.130.32.16',20,0\),\(115,'location_u_pos','6',20,0\),\(116,'u_size','1U',20,0\),\(117,'serial_no','G789456',20,0\),\(118,'hostname.1hostname','srv1.Bios.Labo.Kalif.com',20,0\),\(119,'end_warranty_date','4-Jun-14',20,0\),\(120,'asset_tag','EATON123461',20,0\),\(121,'installation_date','4-Jun-14',20,0\),\(122,'http_link.1','htps://srv1.Bios.Labo.Kalif.com',20,0\),\(123,'model','RX100 G8',20,0\),\(124,'manufacturerbrand','Fujisu',20,0\),\(125,'description','SRV1 PRIMERGY RX100 G8',21,0\),\(126,'ip.1ip','10.130.32.16',21,0\),\(127,'location_u_pos','6',21,0\),\(128,'u_size','1U',21,0\),\(129,'serial_no','G789456',21,0\),\(130,'hostname.1hostname','srv1.Bios.Labo.Kalif.com',21,0\),\(131,'end_warranty_date','4-Jun-14',21,0\),\(132,'asset_tag','EATON123461',21,0\),\(133,'installation_date','4-Jun-14',21,0\),\(134,'http_link.1','htps://srv1.Bios.Labo.Kalif.com',21,0\),\(135,'model','RX100 G8',21,0\),\(136,'manufacturerbrand','Fujisu',21,0\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_ext_attributes|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_ext_attributes FAILED'"
-echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(1,11,6\),\(2,12,6\),\(3,13,2\),\(4,14,1\),\(5,15,4\),\(6,16,7\),\(7,17,1\),\(8,18,3\),\(9,20,5\),\(10,21,5\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device FAILED'"
-echo 'Test of the table t_bios_asset_device			PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_device			PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'main'\),\(4,'pdu'\),\(5,'server'\),\(7,'sts'\),\(1,'ups'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device_type FAILED'"
-echo 'Test of the table t_bios_asset_device_type		PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_device_type		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(1,1,NULL,6,NULL,1\),\(2,3,NULL,6,NULL,1\),\(3,6,NULL,7,NULL,1\),\(4,7,NULL,8,NULL,1\),\(5,8,'B8',9,NULL,1\),\(6,8,'B9',10,NULL,1\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_link|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_link FAILED'"
-echo 'Test of the table t_bios_asset_ext_link			PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_ext_link			PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(1,'power chain'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_link_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_link_type FAILED'"
-echo 'Test of the table t_bios_asset_ext_link_type		PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_ext_link_type		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(1,4,5\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_group_relation|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_group_relation FAILED'"
-echo 'Test of the table t_bios_asset_ext_group_relation       PASSED' | tee $CHECKOUTDIR/DC008.log;
+echo 'Test of the table t_bios_asset_ext_group_relation       PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 TIME=$(date --utc "+%Y-%m-%d %H:%M:%S")
-echo "Finish time is "$TIME
+echo "Finish time is $TIME"
 TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
-echo "Test lasts "$TEST_LAST" second."
+echo "Test lasted $TEST_LAST second."
 exit 0
