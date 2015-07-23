@@ -89,5 +89,14 @@ bool mkdir_if_needed(const char *path, mode_t mode, bool create_parent ) {
     return false;
 }
 
+// basename from libgen.h does not play nice with const char*
+std::string basename(const std::string& path) {
+    auto pos = path.rfind(path_separator());
+    if (pos == std::string::npos)
+        return std::string{path};
+
+    return path.substr(pos+1);
+}
+
 
 } // namespace shared
