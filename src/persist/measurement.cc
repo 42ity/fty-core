@@ -110,7 +110,7 @@ insert_into_measurement_again:
                 "   t_bios_measurement"
                 "       (timestamp, value, scale, topic_id)"
                 " SELECT"
-                "   FROM_UNIXTIME(:time), :value, :scale, id"
+                "   :time, :value, :scale, id"
                 " FROM"
                 "   t_bios_measurement_topic"
                 " WHERE topic=:topic AND"
@@ -215,7 +215,7 @@ db_reply <std::vector<db_msrmnt_t>>
     
     try {
         tntdb::Statement st = conn.prepareCached(
-                " SELECT id, UNIX_TIMESTAMP(timestamp), value, scale, device_id, units, topic"
+                " SELECT id, timestamp, value, scale, device_id, units, topic"
                 " FROM v_bios_measurement"
                 " WHERE topic LIKE :topic");
         tntdb::Result res = st.set("topic", topic)
@@ -288,7 +288,7 @@ void get_measurements(ymsg_t** out, char** out_subj,
     std::string json;
     try {
        std::string query = std::string(
-            " SELECT topic, value, scale, UNIX_TIMESTAMP(timestamp), units "
+            " SELECT topic, value, scale, timestamp, units "
             " FROM v_bios_measurement"
             " WHERE "
             " topic_id IN "
@@ -299,10 +299,10 @@ void get_measurements(ymsg_t** out, char** out_subj,
             "          t.topic LIKE :topic) AND "
             " timestamp ") +
             std::string((in_subj && strlen(in_subj) && in_subj[strlen(in_subj)-1] == '>') ? ">=" : ">") +
-            " FROM_UNIXTIME(:time_st) AND "
+            " :time_st AND "
             " timestamp "  +
             std::string((in_subj && strlen(in_subj) && in_subj[strlen(in_subj)-2] == '<') ? "<=" : "<") +
-            " FROM_UNIXTIME(:time_end) "
+            " :time_end "
             " ORDER BY timestamp ASC";
 
         int64_t start_ts = -1, end_ts = -1, last_ts = -1;
