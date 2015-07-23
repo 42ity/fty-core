@@ -113,10 +113,17 @@ if(request.getMethod() == "PUT") {
     cxxtools::SerializationInfo si;
     cxxtools::SerializationInfo rsi;
     cxxtools::JsonDeserializer deserializer(input);
-    deserializer.deserialize(si);
     cxxtools::SerializationInfo* it = NULL;
     std::string val;
-    rsi = si.getMember(iface);
+    try {
+        deserializer.deserialize(si);
+        rsi = si.getMember(iface);
+    } catch(...) {
+</%cpp>
+{ "error": "Wrong json on input" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
 
 // Gets configuration from json and sets it in config while verifying it matches regexp
 #define AUG_SET(NAME, REGEX) \
