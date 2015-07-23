@@ -20,7 +20,6 @@ TEST_CASE("CIDR Operators","[cidr][operators]") {
   REQUIRE( a6small != a6big );
   struct in_addr a = { 0x0200007F }; // ugly, this can fail on big-endian machine
   REQUIRE( CIDRAddress(&a) == "127.0.0.2" );
-  a = { 0x0000007F };
   REQUIRE( CIDRAddress(&a).prefix() == 32 );
   struct sockaddr_in6 a6 = {
       .sin6_family = AF_INET6,
