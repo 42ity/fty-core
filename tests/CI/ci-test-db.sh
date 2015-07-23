@@ -94,6 +94,8 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_DATA"
 echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
