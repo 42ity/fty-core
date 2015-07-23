@@ -125,10 +125,9 @@ if(request.getMethod() == "PUT") {
     }
 
 // Gets configuration from json and sets it in config while verifying it matches regexp
-#define AUG_SET(NAME, REGEX) \
+#define AUG_SET(NAME) \
     it = rsi.findMember(NAME); \
     if(it != NULL) { \
-        rex = REGEX; \
         it->getValue(val); \
         if(!std::regex_match(val, match, rex)) { \
             reply.out() << std::string("{ \"error\": \"Wrong value '") + val + \
@@ -141,10 +140,36 @@ if(request.getMethod() == "PUT") {
     }
 
     // All the things we need to set
-    AUG_SET("method", "^(dhcp|static|none)$");
-    AUG_SET("address", "^(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])$");
-    AUG_SET("netmask", "^(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])$");
-    AUG_SET("gateway", "^((1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])|[a-z0-9]([a-z0-9]|-)*)$");
+    rex = "^(dhcp|static|none)$";
+    AUG_SET("method");
+    // IP like regexp
+    rex = "^(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])$";
+    AUG_SET("address");
+    AUG_SET("netmask");
+    // IP or hostname
+    rex = "^((1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])|[a-z0-9]([a-z0-9]|-)*)$";
+    AUG_SET("gateway");
+
+    //DNS is array, handle differently
+    it = rsi.findMember("nameservers");
+    if(it != NULL) {
+        command = "rm /files/etc/resolv.conf/nameserver\n";
+        write(augtool.getStdin(), command.c_str(), command.length());
+        for(auto i : *it) {
+            i.getValue(val);
+            if(!std::regex_match(val, match, rex)) {
+                reply.out() << std::string("{ \"error\": \"Wrong value '") + val +
+                                       "' for DNS setting\" } ";
+                return HTTP_BAD_REQUEST;
+            }
+            command = "set /files/etc/resolv.conf/nameserver[0] " + val + "\n";
+            printf("%s\n", command.c_str());
+            write(augtool.getStdin(), command.c_str(), command.length());
+        }
+        nil = wait_read_all(augtool.getStdout());
+    }
+
+    // Commit everything
     command = "save\n";
     write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
