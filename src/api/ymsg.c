@@ -235,6 +235,9 @@ is_ymsg (zmsg_t *msg)
         return false;
 
     zframe_t *frame = zmsg_first (msg);
+    if (!frame) 
+        goto empty;             //  Malformed or empty
+
 
     //  Get and check protocol signature
     ymsg_t *self = ymsg_new (0);
@@ -243,7 +246,10 @@ is_ymsg (zmsg_t *msg)
     uint16_t signature;
     GET_NUMBER2 (signature);
     if (signature != (0xAAA0 | 0))
+    {
+        zsys_error (" problem with signature\n");
         goto fail;             //  Invalid signature
+    }
 
     //  Get message id and parse per message type
     GET_NUMBER1 (self->id);
@@ -254,8 +260,13 @@ is_ymsg (zmsg_t *msg)
             ymsg_destroy (&self);
             return true;
         default:
+        {
+            zsys_error (" problem with self_id '%d'\n", self->id);
             goto fail;
+        }
     }
+    empty:
+        zsys_error (" empty message\n");
     fail:
     malformed:
         ymsg_destroy (&self);
@@ -287,7 +298,10 @@ ymsg_decode (zmsg_t **msg_p)
     uint16_t signature;
     GET_NUMBER2 (signature);
     if (signature != (0xAAA0 | 0))
+    {
+        zsys_error (" problem with signature\n");
         goto empty;             //  Invalid signature
+    }
 
     //  Get message id and parse per message type
     GET_NUMBER1 (self->id);
@@ -342,7 +356,10 @@ ymsg_decode (zmsg_t **msg_p)
                 size_t chunk_size;
                 GET_NUMBER4 (chunk_size);
                 if (self->needle + chunk_size > (self->ceiling))
+                {
+                    zsys_error ("malformed 'response' field \n");
                     goto malformed;
+                }
                 self->response = zchunk_new (self->needle, chunk_size);
                 self->needle += chunk_size;
             }
@@ -350,14 +367,20 @@ ymsg_decode (zmsg_t **msg_p)
                 size_t chunk_size;
                 GET_NUMBER4 (chunk_size);
                 if (self->needle + chunk_size > (self->ceiling))
+                {
+                    zsys_error ("malformed 'request' field \n");
                     goto malformed;
+                }
                 self->request = zchunk_new (self->needle, chunk_size);
                 self->needle += chunk_size;
             }
             break;
 
         default:
+        {
+            zsys_error ("malformed 'id' field\n");
             goto malformed;
+        }
     }
     //  Successful return
     zframe_destroy (&frame);
@@ -1107,6 +1130,7 @@ ymsg_test (bool verbose)
     //  Check that _dup works on empty message
     copy = ymsg_dup (self);
     assert (copy);
+    assert (ymsg_id(copy) == ymsg_id(self));
     ymsg_destroy (&copy);
 
     ymsg_set_version (self, 123);
@@ -1137,6 +1161,7 @@ ymsg_test (bool verbose)
     //  Check that _dup works on empty message
     copy = ymsg_dup (self);
     assert (copy);
+    assert (ymsg_id(copy) == ymsg_id(self));
     ymsg_destroy (&copy);
 
     ymsg_set_version (self, 123);
