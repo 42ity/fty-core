@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctime>
 
 #include "agent-nut.h"
 #include "ymsg.h"
@@ -54,7 +55,7 @@ void NUTAgent::advertisePhysics() {
                     device.second.name().c_str(),
                     measurement.first.c_str(),
                     units.c_str(),
-                    measurement.second, -2, -1);
+                    measurement.second, -2, std::time(0));
                 if( msg ) {
                     log_debug("sending new measurement for ups %s, type %s, value %" PRIi32,
                               device.second.name().c_str(),
@@ -74,7 +75,7 @@ void NUTAgent::advertisePhysics() {
                     device.second.name().c_str(),
                     "status.ups",
                     "",
-                    status_i, 0, -1);
+                    status_i, 0, std::time(0));
                 if( msg ) {
                     log_debug("sending new status for ups %s, value %i (%s)", device.second.name().c_str(), status_i, status_s.c_str() );
                     send( topic.c_str(), &msg );
