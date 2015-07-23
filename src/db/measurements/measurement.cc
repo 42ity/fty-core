@@ -67,15 +67,15 @@ select_measurements (
         // Get measurements  
         {
             std::string query (
-            " SELECT topic, value, scale, UNIX_TIMESTAMP(timestamp) "
+            " SELECT topic, value, scale, timestamp "
             " FROM v_bios_measurement"
             " WHERE "
             " topic_id = :topic_id AND "
             " timestamp ");
             query.append (left_interval_closed ? ">=" : ">")
-                 .append (" FROM_UNIXTIME(:time_st) AND timestamp ")
+                 .append (" :time_st AND timestamp ")
                  .append (right_interval_closed ? "<=" : "<")
-                 .append (" FROM_UNIXTIME(:time_end) ")
+                 .append (" :time_end ")
                  .append (" ORDER BY timestamp ASC");
 
             log_debug("Running query: '%s'", query.c_str ());
@@ -159,7 +159,7 @@ select_measurements_averages (
         log_debug ("topic id: '%" PRId64"'", topic_id);
         {
             tntdb::Statement statement = conn.prepareCached (
-            " SELECT COALESCE(MAX(UNIX_TIMESTAMP(timestamp)), :cval) FROM v_bios_measurement "
+            " SELECT COALESCE(MAX(timestamp), :cval) FROM v_bios_measurement "
             " WHERE topic_id = :topic_id ");
             tntdb::Result result = statement.set ("topic_id", topic_id).set ("cval", INT32_MIN).select ();
             if (result.size () == 0) {
@@ -294,7 +294,7 @@ select_measurement_last_web_byTopic (
     int64_t max_time = 0 ;
     try {
         std::string query_max_time =
-        " SELECT max(UNIX_TIMESTAMP(timestamp)) "
+        " SELECT max(timestamp) "
         " FROM " +
             view + " v " +
         " WHERE " +
@@ -339,7 +339,7 @@ select_measurement_last_web_byTopic (
         " WHERE topic ";
         query += fuzzy ? " LIKE " : " = ";
         query += " :topic AND ";
-        query += " UNIX_TIMESTAMP(timestamp) = :maxtime ";
+        query += " timestamp = :maxtime ";
         log_debug("%s", query.c_str());
 
         tntdb::Statement statement = conn.prepareCached(query);

@@ -365,7 +365,7 @@ common_msg_t* insert_client_info (const char* url, m_dvc_id_t device_id,
             "   v_bios_client_info (id, id_client, id_discovered_device,"
             "                       ext, timestamp)"
             " VALUES (NULL, :idclient, :iddiscovereddevice, :ext,"
-            "            UTC_TIMESTAMP())"
+            "            UNIX_TIMESTAMP())"
         );          // time is the time of inserting into database
         tntdb::Blob blobData ((const char*) zchunk_data(*blob), 
                               zchunk_size (*blob));
@@ -457,7 +457,7 @@ common_msg_t* update_client_info
 
         tntdb::Statement st = conn.prepareCached(
             " UPDATE t_bios_client_info"
-            " SET ext=:ext, timestamp=UTC_TIMESTAMP()"
+            " SET ext=:ext, timestamp=UNIX_TIMESTAMP()"
             " WHERE id_client_info=:idclientinfo"
         );          // time is the time of inserting into database
         tntdb::Blob blobData((const char*) zchunk_data(*blob), 
@@ -501,7 +501,7 @@ common_msg_t* update_ui_properties
 
         tntdb::Statement st = conn.prepareCached(
             " UPDATE t_bios_client_info"
-            " SET ext=:ext, timestamp=UTC_TIMESTAMP()"
+            " SET ext=:ext, timestamp=UNIX_TIMESTAMP()"
             " WHERE id_client=:idclient"
         );          // time is the time of inserting into database
         tntdb::Blob blobData((const char*) zchunk_data(*blob), 
@@ -547,7 +547,7 @@ common_msg_t* select_client_info_last(const char  * url,
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
-            " v.id, UNIX_TIMESTAMP(v.datum) as utm, v.info"
+            " v.id, v.datum as utm, v.info"
             " FROM"
             " v_bios_client_info_last v"
             " WHERE"
@@ -598,7 +598,7 @@ common_msg_t* select_client_info(const char* url,
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
-            "   UNIX_TIMESTAMP(v.timestamp) as utm,"
+            "   v.timestamp,"
             "   v.ext, v.id_client , v.id_discovered_device"
             " FROM"
             "   v_bios_client_info v"
@@ -648,7 +648,7 @@ common_msg_t* select_ui_properties(const char* url)
 
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
-            "   UNIX_TIMESTAMP(v.timestamp) AS utm,"
+            "   v.timestamp,"
             "   v.ext, v.id , v.id_discovered_device"
             " FROM"
             " v_bios_client_info v"
@@ -1466,7 +1466,7 @@ common_msg_t* test_insert_measurement(const char    *url,
             " t_bios_measurement"
             "   (topic_id, value, scale, timestamp)"
             " VALUES"
-            "   (:topicid, :val, :scale, FROM_UNIXTIME(:seconds))" 
+            "   (:topicid, :val, :scale, :seconds)" 
         );
 
         // Insert one row or nothing
