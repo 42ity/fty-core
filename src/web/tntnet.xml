@@ -67,7 +67,7 @@
 
     <!-- Network configuration -->
     <mapping>
-      <target>netcfg-list@bios_web</target>
+      <target>netcfg@bios_web</target>
       <url>^/api/v1/admin/netcfgs$</url>
     </mapping>
     <mapping>
