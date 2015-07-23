@@ -73,7 +73,7 @@ trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
 
 echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db test-db2 test-db-alert \
+    test-db2 test-db-alert \
     test-db-asset-crud test-dbtopology test-outage test-totalpower \
     || FAILED="compilation"
 sleep 1
@@ -91,22 +91,6 @@ if [ "$?" != 0 ] ; then
     RESULT=1
     FAILED="$FAILED ci-empty-db.sh"
     die "Can't prepare the database"
-fi
-sleep 1
-
-echo "-------------------- reset db --------------------"
-loaddb_file "$DB_LOADDIR/$DB_BASE"
-loaddb_file "$DB_LOADDIR/$DB_DATA"
-echo "-------------------- test-db --------------------"
-set +e
-"$BUILDSUBDIR"/test-db
-if [ "$?" != 0 ] ; then
-    echo "----------------------------------------"
-    echo "ERROR: test-db failed"
-    echo "----------------------------------------"
-    RESULT=1
-    FAILED="$FAILED test-db"
-    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
 fi
 sleep 1
 
