@@ -196,6 +196,7 @@ int SubProcess::wait(bool no_hangup)
 }
         
 int SubProcess::kill(int signal) {
+    // TODO should state be changed?
     return ::kill(getPid(), signal); 
 }
 
