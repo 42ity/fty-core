@@ -96,9 +96,9 @@ void log_open() {
     log_set_syslog_level(log_syslog_level);
 
     char *ev_log_level = getenv("BIOS_LOG_LEVEL");
-    int log_level;
 
     if (ev_log_level) {
+        int log_level;
         if (strcmp(ev_log_level, STR(LOG_DEBUG)) == 0) {
             log_level = LOG_DEBUG;
         }

@@ -96,13 +96,13 @@ int retry_writev(int fd, struct iovec *iov, int iovcnt) {
  * until all the data is read in or an error occurs.
  */
 int retry_read(int fd, void *inbuf, unsigned nbyte) {
-    int n;
-    int nread = 0;
-    char *buf = (char *)inbuf;
-
     if (nbyte == 0) {
         return 0;
     }
+
+    int n;
+    int nread = 0;
+    char *buf = (char *)inbuf;
 
     for (;;) {
         n = read(fd, buf, nbyte);
@@ -125,6 +125,10 @@ int retry_read(int fd, void *inbuf, unsigned nbyte) {
 }
 
 bool authenticate(const char *userid, const char *passwd, const char *service) {
+    if (!userid || !passwd) {
+        return false;
+    }
+
     char response[1024];
     char query[8192];
     char *query_end = query;
@@ -136,9 +140,6 @@ bool authenticate(const char *userid, const char *passwd, const char *service) {
 
     if (!service) {
         service = "bios";
-    }
-    if (!userid || !passwd) {
-        return false;
     }
 
     strcpy(pwpath, SASLAUTHD_MUX_PATH);

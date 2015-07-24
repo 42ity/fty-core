@@ -51,10 +51,10 @@ bool is_dir( const char  *path ) {
 
 std::vector<std::string> items_in_directory( const char *path ) {
     std::vector<std::string> result;
-    struct dirent* entry;
     
     DIR * dir = opendir( path );
     if(dir) {
+        struct dirent* entry;
         while( ( entry = readdir(dir) ) != NULL ) {
             result.push_back(entry->d_name);
         }

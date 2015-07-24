@@ -72,7 +72,6 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
         const char *recipient = safe_str (bios_agent_address (agent));
 
         std::string msg_print; // formatted message
-        int rv = 0; // return value of functions
 
         ymsg_format (msg_recv, msg_print);
         log_debug ("RECEIVED\n\tSender: '%s', address: '%s', pattern: '%s',  subject: '%s', status: '%d'.\n\tMessage:\n%s", 

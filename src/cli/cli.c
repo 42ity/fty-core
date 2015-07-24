@@ -75,13 +75,12 @@ static void do_help() {
 int main(int argc, char **argv) {
 
   int index = 0,
-      i = 0;
   index = handle_global_options(argc, (const char**) argv, &gopts);
 #ifndef NDEBUG
   log_debug("####main()\t####");
   log_debug("# argc: '%d'\n# index: '%d'", argc, index);
   log_debug("# **argv:");
-  for (i = 0; i < argc; i++) {
+  for (int i = 0; i < argc; i++) {
     log_debug("#\t[ %d ]\t%s", i, argv[i]);
   }
   log_debug("");
