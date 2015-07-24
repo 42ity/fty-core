@@ -87,7 +87,6 @@ public:
     : _rule_name(rulename), _devices(devices), _description(description)
     {
         _since = since;
-        _rule_name = rulename;
         _state = state;
         _priority = priority;
         _till = till;
