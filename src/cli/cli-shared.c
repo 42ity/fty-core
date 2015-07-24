@@ -10,7 +10,6 @@ handle_global_options(
 const int argc, const char **argv, struct global_opts *gopts) {
   
   int i = 1;
-  const char *cmd = NULL;
 
   if (argc < 1 || argv == NULL || gopts == NULL || argv[argc] != NULL) {
     // TODO ? (?): log
@@ -20,6 +19,7 @@ const int argc, const char **argv, struct global_opts *gopts) {
     return HANDLE_GLOBAL_OPTIONS_BAD_INPUT;
   }
 
+  const char *cmd = NULL;
   while (i != argc) {
     cmd = argv[i];
     if (cmd[0] != '-') {
