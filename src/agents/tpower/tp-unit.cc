@@ -5,7 +5,7 @@
 #include "agents.h"
 #include "log.h"
 
-Measurement TPUnit::realpower() {
+Measurement TPUnit::realpower() const{
     Measurement result;
     result.units("W");
     for( auto &it : _powerdevices ) {
@@ -58,23 +58,22 @@ void TPUnit::advertised() {
     _timestamp = time(NULL);
 }
 
-time_t TPUnit::timeToAdvertisement() {
+time_t TPUnit::timeToAdvertisement() const {
     if( ( _timestamp == 0 ) || realpowerIsUnknown() ) return TPOWER_MEASUREMENT_REPEAT_AFTER;
     time_t dt = time(NULL) - _timestamp;
     if( dt > TPOWER_MEASUREMENT_REPEAT_AFTER ) return 0;
     return TPOWER_MEASUREMENT_REPEAT_AFTER - dt;
 }
 
-bool TPUnit::advertise() {
+bool TPUnit::advertise() const{
     if( realpowerIsUnknown() ) return false;
     return ( _changed || ( time(NULL) - _timestamp > TPOWER_MEASUREMENT_REPEAT_AFTER ) );
 }
 
 ymsg_t * TPUnit::measurementMessage() {
-    ymsg_t *message = NULL;
     try {
         Measurement M = realpower();
-        message = bios_measurement_encode(
+        ymsg_t *message = bios_measurement_encode(
             _name.c_str(),
             "realpower.default",
             M.units().c_str(),

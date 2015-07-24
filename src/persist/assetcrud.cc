@@ -82,11 +82,9 @@ db_reply_t
         (tntdb::Connection &conn, const char *device_name, zhash_t *ext_attributes)
 {
     LOG_START;
-    db_reply_t ret = db_reply_new();
-        
     tntdb::Transaction trans (conn);
 
-    ret = select_device (conn, device_name);
+    db_reply_t ret = select_device (conn, device_name);
     if ( ret.status == 0 )
         trans.commit(); // nothing was done, but we need to end the transaction
     else

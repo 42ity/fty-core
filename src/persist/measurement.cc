@@ -79,7 +79,7 @@ db_reply_t
 insert_into_measurement_again:
         tntdb::Statement st;
 
-        if (! c.has(topic))
+        if (  !c.has(topic) )
         {
             st = conn.prepareCached(
                     " INSERT INTO"
@@ -99,10 +99,7 @@ insert_into_measurement_again:
                            .set("units", units)
                            .set("name", device_name)
                            .execute();
-
             log_debug("[t_bios_measurement_topic]: inserted topic %s, #%" PRIu32 " rows ", topic, n);
-            if ( n != 0 )
-                c.add(topic);
         }
 
         st = conn.prepareCached(
@@ -162,6 +159,8 @@ insert_into_measurement_again:
                 goto insert_into_measurement_again; // successfully inserted into _discovered_device, save measurement one more time
             }
         }
+        else
+            c.add(topic);
         
         ret.rowid = conn.lastInsertId();
         ret.status = 1;

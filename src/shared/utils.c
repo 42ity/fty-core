@@ -331,3 +331,43 @@ bool bsi32_add(int32_t value1, int8_t scale1,
     *scale = l_scale;
     return true;
 }
+
+bool
+get_mac(
+        const char* ethname,
+        char* buf,
+        size_t len) {
+
+    if (!ethname || !buf || len < MAC_SIZEA)
+        return false;
+
+    if (!strcmp(ethname, "lo"))
+        return false;
+
+    bool ret = false;
+    char *path;
+    int r = asprintf(&path, "/sys/class/net/%s/address", ethname);
+    if (!r) {
+        goto fail;
+    }
+
+    int fd = open(path, O_RDONLY);
+    if (!fd) {
+        goto fail;
+    }
+
+    r = read(fd, buf, MAC_SIZEA);
+    if (r != MAC_SIZEA) {
+        buf[0] = '\0';
+        goto close;
+    }
+    buf[r-1] = '\0'; // kill \n
+    ret = true;
+
+close:
+    close(fd);
+fail:
+    free(path);
+
+    return ret;
+}
