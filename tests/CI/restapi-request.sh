@@ -56,33 +56,36 @@ usage(){
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
     echo "  --host NAME       REST API service host name [$SUT_HOST]"
     echo "  --port-web PORT   REST API service HTTP port [$SUT_WEB_PORT]"
+    echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
 }
 
 RELATIVE_URL=""
+SKIP_SANITY=no
 while [ $# -gt 0 ] ; do
     case "$1" in
-        --port-web|--sut-port-web|-wp)
+        --port-web|--sut-port-web|-wp|--port)
             SUT_WEB_PORT="$2"
-            shift 2
+            shift
             ;;
         --host|--machine|-s|-sh|--sut|--sut-host)
             SUT_HOST="$2"
-            shift 2
+            shift
             ;;
         -u|--user|--bios-user)
             BIOS_USER="$2"
-            shift 2
+            shift
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
-            shift 2
+            shift
             ;;
         -m|--method)
             WEBLIB_FUNC="$2"
             shift
             ;;
+        -q|--quick) SKIP_SANITY=yes ;;
         --help|-h)
             usage
             exit 1
@@ -98,6 +101,8 @@ while [ $# -gt 0 ] ; do
     esac
     shift
 done
+
+[ -z "$RELATIVE_URL" ] && die "No RELATIVE_URL was provided"
 
 # Included after CLI processing because sets autovars like BASE_URL
 . "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
@@ -136,32 +141,34 @@ wait_for_web() {
     logmsg_info "Web-server is responsive!" || \
     die "Web-server is NOT responsive!" >&2
 
-# Validate the fundamental BIOS webserver capabilities
-  logmsg_info "Testing webserver ability to serve the REST API"
-  curlfail_push_expect_404
-  if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver code is deeply broken, please fix it first!"
-  fi
+  if [ "$SKIP_SANITY" != yes ]; then
+    # Validate the fundamental BIOS webserver capabilities
+    logmsg_info "Testing webserver ability to serve the REST API"
+    curlfail_push_expect_404
+    if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ] >/dev/null 2>&1 ; then
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+    fi
 
-  if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
-    # We do expect an HTTP-404 on the API base URL
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-  fi
-  curlfail_pop
+    if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ] >/dev/null 2>&1 ; then
+        # We do expect an HTTP-404 on the API base URL
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    fi
+    curlfail_pop
 
-  curlfail_push_expect_noerrors
-  if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
-    # We expect that the login service responds
-    logmsg_error "api_get() returned an error:"
-    api_get "/oauth2/token" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    curlfail_push_expect_noerrors
+    if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
+        # We expect that the login service responds
+        logmsg_error "api_get() returned an error:"
+        api_get "/oauth2/token" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    fi
+    curlfail_pop
+    logmsg_info "Webserver seems basically able to serve the REST API"
   fi
-  curlfail_pop
-  logmsg_info "Webserver seems basically able to serve the REST API"
 
   logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with $WEBLIB_FUNC $*"
   eval "$WEBLIB_FUNC" "$RELATIVE_URL" "$@"
