@@ -148,7 +148,7 @@ date_from_2_1_2=`date -d "1 day ago" '+%F 2:50:00'`
 date_to_2_1_2=`date -d "0 day ago" '+%F 00:10:00'`
 
 # UPS201_1
-date_from_2_1=`date -d "1 day ago" '+%F '`;date_from_2_1=$date_from_2_1`echo 22:50:00`'/home/rvrajik/Documents/Scripts/ci-rackpower-80.sh' 
+date_from_2_1=`date -d "1 day ago" '+%F '`;date_from_2_1=$date_from_2_1`echo 22:50:00` 
 date_to_2_1=`date -d "1 day ago" '+%F '`;date_to_2_1=$date_to_2_1`echo 23:10:00`
 date_from_2_1=`date -d "1 day ago" '+%F '`;date_from_2_1=$date_from_2_1`echo 22:55:00`
 date_to_2_1=`date -d "0 day ago" '+%F '`;date_to_2_1=$date_to_2_1`echo 00:10:00`
@@ -178,10 +178,7 @@ echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
 #insert line for UPS201_2
 sqlline="INSERT INTO t_bios_alert ( rule_name, date_from, priority, state, description, date_till, notification, dc_id) VALUES ( 'upsonbattery@UPS201_2', UNIX_TIMESTAMP('$date_from_2_2') ,        1 ,     1 , 'UPS is running on battery!    ', UNIX_TIMESTAMP('$date_to_2_2') ,            0 , 9);"
 echo $sqlline >> $CHECKOUTDIR/tmp_uptime.sql
-
 cat $CHECKOUTDIR/tmp_uptime.sql
-
-
 loaddb_file $CHECKOUTDIR/tmp_uptime.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 
 sut_run 'systemctl restart biostimer-outage.service'
