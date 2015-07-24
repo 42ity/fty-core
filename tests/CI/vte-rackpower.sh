@@ -40,18 +40,7 @@
     # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
-# Include our standard routines for CI scripts
-. "`dirname $0`"/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
-NEED_BUILDSUBDIR=no determineDirs_default || true
-# *** weblib include
-. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
-echo "SCRIPTDIR =	$SCRIPTDIR"
-echo "CHECKOUTDIR =	$CHECKOUTDIR"
-echo "BUILDSUBDIR =	$BUILDSUBDIR"
-
+TIME_START=$(date +%s)
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -101,9 +90,41 @@ if [ -z "$SUT_WEB_PORT" ]; then
             SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
+
 # unconditionally calculated values
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 SUT_IS_REMOTE=yes
+
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+# *** weblib include
+. "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+
+echo "SCRIPTDIR =	$SCRIPTDIR"
+echo "CHECKOUTDIR =	$CHECKOUTDIR"
+echo "BUILDSUBDIR =	$BUILDSUBDIR"
+
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
+
+
+# default values:
+[ -z "$SUT_USER" ] && SUT_USER="root"
+[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+# port used for ssh requests:
+[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+# port used for REST API requests:
+if [ -z "$SUT_WEB_PORT" ]; then
+    if [ -n "$BIOS_PORT" ]; then
+        SUT_WEB_PORT="$BIOS_PORT"
+    else
+        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
+        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
+    fi
+fi
 
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
@@ -131,8 +152,7 @@ SUM_PASS=0
 SUM_ERR=0
 
     # *** is system running? ***
-LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
-
+#LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
 
 # ***** INIT *****
 function cleanup {
@@ -146,7 +166,7 @@ if [ -f "$LOCKFILE" ]; then
 fi
 
     # *** lock the script with creating $LOCKFILE
-echo $$ > "$LOCKFILE"
+#echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
@@ -221,7 +241,7 @@ set_values_in_ups() {
 
     # *** restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server"
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
     sleep 7
@@ -364,6 +384,21 @@ PSW=user1
 SUM_PASS=0
 SUM_ERR=0
 
+UPS1="epdu101_1"
+UPS2="epdu101_2"
+RACK="8101"
+TYPE1="epdu"
+TYPE2="epdu"
+UPS=$UPS1
+set_values_in_ups "$UPS" "$TYPE1" "1000"
+UPS=$UPS2
+set_values_in_ups "$UPS" "$TYPE2" "0"
+#sleep 10
+   # *** restart NUT server
+#    echo 'Restart NUT server with updated config'
+#    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
+#    echo 'Wait for NUT to start responding...'
+
 # ***** TESTCASES *****
     # *** TC1
 echo "+++++++++++++++++++++++++++++++++++"
@@ -377,11 +412,16 @@ SAMPLES=(
    30.85
    40.43
 )
-UPS1="epdu101_1_"
-UPS2="epdu101_2_"
+UPS1="epdu101_1"
+UPS2="epdu101_2"
 RACK="8101"
 TYPE1="epdu"
 TYPE2="epdu"
+#UPS=$UPS1
+#set_values_in_ups "$UPS" "$TYPE1" "1000"
+#UPS=$UPS2
+#set_values_in_ups "$UPS" "$TYPE2" "0"
+#sleep 10
         # * start TC1
 testcase
         # * TC1 results
@@ -400,8 +440,8 @@ SAMPLES=(
   1064.34
   1130000
 )
-UPS1="epdu102_1_"
-UPS2="epdu102_2_"
+UPS1="epdu102_1"
+UPS2="epdu102_2"
 RACK="8108"
 TYPE1="epdu"
 TYPE2="epdu"
@@ -422,8 +462,8 @@ SAMPLES=(
   80.001
   120.499
 )
-UPS1="ups103_1_"
-UPS2="ups103_2_"
+UPS1="ups103_1"
+UPS2="ups103_2"
 RACK="8116"
 TYPE1="ups"
 TYPE2="ups"
@@ -444,8 +484,8 @@ SAMPLES=(
   80.499
   120.99999999999999
 )
-UPS1="epdu105_1_"
-UPS2="pdu105_1_"
+UPS1="epdu105_1"
+UPS2="pdu105_1"
 RACK="8134"
 TYPE1="epdu"
 TYPE2="pdu"
@@ -466,8 +506,8 @@ SAMPLES=(
   63
 )
 
-UPS1="ups106_1_"
-UPS2="pdu106_2_"
+UPS1="ups106_1"
+UPS2="pdu106_2"
 RACK="8141"
 TYPE1="ups"
 TYPE2="pdu"
