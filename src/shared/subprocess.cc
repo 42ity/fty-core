@@ -196,6 +196,7 @@ int SubProcess::wait(bool no_hangup)
 }
         
 int SubProcess::kill(int signal) {
+    // TODO should state be changed?
     return ::kill(getPid(), signal); 
 }
 
@@ -416,7 +417,6 @@ std::string read_all(int fd) {
 std::string wait_read_all(int fd) {
     static size_t BUF_SIZE = 4096;
     char buf[BUF_SIZE+1];
-    ssize_t r;
     int exit = 0;
 
     int o_flags = fcntl(fd, F_GETFL);
@@ -436,6 +436,7 @@ std::string wait_read_all(int fd) {
     sbuf.sputn(buf, strlen(buf));
 
     exit = 0;
+    ssize_t r;
     while (true) {
         memset(buf, '\0', BUF_SIZE+1);
         errno = 0;

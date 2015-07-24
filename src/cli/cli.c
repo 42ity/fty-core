@@ -74,8 +74,7 @@ static void do_help() {
 
 int main(int argc, char **argv) {
 
-  int index = 0,
-  index = handle_global_options(argc, (const char**) argv, &gopts);
+  int index = handle_global_options(argc, (const char**) argv, &gopts);
 #ifndef NDEBUG
   log_debug("####main()\t####");
   log_debug("# argc: '%d'\n# index: '%d'", argc, index);

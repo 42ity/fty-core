@@ -143,8 +143,7 @@ static const std::vector<std::string> inventoryBIOS {
     "outlet.count"        
 };
 
-NUTDevice::NUTDevice() {  
-    _name = "";
+NUTDevice::NUTDevice(): _name("") {  
 }
 
 NUTDevice::NUTDevice(const char *aName) {  
