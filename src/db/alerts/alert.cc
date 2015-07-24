@@ -795,7 +795,6 @@ db_reply <db_alert_t>
         
         log_debug ("[t_bios_alert]: was %u rows selected", 1);
         res[0].get(m.id);
-        log_debug ( "id = %" PRIu32, m.id );
         res[1].get(m.rule_name);
         res[2].get(m.priority);
         res[3].get(m.alert_state);
