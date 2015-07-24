@@ -18,10 +18,10 @@ Type=simple
 # You can use ${rulename} and ${priority} variables in texts (case sensitive, curly brackets are mandatory)
 # Put those variables into config file in /etc/sysconfig
 #
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/bios/agent-alert-smtp
 
 [Install]
