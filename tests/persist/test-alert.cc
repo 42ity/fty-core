@@ -63,13 +63,13 @@ TEST_CASE("t_bios_alert INSERT/DELETE/SELECT #1","[db][CRUD][insert][delete][sel
     auto reply_select_all = select_alert_all_opened (conn);
     REQUIRE ( reply_select_all.status == 1 );
     REQUIRE ( reply_select_all.item.size() == 1 );
-    REQUIRE ( reply_select.item.at(0).id == rowid );
-    REQUIRE ( reply_select.item.at(0).rule_name == std::string(rule_name) );
-    REQUIRE ( reply_select.item.at(0).alert_state == alert_state );
-    REQUIRE ( reply_select.item.at(0).description == std::string(description) );
-    REQUIRE ( reply_select.item.at(0).notification == notification );
-    REQUIRE ( reply_select.item.at(0).date_from == date_from );
-    REQUIRE ( reply_select.item.at(0).date_till == 0 );
+    REQUIRE ( reply_select_all.item.at(0).id == rowid );
+    REQUIRE ( reply_select_all.item.at(0).rule_name == std::string(rule_name) );
+    REQUIRE ( reply_select_all.item.at(0).alert_state == alert_state );
+    REQUIRE ( reply_select_all.item.at(0).description == std::string(description) );
+    REQUIRE ( reply_select_all.item.at(0).notification == notification );
+    REQUIRE ( reply_select_all.item.at(0).date_from == date_from );
+    REQUIRE ( reply_select_all.item.at(0).date_till == 0 );
 
     // must handle duplicate insert without insert
     reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from, dc_id);
@@ -82,7 +82,7 @@ TEST_CASE("t_bios_alert INSERT/DELETE/SELECT #1","[db][CRUD][insert][delete][sel
     REQUIRE ( reply_delete.status == 1 );
 
     // check select
-    auto reply_select_all = select_alert_all_opened (conn);
+    reply_select_all = select_alert_all_opened (conn);
     REQUIRE ( reply_select_all.status == 1 );
     REQUIRE ( reply_select_all.item.size() == 0 );
 
@@ -114,6 +114,7 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     // insert
     auto reply_insert = insert_into_alert (conn, rule_name, priority, alert_state, description, notification, date_from, dc_id);
     uint64_t rowid = reply_insert.rowid;
+    CAPTURE( rowid );
 
     // update
     int64_t  date_till = 2059829;
@@ -137,13 +138,13 @@ TEST_CASE("t_bios_alert UPDATE end date #2","[db][CRUD][update][alert][crud_test
     auto reply_select_all = select_alert_all_closed (conn);
     REQUIRE ( reply_select_all.status == 1 );
     REQUIRE ( reply_select_all.item.size() == 1 );
-    REQUIRE ( reply_select.item.at(0).id == rowid );
-    REQUIRE ( reply_select.item.at(0).rule_name == std::string(rule_name) );
-    REQUIRE ( reply_select.item.at(0).alert_state == alert_state );
-    REQUIRE ( reply_select.item.at(0).description == std::string(description) );
-    REQUIRE ( reply_select.item.at(0).notification == notification );
-    REQUIRE ( reply_select.item.at(0).date_from == date_from );
-    REQUIRE ( reply_select.item.at(0).date_till == 0 );
+    REQUIRE ( reply_select_all.item.at(0).id == rowid );
+    REQUIRE ( reply_select_all.item.at(0).rule_name == std::string(rule_name) );
+    REQUIRE ( reply_select_all.item.at(0).alert_state == alert_state );
+    REQUIRE ( reply_select_all.item.at(0).description == std::string(description) );
+    REQUIRE ( reply_select_all.item.at(0).notification == notification );
+    REQUIRE ( reply_select_all.item.at(0).date_from == date_from );
+    REQUIRE ( reply_select_all.item.at(0).date_till == date_till );
 
     // delete
     delete_from_alert (conn, rowid);
