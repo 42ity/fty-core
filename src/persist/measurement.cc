@@ -160,7 +160,10 @@ insert_into_measurement_again:
             }
         }
         else
+        {
             c.add(topic);
+            log_debug ("topic added to cache");
+        }
         
         ret.rowid = conn.lastInsertId();
         ret.status = 1;
