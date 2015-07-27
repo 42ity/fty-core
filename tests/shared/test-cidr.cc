@@ -33,6 +33,8 @@ TEST_CASE("CIDR Operators","[cidr][operators]") {
   REQUIRE( CIDRAddress( "1.1.1.1/255.255.255.0" ).valid() );
   REQUIRE( ! CIDRAddress( "1.1.1.1/255.255.255.1" ).valid() );
   REQUIRE( CIDRAddress( "1.1.1.1/24" ).netmask() == "255.255.255.0" );
+  REQUIRE( ! CIDRAddress("255.255.0.3").isNetmask() );
+  REQUIRE( CIDRAddress("255.128.0.0").isNetmask() );
 }
 
 TEST_CASE("CIDR string manipulation","[cidr][operators]") {
@@ -43,8 +45,6 @@ TEST_CASE("CIDR string manipulation","[cidr][operators]") {
   REQUIRE( a6.toString() == "::1" );
   REQUIRE( a4.toString(CIDR_WITH_PREFIX) == "127.0.0.1/32" );
   REQUIRE( a6.toString(CIDR_WITH_PREFIX) == "::1/128" );
-  REQUIRE( ! CIDRAddress("255.255.0.3").isNetmask() );
-  REQUIRE( CIDRAddress("255.128.0.0").isNetmask() );
 }
 
 TEST_CASE("CIDR list","[cidr][list iterating]") {
