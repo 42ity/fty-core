@@ -143,7 +143,7 @@ if(request.getMethod() == "PUT") {
     // All the things we need to set
     AUG_SET("method",  std::regex_match(val, match, std::regex("^(dhcp|static|none)$")) );
     AUG_SET("address", CIDRAddress(val).valid() );
-    AUG_SET("netmask", CIDRAddress("1.1.1.1/" + val).valid() && CIDRAddress(val).valid() );
+    AUG_SET("netmask", CIDRAddress(val).isNetmask() );
     AUG_SET("gateway", CIDRAddress(val).valid() );
 
     //DNS is array, handle differently
