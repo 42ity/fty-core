@@ -13,6 +13,14 @@
 #include <stdio.h>
 #include <zsys.h>
 
+//probably not needed
+static const char*
+s_safe_str(const char* s) {
+    return s ? s : "<null>";
+}
+
+#define _s s_safe_str
+
 int main (int argc, char *argv []) {
     
     log_open();
@@ -46,7 +54,13 @@ int main (int argc, char *argv []) {
         _scoped_ymsg_t *in = bios_agent_recv(client);
         if ( in == NULL )
             continue;
-        log_debug ("Command is '%s'", bios_agent_command(client));
+        log_debug ("command: '%s', reason: '%s', address: '%s', sender: '%s', subject: '%s'",\
+                _s(bios_agent_command(client)),
+                _s(bios_agent_reason(client)),
+                _s(bios_agent_address(client)),
+                _s(bios_agent_sender(client)),
+                _s(bios_agent_subject(client))
+                );
 
         const char *command = bios_agent_command(client);
 
