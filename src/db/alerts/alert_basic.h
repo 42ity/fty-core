@@ -353,18 +353,68 @@ db_reply <std::vector<m_dvc_id_t>>
         (tntdb::Connection &conn,
          m_alrt_id_t        alert_id);
 
-
+//+
+/*
+ * \brief Selects information about last alert by its rulename
+ *
+ * \param conn          - a connection to the database
+ * \param rule_name     - a rule name that produced this alert
+ *
+ * \return in case of success: status = 1,
+ *                             item is set.
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set.
+ */
 db_reply <db_alert_t>
     select_alert_last_byRuleName
         (tntdb::Connection &conn,
          const char *rule_name);
 
+//+
+/*
+ * \brief Selects information about alert by its rulename and
+ *        date when it started.
+ *
+ * \param conn          - a connection to the database
+ * \param date_from     - a date+time when system evaluated that 
+ *                        this alert had started
+ *
+ * \return in case of success: status = 1,
+ *                             item is set.
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set.
+ */
 db_reply <db_alert_t>
     select_alert_byRuleNameDateFrom
         (tntdb::Connection &conn,
          const char *rule_name,
          int64_t     date_from);
 
+//+
+/*
+ * \brief Updates the last record in the table [t_bios_alert] by rule name.
+ *        Sets a new notification bit-vector.
+ *
+ *  Sets a new notification bit-vector. It is able only to add 
+ *  a new notifications sended. (Because we cannot "unsend" a notification).
+ *
+ * \param conn          - a connection to the database
+ * \param notification  - a bit-vector about new notifications sent 
+ *                        about this alert
+ * \param rule_name     - a rule name that produced this alert
+ * 
+ * \return in case of success: status = 1,
+ *                             rowid is set(is 0, if alert_id doesn't exist),
+ *                             affected_rows is set
+ *         in case of fail:    status = 0,
+ *                             errtype is set,
+ *                             errsubtype is set,
+ *                             msg is set
+ */
 db_reply_t
     update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
