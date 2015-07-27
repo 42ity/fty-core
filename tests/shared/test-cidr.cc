@@ -29,7 +29,12 @@ TEST_CASE("CIDR Operators","[cidr][operators]") {
                      '\x00','\x00','\x00','\x00','\x00','\x00','\x00','\x42' },
       .sin6_scope_id = 0
   };
-  REQUIRE( CIDRAddress( (struct sockaddr *)&a6 ) == "::42" );  
+  REQUIRE( CIDRAddress( (struct sockaddr *)&a6 ) == "::42" );
+  REQUIRE( CIDRAddress( "1.1.1.1/255.255.255.0" ).valid() );
+  REQUIRE( ! CIDRAddress( "1.1.1.1/255.255.255.1" ).valid() );
+  REQUIRE( CIDRAddress( "1.1.1.1/24" ).netmask() == "255.255.255.0" );
+  REQUIRE( ! CIDRAddress("255.255.0.3").isNetmask() );
+  REQUIRE( CIDRAddress("255.128.0.0").isNetmask() );
 }
 
 TEST_CASE("CIDR string manipulation","[cidr][operators]") {

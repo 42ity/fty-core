@@ -6,6 +6,7 @@
 #include <regex>
 
 #include "subprocess.h"
+#include "cidr.h"
 
 using namespace shared;
 
@@ -125,11 +126,11 @@ if(request.getMethod() == "PUT") {
     }
 
 // Gets configuration from json and sets it in config while verifying it matches regexp
-#define AUG_SET(NAME) \
+#define AUG_SET(NAME, CHECK)         \
     it = rsi.findMember(NAME); \
     if(it != NULL) { \
         it->getValue(val); \
-        if(!std::regex_match(val, match, rex)) { \
+        if(! CHECK ) { \
             reply.out() << std::string("{ \"error\": \"Wrong value '") + val + \
                                        "' for setting '" NAME "' } "; \
             return HTTP_BAD_REQUEST; \
@@ -140,15 +141,10 @@ if(request.getMethod() == "PUT") {
     }
 
     // All the things we need to set
-    rex = "^(dhcp|static|none)$";
-    AUG_SET("method");
-    // IP like regexp
-    rex = "^(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])$";
-    AUG_SET("address");
-    AUG_SET("netmask");
-    // IP or hostname
-    rex = "^((1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5]).(1?[0-9]?[0-9]|2[0-5][0-5])|[a-z0-9]([a-z0-9]|-)*)$";
-    AUG_SET("gateway");
+    AUG_SET("method",  std::regex_match(val, match, std::regex("^(dhcp|static|none)$")) );
+    AUG_SET("address", CIDRAddress(val).valid() );
+    AUG_SET("netmask", CIDRAddress(val).isNetmask() );
+    AUG_SET("gateway", CIDRAddress(val).valid() );
 
     //DNS is array, handle differently
     it = rsi.findMember("nameservers");
