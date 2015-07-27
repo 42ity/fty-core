@@ -13,6 +13,14 @@
 #include <stdio.h>
 #include <zsys.h>
 
+//probably not needed
+static const char*
+s_safe_str(const char* s) {
+    return s ? s : "<null>";
+}
+
+#define _s s_safe_str
+
 int main (int argc, char *argv []) {
     
     log_open();
@@ -47,11 +55,11 @@ int main (int argc, char *argv []) {
         if ( in == NULL )
             continue;
         log_debug ("command: '%s', reason: '%s', address: '%s', sender: '%s', subject: '%s'",\
-                bios_agent_command(client),
-                bios_agent_reason(client),
-                bios_agent_address(client),
-                bios_agent_sender(client),
-                bios_agent_subject(client)
+                _s(bios_agent_command(client)),
+                _s(bios_agent_reason(client)),
+                _s(bios_agent_address(client)),
+                _s(bios_agent_sender(client)),
+                _s(bios_agent_subject(client))
                 );
 
         const char *command = bios_agent_command(client);
