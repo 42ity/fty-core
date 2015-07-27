@@ -26,8 +26,10 @@ bool TopicCache::has(const std::string& topic) const {
 }
 
 void TopicCache::add(const std::string& topic) {
-    if (_max >= _cache.size())
+    if (_max <= _cache.size())
+    {
         _cache.clear();
+    }
 
     _cache.insert(topic);
 }
