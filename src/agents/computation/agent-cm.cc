@@ -74,11 +74,11 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
         std::string msg_print; // formatted message
 
         ymsg_format (msg_recv, msg_print);
-        log_debug ("RECEIVED\n\tSender: '%s', address: '%s', pattern: '%s',  subject: '%s', status: '%d'.\n\tMessage:\n%s", 
+        log_info ("RECEIVED\n\tSender: '%s', address: '%s', pattern: '%s',  subject: '%s', status: '%d'.\n\tMessage:\n%s", 
             sender, recipient, pattern, subject, bios_agent_status (agent), msg_print.c_str());
 
         if (!msg_recv) {
-            log_debug ("ACTION. N/A");            
+            log_info ("ACTION. N/A");            
             continue;
         }
 
@@ -95,7 +95,7 @@ int main (UNUSED_PARAM int argc, UNUSED_PARAM char **argv) {
                     log_critical ("bios_agent_replyto (address = \"%s\", subject = \"%s\") failed.", sender, "");
                 }
                 else {
-                    log_debug ("ACTION: message sent to '%s' with subject '%s':\n%s", sender, "", msg_print.c_str ());
+                    log_info ("ACTION: message sent to '%s' with subject '%s':\n%s", sender, "", msg_print.c_str ());
                 }
             }
         }
