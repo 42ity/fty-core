@@ -58,28 +58,28 @@ void
 solve_left_margin
 (std::map <int64_t, double>& samples, int64_t extended_start) {
     if (samples.empty ()) {
-        log_debug ("Samples empty.");
+        log_info ("Samples empty.");
         return;
     }
     int64_t start = extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC;
-    log_debug ("Start: %" PRId64, start);
+    log_info ("Start timestamp: '%" PRId64"'.", start);
     if (samples.cbegin()->first >= start) {
-        log_debug ("Nothing to solve. First item in samples: %" PRId64", >= start: %" PRId64, samples.cbegin()->first, start);
+        log_info ("Nothing to solve. First item in samples: '%" PRId64"', >= start: '%" PRId64"'.", samples.cbegin()->first, start);
         return;
     }
     auto it = samples.find (start);
     if (it != samples.end ()) {
-        log_debug ("Value exactly on start: %" PRId64" exists, value = %f", it->first, it->second);
+        log_info ("Value exactly on start: '%" PRId64"' exists, value = '%f'.", it->first, it->second);
         samples.erase (samples.cbegin(), it);
         return;
     }
 
     it = samples.lower_bound (extended_start);
     if (it != samples.end ()) {
-        log_debug ("Lower bound returned timestamp: %" PRId64", value: %f", it->first, it->second);
+        log_info ("lower_bound () returned timestamp: '%" PRId64"', value: '%f'.", it->first, it->second);
     }
     else if (it == samples.end () || it->first >= start) {
-        log_debug ("Lower bound == samples.end () || lower bound >= start");
+        log_info ("lower_bound () == end () OR lower_bound () >= start timestamp.");
         samples.erase (samples.cbegin (), it);
         return;
     }
@@ -94,17 +94,22 @@ solve_left_margin
     auto prev = it; --prev;
 
     if (it->first - prev->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
+        log_info ("First sample that is after start timestamp is within nut repeat interval from previous sample.");
         std::map <int64_t, double>::const_iterator i;
         bool inserted;
         std::tie (i, inserted) = samples.emplace (std::make_pair (extended_start + AGENT_NUT_REPEAT_INTERVAL_SEC, prev->second));
-        if (inserted)
-            log_debug ("emplace ok");
-        else 
-            log_debug ("did NOT emplace");
-
+        if (inserted) {
+            log_info ("emplace () ok.");
+        }
+        else {
+            // This should not happen since we are certain that item being emplaced is not there
+            log_warning ("emplace () failed!");
+        }
         //cut the beginning
+        log_info ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, i->first);
         samples.erase (samples.cbegin (), i);
     } else {
+        log_info ("Erasing from beginning of samples '%" PRId64"' to '%" PRId64"'.", samples.cbegin ()->first, it->first);
         samples.erase (samples.cbegin (), it);
     }
 }
@@ -115,11 +120,11 @@ calculate
     assert (type);
     assert (is_average_type_supported (type));
     if (start >= end) {
-        log_debug ("'start' timestamp >= 'end' timestamp");
+        log_warning ("'start' timestamp >= 'end' timestamp.");
         return -1;
     }
     if (samples.empty ()) {
-        log_debug ("Supplied samples map is empty.");
+        log_debug ("Samples empty.");
         return 1; 
     }
     
@@ -130,7 +135,7 @@ calculate
     }
 
     if (it1->first >= end) {
-        log_debug ("First sample >= 'start' timestamp is >= 'end'. Requested interval empty.");
+        log_debug ("First sample that is >= 'start' timestamp is at the same time >= 'end'. Requested interval empty.");
         return 1;
     }
 
@@ -156,7 +161,7 @@ calculate
         return calculate_arithmetic_mean (samples, start, end, result);
     }
     else {
-        log_debug ("Call `is_average_type_supported ('%s')` returned true; there is probably "
+        log_warning ("Call `is_average_type_supported ('%s')` returned true; there is probably "
                    "no if-branch to handle the supported average type.", type);
         return -1;
     }
@@ -164,9 +169,9 @@ calculate
     if (it1 != samples.end () && it1->first != end) {
         auto it2 = std::prev (it1); // TODO: remove --it2;
         if (it1->first - it2->first <= AGENT_NUT_REPEAT_INTERVAL_SEC) {
-            log_debug ("'End' timestamp: '%" PRId64"'; first value _before_ - timestamp: '%" PRId64"', value: '%f'; "
-                       " first value _after_ - timestamp: '%" PRId64"', value: '%f'; "
-                       " Emplacing at 'end' timestamp value '%f'.",
+            log_debug ("'End' timestamp: '%" PRId64"'; first measurement _before_ -> timestamp: '%" PRId64"', value: '%f'; "
+                       "first measurement _after_ -> timestamp: '%" PRId64"', value: '%f'; "
+                       "Emplacing measurement at 'end' timestamp with value '%f'.",
                        end, it2->first, it2->second, it1->first, it1->second, it2->second);
             samples.emplace (std::make_pair (end, it2->second));
         }
@@ -180,10 +185,8 @@ calculate_arithmetic_mean
     if (start >= end || samples.empty ())
         return -1;
     
-    log_debug ("Inside _calculate_arithmetic_mean (%" PRId64", %" PRId64")\n", start, end); // TODO: remove when done testing
     auto it1 = samples.lower_bound (start);
     if (it1 == samples.end () || it1->first >= end) { // requested interval is empty
-        log_debug ("requested interval empty");
         return 1;
     }
     if (samples.size () == 1) {
@@ -199,7 +202,7 @@ calculate_arithmetic_mean
         int64_t weight = 0;
 
         if (it2 == samples.end ()) {
-            log_debug ("it2 == samples.end ()\n"); // TODO: Remove when done testing
+            log_debug ("it2 == samples.end ()"); // TODO: Remove when done testing
             weight = 1;    
         }
         else if (it2->first >= end) {
@@ -240,7 +243,7 @@ check_completeness
 
 
     int64_t step_sec = average_step_seconds (step);
-    log_debug ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
+    log_info ("last container: %" PRId64"\t last average: %" PRId64"\tend: %" PRId64"\tstep: '%s'\tstep seconds: %" PRId64,
                 last_container_timestamp, last_average_timestamp, end_timestamp, step, step_sec);
 
     if (last_average_timestamp < last_container_timestamp) {
@@ -279,7 +282,7 @@ request_averages
 
     int return_value = 0;
     std::string message_str;
-    log_debug ("Requesting _averages_ <- element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
+    log_info ("Requesting _averages_ <- element_id: '%" PRId64"', source: '%s', type: '%s', step: '%s', "
                " start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'.",
                element_id, source, type, step, start_timestamp, end_timestamp );
     auto ret = persist::select_measurements_averages
@@ -287,7 +290,7 @@ request_averages
     switch (ret.rv) {
         case 0:
         {
-            log_debug ("Success. Last average timestamp: '%" PRId64"'.", last_average_timestamp);
+            log_info ("Success. Last average timestamp: '%" PRId64"'.", last_average_timestamp);
             return_value = 1;
             break;
         }
@@ -329,12 +332,13 @@ request_sampled
 
     int return_value = 0;
     std::string message_str;
-    log_debug ("Requesting _samples_ <- element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
+    log_info ("Requesting _samples_ <- element_id: '%" PRId64"', topic: '%s', start_timestamp: '%" PRId64"', end_timestamp: '%" PRId64"'",
                element_id, topic, start_timestamp, end_timestamp );
     auto ret = persist::select_measurements_sampled (conn, element_id, topic, start_timestamp, end_timestamp, samples, unit);
     switch (ret.rv) {
         case 0:
         {
+            log_info ("Success.");
             return_value = 1;
             break;
         }
@@ -369,9 +373,6 @@ request_sampled
     }
     return return_value;  
 }
-
-
-
 
 } // namespace web
 
@@ -411,7 +412,7 @@ publish_measurement
     ymsg_format (published_measurement, formatted_msg);
     int rv = bios_agent_send (agent, topic.c_str (), &published_measurement); // published_measurement destroyed 
     if (rv == 0) {
-        log_debug ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
+        log_info ("Publishing message on stream '%s' with subject '%s':\n%s", bios_get_stream_main (), topic.c_str (), formatted_msg.c_str());
     } else {
         log_critical ("bios_agent_send (subject = '%s') failed.", topic.c_str ());
     } 
