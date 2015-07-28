@@ -1,6 +1,7 @@
 #include "cidr.h"
 #include <cstdio>
 #include <stdlib.h>
+#include <string.h>
 
 namespace shared {
 
@@ -149,6 +150,29 @@ int CIDRAddress::prefix() const {
   }
 }
 
+std::string CIDRAddress::netmask() const {
+  std::string result;
+
+  if( protocol() == 4 ) { // make sense only for IPv4
+    char *cstr = cidr_to_str(_cidr,CIDR_NETMASK);
+    if( cstr ) {
+      char *p = strchr(cstr,'/');
+      if( p ) {
+        result = ++p;
+      }
+      free(cstr);
+    }
+  }
+  return result;
+}
+
+bool CIDRAddress::isNetmask() const {
+  std::string result;
+
+  if( protocol() != 4 ) return false; // make sense only for IPv4
+  return CIDRAddress( "1.1.1.1/" + toString() ).valid();
+}
+
 void CIDRAddress::invalidate() {
   setCidrPtr(NULL);
 }
@@ -294,7 +318,6 @@ std::string CIDRAddress::toString(CIDROptions opt) const {
   if( opt == CIDR_WITHOUT_PREFIX ) {
     showprefix = false;
   }
-    
   if(_cidr) {
     if( opt == CIDR_AUTO_PREFIX ) {
       if( (cidr_get_proto(_cidr) == CIDR_IPV4) && (prefix() == 32) ) {
