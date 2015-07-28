@@ -25,7 +25,9 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
-[ -n "$CHECKOUTDIR" ] && { cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
+NEED_TESTLIB=no
+# No "cd" is required for this script to perform
+[ -n "$CHECKOUTDIR" ] && { [ -d "$CHECKOUTDIR" ] || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"

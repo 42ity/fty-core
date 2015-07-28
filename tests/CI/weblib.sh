@@ -92,8 +92,9 @@ if [ -z "$CHECKOUTDIR" ]; then
     esac
 fi
 
-# TODO: Support delivery of weblib.sh into distro so that paths are different
+# Support delivery of weblib.sh into distro so that paths are different
 # and testlib may be not available (avoid kill $_PID_TESTER in traps below)
+[ x"$NEED_TESTLIB" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
         . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
 else
