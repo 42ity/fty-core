@@ -5,13 +5,13 @@ Requires=malamute.service bios-db-init.service
 
 [Service]
 Type=simple
-#
-# - BIOS_LOG_LEVEL set bios log level
-#
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
+# Suggested custom config:
+# - BIOS_LOG_LEVEL=warning set a quieter bios log level
+#
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/bios/agent-cm
 
 [Install]

@@ -9,10 +9,10 @@ Conflicts=shutdown.target
 Type=oneshot
 # the service shall be considered active even when all its processes exited
 RemainAfterExit=yes
-EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/bios/db-init
 
 [Install]
