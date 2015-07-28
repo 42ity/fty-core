@@ -87,7 +87,11 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             const char *stream = bios_agent_address(client);
-            if ( ( streq (stream, bios_get_stream_measurements())) ||
+            if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
+                persist::process_alert(out, out_subj, in,bios_agent_subject(client));
+                return;
+            }
+            else if ( ( streq (stream, bios_get_stream_measurements())) ||
                  ( streq (stream, bios_get_stream_main()) ) ) {
                 // New measurements publish
                 std::string topic = bios_agent_subject(client);
