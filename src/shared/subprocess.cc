@@ -26,8 +26,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <sys/types.h>
 #include <signal.h>
-#include <time.h>
-#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 
@@ -61,23 +59,26 @@ SubProcess::SubProcess(Argv cxx_argv, int flags) :
         stderr_flag = PIPE_DEFAULT;
     }
 
-    _inpair[0]  = stdin_flag,  _inpair[1]  = stdin_flag;
-    _outpair[0] = stdout_flag, _outpair[1] = stdout_flag;
-    _errpair[0] = stderr_flag, _errpair[1] = stderr_flag;
+    _inpair[0]  = stdin_flag;  _inpair[1]  = stdin_flag;
+    _outpair[0] = stdout_flag; _outpair[1] = stdout_flag;
+    _errpair[0] = stderr_flag; _errpair[1] = stderr_flag;
 }
 
 SubProcess::~SubProcess() {
     int _saved_errno = errno;
-   
+  
+    // update a state
+    poll();
     // Graceful shutdown
     if (isRunning())
         kill(SIGTERM);
     for (int i = 0; i<20 && isRunning(); i++) {
         usleep(100);
+        poll(); // update a state after awhile
     }
     if (isRunning()) {
+        // wait is already inside terminate
         terminate();
-        wait();
     }
 
     // close pipes
@@ -111,6 +112,7 @@ bool SubProcess::run() {
         return true;
     }
 
+    // create pipes
     if (_inpair[0] != PIPE_DISABLED && ::pipe(_inpair) == -1) {
         return false;
     }
@@ -142,12 +144,13 @@ bool SubProcess::run() {
 
         auto argv = _mk_argv(_cxx_argv);
         if (!argv) {
-            return false;
+            // need to exit from the child gracefully
+            exit(ENOMEM);
         }
 
-        int ret = ::execvp(argv[0], argv);
-        if (ret == -1)
-            exit(errno);
+        ::execvp(argv[0], argv);
+        // We can get here only if execvp failed
+        exit(errno);
 
     }
     // we are in parent
@@ -155,7 +158,7 @@ bool SubProcess::run() {
     ::close(_inpair[0]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
-    // set the returnCode
+    // update a state
     poll();
     return true;
 }
@@ -196,8 +199,9 @@ int SubProcess::wait(bool no_hangup)
 }
         
 int SubProcess::kill(int signal) {
-    // TODO should state be changed?
-    return ::kill(getPid(), signal); 
+    auto ret = ::kill(getPid(), signal);
+    poll();
+    return ret; 
 }
 
 int SubProcess::terminate() {
