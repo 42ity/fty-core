@@ -9,6 +9,7 @@
 #include "log.h"
 #include "defs.h"
 #include "str_defs.h"
+#include "ymsg-asset.h"
 
 #include <stdio.h>
 #include <zsys.h>
@@ -88,8 +89,9 @@ int main (int argc, char *argv []) {
 
             const char *stream = bios_agent_address(client);
             if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
-                persist::process_alert(out, out_subj, in,bios_agent_subject(client));
-                return;
+                ymsg_t* out = NULL;
+                char* out_subj = NULL;
+                persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
             }
             else if ( ( streq (stream, bios_get_stream_measurements())) ||
                  ( streq (stream, bios_get_stream_main()) ) ) {
