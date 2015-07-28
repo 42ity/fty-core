@@ -24,6 +24,11 @@
 #              You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
 # ***********************************************
+( which curl >/dev/null 2>&1 ) || {
+    echo "FATAL-WEBLIB: curl program not found and is required for requests!" >&2
+    exit 127
+}
+
 echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
