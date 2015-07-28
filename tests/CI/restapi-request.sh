@@ -25,13 +25,15 @@
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+[ -n "$CHECKOUTDIR" ] && { cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
+if [ -z "$SUT_WEB_PORT" ]; then
+    [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR"/tests/CI ] && SUT_WEB_PORT="8000" || SUT_WEB_PORT="80"
+fi
 
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
 
