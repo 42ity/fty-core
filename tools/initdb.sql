@@ -49,7 +49,7 @@ CREATE TABLE t_bios_measurement (
     FOREIGN KEY(topic_id)
         REFERENCES t_bios_measurement_topic(id)
         ON DELETE CASCADE
-);
+) ENGINE=Aria;
 
 CREATE TABLE t_bios_device_type(
     id_device_type      TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,

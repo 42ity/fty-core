@@ -49,6 +49,7 @@ DB_RACK_POWER="rack_power.sql"
 DB_DC_POWER="dc_power.sql"
 DB_CRUD="crud_test.sql"
 DB_OUTAGE="test_outage.sql"
+DB_ALERT="test_alert.sql"
 
 RESULT=0
 FAILED=""
@@ -109,6 +110,8 @@ fi
 sleep 1
 
 echo "-------------------- test-db-alert --------------------"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ALERT"
 "$BUILDSUBDIR"/test-db-alert
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
