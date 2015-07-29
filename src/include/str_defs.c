@@ -4,8 +4,6 @@
 
 const char* MLM_ENDPOINT = "ipc://@/malamute";
 
-const char* BIOS_AGENT_NAME_NETMON = "agent-netmon";
-
 const char *BIOS_AGENT_NAME_COMPUTATION = "agent-cm";
 const char *BIOS_AGENT_PREFIX_REST = "rest.";
 const char *BIOS_AGENT_NAME_DB_MEASUREMENT = "persistence.measurement";

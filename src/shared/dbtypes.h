@@ -152,12 +152,4 @@ typedef uint16_t  m_msrmnt_tpc_id_t;
 // ----- column: id_ip --------------------------------
 typedef uint32_t m_ip_id_t;
 
-// ----- table:  t_bios_net_history -------------------
-// ----- column: id_net_history -----------------------
-typedef uint32_t m_nt_hstr_id_t;
-
-// ----- table:  t_bios_nethistory --------------------
-// ----- column: mask ---------------------------------
-typedef uint8_t  m_nt_hstr_mask_t;
-
 #endif // SRC_PERSIST_DVTYPES_H_
