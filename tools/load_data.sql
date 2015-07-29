@@ -400,25 +400,27 @@ insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values
 /* ePDU1-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU1-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU1 eMAA10", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosLeft", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosLeft.Bios.Labo.Kalif.com", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Hercule Poirot", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "hercule@poirot.com", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+32-2-555-42-42", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU1 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer",   "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname",       "MApdu-BiosLeft", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname",  "MApdu-BiosLeft.Bios.Labo.Kalif.com", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",   "Hercule Poirot", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",  "hercule@poirot.com", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",  "+32-2-555-42-42", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "left",@last_asset_element); 
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
 
 /* ePDU2-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent) values ("ePDU2-LAB", @asset_element_device, @last_rack);
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description", "ePDU2 eMAA10", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "EATON", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname", "MApdu-BiosRight", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname", "MApdu-BiosRight.Bios.Labo.Kalif.com", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "Jean-Luc Picard", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "captain@ssenterprise.mil", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "555-4242", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "ePDU2 eMAA10", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer",   "EATON", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("hostname",       "MApdu-BiosRight", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("full_hostname",  "MApdu-BiosRight.Bios.Labo.Kalif.com", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",   "Jean-Luc Picard", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",  "captain@ssenterprise.mil", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",  "555-4242", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_w_pos", "right",@last_asset_element);
 insert into t_bios_asset_device  (id_asset_element, id_asset_device_type) values (@last_asset_element, @asset_device_epdu);
 
 /* SRV1-LAB */

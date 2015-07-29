@@ -138,7 +138,7 @@ remote_make() {
 remote_log_cleanup() {
     echo "-- deleting old log files"
     BCHECKOUTDIR=$(basename $CHECKOUTDIR)
-    REMCMD='find $BCHECKOUTDIR -name '"'"'*.log'"'"' -o -name '"'"'*.trs'"'"' -o -name '"'"'*.xml'"'"' -o -name '"'"'*.out*'"'"' -o -name '"'"'*.err*'"'"
+    REMCMD='find $BCHECKOUTDIR -name '"'"'*.log'"'"' -o -name '"'"'*.trs'"'"' -o -name '"'"'cppcheck.xml'"'"' -o -wholename '"'"'*/tests/junit/*.xml'"'"' -o -name '"'"'*.out*'"'"' -o -name '"'"'*.err*'"'"
     FLIST=$(sut_run "$REMCMD -ls")
     if [ $? = 0 -a -n "$FLIST" ]; then
         echo "$FLIST"
