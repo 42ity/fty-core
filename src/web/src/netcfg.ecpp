@@ -153,7 +153,7 @@ if(request.getMethod() == "PUT") {
         write(augtool.getStdin(), command.c_str(), command.length());
         for(auto i : *it) {
             i.getValue(val);
-            if(!std::regex_match(val, match, rex)) {
+            if(!CIDRAddress(val).valid()) {
                 reply.out() << std::string("{ \"error\": \"Wrong value '") + val +
                                        "' for DNS setting\" } ";
                 return HTTP_BAD_REQUEST;
