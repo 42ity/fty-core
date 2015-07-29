@@ -92,7 +92,6 @@ std::vector<std::string>::const_iterator NUTConfigurator::selectBest(const std::
     // don't do any complicated decision on empty/single set
     if( configs.size() <= 1 ) return configs.begin();
     
-    std::string result;
     log_debug("isEpdu: %i; isUps: %i; canSnmp: %i; canXml: %i", isEpdu(configs), isUps(configs), canSnmp(configs), canXml(configs) ); 
     if( canSnmp( configs ) && isEpdu( configs ) ) {
         log_debug("SNMP capable EPDU => Use SNMP");

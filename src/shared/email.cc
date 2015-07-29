@@ -88,7 +88,7 @@ void Smtp::sendmail(
 }
 
 void Smtp::sendmail(
-        const std::string& data)
+        const std::string& data)    const
 {
     SubProcess proc{_argv, SubProcess::STDIN_PIPE | SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE};
 
@@ -106,8 +106,15 @@ void Smtp::sendmail(
     }
     ::close(proc.getStdin()); //EOF
 
-    bret = proc.wait();
-    int ret = proc.getReturnCode();
+    int ret = proc.wait();
+    if ( ret != 0 ) {
+        throw std::runtime_error( \
+                "/usr/bin/msmtp wait with exit code '" + \
+                std::to_string(proc.getReturnCode()) + "'\nstderr:\n" + \
+                read_all(proc.getStderr()));
+    }
+
+    ret = proc.getReturnCode();
     if (ret != 0) {
         throw std::runtime_error( \
                 "/usr/bin/msmtp failed with exit code '" + \

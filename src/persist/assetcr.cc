@@ -671,7 +671,7 @@ db_reply_t
         log_error ("end: %s, %s", "ignore insert", ret.msg);
         return ret;
     }
-    if ( groups.size() == 0 )
+    if ( groups.empty() )
     {
         log_debug ("nothing to insert");
         ret.status = 1;

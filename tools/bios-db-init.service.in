@@ -2,13 +2,17 @@
 Description=Ensure database schema exists for BIOS services
 After=mysql.service
 Requires=mysql.service
+Conflicts=shutdown.target
 
 [Service]
+# it is expected that the process has to exit before systemd starts follow-up units
 Type=oneshot
-EnvironmentFile=-/etc/sysconfig/bios
+# the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
 EnvironmentFile=-/etc/default/bios
-EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
 ExecStart=@libexecdir@/bios/db-init
 
 [Install]

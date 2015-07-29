@@ -68,7 +68,7 @@ class Alert {
     void setEvaluateFunction( alert_evaluate_function_t func );
     void setEvaluateFunction( alert_evaluate_function_t func, std::map<std::string,std::string> params );
     void addEvaluateFunctionParameter( const std::string &param, const std::string &value );
-    void addTopic( const std::string topic );
+    void addTopic( const std::string &topic );
     alert_state_t evaluate( const std::map< std::string, Measurement > &measurementAvailable );
  protected:
     alert_state_t _state = ALERT_STATE_UNKNOWN;

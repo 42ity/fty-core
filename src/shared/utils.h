@@ -43,6 +43,8 @@ Description: various random C and project wide helpers
         X = NULL; \
     }
 
+#define MAC_SIZEA   18  //size of array of chars for mac address including trailing \0
+
 #ifdef __cplusplus
 extern "C"
 {
@@ -181,6 +183,20 @@ bool bsi32_rescale(int32_t in_value, int8_t in_scale, int8_t new_scale, int32_t*
 bool bsi32_add(int32_t value1, int8_t scale1,
            int32_t value2, int8_t scale2,
            int32_t *value, int8_t* scale);
+
+/** \brief get mac address for given name
+ *
+ * \param ethname name of interface
+ * \param buf preallocated buffer (at minimum MAX_ADDR_LEN+1 long)
+ * \param len length of buffer
+ *
+ * \return true if value has been read, or false if read failed or ethname was lo
+ */
+bool
+get_mac(
+        const char* ethname,
+        char* buf,
+        size_t len);
 #ifdef __cplusplus
 }
 #endif

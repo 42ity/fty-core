@@ -114,7 +114,7 @@ class NUTDevice {
      * Method gets advertising threshold for particular
      * property accoring parameter.
      */
-    int getThreshold(const std::string& varName);
+    int getThreshold(const std::string& varName) const;
 
     /**
      * \brief Method sets the default threshold.
@@ -272,10 +272,10 @@ class NUTDeviceList {
     /**
      * \brief returns the size of device list (number of devices)
      */
-    size_t size();
+    size_t size() const;
 
     //! \brief get the NUTDevice object by name
-    NUTDevice& operator[](const std::string name);
+    NUTDevice& operator[](const std::string &name);
 
     //! \brief get the iterators, to be able to go trough list of devices
     std::map<std::string, NUTDevice>::iterator begin();

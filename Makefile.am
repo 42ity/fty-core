@@ -223,7 +223,9 @@ noinst_LTLIBRARIES += 		libpriv-utils-plusplus.la
 
 libpriv_utils_plusplus_la_SOURCES = \
 				src/shared/utils++.cc \
-				src/shared/utils++.h
+				src/shared/utils++.h \
+				src/shared/filesystem.h \
+				src/shared/filesystem.cc
 
 noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
@@ -496,7 +498,8 @@ test_utils_SOURCES = 	src/shared/utils.h \
 
 test_utils_LDADD = 	libpriv-utils.la \
 			libpriv-test-run.la \
-			libpriv-defs.la
+			libpriv-defs.la \
+			libpriv-utils-plusplus.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/
@@ -618,8 +621,7 @@ test_libbiosapiut_DEPENDENCIES = \
 
 check_PROGRAMS += 	test-autoconfig
 test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
-                          src/agents/autoconfig/configurator.cc \
-                          src/shared/filesystem.cc
+                          src/agents/autoconfig/configurator.cc
 
 test_autoconfig_LDADD = \
 			libpriv-defs.la \
@@ -628,7 +630,8 @@ test_autoconfig_LDADD = \
 			libpriv-cidr.la \
 			libpriv-subprocess.la \
 			libpriv-nutscan.la \
-			libpriv-utils.la
+			libpriv-utils.la \
+			libpriv-utils-plusplus.la
 
 test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi
 
@@ -1024,8 +1027,7 @@ client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
-			src/agents/autoconfig/configurator.cc \
-			src/shared/filesystem.cc
+			src/agents/autoconfig/configurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1036,7 +1038,8 @@ agent_autoconfig_LDADD = \
 			libpriv-cidr.la \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
-			libpriv-utils-ymsg.la
+			libpriv-utils-ymsg.la \
+			libpriv-utils-plusplus.la
 # FIXME remove utils ymsg
 
 agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi

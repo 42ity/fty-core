@@ -83,23 +83,18 @@ class SubProcess {
         static const int STDOUT_PIPE=0x02;
         static const int STDERR_PIPE=0x04;
        
-        static const int codeRunning = INT_MIN;
         static const int PIPE_DEFAULT = -1;
         static const int PIPE_DISABLED = -2;
 
         // \brief construct instance
         //
-        // @param argv - C-like string of argument, see execvpe(2) for details
+        // @param argv  - C-like string of argument, see execvpe(2) for details
         // @param flags - controll the creation of stdin/stderr/stdout pipes, default no
         //
-        // \todo does not deal with a command line limit
+        // \todo TODO does not deal with a command line limit
         explicit SubProcess(Argv cxx_argv, int flags=0);
 
-        // \brief close all pipes, waits on process termination
-        //
-        // \warning destructor calls terminate() so it is better to handle
-        // graceful shutdown by youself.
-        //
+        // \brief gracefully kill/terminate the process and close all pipes
         virtual ~SubProcess();
 
         // \brief return the commandline
@@ -120,11 +115,10 @@ class SubProcess {
         //! \brief get the pipe ends connected to stderr of started program, or -1 if not started
         int getStderr() const { return _errpair[0]; }
 
-        //! \brief does program run or not
+        //! \brief returns last checked status of the process 
         //
-        //  isRunning checks the status code, so wait/poll function calls are necessary
+        //  Checks the status field only, so wait/poll function calls are necessary
         //  in order to see the real state of a process
-        //  \todo - call kill(0) + wait if not running?
         bool isRunning() const { return _state == SubProcessState::RUNNING; }
 
         //! \brief get the return code, \see wait for meaning
@@ -137,9 +131,6 @@ class SubProcess {
         // can be started only once, all subsequent calls becames nooop and return true.
         //
         // @return true if exec was successfull, otherwise false and reason is in errno
-        //
-        // \todo error reporting from a child
-        //
         bool run();
 
         //! \brief wait on program terminate
@@ -147,16 +138,16 @@ class SubProcess {
         //  @param no_hangup if false (default) wait indefinitelly, otherwise return immediatelly
         //  @return positive return value of a process
         //          negative is a number of a signal which terminates process
-        //          or codeRunning constant indicating code is still running
         int wait(bool no_hangup=false);
 
-        //! \brief no hanging varint of /see wait
+        //! \brief no hanging variant of /see wait
         int poll() {  return wait(true); }
 
         //! \brief kill the subprocess with defined signal, default SIGTERM/15
         //
+        //  @param signal - signal, defaul is SIGTERM
+        //
         //  @return see kill(2)
-        //  \todo - to throw an exception (signal != 0)?
         int kill(int signal=SIGTERM);
 
         //! \brief terminate the subprocess with SIGKILL/9
@@ -193,6 +184,8 @@ class SubProcess {
 
 };
 
+
+// TODO legacy code
 class ProcessQue {
 
     public:
@@ -254,6 +247,8 @@ class ProcessQue {
         ProcessQue& operator=(ProcessQue&& p) = delete;
 };
 
+
+// TODO and this one also is a legacy code
 //! caches process's stdout/stderr in std::ostringstream
 class ProcCache {
     public:
@@ -300,6 +295,7 @@ class ProcCache {
         std::ostringstream _ecache;
 };
 
+// TODO seems this on is a legacy code
 //! map<pid_t, ProcCache> with ProcCache-like API
 class ProcCacheMap {
 

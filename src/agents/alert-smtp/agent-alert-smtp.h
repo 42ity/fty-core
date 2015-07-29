@@ -63,7 +63,7 @@ protected:
     std::string smtpServer() { return _smtpServer; }
     void notify (std::map <std::string, AlertBasic>::iterator it);
     std::string replaceTokens(const std::string &text, const std::string &pattern, const std::string &replacement) const;
-    std::string replaceTokens( const std::string text, alertIterator_t it ) const;
+    std::string replaceTokens( const std::string &text, alertIterator_t it ) const;
 };
 
 #endif // SRC_AGENTS_ALERT_SMTP_AGENT_H__

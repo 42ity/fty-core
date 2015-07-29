@@ -67,7 +67,10 @@ struct _ymsg_t {
 //  Get a block of octets from the frame
 #define GET_OCTETS(host,size) { \
     if (self->needle + size > self->ceiling) \
+    {\
+        zsys_error ("malformed in GET_OCTETS \n");\
         goto malformed; \
+    }\
     memcpy ((host), self->needle, size); \
     self->needle += size; \
 }
@@ -110,7 +113,10 @@ struct _ymsg_t {
 //  Get a 1-byte number from the frame
 #define GET_NUMBER1(host) { \
     if (self->needle + 1 > self->ceiling) \
+    {\
+        zsys_error ("malformed in NUMBER1 \n");\
         goto malformed; \
+    }\
     (host) = *(byte *) self->needle; \
     self->needle++; \
 }
@@ -118,7 +124,10 @@ struct _ymsg_t {
 //  Get a 2-byte number from the frame
 #define GET_NUMBER2(host) { \
     if (self->needle + 2 > self->ceiling) \
+    {\
+        zsys_error ("malformed in NUMBER2 \n");\
         goto malformed; \
+    }\
     (host) = ((uint16_t) (self->needle [0]) << 8) \
            +  (uint16_t) (self->needle [1]); \
     self->needle += 2; \
@@ -127,7 +136,10 @@ struct _ymsg_t {
 //  Get a 4-byte number from the frame
 #define GET_NUMBER4(host) { \
     if (self->needle + 4 > self->ceiling) \
+    {\
+        zsys_error ("malformed in NUMBER4 \n");\
         goto malformed; \
+    }\
     (host) = ((uint32_t) (self->needle [0]) << 24) \
            + ((uint32_t) (self->needle [1]) << 16) \
            + ((uint32_t) (self->needle [2]) << 8) \
@@ -138,7 +150,10 @@ struct _ymsg_t {
 //  Get a 8-byte number from the frame
 #define GET_NUMBER8(host) { \
     if (self->needle + 8 > self->ceiling) \
+    {\
+        zsys_error ("malformed in NUMBER8 \n");\
         goto malformed; \
+    }\
     (host) = ((uint64_t) (self->needle [0]) << 56) \
            + ((uint64_t) (self->needle [1]) << 48) \
            + ((uint64_t) (self->needle [2]) << 40) \
@@ -163,7 +178,10 @@ struct _ymsg_t {
     size_t string_size; \
     GET_NUMBER1 (string_size); \
     if (self->needle + string_size > (self->ceiling)) \
+    {\
+        zsys_error ("malformed in STRING \n");\
         goto malformed; \
+    }\
     (host) = (char *) malloc (string_size + 1); \
     memcpy ((host), self->needle, string_size); \
     (host) [string_size] = 0; \
@@ -183,7 +201,10 @@ struct _ymsg_t {
     size_t string_size; \
     GET_NUMBER4 (string_size); \
     if (self->needle + string_size > (self->ceiling)) \
+    {\
+        zsys_error ("malformed in LONGSTRING \n");\
         goto malformed; \
+    }\
     (host) = (char *) malloc (string_size + 1); \
     memcpy ((host), self->needle, string_size); \
     (host) [string_size] = 0; \
@@ -328,7 +349,10 @@ ymsg_decode (zmsg_t **msg_p)
                 size_t chunk_size;
                 GET_NUMBER4 (chunk_size);
                 if (self->needle + chunk_size > (self->ceiling))
+                {
+                    zsys_error ("malformed in YMSG response field \n");
                     goto malformed;
+                }
                 self->request = zchunk_new (self->needle, chunk_size);
                 self->needle += chunk_size;
             }

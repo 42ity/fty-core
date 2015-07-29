@@ -184,9 +184,7 @@ bios_web_average_request_extract (ymsg_t *self, int64_t *start_timestamp, int64_
     if (!self || !start_timestamp || !end_timestamp || !type || !step || !element_id || !source || ymsg_id (self) != YMSG_SEND)
         return -1;
 
-    int rc = -1;
-
-    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
+    int rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
     if (rc != 0)
         goto bios_web_average_request_decode_err;
     rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_END_TS, end_timestamp);
@@ -267,8 +265,7 @@ bios_db_measurements_read_request_extract (ymsg_t *self, int64_t *start_timestam
     if (ymsg_id (self) != YMSG_SEND)
         goto bios_db_measurements_read_request_extract_err;
 
-    int rc = -1;
-    rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
+    int rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_START_TS, start_timestamp);
     if (rc != 0)
         goto bios_db_measurements_read_request_extract_err;
     rc = ymsg_aux_int64 (self, WEB_AVERAGE_KEY_END_TS, end_timestamp);

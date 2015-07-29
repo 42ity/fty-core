@@ -57,7 +57,7 @@ LOG_START;
 try {
     int r = ::mkstemp(path);
     if (r == -1) {
-        throw std::runtime_error{::strerror(errno)};
+        throw std::runtime_error( ::strerror(errno) );
     }
     ::close(r);
 
@@ -74,14 +74,14 @@ try {
     const auto& encoding = magic.second;
     if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
         std::string msg = "This file (" + magic.first + ") is not supported please try again with a different file.";
-        throw std::invalid_argument{msg.c_str()};
+        throw std::invalid_argument( msg.c_str() );
     }
 
     if (encoding == "utf-16le") {
         // convert utf-16le using iconv
         int r2 = ::mkstemp(new_path);
         if (r2 == -1) {
-            throw std::runtime_error{::strerror(errno)};
+            throw std::runtime_error( ::strerror(errno) );
         }
         ::close(r2);
 

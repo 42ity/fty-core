@@ -100,7 +100,7 @@ namespace shared {
              *
              * \throws std::out_of_range if row_i > data.size() or title_name is not known
              */
-            std::string get_strip(size_t row_i, const std::string& title_name);
+            std::string get_strip(size_t row_i, const std::string& title_name) const;
             
             /**
              * \brief return number of rows

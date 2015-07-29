@@ -143,8 +143,7 @@ static const std::vector<std::string> inventoryBIOS {
     "outlet.count"        
 };
 
-NUTDevice::NUTDevice() {  
-    _name = "";
+NUTDevice::NUTDevice(): _name("") {  
 }
 
 NUTDevice::NUTDevice(const char *aName) {  
@@ -223,7 +222,7 @@ void NUTDevice::setChanged(const std::string& name,const bool status){
     setChanged(name.c_str(),status);
 }
 
-int NUTDevice::getThreshold(const std::string& varName) {
+int NUTDevice::getThreshold(const std::string& varName) const {
     // TODO: read different threshold for different variables from config
     // for now it is 5%
     if(varName.empty()) {} // silence the warning
@@ -531,11 +530,11 @@ void NUTDeviceList::update( bool forceUpdate ) {
     }
 }
 
-size_t NUTDeviceList::size() {
+size_t NUTDeviceList::size() const {
     return _devices.size();
 }
 
-NUTDevice& NUTDeviceList::operator[](const std::string name) {
+NUTDevice& NUTDeviceList::operator[](const std::string &name) {
     return _devices[name];
 }
 

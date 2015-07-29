@@ -2,6 +2,7 @@
 
 #include "defs.h"
 #include "utils.h"
+#include "filesystem.h"
 
 TEST_CASE("str_eq","[utils][streq]"){
     CHECK(str_eq(NULL, NULL));
@@ -263,4 +264,29 @@ TEST_CASE("bsi32_add","[utils][bs_add]"){
     CHECK(value == 42);    //<<< just the previous value
     CHECK(scale == 0);     //<<< just the previous value
     return;
+}
+
+TEST_CASE("get_mac", "[utils][get_mac]") {
+
+    for (const auto& f: shared::files_in_directory("/sys/class/net/")) {
+
+        char buf[MAC_SIZEA];
+        memset(buf, '\0', MAC_SIZEA);
+        auto ethname = shared::basename(f);
+        bool ret = get_mac(ethname.c_str(), buf, MAC_SIZEA);
+
+        if (ethname == "lo") {
+            CHECK(!ret);
+            continue;
+        }
+
+        // one cannot guarantee that on all of our testing virtual machines
+        // mac addresses will be available for all interfaces
+        if (ret)
+            CHECK(strlen(buf) == MAC_SIZEA);
+        else
+            CHECK(strlen(buf) == 0);
+
+    }
+    
 }

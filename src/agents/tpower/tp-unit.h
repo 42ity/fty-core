@@ -35,10 +35,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 class TPUnit {
  public:
     //\! \brief calculate total realpower
-    Measurement realpower();
+    Measurement realpower() const;
     
     //\! \brief get set unit name
-    std::string name() { return _name; };
+    std::string name() const { return _name; };
     void name(const std::string &name) { _name = name; };
     void name(const char *name) { _name =  name ? name : ""; };
     
@@ -57,19 +57,19 @@ class TPUnit {
     void setMeasurement(const Measurement &M);
     
     //! \brief returns true if measurement is changend and we should advertised
-    bool changed() { return _changed; }
+    bool changed() const { return _changed; }
 
     //! \brief set/clear changed status
     void changed(bool newStatus);
 
     //! \brief returns true if measurement should be send (changed is true or we did not send it for long time)
-    bool advertise();
+    bool advertise() const;
 
     //! \brief set timestamp of the last publishing moment
     void advertised();
 
     //! \brief time to next advertisement [s]
-    time_t timeToAdvertisement();
+    time_t timeToAdvertisement() const;
 
     //! \brief create ymsg meeasurement message
     ymsg_t *measurementMessage();

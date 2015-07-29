@@ -108,7 +108,7 @@ const std::string& CsvMap::get(size_t row_i, const std::string& title_name) cons
     return _data[row_i][col_i];
 }
 
-std::string CsvMap::get_strip(size_t row_i, const std::string& title_name) {
+std::string CsvMap::get_strip(size_t row_i, const std::string& title_name) const{
     return _ci_strip(get(row_i, title_name));
 }
 

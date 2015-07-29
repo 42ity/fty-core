@@ -51,10 +51,10 @@ bool is_dir( const char  *path ) {
 
 std::vector<std::string> items_in_directory( const char *path ) {
     std::vector<std::string> result;
-    struct dirent* entry;
     
     DIR * dir = opendir( path );
     if(dir) {
+        struct dirent* entry;
         while( ( entry = readdir(dir) ) != NULL ) {
             result.push_back(entry->d_name);
         }
@@ -87,6 +87,15 @@ bool mkdir_if_needed(const char *path, mode_t mode, bool create_parent ) {
     }
     mkdir(path,mode);
     return false;
+}
+
+// basename from libgen.h does not play nice with const char*
+std::string basename(const std::string& path) {
+    auto pos = path.rfind(path_separator());
+    if (pos == std::string::npos)
+        return std::string{path};
+
+    return path.substr(pos+1);
 }
 
 

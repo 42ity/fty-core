@@ -83,18 +83,16 @@ public:
     AlertBasic (const char *rulename, uint8_t state, 
         const char *devices, const char *description, 
         time_t till,
-        time_t since, int8_t priority)
+        time_t since, int8_t priority) 
+    : _rule_name(rulename), _devices(devices), _description(description)
     {
         _since = since;
-        _rule_name = rulename;
         _state = state;
-        _devices = devices;
-        _description = description;
         _priority = priority;
         _till = till;
     };
 
-    std::string toString(){
+    std::string toString() const{
         return "rulename= "+ruleName() + "; devices=" + devices() + "; since = " 
             + std::to_string(since()) + ";till=" + std::to_string(till());
     }

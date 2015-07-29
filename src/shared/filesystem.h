@@ -76,6 +76,15 @@ std::vector<std::string> files_in_directory( const char *path );
  */
 bool mkdir_if_needed(const char *path, mode_t mode = 0x755, bool create_parent=true );
 
+/**
+ * \brief return basename from given string
+ *
+ * \param path
+ *
+ * \return the component of path following the final path_separator()
+ */
+std::string basename(const std::string& path);
+
 } // namespace shared
 
 #endif

@@ -103,7 +103,7 @@ namespace shared {
              * \throws std::runtime_error for msmtp invocation errors
              */
             void sendmail(
-                    const std::string& data);
+                    const std::string& data) const;
 
         protected:
 
