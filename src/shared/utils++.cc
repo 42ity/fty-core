@@ -42,8 +42,7 @@ void escape (const std::string& in, const std::string& escape_chars, std::string
 
     out.clear();
     if (in.empty() || escape_chars.empty()) {
-        s << in;
-        out = s.str();
+        out = in;
         return;
     }
 
@@ -58,8 +57,7 @@ void escape (const std::string& in, const std::string& escape_chars, std::string
 
     pos = in.find_first_of(escape_chars);
     if (pos == std::string::npos) {
-        s << in;
-        out = s.str();  //there must be better way how to copy string...
+        out = in;
         return;
     }
 
