@@ -341,7 +341,6 @@ drop view if exists v_bios_discovered_device;
 drop view if exists v_bios_client;
 drop view if exists v_bios_client_info;
 drop view if exists v_bios_discovered_ip;
-drop view if exists v_bios_net_history;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
