@@ -17,8 +17,8 @@ std::string real_out(std::string in, bool key_value = true, std::string sep = ""
     std::string out;
     cxxtools::split("\n", in, std::back_inserter(spl));
     if(spl.size() >= 3) {
-        spl.erase(spl.end());
         spl.erase(spl.begin());
+        spl.pop_back();
     } else {
         return out;
     }
