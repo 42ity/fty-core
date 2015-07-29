@@ -1892,8 +1892,8 @@ check-local: check-dlls web-link-test test-sdk \
 # or if everything is properly GitIgnored - then succeed
 # If some not-gitignored files are found, then fail
 check-gitignore: all-buildproducts
-	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" = xyes ]; then \
-	    echo "SKIP: $@ (by explicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
+	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" \!= xno ]; then \
+	    echo "SKIP: $@ (by implicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
 	  else \
 	    if which git >/dev/null 2>&1 ; then \
 	        git status -s | egrep '^\?\? ' && \
