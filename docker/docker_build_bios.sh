@@ -19,21 +19,20 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #   Description: Script to generate eaton/bios container
-export build_dir=../build/
+export build_dir=..
 export temp_dir=./temp 
 
 echo "preparing $temp_dir .. "
 mkdir -p $temp_dir
+export DESTDIR=`cd $temp_dir; pwd`
 CURDIR=`pwd`
 cd $build_dir
 make install
+
 cd $CURDIR
 cp ./resources/Dockerfile $temp_dir
-cp /usr/share/compiled-webapp.tar $temp_dir/usr/share
-
-#in case of network timeout between mbt and roz, force the way for getting libcidr0 and cidrcalc packages like this
-#cp ../../temp/cidrcalc_1.2.3-1_amd64.deb $temp_dir
-#cp ../../temp/libcidr0_1.2.3-1_amd64.deb $temp_dir
+mkdir $temp_dir/usr/share
+cp ~/compiled-webapp.tar $temp_dir/usr/share
 
 echo "building docker eaton/bios .."
 sudo docker build --no-cache=true --rm=true -t eaton/bios $temp_dir
