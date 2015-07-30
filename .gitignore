@@ -164,6 +164,8 @@ bios-agent-tpower.service
 !tools/bios-agent-autoconfig.service.in
 bios-agent-autoconfig.service
 !tools/bios-agent-th.service.in
+bios-reset-button.service
+!tools/bios-reset-button.service.in
 bios-agent-th.service
 !tools/biostimer-graphs-prefetch.service.in
 biostimer-graphs-prefetch.service

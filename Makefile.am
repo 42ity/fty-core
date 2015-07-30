@@ -1327,7 +1327,7 @@ SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-alert.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service
+                        bios-db-init.service bios-reset-button.service
 
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
