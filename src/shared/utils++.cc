@@ -33,51 +33,43 @@ void dtos (double number, std::streamsize precision, std::string& result) {
 
 } // namespace utils::math
 
-void escape (const std::string& in, const std::string& escape_chars, std::string& out) {
-
-    size_t pos =0;
-    size_t prev_pos = 0;
+std::string escape (const std::string& in, const std::string& escape_chars) {
 
     std::stringstream s;
 
-    out.clear();
-    if (in.empty() || escape_chars.empty()) {
-        out = in;
-        return;
+    if (in.empty() || escape_chars.empty())
+        return in;
+
+    if (in.size() == 1 && in.find_first_of(escape_chars) != std::string::npos)
+        return "\\" + in;
+
+    if (escape_chars.find('\\') != std::string::npos)
+        return in;
+
+    if (in.find_first_of(escape_chars) == std::string::npos) {
+        return in;
     }
 
-    if (in.size() == 1 && in.find_first_of(escape_chars) != std::string::npos) {
-        out = '\\' + in;
-        return;
+    size_t i = 0;
+    while (i < in.size()) {
+        if (in[i] == '\\') {
+            s << in[i] << in[i+1];
+            i++;
+        }
+        else if (in.substr(i, i+1).find_first_of(escape_chars) == 0) {
+            s << '\\' << in[i];
+        }
+        else {
+            s << in[i];
+        }
+        i++;
     }
 
-    if (escape_chars.find('\\') != std::string::npos) {
-        return;
-    }
-
-    pos = in.find_first_of(escape_chars);
-    if (pos == std::string::npos) {
-        out = in;
-        return;
-    }
-
-    while (pos != std::string::npos)
-    {
-        if (in[pos-1] != '\\')
-            s << in.substr(prev_pos, pos) << '\\' << in[pos];
-        else
-            s << in.substr(prev_pos, pos+1);
-        prev_pos = pos;
-        pos = in.find_first_of(escape_chars, pos+1);
-    }
-    if (prev_pos != pos)
-        s << in.substr(prev_pos+1);
-
-    out = s.str();
+    return s.str();
 }
 
-void sql_escape(const std::string& in, std::string& out) {
-    return escape(in, "_%", out);
+std::string sql_escape(const std::string& in) {
+    return escape(in, "_%");
 }
 
 } // namespace utils

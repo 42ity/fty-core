@@ -43,26 +43,26 @@ void dtos (double number, std::streamsize precision, std::string& result);
  *
  * \param[in] in is input string to be escaped
  * \param[in] escape_chars is list of characters to be escaped
- * \param[out] result is escaped string
  *
- * \todo TODO: escaping of backslash itself is not implemented and if present in escape_chars, out remains empty
+ * \todo TODO: escaping of backslash itself is not implemented and if present in escape_chars, nothing is escaped
+ *
+ * \return escaped string
  */
-void
+std::string
 escape (
         const std::string& in,
-        const std::string& escape_chars,
-        std::string& out);
+        const std::string& escape_chars);
 
 /*!
  * \brief escape special characters for SQL (_ and %)
  *
  * \param[in] in is input string to be escaped
- * \param[out] result is escaped string
+ *
+ * \return escaped string
  */
-void
+std::string
 sql_escape(
-        const std::string& in,
-        std::string& out);
+        const std::string& in);
 
 } // namespace utils
 

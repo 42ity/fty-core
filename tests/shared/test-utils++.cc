@@ -67,19 +67,19 @@ TEST_CASE ("escape", "[utilities]")
         {R"(ba\_r)", R"(ba\_r)"},
         {"h%m", R"(h\%m)"},
         {R"(h\%m)", R"(h\%m)"},
+        {R"(foo\_bar_baz\%ham%)", R"(foo\_bar\_baz\%ham\%)"},
     };
     const std::string escape_chars{"_%"};
-    std::string out;
 
     for (const auto& i: vec) {
         const auto& inp = i.first;
         const auto& exp = i.second;
 
-        utils::escape(inp, escape_chars, out);
+        std::string out = utils::escape(inp, escape_chars);
         CHECK(out == exp);
     }
 
     std::string inp{R"(\\\\)"};
-    utils::escape(inp, "\\", out);
-    CHECK(out == "");
+    std::string out = utils::escape(inp, "\\");
+    CHECK(out == inp);
 }
