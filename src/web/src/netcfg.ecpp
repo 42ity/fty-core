@@ -117,10 +117,17 @@ if(request.getMethod() == "PUT") {
     std::string val;
     try {
         deserializer.deserialize(si);
-        rsi = si.getMember(iface);
-    } catch(...) {
+    } catch(const std::exception& e) {
 </%cpp>
-{ "error": "Wrong json on input" }
+{ "error": "Wrong json on input - <$ e.what() $>" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    try {
+        rsi = si.getMember(iface);
+    } catch(const std::exception& e) {
+</%cpp>
+{ "error": "No configuration for interface <$ iface $> provided" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
@@ -132,7 +139,9 @@ if(request.getMethod() == "PUT") {
         it->getValue(val); \
         if(! CHECK ) { \
             reply.out() << std::string("{ \"error\": \"Wrong value '") + val + \
-                                       "' for setting '" NAME "' } "; \
+                                       "' for setting '" NAME " (interface " + iface + \
+                                       (NAME == "method" ? "" : (", method ")) + method + \
+                                       "' } "; \
             return HTTP_BAD_REQUEST; \
         } \
         command = "set " + address + "/" NAME " " + val + "\n"; \
@@ -141,10 +150,19 @@ if(request.getMethod() == "PUT") {
     }
 
     // All the things we need to set
-    AUG_SET("method",  std::regex_match(val, match, std::regex("^(dhcp|static|none)$")) );
-    AUG_SET("address", CIDRAddress(val).valid() );
-    AUG_SET("netmask", CIDRAddress(val).isNetmask() );
-    AUG_SET("gateway", CIDRAddress(val).valid() );
+    std::string method;
+    AUG_SET("method",  std::regex_match(method = val, match,
+                       std::regex("^(dhcp|static|none|manual)$")));
+    AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
+    AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
+    AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
+    if(method != "static") {
+        command = "rm " + address + "/address\n"
+                  "rm " + address + "/netmask\n"
+                  "rm " + address + "/gateway\n";
+        write(augtool.getStdin(), command.c_str(), command.length()); \
+        nil = wait_read_all(augtool.getStdout()); \
+    }
 
     //DNS is array, handle differently
     it = rsi.findMember("nameservers");
