@@ -298,15 +298,6 @@ libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
 noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = \
-			src/persist/persistence.h \
-			src/persist/databaseobject.cc \
-			src/persist/databaseobject.h \
-			src/persist/databasetimeobject.cc \
-			src/persist/databasetimeobject.h \
-			src/persist/ip.cc \
-			src/persist/ip.h \
-			src/persist/nethistory.cc \
-			src/persist/nethistory.h \
 			src/persist/assetcrud.cc \
 			src/persist/assetcr.cc \
 			src/persist/assetd.cc \
@@ -657,26 +648,6 @@ test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
 #                        CI tests
 #----------------------------------------------------------------------
 
-cibin_programs += 	test-db
-
-test_db_SOURCES = 	tests/persist/test-nethistory.cc
-
-test_db_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-test-run.la
-
-test_db_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
-
-
 cibin_programs += 	test-loadcsv
 
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
@@ -928,22 +899,6 @@ TESTS += $(check_SCRIPTS)
 #------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
-
-client_PROGRAMS += 	agent-netmon
-agent_netmon_SOURCES = \
-			src/agents/netmon/linux \
-			src/agents/netmon/agent-netmon.c
-
-agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/agents/netmon
-
-agent_netmon_LDADD = \
-			libpriv-defs.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libbiosapi.la
-
-agent_netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
 
 client_PROGRAMS += 	server-agent
 
@@ -1226,7 +1181,6 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
-                      src/web/src/network.cpp src/web/src/networks.cpp   \
                       src/web/src/current.cpp src/web/src/ui_properties.cpp  \
                       src/web/src/rack_total.cpp src/web/src/location.cpp    \
                       src/web/src/datacenter_indicators.cpp              \
@@ -1238,7 +1192,8 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc		 
+                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
+					  src/web/src/dci_impl.h
 
 
 EXTRA_DIST +=		src/web/include/enc.h
@@ -1340,8 +1295,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/netmon/*/*.h \
-			$(top_srcdir)/src/agents/netmon/*/*/*.h \
 			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
@@ -1368,7 +1321,7 @@ autopathedit = ${SED} \
 # systemd integration enabled?
 if HAVE_SYSTEMD
 # Here we list the actual service-definition files that should be compiled
-SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
+SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
@@ -1892,8 +1845,8 @@ check-local: check-dlls web-link-test test-sdk \
 # or if everything is properly GitIgnored - then succeed
 # If some not-gitignored files are found, then fail
 check-gitignore: all-buildproducts
-	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" = xyes ]; then \
-	    echo "SKIP: $@ (by explicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
+	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" \!= xno ]; then \
+	    echo "SKIP: $@ (by implicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
 	  else \
 	    if which git >/dev/null 2>&1 ; then \
 	        git status -s | egrep '^\?\? ' && \
