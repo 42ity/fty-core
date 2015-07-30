@@ -1,8 +1,8 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
-#RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
+RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
-#ENV http_proxy http://proxy.eur.etn.com:8080 
+ENV http_proxy http://proxy.eur.etn.com:8080 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \
   tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 \
@@ -17,7 +17,8 @@ RUN apt-get update && apt-get install -y --force-yes \
   libczmq1 \
   libmlm1 \
   malamute \
-  libnutclient0
+  libnutclient0 \
+  augeas-tools
   
 #RUN apt-get install -y apt-utils
 RUN apt-get clean
@@ -54,10 +55,13 @@ RUN echo "admin\nadmin\n" | passwd admin
 
 #mysql configuration (assume link mysql:db with other mariadb container)
 #RUN mv /etc/mysql/my.cnf /etc/mysql/my.cnf.orig
-RUN echo "[client]" > /etc/mysql/my.cnf
-RUN echo "host            = db" >> /etc/mysql/my.cnf
-RUN echo "port            = 3306" >> /etc/mysql/my.cnf
+RUN echo "[client]" > /etc/mysql/my.cnf 
+RUN echo "host            = db" >> /etc/mysql/my.cnf 
+RUN echo "port            = 3306" >> /etc/mysql/my.cnf 
 RUN echo "protocol        = TCP" >> /etc/mysql/my.cnf
+
+#network interfaces configuration
+ADD ./usr/local/share/bios/docker/resources/interfaces /etc/network/interfaces
 
 #DB init script
 ADD ./usr/local/share/bios/sql/mysql/initdb.sql /usr/local/share/bios/sql/mysql/initdb.sql
