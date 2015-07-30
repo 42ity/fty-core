@@ -11,7 +11,6 @@ INSERT INTO t_empty values (1);
 
 DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
-drop table if exists t_bios_net_history;
 drop table if exists t_bios_measurement;
 drop table if exists t_bios_measurement_topic;
 drop table if exists t_bios_client_info;
@@ -49,7 +48,7 @@ CREATE TABLE t_bios_measurement (
     FOREIGN KEY(topic_id)
         REFERENCES t_bios_measurement_topic(id)
         ON DELETE CASCADE
-);
+) ENGINE=Aria;
 
 CREATE TABLE t_bios_device_type(
     id_device_type      TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -127,17 +126,6 @@ CREATE TABLE t_bios_discovered_ip(
         ON DELETE RESTRICT
 );
 
-CREATE TABLE t_bios_net_history(
-    id_net_history  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-    command         CHAR(1)             NOT NULL,
-    mac             CHAR(17),
-    mask            TINYINT UNSIGNED    NOT NULL,
-    ip              CHAR(45)            NOT NULL,
-    name            VARCHAR(50),
-    timestamp       BIGINT              NOT NULL,
-
-    PRIMARY KEY(id_net_history)
-);
 
 CREATE TABLE t_bios_client(
     id_client   TINYINT UNSIGNED    NOT NULL AUTO_INCREMENT,
@@ -353,7 +341,6 @@ drop view if exists v_bios_discovered_device;
 drop view if exists v_bios_client;
 drop view if exists v_bios_client_info;
 drop view if exists v_bios_discovered_ip;
-drop view if exists v_bios_net_history;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
@@ -364,8 +351,6 @@ create view v_bios_client as select id_client id, name from t_bios_client;
 create view v_bios_client_info as select id_client_info id, id_discovered_device , ext , timestamp , id_client from t_bios_client_info;
 
 create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
-
-create view v_bios_net_history as select id_net_history id, ip , mac,mask, command, timestamp,name  from t_bios_net_history;
 
 drop view if exists v_bios_ip_last;
 drop view if exists v_bios_client_info_last;

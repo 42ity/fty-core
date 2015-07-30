@@ -40,7 +40,7 @@ int main (int argc, char *argv [])
     char *subject   = (argn < argc) ? argv[argn++] : NULL;
 
     if (!endpoint || !timeout || !address || !stream || !subject || streq (stream, "-h")) {
-        printf ("syntax: netmon_shell [-v] endpoint timeout address stream subject\n");
+        printf ("syntax: dshell [-v] endpoint timeout address stream subject\n");
         printf ("\tsubject - regexp\n");
         return 0;
     }
