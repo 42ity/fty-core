@@ -29,58 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "cleanup.h"
 
 ymsg_t *
-bios_netmon_encode
-(int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address) {
-    if (!interface_name || !ip_address || !mac_address ||
-        (event < NETWORK_EVENT_AUTO_ADD) || (event >= NETWORK_EVENT_TERMINATOR) ||
-        (ip_version != IP_VERSION_4 && ip_version != IP_VERSION_6))
-        return NULL;
-    ymsg_t *message = ymsg_new (YMSG_SEND);
-    if (!message)
-        return NULL;
-
-    ymsg_aux_set_int32 (message, NETMON_KEY_EVENT, event);
-    ymsg_aux_insert (message, NETMON_KEY_IFNAME, "%s", interface_name);
-    ymsg_aux_set_int32 (message, NETMON_KEY_IPVER, ip_version);
-    ymsg_aux_insert (message, NETMON_KEY_IPADDR, "%s", ip_address);
-    ymsg_aux_set_uint32 (message, NETMON_KEY_PREFIXLEN, prefix_length);
-    ymsg_aux_insert (message, NETMON_KEY_MACADDR, "%s", mac_address);
-    return message; 
-}
-
-int
-bios_netmon_extract
-(ymsg_t *self, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address) {
-    if (!self || !event || !interface_name || !ip_version || !ip_address || !prefix_length || !mac_address || ymsg_id (self) != YMSG_SEND)
-        return -1;
-
-    *interface_name = *ip_address = *mac_address = NULL;
-
-    int rv = ymsg_aux_int32 (self, NETMON_KEY_EVENT, event);
-    if (rv != 0)
-        goto bios_netmon_extract_err;
-    *interface_name = strdup (ymsg_aux_string (self, NETMON_KEY_IFNAME, ""));
-    rv = ymsg_aux_int32 (self, NETMON_KEY_IPVER, ip_version);
-    if (rv != 0)
-        goto bios_netmon_extract_err;
-    *ip_address = strdup (ymsg_aux_string (self, NETMON_KEY_IPADDR, ""));
-    uint32_t ui;
-    rv = ymsg_aux_uint32 (self, NETMON_KEY_PREFIXLEN, &ui);
-    if (rv != 0 || ui > 255)
-        goto bios_netmon_extract_err;
-    *prefix_length = (uint8_t) ui; 
-    *mac_address = strdup (ymsg_aux_string (self, NETMON_KEY_MACADDR, ""));
-    return 0;
-        
-bios_netmon_extract_err:
-    FREE0 (*interface_name);
-    FREE0 (*ip_address);
-    FREE0 (*mac_address);
-    return -1; 
-}
-
-
-ymsg_t *
     bios_inventory_encode
         (const char *device_name, zhash_t **ext_attributes, const char *module_name)
 {

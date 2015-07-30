@@ -41,7 +41,6 @@ CONTRIB*.html
 Makefile.in
 Makefile
 !Makefile.am
-agent-netmon
 bios_web.la
 dshell
 !tools/dshell
@@ -90,7 +89,6 @@ test-computation
 test-csv
 test-loadcsv
 test-db-alert
-test-db
 test-db2
 test-log
 test-subprocess
@@ -157,8 +155,6 @@ bios-agent-cm.service
 bios-agent-inventory.service
 !tools/bios-agent-nut.service.in
 bios-agent-nut.service
-!tools/bios-agent-netmon.service.in
-bios-agent-netmon.service
 !tools/bios-agent-dbstore.service.in
 bios-agent-dbstore.service
 !tools/bios-server-agent.service.in
@@ -168,6 +164,8 @@ bios-agent-tpower.service
 !tools/bios-agent-autoconfig.service.in
 bios-agent-autoconfig.service
 !tools/bios-agent-th.service.in
+bios-reset-button.service
+!tools/bios-reset-button.service.in
 bios-agent-th.service
 !tools/biostimer-graphs-prefetch.service.in
 biostimer-graphs-prefetch.service
@@ -208,7 +206,6 @@ tntnet.xml
 
 !src/agents
 !src/agents/dbstore
-!src/agents/netmon
 !src/agents/nut
 !src/agents/server-agent
 !src/agents/th

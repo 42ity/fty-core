@@ -251,10 +251,6 @@ BIOS_EXPORT const char *
 BIOS_EXPORT const char *
     bios_get_stream_alerts ();
 
-//! Get name of the ##BIOS## stream for networks
-BIOS_EXPORT const char *
-bios_get_stream_networks ();
-
 //! Get array of ##BIOS## streams
 BIOS_EXPORT const char **
     bios_get_streams (uint8_t *count);

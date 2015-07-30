@@ -9,6 +9,7 @@
 #include "log.h"
 #include "defs.h"
 #include "str_defs.h"
+#include "ymsg-asset.h"
 
 #include <stdio.h>
 #include <zsys.h>
@@ -48,7 +49,6 @@ int main (int argc, char *argv []) {
     // We are listening for measurements
     bios_agent_set_consumer(client, bios_get_stream_main(), ".*"); // to be dropped onc we migrate to multiple streams
     bios_agent_set_consumer(client, bios_get_stream_measurements(), ".*");
-    bios_agent_set_consumer(client, bios_get_stream_networks(), ".*");
     while(!zsys_interrupted) {
 
         _scoped_ymsg_t *in = bios_agent_recv(client);
@@ -87,14 +87,16 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             const char *stream = bios_agent_address(client);
-            if ( ( streq (stream, bios_get_stream_measurements())) ||
+            if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
+                ymsg_t* out = NULL;
+                char* out_subj = NULL;
+                persist::process_alert(&out, &out_subj, in,bios_agent_subject(client));
+            }
+            else if ( ( streq (stream, bios_get_stream_measurements())) ||
                  ( streq (stream, bios_get_stream_main()) ) ) {
                 // New measurements publish
                 std::string topic = bios_agent_subject(client);
                 persist::process_measurement(topic, &in, c);
-            }
-            else if (streq (stream, bios_get_stream_networks())) {
-                persist::process_networks(&in);
             }
             else {
                 log_warning("Unsupported stream '%s' for STREAM DELIVER", stream);

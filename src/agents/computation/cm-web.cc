@@ -84,7 +84,7 @@ process
             if (ret.rv != 0)
                 log_error ("Could not resolve device name from element id: '%" PRId64"'. Therefore it is not possible to publish computed values on stream.", element_id);
             else
-                log_debug ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
+                log_info ("Device name resolved from element id: '%" PRId64"' is '%s'.", element_id, device_name.c_str ());
         }
         
         // First, try to request the averages
@@ -131,7 +131,7 @@ process
                 if (start_sampled_ts < 0) {
                     log_warning ("While timestamp in persistence is of type DATETIME, variable 'start_sampled_ts' should not be negative.");
                 }
-                log_debug ("last_average_ts: '%" PRId64"', start_sampled_ts: '%" PRId64"'.", last_average_ts, start_sampled_ts);
+                log_info ("last_average_ts: '%" PRId64"', start_sampled_ts: '%" PRId64"'.", last_average_ts, start_sampled_ts);
 
                 log_info ("Timestamp of last stored average: '%" PRId64"' <<  start_timestamp: '%" PRId64"'. "
                           "Therefore we need to compute averages from following sampled data interval: "
@@ -167,10 +167,12 @@ process
                 utils::math::dtos (p.second, 2, comp_result_str);
                 item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                 item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (p.first));
-                if (comma_counter == 0) 
+                if (comma_counter == 0) { 
                     ++comma_counter;
-                else
+                }
+                else {
                     data_str += ",\n";           
+                }
                 data_str += item;
             }
             // check if all requested averages were returned and if we need to compute something from sampled
@@ -196,15 +198,12 @@ process
         }
 
         if (!samples.empty ()) {
-            log_debug ("samples directly from db:"); // TODO: remove when done testing
-            for (const auto &p : samples) {
-                log_debug ("%" PRId64" => %f", p.first, p.second);
-            }
+            log_info ("Samples directly from db; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
+                       samples.size (), samples.cbegin ()->first, samples.cbegin ()->second);
+            log_info ("Calling solve_left_margin (extended_start = '%" PRId64"').", start_sampled_ts);
             solve_left_margin (samples, start_sampled_ts);
-            log_debug ("samples after solving left margin:"); // TODO: remove when done testing
-            for (const auto &p : samples) {
-                log_debug ("%" PRId64" => %f", p.first, p.second);
-            }
+            log_info ("Samples after solving left margin; count: '%" PRIu64"', first measurement -> timestamp: '%" PRId64"', value '%f'",
+                       samples.size (), samples.cbegin ()->first, samples.cbegin ()->second);
             if (!samples.empty ()) {
                 int64_t first_ts = samples.cbegin()->first;
                 int64_t second_ts = average_first_since (first_ts, step);
@@ -214,21 +213,13 @@ process
                            first_ts, second_ts, end_ts);
                 while (second_ts <= end_ts) {
                     std::string item = BIOS_WEB_AVERAGE_REPLY_JSON_DATA_ITEM_TMPL;
-                    log_debug ("calling calculate (%" PRId64", %" PRId64")", first_ts, second_ts); // TODO: remove when done testing
+                    log_debug ("Calling calculate (start = '%" PRId64"', end = '%" PRId64"', type = '%s')", first_ts, second_ts, type);
                     rv = calculate (samples, first_ts, second_ts, type, comp_result);
-                    // TODO: better return value check
                     if (rv == 0) {
                         if (second_ts >= start_ts) {
                             std::string comp_result_str;
                             utils::math::dtos (comp_result, 2, comp_result_str);
-                            if (comp_result_str.c_str () == NULL) { // TODO: Remove this testing/debugging code
-                                log_critical ("comp_result_str.c_str () is NULL"); 
-                                log_critical ("utils::math::dtos is probably misbehaving, here are the params double: %f, precission is fixed at 2", comp_result );
-                            } else {
-                                log_debug ("%" PRId64"\t%s\n", second_ts, comp_result_str.c_str ()); // TODO: remove when done testing                        
-                                item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
-                            }
-                            // 
+                            item.replace (item.find ("##VALUE##"), strlen ("##VALUE##"), comp_result_str);
                             item.replace (item.find ("##TIMESTAMP##"), strlen ("##TIMESTAMP##"), std::to_string (second_ts));
                             if (comma_counter == 0) 
                                 ++comma_counter;
@@ -241,18 +232,16 @@ process
                         publish_measurement (agent, device_name.c_str (), source, type, step, unit.c_str (), comp_result, second_ts);
                     }
                     else if (rv == -1) {
-                        log_warning ("process_db_measurement_calculate failed"); // TODO
+                        log_warning ("calculate failed ().");
                     }
-                    else if (rv == 1) {
-                        log_debug ("Requested interval empty");
-                    }
+
                     first_ts = second_ts;
                     second_ts += average_step_seconds (step);
                 }
             }  
         }
         else {
-            log_debug ("_samples_ empty.");
+            log_info ("_samples_ empty.");
         }
                       
         json_out.replace (json_out.find ("##UNITS##"), strlen ("##UNITS##"), unit);

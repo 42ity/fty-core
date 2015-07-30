@@ -38,6 +38,32 @@ void dtos (double number, std::streamsize precision, std::string& result);
 
 } // namespace utils::math
 
+/*!
+ * \brief universal escaping function
+ *
+ * \param[in] in is input string to be escaped
+ * \param[in] escape_chars is list of characters to be escaped
+ *
+ * \todo TODO: escaping of backslash itself is not implemented and if present in escape_chars, nothing is escaped
+ *
+ * \return escaped string
+ */
+std::string
+escape (
+        const std::string& in,
+        const std::string& escape_chars);
+
+/*!
+ * \brief escape special characters for SQL (_ and %)
+ *
+ * \param[in] in is input string to be escaped
+ *
+ * \return escaped string
+ */
+std::string
+sql_escape(
+        const std::string& in);
+
 } // namespace utils
 
 #endif // SRC_SHARED_UTILS_PLUSPLUS_H__
