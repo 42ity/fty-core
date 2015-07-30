@@ -30,12 +30,10 @@ NEED_TESTLIB=no
 [ -n "$CHECKOUTDIR" ] && { [ -d "$CHECKOUTDIR" ] || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"; }
 logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 
+# Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-if [ -z "$SUT_WEB_PORT" ]; then
-    [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR"/tests/CI ] && SUT_WEB_PORT="8000" || SUT_WEB_PORT="80"
-fi
 
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
 
@@ -59,10 +57,14 @@ usage(){
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
     echo "  --host NAME       REST API service host name [$SUT_HOST]"
-    echo "  --port-web PORT   REST API service HTTP port [$SUT_WEB_PORT]"
+    echo "  --port-web PORT   REST API service HTTP port (default: it depends)"
     echo "  -q|--quick  skip sanity checks that the server serves BIOS REST API"
     echo "  -m|--method which routine to use from weblib.sh (Default: '$WEBLIB_FUNC')"
     echo "NOTE: RELATIVE_URL is under the BASE_URL (host:port/api/v1)"
+}
+
+SUT_is_localhost() {
+    [ "$SUT_HOST" = "127.0.0.1" -o "$SUT_HOST" = "localhost" ]
 }
 
 RELATIVE_URL=""
@@ -106,13 +108,23 @@ while [ $# -gt 0 ] ; do
     shift
 done
 
-[ -z "$RELATIVE_URL" ] && die "No RELATIVE_URL was provided"
+if [ -z "$SUT_WEB_PORT" ]; then
+    SUT_is_localhost && [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR"/tests/CI ] \
+    && SUT_WEB_PORT="8000" \
+    || SUT_WEB_PORT="80"
+fi
 
 # Included after CLI processing because sets autovars like BASE_URL
 . "$SCRIPTDIR/weblib.sh" || CODE=$? die "Can not include web script library"
 
+[ -z "$RELATIVE_URL" ] && die "No RELATIVE_URL was provided"
+
 test_web_port() {
-    # NOTE: Localhost only :)
+    if ! SUT_is_localhost ; then
+        logmsg_warn "test_web_port() skipped for non-localhost ($SUT_HOST:$SUT_WEB_PORT)"
+        return 0
+    fi
+
     netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
 }
 
@@ -129,21 +141,27 @@ wait_for_web() {
 
 # it is up to the caller to prepare environment - tntnet, saslauthd, malamute etc.
   if ! pidof saslauthd > /dev/null; then
-    logmsg_error "saslauthd is not running, you may need to start it first!"
+    SUT_is_localhost && \
+    logmsg_warn "saslauthd is not running (locally), you may need to start it first!"
   fi
 
   if ! pidof malamute > /dev/null; then
-    logmsg_error "malamute is not running (locally), you may need to start it first!"
+    SUT_is_localhost && \
+    logmsg_warn "malamute is not running (locally), you may need to start it first!"
   fi
 
   if ! pidof mysqld > /dev/null ; then
-    logmsg_error "mysqld is not running (locally), you may need to start it first!"
+    SUT_is_localhost && \
+    logmsg_warn "mysqld is not running (locally), you may need to start it first!"
   fi
 
   logmsg_info "Waiting for web-server to begin responding..."
-  wait_for_web && \
-    logmsg_info "Web-server is responsive!" || \
+  if wait_for_web ; then
+    SUT_is_localhost && \
+    logmsg_info "Web-server is responsive!"
+  else
     die "Web-server is NOT responsive!" >&2
+  fi
 
   if [ "$SKIP_SANITY" != yes ]; then
     # Validate the fundamental BIOS webserver capabilities
@@ -174,5 +192,5 @@ wait_for_web() {
     logmsg_info "Webserver seems basically able to serve the REST API"
   fi
 
-  logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with $WEBLIB_FUNC $*"
+  logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with '$WEBLIB_FUNC' $*"
   eval "$WEBLIB_FUNC" "$RELATIVE_URL" "$@"
