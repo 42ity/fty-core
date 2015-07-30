@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_KEYTAG_LENGTH       40
 // t_bios_asset_ext_attributes.value
 #define MAX_VALUE_LENGTH        255
-// t_bios_asset_device.mac   and t_bios_net_history.mac
+// t_bios_asset_device.mac
 #define MAX_MAC_LENGTH          17
 // t_bios_asset_device.ip    and t_bios_discovered_ip.ip
 #define MAX_IP_LENGTH           45

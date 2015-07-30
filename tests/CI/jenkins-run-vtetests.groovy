@@ -60,7 +60,6 @@ for(
     jobName in [
         "vtetest_restapi",
         "vtetest_rackpower",
-        "vtetest_netmon",
         "vte_tab_import",
     ]
 ){

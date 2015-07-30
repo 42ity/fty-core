@@ -33,15 +33,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-//! encoded message or NULL on failure
-BIOS_EXPORT ymsg_t *
-    bios_netmon_encode (int event, const char *interface_name, int ip_version, const char *ip_address, uint8_t prefix_length, const char *mac_address);
-
-//! 0 on success, -1 on failure
-BIOS_EXPORT int
-    bios_netmon_extract (ymsg_t *self, int *event, char **interface_name, int *ip_version, char **ip_address, uint8_t *prefix_length, char **mac_address);
-
-
 BIOS_EXPORT ymsg_t *
     bios_inventory_encode (const char *device_name, zhash_t **ext_attributes, const char *module_name);
 
