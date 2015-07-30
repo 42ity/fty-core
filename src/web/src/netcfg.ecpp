@@ -117,10 +117,17 @@ if(request.getMethod() == "PUT") {
     std::string val;
     try {
         deserializer.deserialize(si);
-        rsi = si.getMember(iface);
-    } catch(...) {
+    } catch(const std::exception& e) {
 </%cpp>
-{ "error": "Wrong json on input" }
+{ "error": "Wrong json on input - <$ e.what() $>" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    try {
+        rsi = si.getMember(iface);
+    } catch(const std::exception& e) {
+</%cpp>
+{ "error": "No configuration for interface <$ iface $> provided" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
