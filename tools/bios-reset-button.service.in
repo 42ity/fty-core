@@ -1,7 +1,5 @@
 [Unit]
-Description=netmon driver for BIOS project
-After=malamute.service
-Requires=malamute.service
+Description=Handles events from reset button we have on our RC
 
 [Service]
 Type=simple
@@ -9,7 +7,7 @@ EnvironmentFile=-/etc/default/bios
 EnvironmentFile=-/etc/sysconfig/bios
 EnvironmentFile=-/etc/default/bios__%n.conf
 EnvironmentFile=-/etc/sysconfig/bios__%n.conf
-ExecStart=@libexecdir@/bios/agent-netmon
+ExecStart=@datadir@/@PACKAGE@/scripts/reset-button.sh
 
 [Install]
 WantedBy=multi-user.target

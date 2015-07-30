@@ -312,11 +312,6 @@ values
 INSERT INTO t_bios_discovered_device (id_device_type, name) values (@device_unclassified, "measures");
 SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "measures";
 
-INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "fe80", 64, "wlo1", "c4:d9:87:2f:dc:7b", UTC_TIMESTAMP());
-INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("m", "192.168.1.0", 24, "", "", UTC_TIMESTAMP());
-INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("a", "10.231.107.0", 24, "enp0s25", "a0:1d:48:b7:e2:4e", UTC_TIMESTAMP());
-INSERT INTO t_bios_net_history (command, ip, mask, mac, name, timestamp) VALUES ("d", "10.0.0.0", 8, "", "", UTC_TIMESTAMP());
-
 /* ************* */
 /* MBT Rack data */
 /* ************* */
