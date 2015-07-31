@@ -1,3 +1,6 @@
+#ifndef SRC_SHARED_SAMPLE_AGENT_H
+#define SRC_SHARED_SAMPLE_AGENT_H
+
 #include <sys/types.h>
 
 #include "bios_agent.h"
@@ -17,3 +20,4 @@ struct sample_agent {
 };
 
 // extern sample_agent agent;
+#endif // SRC_SHARED_SAMPLE_AGENT_H

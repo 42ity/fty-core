@@ -1,5 +1,5 @@
-#ifndef ASSET_TYPES_H
-#define ASSET_TYPES_H
+#ifndef SRC_SHARED_ASSET_TYPES_H
+#define SRC_SHARED_ASSET_TYPES_H
 
 namespace asset_type {
 
@@ -15,4 +15,4 @@ enum asset_type {
 
 };
 
-#endif //ASSET_TYPES_H
+#endif //SRC_SHARED_ASSET_TYPES_H

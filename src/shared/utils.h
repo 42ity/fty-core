@@ -22,7 +22,8 @@ Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
 Description: various random C and project wide helpers
 */
 
-#pragma once
+#ifndef SRC_SHARED_UTILS_H
+#define SRC_SHARED_UTILS_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -200,3 +201,5 @@ get_mac(
 #ifdef __cplusplus
 }
 #endif
+
+#endif // SRC_SHARED_UTILS_H

@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
 
-#ifndef PERSIST_ERROR_H
-#define PERSIST_ERROR_H
+#ifndef SRC_PERSIST_PERSIST_ERROR_H
+#define SRC_PERSIST_PERSIST_ERROR_H
 
 #include <stdexcept>
 #include <string>
@@ -94,4 +94,4 @@ namespace bios
     };
 
 }
-#endif // PERSIST_ERROR_H
+#endif // SRC_PERSIST_PERSIST_ERROR_H

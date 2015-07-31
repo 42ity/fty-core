@@ -2,6 +2,10 @@
  * \brief Header file for token manipulation class
  *
  */
+
+#ifndef SRC_WEB_INCLUDE_TOKENS_H
+#define SRC_WEB_INCLUDE_TOKENS_H
+
 #include <string>
 #include <sodium.h>
 
@@ -37,3 +41,5 @@ public:
      */
     void decode_token(char* buff, const std::string token);
 };
+
+#endif // SRC_WEB_INCLUDE_TOKENS_H
