@@ -270,7 +270,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     const char      *status = "active";
     a_elmnt_pr_t     priority_el = 4;
     a_elmnt_bc_t     bc = 3;
-    auto reply_insert_element = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority_el, bc);
+    a_dvc_tp_id_t    subtype_id = 3;
+
+    auto reply_insert_element = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority_el, bc, subtype_id);
     uint64_t rowid_element = reply_insert_element.rowid;
     CAPTURE ( rowid_element );
 
@@ -359,7 +361,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     const char      *status = "active";
     a_elmnt_pr_t     priority_el = 4;
     a_elmnt_bc_t     bc = 3;
-    auto reply_insert_element1 = insert_into_asset_element (conn, element_name1, element_type_id, parent_id, status, priority_el, bc);
+    a_dvc_tp_id_t    subtype_id = 3;
+
+    auto reply_insert_element1 = insert_into_asset_element (conn, element_name1, element_type_id, parent_id, status, priority_el, bc, subtype_id);
     uint64_t rowid_element1 = reply_insert_element1.rowid;
     CAPTURE ( rowid_element1 );
 
@@ -376,7 +380,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
 
     //insert element
     const char *element_name2 = "test_element_name5.2";
-    auto reply_insert_element2 = insert_into_asset_element (conn, element_name2, element_type_id, parent_id, status, priority_el, bc);
+    auto reply_insert_element2 = insert_into_asset_element (conn, element_name2, element_type_id, parent_id, status, priority_el, bc, subtype_id);
     uint64_t rowid_element2 = reply_insert_element2.rowid;
     CAPTURE ( rowid_element2 );
 

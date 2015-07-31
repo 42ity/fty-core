@@ -70,10 +70,6 @@ typedef uint32_t a_grp_rltn_id_t;
 // uint16_t
 typedef uint16_t  a_elmnt_tp_id_t;
 
-// ----- table:  t_bios_asset_device ------------------
-// ----- column: id_asset_device ----------------------
-typedef uint32_t a_dvc_id_t;
-
 // ----- table:  t_bios_asset_device_type -------------
 // ----- column: id_asset_device_type -----------------
 // TODO tntdb can't manage uint8_t, so for now there is

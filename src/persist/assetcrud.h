@@ -105,11 +105,6 @@ db_reply_t
          a_elmnt_id_t group_id,
          a_elmnt_id_t asset_element_id);
 
-db_reply_t
-    insert_into_asset_device
-        (tntdb::Connection &conn,
-         a_elmnt_id_t   asset_element_id,
-         a_dvc_tp_id_t  asset_device_type_id);
 
 db_reply_t
     insert_into_asset_link
@@ -140,7 +135,8 @@ db_reply_t
          a_elmnt_id_t     parent_id,
          const char      *status,
          a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc);
+         a_elmnt_bc_t     bc,
+         a_dvc_tp_id_t    subtype_id);
 
 db_reply_t
     insert_into_asset_links
@@ -174,11 +170,6 @@ db_reply_t
          a_elmnt_bc_t     bc);
 
 ////////////////// DELETE
-//
-db_reply_t
-    delete_asset_device
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id);
 
 db_reply_t
     delete_asset_link
@@ -194,12 +185,12 @@ db_reply_t
 db_reply_t
     delete_asset_links_to
         (tntdb::Connection &conn, 
-         a_dvc_id_t asset_device_id);
+         a_elmnt_id_t asset_device_id);
 
 db_reply_t
     delete_asset_links_from
         (tntdb::Connection &conn, 
-         a_dvc_id_t asset_device_id);
+         a_elmnt_id_t asset_device_id);
 
 db_reply_t
     delete_asset_group_links
