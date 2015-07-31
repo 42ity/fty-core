@@ -31,7 +31,8 @@ make install
 
 cd $CURDIR
 cp ./resources/Dockerfile $temp_dir
-mkdir $temp_dir/usr/share
+
+mkdir -p $temp_dir/usr/share
 cp ~/compiled-webapp.tar $temp_dir/usr/share
 
 echo "building docker eaton/bios .."
