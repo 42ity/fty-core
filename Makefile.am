@@ -1164,7 +1164,7 @@ outage_LDADD = \
 			libpriv-utils-ymsg.la
 
 
-outage_LDFLAGS =	-lnetlink -ltntdb
+outage_LDFLAGS =	-ltntdb
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
