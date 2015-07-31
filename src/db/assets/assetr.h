@@ -22,7 +22,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H
 
-
 #include <tntdb/connect.h>
 #include <vector>
 #include "dbtypes.h"
