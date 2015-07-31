@@ -1,20 +1,25 @@
 # This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
 
-# The loopback network interface
-#auto eth1
+iface eth00 inet dhcp
+   pre-up ip link add $IFACE type dummy
+   up ip link set $IFACE up
+   down ip link set $IFACE down
+   post-down ip link del $IFACE
 iface eth1 inet static
-   address 192.168.1.2
+   address 192.168.1.10
    netmask 255.255.255.0
    gateway 192.168.1.1
    pre-up ip link add $IFACE type dummy
    up ip link set $IFACE up
-   down ip link set $IFACE down 
-   post-down ip link del $IFACE 
-#auto eth2
-iface eth2 inet dhcp
+   down ip link set $IFACE down
+   post-down ip link del $IFACE
+iface eth2 inet static
+   address 192.168.2.10
+   netmask 255.255.255.0
+   gateway 192.168.2.1
    pre-up ip link add $IFACE type dummy
    up ip link set $IFACE up
    down ip link set $IFACE down
-   post-down ip link del $IFACE 
+   post-down ip link del $IFACE
 
