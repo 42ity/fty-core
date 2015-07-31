@@ -30,7 +30,4 @@
 #define AUTH_LEVEL_ADMIN            3   // Identified as an administrator
 #define AUTH_LEVEL__MAX             3
 
-
-#endif	/* AUTH_LEVELS_H */
-
 #endif // SRC_WEB_INCLUDE_AUTH_LEVELS_H
