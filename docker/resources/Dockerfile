@@ -54,9 +54,9 @@ RUN echo "admin\nadmin\n" | passwd admin
 
 #mysql configuration (assume link mysql:db with other mariadb container)
 #RUN mv /etc/mysql/my.cnf /etc/mysql/my.cnf.orig
-RUN echo "[client]" > /etc/mysql/my.cnf 
-RUN echo "host            = db" >> /etc/mysql/my.cnf 
-RUN echo "port            = 3306" >> /etc/mysql/my.cnf 
+RUN echo "[client]" > /etc/mysql/my.cnf
+RUN echo "host            = db" >> /etc/mysql/my.cnf
+RUN echo "port            = 3306" >> /etc/mysql/my.cnf
 RUN echo "protocol        = TCP" >> /etc/mysql/my.cnf
 
 #network interfaces configuration
