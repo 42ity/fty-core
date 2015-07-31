@@ -159,7 +159,6 @@ CREATE TABLE t_bios_client_info(
 
 DROP TABLE if exists t_bios_asset_link;
 DROP TABLE if exists t_bios_asset_link_type;
-DROP TABLE if exists t_bios_asset_device;
 DROP TABLE if exists t_bios_asset_device_type;
 DROP TABLE if exists t_bios_asset_ext_attributes;
 DROP TABLE if exists t_bios_asset_group_relation;
@@ -171,17 +170,27 @@ DROP TABLE if exists t_bios_asset_element_type;
 CREATE TABLE t_bios_asset_element_type (
   id_asset_element_type TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
   name                  VARCHAR(50)      NOT NULL,
-  
+
   PRIMARY KEY (id_asset_element_type),
-  
+
   UNIQUE INDEX `UI_t_bios_asset_element_type` (`name` ASC)
 
 ) AUTO_INCREMENT = 1;
 
+CREATE TABLE t_bios_asset_device_type(
+  id_asset_device_type TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+  name                 VARCHAR(50)        NOT NULL,
+
+  PRIMARY KEY (id_asset_device_type),
+  UNIQUE INDEX `UI_t_bios_asset_device_type` (`name` ASC)
+
+);
+
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(50)         NOT NULL,
+  name              VARCHAR(50)         NOT NULL UNIQUE,
   id_type           TINYINT UNSIGNED    NOT NULL,
+  id_subtype        TINYINT UNSIGNED,
   id_parent         INT UNSIGNED,
   status            char(9)             NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
@@ -190,13 +199,19 @@ CREATE TABLE t_bios_asset_element (
   PRIMARY KEY (id_asset_element),
 
   INDEX FK_ASSETELEMENT_ELEMENTTYPE_idx (id_type   ASC),
+  INDEX FK_ASSETELEMENT_ELEMENTSUBTYPE_idx (id_subtype   ASC),
   INDEX FK_ASSETELEMENT_PARENTID_idx    (id_parent ASC),
 
   CONSTRAINT FK_ASSETELEMENT_ELEMENTTYPE
     FOREIGN KEY (id_type)
     REFERENCES t_bios_asset_element_type (id_asset_element_type)
     ON DELETE RESTRICT,
-  
+
+  CONSTRAINT FK_ASSETELEMENT_ELEMENTSUBTYPE
+    FOREIGN KEY (id_subtype)
+    REFERENCES t_bios_asset_device_type (id_asset_device_type)
+    ON DELETE RESTRICT,
+
   CONSTRAINT FK_ASSETELEMENT_PARENTID
     FOREIGN KEY (id_parent)
     REFERENCES t_bios_asset_element (id_asset_element)
@@ -227,37 +242,6 @@ CREATE TABLE t_bios_asset_group_relation (
 );
 
 
-CREATE TABLE t_bios_asset_device_type(
-  id_asset_device_type TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
-  name                 VARCHAR(50)        NOT NULL,
-  
-  PRIMARY KEY (id_asset_device_type),
-  UNIQUE INDEX `UI_t_bios_asset_device_type` (`name` ASC)
-
-);
-
-
-CREATE TABLE t_bios_asset_device (
-  id_asset_device       INT UNSIGNED     NOT NULL AUTO_INCREMENT,
-  id_asset_element      INT UNSIGNED     NOT NULL,
-  id_asset_device_type  TINYINT UNSIGNED NOT NULL,
-
-  PRIMARY KEY (id_asset_device),
-
-  INDEX FK_ASSETDEVICE_ELEMENT_idx    (id_asset_device_type   ASC),
-  INDEX FK_ASSETDEVICE_DEVICETYPE_idx (id_asset_device_type   ASC),
-
-  CONSTRAINT FK_ASSETDEVICE_ELEMENT
-    FOREIGN KEY (id_asset_element)
-    REFERENCES t_bios_asset_element (id_asset_element)
-    ON DELETE RESTRICT,
-
-  CONSTRAINT FK_ASSETDEVICE_DEVICETYPE
-    FOREIGN KEY (id_asset_device_type)
-    REFERENCES t_bios_asset_device_type (id_asset_device_type)
-    ON DELETE RESTRICT
-);
-
 CREATE TABLE t_bios_asset_link_type(
   id_asset_link_type   TINYINT UNSIGNED   NOT NULL AUTO_INCREMENT,
   name                 VARCHAR(50)        NOT NULL,
@@ -283,12 +267,12 @@ CREATE TABLE t_bios_asset_link (
   
   CONSTRAINT FK_ASSETLINK_SRC 
     FOREIGN KEY (id_asset_device_src)
-    REFERENCES t_bios_asset_device(id_asset_device)
+    REFERENCES t_bios_asset_element(id_asset_element)
     ON DELETE RESTRICT,
 
   CONSTRAINT FK_ASSETLINK_DEST
     FOREIGN KEY (id_asset_device_dest)
-    REFERENCES t_bios_asset_device(id_asset_device)
+    REFERENCES t_bios_asset_element(id_asset_element)
     ON DELETE RESTRICT,
 
   CONSTRAINT FK_ASSETLINK_TYPE
@@ -416,13 +400,12 @@ CREATE VIEW v_bios_asset_element_type AS
         t_bios_asset_element_type t1;
 
 CREATE VIEW v_bios_asset_device AS
-    SELECT  v1.id_asset_device,
-            v1.id_asset_element,
-            v1.id_asset_device_type,
-            v2.name
-    FROM t_bios_asset_device v1
-        LEFT JOIN t_bios_asset_device_type v2
-        ON (v1.id_asset_device_type = v2.id_asset_device_type);
+    SELECT  t1.id_asset_element,
+            t2.id_asset_device_type,
+            t2.name
+    FROM t_bios_asset_element t1
+        LEFT JOIN t_bios_asset_device_type t2
+        ON (t1.id_subtype = t2.id_asset_device_type);
 
 DROP VIEW IF EXISTS v_web_element;
 CREATE VIEW v_web_element AS
@@ -476,44 +459,34 @@ CREATE VIEW v_web_alert_all AS
 
 CREATE VIEW v_bios_asset_link AS
     SELECT  v1.id_link,
-            v1.id_asset_device_src,
             v1.src_out,
-            v1.id_asset_device_dest,
             v1.dest_in,
             v1.id_asset_link_type,
-            v2.id_asset_element id_asset_element_src,
-            v3.id_asset_element id_asset_element_dest
-    FROM t_bios_asset_link v1
-        LEFT JOIN v_bios_asset_device v2
-        ON(v1.id_asset_device_src  = v2.id_asset_device)
-        LEFT JOIN v_bios_asset_device v3
-        ON(v1.id_asset_device_dest = v3.id_asset_device);
+            v1.id_asset_device_src AS id_asset_element_src,
+            v1.id_asset_device_dest AS id_asset_element_dest
+    FROM t_bios_asset_link v1;
 
 CREATE VIEW v_bios_asset_link_topology AS
     SELECT  v1.src_out,
             v1.dest_in,
             v1.id_asset_link_type,
-            v2.id_asset_element AS id_asset_element_src,
+            v1.id_asset_device_src AS id_asset_element_src,
             v4.name AS src_name,
-            v3.id_asset_element AS id_asset_element_dest,
+            v1.id_asset_device_dest AS id_asset_element_dest,
             v5.name AS dest_name,
             v6.name AS src_type_name,
             v7.name AS dest_type_name,
             v6.id_asset_device_type AS src_type_id,
             v7.id_asset_device_type AS dest_type_id
     FROM t_bios_asset_link v1
-        LEFT JOIN t_bios_asset_device v2
-        ON (v1.id_asset_device_src  = v2.id_asset_device)
-        LEFT JOIN v_bios_asset_device v3
-        ON (v1.id_asset_device_dest = v3.id_asset_device)
         LEFT JOIN t_bios_asset_element v4
-        ON (v4.id_asset_element = v2.id_asset_element)
+        ON (v4.id_asset_element = v1.id_asset_device_src)
         LEFT JOIN t_bios_asset_element v5
-        ON (v5.id_asset_element = v3.id_asset_element)
+        ON (v5.id_asset_element = v1.id_asset_device_dest)
         LEFT JOIN t_bios_asset_device_type v6
-        ON (v2.id_asset_device_type = v6.id_asset_device_type)
+        ON (v4.id_subtype = v6.id_asset_device_type)
         LEFT JOIN t_bios_asset_device_type v7
-        ON (v3.id_asset_device_type = v7.id_asset_device_type);
+        ON (v5.id_subtype = v7.id_asset_device_type);
 
 create view v_bios_asset_device_type as select id_asset_device_type as id, name from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
