@@ -25,44 +25,38 @@ insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) v
 insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values ("477004", "RACK3-US477", @asset_element_rack, "477001");
 
 /* UPSs */
-insert into t_bios_asset_element (id_asset_element ,name , id_type, id_parent) values ("477005", "UPS1-US477", @asset_element_device, "477002");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477011", "477005", @asset_device_ups);
-insert into t_bios_asset_element (id_asset_element ,name , id_type, id_parent) values ("477006", "UPS2-US477", @asset_element_device, "477003");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477012", "477006", @asset_device_ups);
-insert into t_bios_asset_element (id_asset_element ,name , id_type, id_parent) values ("477007", "UPS3-US477", @asset_element_device, "477004");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477013", "477007", @asset_device_ups);
+insert into t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent) values ("477005", "UPS1-US477", @asset_element_device, @asset_device_ups, "477002");
+insert into t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent) values ("477006", "UPS2-US477", @asset_element_device, @asset_device_ups, "477003");
+insert into t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent) values ("477007", "UPS3-US477", @asset_element_device, @asset_device_ups, "477004");
 
 /* Servers */
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values ("477008", "SRV1-US477",  @asset_element_device, "477002");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477014", "477008", @asset_device_server);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values ("477009", "SRV2-US477",  @asset_element_device, "477003");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477015", "477009", @asset_device_server);
-insert into t_bios_asset_element (id_asset_element, name , id_type, id_parent) values ("477010", "SRV3-US477",  @asset_element_device, "477004");
-insert into t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) values ("477016", "477010", @asset_device_server);
+insert into t_bios_asset_element (id_asset_element, name, id_type, id_subtype, id_parent) values ("477008", "SRV1-US477",  @asset_element_device, @asset_device_server, "477002");
+insert into t_bios_asset_element (id_asset_element, name ,id_type, id_subtype, id_parent) values ("477009", "SRV2-US477",  @asset_element_device, @asset_device_server, "477003");
+insert into t_bios_asset_element (id_asset_element, name ,id_type, id_subtype, id_parent) values ("477010", "SRV3-US477",  @asset_element_device, @asset_device_server, "477004");
 
 /* Powerchain */
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
-values 
+values
 (
-    "477011",
-    "477014",
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS1-US477'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV1-US477'),
     @asset_link_powerchain
 );
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
-values 
+values
 (
-    "477012",
-    "477015",
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS2-US477'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV2-US477'),
     @asset_link_powerchain
 );
 insert into t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
-values 
+values
 (
-    "477013",
-    "477016",
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'UPS3-US477'),
+    (SELECT id_asset_element FROM t_bios_asset_element WHERE name = 'SRV3-US477'),
     @asset_link_powerchain
 );
 
