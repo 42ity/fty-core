@@ -1,5 +1,7 @@
 #include <sys/types.h>
 
+#ifndef SRC_AGENTS_TH_LIBTH_H
+#define SRC_AGENTS_TH_LIBTH_H
                             //adr  command  r/w
 #define STATUS_REG_W 0x06   //000   0011    0
 #define STATUS_REG_R 0x07   //000   0011    1
@@ -27,3 +29,5 @@ void reset_device(int fd);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // SRC_AGENTS_TH_LIBTH_H

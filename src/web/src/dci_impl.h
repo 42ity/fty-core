@@ -1,3 +1,6 @@
+#ifndef SRC_WEB_SRC_DCI_IMPL_H
+#define SRC_WEB_SRC_DCI_IMPL_H
+
 // this file exists only to have syntax highlighting correct
 // to be included in datacenter_indicators.ecpp
 
@@ -214,3 +217,4 @@ s_is_valid_param(const std::string& p)
 }
 
 
+#endif // SRC_WEB_SRC_DCI_IMPL_H

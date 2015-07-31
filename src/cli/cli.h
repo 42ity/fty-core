@@ -22,7 +22,8 @@ Author(s): Michal Vyskocil <michalvyskocil@eaton.com>
 Description: definitions for command line interface
 References: BIOS-245
 */
-#pragma once
+#ifndef SRC_CLI_CLI_H
+#define SRC_CLI_CLI_H
 
 #define HANDLE_GLOBAL_OPTIONS_BAD_INPUT 0
 #define MSG_E_USER_PAGE_NOT_IMPLEMENTED \
@@ -80,3 +81,5 @@ int do_network(const int argc, const char **argv, const struct global_opts *opts
 #ifdef __cplusplus
 }
 #endif
+
+#endif // SRC_CLI_CLI_H

@@ -20,6 +20,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
+#ifndef SRC_DB_CALCULATION_H
+#define SRC_DB_CALCULATION_H
+
+
 #include <tntdb/connect.h> // conn
 #include <string> //string
 #include "defs.h"
@@ -84,3 +88,5 @@ int
          int64_t &total);
 
 } // end namespace
+
+#endif // SRC_DB_CALCULATION_H

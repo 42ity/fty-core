@@ -5,8 +5,8 @@
  * Created on January 16, 2015, 1:02 PM
  */
 
-#ifndef AUTH_LEVELS_H
-#define	AUTH_LEVELS_H
+#ifndef SRC_WEB_INCLUDE_AUTH_LEVELS_H
+#define SRC_WEB_INCLUDE_AUTH_LEVELS_H
 
 //extern int8_t access_auth_level;
 /* // Consumers require this block in ECPP templates:
@@ -30,6 +30,4 @@
 #define AUTH_LEVEL_ADMIN            3   // Identified as an administrator
 #define AUTH_LEVEL__MAX             3
 
-
-#endif	/* AUTH_LEVELS_H */
-
+#endif // SRC_WEB_INCLUDE_AUTH_LEVELS_H

@@ -20,5 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
+#ifndef SRC_DB_ALERTS_H
+#define SRC_DB_ALERTS_H
 
 #include "alerts/alert_basic.h"
+
+#endif // SRC_DB_ALERTS_H
