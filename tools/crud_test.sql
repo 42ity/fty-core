@@ -8,3 +8,6 @@ INSERT INTO t_bios_asset_element(id_asset_element, name, id_type, id_parent) VAL
 
 INSERT INTO t_bios_asset_device (id_asset_element, id_asset_device_type) VALUES (4, 2);
 INSERT INTO t_bios_asset_device (id_asset_element, id_asset_device_type) VALUES (5, 3);
+
+/* for aupdate element*/
+INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, business_crit, status, priority) VALUES (6, "asset_crud_DEVICE_update",6, 1, 0, "nonactive", 3);
