@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <regex>
+#include <string.h>
 
 #include "subprocess.h"
 #include "cidr.h"
@@ -132,6 +133,7 @@ if(request.getMethod() == "PUT") {
         return HTTP_BAD_REQUEST;
     }
 
+
 // Gets configuration from json and sets it in config while verifying it matches regexp
 #define AUG_SET(NAME, CHECK)         \
     it = rsi.findMember(NAME); \
@@ -140,7 +142,7 @@ if(request.getMethod() == "PUT") {
         if(! CHECK ) { \
             reply.out() << std::string("{ \"error\": \"Wrong value '") + val + \
                                        "' for setting '" NAME " (interface " + iface + \
-                                       (NAME == "method" ? "" : (", method ")) + method + \
+                                       (strcmp (NAME, "method") == 0 ? "" : (", method ")) + method + \
                                        "' } "; \
             return HTTP_BAD_REQUEST; \
         } \
