@@ -205,7 +205,10 @@ if(request.getMethod() == "PUT") {
     }
 
     // Commit everything
-    command = "save\nload\n";
+    command = "save\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    command = "load\n";
     write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
 }
