@@ -1249,7 +1249,7 @@ zmsg_t* get_return_power_topology_from(const char* url, asset_msg_t* getmsg)
     }
 
     // check, if selected element is device
-    if ( device_type_name.empty() )
+    if ( device_type_id == 10 ) // ATEENTION magic constant from initdb.sql
     {   // then it is not a device
         log_warning ("abort with err = '%s %" PRIu32 " %s'",
                         "specified element id =", element_id,
@@ -1397,7 +1397,7 @@ select_power_topology_to (const char* url, a_elmnt_id_t element_id,
     }
     
     // check, if selected element is a device
-    if ( device_type_name.empty() )
+    if ( device_type_id == 10 ) // ATTENTION: magic constant from initdb.sql
         throw bios::ElementIsNotDevice(); // then it is not a device
 
     // devices that should be searched for powerlinks
