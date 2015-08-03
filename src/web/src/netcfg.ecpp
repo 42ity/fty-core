@@ -66,6 +66,11 @@ if(!augtool.isRunning()) {
     }
 }
 
+// Make sure we have the fresh data
+command = "load\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = wait_read_all(augtool.getStdout());
+
 // Are we asked to just list possible configurations?
 rex = "^.*/netcfgs$";
 if(std::regex_match(request.getUrl(), match, rex)) {
@@ -166,7 +171,7 @@ if(request.getMethod() == "PUT") {
     }
 
     // Commit everything
-    command = "save\n";
+    command = "save\nload\n";
     write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
 }
