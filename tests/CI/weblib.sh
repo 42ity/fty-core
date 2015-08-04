@@ -100,7 +100,7 @@ fi
     WEBLIB_CURLFAIL_HTTPERRORS=ignore && \
     SKIP_SANITY=yes && \
     curl() {
-        ./curlbbwget.sh "$@"
+        "$SCRIPTDIR/curlbbwget.sh" "$@"
     } || {
         echo "FATAL-WEBLIB: neither curl program nor curlbbwget.sh emulator" \
             "were found and one is required for requests!" >&2
