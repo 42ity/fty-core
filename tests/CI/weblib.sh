@@ -24,11 +24,6 @@
 #              You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure
 
 # ***********************************************
-( which curl >/dev/null 2>&1 ) || {
-    echo "FATAL-WEBLIB: curl program not found and is required for requests!" >&2
-    exit 127
-}
-
 echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
@@ -96,6 +91,22 @@ if [ -z "$CHECKOUTDIR" ]; then
             CHECKOUTDIR="" ;;
     esac
 fi
+
+# Detect needed real curl or its wget-based emulator which suffices in
+# a limited way (e.g. no parsing of output headers in "< Line" format)
+# Not good for CI tests, but is sufficient for command-line automation.
+( which curl >/dev/null 2>&1 ) || {
+    [ -x "$SCRIPTDIR/curlbbwget.sh" ] && \
+    WEBLIB_CURLFAIL_HTTPERRORS=ignore && \
+    SKIP_SANITY=yes && \
+    curl() {
+        ./curlbbwget.sh "$@"
+    } || {
+        echo "FATAL-WEBLIB: neither curl program nor curlbbwget.sh emulator" \
+            "were found and one is required for requests!" >&2
+        exit 127
+    }
+}
 
 # Support delivery of weblib.sh into distro so that paths are different
 # and testlib may be not available (avoid kill $_PID_TESTER in traps below)
