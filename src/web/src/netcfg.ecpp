@@ -119,7 +119,6 @@ if(request.getMethod() == "PUT") {
     cxxtools::SerializationInfo si;
     cxxtools::SerializationInfo rsi;
     cxxtools::JsonDeserializer deserializer(input);
-    cxxtools::SerializationInfo* it = NULL;
     std::string val;
     try {
         deserializer.deserialize(si);
@@ -141,57 +140,75 @@ if(request.getMethod() == "PUT") {
 
 // Gets configuration from json and sets it in config while verifying it matches regexp
 #define AUG_SET(NAME, CHECK)         \
-    it = rsi.findMember(NAME); \
-    if(it != NULL) { \
-        it->getValue(val); \
+    if(it.name() == NAME) { \
+        it.getValue(val); \
         if(! CHECK ) { \
-            reply.out() << std::string("{ \"error\": \"Wrong value '") + val + \
-                                       "' for setting '" NAME " (interface " + iface + \
-                                       (strcmp (NAME, "method") == 0 ? "" : (", method ")) + method + \
-                                       "' } "; \
+            reply.out() << std::string("{ \"error\": \"Wrong value for " NAME \
+                                       "setting' } "); \
             return HTTP_BAD_REQUEST; \
         } \
         command = "set " + address + "/" NAME " " + val + "\n"; \
         write(augtool.getStdin(), command.c_str(), command.length()); \
         nil = wait_read_all(augtool.getStdout()); \
+        handled = true; \
     }
 
     // All the things we need to set
     std::string method;
-    AUG_SET("method",  std::regex_match(method = val, match,
-                       std::regex("^(dhcp|static|none|manual)$")));
-    AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
-    AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
-    AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
-    if(method != "static") {
-        command = "rm " + address + "/address\n"
-                  "rm " + address + "/netmask\n"
-                  "rm " + address + "/gateway\n";
-        write(augtool.getStdin(), command.c_str(), command.length()); \
-        nil = wait_read_all(augtool.getStdout()); \
-    }
+    for(auto it : rsi) {
+        bool handled = false;
+        AUG_SET("method",  std::regex_match(method = val, match,
+                           std::regex("^(dhcp|static|none|manual)$")));
+        AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
+        AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
+        AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
 
-    //DNS is array, handle differently
-    it = rsi.findMember("nameservers");
-    if(it != NULL) {
-        command = "rm /files/etc/resolv.conf/nameserver\n";
-        write(augtool.getStdin(), command.c_str(), command.length());
-        for(auto i : *it) {
-            i.getValue(val);
-            if(!CIDRAddress(val).valid()) {
-                reply.out() << std::string("{ \"error\": \"Wrong value '") + val +
-                                       "' for DNS setting\" } ";
+        if(method != "static") {
+            command = "rm " + address + "/address\n"
+                      "rm " + address + "/netmask\n"
+                      "rm " + address + "/gateway\n";
+            write(augtool.getStdin(), command.c_str(), command.length()); \
+            nil = wait_read_all(augtool.getStdout()); \
+        }
+
+        //DNS is array, handle differently
+        if(it.name() == "nameservers") {
+            if(it.category() != cxxtools::SerializationInfo::Category::Array) {
+</%cpp>
+{ "error": "Wrong value for DNS setting - array expected" }
+<%cpp>
                 return HTTP_BAD_REQUEST;
             }
-            command = "set /files/etc/resolv.conf/nameserver[0] " + val + "\n";
-            printf("%s\n", command.c_str());
+            command = "rm /files/etc/resolv.conf/nameserver\n";
             write(augtool.getStdin(), command.c_str(), command.length());
+            for(auto i : it) {
+                i.getValue(val);
+                if(!CIDRAddress(val).valid()) {
+</%cpp>
+{ "error": "Wrong value for DNS setting - array of IPs expected" }
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
+                command = "set /files/etc/resolv.conf/nameserver[0] " + val + "\n";
+                printf("%s\n", command.c_str());
+                write(augtool.getStdin(), command.c_str(), command.length());
+            }
+            nil = wait_read_all(augtool.getStdout());
+            handled = true;
         }
-        nil = wait_read_all(augtool.getStdout());
+        if(!handled) {
+</%cpp>
+{ "error": "Invalid option '<$ it.name() $>'" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
     }
 
     // Commit everything
-    command = "save\nload\n";
+    command = "save\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    command = "load\n";
     write(augtool.getStdin(), command.c_str(), command.length());
     nil = wait_read_all(augtool.getStdout());
 }
