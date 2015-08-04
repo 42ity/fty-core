@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 
 #include "dbhelpers.h"
+namespace persist {
 /*
  * \brief Processes a csv file
  *
@@ -42,4 +43,9 @@ void
          std::vector <db_a_elmnt_t> &okRows,
          std::map <int, std::string> &failRows);
 
+//TODO: think about prototype
+void
+    export_asset_csv
+        (void);
+}
 #endif

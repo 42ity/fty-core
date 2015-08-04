@@ -171,6 +171,19 @@ db_reply <std::map <std::string, std::pair<std::string, bool> >>
     }
 }
 
+int
+select_ext_attributes(
+        tntdb::Connection &conn,
+        a_elmnt_id_t element_id,
+        std::map <std::string, std::pair<std::string, bool> >& out)
+{
+    auto dbreply = select_ext_attributes(conn, element_id);
+    if (dbreply.status == 0)
+        return -1;
+    out = dbreply.item;
+    return 0;
+}
+
 db_reply <std::vector <db_tmp_link_t>>
     select_asset_device_links_to
         (tntdb::Connection &conn,
@@ -417,4 +430,68 @@ reply_t
         return rep;
     }
 }
+
+int
+    select_asset_element_all(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id, v.name, v.type_name,"
+            "   v.subtype_name, v.id_parent,"
+            "   v.business_crit, v.status, v.priority"
+            " FROM"
+            "   v_web_element v"
+        );
+
+        tntdb::Result res = st.select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+    select_ext_attributes_keytags(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   DISTINCT(keytag)"
+            " FROM"
+            "   v_bios_asset_ext_attributes"
+        );
+
+        tntdb::Result res = st.select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
 } // namespace end

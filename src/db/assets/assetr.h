@@ -22,9 +22,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H
 
+#include <functional>
+#include <vector>
 
 #include <tntdb/connect.h>
-#include <vector>
 #include "dbtypes.h"
 #include "dbhelpers.h"
 #include "db/types.h"
@@ -77,6 +78,12 @@ db_reply < std::map <std::string, std::pair<std::string, bool> > >
     select_ext_attributes
         (tntdb::Connection &conn, 
          a_elmnt_id_t element_id);
+int
+select_ext_attributes(
+        tntdb::Connection &conn,
+        a_elmnt_id_t element_id,
+        std::map <std::string, std::pair<std::string, bool> >& out);
+
 
 db_reply <std::vector <db_tmp_link_t> >
     select_asset_device_links_to
@@ -100,6 +107,33 @@ reply_t
          a_elmnt_id_t  element_id,
          a_elmnt_id_t &dc_id);
 
+/**\brief select everything from v_web_element
+ *
+ * \param[in]   tntdb connection
+ * \param[in]   callback function to operate on result row
+ */
+int
+    select_asset_element_all(
+            tntdb::Connection& conn,
+            std::function<void(const tntdb::Row&)>& cb);
+
+/**\brief select all stored keytag names from v_bios_asset_ext_attributes
+ *
+ * \param[in]   tntdb connection
+ * \param[in]   callback function to operate on result row
+ */
+int
+    select_ext_attributes_keytags(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb);
+
+int
+    select_asset_element_parent_name(
+            tntdb::Connection& conn,
+            a_elmnt_id_t id,
+            std::string& name);
 } //namespace end
 
 #endif // SRC_DB_ASSETS_ASSETR_H

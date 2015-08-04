@@ -374,7 +374,8 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/assets/assetr.cc \
 			src/db/assets.h \
 			src/db/inout.h \
-			src/db/inout/loadcsv.cc
+			src/db/inout/loadcsv.cc \
+			src/db/inout/exportcsv.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -924,6 +925,20 @@ agent_th_LDADD = \
 			 libpriv-proto.la libpriv-log.la
 
 agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
+
+bin_PROGRAMS += test-exportcsv
+test_exportcsv_SOURCES = tests/test-exportcsv.cc
+test_exportcsv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+test_exportcsv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la
+test_exportcsv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
 
 bin_PROGRAMS += 		generate_measurement
 
