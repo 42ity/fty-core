@@ -171,8 +171,9 @@ if(request.getMethod() == "PUT") {
     if(it.name() == NAME) { \
         it.getValue(val); \
         if(! CHECK ) { \
-            reply.out() << std::string("{ \"error\": \"Wrong value for " NAME \
-                                       " setting' } "); \
+            reply.out() << std::string("{ \"error\": \"Wrong value for '" NAME \
+                                       "' setting or setting '" NAME "' not " \
+                                       " expected.\" }"); \
             return HTTP_BAD_REQUEST; \
         } \
         command = "set " + address + "/" NAME " " + val + "\n"; \
