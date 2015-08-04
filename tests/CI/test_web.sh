@@ -37,6 +37,8 @@ FAILED=""
 [ -z "$SKIP_NONSH_TESTS" ] && SKIP_NONSH_TESTS=yes
 SKIPPED_NONSH_TESTS=0
 
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -96,31 +98,36 @@ if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
         "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
 fi
 
-logmsg_info "Testing webserver ability to serve the REST API"
-curlfail_push_expect_404
-if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver code is deeply broken, please fix it first!"
-fi
+if [ "$SKIP_SANITY" = yes ]; then
+    # This is hit e.g. when a wget-based "curl emulator" is used for requests
+    logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
+else
+    logmsg_info "Testing webserver ability to serve the REST API"
+    curlfail_push_expect_404
+    if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+    fi
 
-if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
-    # We do expect an HTTP-404 on the API base URL
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-fi
-curlfail_pop
+    if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
+        # We do expect an HTTP-404 on the API base URL
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    fi
+    curlfail_pop
 
-curlfail_push_expect_noerrors
-if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
-    # We expect that the login service responds
-    logmsg_error "api_get() returned an error:"
-    api_get "/oauth2/token" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    curlfail_push_expect_noerrors
+    if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
+        # We expect that the login service responds
+        logmsg_error "api_get() returned an error:"
+        api_get "/oauth2/token" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    fi
+    curlfail_pop
+    logmsg_info "Webserver seems basically able to serve the REST API"
 fi
-curlfail_pop
-logmsg_info "Webserver seems basically able to serve the REST API"
 
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
