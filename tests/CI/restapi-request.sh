@@ -68,7 +68,8 @@ SUT_is_localhost() {
 }
 
 RELATIVE_URL=""
-SKIP_SANITY=no
+# SKIP_SANITY=(yes|no|onlyerrors)
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 while [ $# -gt 0 ] ; do
     case "$1" in
         --port-web|--sut-port-web|-wp|--port)
@@ -163,7 +164,9 @@ wait_for_web() {
     die "Web-server is NOT responsive!" >&2
   fi
 
-  if [ "$SKIP_SANITY" != yes ]; then
+  if [ "$SKIP_SANITY" = yes ]; then
+    logmsg_info "Skipping sanity checks due to SKIP_SANITY=$SKIP_SANITY"
+  else
     # Validate the fundamental BIOS webserver capabilities
     logmsg_info "Testing webserver ability to serve the REST API"
     curlfail_push_expect_404
@@ -181,14 +184,17 @@ wait_for_web() {
     fi
     curlfail_pop
 
-    curlfail_push_expect_noerrors
-    if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
-        # We expect that the login service responds
-        logmsg_error "api_get() returned an error:"
-        api_get "/oauth2/token" >&2
-        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    if [ "$SKIP_SANITY" != onlyerrors ]; then
+        curlfail_push_expect_noerrors
+        if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ] >/dev/null 2>&1 ; then
+            # We expect that the login service responds
+            logmsg_error "api_get() returned an error:"
+            api_get "/oauth2/token" >&2
+            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+        fi
+        curlfail_pop
     fi
-    curlfail_pop
+
     logmsg_info "Webserver seems basically able to serve the REST API"
   fi
 
