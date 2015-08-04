@@ -49,12 +49,12 @@ cmpjson_strings() {
             rm -f "$TMPF1" "$TMPF1"
             touch "$TMPF1" "$TMPF1" && \
             chmod 600 "$TMPF1" "$TMPF1" && \
-            trap "rm -f '$TMPF1' '$TMPF2'" EXIT SIGHUP SIGINT SIGQUIT SIGTERM && \
+            settraps "rm -f '$TMPF1' '$TMPF2'" && \
             { echo "$1" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF1"; res1=$?
               echo "$2" | eval $JSONSH -l $JSONSH_OPTIONS_VERBOSE > "$TMPF2"; res2=$?
               [ "$res1" = 0 -a "$res2" = 0 ] && diff -bu "$TMPF1" "$TMPF2"; }
             rm -f "$TMPF1" "$TMPF2"
-            trap '' EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+            settraps '-'
 	fi
     fi
 
