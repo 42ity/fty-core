@@ -1,16 +1,16 @@
 /*
 Copyright (C) 2015 Eaton
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -23,7 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
 
-#include "loadcsv.h"
+#include "db/inout.h"
 
 #include "csv.h"
 #include "log.h"
@@ -106,9 +106,9 @@ static bool
 
 int
     get_pdu_epdu_info_location_w_pos
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t parent_id, 
-         int &pdu_epdu_count, 
+        (tntdb::Connection &conn,
+         a_elmnt_id_t parent_id,
+         int &pdu_epdu_count,
          std::string &last_position)
 {
     LOG_START;
@@ -121,7 +121,7 @@ int
         if ( ( std::get<2>(adevice) == "pdu" ) || ( std::get<2>(adevice) == "epdu" ) )
         {
             pdu_epdu_count++;
-            db_reply <std::map <std::string, std::pair<std::string, bool> >> 
+            db_reply <std::map <std::string, std::pair<std::string, bool> >>
                 ext_attributes = persist::select_ext_attributes (conn, std::get<0>(adevice));
             auto it = ext_attributes.item.find("location_w_pos");
             if ( it != ext_attributes.item.cend() )
@@ -129,7 +129,7 @@ int
             else
             {
                 log_warning ("inconsistent state: epdu/pdu without location_w_pos, use 'right'");
-                last_position = "left"; 
+                last_position = "left";
             }
         }
     }
@@ -160,7 +160,7 @@ static db_a_elmnt_t
     static auto TYPES = read_element_types (conn);
 
     static auto SUBTYPES = read_device_types (conn);
-    
+
     // This is used to track, which columns had been already processed,
     // because if they didn't yet,
     // then they should be treated as external attribute
@@ -259,7 +259,7 @@ static db_a_elmnt_t
     // BIOS-991 --end
 
     std::string group;
-    
+
     // list of element ids of all groups, the element belongs to
     std::set <a_elmnt_id_t>  groups{};
     for ( int group_index = 1 ; true; group_index++ )
@@ -275,7 +275,7 @@ static db_a_elmnt_t
             // if group was not specified, just skip it
             if ( !group.empty() )
             {
-                // find an id from DB 
+                // find an id from DB
                 auto ret = select_asset_element_by_name(conn, group.c_str());
                 if ( ret.status == 1 )
                     groups.insert(ret.item.id);  // if OK, then take ID
@@ -286,7 +286,7 @@ static db_a_elmnt_t
                 }
             }
         }
-        catch (const std::out_of_range &e) 
+        catch (const std::out_of_range &e)
         // if column doesn't exist, then break the cycle
         {
             log_debug ("end of group processing");
@@ -294,14 +294,14 @@ static db_a_elmnt_t
             break;
         }
     }
-    
+
     std::vector <link_t>  links{};
     for ( int link_index = 1; true; link_index++ )
     {
         link_t one_link{0, 0, NULL, NULL, 0};
         try {
             // column name
-            auto link_col_name = "power_source." + 
+            auto link_col_name = "power_source." +
                                                 std::to_string(link_index);
             // remove from unused
             unused_columns.erase(link_col_name);
@@ -310,7 +310,7 @@ static db_a_elmnt_t
             log_debug ("power_source_name = '%s'", link_source.c_str());
             if ( !link_source.empty() ) // if power source is not specified
             {
-                // find an id from DB 
+                // find an id from DB
                 auto ret = select_asset_element_by_name
                                                 (conn, link_source.c_str());
                 if ( ret.status == 1 )
@@ -389,7 +389,7 @@ static db_a_elmnt_t
             {
                 // BIOS-991 --start
                 switch ( pdu_epdu_count ) {
-                    case 0: { 
+                    case 0: {
                                 zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                                 break;
                             }
@@ -421,7 +421,7 @@ static db_a_elmnt_t
             log_debug ("key = %s value = %s was ignored", key.c_str(), value.c_str());
         }
     }
-    // if the row represents group, the subtype represents a type 
+    // if the row represents group, the subtype represents a type
     // of the group.
     // As group has no special table as device, then this information
     // sould be inserted as external attribute
@@ -440,11 +440,11 @@ static db_a_elmnt_t
         {
             throw std::invalid_argument("insertion was unsuccess");
         }
-        m.id = ret.rowid; 
+        m.id = ret.rowid;
     }
     else
-    {   
-        // this is a transaction 
+    {
+        // this is a transaction
         auto ret = insert_device (conn, links, groups, name.c_str(),
                 parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
                 priority, bc);
@@ -452,9 +452,9 @@ static db_a_elmnt_t
         {
             throw std::invalid_argument("insertion was unsuccess");
         }
-        m.id = ret.rowid; 
+        m.id = ret.rowid;
     }
-    
+
     m.name = name;
     m.status = status;
     m.parent_id = parent_id;
@@ -497,8 +497,8 @@ mandatory_missing
 
 void
     load_asset_csv
-        (std::istream& input, 
-         std::vector <db_a_elmnt_t> &okRows, 
+        (std::istream& input,
+         std::vector <db_a_elmnt_t> &okRows,
          std::map <int, std::string> &failRows)
 {
     LOG_START;
@@ -541,7 +541,7 @@ void
         LOG_END;
         throw std::runtime_error(msg.c_str());
     }
-    
+
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
