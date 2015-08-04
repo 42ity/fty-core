@@ -304,7 +304,7 @@ CURL() {
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
