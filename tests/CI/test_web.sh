@@ -37,6 +37,10 @@ FAILED=""
 [ -z "$SKIP_NONSH_TESTS" ] && SKIP_NONSH_TESTS=yes
 SKIPPED_NONSH_TESTS=0
 
+# SKIP_SANITY=(yes|no|onlyerrors)
+#   yes = skip sanity tests in ultimate request/test scripts
+#   no  = do all tests
+#   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
 # Include our standard routines for CI scripts
@@ -118,14 +122,17 @@ else
     fi
     curlfail_pop
 
-    curlfail_push_expect_noerrors
-    if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
-        # We expect that the login service responds
-        logmsg_error "api_get() returned an error:"
-        api_get "/oauth2/token" >&2
-        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    if [ "$SKIP_SANITY" != onlyerrors ]; then
+        curlfail_push_expect_noerrors
+        if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
+            # We expect that the login service responds
+            logmsg_error "api_get() returned an error:"
+            api_get "/oauth2/token" >&2
+            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+        fi
+        curlfail_pop
     fi
-    curlfail_pop
+
     logmsg_info "Webserver seems basically able to serve the REST API"
 fi
 

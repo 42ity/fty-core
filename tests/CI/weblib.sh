@@ -95,8 +95,16 @@ fi
 # Detect needed real curl or its wget-based emulator which suffices in
 # a limited way (e.g. no parsing of output headers in "< Line" format)
 # Not good for CI tests, but is sufficient for command-line automation.
+
+# SKIP_SANITY=(yes|no|onlyerrors)
+#   yes = skip sanity tests in certain ultimate request/test scripts
+#   no  = do all tests
+#   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
+
 ( which curl >/dev/null 2>&1 ) || {
     [ -x "$SCRIPTDIR/curlbbwget.sh" ] && \
+    SKIP_SANITY=onlyerrors && \
     curl() {
         "$SCRIPTDIR/curlbbwget.sh" "$@"
     } || {
