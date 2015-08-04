@@ -9,6 +9,7 @@
 [ -z "$MULTIPART_BOUNDARY" ] && \
     MULTIPART_BOUNDARY='--------------------------b10c0fda7a424242'
 [ -z "$DRY_RUN" ] && DRY_RUN=no
+[ -z "$CURLSTDERR" ] && CURLSTDERR='&2'
 
 # Note that array elements are passed as singular string tokens, so there
 # must(!) be no quoting inside, e.g. "--flag=arg with space" needs no quotes!
@@ -37,7 +38,7 @@ ${MULTIPART_BOUNDARY}--" | sed 's,$,\r,'`"
         #echo "... '$1'" >&2
         case "$1" in
             -v) ;; # silently ignore
-            --stderr) shift ;; # silently ignore with argument
+            --stderr) CURLSTDERR="$2"; shift ;;
             --insecure) WGETARGS+=("--no-check-certificate") ;;
             --progress-bar) WGETARGS_GNU+=("--show-progress") ;;
             --header|-H) case "$2" in
@@ -129,15 +130,19 @@ ${FORM_TAIL}
 }
 
 debug_print() {
-        echo_concat "DEBUG: $WGET "
-        for I in "${WGETARGS[@]}" ; do
-            echo_concat "'$I' "
-        done
-        echo_concat "  ... URLs: ...  "
-        for I in "${WGETARGS_URL[@]}" ; do
-            echo_concat "'$I' "
-        done
-        echo ""; echo ""
+    echo_concat "DEBUG: $WGET "
+    for I in "${WGETARGS[@]}" ; do
+        echo_concat "'$I' "
+    done
+    echo_concat "  ... URLs: ...  "
+    for I in "${WGETARGS_URL[@]}" ; do
+        echo_concat "'$I' "
+    done
+    echo ""; echo ""
+}
+
+run_wget() {
+    $WGET "${WGETARGS[@]}" "${WGETARGS_URL[@]}"
 }
 
 WGET=""
@@ -154,6 +159,7 @@ if [ "$DRY_RUN" = yes ]; then
         exit 0
 else
         [ "$CI_DEBUG" -gt 3 ] 2>/dev/null && debug_print >&2
-        $WGET "${WGETARGS[@]}" "${WGETARGS_URL[@]}"
+        # Direct stderr to &2 or a file
+        eval run_wget "2>$CURLSTDERR"
         exit $?
 fi
