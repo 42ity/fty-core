@@ -97,7 +97,6 @@ fi
 # Not good for CI tests, but is sufficient for command-line automation.
 ( which curl >/dev/null 2>&1 ) || {
     [ -x "$SCRIPTDIR/curlbbwget.sh" ] && \
-    SKIP_SANITY=yes && \
     curl() {
         "$SCRIPTDIR/curlbbwget.sh" "$@"
     } || {

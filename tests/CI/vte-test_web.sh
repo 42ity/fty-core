@@ -153,7 +153,7 @@ fi
 
 # is web server running?
 curlfail_push_expect_404
-if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
     CODE=4 die "Webserver is not running or has errors, please start it first!"
 fi
 curlfail_pop
