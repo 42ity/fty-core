@@ -402,7 +402,7 @@ settraps() {
         for P in "" SIG; do for S in $TRAP_SIGNALS ; do
                 case "$1" in
                 -|"") trap "$1" $P$S 2>/dev/null || true ;;
-                *)    trap 'ERRCODE=$?; ('"$*"'); exit $ERRCODE;' $P$S 2>/dev/null || true ;;
+                *)    trap 'ERRCODE=$?; { '"$*"' ;}; exit $ERRCODE;' $P$S 2>/dev/null || true ;;
                 esac
         done; done
 }
