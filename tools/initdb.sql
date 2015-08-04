@@ -190,7 +190,7 @@ CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
   name              VARCHAR(50)         NOT NULL UNIQUE,
   id_type           TINYINT UNSIGNED    NOT NULL,
-  id_subtype        TINYINT UNSIGNED,
+  id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
   id_parent         INT UNSIGNED,
   status            char(9)             NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
@@ -414,22 +414,22 @@ CREATE VIEW v_web_element AS
         t1.name,
         t1.id_type,
         v3.name AS type_name,
-        v4.id_asset_device_type AS subtype_id,
+        t1.id_subtype AS subtype_id,
         v4.name AS subtype_name,
         t1.id_parent,
         t2.id_type AS id_parent_type,
         t1.business_crit,
         t1.status,
         t1.priority
-    FROM        
+    FROM
         t_bios_asset_element t1
-        LEFT JOIN t_bios_asset_element t2 
+        LEFT JOIN t_bios_asset_element t2
             ON (t1.id_parent = t2.id_asset_element)
         LEFT JOIN v_bios_asset_element_type v3
             ON (t1.id_type = v3.id)
-        LEFT JOIN v_bios_asset_device v4
-            ON (v4.id_asset_element = t1.id_asset_element);
- 
+        LEFT JOIN t_bios_asset_device_type v4
+            ON (v4.id_asset_device_type = t1.id_subtype);
+
 
 /* for REST API: /asset/all */
 DROP VIEW IF EXISTS v_web_alert_all;
@@ -505,7 +505,8 @@ SELECT v1.id_asset_element,
        v4.id_parent AS id_parent4,
        v1.status, 
        v1.priority, 
-       v1.business_crit
+       v1.business_crit,
+       v1.id_type
 FROM t_bios_asset_element v1 
      LEFT JOIN t_bios_asset_element v2 
         ON (v1.id_parent = v2.id_asset_element) 
@@ -651,6 +652,7 @@ INSERT INTO t_bios_asset_device_type (name) VALUES ("pdu");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("server");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("main");
 INSERT INTO t_bios_asset_device_type (name) VALUES ("sts");
+INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N_A");
 
 /* t_bios_asset_link_type */
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");

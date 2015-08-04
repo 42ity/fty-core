@@ -278,7 +278,7 @@ std::string filter;
                         json.append("\"id\" : \"")
                             .append(std::to_string(std::get<0>(row)))
                             .append("\",\n");
-                        if (!std::get<4>(row).empty()) {
+                        if (std::get<4>(row) != "N_A") { // magic constant from initdb.sql
                             for (int i = 0; i < indent; i++) {
                                 json.append ("\t");
                             }
@@ -305,7 +305,7 @@ std::string filter;
                         json.append("\"id\" : \"")
                             .append(std::to_string(std::get<0>(row)))
                             .append("\"");
-                        if (!std::get<4>(row).empty()) {
+                        if (std::get<4>(row) != "N_A") { // magic constant from initdb.sql
                             json.append(",\n");
                             for (int i = 0; i < indent; i++) {
                                 json.append ("\t");
