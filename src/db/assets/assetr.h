@@ -19,6 +19,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     \brief  Basic select-functions for assets
     \author Alena Chernikava <alenachernikava@eaton.com>
 */
+#ifndef SRC_DB_ASSETS_ASSETR_H
+#define SRC_DB_ASSETS_ASSETR_H
 
 
 #include <tntdb/connect.h>
@@ -99,3 +101,5 @@ reply_t
          a_elmnt_id_t &dc_id);
 
 } //namespace end
+
+#endif // SRC_DB_ASSETS_ASSETR_H

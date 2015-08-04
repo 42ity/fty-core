@@ -53,14 +53,14 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     uint8_t id_group  = 1;
 
     uint32_t    start_id                = 7000;
-    uint8_t     start_type_id           = 2;        
+    uint8_t     start_type_id           = 2;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = 7;    // take all, 7 means without the filter
     bool        start_recursive         = false;
 
     log_info ("=============== LOCATION FROM #3 ==================");
-    
+
     _scoped_asset_msg_t* getmsg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
     assert ( getmsg );
     asset_msg_set_element_id  (getmsg, start_id);
@@ -73,22 +73,22 @@ TEST_CASE("Location topology from #3","[db][topology][location][location_topolog
     // (child, parent)
     // id, id_type, name, device_type_name
     edge_lf expected;
-    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc, start_name, ""));
-    
-    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , ""      , start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , ""      , start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc, start_name, ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc, start_name, ""));
-    
+
+    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc, start_name, "N_A"));
+
+    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , "N_A"      , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , "N_A"      , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc, start_name, "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"      , start_id, id_dc, start_name, "N_A"));
+
     // a group
-    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
+    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , "N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
-    assert ( retTopology );   
+    assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
 
     _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -159,7 +159,7 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = 7;    // take all, 7 means without the filter
     bool        start_recursive         = true;
 
@@ -178,35 +178,35 @@ TEST_CASE("Location topology from #4","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
-    
-    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
-    expected.insert (std::make_tuple(7014, id_rack  , "RACK_LOC_1"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
-    
-    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
-    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
+    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , "N_A"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , "N_A"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"   , start_id, id_dc  , start_name    , "N_A"));
 
-    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
+    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , "N_A"   , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
+    expected.insert (std::make_tuple(7014, id_rack  , "RACK_LOC_1"  , "N_A"   , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
 
-    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", ""));
-    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010"  , "ups"  , 7009    , id_rack, "RACK_LOC_010", ""));
+    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , "N_A"   , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
+    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , "N_A"   , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
 
-    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", ""));
+    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", "N_A"   , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", "N_A"   , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
 
-    expected.insert (std::make_tuple(7011, id_rack  , "RACK_LOC_20" , ""      , 7005    , id_row , "ROW_LOC_20"  , ""));
-    
-    expected.insert (std::make_tuple(7012, id_rack  , "RACK_LOC_21" , ""      , 7006    , id_row , "ROW_LOC_21"  , ""));
+    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", "N_A"));
+    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010" , "ups"   , 7009    , id_rack, "RACK_LOC_010", "N_A"));
+
+    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", "N_A"));
+
+    expected.insert (std::make_tuple(7011, id_rack  , "RACK_LOC_20" , "N_A"   , 7005    , id_row , "ROW_LOC_20"  , "N_A"));
+
+    expected.insert (std::make_tuple(7012, id_rack  , "RACK_LOC_21" , "N_A"   , 7006    , id_row , "ROW_LOC_21"  , "N_A"));
 
     // a group
-    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
+    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , "N_A"));
 
     // as a recursive, than tfor every group should be written one layer of the elements
 
@@ -286,7 +286,7 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = true;
 
@@ -304,12 +304,12 @@ TEST_CASE("Location topology from #5","[db][topology][location][location_topolog
     // (child, parent)
     // id, id_type, name, device_type_name
     edge_lf expected;
- 
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
-    
+
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
-    assert ( retTopology );   
+    assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
 
     _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -386,7 +386,7 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = false;
 
@@ -404,12 +404,12 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
     // (child, parent)
     // id, id_type, name, device_type_name
     edge_lf expected;
- 
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
-    
+
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
-    assert ( retTopology );   
+    assert ( retTopology );
     REQUIRE ( is_asset_msg (retTopology) );
 
     _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
@@ -417,7 +417,7 @@ TEST_CASE("Location topology from #5.1","[db][topology][location][location_topol
 //    asset_msg_print (cretTopology);
     // check if the root is ok
     REQUIRE ( compare_start_element (cretTopology, start_id, start_type_id, start_name, start_device_type_name) );
-   
+
     // take edges from each group, and union step by step into r1
     auto r1 = print_frame_to_edges (asset_msg_dcs (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
     auto r2 = print_frame_to_edges (asset_msg_rooms (cretTopology), start_id, start_type_id, std::string(start_name), std::string(start_device_type_name));
@@ -479,7 +479,7 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
     uint32_t    start_id                = 7004;
     uint8_t     start_type_id           = id_row;
     const char* start_name              = "ROW_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
@@ -497,13 +497,13 @@ TEST_CASE("Location topology from #6","[db][topology][location][location_topolog
     // (child, parent)
     // id, id_type, name, device_type_name
     edge_lf expected;
-    
-    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", ""));
-    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010" , "ups"   , 7009    , id_rack, "RACK_LOC_010", ""));
 
-    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", ""));
+    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", "N_A"));
+    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010" , "ups"   , 7009    , id_rack, "RACK_LOC_010", "N_A"));
+
+    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", "N_A"));
  
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -576,7 +576,7 @@ TEST_CASE("Location topology from #6.1","[db][topology][location][location_topol
     uint32_t    start_id                = 7004;
     uint8_t     start_type_id           = id_row;
     const char* start_name              = "ROW_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = false;
 
@@ -652,7 +652,7 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
@@ -671,7 +671,7 @@ TEST_CASE("Location topology from #7","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
     
-    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , ""      , start_id, id_dc  , start_name    , ""));
+    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
  
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -744,7 +744,7 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
     uint32_t    start_id                = 7002;
     uint8_t     start_type_id           = id_room;
     const char* start_name              = "ROOM_LOC_02";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
@@ -763,8 +763,8 @@ TEST_CASE("Location topology from #8","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
   
-    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
-    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
+    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
+    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -837,7 +837,7 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_rack;
     bool        start_recursive         = true;
 
@@ -856,22 +856,22 @@ TEST_CASE("Location topology from #9","[db][topology][location][location_topolog
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
+    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
     
-    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
-    expected.insert (std::make_tuple(7014, id_rack  , "RACK_LOC_1"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
+    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , "N_A"      , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
+    expected.insert (std::make_tuple(7014, id_rack  , "RACK_LOC_1"  , "N_A"      , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
     
-    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
-    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
+    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
+    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
 
-    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
+    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
 
-    expected.insert (std::make_tuple(7011, id_rack  , "RACK_LOC_20" , ""      , 7005    , id_row , "ROW_LOC_20"  , ""));
+    expected.insert (std::make_tuple(7011, id_rack  , "RACK_LOC_20" , "N_A"      , 7005    , id_row , "ROW_LOC_20"  , "N_A"));
     
-    expected.insert (std::make_tuple(7012, id_rack  , "RACK_LOC_21" , ""      , 7006    , id_row , "ROW_LOC_21"  , ""));
+    expected.insert (std::make_tuple(7012, id_rack  , "RACK_LOC_21" , "N_A"      , 7006    , id_row , "ROW_LOC_21"  , "N_A"));
  
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -945,7 +945,7 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_group;
     bool        start_recursive         = false;
 
@@ -964,7 +964,7 @@ TEST_CASE("Location topology from #10","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
+    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , "N_A"));
  
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -1037,7 +1037,7 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = false;
 
@@ -1056,10 +1056,10 @@ TEST_CASE("Location topology from #11","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , ""));
+    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
  
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -1132,7 +1132,7 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
@@ -1151,17 +1151,17 @@ TEST_CASE("Location topology from #12","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
-    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", ""      , 7004    , id_row , "ROW_LOC_01"  , ""));
-    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", ""));
-    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010"  , "ups"  , 7009    , id_rack, "RACK_LOC_010", ""));
-    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", ""));
+    expected.insert (std::make_tuple(7016, id_device, "main_LOC_1"  , "main"  , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1", "genset", start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1"   , "ups"   , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7019, id_device, "srv_LOC_40"  , "server", start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , "N_A"      , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
+    expected.insert (std::make_tuple(7009, id_rack  , "RACK_LOC_010", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7010, id_rack  , "RACK_LOC_011", "N_A"      , 7004    , id_row , "ROW_LOC_01"  , "N_A"));
+    expected.insert (std::make_tuple(7020, id_device, "srv_LOC_10"  , "server", 7009    , id_rack, "RACK_LOC_010", "N_A"));
+    expected.insert (std::make_tuple(7022, id_device, "ups_LOC_010"  , "ups"  , 7009    , id_rack, "RACK_LOC_010", "N_A"));
+    expected.insert (std::make_tuple(7021, id_device, "srv_LOC_11"  , "server", 7010    , id_rack, "RACK_LOC_011", "N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -1235,7 +1235,7 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     uint32_t    start_id                = 0;
     uint8_t     start_type_id           = 0;
     const char* start_name              = "";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "";   // it is not a device
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = true;
 
@@ -1257,9 +1257,9 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     expected.insert (std::make_tuple(7023, id_device, "srv_LOC_50"  , "server", 0, 0,"", ""));
     expected.insert (std::make_tuple(7024, id_device, "srv_LOC_51"  , "server", 0, 0,"", ""));
 
-    expected.insert (std::make_tuple(7015, id_rack, "RACK_LOC_50"  , "", 0, 0,"", ""));
-    expected.insert (std::make_tuple(7008, id_row, "ROW_LOC_50"   , "", 0, 0,"", ""));
-    expected.insert (std::make_tuple(7003, id_room, "ROOM_LOC_50"  , "", 0, 0,"", ""));
+    expected.insert (std::make_tuple(7015, id_rack, "RACK_LOC_50"  , "N_A", 0, 0,"", ""));
+    expected.insert (std::make_tuple(7008, id_row, "ROW_LOC_50"   , "N_A", 0, 0,"", ""));
+    expected.insert (std::make_tuple(7003, id_room, "ROOM_LOC_50"  , "N_A", 0, 0,"", ""));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -1268,7 +1268,7 @@ TEST_CASE("Location topology from #13","[db][topology][location][location_topolo
     _scoped_asset_msg_t* cretTopology = asset_msg_decode (&retTopology);
     assert ( cretTopology );
 
-//    asset_msg_print (cretTopology);
+    asset_msg_print (cretTopology);
     // check if the root is ok
     REQUIRE ( compare_start_element (cretTopology, start_id, start_type_id, start_name, start_device_type_name) );
    
@@ -1334,7 +1334,7 @@ TEST_CASE("Location topology from #14","[db][topology][location][location_topolo
     uint32_t    start_id                = 0;
     uint8_t     start_type_id           = 0;
     const char* start_name              = "";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "";   // it is not a device
     uint8_t     start_filter_type_id    = 6;
     bool        start_recursive         = true;
 
@@ -1429,7 +1429,7 @@ TEST_CASE("Location topology from #15","[db][topology][location][location_topolo
     uint32_t    start_id                = 7032;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_04";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = true;
 
@@ -1506,7 +1506,7 @@ TEST_CASE("Location topology from #16","[db][topology][location][location_topolo
     uint32_t    start_id                = 7032;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_04";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = 7;
     bool        start_recursive         = false;
 
@@ -1584,7 +1584,7 @@ TEST_CASE("Location topology from #17","[db][topology][location][location_topolo
     uint32_t    start_id                = 7032;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_04";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = false;
 
@@ -1662,7 +1662,7 @@ TEST_CASE("Location topology from #18","[db][topology][location][location_topolo
     uint32_t    start_id                = 7032;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_04";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
@@ -1740,7 +1740,7 @@ TEST_CASE("Location topology from #19","[db][topology][location][location_topolo
     uint32_t    start_id                = 7026;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_02";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
@@ -1819,7 +1819,7 @@ TEST_CASE("Location topology from #20","[db][topology][location][location_topolo
     uint32_t    start_id                = 7026;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_02";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_room;
     bool        start_recursive         = true;
 
@@ -1897,7 +1897,7 @@ TEST_CASE("Location topology from #21","[db][topology][location][location_topolo
     uint32_t    start_id                = 7029;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_03";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_rack;
     bool        start_recursive         = true;
 
@@ -1975,7 +1975,7 @@ TEST_CASE("Location topology from #22","[db][topology][location][location_topolo
     uint32_t    start_id                = 7029;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_03";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_device;
     bool        start_recursive         = true;
 
@@ -2052,7 +2052,7 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_rack;    // take all, 7 means without the filter
     bool        start_recursive         = false;
 
@@ -2071,7 +2071,7 @@ TEST_CASE("Location topology from #23","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , ""      , start_id, id_dc  , start_name    , ""));
+    expected.insert (std::make_tuple(7013, id_rack  , "RACK_LOC_30" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -2144,7 +2144,7 @@ TEST_CASE("Location topology from #24","[db][topology][location][location_topolo
     uint32_t    start_id                = 7001;
     uint8_t     start_type_id           = id_room;
     const char* start_name              = "ROOM_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = 6;
     bool        start_recursive         = false;
 
@@ -2218,7 +2218,7 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";   // it is not a device, so it should be empty string
     uint8_t     start_filter_type_id    = id_row;
     bool        start_recursive         = true;
 
@@ -2237,14 +2237,14 @@ TEST_CASE("Location topology from #25","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
  
-    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , ""      , start_id, id_dc  , start_name    , ""));
-    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , ""      , start_id, id_dc  , start_name    , ""));
+    expected.insert (std::make_tuple(7007, id_row   , "ROW_LOC_30"  , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7001, id_room  , "ROOM_LOC_01" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
+    expected.insert (std::make_tuple(7002, id_room  , "ROOM_LOC_02" , "N_A"      , start_id, id_dc  , start_name    , "N_A"));
     
-    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , ""      , 7001    , id_room, "ROOM_LOC_01" , ""));
+    expected.insert (std::make_tuple(7004, id_row   , "ROW_LOC_01"  , "N_A"      , 7001    , id_room, "ROOM_LOC_01" , "N_A"));
     
-    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
-    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , ""      , 7002    , id_room, "ROOM_LOC_02" , ""));
+    expected.insert (std::make_tuple(7005, id_row   , "ROW_LOC_20"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
+    expected.insert (std::make_tuple(7006, id_row   , "ROW_LOC_21"  , "N_A"      , 7002    , id_room, "ROOM_LOC_02" , "N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_from (url.c_str(), getmsg);
     assert ( retTopology );   
@@ -2319,7 +2319,7 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     uint32_t    start_id                = 7000;
     uint8_t     start_type_id           = id_dc;
     const char* start_name              = "DC_LOC_01";
-    const char* start_device_type_name  = "";   // it is not a device, so it should be empty string
+    const char* start_device_type_name  = "N_A";
     uint8_t     start_filter_type_id    = id_group;
     bool        start_recursive         = true;
 
@@ -2338,7 +2338,7 @@ TEST_CASE("Location topology from #26","[db][topology][location][location_topolo
     // id, id_type, name, device_type_name
     edge_lf expected;
    
-    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , ""));
+    expected.insert (std::make_tuple(7025, id_group, "inputpowergroup DC_LOC_01","happynewyear", start_id, id_dc, start_name    , "N_A"));
     expected.insert (std::make_tuple(7016, id_device, "main_LOC_1","main",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7017, id_device, "genset_LOC_1","genset",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));
     expected.insert (std::make_tuple(7018, id_device, "ups_LOC_1","ups",7025, id_group, "inputpowergroup DC_LOC_01","happynewyear"));

@@ -1,5 +1,5 @@
-#ifndef WEB_DATA_H
-#define WEB_DATA_H
+#ifndef SRC_SHARED_DATA_H
+#define SRC_SHARED_DATA_H
 
 #include <czmq.h>
 #include <string>
@@ -42,4 +42,4 @@ class ui_props_manager {
         std::string put(const std::string& props);
 };
 
-#endif // WEB_DATA_H
+#endif // SRC_SHARED_DATA_H
