@@ -25,21 +25,15 @@ SELECT @asset_link_powerchain := id_asset_link_type
 INSERT INTO t_bios_asset_element (name , id_type, id_parent)
 VALUES ('DC1', @asset_element_datacenter, NULL);
 SET @last_asset_element := LAST_INSERT_ID();
-SET @last_datacenter := @last_asset_element; 
+SET @last_datacenter := @last_asset_element;
 
 /* DC1 ups */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ('UPS1-DC1', @asset_element_device, @last_datacenter);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_ups);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ('UPS1-DC1', @asset_element_device, @asset_device_ups, @last_datacenter);
 
 /* DC1 main */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ('main-DC1', @asset_element_device, @last_datacenter);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_main);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ('main-DC1', @asset_element_device, @asset_device_main, @last_datacenter);
 
 /* RACK1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent)
@@ -47,11 +41,9 @@ VALUES (NULL, 'RACK1', @asset_element_rack, @last_datacenter);
 SET @last_asset_element := LAST_INSERT_ID();
 SET @last_rack := @last_asset_element;
 /* RACK1 ups */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ('UPS2-RACK1', @asset_element_device, @last_rack);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ('UPS2-RACK1', @asset_element_device, @asset_device_ups, @last_rack);
 SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_ups);
 
 /* RACK2 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent)
@@ -59,11 +51,8 @@ VALUES (NULL, 'RACK2', @asset_element_rack, @last_datacenter);
 SET @last_asset_element := LAST_INSERT_ID();
 SET @last_rack := @last_asset_element;
 /* RACK2 epdu */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ('EPDU1-RACK2', @asset_element_device, @last_rack);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_epdu);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ('EPDU1-RACK2', @asset_element_device, @asset_device_epdu, @last_rack);
 
 /* Asset links */
 
@@ -72,15 +61,11 @@ INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-        ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'main-DC1'),
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-     ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS1-DC1'),
     @asset_link_powerchain
 );
@@ -90,15 +75,11 @@ INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-        ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS1-DC1'),
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-     ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'EPDU1-RACK2'),
     @asset_link_powerchain
 );
@@ -108,45 +89,32 @@ INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-        ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS1-DC1'),
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-     ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS2-RACK1'),
     @asset_link_powerchain
 );
 
 /* main  unlockated*/
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ("main-unlockated", @asset_element_device, NULL);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_main);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ("main-unlockated", @asset_element_device, @asset_device_main, NULL);
 
 /* DC2 */
 INSERT INTO t_bios_asset_element (name , id_type, id_parent)
 VALUES ("DC2", @asset_element_datacenter, NULL);
 SET @last_asset_element := LAST_INSERT_ID();
-SET @last_datacenter := @last_asset_element; 
+SET @last_datacenter := @last_asset_element;
 
 /* DC2 ups */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ("UPS3-DC2", @asset_element_device, @last_datacenter);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_ups);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ("UPS3-DC2", @asset_element_device, @asset_device_ups, @last_datacenter);
 
 /* DC2 epdu */
-INSERT INTO t_bios_asset_element (name , id_type, id_parent)
-VALUES ("EPDU2-DC2", @asset_element_device, @last_datacenter);
-SET @last_asset_element := LAST_INSERT_ID();
-INSERT INTO t_bios_asset_device  (id_asset_element, id_asset_device_type)
-VALUES (@last_asset_element, @asset_device_epdu);
+INSERT INTO t_bios_asset_element (name , id_type, id_subtype, id_parent)
+VALUES ("EPDU2-DC2", @asset_element_device, @asset_device_epdu, @last_datacenter);
 
 
 /* Asset links */
@@ -156,15 +124,11 @@ INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-        ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'main-unlockated'),
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-     ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS3-DC2'),
     @asset_link_powerchain
 );
@@ -174,15 +138,11 @@ INSERT INTO t_bios_asset_link
     (id_asset_device_src, id_asset_device_dest, id_asset_link_type)
 VALUES
 (
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-        ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'UPS1-DC1'),
-    (SELECT id_asset_device
-     FROM t_bios_asset_device AS t1
-     INNER JOIN t_bios_asset_element AS t2
-     ON t1.id_asset_element = t2.id_asset_element
+    (SELECT id_asset_element
+     FROM t_bios_asset_element
      WHERE name = 'EPDU2-DC2'),
     @asset_link_powerchain
 );
