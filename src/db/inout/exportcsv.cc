@@ -103,7 +103,7 @@ void
         a_elmnt_id_t id;
         r["id"].get(id);
 
-        a_elmnt_id_t id_parent;
+        a_elmnt_id_t id_parent = 0;
         r["id_parent"].get(id_parent);
 
         // 2.1      select all extended attributes
@@ -150,11 +150,11 @@ void
 
         uint32_t priority;
         r["priority"].get(priority);
-        std::cout << priority << ",";
+        std::cout << "P" << priority << ",";
 
-        std::string business_critical;
+        uint32_t business_critical = 0;
         r["business_crit"].get(business_critical);
-        std::cout << business_critical << ",";
+        std::cout << (business_critical == 0 ? "no" : "yes") << ",";
         }
 
         // 2.5.2        power location
@@ -166,7 +166,10 @@ void
 
         // 2.5.3        extended attributes
         for (const auto& k : KEYTAGS) {
-            std::cout << ",";
+            if (ext_attrs.count(k) == 1)
+                std::cout << ext_attrs[k].first << ",";
+            else
+                std::cout << ",";
         }
         
         // 2.5.4        groups
