@@ -296,10 +296,16 @@ CURL() {
 
     _PRINT_CURL_TRACE=no
     if [ $RES_CURL != 0 ]; then
-        ### Based on caller redirections, this output may never be seen
-        echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
-            "perhaps the web server is not available or has crashed?" >&3
-        _PRINT_CURL_TRACE=yes
+        if [ -n "$ERR_CURL" ] && ( echo "$ERR_CURL"; echo "" ) | grep wget >/dev/null ; then
+            # Busybox wget returns non-zero for non-success HTTP result codes
+            # and returns the header part with code in its stderr message
+            RES_CURL=0
+        else
+            ### Based on caller redirections, this output may never be seen
+            echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
+                "perhaps the web server is not available or has crashed?" >&3
+            _PRINT_CURL_TRACE=yes
+        fi
     fi
 
     ERR_MATCH=""
