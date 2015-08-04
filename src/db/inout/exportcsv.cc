@@ -63,33 +63,42 @@ void
 
     // TODO: get number of power links!!!
     uint32_t max_power_links = 3;
-    for (uint32_t i = max_power_links; i != 0; i--) {
-        std::string si = std::to_string(i);
-        KEYTAGS.insert(KEYTAGS.begin(), "power_input." + si);
-        KEYTAGS.insert(KEYTAGS.begin(), "power_plug_src." + si);
-        KEYTAGS.insert(KEYTAGS.begin(), "power_source." + si);
-    }
-
     uint32_t max_groups = 2;
-    for (uint32_t i = max_groups; i != 0; i--) {
-        KEYTAGS.push_back("group." + std::to_string(i));
-    }
+
 
     // put all remaining keys from the database
     s_update_keytags(conn, KEYTAGS);
 
-    // 0. print the row with headers
+    // 1 print the first row with names
+    // 1.1      names from asset element table itself
     for (const auto& k : ASSET_ELEMENT_KEYTAGS) {
         std::cout << k << ",";
     }
+    
+    // 1.2      print power links
+    for (uint32_t i = 0; i != max_power_links; i++) {
+        std::string si = std::to_string(i+1);
+        std::cout << "power_source."   + si << ",";
+        std::cout << "power_plug_src." + si << ",";
+        std::cout << "power_input."    + si << ",";
+    }
+
+    // 1.3      print extended attributes
     for (const auto& k : KEYTAGS) {
         std::cout << k << ",";
     }
+
+    // 1.4      print groups
+    for (uint32_t i = 0; i != max_groups; i++) {
+        std::string si = std::to_string(i+1);
+        std::cout << "group."   + si << ",";
+    }
     std::cout << std::endl;
 
+    // 2. FOR EACH ROW from v_web_asset_element / t_bios_asset_element do ...
     std::function<void(const tntdb::Row&)>
         process_v_web_asset_element_row \
-        = [&conn, &KEYTAGS](const tntdb::Row& r)
+        = [&conn, &KEYTAGS, max_power_links, max_groups](const tntdb::Row& r)
     {
         a_elmnt_id_t id;
         r["id"].get(id);
@@ -97,12 +106,12 @@ void
         a_elmnt_id_t id_parent;
         r["id_parent"].get(id_parent);
 
-        // 2.) select * from t_bios_asset_ext_attributes
+        // 2.1      select all extended attributes
 
         std::map <std::string, std::pair<std::string, bool> > ext_attrs;
         select_ext_attributes(conn, id, ext_attrs);
 
-        //parent name
+        // 2.2      get name of parent
         auto dbreply = select_asset_element_web_byId(
                 conn,
                 id_parent);
@@ -111,13 +120,13 @@ void
             location = dbreply.item.name;
 
         /* TODO TODO TODO TODO */
-        // 3.) links
+        // 2.3 links
         // auto location_to = select_asset_device_
+        //
+        // 3.4 groups
 
-        // 4.) select * from v_bios_asset_link
-
-        // 5.) PRINT IT
-        // 5.1)     things from asset element table itself
+        // 2.5      PRINT IT
+        // 2.5.1    things from asset element table itself
         {
         std::cout << id << ",";
 
@@ -146,19 +155,28 @@ void
         std::string business_critical;
         r["business_crit"].get(business_critical);
         std::cout << business_critical << ",";
-
         }
 
-        // 5.2 other keytags
+        // 2.5.2        power location
+        for (uint32_t i = 0; i != max_power_links; i++) {
+            std::cout << ",";
+            std::cout << ",";
+            std::cout << ",";
+        }
+
+        // 2.5.3        extended attributes
         for (const auto& k : KEYTAGS) {
+            std::cout << ",";
+        }
+        
+        // 2.5.4        groups
+        for (uint32_t i = 0; i != max_groups; i++) {
             std::cout << ",";
         }
         std::cout << std::endl;
 
     };
 
-
-    // for each row from v_web_asset_element do ...
     select_asset_element_all(
             conn,
             process_v_web_asset_element_row);
