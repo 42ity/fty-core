@@ -32,9 +32,9 @@ TEST_CASE("Location topology to #1","[db][topology][location][location_topology.
 //    asset_msg_print (getmsg);
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
-    expected.push (std::make_tuple (7014,id_rack,"RACK_LOC_1",""));
-    expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01",""));
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7014,id_rack,"RACK_LOC_1","N_A"));
+    expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01","N_A"));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -105,10 +105,10 @@ TEST_CASE("Location topology to #2","[db][topology][location][location_topology.
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
     expected.push (std::make_tuple (7022,id_device,"ups_LOC_010","ups"));
-    expected.push (std::make_tuple (7009,id_rack,"RACK_LOC_010",""));
-    expected.push (std::make_tuple (7004,id_row,"ROW_LOC_01",""));
-    expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01",""));
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7009,id_rack,"RACK_LOC_010","N_A"));
+    expected.push (std::make_tuple (7004,id_row,"ROW_LOC_01","N_A"));
+    expected.push (std::make_tuple (7001,id_room,"ROOM_LOC_01","N_A"));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -179,9 +179,9 @@ TEST_CASE("Location topology to #3","[db][topology][location][location_topology.
 //    asset_msg_print (getmsg);
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
-    expected.push (std::make_tuple (7005,id_row,"ROW_LOC_20",""));
-    expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02",""));
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7005,id_row,"ROW_LOC_20","N_A"));
+    expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02","N_A"));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -321,8 +321,8 @@ TEST_CASE("Location topology to #5","[db][topology][location][location_topology.
 //    asset_msg_print (getmsg);
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
-    expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02",""));
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7002,id_room,"ROOM_LOC_02","N_A"));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -392,7 +392,7 @@ TEST_CASE("Location topology to #6","[db][topology][location][location_topology.
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
     expected.push (std::make_tuple (7025,id_group,"inputpowergroup DC_LOC_01","happynewyear"));
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );
@@ -460,7 +460,7 @@ TEST_CASE("Location topology to #7","[db][topology][location][location_topology.
 //    asset_msg_print (getmsg);
 
     std::queue<std::tuple<int,int,std::string,std::string>> expected;
-    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01",""));
+    expected.push (std::make_tuple (7000,id_dc,"DC_LOC_01","N_A"));
 
     _scoped_zmsg_t* retTopology = get_return_topology_to (url.c_str(), getmsg);
     assert ( retTopology );

@@ -77,6 +77,17 @@
         <iface>$1</iface>
       </args>
     </mapping>
+    <mapping>
+      <target>iface@bios_web</target>
+      <url>^/api/v1/admin/ifaces$</url>
+    </mapping>
+    <mapping>
+      <target>iface@bios_web</target>
+      <url>^/api/v1/admin/iface/(.*)$</url>
+      <args>
+        <iface>$1</iface>
+      </args>
+    </mapping>
 
     <!-- Time settings -->
     <mapping>

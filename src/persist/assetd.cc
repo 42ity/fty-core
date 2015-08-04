@@ -40,67 +40,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /////////////////////// DELETE ///////////////////////////////////////////
 //=============================================================================
-db_reply_t
-    delete_asset_device
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id)
-{
-    LOG_START;
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-    
-    db_reply_t ret = db_reply_new();
-    
-    // input parameters control 
-    if ( asset_element_id == 0 )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
-        return ret;
-    }
-    log_debug ("input parameters are correct");
-  
-    try{
-        tntdb::Statement st = conn.prepareCached(
-            " DELETE FROM"
-            "   t_bios_asset_device"
-            " WHERE"
-            "   id_asset_element = :element"
-        );
-    
-        ret.affected_rows = st.set("element", asset_element_id).
-                               execute();
-        log_debug ("[t_bios_asset_element]: was deleted %" 
-                                PRIu64 " rows", ret.affected_rows);
-        if ( ( ret.affected_rows == 1 ) || ( ret.affected_rows == 0 ) )
-        {
-            ret.status = 1;
-            LOG_END;
-            return ret;
-        }
-        else
-        {
-            ret.status     = 0;
-            ret.errtype    = DB_ERR;
-            ret.errsubtype = DB_ERROR_DELETEFAIL;
-            ret.msg        = "unexpected number of rows was deleted";
-            log_error ("end: %s", ret.msg);
-            return ret;
-        } 
-    }
-    catch (const std::exception &e) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
-        return ret;
-    }
-}
-
-//=============================================================================
 // ATTENTION: in theory there could exist more than one link 
 // between two devices
 db_reply_t
@@ -139,17 +78,11 @@ db_reply_t
     try{
         tntdb::Statement st = conn.prepareCached(
             " DELETE"
-            "   t_bios_asset_link"
             " FROM"
             "   t_bios_asset_link"
-            "   INNER JOIN v_bios_asset_link"
             " WHERE"
-            "   t_bios_asset_link.id_asset_device_src = "
-            "           v_bios_asset_link.id_asset_device_src AND"
-            "   t_bios_asset_link.id_asset_device_dest = "
-            "           v_bios_asset_link.id_asset_device_dest AND"
-            "   v_bios_asset_link.id_asset_element_src = :src AND"
-            "   v_bios_asset_link.id_asset_element_dest = :dest"
+            "   id_asset_device_src = :src AND"
+            "   id_asset_device_dest = :dest"
         );
 
         ret.affected_rows = st.set("src", asset_element_id_src).
@@ -197,16 +130,11 @@ db_reply_t
     try{
         tntdb::Statement st = conn.prepareCached(
             " DELETE"
-            "   t_bios_asset_link"
             " FROM"
             "   t_bios_asset_link"
-            "   INNER JOIN t_bios_asset_device"
             " WHERE"
-            "   t_bios_asset_device.id_asset_element = :element AND"
-            "   ( ( t_bios_asset_link.id_asset_device_src = "
-            "               t_bios_asset_device.id_asset_device) OR"
-            "     ( t_bios_asset_link.id_asset_device_dest = "
-            "               t_bios_asset_device.id_asset_device) )"
+            "   id_asset_device_src = :element OR"
+            "   id_asset_device_dest = :element"
         );
 
         ret.affected_rows = st.set("element", asset_element_id).
@@ -231,7 +159,7 @@ db_reply_t
 db_reply_t
     delete_asset_links_to
         (tntdb::Connection &conn, 
-         a_dvc_id_t asset_device_id)
+         a_elmnt_id_t asset_device_id)
 // ATTENTION: asset_device_id is from t_bios_asset_device
 // and it is NOT from t_bios_asset_element;
 {
@@ -282,7 +210,7 @@ db_reply_t
 db_reply_t
     delete_asset_links_from
         (tntdb::Connection &conn, 
-         a_dvc_id_t asset_device_id)
+         a_elmnt_id_t asset_device_id)
 // ATTENTION: asset_device_id is from t_bios_asset_device
 // and it is NOT from t_bios_asset_element;
 {
@@ -885,7 +813,7 @@ db_reply_t
         log_info ("end: error occured during deleting ext attributes");
         return reply_delete1;
     }
- 
+
     auto reply_delete2 = delete_asset_group_links (conn, element_id);
     if ( reply_delete2.status == 0 )
     {
@@ -903,15 +831,7 @@ db_reply_t
         return reply_delete3;
     }
 
-    auto reply_delete4 = delete_asset_device (conn, element_id);
-    if ( reply_delete4.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing element");
-        return reply_delete4;
-    }
-
-    auto reply_delete5 = delete_monitor_asset_relation_by_a 
+    auto reply_delete5 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
     if ( reply_delete5.status == 0 )
     {
@@ -927,7 +847,7 @@ db_reply_t
         log_info ("end: error occured during removing element");
         return reply_delete6;
     }
- 
+
     trans.commit();
     LOG_END;
     return reply_delete6;
