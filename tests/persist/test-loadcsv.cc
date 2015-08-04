@@ -9,6 +9,8 @@
 #include "dbpath.h"
 #include <fstream>
 
+using namespace persist;
+
 std::string get_dc_lab_description() {
     tntdb::Connection conn;
     REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );

@@ -34,6 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 using namespace shared;
 
+namespace persist {
 // convert input '?[1-5]' to 1-5
 static int
     get_priority
@@ -557,3 +558,5 @@ void
     }
     LOG_END;
 }
+
+} // namespace persist

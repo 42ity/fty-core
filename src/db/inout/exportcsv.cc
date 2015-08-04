@@ -122,7 +122,7 @@ void
         process_v_web_asset_element_row \
         = [&conn, &KEYTAGS, max_power_links, max_groups](const tntdb::Row& r)
     {
-        a_elmnt_id_t id;
+        a_elmnt_id_t id = 0;
         r["id"].get(id);
 
         a_elmnt_id_t id_parent = 0;
