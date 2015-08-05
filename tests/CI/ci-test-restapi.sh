@@ -209,8 +209,10 @@ kill_daemons() {
   DBNGPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap 'TR=$?; echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons && exit $TR' EXIT
-  trap 'TR=$?; [ "$TR" = 0 ] && TR=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons && exit $TR' SIGHUP SIGINT SIGQUIT SIGTERM
+  # The ERRCODE is defined by settraps() as the program exitcode
+  # as it enters the trap
+  TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
+  TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons && exit $ERRCODE'
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \

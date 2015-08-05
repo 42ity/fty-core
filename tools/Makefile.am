@@ -4,7 +4,8 @@ EXTRA_DIST =
 helperdir	= $(datadir)/@PACKAGE@/scripts
 helper_SCRIPTS	= init-os-accounts.sh resolveip.sh JSON.sh ldd-tracer.sh rc-bios \
 		    biostimer-graphs-prefetch.sh reset-button.sh
-helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh ../tests/CI/restapi-request.sh
+helper_SCRIPTS	+= ../tests/CI/scriptlib.sh ../tests/CI/weblib.sh \
+		    ../tests/CI/restapi-request.sh ../tests/CI/curlbbwget.sh
 
 mysqldir	= $(datadir)/@PACKAGE@/sql/mysql
 mysql_DATA	= initdb.sql
