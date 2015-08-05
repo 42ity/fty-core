@@ -1,16 +1,16 @@
 /*
 Copyright (C) 2014-2015 Eaton
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -49,7 +49,7 @@ db_reply <db_web_basic_element_t>
     log_debug ("element_id = %" PRIi32, element_id);
 
     // TODO write function new
-    db_web_basic_element_t item {0, "", "", 0, 0, 0, "", 0, 0, 0, ""};
+    db_web_basic_element_t item {0, "", "", 0, 0, 0, "", 0, 0, 0, "",""};
     db_reply <db_web_basic_element_t> ret = db_reply_new(item);
 
     try{
@@ -58,7 +58,8 @@ db_reply <db_web_basic_element_t>
             " SELECT"
             "   v.id, v.name, v.id_type, v.type_name,"
             "   v.subtype_id, v.subtype_name, v.id_parent,"
-            "   v.id_parent_type, v.business_crit, v.status, v.priority"
+            "   v.id_parent_type, v.business_crit, v.status,"
+            "   v.priority, v.asset_tag"
             " FROM"
             "   v_web_element v"
             " WHERE :id = v.id"
@@ -90,6 +91,8 @@ db_reply <db_web_basic_element_t>
         log_debug ("status = '%s'", ret.item.status.c_str());
         row[10].get(ret.item.priority);
         log_debug ("priority = %" PRIi16, ret.item.priority);
+        row[11].get(ret.item.asset_tag);
+        log_debug ("priority = %s", ret.item.asset_tag.c_str());
 
         ret.status = 1;
         LOG_END;
@@ -195,7 +198,7 @@ db_reply <std::vector <db_tmp_link_t>>
             " WHERE"
             "   v.id_asset_element_dest = :iddevice AND"
             "   v.id_asset_link_type = :idlinktype"
-        ); 
+        );
 
         tntdb::Result result = st_pow.set("iddevice", element_id).
                                       set("idlinktype", link_type_id).
@@ -311,7 +314,7 @@ db_reply <std::map <uint32_t, std::string> >
             uint32_t id = 0;
             row[1].get(id);
 
-            ret.item.insert(std::pair<uint32_t, std::string>(id, name)); 
+            ret.item.insert(std::pair<uint32_t, std::string>(id, name));
         }
 
         if ( ret.item.size() == 0 )  // elements were not found

@@ -44,6 +44,7 @@ struct db_web_basic_element_t {
     a_dvc_tp_id_t    subtype_id;
     // TODO location
     std::string      subtype_name;
+    std::string      asset_tag;
 };
 
 /**
