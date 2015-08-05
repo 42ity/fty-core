@@ -181,6 +181,8 @@ void
         // auto location_to = select_asset_device_
         //
         // 3.4 groups
+        std::vector<std::string> groups;
+        select_group_names(conn, id, groups);
 
         // 2.5      PRINT IT
         // 2.5.1    things from asset element table itself
@@ -229,7 +231,10 @@ void
         
         // 2.5.4        groups
         for (uint32_t i = 0; i != max_groups; i++) {
-            lcs.add("");
+            if (i >= groups.size())
+                lcs.add("");
+            else
+                lcs.add(groups[i]);
         }
 
         lcs.add(id);

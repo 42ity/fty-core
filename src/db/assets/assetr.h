@@ -134,6 +134,34 @@ int
             tntdb::Connection& conn,
             a_elmnt_id_t id,
             std::string& name);
+
+/** \brief selects all group names for given element id
+ *
+ *  \param[in] conn is tntdb connection
+ *  \param[in] id is asset element id
+ *  \param[in] callback function to operate on result row
+ *
+ *  \return -1 in case of error or 0 for success
+ */
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::function<void(const tntdb::Row&)> cb);
+
+/** \brief selects all group names for given element id
+ *
+ *  \param[in]  conn is tntdb connection
+ *  \param[in]  id is asset element id
+ *  \param[out] vector of strings with results
+ *
+ *  \return -1 in case of error or 0 for success
+ */
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::vector<std::string>& out);
 } //namespace end
 
 #endif // SRC_DB_ASSETS_ASSETR_H

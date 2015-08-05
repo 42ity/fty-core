@@ -494,4 +494,50 @@ int
     }
 }
 
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::function<void(const tntdb::Row&)> cb)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v2.name "
+            " FROM v_bios_asset_group_relation v1 "
+            " JOIN v_bios_asset_element v2 "
+            "   ON v1.id_asset_group=v2.id "
+            " WHERE v1.id_asset_element=:id "
+        );
+
+        tntdb::Result res = st.set("id", id).select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::vector<std::string>& out)
+{
+    std::function<void(const tntdb::Row&)> func = \
+        [&out](const tntdb::Row& r)
+        {
+            std::string name;
+            r["name"].get(name);
+            out.push_back(name);
+        };
+    return select_group_names(conn, id, func);
+}
 } // namespace end
