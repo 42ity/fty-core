@@ -1,4 +1,7 @@
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
 
 SED_FILTER_TIME='s|.*\"time\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'
 ZEROEPOCH='{ "time":"1970-01-01T00:00:00Z" }'
