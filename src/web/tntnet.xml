@@ -111,6 +111,13 @@
       <url>^/api/v1/asset/import.*</url>
     </mapping>
 
+    <!-- Asset export -->
+    <mapping>
+      <target>asset_export@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/asset/export.*</url>
+    </mapping>
+
     <!--
          Asset GET
          XXX: This needs to be last position as this regexp matches all possible

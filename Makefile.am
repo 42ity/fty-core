@@ -851,7 +851,7 @@ bios_email_SOURCES = \
 bios_email_LDADD = \
 			libpriv-log.la \
 			libpriv-email.la \
-			libpriv-subprocess.la 
+			libpriv-subprocess.la
 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
@@ -868,6 +868,21 @@ bios_nutscan_LDADD = \
 			libpriv-subprocess.la
 
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
+
+cibin_programs += bios-exportcsv
+bios_exportcsv_SOURCES = tests/db/bios-exportcsv.cc
+bios_exportcsv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_exportcsv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la
+bios_exportcsv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
+
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
@@ -925,20 +940,6 @@ agent_th_LDADD = \
 			 libpriv-proto.la libpriv-log.la
 
 agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
-
-bin_PROGRAMS += test-exportcsv
-test_exportcsv_SOURCES = tests/test-exportcsv.cc
-test_exportcsv_CPPFLAGS = \
-						  $(AM_CPPFLAGS) \
-						  -I $(abs_top_srcdir)/src/ \
-						  -I $(abs_top_srcdir)/src/persist/ \
-						  -I $(abs_top_srcdir)/src/share/
-test_exportcsv_LDADD = \
-						 libpriv-db-alerts.la \
-						 libpriv-log.la \
-						 libpriv-db.la
-test_exportcsv_LDFLAGS = \
-						 ${CXXTOOLS_LIBS} -ltntdb
 
 bin_PROGRAMS += 		generate_measurement
 
@@ -1202,7 +1203,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp
+                      src/web/src/uptime.cpp src/web/src/iface.cpp \
+					  src/web/src/asset_export.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
