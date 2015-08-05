@@ -12,13 +12,17 @@
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 determineDirs || true
 
-[ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
-# By default we do sorted comparisons; pass a " " space envvar to unset options
-[ -z "$JSONSH_OPTIONS" ] && JSONSH_OPTIONS="-N=-n -Nnx=%.16f"
-[ -z "$JSONSH_OPTIONS_VERBOSE" ] && JSONSH_OPTIONS_VERBOSE="-S=-n -Nnx=%.16f"
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
 
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && \
-    die "JSON.sh is not executable (tried '$JSONSH')"
+# By default we do sorted comparisons; pass a " " space envvar to unset options
+[ -z "${JSONSH_OPTIONS-}" ] && JSONSH_OPTIONS="-N=-n -Nnx=%.16f"
+[ -z "${JSONSH_OPTIONS_VERBOSE-}" ] && JSONSH_OPTIONS_VERBOSE="-S=-n -Nnx=%.16f"
+
+[ -n "$JSONSH" ] && [ -x "$JSONSH" ] || \
+    die "JSON.sh is not executable (tried '${JSONSH-}')"
 
 self_test() {
     local jsonstr1='{"current":[{"id":3,"realpower.1":1,"voltage.2":1,"current.2":12,"current.1":31,"voltage.1":3}]}'
