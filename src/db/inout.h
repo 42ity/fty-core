@@ -23,6 +23,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef SRC_DB_INOUT_H
 #define SRC_DB_INOUT_H
 
+#include <iostream>
 #include <vector>
 #include <map>
 
@@ -43,9 +44,12 @@ void
          std::vector <db_a_elmnt_t> &okRows,
          std::map <int, std::string> &failRows);
 
-//TODO: think about prototype
+/** \brief export csv file and write result to output stream
+ *
+ * \param[out] out - reference to standard output stream to which content will be written
+ */
 void
     export_asset_csv
-        (void);
+        (std::ostream& out);
 }
 #endif

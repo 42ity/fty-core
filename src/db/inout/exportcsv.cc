@@ -23,7 +23,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <iostream>
 #include <algorithm>
 
+#include "cxxtools/csvserializer.h"
 #include "tntdb/row.h"
+
 #include "db/assets.h"
 #include "dbpath.h"
 #include "log.h"
@@ -55,9 +57,37 @@ s_update_keytags(
             foo);
 }
 
+// helper class to assist with serialization line by line
+class LineCsvSerializer {
+    public:
+        explicit LineCsvSerializer(std::ostream& out):
+            _cs{out, NULL},
+            _buf{}
+        {}
+
+        void add(const std::string& s) {
+            _buf.push_back(s);
+        }
+
+        void add(const uint32_t i) {
+            return add(std::to_string(i));
+        }
+
+        void serialize() {
+            std::vector<std::vector<std::string>> aux{};
+            aux.push_back(_buf);
+            _cs.serialize(aux);
+            _buf.clear();
+        }
+
+    protected:
+        cxxtools::CsvSerializer _cs;
+        std::vector<std::string> _buf;
+};
+
 void
     export_asset_csv
-        (void)
+        (std::ostream& out)
 {
     // 0.) tntdb connection
     tntdb::Connection conn;
@@ -71,6 +101,8 @@ void
         LOG_END;
         throw std::runtime_error(msg.c_str());
     }
+
+    LineCsvSerializer lcs{out};
 
     // TODO: move somewhere else
     std::vector<std::string> KEYTAGS = {
@@ -87,40 +119,39 @@ void
     uint32_t max_power_links = 3;
     uint32_t max_groups = 2;
 
-
     // put all remaining keys from the database
     s_update_keytags(conn, KEYTAGS);
 
     // 1 print the first row with names
     // 1.1      names from asset element table itself
     for (const auto& k : ASSET_ELEMENT_KEYTAGS) {
-        std::cout << k << ",";
+        lcs.add(k);
     }
     
     // 1.2      print power links
     for (uint32_t i = 0; i != max_power_links; i++) {
         std::string si = std::to_string(i+1);
-        std::cout << "power_source."   + si << ",";
-        std::cout << "power_plug_src." + si << ",";
-        std::cout << "power_input."    + si << ",";
+        lcs.add("power_source."   + si);
+        lcs.add("power_plug_src." + si);
+        lcs.add("power_input."    + si);
     }
 
     // 1.3      print extended attributes
     for (const auto& k : KEYTAGS) {
-        std::cout << k << ",";
+        lcs.add(k);
     }
 
     // 1.4      print groups
     for (uint32_t i = 0; i != max_groups; i++) {
         std::string si = std::to_string(i+1);
-        std::cout << "group."   + si << ",";
+        lcs.add("group."   + si);
     }
-    std::cout << std::endl;
+    lcs.serialize();
 
     // 2. FOR EACH ROW from v_web_asset_element / t_bios_asset_element do ...
     std::function<void(const tntdb::Row&)>
         process_v_web_asset_element_row \
-        = [&conn, &KEYTAGS, max_power_links, max_groups](const tntdb::Row& r)
+        = [&conn, &lcs, &KEYTAGS, max_power_links, max_groups](const tntdb::Row& r)
     {
         a_elmnt_id_t id = 0;
         r["id"].get(id);
@@ -150,63 +181,61 @@ void
         // 2.5      PRINT IT
         // 2.5.1    things from asset element table itself
         {
-        std::cout << id << ",";
+        lcs.add(id);
 
         std::string name;
         r["name"].get(name);
-        std::cout << name << ",";
+        lcs.add(name);
 
         std::string type_name;
         r["type_name"].get(type_name);
-        std::cout << type_name << ",";
+        lcs.add(type_name);
 
         std::string subtype_name;
         r["subtype_name"].get(subtype_name);
-        std::cout << subtype_name << ",";
+        lcs.add(subtype_name);
 
-        std::cout << location << ",";
+        lcs.add(location);
 
         std::string status;
         r["status"].get(status);
-        std::cout << status << ",";
+        lcs.add(status);
 
         uint32_t priority;
         r["priority"].get(priority);
-        std::cout << "P" << priority << ",";
+        lcs.add("P" + std::to_string(priority));
 
         uint32_t business_critical = 0;
         r["business_crit"].get(business_critical);
-        std::cout << (business_critical == 0 ? "no" : "yes") << ",";
+        lcs.add(business_critical == 1 ? "yes" : "no");
         }
 
         // 2.5.2        power location
         for (uint32_t i = 0; i != max_power_links; i++) {
-            std::cout << ",";
-            std::cout << ",";
-            std::cout << ",";
+            lcs.add("");
+            lcs.add("");
+            lcs.add("");
         }
 
         // 2.5.3        extended attributes
         for (const auto& k : KEYTAGS) {
             if (ext_attrs.count(k) == 1)
-                std::cout << ext_attrs[k].first << ",";
+                lcs.add(ext_attrs[k].first);
             else
-                std::cout << ",";
+                lcs.add("");
         }
         
         // 2.5.4        groups
         for (uint32_t i = 0; i != max_groups; i++) {
-            std::cout << ",";
+            lcs.add("");
         }
-        std::cout << std::endl;
+        lcs.serialize();
 
     };
 
     select_asset_element_all(
             conn,
             process_v_web_asset_element_row);
-
-
 }
 
 } // namespace persist
