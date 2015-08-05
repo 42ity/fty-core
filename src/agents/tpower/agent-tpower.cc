@@ -95,6 +95,7 @@ void TotalPowerAgent::onSend( ymsg_t **message ) {
 
     if( topic.compare(0,9,"configure") == 0 ) {
         // something is beeing reconfigured, let things to settle down
+        if( _reconfigPending == 0 ) log_info("Reconfiguration scheduled");
         _reconfigPending = time(NULL) + 60;
     } else {
         // measurement received
@@ -162,14 +163,19 @@ time_t TotalPowerAgent::getPollInterval() {
         time_t Tx = dc_it.second.timeToAdvertisement();
         if( Tx > 0 && Tx < T ) T = Tx;
     }
+    if( _reconfigPending ) {
+        time_t Tx = _reconfigPending - time(NULL) + 1;
+        if( Tx <= 0 ) Tx = 1;
+        if( Tx < T ) T = Tx;
+    }
     return T * 1000;
 }
 
 
 void TotalPowerAgent::onPoll() {
-    if( _reconfigPending && ( _reconfigPending < time(NULL) ) ) configuration();
     sendMeasurement( _racks );
     sendMeasurement( _DCs );
+    if( _reconfigPending && ( _reconfigPending <= time(NULL) ) ) configuration();
     _timeout = getPollInterval();
 }
 
