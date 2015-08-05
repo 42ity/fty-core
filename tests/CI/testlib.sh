@@ -25,14 +25,14 @@
 
 # ***********************************************
 ### Should the test suite break upon first failed test?
-[ x"$CITEST_QUICKFAIL" != xyes ] && CITEST_QUICKFAIL=no
+[ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
 
-[ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
+[ -n "${SCRIPTDIR-}" ] && [ -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
 
-if [ -z "$CHECKOUTDIR" ]; then
+if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
             CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
@@ -46,7 +46,10 @@ if [ -z "$CHECKOUTDIR" ]; then
     esac
 fi
 
-[ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
 
 _TOKEN_=""
 TESTLIB_FORCEABORT=no
