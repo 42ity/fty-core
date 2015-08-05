@@ -41,6 +41,7 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
 
 TIME_START=$(date +%s)
+export BIOS_LOG_LEVEL=LOG_DEBUG
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -109,27 +110,9 @@ echo "BUILDSUBDIR =	$BUILDSUBDIR"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
-
-# default values:
-[ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
-# port used for ssh requests:
-[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
-# port used for REST API requests:
-if [ -z "$SUT_WEB_PORT" ]; then
-    if [ -n "$BIOS_PORT" ]; then
-        SUT_WEB_PORT="$BIOS_PORT"
-    else
-        SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
-        [ "$SUT_SSH_PORT" -ge 2200 ] && \
-            SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
-    fi
-fi
-
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
@@ -148,8 +131,8 @@ USR=user1
 PSW=user1
 
     # *** numbers of passed/failed subtest
-SUM_PASS=0
-SUM_ERR=0
+#SUM_PASS=0
+#SUM_ERR=0
 
     # *** is system running? ***
 #LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
@@ -169,17 +152,16 @@ fi
 #echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
-trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+TRAP_SIGNALS=EXIT settraps cleanup
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 # TODO: replace by calls to proper rc-bios script
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory bios-agent-cm ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory bios-agent-cm ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
-
 
 # ***** FILL AND START DB *****
     # *** write power rack base test data to DB on SUT
@@ -189,6 +171,9 @@ set -e
   loaddb_file ./tools/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
 set +e
+
+sut_run 'systemctl restart bios-agent-tpower'
+sut_run 'systemctl restart bios-agent-dbstore'
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
@@ -244,7 +229,7 @@ set_values_in_ups() {
     rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
-    sleep 7
+    sleep 20
     N=20
     while [ "$N" -gt 0 ]; do
         OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
@@ -256,8 +241,8 @@ set_values_in_ups() {
         echo "NOTE: The wait loop for NUT response has expired without success"
 
     # *** start upsrw (output hidden because this can fail for some target variables)
-    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
-    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost"
+#    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
+    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost 2>/dev/null"
     sleep 6
 }
 
@@ -292,6 +277,8 @@ testcase() {
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
             PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
+#            api_get_content "$PAR"
+            sleep 2
             RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" && \
                 logmsg_info "SUCCESS: api_get_content '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
                 logmsg_error "FAILED ($?): api_get_content '$PAR'" 
@@ -390,16 +377,18 @@ RACK="8101"
 TYPE1="epdu"
 TYPE2="epdu"
 UPS=$UPS1
-set_values_in_ups "$UPS" "$TYPE1" "1000"
+
+set_values_in_ups "$UPS" "$TYPE1" "0"
 UPS=$UPS2
 set_values_in_ups "$UPS" "$TYPE2" "0"
-#sleep 10
-   # *** restart NUT server
-#    echo 'Restart NUT server with updated config'
-#    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
-#    echo 'Wait for NUT to start responding...'
 
+   # *** restart NUT server
+    echo 'Restart NUT server with updated config'
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
+    echo 'Wait for NUT to start responding...'
+sleep 20
 # ***** TESTCASES *****
+
     # *** TC1
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 1"
@@ -435,6 +424,9 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 2"
 echo "+++++++++++++++++++++++++++++++++++"
         # * set TC2 specific variables
+TIME_ACT=$(date --utc "+%Y-%m-%d %H:%M:%S")
+echo "Time is "$TIME_ACT
+
 SAMPLES=(
   1004567.34
   1064.34
@@ -452,11 +444,14 @@ echo "@@@@@@@@@@ TEST2 RESULTS @@@@@@@@@@"
 results $SUCCESSES $ERRORS
 SUM_PASS=$(expr ${SUM_PASS} + ${SUCCESSES})
 SUM_ERR=$(expr ${SUM_ERR} + ${ERRORS})
+
     # *** TC3
 echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 3"
 echo "+++++++++++++++++++++++++++++++++++"
         # * set TC3 specific variables
+TIME_ACT=$(date --utc "+%Y-%m-%d %H:%M:%S")
+echo "Time is "$TIME_ACT
 SAMPLES=(
   100.999
   80.001
@@ -479,6 +474,8 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 6"
 echo "+++++++++++++++++++++++++++++++++++"
         # * set TC6 specific variables
+TIME_ACT=$(date --utc "+%Y-%m-%d %H:%M:%S")
+echo "Time is "$TIME_ACT
 SAMPLES=(
   100.501
   80.499
@@ -500,6 +497,8 @@ echo "+++++++++++++++++++++++++++++++++++"
 echo "Test 8"
 echo "+++++++++++++++++++++++++++++++++++"
         # * set TC8 specific variables
+TIME_ACT=$(date --utc "+%Y-%m-%d %H:%M:%S")
+echo "Time is "$TIME_ACT
 SAMPLES=(
   48
   55
@@ -529,6 +528,8 @@ TIME_END=$(date +%s)
 TEST_LAST=$(expr $TIME_END - $TIME_START)
 echo "Test lasts "$TEST_LAST" second."
 if [ $SUM_ERR = 0 ] ; then
+    echo "TEST PASSED."
     exit 0
 fi
+echo "TEST FAILED."
 exit 1
