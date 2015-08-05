@@ -19,6 +19,7 @@ bool TotalPowerAgent::configuration( )
     tntdb::Connection connection;
 
     try {
+        log_info("loading power topology from database");
         _racks.clear();
         _affectedRacks.clear();
         _DCs.clear();
@@ -55,10 +56,12 @@ bool TotalPowerAgent::configuration( )
         _reconfigPending = 0;
         return true;
     } catch (const std::exception& e) {
-        log_error ("Excepton caught: '%s'.", e.what ());
+        log_error("Failed to read configuration from database. Excepton caught: '%s'.", e.what ());
+        _reconfigPending = time(NULL) + 60;
         return false;
     } catch(...) {
-        log_error ("Unknown exception caught.");
+        log_error ("Failed to read configuration from database. Unknown exception caught.");
+        _reconfigPending = time(NULL) + 60;
         return false;
     }
 }
@@ -84,20 +87,14 @@ void TotalPowerAgent::addDeviceToMap(
 void TotalPowerAgent::onStart( )
 {
     _timeout = TPOWER_POLLING_INTERVAL;
-    if( ! configuration() ) {
-        log_error("Failed to read configuration from database");
-        zsys_interrupted = true;
-        _exitStatus = 1;
-    }
+    configuration();
 }
 
 void TotalPowerAgent::onSend( ymsg_t **message ) {
     std::string topic = subject();
-    log_debug( "topic: %s", topic.c_str() );
-    
+
     if( topic.compare(0,9,"configure") == 0 ) {
         // something is beeing reconfigured, let things to settle down
-        log_debug( "reconfigure soon" );
         _reconfigPending = time(NULL) + 60;
     } else {
         // measurement received
