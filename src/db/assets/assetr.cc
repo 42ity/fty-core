@@ -578,4 +578,67 @@ select_v_web_asset_power_link_src_byId(
         return -1;
     }
 }
+
+//TODO: maximum groups and maximum power sources
+/*
+ * *
+<Malanka> select max(grp_count) from ( select count(*) grp_count from t_bios_asset_group_relation group by id_asset_element) elmnt_grp;
+<Malanka> select max(power_src_count) from ( select count(*) power_src_count from t_bios_asset_link group by id_asset_device_dest) pwr;
+*/
+
+int
+max_number_of_asset_groups(
+        tntdb::Connection& conn)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   MAX(grp_count) "
+            " FROM "
+            "   ( SELECT COUNT(*) grp_count FROM t_bios_asset_group_relation "
+            "            GROUP BY id_asset_element) elmnt_grp "
+        );
+
+        tntdb::Row row = st.selectRow();
+
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+max_number_of_power_links(
+        tntdb::Connection& conn)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   MAX(power_src_count) "
+            " FROM "
+            "   ( SELECT COUNT(*) power_src_count FROM t_bios_asset_link "
+            "            GROUP BY id_asset_device_dest) pwr "
+        );
+
+        tntdb::Row row = st.selectRow();
+
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
 } // namespace end

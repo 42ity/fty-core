@@ -178,6 +178,20 @@ select_v_web_asset_power_link_src_byId(
         tntdb::Connection& conn,
         a_elmnt_id_t id,
         row_cb_f& cb);
-} //namespace end
 
+/** \brief select maximal number of groups in the system
+ *
+ *  \param[in] conn is tntdb connection
+ *
+ *  \return -1 in case of error otherwise number of groups
+ */
+int
+max_number_of_asset_groups(
+        tntdb::Connection& conn);
+
+int
+max_number_of_power_links(
+        tntdb::Connection& conn);
+
+} //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
