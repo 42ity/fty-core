@@ -95,7 +95,7 @@ if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
 { "error" : "License accepted in version <$ buff_a $>, but current version is <$ buff_r $>. Please reaccept it." }
 % }
 <%cpp>
-	RETURN HTTP_METHOD_NOT_ALLOWED;
+	RETURN HTTP_UNAUTHORIZED;
 } else {
 	RETURN DECLINED;
 }
