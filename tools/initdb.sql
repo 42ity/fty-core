@@ -188,19 +188,22 @@ CREATE TABLE t_bios_asset_device_type(
 
 CREATE TABLE t_bios_asset_element (
   id_asset_element  INT UNSIGNED        NOT NULL AUTO_INCREMENT,
-  name              VARCHAR(50)         NOT NULL UNIQUE,
+  name              VARCHAR(50)         NOT NULL,
   id_type           TINYINT UNSIGNED    NOT NULL,
   id_subtype        TINYINT UNSIGNED    NOT NULL DEFAULT 10,
   id_parent         INT UNSIGNED,
   status            char(9)             NOT NULL DEFAULT "nonactive",
   priority          TINYINT             NOT NULL DEFAULT 5,
   business_crit     TINYINT             NOT NULL DEFAULT 0,
+  asset_tag         CHAR(10)            NOT NULL,
 
   PRIMARY KEY (id_asset_element),
 
   INDEX FK_ASSETELEMENT_ELEMENTTYPE_idx (id_type   ASC),
   INDEX FK_ASSETELEMENT_ELEMENTSUBTYPE_idx (id_subtype   ASC),
   INDEX FK_ASSETELEMENT_PARENTID_idx    (id_parent ASC),
+  UNIQUE INDEX `UI_t_bios_asset_element_NAME` (`name` ASC),
+  UNIQUE INDEX `UI_t_bios_asset_element_ASSET_TAG` (`asset_tag`  ASC),
 
   CONSTRAINT FK_ASSETELEMENT_ELEMENTTYPE
     FOREIGN KEY (id_type)
@@ -420,7 +423,8 @@ CREATE VIEW v_web_element AS
         t2.id_type AS id_parent_type,
         t1.business_crit,
         t1.status,
-        t1.priority
+        t1.priority,
+        t1.asset_tag
     FROM
         t_bios_asset_element t1
         LEFT JOIN t_bios_asset_element t2
@@ -491,7 +495,7 @@ CREATE VIEW v_bios_asset_link_topology AS
 create view v_bios_asset_device_type as select id_asset_device_type as id, name from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
-create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
+create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority, v1.asset_tag from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
@@ -504,6 +508,7 @@ SELECT v1.id_asset_element,
        v3.id_parent AS id_parent3,
        v4.id_parent AS id_parent4,
        v1.status, 
+       v1.asset_tag,
        v1.priority, 
        v1.business_crit,
        v1.id_type
