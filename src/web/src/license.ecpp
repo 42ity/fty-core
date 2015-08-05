@@ -9,59 +9,66 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <string.h>
+#include <stdlib.h>
 
-#ifndef LICENSE_PATH
-#define LICENSE_PATH "/usr/share/bios/license"
-#endif
-#ifndef BIOS_DATA_PATH
-#define BIOS_DATA_PATH "/var/lib/bios"
-#endif
+#include "config.h"
+
+#define RETURN free(current_license); free(accepted_license); return
+
 </%pre>
 <%cpp>
 // Basic operations
+char *current_license = getenv("LICENSE_DIR");
+char *accepted_license = getenv("DATADIR");
+if(current_license == NULL)
+   current_license = "/usr/share/bios/license";
+if(accepted_license == NULL)
+   current_license = "/var/lib/bios";
+asprintf(&current_license, "%s/current", current_license);
+asprintf(&accepted_license, "%s/license", accepted_license);
 std::regex rex;
 std::smatch match;
 rex = "^.*/license$";
 if(std::regex_match(request.getUrl(), match, rex)) {
 	if(request.isMethodGET()) {
-		std::ifstream source(LICENSE_PATH "/current", std::ios::binary);
+		std::ifstream source(current_license, std::ios::binary);
 		if(!source.good()) {
 </%cpp>
 { "error" : "Error reading license file." }
 <%cpp>
-			return HTTP_INTERNAL_SERVER_ERROR;
+			RETURN HTTP_INTERNAL_SERVER_ERROR;
 		}
 		reply.out() << source.rdbuf();
-		return HTTP_OK;
+		RETURN HTTP_OK;
 	}
 	if(request.isMethodPOST()) {
 		char buff[512];
 		memset(buff, 0, 512);
-	    int dest = open(BIOS_DATA_PATH "/license", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		readlink(LICENSE_PATH "/current", buff, 512);
+	    int dest = open(accepted_license, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		readlink(current_license, buff, 512);
 		uint64_t tme = time(NULL);
 		if(dest < 0 || buff[0] == 0 ||
 		   dprintf(dest, "%s\n%" PRIu64 "\n", buff, tme) < 4) {
 </%cpp>
 { "error" : "Can't save license acceptance or can't get license version." }
 <%cpp>
-			return HTTP_INTERNAL_SERVER_ERROR;
+			RETURN HTTP_INTERNAL_SERVER_ERROR;
 		} else {
 </%cpp>
 { "success" : "License version <$ buff $> accepted." }
 <%cpp>
 			close(dest);
-			return HTTP_OK;
+			RETURN HTTP_OK;
 		}
 	}
-	return HTTP_BAD_REQUEST;
+	RETURN HTTP_BAD_REQUEST;
 }
 char *buff_a = NULL;
 char buff_r[512];
 memset(buff_r, 0, 512);
 uint64_t tme;
-readlink(LICENSE_PATH "/current", buff_r, 512);
-FILE* src = fopen(BIOS_DATA_PATH "/license", "r");
+readlink(current_license, buff_r, 512);
+FILE* src = fopen(accepted_license, "r");
 if(src != NULL) {
 	fscanf(src,"%ms\n%" PRIu64 "\n", &buff_a, &tme);
 	fclose(src);
@@ -78,7 +85,7 @@ if(std::regex_match(request.getUrl(), match, rex)) {
 % }
 }
 <%cpp>
-	return HTTP_OK;
+	RETURN HTTP_OK;
 }
 if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
 </%cpp>
@@ -88,8 +95,8 @@ if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
 { "error" : "License accepted in version <$ buff_a $>, but current version is <$ buff_r $>. Please reaccept it." }
 % }
 <%cpp>
-	return HTTP_METHOD_NOT_ALLOWED;
+	RETURN HTTP_METHOD_NOT_ALLOWED;
 } else {
-	return DECLINED;
+	RETURN DECLINED;
 }
 </%cpp>
