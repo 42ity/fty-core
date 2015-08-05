@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ -n "`wget -O - 'http://localhost/api/v1/admin/license/status' | grep '.*accepted.*yes.*'`" ]; then
+	echo "License Accepted"
+	exit 0
+else
+	echo "License Not Accepted"
+	exit 1
+fi
