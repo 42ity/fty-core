@@ -54,6 +54,8 @@ class TotalPowerAgent : public BIOSAgent {
     std::map< std::string, std::string> _affectedRacks;
     //! \brief list of DCs, affected by powerdevice
     std::map< std::string, std::string> _affectedDCs;
+    //! \brief we should 
+    time_t _reconfigPending = 0;
 
     //! \brief read configuration from database
     bool configuration();
