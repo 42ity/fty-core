@@ -125,6 +125,8 @@ void
     // 1 print the first row with names
     // 1.1      names from asset element table itself
     for (const auto& k : ASSET_ELEMENT_KEYTAGS) {
+        if (k == "id")
+            continue;       //ugly but works
         lcs.add(k);
     }
     
@@ -146,6 +148,8 @@ void
         std::string si = std::to_string(i+1);
         lcs.add("group."   + si);
     }
+
+    lcs.add("id");
     lcs.serialize();
 
     // 2. FOR EACH ROW from v_web_asset_element / t_bios_asset_element do ...
@@ -181,8 +185,6 @@ void
         // 2.5      PRINT IT
         // 2.5.1    things from asset element table itself
         {
-        lcs.add(id);
-
         std::string name;
         r["name"].get(name);
         lcs.add(name);
@@ -229,6 +231,8 @@ void
         for (uint32_t i = 0; i != max_groups; i++) {
             lcs.add("");
         }
+
+        lcs.add(id);
         lcs.serialize();
 
     };
