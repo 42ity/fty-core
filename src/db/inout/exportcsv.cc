@@ -57,6 +57,38 @@ s_update_keytags(
             foo);
 }
 
+// using callbacks in cycle with maximum possible items might be difficult, so simply generate vector
+// for power links and print it inside the cycle
+//
+// at the same time I don't think this is general enough to be in src/db, so static functions here
+typedef std::vector<std::tuple<std::string, std::string, std::string>> power_links_t;
+static int
+s_power_links(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        power_links_t& out)
+{
+    row_cb_f foo = \
+        [&out](const tntdb::Row& r)
+        {
+            std::string src_name;
+            std::string src_out;
+            std::string dest_in;
+            r["src_name"].get(src_name);
+            r["src_out"].get(src_out);
+            r["dest_in"].get(dest_in);
+            out.push_back(std::make_tuple(
+                src_name,
+                src_out,
+                dest_in
+            ));
+        };
+    return select_v_web_asset_power_link_src_byId(
+            conn,
+            id,
+            foo);
+}
+
 // helper class to assist with serialization line by line
 class LineCsvSerializer {
     public:
@@ -164,7 +196,6 @@ void
         r["id_parent"].get(id_parent);
 
         // 2.1      select all extended attributes
-
         std::map <std::string, std::pair<std::string, bool> > ext_attrs;
         select_ext_attributes(conn, id, ext_attrs);
 
@@ -176,10 +207,10 @@ void
         if (dbreply.status == 1)
             location = dbreply.item.name;
 
-        /* TODO TODO TODO TODO */
         // 2.3 links
-        // auto location_to = select_asset_device_
-        //
+        power_links_t power_links;
+        s_power_links(conn, id, power_links);
+
         // 3.4 groups
         std::vector<std::string> groups;
         select_group_names(conn, id, groups);
@@ -216,9 +247,21 @@ void
 
         // 2.5.2        power location
         for (uint32_t i = 0; i != max_power_links; i++) {
-            lcs.add("");
-            lcs.add("");
-            lcs.add("");
+            std::string source{""};
+            std::string plug_src{""};
+            std::string input{""};
+
+            if (i >= power_links.size()) {
+                //nothing here, exists only for consistency reasons
+            }
+            else {
+                source   = std::get<0>(power_links[i]);
+                plug_src = std::get<1>(power_links[i]);
+                input    = std::get<2>(power_links[i]);
+            }
+            lcs.add(source);
+            lcs.add(plug_src);
+            lcs.add(input);
         }
 
         // 2.5.3        extended attributes

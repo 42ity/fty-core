@@ -501,6 +501,7 @@ select_group_names(
         std::function<void(const tntdb::Row&)> cb)
 {
     LOG_START;
+    log_debug("id: %" PRIu32, id);
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
@@ -539,5 +540,42 @@ select_group_names(
             out.push_back(name);
         };
     return select_group_names(conn, id, func);
+}
+
+int
+select_v_web_asset_power_link_src_byId(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        row_cb_f& cb)
+{
+    LOG_START;
+    log_debug("id: %" PRIu32, id);
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.id_link, "
+            "   v.id_asset_element_src, "
+            "   v.src_name, "
+            "   v.id_asset_element_dest, "
+            "   v.dest_name, "
+            "   v.src_out, "
+            "   v.dest_in "
+            " FROM v_web_asset_link v "
+            " WHERE v.id_asset_element_src=:id "
+            " AND v.link_name = 'power chain' "
+        );
+
+        tntdb::Result res = st.set("id", id).select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
 }
 } // namespace end

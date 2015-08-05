@@ -65,6 +65,8 @@ struct db_web_element_t{
     std::map <std::string, std::pair<std::string, bool> > ext;
 };
 
+typedef std::function<void(const tntdb::Row&)> row_cb_f ;
+
 namespace persist{
 
 
@@ -162,6 +164,20 @@ select_group_names(
         tntdb::Connection& conn,
         a_elmnt_id_t id,
         std::vector<std::string>& out);
+
+/** \brief selects information about power links for given device id
+ *
+ *  \param[in] conn is tntdb connection
+ *  \param[in] id is asset element id
+ *  \param[in] callback function to operate on result row
+ *
+ *  \return -1 in case of error or 0 for success
+ */
+int
+select_v_web_asset_power_link_src_byId(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        row_cb_f& cb);
 } //namespace end
 
 #endif // SRC_DB_ASSETS_ASSETR_H
