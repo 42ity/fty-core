@@ -65,7 +65,9 @@ myDEVDOCDIR =	docs/develop
 SUBDIRS =	$(myMANDIR) docs/examples tools
 
 # run tntnet from Makefile
-RUN_TNTNET = ${TNTNET} tntnet.xml
+RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
+             export DATADIR="$(abs_top_builddir)/var/bios"; \
+	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
