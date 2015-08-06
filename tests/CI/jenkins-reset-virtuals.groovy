@@ -36,11 +36,11 @@ def waitForJob(name) {
 }
 
 // Start another jobs to reset machines
-for( hypervisor in ["mirabox.roz.lab.etn.com", "debian.roz.lab.etn.com"]) {
-    println "reseting on $hypervisor";
+for( vm in ["mirabox-test.roz.lab.etn.com", "debian-test.roz.lab.etn.com", "test-debian-0", "test-debian-1", "test-debian-2", "test-debian-3"]) {
+    println "reseting $vm";
     startJob(
         "reset_virtual_machine",
-        [ new StringParameterValue('HYPERVISOR', hypervisor), ]
+        [ new StringParameterValue('VIRTUALMACHINE', vm), ]
     );
     waitForJob("reset_virtual_machine");
 }

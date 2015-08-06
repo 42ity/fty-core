@@ -18,7 +18,7 @@ import hudson.utils.*
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Author(s): Tomas Halman <TomasHalman@eaton.com>
- *           
+ *
  * Description: Runs the "Test plan". Necessary jobs first (like compiling),
  *              later on functional/integration tests. If one of necessary jobs
  *              fails, Test plan fails immediatelly too. If one of functional/integration
@@ -26,18 +26,17 @@ import hudson.utils.*
  *              using "Console output parsing" plugin.
  */
 
-def startJob(name,params) {
+def doJob(name,params) {
     job = Hudson.instance.getJob(name);
-    job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
-    sleep(1000);
-}
-
-def waitForJob(name) {
-    job = Hudson.instance.getJob(name);
-    while( job.isInQueue() || job.isBuilding() ) {
+    if( job.isDisabled() ) return 0;
+    fut = job.scheduleBuild2(0, new Cause.UpstreamCause(build), new ParametersAction(params) );
+    fut.waitForStart();
+    println "* See " + job.getLastBuild().getAbsoluteUrl() + "consoleFull for console output.";
+    while( ! ( fut.isDone() || fut.isCancelled() ) ) {
         sleep(1000);
     }
-    return job.getLastBuild().getResult();
+    println "* Job duration: " + job.getLastCompletedBuild().getDurationString();
+    result = job.getLastCompletedBuild();
 }
 
 
@@ -63,34 +62,64 @@ for(
     ]
 ){
     println "=== Starting $jobName ===";
-    startJob(jobName, jobParams);
-    result = waitForJob(jobName);
-    if ( result == Result.SUCCESS ) {
-        println result.toString()
-    } else  if ( result == Result.UNSTABLE ) {
-        println "WARNING: " + jobName + " result is " + result.toString();
+    lastbuild = doJob(jobName, jobParams);
+    if( lastbuild == 0 ) {
+        println "SKIPPED: Job $jobName is disabled";
     } else {
-        println "ERROR: " + jobName + " result is " + result.toString();
-        throw new Exception("Job $jobName failed");
+        result = lastbuild.getResult();
+        if ( result == Result.SUCCESS ) {
+            print result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else  if ( result == Result.UNSTABLE ) {
+            print "WARNING: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+        } else  if ( result == Result.ABORTED ) {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName was aborted");
+        } else {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName failed");
+        }
     }
 }
 
 // Running other tests, it make sense to continue if some of them fails
 for(
     jobName in [
+        "test_compilation_warnings",
         "start_bios",
         "test_db_tests",
-        "test_netmon",
         "test_restapi",
+        "test_NUT",
+        "test_rackpower",
+        "test_libbiosapi",
         "stop_bios"
     ]
 ){
     println "=== Starting $jobName ===";
-    startJob(jobName, jobParams);
-    result = waitForJob(jobName);
-    if ( result == Result.SUCCESS ) {
-        println result.toString()
+    lastbuild = doJob(jobName, jobParams);
+    if( lastbuild == 0 ) {
+        println "SKIPPED: Job $jobName is disabled, skipped";
     } else {
-        println "WARNING: " + jobName + " result is " + result.toString();
+        result = lastbuild.getResult();
+        if ( result == Result.SUCCESS ) {
+            print result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for details";
+        } else  if ( result == Result.ABORTED ) {
+            print "ERROR: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + " for failed build details";
+            throw new Exception("Job $jobName was aborted");
+        } else {
+            print "WARNING: " + jobName + " result is " + result.toString();
+            println ", see " + lastbuild.getAbsoluteUrl() + "  for failed build details";
+        }
     }
 }
+
+println ""
+println "=== Wrapping up the umbrella build:"
+println "* Build scheduled: " + build.getTimestamp().getTime().toString();
+println "* Build duration: " + build.getDurationString() + " (finishing now)";
+println ""

@@ -22,12 +22,18 @@
 
 install_packages() {
     # if debian
-    apt-get update
-    apt-get -f -y --force-yes --fix-missing install
-    apt-get -f -y --force-yes install "$@"
+    apt-get update -q || { echo "Wipe metadata and retry"; rm -rf /var/lib/apt/lists/*; apt-get update -q; }
+    dpkg --configure -a
+    apt-get -f -y --force-yes --fix-missing \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+        install
+    apt-get -f -y --force-yes \
+        -q -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" \
+        install "$@"
 }
 
 if [ "$1" != "" ] ; then
+   export DEBIAN_FRONTEND=noninteractive
    install_packages "$@"
 else
    echo "Usage: $(basename $0) package [package ...]"

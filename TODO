@@ -3,6 +3,16 @@ TODO
 
 The list of known issues, which have to be addressed!
 
+src/persist/assettopology.cc (MARIA_DB_CRASH):
+-------------------------------------------------------------
+-> The known issue with mariadb crash. Rework when crash would be fixed.
+
+src/persist/assetmsg.cc (insert links):
+-------------------------------------------------------------
+-> Inserting of the information is not done yet. But it is assumed, that 
+   It is not possible to insert the link (NULL,7,NULL,8) twice
+   (src_out:src-id:dest_in:dest_id).
+
 src/utils/messages :
 --------------------
 GCL: Major comments are same as previous on PR BIOS-347 :
@@ -25,7 +35,7 @@ src/cli/cli-network.cc :
 
 BIOS-354 :
 ----------
--> In database is already stored an UTC_TIMESPAMP.
+-> In database is already stored an UTC_TIMESTAMP.
 -> In monitorpersistence.cc a date is extracted as UNIX_TIME (with the 
    database function). Problem would appear with dates after 2038.
    Solution: 1. wait until in database would be implemented a 64-bit version
@@ -33,29 +43,6 @@ BIOS-354 :
 
 Upcoming CLEANUP-UP cycle :
 ------------------------
-
-==== src/drivers/nmap/nmap-parse.cc ====
--> move the file into a namespace, suggestion: drivers::nmap
--> "hoststate" constants (currently string literals & integers) - expose in a namespace; probably as static consts
--> hoststate_byte(), byte_hoststate - namespace; rename
--> DRIVER_NMAP_REPLY - move to a ##DEFINITIONS## file
--> state2str; str2state - namespace; ?rename; rework uint8_t; constants 
--> str2method doesn't have a conterpart - namespace; constants
--> matryoshka2frame - unit test; namespace, suggestion: shared::zmq
--> there is some code duplication - at least take a look and make a comment
-
-==== src/drivers/nmap/nmap-parse.h ====
--> bad header guard name
--> namespace
-
-==== src/drivers/nmap/nmap-driver.h ====
--> bad header guard name
--> namespace;
--> take a moment to think about what and how to expose 
-
-==== src/drivers/nmap/nmap.cc  ====
--> DRIVER_NMAP_SOCK, DRIVER_NMAP_REPLY - ##DEFINITIONS## file
--> namespace
 
 ==== src/drivers/nut/nut-driver.h  ====
 -> bad header guard
@@ -76,15 +63,11 @@ I propose to drop this directory with its contents entirely
 ==== src/cli ====
 I propose not to drop this directory yet; it's been removed from build
 
-==== src/netmon  ==== 
--> remove jsonf.*
--> namespace; suggestion: drivers::netmon
--> 
-
 ==== src/utils/<everything persistence related>  ====
 -> move to src/persistence
 -> namespace; suggestion: db
--> QUESTION: Do we want to rename some of the files with the move? (i.e. assetmsgpersistence.cc -> assetmsg.cc or similar)
+-> QUESTION: Do we want to rename some of the files with the move?
+  (i.e. assetmsgpersistence.cc -> assetmsg.cc or similar)
 
 ==== src/utils/{cidr.*, log.*} ====
 -> implied namespace change
@@ -99,7 +82,7 @@ I propose to drop content of this directory; not the directory itself
 
 ==== src/web ====
 Because I haven't seen the contents of (or worked with) this directory before,
-I wouldn't like to suggest any clean-up tasks here. Perhaps MHR could weight in
+I wouldn't like to suggest any clean-up tasks here. Perhaps MHR could weigh in
 if anything is needed to be done here.
 
 ==== tools/ ====
@@ -112,7 +95,40 @@ if anything is needed to be done here.
 -> rename utils to shared, to reflect the change
 -> do not drop the cli
 
-==== src/simple ====
--> defs.h - should become a ##DEFINITIONS## file; perhaps a rename/merge with other file
+==== src/include/defs.h ====
+-> should become a file with only declarations; move all definitions to some
+   .c file and link consumers with that, so there are no conflicts if several
+   objects in one program #include this defs.h
 
+=== The building infrastructure ===
+
+==== Makefile.am =====
+-> Generate a docs/devel/index.html with the list of generated HTML and
+   unprocessed text files and a link into "doxygen/" and deliver it;
+   add a footer with the build information (git, host, timestamps...)
+   This may be based on the recently added .git_details file contents.
+-> research and refactor generation of doxygen/ docs, preferably to have
+   them really generated (5+ Mbytes worth) in the build directory but
+   with relative URL-links to src/* rather than build-host absolute paths
+
+==== configure and .in processed files ====
+-> (?) refactor some scripts to become generated with substitution of default
+   passwords, user/group names, etc. instead of current hardcoding.
+-> SASL MUX path - test the sasl service startup/config files for the mux
+   path or directory that contains it (at least the few predefined variants)
+   as a further fallback option
+-> Thread Sanitizer builds currently do not work; possibly some compiler
+   flags are in conflict. Research and fix.
+
+==== CI and RC scripts ====
+-> there is a lot of duplicated logic regarding startup of components and
+   needed system services (malamute, tntnet, mysql) across different scripts
+   for CI and end-user runtime environments. Converge these so only one is
+   actually developed (e.g. `tools/rc-bios`) and others call it.
+-> experiment: verify whether our component programs need to start with an
+   `LD_PRELOAD` when built with ASan support, like is currently done for the
+   `bios_web.so` as part of `tntnet` during `make web-test` to support the
+   third-party libraries with dynamic runtime instrumentation. If so, improve
+   the `tools/rc-bios` script to detect (`ldd`?) and meet this need when
+   running our project's programs.
 

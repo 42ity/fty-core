@@ -46,6 +46,7 @@ EOF
 }
 
 function cleanup() {
+  set +e
   rm -f "$LOCKFILE"
 
   if [[ "$MAKE_CHECK" -ne 0 ]]; then

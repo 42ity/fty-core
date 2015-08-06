@@ -1,0 +1,124 @@
+# valgrind suppression file for BIOS
+
+# actually the bug in libcidr, let's hide it from our results
+{
+   BIOS-CIDR-Value8
+   Memcheck:Value8
+   fun:tolower
+   fun:strcasecmp
+   fun:cidr_from_str
+}
+
+{
+   BIOS-CIDR-Cond
+   Memcheck:Cond
+   fun:tolower
+   fun:strcasecmp
+   fun:cidr_from_str
+}
+
+# This is result of REQUIRE ( ymsg_encoded != NULL ); - seems like bug in catch actually
+{
+   BIOS-CATCH-1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+   fun:_ZNSt16__numpunct_cacheIcE8_M_cacheERKSt6locale
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE13_M_insert_intIlEES3_S3_RSt8ios_basecT_
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl
+   fun:_ZNSo9_M_insertIlEERSoT_
+   fun:operator<<
+   fun:convert<long int>
+   fun:toString<long int>
+   fun:captureExpression<(Catch::Internal::Operator)1u, long int>
+   fun:operator!=<long int>
+   fun:*
+   fun:invoke
+   fun:runCurrentTest
+   fun:runTest
+   fun:_ZN5Catch6Runner8runTestsEv
+   fun:_ZN5Catch7Session3runEv
+   fun:run
+   fun:main
+}
+
+{
+   BIOS-CATCH-2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE13_M_insert_intIlEES3_S3_RSt8ios_basecT_
+   fun:_ZNKSt7num_putIcSt19ostreambuf_iteratorIcSt11char_traitsIcEEE6do_putES3_RSt8ios_basecl
+   fun:_ZNSo9_M_insertIlEERSoT_
+   fun:operator<<
+   fun:convert<long int>
+   fun:toString<long int>
+   fun:captureExpression<(Catch::Internal::Operator)1u, long int>
+   fun:operator!=<long int>
+   fun:*
+   fun:invoke
+   fun:runCurrentTest
+   fun:runTest
+   fun:_ZN5Catch6Runner8runTestsEv
+   fun:_ZN5Catch7Session3runEv
+   fun:run
+   fun:main
+}
+
+#TODO: this may be bug in cxxtools - needs investigation
+{
+   BIOS-CXXTOOLS-1
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   obj:*/libcxxtools.so.9.0.0
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   obj:*/ld-2.19.so
+}
+
+#TODO: this may be bug in cxxtools - needs investigation
+{
+   BIOS-CXXTOOLS-2
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znwm
+# TODO:    fun:_Zn*m
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   obj:*/libcxxtools.so.9.0.0
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   obj:*/ld-2.19.so
+
+}
+
+#TODO: this may be bug in cxxtools - needs investigation
+{
+   BIOS-CXXTOOLS-3
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Znam
+#TODO:   fun:_Zn*m
+   fun:_ZNSt6locale5_ImplC1ERKS0_m
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+   obj:*/libcxxtools.so.9.0.0
+   fun:call_init.part.0
+   fun:call_init
+   fun:_dl_init
+   obj:*/ld-2.19.so
+}
+
+{
+   BIOS-CXXTOOLS-4
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   fun:_Zn*m
+   fun:_ZNSt6locale5_ImplC1ERKS0_m
+   fun:_ZNSt6localeC1ISt7num_putIN8cxxtools4CharESt19ostreambuf_iteratorIS3_St11char_traitsIS3_EEEEERKS_PT_
+   fun:_ZN8cxxtools10InitLocaleC1Ev
+}

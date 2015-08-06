@@ -123,8 +123,8 @@ build-results repositories, including the following Linux OS releases:
  * http://obs.roz.lab.etn.com:82/Pool:/master/CentOS_7.0/
  * http://obs.roz.lab.etn.com:82/Pool:/master/openSUSE_13.1/
 
-These packages include such build and/or runtime dependencies as
-libvariant, iproute2, mariadb, zeromq, nmap and so on.
+These packages include such build and/or run-time dependencies as
+libvariant, iproute2, mariadb, zeromq and so on.
 
 [NOTE]
 *NOTE*: See the document 'INSTALL-referenceOS-debian8' (or its derivative
@@ -141,24 +141,101 @@ recently "frozen" and heading to official stable supported release).
 However, automatic dependency handling in OBS should handle refreshed
 source code coming from some project's upstream for us.
 
-Automatic setup of OBS as a package source for a supported Debian 8.0
-platform with APT package management should work like this (execute
-as "root"):
+* *Keys to trust and repositories to use:*
+Automatic setup of an OBS instance as a package source for a supported
+Debian 8.0 platform with APT package management should work like this
+(execute as 'root'):
 ----
 :; wget -O - \
      http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-roz-deb8.list
+
 :; wget -O - \
      http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/Release.key | \
      apt-key add - && \
    echo 'deb http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0 /' > \
      /etc/apt/sources.list.d/95bios-obs-mbt-deb8.list
+----
+* *Repository preference:*
+It is also encouraged to make sure that your package manager always prefers
+the project's supported packages over any other repositories (i.e. in the
+upstream OS distribution) that might be named the same:
+----
+:; cat > /etc/apt/preferences.d/bios <<EOF
+Package: *
+Pin: origin "obs.roz.lab.etn.com"
+Pin-Priority: 9999
+
+Package: *
+Pin: origin "obs.mbt.lab.etn.com"
+Pin-Priority: 8999
+EOF
+----
+See https://wiki.debian.org/AptPreferences for more details.
+
+NOTE: for some experimental purposes, you might want to put just the
+specific name or a pattern to prefer just some 'Package'(s) from our
+OBS; keep in mind that such a list should at least include 'iproute*',
+because the upstream Debian deprecated 'iproute2-dev' (claiming that
+the interface is private to the kernel and should not be used directly)
+and provides an empty package just for legacy compatibility purposes.
+
+* *Before any installations, update the packaging metadata* known to
+your packaging client: in order to calculate the dependencies, `apt`
+keeps a cache of downloaded lists of packages provided by each of the
+configured repositories. In a dynamic world, these should be updated
+before starting any installations or upgrades:
+----
 :; apt-get update
 ----
+
+NOTE: with a bleeding-edge distribution used in our case, formats can
+change so once in a year a fallback trick may be required to get `apt`
+to actually work (the error in our particular case was that upstream
+repositories changed compressed metadata file extensions and this
+baffled old cached metadata updates):
+----
+:; apt-get update || { rm -rf /var/lib/apt/lists/*; apt-get update; }
+----
+
 Afterwards the usual installation and update actions with `apt-get install`,
 search with `apt-cache search` and so on should work.
+
+To verify which variant (version/repo) of the package is installed and
+what such variants are known to `apt`, you can use `apt-cache policy`:
+----
+:; apt-cache policy iproute2-dev
+iproute2-dev:
+  Installed: 3.16.0-0
+  Candidate: 3.16.0-0
+  Package pin: 3.16.0-0
+  Version table:
+ *** 3.16.0-0 9999
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+        100 /var/lib/dpkg/status
+
+:; apt-cache policy mariadb-server-10.0
+mariadb-server-10.0:
+  Installed: 10.0.14-2
+  Candidate: 10.0.14-2
+  Version table:
+ *** 10.0.14-2 0
+        500 http://localhost:3142/debian/ jessie/main amd64 Packages
+        500 http://gate:3142/debian/ jessie/main amd64 Packages
+        500 http://ftp.debian.org/debian/ jessie/main amd64 Packages
+        100 /var/lib/dpkg/status
+     10.0.10-1 0
+        500 http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+     10.0.10-1 0
+        500 http://obs.mbt.lab.etn.com:82/Pool:/master/Debian_8.0/  Packages
+----
+In the example above, 'iproute2-dev' was installed from OBS, but for MariaDB
+a version provided by the distribution and newer than the one in OBS was
+picked (as permitted by the "pinning" settings on that OS installation).
+
 
 Manually fetching and installing packages built for Debian 8.0
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -200,10 +277,28 @@ the upstream OS itself, don't forget to update the metadata index first
 :; apt-get update
 ----
 
+The compiler and interpreter suites
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The project is developed and built with GCC 4.8 or newer, and GNU make.
+The GNU auto-tools (autoconf, automake) and m4 packages are needed to
+regenerate the `configure` script. Further tools that may be required
+might include the linker, binutils and similar common C/C++ development
+packages.
+
+Scripts in the project are developed in POSIX shells (should work with
+`dash` and similar constrained shells as a `/bin/sh`); some shell scripts
+do require a `/bin/bash` explicitly. Further script environments include
+Python.
+
+We hope to minimize run-time dependencies and thus the total installation
+footprint and RAM usage, so other languages (Java, JS, PERL, PHP, Ruby,
+etc.) should have an undeniable reason to be added and used in the project.
+
 
 iproute (may be named iproute2)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * Install iproute-dev development files, version "20120521" or newer,
+ * Install iproute-dev development files, version "20120521" or newer
+(later versions are linked with the Linux kernel release like "3.16"),
 using your configured system repositories, i.e. with Debian APT:
 ----
 :; apt-get install -y iproute2-dev
@@ -309,14 +404,16 @@ anyway, and they will pull in their modern base packages as needed.
 
 Network UPS Tools (NUT)
 ~~~~~~~~~~~~~~~~~~~~~~~
- * Install NUT project parts needed for linking:
+ * Install NUT project parts needed for compilation and linking:
 ----
-:; apt-get install -y libupsclient-dev libnutclient-dev
+:; apt-get install -y libupsclient-dev libnutclient-dev libnutscan-dev
 ----
  ** Note: specifically the $BIOS core project needs 'libnutclient' version
 0.27 or newer, which is provided either by recent source of the Network
 UPS Tools, or by its very recent packaging (numbered 2.7.2-2 on OBS for
 Debian).
+ ** Note: These packages should be delivered from OBS at the moment because
+they include patches not served by the upstream projects and distro builds.
  ** If you need more of NUT (actual programs -- drivers, server and client
 daemons and utilities), consider adding these packages:
 ----
@@ -380,7 +477,7 @@ other advanced non-default applications; for now see the comments in its
 code for details on further configuration.
 
 NOTE: This script defines also a group named 'bios', to which the elevated
-permissions bellow are assigned. If you build and test the project under
+permissions below are assigned. If you build and test the project under
 a different account, consider adding 'bios' as its secondary group:
 ----
 :; adduser builder bios
@@ -398,11 +495,19 @@ project accounts to execute many specific tasks.
 ----
 
 * Inspect and copy the sample $BIOS project configuration file into your
-'sudo' installation:
+'sudo' installation which defines a number of sudo'able commands needed
+for the $BIOS project daemons at run-time:
 ----
-:; cp docs/examples/bios_sudo_conf /etc/sudoers.d/
+:; cp docs/examples/sudoers.d/bios_00_base /etc/sudoers.d/
 ----
 (Consult that file regarding the matters of what it sets, why and how).
+
+* To run the automated testing as the 'bios' user or a member of the 'bios'
+group in your OS, a few more commands are needed, defined in an optional
+`sudo` configuration file. In this case, install it also:
+----
+:; cp docs/examples/sudoers.d/bios_01_citest /etc/sudoers.d/
+----
 
 
 SASL2 daemon and PAM
@@ -445,135 +550,83 @@ into the binary code, so the building user must either have access to the
 socket (`adduser builder sasl`) or an explicit '--with-saslauthd-mux=...'
 option must be passed to `configure`.
 
+ * Finally, add the PAM configuration file which defines and constrains
+the 'bios' service, allowing only members of the 'bios' group to pass the
+authentication for this service (i.e. when doing web-logins in REST API).
+Two files need to be installed -- a PAM snippet and a list of groups
+which this snippet references:
+----
+:; cp docs/examples/pam.d/bios /etc/pam.d/
+:; cp docs/examples/security/bios_groups.conf /etc/security
+----
+
+NOTE: the default PAM configurations in the OS are somewhat relaxed by
+allowing authentication into service names which are not actually defined
+in the current OS security setup. This can apparently be forbidden with 
+changes to the file '/etc/pam.d/other', but the matter is out of scope
+of our project. For more details, see:
+
+ * http://tldp.org/HOWTO/User-Authentication-HOWTO/x263.html
+
 Beside the setup discussed above, no extra configuration for SASL and PAM
 is needed on the target Debian 8 platform -- everything is pre-integrated
 by the OS.
 
 
 
-Other packages
-~~~~~~~~~~~~~~
-----
-:; apt-get install -y nmap
-----
-
-
 Configure and build the $BIOS project sources
 ---------------------------------------------
 (Getting the project sources is covered above in this document).
 
-The autogen.sh script
-~~~~~~~~~~~~~~~~~~~~~
-The project includes an `autogen.sh` script which currently defines the
-following methods (selected by first attribute on the command-line):
-
- * (no attributes) Recreate the `configure` script if needed, and exit
- * 'build' or 'build-samedir' -- (re)create `configure` if needed, run it
-in the project root directory, execute a parallel (for speed) and then a
-sequential (for correctness) `make` for targets named further on the
-command line (or default to 'all' as defined in the 'Makefile')
- * 'build-subdir' -- same as above, except that a subdirectory is created
-and changed into before doing the job
- * 'install' or 'install-samedir' -- do the 'build-samedir' routine followed
-by a `make install`
- * 'install-subdir' -- do the 'build-subdir' routine followed by
-a `make install`
- * 'distcheck' -- (re)create `configure` if needed, run it in the project
-root directory, and run `make distcheck`
-
-
-The short version
-~~~~~~~~~~~~~~~~~
-If everything goes smoothly, you just need to run this snippet in the
-base directory of your source-code checkout (details and explanations
-follow in the next chapter) for a (re)build of the $BIOS core codebase:
-
- * set up the paths (optionally -- the values shown below are the defaults
-for the `autogen.sh` script if nothing has been defined by the user):
+NOTE: While the section below goes into greater detail about managing the
+build following a generic GNU auto-tools procedure, some typical building
+management scenarios are automated in the `./tools/builder.sh` script (and
+our `autogen.sh` invokes it if any command-line parameters are provided),
+so that most activity can be done by typing one relatively short command.
+Details on its usage can be seen in the help output of that script (see
+`autogen.sh --help`), or in its documentation (see
+'link:README-builder.html[docs/develop/README-builder.txt]').
 ----
-:; BLDARCH="`uname -s`-`uname -m`"
-:; DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH}
-:; export BLDARCH DESTDIR
-----
- * run a (re)build based in the same directory (note that by default
-this first does a pass of parallel building, then revisits with the
-sequential build of the same codebase, to speed up the overall process):
-----
+# The common and simple case of a clean+config+quiet_parmake+verbose_seqmake
+# for an in-tree build would be:
 :; ./autogen.sh build
-----
- * optionally, instead run a (re)build based in the same directory and
-install the products under 'DESTDIR':
-----
-:; ./autogen.sh install
-----
- * optionally, if you are into debugging the 'Makefile' itself, or into
-fixing the problems discovered with compiler warnings, then for a quieter
-build (so that "real" compiler warnings are not obscured by dozens of
-arguably less important ones about unused items in the auto-generated
-code), you can define the relevant compiler flags before `configure`;
-and also you can use only the slower sequential `make` procedure whose
-output is ordered and thus it is more informative and coherent for this
-job, i.e.:
-----
-:; CFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
-   CXXFLAGS="-Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable" \
-   NOPARMAKE=Y ./autogen.sh build
+
+# Follow-up remakes with the same settings (during development) can be:
+:; ./autogen.sh make
 ----
 
-If this simple automated build procedure fails, try the longer version
-step-by-step and with more verbosity, as detailed below.
-
-
-
-The slightly longer version
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Under the hood, the `autogen.sh` script's 'build*' and 'install*' methods
-execute logic similar to this:
-----
-:; BLDARCH="`uname -s`-`uname -m`"
-:; ( make -k distclean; \
-     ./autogen.sh && \
-     ./configure && \
-   { make -k clean; make V=0 -j 4 -k all; make all; } && \
-   { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
-----
-
-NOTE: Currently the following pretty subdir-build fails due to `doxygen`,
-but the rest works:
-----
-:; BLDARCH="`uname -s`-`uname -m`"
-:; ( ./autogen.sh && \
-   { rm -rf build-${BLDARCH}; \
-     mkdir build-${BLDARCH}; \
-     cd build-${BLDARCH}; } && \
-   ../configure && \
-   { make V=0 -j 4 -k all; make all; } && \
-   { make DESTDIR=/var/tmp/bios-core-instroot-${BLDARCH} install; } )
-----
-
-The long version
-~~~~~~~~~~~~~~~~
+NOTE: We are obliged to stress that the *supported* method of compilation
+is the common `./autogen.sh && configure && make` pattern (and with the
+sequential `make` while we are at it), possibly followed by `make install`.
+While our scripted extensions are made for developers' personal convenience
+as well as simplification and unification of automated testing scripts, and
+are provided with the project sources to help others, they are not currently
+endorsed nor prioritized by the official support of the $BIOS project.
 
 If no `configure` script is available yet (or if it needs to be rebuilt):
 
- * create or update the `configure` script:
+ * Create or update the `configure` script as deemed necessary by automated
+logic:
 ----
 :; ./autogen.sh
 ----
- * ...or if you need to enforce an update of the `configure` script:
+ * ...or if you want to most certainly enforce an update of the `configure`
+script:
 ----
 :; autoreconf -fiv
 ----
 
-else (if configure script exists and is acceptable):
+If the `configure` script exists and is acceptable, you can proceed with
+the compilation and installation:
 
- * Configure the build system:
+ * Configure the build system, default options should generally suffice:
 ----
 :; ./configure
 ----
- ** An "out-of-tree" build (i.e. to produce binaries and other build
-    results for different platforms from the same copy of the source
-    codebase) can be triggered in a way similar to this:
+ ** An "out-of-tree" or "relocated" build (useful for example to produce
+    the binaries and other build results for different platforms from the
+    same copy of the source codebase) can be triggered in a way similar
+    to this:
 ----
 :; mkdir build
 :; cd build && \
@@ -584,21 +637,6 @@ else (if configure script exists and is acceptable):
 ----
 :; make
 ----
- ** When the project becomes large enough, it may make sense to speed up
-    the builds using parallelization, followed by a pass of sequential
-    make to reduce the impact of intemittent failures, such as those
-    caused by filesystem lags, out-of-memory issues, or by breaking
-    some unspecified dependency ordering. Assuming a GNU `make`, run:
-----
-:; make -j 4 -k ; make
-----
- ** A quieter build can be triggered for GNU `make` with 'V=0' parameter
-    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
-    which is good at least until you hit some build errors and need more
-    verbosity), thus suggesting this command line:
-----
-:; make V=0 -j 4 -k ; make V=0
-----
  * Install the binaries (under a chosen destination root directory
    '/some/path', such as under a temporary filesystem or your homedir):
 ----
@@ -606,12 +644,135 @@ else (if configure script exists and is acceptable):
 ----
 
 
+About parallel `make`
+~~~~~~~~~~~~~~~~~~~~
+As noted above, the sequential `make` routine, which does one task at
+a time, in order dictated by dependencies, is the most reliable way to
+ensure that the project is compiled and linked and installed correctly.
+It is also the slowest way to achieve this goal, and with the development
+cycle involving lots of rebuilds and other automated `make` jobs, the
+time loss of everyone waiting for the build to complete adds up.
+
+Even on a single-CPU computer, the mathematical load of the compiler
+can generally be parallelized with blocking disk I/O to read and write
+the files, so parallel jobs are often requested as two per processor.
+
+However, the parallel `make` has its traps and pitfalls: it uses more CPU
+concurrently, so individual jobs may take longer to complete (especially
+when there are several jobs per CPU and/or swapping becomes involved),
+and coupled with filesystems or their specific mount options that for
+some reasons do not update metadata atomically, the dependency order can
+get broken (things expected to exist are not yet seen); also there may
+be some third-party tools that use the same filename for output and so
+parallel invokations of that tool are bound to fail; the memory resources
+are used more heavily so jobs can fail due to out-of-memory errors rather
+than coding mistakes. In case of GNU make, not specifying the maximum
+number of jobs to run causes unlimited parallelicity, so hundreds of
+processes can be spawned and might fail due to forking issues (`ulimit`
+constraints or OS resource depletion).
+
+In short, while parallel `make` can fail with higher probability than a
+sequential `make`, and its failure alone does not mean bad quality of
+the built project's source code. In certain cases, its success also does
+not guarantee correctness.
+
+When the project becomes large enough, it may make sense to speed up
+the builds using parallelization, followed by a pass of sequential
+`make` to reduce the impact of intemittent failures, such as those
+caused by filesystem lags, out-of-memory issues, or by breaking some
+poorly specified dependency ordering. This approach benefits from both
+the substantial speed improvement of a parallel `make` and the higher
+dependability of the sequential one. Also, linear and less clobbered
+output of the sequential `make` makes spotting and debugging of the
+remaining fatal errors during development (including development of
+the 'Makefile' itself) much easier.
+
+ * For a quick solution, assuming a GNU make or compatible, in place
+of the singular `make` commands, run this:
+----
+:; { make -j 4 -k ; make; }
+----
+ * Thus the one-liner to configure and compile the project becomes
+similar to this:
+----
+:; ./autogen.sh && ./configure && { make -j 4 -k; make; } && make install
+----
+
+
+
+About quieter `make`
+~~~~~~~~~~~~~~~~~~~~
+Output of the `make` program is by default moderately verbose, including
+the command lines executed by the process. This adds up to a lot of text,
+in which the possible compilation errors are getting somewhat lost.
+The `make V=0` output format which only prints a short summary of what
+file is being processed with what program, half a line per source file,
+is often much more convenient.
+
+ *  A quieter build can be triggered for GNU `make` with 'V=0' parameter
+    (which means that means only 'CC', 'CXX', 'CXXLD' lines will appear -
+    which is good at least until you hit some build errors and need more
+    verbosity), thus suggesting this command line:
+----
+:; { make V=0 -j 4 -k ; make V=0; }
+----
+
+
+
 Testing the build
 -----------------
+
+Testing REST API
+~~~~~~~~~~~~~~~~
 Before testing the REST API with `test_web.sh`, make sure to configure
-the OS properly (including the user accounts and runtime dependencies
+the OS properly (including the user accounts and run-time dependencies
 described above).
 
+See also:
+
+ * 'link:README-web-tests-generalInfo.html[src/web/README.txt]'
+ * 'link:README-web-tests-ciAutomation.html[tests/CI/web/README.txt]'
+
+
+Address, Leak and Thread Sanitizers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The $BIOS project supports builds under GCC4.8+ with included Google
+Address Sanitizer and Leak Sanitizer (ASan+LSan) functionality. These
+are enabled by default if the currently produced build is a `DEBUG`
+one (currently this is the default mode; generally it is manageable
+by `./configure --enable-debug-build`. Likewise, one can produce a
+"production" (non-DEBUG) build still instrumented with ASan+LSan
+by explicit `./configure --enable-address-sanitizer`. This is not
+a default mode for non-DEBUG builds because the produced code is a
+little slower and bigger (approx 2x), and it is forced to crash when
+errors are detected.
+
+GCC4.8+ also supports a Thread Sanitizer, which allows to detect race
+conditions. These builds are much bigger and slower (approx 15x), so
+this mode is off by default and can be enabled only explicitly with 
+`./configure --enable-thread-sanitizer`. Depending on the compiler,
+this may be incompatible with Address Sanitizer, so ASan defaults
+to disabled if TSan is requested. If both features are requested
+explicitly, the `configure` script will try to check if they can
+be enabled simultaneously, and should exit if not.
+
+NOTE: Thread Sanitizer support in $BIOS project is currently only
+formally supported by the autoconf scaffolding. The produced files
+do not run well, claiming some internal conflicts, maybe with some
+of the other compiler options. This is a matter for some further
+research work, if need arises.
+
+It is recommended to run ASan-instrumented binaries along with an
+`LD_PRELOAD=/path/to/libasan.so` so that the third-party dynamic
+libraries used by our project would employ the same `new`/`delete`
+and `malloc`/`free` ASan-instrumented routines to reduce false
+positive detections. Otherwise it is possible, for example, that
+an exit from a function due to an exception would trigger the
+`__asan_handle_no_return` error handler and crash the program.
+
+
+Generic notes on testing the $BIOS project
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The 'Makefile' includes some targets for automated testing, such as:
 
  * `make check` -- this would trigger the compilation of all tests
@@ -620,7 +781,8 @@ The 'Makefile' includes some targets for automated testing, such as:
    tests
  * `./test-db` -- would run the database tests
 
-Note: as part of the project's automated validation the `make distcheck`
+Note: as part of the project's automated validation, the `make distcheck`
 must succeed in building and testing all targets, including a subdirectory
-build. An `./autogen.sh distcheck` method exists to automate this into a
-single-command routine to configure-build-check.
+build. An `./autogen.sh distcheck` action exists to automate this into a
+single-command routine to clean-configure-build+check.
+

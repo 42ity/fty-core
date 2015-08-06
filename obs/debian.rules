@@ -7,7 +7,8 @@
 #export DH_VERBOSE=1
 
 # This is the debhelper compatibility version to use.
-export DH_COMPAT=4
+# MVY: magic variable, but with previous 4 dh_strip did not worked, so update to 8
+export DH_COMPAT=8
 
 CFLAGS = -g
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -28,8 +29,8 @@ build-stamp:
 
 	# Add here commands to compile the package.
 	autoreconf -fi
-	./configure --prefix=/usr
-	make all
+	./configure --prefix=/usr --with-saslauthd-mux=/var/run/saslauthd/mux
+	make -j4 all
 	# --- end custom part for compiling
 
 	touch build-stamp
@@ -79,7 +80,7 @@ binary-arch: build install
 #	dh_undocumented
 	dh_installchangelogs
 	dh_link
-	dh_strip
+	dh_strip --dbg-package=core-dbg
 	dh_compress
 	dh_fixperms
 #	dh_makeshlibs
