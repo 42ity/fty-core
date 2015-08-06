@@ -299,7 +299,7 @@ SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WH
 insert into t_bios_asset_element (name , id_type, id_parent, asset_tag)values ("DC-LAB", @asset_element_datacenter,  NULL, "myasset19");
 set @last_asset_element := LAST_INSERT_ID();
 set @last_datacenter := @last_asset_element; 
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EATON Montobonnot Datacenter", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EATON Montobonnot Datacenter (тест)", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("company",    "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("site",       "Montbonnot", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("country",    "France", @last_asset_element);

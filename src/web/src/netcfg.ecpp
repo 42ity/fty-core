@@ -133,6 +133,14 @@ if(address.empty()) {
     return HTTP_NOT_FOUND;
 }
 
+#define AUG_GET(NAME, VAL) \
+    command = "get " + address + "/" NAME "\n"; \
+    write(augtool.getStdin(), command.c_str(), command.length()); \
+    VAL = real_out(wait_read_all(augtool.getStdout()));
+
+std::string method;
+AUG_GET("method", method);
+
 // Modifications requested?
 if(request.getMethod() == "PUT") {
     std::stringstream input(request.getBody(), std::ios_base::in);
@@ -163,8 +171,9 @@ if(request.getMethod() == "PUT") {
     if(it.name() == NAME) { \
         it.getValue(val); \
         if(! CHECK ) { \
-            reply.out() << std::string("{ \"error\": \"Wrong value for " NAME \
-                                       "setting' } "); \
+            reply.out() << std::string("{ \"error\": \"Wrong value for '" NAME \
+                                       "' setting or setting '" NAME "' not " \
+                                       " expected.\" }"); \
             return HTTP_BAD_REQUEST; \
         } \
         command = "set " + address + "/" NAME " " + val + "\n"; \
@@ -174,7 +183,6 @@ if(request.getMethod() == "PUT") {
     }
 
     // All the things we need to set
-    std::string method;
     for(auto it : rsi) {
         bool handled = false;
         AUG_SET("method",  std::regex_match(method = val, match,
@@ -254,12 +262,7 @@ if(request.getMethod() == "PUT") {
 
 }
 
-std::string method, ip, netmask, gateway, dns;
-#define AUG_GET(NAME, VAL) \
-    command = "get " + address + "/" NAME "\n"; \
-    write(augtool.getStdin(), command.c_str(), command.length()); \
-    VAL = real_out(wait_read_all(augtool.getStdout()));
-
+std::string ip, netmask, gateway, dns;
 AUG_GET("method", method);
 AUG_GET("address", ip);
 AUG_GET("netmask", netmask);

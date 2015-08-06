@@ -74,17 +74,17 @@ while [ $# -gt 0 ]; do
 done
 
 # default values:
-[ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "${SUT_USER-}" ] && SUT_USER="root"
+[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz.lab.etn.com"
 # port used for ssh requests:
-[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
-if [ -z "$SUT_WEB_PORT" ]; then
-    if [ -n "$BIOS_PORT" ]; then
+if [ -z "${SUT_WEB_PORT-}" ]; then
+    if [ -n "${BIOS_PORT-}" ]; then
         SUT_WEB_PORT="$BIOS_PORT"
     else
         SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
-        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+        [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
             SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
@@ -153,22 +153,22 @@ fi
 
 # is web server running?
 curlfail_push_expect_404
-if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
+if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
     CODE=4 die "Webserver is not running or has errors, please start it first!"
 fi
 curlfail_pop
 
 # log dir contents the real responses
 cd "`dirname "$0"`"
-[ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
+[ -n "${LOG_DIR-}" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
 
 # cmpjson.sh compares json like files
 CMPJSON_SH="`pwd`/cmpjson.sh"
 CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
-[ -z "$CMP" ] && CMP="$CMPJSON_SH"
-[ -s "$CMP" ] || exit 5
+[ -z "${CMP-}" ] && CMP="$CMPJSON_SH"
+[ -s "${CMP-}" ] || exit 5
 
 # web/commands dir contains the request commands
 cd web/commands

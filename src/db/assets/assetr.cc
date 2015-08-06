@@ -174,6 +174,19 @@ db_reply <std::map <std::string, std::pair<std::string, bool> >>
     }
 }
 
+int
+select_ext_attributes(
+        tntdb::Connection &conn,
+        a_elmnt_id_t element_id,
+        std::map <std::string, std::pair<std::string, bool> >& out)
+{
+    auto dbreply = select_ext_attributes(conn, element_id);
+    if (dbreply.status == 0)
+        return -1;
+    out = dbreply.item;
+    return 0;
+}
+
 db_reply <std::vector <db_tmp_link_t>>
     select_asset_device_links_to
         (tntdb::Connection &conn,
@@ -418,6 +431,217 @@ reply_t
         rep.rv = -2;
         dc_id = 0;
         return rep;
+    }
+}
+
+int
+    select_asset_element_all(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id, v.name, v.type_name,"
+            "   v.subtype_name, v.id_parent,"
+            "   v.business_crit, v.status, v.priority"
+            " FROM"
+            "   v_web_element v"
+        );
+
+        tntdb::Result res = st.select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+    select_ext_attributes_keytags(
+            tntdb::Connection& conn,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   DISTINCT(keytag)"
+            " FROM"
+            "   v_bios_asset_ext_attributes"
+        );
+
+        tntdb::Result res = st.select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::function<void(const tntdb::Row&)> cb)
+{
+    LOG_START;
+    log_debug("id: %" PRIu32, id);
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v2.name "
+            " FROM v_bios_asset_group_relation v1 "
+            " JOIN v_bios_asset_element v2 "
+            "   ON v1.id_asset_group=v2.id "
+            " WHERE v1.id_asset_element=:id "
+        );
+
+        tntdb::Result res = st.set("id", id).select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+select_group_names(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        std::vector<std::string>& out)
+{
+    std::function<void(const tntdb::Row&)> func = \
+        [&out](const tntdb::Row& r)
+        {
+            std::string name;
+            r["name"].get(name);
+            out.push_back(name);
+        };
+    return select_group_names(conn, id, func);
+}
+
+int
+select_v_web_asset_power_link_src_byId(
+        tntdb::Connection& conn,
+        a_elmnt_id_t id,
+        row_cb_f& cb)
+{
+    LOG_START;
+    log_debug("id: %" PRIu32, id);
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   v.id_link, "
+            "   v.id_asset_element_src, "
+            "   v.src_name, "
+            "   v.id_asset_element_dest, "
+            "   v.dest_name, "
+            "   v.src_out, "
+            "   v.dest_in "
+            " FROM v_web_asset_link v "
+            " WHERE v.id_asset_element_src=:id "
+            " AND v.link_name = 'power chain' "
+        );
+
+        tntdb::Result res = st.set("id", id).select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+//TODO: maximum groups and maximum power sources
+/*
+ * *
+<Malanka> select max(grp_count) from ( select count(*) grp_count from t_bios_asset_group_relation group by id_asset_element) elmnt_grp;
+<Malanka> select max(power_src_count) from ( select count(*) power_src_count from t_bios_asset_link group by id_asset_device_dest) pwr;
+*/
+
+int
+max_number_of_asset_groups(
+        tntdb::Connection& conn)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   MAX(grp_count) "
+            " FROM "
+            "   ( SELECT COUNT(*) grp_count FROM t_bios_asset_group_relation "
+            "            GROUP BY id_asset_element) elmnt_grp "
+        );
+
+        tntdb::Row row = st.selectRow();
+
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+int
+max_number_of_power_links(
+        tntdb::Connection& conn)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   MAX(power_src_count) "
+            " FROM "
+            "   ( SELECT COUNT(*) power_src_count FROM t_bios_asset_link "
+            "            GROUP BY id_asset_device_dest) pwr "
+        );
+
+        tntdb::Row row = st.selectRow();
+
+        int r = 0;
+        row[0].get(r);
+        LOG_END;
+        return r;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
     }
 }
 } // namespace end

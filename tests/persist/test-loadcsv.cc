@@ -4,10 +4,12 @@
 #include <tntdb/statement.h>
 #include "csv.h"
 #include "log.h"
-#include "loadcsv.h"
+#include "db/inout.h"
 #include "assetcrud.h"
 #include "dbpath.h"
-#include <fstream>    
+#include <fstream>
+
+using namespace persist;
 
 std::string get_dc_lab_description() {
     tntdb::Connection conn;
@@ -46,7 +48,7 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     std::string usv = base_path + ".usv";
     std::vector <db_a_elmnt_t> okRows;
     std::map <int, std::string> failRows;
-    
+
     static std::string exp = to_utf8(cxxtools::String(L"Lab DC(тест)"));
     REQUIRE_NOTHROW(get_dc_lab_description() == exp);
 
@@ -57,7 +59,7 @@ TEST_CASE("CSV multiple field names", "[csv]") {
     // test tab separated values
     std::fstream tsv_buf{tsv};
     REQUIRE_NOTHROW(load_asset_csv(tsv_buf, okRows, failRows ));
-    
+
     // test semicolon separated values
     std::fstream ssv_buf{ssv};
     REQUIRE_NOTHROW(load_asset_csv(ssv_buf, okRows, failRows ));
