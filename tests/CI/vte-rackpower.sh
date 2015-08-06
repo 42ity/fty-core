@@ -25,6 +25,7 @@
     # *** TRP - Total Rack Power
 
 # ***** DESCRIPTION *****
+    # *** The new topology is assets
     # *** test creates defined messages through nut using dummy nut driver
     # *** data contained in the messages pass through nut into DB
     # *** restAPI req. for TRP (arg1="$RACK"'&'arg2=total_power) is sent
@@ -33,12 +34,12 @@
 
 # ***** PREREQUISITES *****
     # *** SUT_SSH_PORT should be passed as parameter --port <value>
-    # *** it is currently from interval <2206;2209>
+    # *** it is currently from interval <2206;2209>, for restAPI reguests are generated ports from <8006;8009>
     # *** must run as root without using password 
     # *** BIOS image must be installed and running on SUT 
     # *** upsd.conf, upssched.conf and upsmon.conf are present on SUT in the /etc/nut dir 
-    # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS 
-    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) 
+    # *** tools directory containing tools/initdb.sql tools/rack_power.sql present on MS for assets
+    # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) and scriptlib.sh
 
 TIME_START=$(date +%s)
 export BIOS_LOG_LEVEL=LOG_DEBUG
@@ -76,7 +77,7 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-# default values:
+    # *** default connection parameters values:
 [ -z "$SUT_USER" ] && SUT_USER="root"
 [ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
 # port used for ssh requests:
@@ -91,51 +92,42 @@ if [ -z "$SUT_WEB_PORT" ]; then
             SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
-
-# unconditionally calculated values
+    # *** set SUT base URL and SUT name
 BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+    # *** local or remote?
 SUT_IS_REMOTE=yes
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
-    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+    { echo "CI-FATAL: $0: Can not include script library" >&2;exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 # *** weblib include
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
-cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
-echo "SCRIPTDIR =	$SCRIPTDIR"
-echo "CHECKOUTDIR =	$CHECKOUTDIR"
-echo "BUILDSUBDIR =	$BUILDSUBDIR"
+        # * config dir for the nut dummy driver parameters allocated in config files
+    # *** working directories
+CFGDIR="/etc/nut"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+echo "SCRIPTDIR =       $SCRIPTDIR"
+echo "CHECKOUTDIR =     $CHECKOUTDIR"
+echo "BUILDSUBDIR =     $BUILDSUBDIR"
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
-
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
 
 # ***** GLOBAL VARIABLES *****
-TIME_START=$(date +%s)
-
-    # *** set SUT base URL and SUT name
-
     # *** config dir for the nut dummy driver parameters allocated in config files
 CFGDIR="/etc/nut"
-
     # *** parameters monitored and counted with
 PARAM1="ups.realpower"
 PARAM2="outlet.realpower"
-
     # *** user and password for upsrw
 USR=user1
 PSW=user1
-
-    # *** numbers of passed/failed subtest
-#SUM_PASS=0
-#SUM_ERR=0
-
-    # *** is system running? ***
-#LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
+    # *** create lockfile name ***
+LOCKFILE="`echo "/tmp/ci-test-rackpower-vte__${SUT_USER}@${SUT_HOST}:${SUT_SSH_PORT}:${SUT_WEB_PORT}.lock" | sed 's, ,__,g'`"
 
 # ***** INIT *****
 function cleanup {
@@ -146,21 +138,19 @@ function cleanup {
 if [ -f "$LOCKFILE" ]; then
     ls -la "$LOCKFILE" >&2
     die "Script already running. Aborting."
+    cleanup
 fi
-
     # *** lock the script with creating $LOCKFILE
-#echo $$ > "$LOCKFILE"
+echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
 TRAP_SIGNALS=EXIT settraps cleanup
-
-logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
 # TODO: replace by calls to proper rc-bios script
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done;exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** FILL AND START DB *****
@@ -177,6 +167,7 @@ sut_run 'systemctl restart bios-agent-dbstore'
 
 # ***** COMMON FUNCTIONS ***
     # *** rem_copy_file()
+        # * make copy of the file from MS (the first parameter) to SUT (the second parameter)
 rem_copy_file() {
     SRC_FILE=$1
     DST_FILE=$2
@@ -185,11 +176,12 @@ rem_copy_file() {
 }
 
     # *** rem_cmd()
-#Send remote command from MS to be performed in SUT
+        # * Send remote command from MS to be performed in SUT
 rem_cmd() {
     sut_run "$@" | tee -a $CHECKOUTDIR/ci-rackpower-vte.log
 }
     # *** set_values_in_ups()
+        # * set new future values of measured data 
 set_values_in_ups() {
     ### TODO: Rewrite so that regular dev-file changes and upsrw are separate
     ### from new dev-file definitions and NUT restart (that's once per testcase
@@ -212,7 +204,7 @@ set_values_in_ups() {
     echo "set values in ups.conf"
     sed -r -e "s/UPS1/$UPS1/g" -e "s/UPS2/$UPS2/g" </tmp/pattern.conf >/tmp/ups.new
 
-    # *** Copy the .dev .conf files to SUT
+            # * Copy the .dev .conf files to SUT
     if [ $UPS = $UPS1 ]; then
         if [ "$TYPE2" = epdu ]; then
             rem_copy_file pattern-epdu.dev $UPS2.dev
@@ -222,14 +214,12 @@ set_values_in_ups() {
     fi
     rem_copy_file $UPS.new $UPS.dev
     rem_copy_file ups.new ups.conf
-    sleep 3
 
-    # *** restart NUT server
+            # * restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 1; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
-    sleep 20
     N=20
     while [ "$N" -gt 0 ]; do
         OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
@@ -242,11 +232,11 @@ set_values_in_ups() {
 
     # *** start upsrw (output hidden because this can fail for some target variables)
 #    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
-    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost 2>/dev/null"
-    sleep 6
+#    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost 2>/dev/null"
 }
 
     # *** testcase()
+        # * count, expected result, read restAPI result, compare them and set the result
 testcase() {
     echo "starting the test"
 
@@ -277,8 +267,6 @@ testcase() {
             TP="$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')"
                        # send restAPI request to find generated value of total power
             PAR="/metric/computed/rack_total?arg1=${RACK}&arg2=total_power"
-#            api_get_content "$PAR"
-            sleep 2
             RACK_TOTAL_POWER1_CONTENT="`api_get_content "$PAR"`" && \
                 logmsg_info "SUCCESS: api_get_content '$PAR': $RACK_TOTAL_POWER1_CONTENT" || \
                 logmsg_error "FAILED ($?): api_get_content '$PAR'" 
@@ -310,21 +298,14 @@ results() {
 
 
 # ***** START *****
-    # *** check the processes running on SUT
-# TODO
-
-    # *** check the nut config files on SUT
-# TODO
-# upsd.conf, upssched.conf and upsmon.conf ARE PRESENT ON SUT
+    # *** remove old .dev files ON SUT
 rem_cmd "rm -f $CFGDIR/*.dev"
-
     # *** create the nut.conf and upsd.users files on SUT
         # * nut.conf
 echo "creating nut config"
 echo "MODE=standalone" > /tmp/nut.conf
-
         # * upsd.users
-    echo "[$USR]
+echo "[$USR]
 password=$PSW
 actions=SET
 instcmds=ALL" > /tmp/upsd.users
@@ -333,9 +314,8 @@ chmod 640 /tmp/upsd.users
         # * Copy the cfgfiles to SUT
 rem_copy_file nut.conf nut.conf
 rem_copy_file upsd.users upsd.users
-
-    # *** create pattern .dev AND .conf files
-                       # pattern.dev (for <upsX.dev>) and pattern.conf (for ups.conf)
+    # *** create pattern .dev AND .conf file
+                 # pattern.dev (for <upsX.dev>) and pattern.conf (for ups.conf)
         # * create the paterns of ups or epdu file on MS
 TYPE=$1
         # * Create "epdu" .dev pattern
@@ -384,9 +364,9 @@ set_values_in_ups "$UPS" "$TYPE2" "0"
 
    # *** restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 5
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 1; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...'
-sleep 20
+
 # ***** TESTCASES *****
 
     # *** TC1
@@ -398,19 +378,14 @@ echo "Start time is "$TIME
         # * set TC1 specific variables
 SAMPLES=(
    50.56
-   30.85
-   40.43
+#   30.85
+#   40.43
 )
 UPS1="epdu101_1"
 UPS2="epdu101_2"
 RACK="8101"
 TYPE1="epdu"
 TYPE2="epdu"
-#UPS=$UPS1
-#set_values_in_ups "$UPS" "$TYPE1" "1000"
-#UPS=$UPS2
-#set_values_in_ups "$UPS" "$TYPE2" "0"
-#sleep 10
         # * start TC1
 testcase
         # * TC1 results
@@ -529,7 +504,9 @@ TEST_LAST=$(expr $TIME_END - $TIME_START)
 echo "Test lasts "$TEST_LAST" second."
 if [ $SUM_ERR = 0 ] ; then
     echo "TEST PASSED."
+    cleanup
     exit 0
 fi
 echo "TEST FAILED."
+cleanup
 exit 1
