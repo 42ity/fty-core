@@ -65,7 +65,10 @@ myDEVDOCDIR =	docs/develop
 SUBDIRS =	$(myMANDIR) docs/examples tools
 
 # run tntnet from Makefile
-RUN_TNTNET = ${TNTNET} tntnet.xml
+RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
+             export DATADIR="$(abs_top_builddir)/var/bios"; \
+	     rm -rf "$(abs_top_builddir)/var"; \
+	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
@@ -1198,19 +1201,19 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp \
-					  src/web/src/asset_export.cpp
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp       \
+		      src/web/src/license.cpp src/web/src/asset_export.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
+                      src/shared/upsstatus.cc src/web/src/enc.cc         \
 					  src/web/src/dci_impl.h
 
 
