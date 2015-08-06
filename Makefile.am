@@ -62,7 +62,7 @@ myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools obs
 
 # run tntnet from Makefile
 RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
