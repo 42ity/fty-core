@@ -204,6 +204,16 @@ static db_a_elmnt_t
     if (bs_critical == "no")
         bc = 0;
 
+    auto asset_tag = cm.get(row_i, "asset_tag");
+    log_debug ("asset_tag = '%s'", asset_tag.c_str());
+    if ( asset_tag.empty() )
+        throw std::invalid_argument("asset_tag is required");
+    if ( asset_tag.length() < 6 )
+        throw std::invalid_argument("asset_tag should have at least 6 characters");
+    if ( asset_tag.length() > 10 )
+        throw std::invalid_argument("asset_tag should have max 10 characters");
+    unused_columns.erase("asset_tag");
+
     int priority = get_priority(cm.get_strip(row_i, "priority"));
     log_debug ("priority = %d", priority);
     unused_columns.erase("priority");
@@ -386,6 +396,7 @@ static db_a_elmnt_t
 
         if ( match_ext_attr (value, key) )
         {
+            // may be lambda can perfectly be used here
             if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
             {
                 // BIOS-991 --start
@@ -408,9 +419,15 @@ static db_a_elmnt_t
                             }
                 }
                 // BIOS-991 --end
+                continue;
             }
-            else
-                zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+            if ( key == "serial_no" )
+            {
+                if  ( unique_keytag (conn, key, value) == 0 )
+                    zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+                continue;
+            }
+            zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
         }
         else
         {
@@ -436,7 +453,7 @@ static db_a_elmnt_t
         // this is a transaction
         auto ret = insert_dc_room_row_rack_group
                 (conn, name.c_str(), type_id, parent_id,
-                extattributes, status.c_str(), priority, bc, groups);
+                 extattributes, status.c_str(), priority, bc, groups, asset_tag);
         if ( ret.status != 1 )
         {
             throw std::invalid_argument("insertion was unsuccess");
@@ -448,7 +465,7 @@ static db_a_elmnt_t
         // this is a transaction
         auto ret = insert_device (conn, links, groups, name.c_str(),
                 parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
-                priority, bc);
+                priority, bc, asset_tag);
         if ( ret.status != 1 )
         {
             throw std::invalid_argument("insertion was unsuccess");
@@ -462,6 +479,7 @@ static db_a_elmnt_t
     m.priority = priority;
     m.bc = bc;
     m.type_id = type_id;
+    m.asset_tag = asset_tag;
 
     LOG_END;
     return m;
