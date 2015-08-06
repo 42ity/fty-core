@@ -390,7 +390,8 @@ db_reply_t
          const char      *status,
          a_elmnt_pr_t     priority,
          a_elmnt_bc_t     bc,
-         a_dvc_tp_id_t    subtype_id)
+         a_dvc_tp_id_t    subtype_id,
+         const char      *asset_tag)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -400,6 +401,7 @@ db_reply_t
     log_debug ("  priority = %" PRIu16, priority);
     log_debug ("  bc = %" PRIu16, bc);
     log_debug ("  subtype_id = %" PRIu16, subtype_id);
+    log_debug ("  asset_tag = %s", asset_tag);
     if ( subtype_id == 0 ) // use default
         subtype_id = 10;  // ATTENTION; need to be alligned with initdb
 
@@ -446,10 +448,10 @@ db_reply_t
                 " INSERT INTO"
                 "   t_bios_asset_element"
                 "   (name, id_type, id_parent, status, priority,"
-                "    business_crit, id_subtype)"
+                "    business_crit, id_subtype, asset_tag)"
                 " SELECT"
                 "   :name, :type, NULL, :status, :priority,"
-                "   :business_crit, :subtype"
+                "   :business_crit, :subtype, :assettag"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -471,6 +473,7 @@ db_reply_t
                                    set("priority", priority).
                                    set("business_crit", bc).
                                    set("subtype", subtype_id).
+                                   set("assettag", asset_tag).
                                    execute();
         }
         else
@@ -479,10 +482,10 @@ db_reply_t
                 " INSERT INTO"
                 "   t_bios_asset_element"
                 "   (name, id_type, id_parent, status, priority,"
-                "    business_crit, id_subtype)"
+                "    business_crit, id_subtype, asset_tag)"
                 " SELECT"
                 "   :name, :type, :parent, :status, :priority,"
-                "   :business_crit, :subtype"
+                "   :business_crit, :subtype, :assettag"
                 " FROM"
                 "   t_empty"
                 " WHERE NOT EXISTS"
@@ -504,6 +507,7 @@ db_reply_t
                                    set("priority", priority).
                                    set("business_crit", bc).
                                    set("subtype", subtype_id).
+                                   set("assettag", asset_tag).
                                    execute();
         }
         ret.rowid = conn.lastInsertId();
@@ -668,7 +672,8 @@ db_reply_t
      const char      *status,
      a_elmnt_pr_t     priority,
      a_elmnt_bc_t     bc,
-     std::set <a_elmnt_id_t> const &groups)
+     std::set <a_elmnt_id_t> const &groups,
+     const std::string &asset_tag)
 {
     LOG_START;
 //    log_debug ("  element_name = '%s'", element_name);
@@ -678,7 +683,7 @@ db_reply_t
     tntdb::Transaction trans(conn);
 
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, element_type_id, parent_id, status, priority, bc, 0);
+                        (conn, element_name, element_type_id, parent_id, status, priority, bc, 0, asset_tag.c_str());
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();
@@ -739,14 +744,15 @@ db_reply_t
        (tntdb::Connection &conn,
         std::vector <link_t> &links,
         std::set <a_elmnt_id_t> const &groups,
-        const char    *element_name, 
+        const char    *element_name,
         a_elmnt_id_t   parent_id,
         zhash_t       *extattributes,
         a_dvc_tp_id_t  asset_device_type_id,
         const char    *asset_device_type_name,
         const char    *status,
         a_elmnt_pr_t   priority,
-        a_elmnt_bc_t   bc)
+        a_elmnt_bc_t   bc,
+        const std::string &asset_tag)
 {
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
@@ -754,9 +760,9 @@ db_reply_t
     log_debug ("  asset_device_type_id = %" PRIu32, asset_device_type_id);
 
     tntdb::Transaction trans(conn);
-        
+
     auto reply_insert1 = insert_into_asset_element
-                        (conn, element_name, asset_type::DEVICE, parent_id, status, priority, bc, asset_device_type_id);
+                        (conn, element_name, asset_type::DEVICE, parent_id, status, priority, bc, asset_device_type_id, asset_tag.c_str());
     if ( reply_insert1.affected_rows == 0 )
     {
         trans.rollback();
@@ -773,7 +779,7 @@ db_reply_t
         log_error ("end: device was not inserted (fail in ext_attributes)");
         return reply_insert2;
     }
-           
+
     auto reply_insert3 = insert_element_into_groups (conn, groups, element_id);
     if ( ( reply_insert3.status == 0 ) && ( reply_insert3.affected_rows == 0 ) )
     {

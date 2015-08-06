@@ -193,9 +193,33 @@ int
 max_number_of_asset_groups(
         tntdb::Connection& conn);
 
+
+/** \brief select maximal number of power sources for device in the system
+ *
+ *  \param[in] conn is tntdb connection
+ *
+ *  \return -1 in case of error otherwise number of power sources
+ */
 int
 max_number_of_power_links(
         tntdb::Connection& conn);
+
+
+/** \brief check if the pair (key, value) is unique
+ *
+ *  \param[in] conn is tntdb connection
+ *  \param[in] keytag is a keytag to check
+ *  \param[in] value is value to check
+ *
+ *  \return -1 in case of error
+ *           0 if there is no such pair in db yet
+ *           otherwise number of such pairs
+ */
+int
+unique_keytag(
+        tntdb::Connection &conn,
+        const std::string &keytag,
+        const std::string &value);
 
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H
