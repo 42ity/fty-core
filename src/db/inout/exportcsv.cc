@@ -135,6 +135,7 @@ void
         LOG_END;
         throw std::runtime_error(msg.c_str());
     }
+    tntdb::Transaction transaction{conn, true};
 
     LineCsvSerializer lcs{out};
 
@@ -166,7 +167,7 @@ void
             continue;       //ugly but works
         lcs.add(k);
     }
-    
+
     // 1.2      print power links
     for (uint32_t i = 0; i != max_power_links; i++) {
         std::string si = std::to_string(i+1);
@@ -276,7 +277,7 @@ void
             else
                 lcs.add("");
         }
-        
+
         // 2.5.4        groups
         for (uint32_t i = 0; i != max_groups; i++) {
             if (i >= groups.size())
@@ -293,6 +294,7 @@ void
     select_asset_element_all(
             conn,
             process_v_web_asset_element_row);
+    transaction.commit();
 }
 
 } // namespace persist
