@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <map>
 
 #include <tntdb/connect.h>
+
 #include "dbtypes.h"
 #include "dbhelpers.h"
 #include "db/types.h"
@@ -48,6 +49,7 @@ struct db_web_basic_element_t {
     a_dvc_tp_id_t    subtype_id;
     // TODO location
     std::string      subtype_name;
+    std::string      asset_tag;
 };
 
 /**
