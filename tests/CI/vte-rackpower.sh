@@ -170,6 +170,7 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
 set -o pipefail 2>/dev/null || true
 set -e
 { loaddb_file ./tools/initdb.sql && \
+  loaddb_file ./tools/initdb_ci_patch.sql && \
   loaddb_file ./tools/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
 set +e
