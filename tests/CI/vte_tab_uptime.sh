@@ -127,6 +127,10 @@ loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.l
 loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
 set +e
 
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
 # ***** POST THE CSV FILE *****
 ASSET="$CHECKOUTDIR/tools/bam_import_16_vte_uptime_2_DC.csv"
 

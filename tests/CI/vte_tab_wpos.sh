@@ -133,6 +133,10 @@ subtest() {
     loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
     set +e
 
+    # Try to accept the BIOS license on server
+    ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
     # ***** POST THE CSV FILE *****
     ASSET="$CHECKOUTDIR/tools/$1"
     api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/import_TP-${_SCRIPT_NAME}.log
