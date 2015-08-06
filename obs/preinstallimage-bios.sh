@@ -67,6 +67,16 @@ passwd bios <<EOF
 @PASSWORD@
 EOF
 
+# Workplace for the webserver and graph daemons
+mkdir -p /var/lib/bios
+chown -R bios:bios /var/lib/bios
+
+# A few helper aliases
+cat > /etc/profile.d/bios_aliases.sh << EOF
+alias dbb=\"mysql -u root box_utf8 -t\"
+alias la=\"ls -la\"
+EOF
+
 # Setup u-Boot
 echo '/dev/mtd3 0x00000 0x40000 0x40000' > /etc/fw_env.config
 
