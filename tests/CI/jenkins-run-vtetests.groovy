@@ -61,6 +61,8 @@ for(
         "vtetest_restapi",
         "vtetest_rackpower",
         "vte_tab_import",
+        "vte_tab_uptime",
+        "vte_tab_wpos",
     ]
 ){
     println "=== Starting $jobName ===";
