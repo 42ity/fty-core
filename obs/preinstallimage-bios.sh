@@ -342,9 +342,12 @@ rm -f /usr/bin/qemu*
 case "$IMGTYPE" in
     devel)
         /usr/sbin/update-ccache-symlinks
-        mkdir /root/.ccache
+        # If this image ends up on an RC3, avoid polluting NAND with ccache
+        mkdir -p /home/bios/.ccache
+        chown -R bios:bios /home/bios/.ccache
+        rm -rf /root/.ccache
+        ln -s /home/bios/.ccache /root/.ccache
         echo "export PATH=\"/usr/lib/ccache:/usr/lib64/ccache:\$PATH\"" > /etc/profile.d/ccache.sh
-        rm -f '/usr/bin/qemu*'
         ;;
 esac
 
