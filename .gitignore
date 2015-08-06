@@ -123,6 +123,10 @@ tests/CI/tmp.*
 tests/CI/web/commands/tmp.*
 tests/CI/*.pyc
 
+tests/fixtures/license/current
+tests/fixtures/license/1.0
+var/
+
 build/
 build-*/
 
