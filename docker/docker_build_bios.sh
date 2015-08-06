@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-#   Copyright (c) 2014 Eaton Corporation <www.eaton.com>
+#   Copyright (c) 2015 Eaton Corporation <www.eaton.com>
 #   Copyright other contributors as noted in the AUTHORS file.
 #
 #   This file is part of the Eaton $BIOS project.
@@ -19,11 +19,13 @@
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #   Description: Script to generate eaton/bios container
+set -e
+
 export build_dir=..
 export temp_dir=./temp 
 
 echo "preparing $temp_dir .. "
-mkdir -p $temp_dir
+mkdir -p "{$temp_dir}"
 export DESTDIR=`cd $temp_dir; pwd`
 CURDIR=`pwd`
 cd $build_dir
@@ -31,8 +33,9 @@ make install
 
 cd $CURDIR
 cp ./resources/Dockerfile $temp_dir
+sed -i "s|HTTP_PROXY|$http_proxy|g" $temp_dir/Dockerfile
 
-mkdir -p $temp_dir/usr/share
+mkdir -p "{$temp_dir}/usr/share"
 cp ~/compiled-webapp.tar $temp_dir/usr/share
 
 echo "building docker eaton/bios .."

@@ -22,7 +22,8 @@ dockerres_DATA = 	resources/Dockerfile \
 			resources/ROZ.ePDU05.dev \
 			resources/ups.conf \
 			resources/upsmon.conf \
-			resources/interfaces
+			resources/interfaces \
+			resources/license
 
 EXTRA_DIST += $(docker_SCRIPTS) $(dockerres_SCRIPTS) $(dockerres_DATA)
 

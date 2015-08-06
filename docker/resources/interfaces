@@ -1,25 +1,12 @@
 # This file describes the network interfaces available on your system
 # and how to activate them. For more information, see interfaces(5).
-
-iface eth00 inet dhcp
-   pre-up ip link add $IFACE type dummy
-   up ip link set $IFACE up
-   down ip link set $IFACE down
-   post-down ip link del $IFACE
+iface eth0 inet dhcp
 iface eth1 inet static
    address 192.168.1.10
    netmask 255.255.255.0
    gateway 192.168.1.1
-   pre-up ip link add $IFACE type dummy
-   up ip link set $IFACE up
-   down ip link set $IFACE down
-   post-down ip link del $IFACE
 iface eth2 inet static
    address 192.168.2.10
    netmask 255.255.255.0
    gateway 192.168.2.1
-   pre-up ip link add $IFACE type dummy
-   up ip link set $IFACE up
-   down ip link set $IFACE down
-   post-down ip link del $IFACE
 
