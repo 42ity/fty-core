@@ -150,10 +150,10 @@ void
     };
 
     uint32_t max_power_links = max_number_of_power_links(conn);
-    if (max_power_links == 0)
+    if (max_power_links <= 0)
         max_power_links = 1;
     uint32_t max_groups = max_number_of_asset_groups(conn);
-    if (max_groups == 0)
+    if (max_groups <= 0)
         max_groups = 1;
 
     // put all remaining keys from the database
