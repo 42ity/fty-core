@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 #include "db/inout.h"
-#include "enc.h"
+#include "bios-magic.h"
 #include "log.h"
 #include "subprocess.h"
 #include "bios_agent.h"
@@ -70,7 +70,7 @@ try {
     out.close();
 
     // check the encoding
-    auto magic = file_type_encoding(path);
+    auto magic = shared::file_type_encoding(path);
     const auto& encoding = magic.second;
     if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
         std::string msg = "This file (" + magic.first + ") is not supported please try again with a different file.";

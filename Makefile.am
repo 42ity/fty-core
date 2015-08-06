@@ -409,6 +409,11 @@ libpriv_nutscan_la_SOURCES = \
 			src/shared/nutscan.h \
 			src/shared/nutscan.cc
 
+noinst_LTLIBRARIES +=	libpriv-magic.la
+libpriv_magic_la_SOURCES = \
+			src/shared/magic.cc \
+			src/shared/bios-magic.h
+
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
@@ -1210,11 +1215,8 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
+                      src/shared/upsstatus.cc 							 \
 					  src/web/src/dci_impl.h
-
-
-EXTRA_DIST +=		src/web/include/enc.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -1244,7 +1246,8 @@ bios_web_la_LIBADD = \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la
+			libpriv-db-measurements.la \
+			libpriv-magic.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
