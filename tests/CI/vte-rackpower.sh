@@ -42,7 +42,7 @@
     # *** tests/CI directory (on MS) contains weblib.sh (api_get_content and CURL functions needed) and scriptlib.sh
 
 TIME_START=$(date +%s)
-export BIOS_LOG_LEVEL=LOG_DEBUG
+#export BIOS_LOG_LEVEL=LOG_DEBUG
 
     # *** read parameters if present
 while [ $# -gt 0 ]; do
@@ -217,8 +217,9 @@ set_values_in_ups() {
 
             # * restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
+    rem_cmd "systemctl stop nut-server; sleep 5; systemctl stop nut-driver; sleep 5; systemctl start nut-driver; sleep 5; systemctl start nut-server"
     echo 'Wait for NUT to start responding...' 
+    sleep 40
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
     N=20
     while [ "$N" -gt 0 ]; do
@@ -364,7 +365,8 @@ set_values_in_ups "$UPS" "$TYPE2" "0"
 
    # *** restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
+    rem_cmd "systemctl stop nut-server; sleep 5; systemctl stop nut-driver; sleep 5; systemctl start nut-driver; sleep 5; systemctl start nut-server"
+#    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...'
 
 # ***** TESTCASES *****
