@@ -44,6 +44,9 @@
 echo "Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
 
+# Protect against errors... such as maybe running on a dev workstation
+set -e
+
 # Setup core dumps
 if true; then
     mkdir -p /var/crash
