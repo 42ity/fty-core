@@ -1,0 +1,153 @@
+#!/bin/sh
+#
+### BEGIN INIT INFO
+# Provides:          bios-containers
+# Required-Start:    
+# Required-Stop:
+# Should-Start:      $network
+# Should-Stop:       $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Start and stop the $BIOS containers on CI hosts
+# Description:       Starts BIOS containers on CI hosts during boot
+### END INIT INFO
+#
+
+# Copyright (C) 2015 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# Description: /etc/init.d/rc-bios-ci-container-delayedstart
+#       Auto-start wrapper for $BIOS containers to start up a bit
+#       after the host OS is up, so they can pull new images (if any).
+#       Intended for hosts involved in CI and test infrastructure.
+
+[ -n "$CONTAINERS" ] || \
+	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-'`" || \
+	CONTAINERS="latest"
+[ -z "$STARTDELAY_DL" ] && STARTDELAY_DL="2 min"
+[ -z "$STARTDELAY" ] && STARTDELAY="3 min"
+
+# The real script is part of $BIOS CI suite
+[ -z "$CI_RESET_VM" ] && CI_RESET_VM="/root/ci-reset-virtual-machine.sh"
+[ ! -x "$CI_RESET_VM" ] && echo "ERROR: CI_RESET_VM script not found at '$CI_RESET_VM'" && exit 1
+
+# Run apt-get to set up packages which we need?
+# Needs "ci-setup-test-machine.sh" in same dir as $CI_RESET_VM
+[ -z "$INSTALL_DEV_PKGS" ] && \
+[ -x "`dirname "$CI_RESET_VM"`/ci-setup-test-machine.sh" ] && \
+    INSTALL_DEV_PKGS=yes
+
+LANG=C
+LC_ALL=C
+export LANG LC_ALL
+
+start_delayed() {
+	echo "Queuing '$0 download' to refresh the images in $STARTDELAY_DL..." >&2
+	echo "$0 download" | at -M "now + $STARTDELAY_DL"
+	for C in $CONTAINERS ; do
+		echo "Queuing '$C' container to autoboot and update in $STARTDELAY..." >&2
+		case "$C" in
+		    demo)
+			[ -x /root/update_demo ] && \
+			    echo "/root/update_demo"  | at -M "now + $STARTDELAY" || \
+			    echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY"
+			;;
+		    test-debian-[6789]) # VTEs need only the default image
+			echo "INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy" | at -M "now + $STARTDELAY" ;;
+		    *) # By default we do updates
+			echo "$CI_RESET_VM -m '$C' -b devel --install-dev" | at -M "now + $STARTDELAY" ;;
+		esac
+	done
+}
+
+start_instant() {
+	download
+	for C in $CONTAINERS ; do
+		echo "(Re-)starting and updating '$C' container..." >&2
+		case "$C" in
+		    demo)
+			( [ -x /root/update_demo ] && \
+			    /root/update_demo || \
+			    INSTALL_DEV_PKGS=no $CI_RESET_VM -m '$C' -b deploy --attempt-download no ) &
+			;;
+		    test-debian-[6789]) # VTEs need only the default image
+			INSTALL_DEV_PKGS=no $CI_RESET_VM -m "$C" -b deploy --attempt-download no & ;;
+		    *) # By default we do updates
+			$CI_RESET_VM -m "$C" -b devel --install-dev --attempt-download no & ;;
+		esac
+	done
+	wait
+}
+
+start() {
+	if /etc/init.d/atd status || /etc/init.d/atd restart ; then
+		start_delayed
+	else
+		start_instant
+	fi
+}
+
+restart() {
+	start_instant
+}
+
+stop() {
+	for C in $CONTAINERS ; do
+		( $CI_RESET_VM -m "$C" --stop-only --attempt-download no || \
+		  virsh -c lxc:// destroy "$C" 2> /dev/null > /dev/null ) &
+	done >/dev/null 2>&1
+}
+
+download() {
+	$CI_RESET_VM --download-only -b devel
+	$CI_RESET_VM --download-only -b deploy
+}
+
+refresh() {
+	download 2>&1 | \
+	grep 'The file is already fully retrieved; nothing to do' || \
+	restart
+}
+
+status() {
+	LIST="`virsh -c lxc:// list --all | tail -n +3`"
+	RES=$?
+	echo "$LIST"
+
+	[ "$RES" = 0 ] && \
+	for C in $CONTAINERS ; do
+		echo "$LIST" | ( \
+		RES=-1	# Container not defined
+		while read _ID _NAME _STATE ; do
+			if [ "$_NAME" = "$C" ]; then
+				RES=0
+				[ "$_ID" = "-" -o "$_STATE" != running ] && RES=2 # Container not up
+			fi
+			[ $RES -ge 0 ] && exit $RES
+		done; exit 127 ) || RES=$?
+		[ $RES != 0 ] && return $RES	# At least one VM is not found, or found and not up
+	done
+
+	return $RES
+}
+
+case "$1" in
+start|start_delayed|start_instant|restart|stop|refresh|download|status)
+	$1
+	return $?
+	;;
+esac

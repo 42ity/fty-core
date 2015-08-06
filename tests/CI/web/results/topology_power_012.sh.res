@@ -1,0 +1,1 @@
+{"devices":[{"name":"UPSTO5","id":"5049","type":"ups"},{"name":"SINK17","id":"5052","type":"sink"},{"name":"SINK18","id":"5053","type":"sink"}],"powerchains":[{"src-id":"5053","dst-id":"5049"},{"src-id":"5052","dst-id":"5049"}]}

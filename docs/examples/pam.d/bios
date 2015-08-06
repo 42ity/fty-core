@@ -1,0 +1,47 @@
+#
+# Description:
+# The PAM 'bios' service configuration file for the Eaton $BIOS project.
+# Note that this file must be named 'bios' to identify the service name.
+# This allows members of the groups listed in /etc/security/bios_groups.conf
+# (i.e. the 'bios' group by default) to PAM/SASL-authenticate to the daemons.
+# See also the script to generate these needed $BIOS accounts and groups:
+#    tools/init-os-accounts.sh
+#
+# Most of the PAM setup code below is relatively standard boilerplate,
+# it is here just to ensure these lines are defined regardless of
+# the distribution used. Probably some of the explicit lines repeat
+# definitions in "common-*" includables, but PAM does not complain
+# and so we don't ;) If your older PAM does not support "include",
+# just comment those lines away.
+# The one actually unique snippet begins at "pam_listfile.so".
+#
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>,
+#            Michal Vyskocil <MichalVyskocil@eaton.com>,
+#            Michal Hrusecky <MichalHrusecky@eaton.com>
+#
+
+    auth	required        pam_env.so
+    auth	required        pam_unix.so	try_first_pass
+
+# Note that "requisite" mismatch fails instantly,
+# while "required" goes on to other checks first
+    auth	requisite	pam_listfile.so	onerr=fail item=group sense=allow file=/etc/security/bios_groups.conf
+
+@include	common-auth
+
+    account	required	pam_unix.so	try_first_pass
+
+@include	common-account
+
+    password	requisite	pam_cracklib.so
+    password	required	pam_unix.so	use_authtok shadow try_first_pass
+
+@include	common-password
+
+    session	required	pam_limits.so
+    session	required	pam_unix.so	try_first_pass
+    session	optional	pam_umask.so
+    session	optional	pam_env.so
+
+ @include	common-session-noninteractive
+

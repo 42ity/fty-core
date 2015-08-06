@@ -1,5 +1,19 @@
-ACLOCAL_AMFLAGS = -I m4 ${ACLOCAL_FLAGS}
-AUTOMAKE_OPTIONS = color-tests parallel-tests
+# Description: The Makefile (automake template) for the $BIOS project.
+# Note: relies on GNU make syntax and features, may fail to work in
+# other make programs.
+
+ACLOCAL_AMFLAGS =	-I m4 ${ACLOCAL_FLAGS}
+AUTOMAKE_OPTIONS =	color-tests parallel-tests
+
+# http://www.gnu.org/software/automake/manual/html_node/Basics-of-Distribution.html
+# NOTE: "dist" is not "install": The dist rule in the Makefile can be used to
+# generate a gzipped tar file and other flavors of archive for distribution.
+# Sometimes there are files that must be distributed, but which are not covered
+# in the automatic rules. These files should be listed in the EXTRA_DIST
+# variable. You can mention files from subdirectories in EXTRA_DIST.
+# You can also mention a directory in EXTRA_DIST; in this case the entire
+# directory will be recursively copied into the distribution... you can
+# use the dist-hook feature to filter the contents (remove ".svn/" etc).
 EXTRA_DIST =
 
 bin_PROGRAMS =
@@ -9,35 +23,55 @@ noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
 noinst_SCRIPTS =
+dist_noinst_DATA =
+# http://www.gnu.org/software/automake/manual/html_node/Built-Sources-Example.html
+# http://www.gnu.org/software/automake/manual/html_node/Sources.html
+# A source file listed in BUILT_SOURCES is made on `make all` or `make check`
+# (or even `make install`) before other targets are processed. However, such
+# a source file is not compiled unless explicitly requested by mentioning it
+# in some other _SOURCES variable. 
 BUILT_SOURCES =
+# http://www.gnu.org/software/automake/manual/html_node/Clean.html
+# * If make built it, and it is commonly something that one would want to
+#   rebuild (for instance, a .o file), then mostlyclean should delete it.
+# * Otherwise, if make built it, then clean should delete it.
+# * If configure built it, then distclean should delete it.
 CLEANFILES =
 DISTCLEANFILES =
+DISTCLEANDIRS =
+# autoconf does not allow pkglib_PROGRAMS for some reason
+clientdir = ${pkglibexecdir}
+client_PROGRAMS =
+
+# test programs executed by CI scripts
+# lower-case var with actual list (so targets can be built by explicit request)
+# upper-case var picked up by autotools, populated based on configure settings;
+#   its relevant "cibindir" is conditionally defined below
+cibin_programs =
+
 TESTS =
 
-SUBDIRS = docs/man docs/examples tools
+# Initialize some more variables
+pkgconfigdir =			$(libdir)/pkgconfig
+pkgconfig_DATA =
+pkginclude_HEADERS =
+lib_LTLIBRARIES =
 
-AM_CPPFLAGS = -include $(top_builddir)/config.h \
-			  -I$(top_srcdir)/src/shared \
-			  -I$(top_srcdir)/src/include \
-			  -DDEBUG \
-			  -DDEVEL
+# Named by analogy from configure'd myDOXDIR for doxygen
+myMANDIR =	docs/man
+myDEVDOCDIR =	docs/develop
 
+# Locations of child Makefiles
+SUBDIRS =	$(myMANDIR) docs/examples tools
 
-AM_CFLAGS =			${my_CFLAGS} \
-				-fvisibility=hidden \
-				-ffunction-sections \
-				-fdata-sections \
-				$(LIBZMQ_CFLAGS) \
-				$(LIBCZMQ_CFLAGS) \
-				$(LIBVARIANT_CFLAGS)
+# run tntnet from Makefile
+RUN_TNTNET = ${TNTNET} tntnet.xml
 
-AM_CXXFLAGS =			${my_CXXFLAGS} \
-				-fvisibility=hidden \
-				-ffunction-sections \
-				-fdata-sections
-
-AM_LDFLAGS = 			-Wl,--gc-sections \
-				-Wl,--as-needed
+if ENABLE_DOCKER_SUPPORT
+# Integrate packaging of resource files for management of Docker containers
+# Note that docker/README is processed by this root Makefile, below...
+SUBDIRS +=	docker
+endif
 
 # ----------------------------------------------------------------------
 # List of header files. The purpose of this list is not dependency
@@ -46,11 +80,188 @@ AM_LDFLAGS = 			-Wl,--gc-sections \
 
 dist_noinst_HEADERS = 
 
+# Clean up products of configure script
+DISTCLEANFILES += \
+		$(addsuffix /Makefile.in,$(SUBDIRS) .) \
+		aclocal.m4 config.h.in config.h.in~ config.log \
+		m4/libtool.m4 \
+		m4/ltoptions.m4 \
+		m4/ltsugar.m4 \
+		m4/ltversion.m4 \
+		m4/lt~obsolete.m4 \
+		build-aux/compile* \
+		build-aux/config* \
+		build-aux/depcomp* \
+		build-aux/install* \
+		build-aux/ltmain* \
+		build-aux/missing* \
+		build-aux/test* \
+		autom4te.cache/output* \
+		autom4te.cache/traces* \
+		autom4te.cache/requests \
+		tests/CI/web/log/*.log
+
+# These are deleted by "distclean-local-dirs" if they exist and are empty
+# The "distclean-generic" with "rm DISTCLEANFILES" is a dependency for this
+DISTCLEANDIRS += \
+		autom4te.cache \
+		build-aux \
+		config \
+		tests/CI/web/log
+
+# recommended by daemon(7)
+DISTCHECK_CONFIGURE_FLAGS = \
+        --with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir) \
+        --with-systemdsystempresetdir=$$dc_install_base/$(systemdsystempresetdir)
+
+AM_CPPFLAGS = \
+		${my_CPPFLAGS} \
+		-include $(abs_top_builddir)/config.h \
+		-I$(abs_top_builddir)/include \
+		-I$(abs_top_srcdir)/include \
+		-I$(abs_top_builddir)/src/shared \
+		-I$(abs_top_builddir)/src/include \
+		-I$(abs_top_srcdir)/src/shared \
+		-I$(abs_top_srcdir)/src/include \
+		-I$(abs_top_builddir)/src/msg \
+		-I$(abs_top_srcdir)/src/msg \
+		-D__STDC_FORMAT_MACROS
+
+AM_CFLAGS = \
+		${my_CFLAGS} \
+		$(CFLAG_VISIBILITY) \
+		-ffunction-sections \
+		-fdata-sections \
+		$(LIBZMQ_CFLAGS) \
+		$(LIBCZMQ_CFLAGS) \
+		$(LIBVARIANT_CFLAGS)
+
+AM_CXXFLAGS = \
+		${my_CXXFLAGS} \
+		$(CXXFLAG_VISIBILITY) \
+		-ffunction-sections \
+		-fdata-sections
+
+AM_LDFLAGS = \
+		${my_LDFLAGS} \
+		-L$(abs_top_builddir) \
+	 	-Wl,--gc-sections \
+		-Wl,--as-needed
+
+########################################################################
+# (Shared) Public $BIOS API Library
+# While this location in the Makefile hopefully ensures that this is
+# built before other objects, please do not neglect proper definition
+# of _DEPENDENCIES variables
+########################################################################
+
+# Current interface number
+LIBBIOSAPI_CURRENT=0
+# Revision (implementation number) within current interface
+LIBBIOSAPI_REVISION=0
+# How many previous interfaces are still supported
+LIBBIOSAPI_AGE=0
+
+# Note the public API binary library files are installed to the system
+# common $(libdir), not private $(pkglibdir) like e.g. REST API module
+lib_LTLIBRARIES +=		libbiosapi.la
+
+libbiosapi_la_HEADERS_noinst = \
+				$(top_srcdir)/include/app.h \
+				$(top_srcdir)/include/bios_agent.h \
+				$(top_srcdir)/include/bios_export.h \
+				$(top_srcdir)/include/agents.h \
+				$(top_srcdir)/include/ymsg.h
+
+# where to install the headers on the system
+libbiosapi_ladir =		$(includedir)/@PACKAGE@
+
+libbiosapi_la_SOURCES = \
+				src/api/app.c \
+				src/api/bios_agent.c \
+				src/api/agents.c \
+				src/api/ymsg.c \
+				src/include/defs.h \
+				$(libbiosapi_la_HEADERS_noinst)
+
+libbiosapi_la_LIBADD = \
+				libpriv-utils-ymsg.la
+
+libbiosapi_la_CPPFLAGS = \
+		$(AM_CPPFLAGS) -DBUILDING_LIBBIOSAPI=1
+
+libbiosapi_la_LDFLAGS = \
+		$(AM_LDFLAGS) \
+		-fPIC -shared \
+		${LIBZMQ_LIBS} ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} \
+		-version-info $(LIBBIOSAPI_CURRENT):$(LIBBIOSAPI_REVISION):$(LIBBIOSAPI_AGE)
+
+if HAVE_LD_VERSION_SCRIPT
+libbiosapi_la_LDFLAGS += \
+		-Wl,--version-script=$(top_srcdir)/src/api/libbiosapi.sym
+else
+libbiosapi_la_LDFLAGS += \
+		-export-symbols $(top_srcdir)/src/api/libbiosapi.sym
+endif
+
+libbiosapi_la_DEPENDENCIES =	$(top_srcdir)/src/api/libbiosapi.sym libpriv-utils-ymsg.la
+EXTRA_DIST +=			src/api/libbiosapi.sym
+
+pkgconfig_DATA +=		src/api/libbiosapi.pc
+EXTRA_DIST +=			src/api/libbiosapi.pc.in  src/api/libbiosapi.pc
+DISTCLEANFILES +=		src/api/libbiosapi.pc
+
+pkginclude_HEADERS += 		$(libbiosapi_la_HEADERS_noinst)
+dist_noinst_HEADERS +=		$(libbiosapi_la_HEADERS_noinst)
+
+
 #----------------------------------------------------------------------
+# Some of our code is arranged into private libraries used during
+# build, but not published or distributed outside the build-tree.
+
+noinst_LTLIBRARIES += 		libpriv-utils-plusplus.la
+
+libpriv_utils_plusplus_la_SOURCES = \
+				src/shared/utils++.cc \
+				src/shared/utils++.h \
+				src/shared/filesystem.h \
+				src/shared/filesystem.cc
+
+noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
+
+libpriv_utils_ymsg_la_SOURCES = \
+				src/shared/utils_ymsg.c \
+				src/shared/utils_ymsg.h \
+				src/shared/utils_ymsg++.cc \
+				src/shared/utils_ymsg++.h \
+				src/shared/utils_app.c \
+				src/shared/utils_app.h \
+				src/include/cleanup.h
+
+libpriv_utils_ymsg_la_LIBADD =  libpriv-utils.la
+
+noinst_LTLIBRARIES += 		libpriv-defs.la
+
+libpriv_defs_la_SOURCES = 	src/include/str_defs.c \
+				src/include/str_defs.h
+
+noinst_LTLIBRARIES += 		libpriv-git-details-override.la
+
+libpriv_git_details_override_la_SOURCES = \
+				src/include/git_details_override.h \
+				src/include/git_details_override.c
+
+libpriv_git_details_override_la_DEPENDENCIES = \
+				$(abs_top_builddir)/.git_details
+
 noinst_LTLIBRARIES += 		libpriv-utils.la
 
 libpriv_utils_la_SOURCES = 	src/shared/utils.c \
-				src/shared/utils.h
+				src/shared/utils.h \
+				src/include/str_defs.h \
+				src/include/defs.h
+
+libpriv_utils_la_LIBADD = 	libpriv-defs.la
 
 
 noinst_LTLIBRARIES += 		libpriv-log.la
@@ -58,74 +269,156 @@ noinst_LTLIBRARIES += 		libpriv-log.la
 libpriv_log_la_SOURCES = 	src/shared/log.h \
 				src/shared/log.c
 
-libpriv_log_la_CPPFLAGS = $(AM_CPPFLAGS) -D_GNU_SOURCE
-
 noinst_LTLIBRARIES += \
 				libpriv-subprocess.la
 
 libpriv_subprocess_la_SOURCES = src/shared/subprocess.h \
 				src/shared/subprocess.cc
 
-libpriv_subprocess_la_LIBADD = -lcxxtools
+libpriv_subprocess_la_LIBADD = ${CXXTOOLS_LIBS}
 
 noinst_LTLIBRARIES += 		libpriv-cidr.la
 
 libpriv_cidr_la_SOURCES = 	src/shared/cidr.h \
 				src/shared/cidr.cc
 
+noinst_LTLIBRARIES +=		libpriv-csv.la
+
+libpriv_csv_la_SOURCES =	src/shared/csv.h \
+				src/shared/csv.cc
+
+libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_src_dir)/src/msg
+
+libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
+
 noinst_LTLIBRARIES += 		libpriv-db.la
 
-libpriv_db_la_SOURCES = 	src/persist/persistence.h \
-				src/persist/databaseobject.cc \
-				src/persist/databaseobject.h \
-				src/persist/databasetimeobject.cc \
-				src/persist/databasetimeobject.h \
-				src/persist/ip.cc \
-				src/persist/ip.h \
-				src/persist/nethistory.cc \
-				src/persist/nethistory.h \
-				src/persist/assetmsg.cc \
-				src/persist/assetmsg.h \
-				src/persist/persistencelogic.cc \
-				src/persist/persistencelogic.h \
-				src/persist/monitor.cc \
-				src/persist/monitor.h \
-				src/persist/measure_types.cc \
-				src/persist/measure_types.h \
-				src/include/common_msg.c \
-				src/include/common_msg.h \
-				src/include/nmap_msg.h \
-				src/include/nmap_msg.c \
-				src/include/netdisc_msg.c \
-				src/include/netdisc_msg.h \
-				src/include/powerdev_msg.c \
-				src/include/powerdev_msg.h \
-				src/include/asset_msg.c \
-                                src/include/asset_msg.h
+libpriv_db_la_SOURCES = \
+			src/persist/assetcrud.cc \
+			src/persist/assetcr.cc \
+			src/persist/assetd.cc \
+			src/persist/assetcrud.h \
+			src/persist/assettopology.cc \
+			src/persist/assettopology.h \
+			src/persist/persist_error.cc \
+			src/persist/persist_error.h \
+			src/persist/assettopology.h \
+			src/persist/persistencelogic.cc \
+			src/persist/persistencelogic.h \
+			src/persist/monitor.cc \
+			src/persist/monitor.h \
+			src/persist/calc_power.cc \
+			src/persist/calc_power.h \
+			src/persist/dbhelpers.cc \
+			src/persist/dbhelpers.h \
+			src/persist/measurement.h \
+			src/persist/measurement.cc \
+			src/persist/ymsg-asset.h \
+			src/persist/ymsg-asset.cc \
+			tools/dbpath.cc
+
+# "configure"-generated source with connection string needed for any programs
+# that use the database (linked into libpriv-db)
+BUILT_SOURCES +=	$(abs_top_builddir)/tools/dbpath.cc
+DISTCLEANFILES +=	$(abs_top_builddir)/tools/dbpath.cc
 
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
-					-I$(top_srcdir)/src/include \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/shared \
-					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist
 
-DISTCLEANFILES +=		docs/doxygen/Doxyfile
+libpriv_db_la_LIBADD =	libbiosapi.la \
+						libpriv-log.la \
+						libpriv-csv.la
+
+noinst_LTLIBRARIES += 		libpriv-db-measurements.la
+
+libpriv_db_measurements_la_SOURCES = \
+			src/db/measurements/measurement.cc \
+			src/db/measurements/measurement.h \
+			src/db/measurements.h \
+			src/db/types.h
+
+libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools
+
+noinst_LTLIBRARIES +=		libpriv-db-calculations.la
+
+libpriv_db_calculations_la_SOURCES = \
+			src/db/calculation.h \
+			src/db/calculation.cc
+
+libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/persist/
+
+
+#####
+noinst_LTLIBRARIES += 		libpriv-db-alerts.la
+
+libpriv_db_alerts_la_SOURCES = \
+			src/db/alerts/alert.cc \
+			src/db/alerts/alert_basic.h \
+			src/db/alerts.h \
+			src/db/assets/assetr.h \
+			src/db/assets/assetr.cc \
+			src/db/assets.h \
+			src/db/inout.h \
+			src/db/inout/loadcsv.cc \
+			src/db/inout/exportcsv.cc
+
+libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist
+
+#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
+#			libpriv-log.la libpriv-csv.la
+
+
+#####
+noinst_LTLIBRARIES +=	libpriv-proto.la
+
+libpriv_proto_la_SOURCES = \
+			src/msg/asset_msg.c \
+			src/msg/asset_msg.h \
+			src/msg/common_msg.c \
+			src/msg/common_msg.h
+
+libpriv_proto_la_LIBADD = ${CXXTOOLS_LIBS} libbiosapi.la
+
+noinst_LTLIBRARIES +=	libpriv-email.la
+libpriv_email_la_SOURCES = \
+			src/shared/email.h \
+			src/shared/email.cc
+
+noinst_LTLIBRARIES +=	libpriv-nutscan.la
+libpriv_nutscan_la_SOURCES = \
+			src/shared/nutscan.h \
+			src/shared/nutscan.cc
+
+DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
 
-if HAVE_DOXYGEN
-@echo "WARNING: Source code documentation was built with 'doxygen', but the check with 'tools/run-test-doc.sh' is skipped since it is known that it currently fails!" >&2
-#check_SCRIPTS += tools/run-test-doc.sh
-#else !HAVE_DOXYGEN
-# AQU note: this would need a target to work...
-#@echo "Source code documentation check not available since 'doxygen' was not found."
-endif
+# Tester for the doxygen output sanity
+check_SCRIPTS +=	tools/run-test-doc.sh
 
 # Needed at least for the distcheck (post distribution tests)
-EXTRA_DIST += tools/run-test.sh
-LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
+EXTRA_DIST +=		tools/run-test.sh
+LOG_COMPILER =		$(abs_top_srcdir)/tools/run-test.sh
 
 
 #Test case examples:
@@ -142,9 +435,8 @@ LOG_COMPILER = $(top_srcdir)/tools/run-test.sh
 #Names within square brackets are interpreted as tags. A series of tags form an AND expression wheras a comma-separated sequence forms an OR expression. e.g.:
 #
 #[one][two],[three]
-
-
-AM_LOG_FLAGS = 				exclude:[db*]  -t
+# setup using AM_LOG_FLAGS see an example
+# AM_LOG_FLAGS = 				~[db]
 
 check_LTLIBRARIES += 			libpriv-test-run.la
 
@@ -152,13 +444,20 @@ libpriv_test_run_la_SOURCES = 		tests/include/catch.hpp \
 					tests/test-run.cc
 
 libpriv_test_run_la_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+					-I$(abs_top_srcdir)/tests/include/
 
 #----------------------------------------------------------------------
 #                        TNTnet
 #----------------------------------------------------------------------
 
 SUFFIXES=.ecpp .gif .jpg .css .js .cpp
+
+# Note that apparently "make dist(check)" adds all *.cpp files to its tarball
+# including those that are generated here. And does not add *.ecpp by default.
+# Not-including the build *.cpp into dist is tricky, but does not matter much.
+EXTRA_DIST +=				$(top_srcdir)/src/web/src/*.ecpp
+
+src/web/src/sysinfo.cpp: src/include/git_details_override.h
 
 .ecpp.cpp:
 	${ECPPC} ${ECPPFLAGS} ${ECPPFLAGS_CPP} -o $@ $<
@@ -179,28 +478,46 @@ SUFFIXES=.ecpp .gif .jpg .css .js .cpp
 #                        Unit tests
 #----------------------------------------------------------------------
 
-check_PROGRAMS += 			test-utils
+check_PROGRAMS +=	test-utils-plusplus	
+
+test_utils_plusplus_SOURCES = \
+			src/shared/utils++.h \
+			tests/shared/test-utils++.cc
+
+test_utils_plusplus_LDADD = \
+			libpriv-utils-plusplus.la \
+			libpriv-test-run.la
+
+test_utils_plusplus_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/
+
+check_PROGRAMS += 	test-utils
 
 test_utils_SOURCES = 	src/shared/utils.h \
-						tests/shared/test-utils.cc
+			tests/shared/test-utils.cc
 
-test_utils_LDADD = 		libpriv-utils.la \
-						libpriv-test-run.la
+test_utils_LDADD = 	libpriv-utils.la \
+			libpriv-test-run.la \
+			libpriv-defs.la \
+			libpriv-utils-plusplus.la
 
 test_utils_CPPFLAGS =	$(AM_CPPFLAGS) \
-						-I$(top_srcdir)/tests/include/
+			-I$(abs_top_srcdir)/tests/include/
 
-check_PROGRAMS += 			test-log
+test_utils_LDFLAGS =	${LIBCZMQ_LIBS}
 
-test_log_SOURCES = 		src/shared/log.h \
-						src/shared/utils.h \
-						tests/shared/test-log.cc
+check_PROGRAMS += 	test-log
 
-test_log_LDADD = 			libpriv-log.la \
-					libpriv-utils.la \
-					libpriv-test-run.la
-test_log_CPPFLAGS =			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
+test_log_SOURCES = 	src/shared/log.h \
+			src/shared/utils.h \
+			tests/shared/test-log.cc
+
+test_log_LDADD = 	libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-test-run.la
+test_log_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/
 
 check_PROGRAMS += 			test-subprocess
 test_subprocess_SOURCES = 		src/shared/subprocess.h \
@@ -208,307 +525,1613 @@ test_subprocess_SOURCES = 		src/shared/subprocess.h \
 test_subprocess_LDADD = 		libpriv-subprocess.la \
 					libpriv-test-run.la
 test_subprocess_CPPFLAGS =		$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
-test_subprocess_LDFLAGS =		-lcxxtools -lcidr
+					-I$(abs_top_srcdir)/tests/include/
+test_subprocess_LDFLAGS =		${CXXTOOLS_LIBS} -lcidr
 
-check_PROGRAMS += 			test-cidr
-test_cidr_SOURCES = 			src/shared/cidr.cc \
-					tests/shared/test-cidr.cc
-test_cidr_LDADD = 			libpriv-test-run.la
-test_cidr_CPPFLAGS = 			$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/
-test_cidr_LDFLAGS =			-lcidr
+check_PROGRAMS += 	test-cidr
+test_cidr_SOURCES = 	src/shared/cidr.cc \
+			tests/shared/test-cidr.cc
+test_cidr_LDADD = 	libpriv-test-run.la
+test_cidr_CPPFLAGS = 	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/
+test_cidr_LDFLAGS =	-lcidr
+
+check_PROGRAMS += 	test-csv
+
+test_csv_SOURCES =		src/shared/csv.h \
+					    tests/shared/test-csv.cc
+
+test_csv_LDADD = 		libpriv-log.la \
+						libpriv-csv.la \
+					    libpriv-test-run.la
+
+test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/shared \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/tests/include
+
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
+
+check_PROGRAMS += 	test-agents
+
+test_agents_SOURCES = \
+			tests/api/test-agents.cc
+
+test_agents_LDADD = \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libpriv-utils-ymsg.la
+
+test_agents_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_agents_LDFLAGS = \
+			${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS}
+
+check_PROGRAMS += 	test-computation
+
+test_computation_SOURCES = \
+			tests/agents/cm/test-cm-utils.cc \
+			src/agents/computation/cm-utils.h \
+			src/agents/computation/cm-utils.cc
+
+test_computation_LDADD = \
+			libpriv-test-run.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libbiosapi.la \
+			libpriv-db-measurements.la \
+			libpriv-utils-ymsg.la
+
+test_computation_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/computation \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
+
+test_computation_LDFLAGS = ${CXXTOOLS_LIBS} ${LIBCZMQ_LIBS} -ltntdb
+
+### The unit-tester for some routines from libbiosapi
+check_PROGRAMS +=		test-libbiosapiut
+test_libbiosapiut_SOURCES =	tests/api/test-libbiosapiut.cc
+test_libbiosapiut_CPPFLAGS = \
+			-I$(abs_top_srcdir)/tests/include \
+			-I$(abs_top_srcdir)/include \
+			-I$(abs_top_srcdir)/src/msg \
+			-I$(abs_top_srcdir)/src/include
+test_libbiosapiut_LDADD =	libpriv-test-run.la libpriv-proto.la -lbiosapi
+test_libbiosapiut_DEPENDENCIES = \
+				libpriv-test-run.la \
+				libpriv-proto.la \
+				libbiosapi.la
+
+### agent autoconfig tests
+
+check_PROGRAMS += 	test-autoconfig
+test_autoconfig_SOURCES = tests/agents/autoconfig/test-autoconfig.cc \
+                          src/agents/autoconfig/configurator.cc
+
+test_autoconfig_LDADD = \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-test-run.la \
+			libpriv-cidr.la \
+			libpriv-subprocess.la \
+			libpriv-nutscan.la \
+			libpriv-utils.la \
+			libpriv-utils-plusplus.la
+
+test_autoconfig_LDFLAGS = $(LIBCZMQ_LIBS) $(CXXTOOLS_LIBS) -lcidr -lbiosapi
+
+test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/agents/autoconfig/ \
+			-DTDIR=$(abs_top_srcdir)/tests/agents/autoconfig/
 
 
-check_PROGRAMS += 			test-db
+###
 
-test_db_SOURCES = 	tests/persist/test-nethistory.cc
 
-test_db_LDADD = 			libpriv-db.la \
-					libpriv-cidr.la \
-					libpriv-test-run.la
+#----------------------------------------------------------------------
+#                        CI tests
+#----------------------------------------------------------------------
 
-test_db_CPPFLAGS = $(AM_CPPFLAGS) \
-				   -I$(top_srcdir)/tests/include/ \
-				   -I$(top_srcdir)/src/persist \
-				   -I$(top_srcdir)/tools \
-				   -I$(top_builddir)/tools
+cibin_programs += 	test-loadcsv
 
-test_db_LDFLAGS =			-ltntdb -lcxxtools -lcidr
+test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
-check_PROGRAMS += 			test-db2
+test_loadcsv_LDADD = \
+			libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-log.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-csv.la \
+			libpriv-test-run.la
 
-test_db2_SOURCES = tests/persist/test-monitor.cc \
-				   tests/persist/test-monitor-clientinfo.cc \
-				   tests/persist/test-asset.cc \
-				   src/include/common_msg.h 
+test_loadcsv_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
 
-test_db2_LDADD = libpriv-db.la \
-				 libpriv-cidr.la \
-				 libpriv-test-run.la \
-				 libpriv-log.la
+test_loadcsv_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
 
+
+cibin_programs += 	test-db2
+
+test_db2_SOURCES = \
+			tests/persist/test-monitor.cc \
+			tests/persist/test-monitor-clientinfo.cc \
+			tests/persist/test-measurement.cc \
+			tests/persist/test-realdatamonitor.cc
+
+test_db2_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-cidr.la \
+			libpriv-proto.la \
+			libpriv-utils.la \
+			libpriv-defs.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
 
 test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
-					-I$(top_srcdir)/tests/include/ \
-					-I$(top_srcdir)/src/persist \
-					-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/tools \
-					-I$(top_builddir)/tools
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
 
-test_db2_LDFLAGS =			-ltntdb -lcxxtools -lcidr -lzmq -lczmq
+test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+cibin_programs += 	test-outage
+
+test_outage_SOURCES = \
+			tests/persist/test-outage.cc
+
+test_outage_LDADD = \
+			libpriv-log.la \
+			libpriv-db-calculations.la \
+			libpriv-db-measurements.la \
+			libpriv-db.la \
+			libpriv-defs.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-utils-ymsg.la
+
+test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src
+
+test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
+
+cibin_programs += 	test-dbtopology
+
+test_dbtopology_SOURCES = \
+			tests/persist/test-topology.cc \
+			tests/persist/test-topology-power-to.cc \
+			tests/persist/test-topology-power-from.cc \
+			tests/persist/test-topology-power-datacenter.cc \
+			tests/persist/test-topology-power-group.cc \
+			tests/persist/test-topology-location-from.cc \
+			tests/persist/test-topology-location-to.cc
+
+test_dbtopology_LDADD = \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_dbtopology_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_dbtopology_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+cibin_programs += 	test-db-asset-crud
+
+test_db_asset_crud_SOURCES = \
+			tests/persist/test-asset-crud.cc
+
+test_db_asset_crud_LDADD = \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_db_asset_crud_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_asset_crud_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+cibin_programs += 	test-db-alert
+
+test_db_alert_SOURCES = \
+			tests/persist/test-alert.cc
+
+test_db_alert_LDADD = \
+			libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_db_alert_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_db_alert_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+#### total power tests
+cibin_programs += 	test-totalpower
+
+test_totalpower_SOURCES = \
+			tests/persist/test-rack-power.cc \
+			tests/persist/test-dc-power.cc 
+
+test_totalpower_LDADD = \
+			libpriv-db.la \
+			libpriv-utils.la \
+			libpriv-proto.la \
+			libpriv-test-run.la \
+			libpriv-log.la
+
+test_totalpower_CPPFLAGS = \
+			$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+test_totalpower_LDFLAGS = \
+			-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
+
+
+###
+cibin_programs +=	test-web
+
+test_web_SOURCES = 	tests/web/src/test-location-helpers.cc \
+			src/web/src/location_helpers.cc
+
+test_web_LDADD = 	libpriv-test-run.la \
+			libpriv-log.la
+
+test_web_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/tests/include/ \
+			-I$(abs_top_srcdir)/src/web/include
+
+#test_web_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr $(LIBCZMQ_LIBS)
+
+
+cibin_programs +=	bios-email
+
+bios_email_SOURCES = \
+			src/shared/email.h \
+			tests/shared/bios-email.cc
+
+bios_email_LDADD = \
+			libpriv-log.la \
+			libpriv-email.la \
+			libpriv-subprocess.la
+
+bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
+
+cibin_programs +=	bios-nutscan
+
+bios_nutscan_SOURCES = \
+			src/shared/nutscan.h \
+			tests/shared/bios-nutscan.cc
+
+bios_nutscan_LDADD = \
+			libpriv-log.la \
+			libpriv-cidr.la \
+			libpriv-nutscan.la \
+			libpriv-subprocess.la
+
+bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
+
+cibin_programs += bios-exportcsv
+bios_exportcsv_SOURCES = tests/db/bios-exportcsv.cc
+bios_exportcsv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_exportcsv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la
+bios_exportcsv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
+
+
+# Do we build and install CI programs by default? (see configure)
+cibin_programs_list := $(cibin_programs)
+cibindir = ${pkgbindir}
+if ENABLE_CI_TESTS
+cibin_PROGRAMS = $(cibin_programs)
+else
+# Try to cheat automake into NOT building these programs on simple "make check"
+cibin_PROGRAMS =
+override cibin_programs =
+endif
+
+# These may be built explicitly, so should be removable in any case
+CLEANFILES += $(cibin_programs_list)
+
+### Verification that bios_web.so is in fact usable on binary level
+### Note that this creates no retainable output file
+web-link-test: bios_web.la
+			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
+			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			${CXXTOOLS_LIBS} -ltntnet \
+			$(abs_top_builddir)/.libs/bios_web.so && \
+			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
+			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
+
+EXTRA_DIST +=		tests/web-linking-test.cpp
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
 
-#----------------------------------------------------------------------
+#------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
 
-bin_PROGRAMS += 			netmon
-netmon_LDFLAGS =			-lnetlink $(LIBZMQ_LIBS) \
-					${LIBCZMQ_LIBS}
-netmon_SOURCES = src/drivers/netmon/linux \
-				 src/drivers/netmon/netmon.c \
-				 src/drivers/netmon/msg_send.cc \
-				 src/drivers/netmon/msg_send.h \
-				 src/include/netdisc_msg.h \
-				 src/include/netdisc_msg.c
+client_PROGRAMS += 	server-agent
 
-netmon_CPPFLAGS = $(AM_CPPFLAGS) \
-				  -I$(top_srcdir)/src/drivers/netmon \
-				  -D_GNU_SOURCE \
-				  -I$(top_srcdir)/src/simple
+server_agent_SOURCES =	src/agents/server-agent/server-agent.cc src/shared/sample_agent.cc
 
-netmon_LDADD = libpriv-utils.la libpriv-log.la
+server_agent_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-bin_PROGRAMS += simple
+server_agent_LDADD = \
+			 libpriv-proto.la \
+			 libpriv-log.la \
+			 libpriv-defs.la
 
-simple_SOURCES = src/simple/main.cc \
-				 src/include/defs.h \
-				 $(top_srcdir)/tools/dbinit.h \
-				 src/persist/persistence.h \
-				 src/include/netdisc_msg.c \
-				 src/include/netdisc_msg.h \
-				 src/include/powerdev_msg.c \
-				 src/include/common_msg.c \
-				 src/include/common_msg.h \
-				 src/drivers/nut/nut-actor.cc \
-				 src/drivers/nut/nut-driver.cc \
-				 src/include/nmap_msg.h \
-				 src/include/nmap_msg.c
+server_agent_CPPFLAGS =	$(AM_CPPFLAGS)
 
-simple_LDFLAGS = -lcidr \
-				 ${LIBCZMQ_LIBS} \
-				 ${LIBNUTCLIENT_LIBS} \
-				 -lcxxtools \
-				 -ltntdb
+client_PROGRAMS += 	agent-th
 
-simple_CPPFLAGS = $(AM_CPPFLAGS) \
-				  -I$(top_srcdir)/tools/ \
-				  -I$(top_builddir)/tools/ \
-				  -I$(top_srcdir)/src/persist \
-				  -I$(top_srcdir)/src/simple/ \
-				  -I$(top_srcdir)/src/drivers/nut
+agent_th_SOURCES =	src/agents/th/agent-th.cc src/shared/sample_agent.cc src/agents/th/libth.c
 
-simple_LDADD = libpriv-db.la \
-			   libpriv-cidr.la \
-			   libpriv-log.la \
-			   libpriv-subprocess.la
+agent_th_LDFLAGS =	${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-dist_noinst_HEADERS += src/include/asset_msg.h \
-					   src/simple/asset_types.h \
-					   src/include/powerdev_msg.h \
-					   src/drivers/nut/nut-actor.h \
-					   src/drivers/nut/nut-driver.h
+agent_th_LDADD = \
+			 libpriv-proto.la libpriv-log.la
 
+agent_th_CPPFLAGS =	$(AM_CPPFLAGS) -I$(abs_top_srcdir)/src/agents/th
 
-bin_PROGRAMS += driver-nmap
+bin_PROGRAMS += 		generate_measurement
 
-driver_nmap_SOURCES = src/drivers/nmap/nmap-driver.h \
-					  src/drivers/nmap/nmap.cc \
-					  src/drivers/nmap/nmap-parse.h \
-					  src/drivers/nmap/nmap-parse.cc \
-					  src/include/nmap_msg.h \
-					  src/include/nmap_msg.c
+generate_measurement_SOURCES =	tools/generate_measurement.cc
 
-driver_nmap_LDADD = libpriv-subprocess.la libpriv-log.la libpriv-cidr.la
-driver_nmap_LDFLAGS = ${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} -lcidr
-driver_nmap_CPPFLAGS = $(AM_CPPFLAGS) \
-			   		   -I$(top_srcdir)/src/simple
+generate_measurement_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
 
-bin_PROGRAMS += fake_message
-fake_message_LDFLAGS = ${LIBCZMQ_LIBS}
-fake_message_CPPFLAGS = 		-I$(top_srcdir)/src/simple \
-					-I$(top_srcdir)/src/web/include \
-					-I$(top_srcdir)/tools \
-					-I$(top_srcdir)/src/include \
-					-I$(top_builddir)/tools
-fake_message_SOURCES = src/include/asset_msg.c src/web/src/data.cpp \
-                       src/web/fake_message.cpp
+generate_measurement_LDADD = \
+				libpriv-proto.la
 
-# Generated header needed for any programs that use the database
-BUILT_SOURCES +=	$(top_builddir)/tools/dbpath.h
+generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
-pkglib_LTLIBRARIES += bios_web.la
-bios_web_la_SOURCES = src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
-                      src/web/src/data.cpp  src/web/src/item.cpp         \
-                      src/web/src/json.cpp  src/web/src/list.cpp         \
-                      src/web/src/mock.cpp  src/web/src/sasl.cpp         \
-                      src/web/src/network.cpp src/web/src/networks.cpp   \
-                      src/web/src/time.cpp  src/web/src/tokens.cpp       \
-                      src/shared/log.c
+client_SCRIPTS =	tools/db-init
 
-bios_web_la_CPPFLAGS = $(AM_CPPFLAGS) \
-                       ${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
-                       ${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
-					   -DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
-					   -I$(top_srcdir)/src/simple \
-				   	   -I$(top_srcdir)/src/web/include \
-					   -I$(top_srcdir)/tools \
-				   	   -I$(top_builddir)/tools \
-					   -I$(top_srcdir)/src/persist
+client_PROGRAMS +=	agent-dbstore
 
-bios_web_la_LDFLAGS = ${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
-					  ${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
-					  -module -lm -ltntdb -ltntnet -lcidr
-bios_web_la_LIBADD = libpriv-db.la libpriv-cidr.la
-
-dist_noinst_HEADERS +=	src/web/include/data.h \
-			src/web/include/sasl.h \
-			src/web/include/tokens.h \
-			src/persist/assetmsg.h \
+agent_dbstore_SOURCES =		src/agents/dbstore/agent-dbstore.cc \
 			tools/dbpath.h
 
-tntnet.xml: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || rm -f $@
+agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
+			${LIBMLM_LIBS} -ltntdb -lcidr
 
-tntnet.xml.example: $(top_srcdir)/src/web/tntnet.xml
-	${SED} 's|\(.*\)<!--.*<dir>/</dir>.*-->.*|\1<dir>$(datadir)/$(PACKAGE_NAME)-$(PACKAGE-VERSION)/web</dir>\n\1<compPath><entry>$(pkglibdir)</entry></compPath>|' $< > $@ || rm -f $@
+agent_dbstore_LDADD = \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-utils-ymsg.la \
+			libpriv-cidr.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-defs.la
 
-EXTRA_DIST += tntnet.xml.example
 
-web-test: tntnet.xml bios_web.la
-	${TNTNET} tntnet.xml
+agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
+
+EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/db-init.in
+
+dist_noinst_HEADERS += \
+			src/msg/asset_msg.h \
+			src/shared/asset_types.h \
+			src/agents/nut/nut-driver.h
+
+#FIXME: dshell is not supposed to be in /usr/lib/bios/ - create specific group
+bin_PROGRAMS += 	dshell
+
+dshell_SOURCES =	tools/dshell.cc
+
+dshell_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}
+
+dshell_LDADD = \
+			libpriv-proto.la \
+			libpriv-defs.la
+
+dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(top_srcdir)/src/include
+
+client_PROGRAMS +=	agent-nut
+
+agent_nut_SOURCES = \
+			src/agents/nut/nut-driver.cc \
+			src/agents/nut/agent-nut.cc \
+			src/shared/upsstatus.cc
+
+agent_nut_LDADD = \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_nut_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${LIBNUTCLIENT_LIBS} -lbiosapi
+
+agent_nut_CPPFLAGS =	$(AM_CPPFLAGS)
+
+client_PROGRAMS +=	agent-alert-smtp
+
+agent_alert_smtp_SOURCES = \
+			src/agents/alert-smtp/agent-alert-smtp.h \
+			src/agents/alert-smtp/agent-alert-smtp.cc \
+			src/agents/alert-smtp/alert-basic.h
+
+
+agent_alert_smtp_LDADD = \
+			libbiosapi.la \
+			libpriv-log.la \
+			libpriv-email.la \
+			libpriv-subprocess.la \
+			libpriv-defs.la
+
+agent_alert_smtp_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lbiosapi
+
+agent_alert_smtp_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_builddir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/agents/alert
+
+
+client_PROGRAMS +=	agent-autoconfig
+
+agent_autoconfig_SOURCES = \
+			src/agents/autoconfig/agent-autoconfig.cc \
+			src/agents/autoconfig/configurator.cc
+
+agent_autoconfig_LDADD = \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-log.la \
+			libpriv-nutscan.la \
+			libpriv-cidr.la \
+			libpriv-defs.la \
+			libpriv-subprocess.la \
+			libpriv-utils-ymsg.la \
+			libpriv-utils-plusplus.la
+# FIXME remove utils ymsg
+
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
+
+agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
+
+
+
+client_PROGRAMS +=	agent-inventory
+
+agent_inventory_SOURCES = \
+			src/agents/inventory/agent-inventory.cc \
+			tools/dbpath.h
+
+agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lcidr
+
+### TODO this agent should not link with libpriv-db-alerts.
+### But now it is required, because of "huge" libpriv-db
+agent_inventory_LDADD = \
+			libpriv-db.la \
+			libpriv-db-alerts.la \
+			libpriv-cidr.la \
+			libpriv-defs.la \
+			libpriv-log.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/persist
+
+client_PROGRAMS +=	agent-cm
+
+agent_cm_SOURCES = \
+			src/agents/computation/agent-cm.cc \
+			src/agents/computation/cm-web.cc \
+			src/agents/computation/cm-web.h \
+			src/agents/computation/cm-utils.h \
+			src/agents/computation/cm-utils.cc
+
+agent_cm_LDADD = \
+            libpriv-db.la \
+			libpriv-log.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la \
+			libpriv-utils-plusplus.la \
+			libpriv-defs.la
+
+agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -ltntdb
+
+agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_builddir)/tools
+
+
+client_PROGRAMS +=	agent-tpower
+
+agent_tpower_SOURCES = \
+			src/agents/tpower/agent-tpower.cc \
+			src/agents/tpower/tp-unit.cc \
+			src/agents/alert/alert-measurement.cc
+
+agent_tpower_LDADD = \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libbiosapi.la \
+			libpriv-utils-ymsg.la
+
+agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
+
+agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/agents/alert \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools
+
+client_PROGRAMS +=      agent-alert
+
+agent_alert_SOURCES = \
+			src/agents/alert/alert-entity.cc \
+			src/agents/alert/alert-measurement.cc \
+			src/agents/alert/agent-alert.cc \
+			src/agents/alert/alert-model.cc \
+			src/shared/utils_app.c \
+			src/shared/utils_ymsg.c \
+			src/include/str_defs.c
+
+agent_alert_LDADD = \
+			libpriv-utils.la \
+			libpriv-log.la \
+			libpriv-db.la \
+			libpriv-proto.la \
+			libbiosapi.la
+
+agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -lbiosapi
+
+agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
+                       -I$(abs_top_srcdir)/src/persist \
+                       -I$(abs_top_srcdir)/tools
+
+client_PROGRAMS += 	outage
+outage_SOURCES = \
+			src/outage/outage.cc
+
+outage_CPPFLAGS =	$(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/db \
+			-I$(abs_top_srcdir)/src/persist
+
+outage_LDADD = \
+			libpriv-defs.la \
+			libpriv-db-calculations.la \
+			libpriv-db-measurements.la \
+			libpriv-db.la \
+			libpriv-log.la \
+			libpriv-utils.la \
+			libpriv-proto.la \
+			libpriv-utils-ymsg.la
+
+
+outage_LDFLAGS =	-ltntdb
+
+###################################################################
+# Web Library (tntnet dynamic module for $BIOS REST API)
+###################################################################
+pkglib_LTLIBRARIES += bios_web.la
+
+# Many but not all of CPP files with bios_web.la are generated from ECPP files
+# List them explicitly as separate sets, so that generated files can be cleaned
+BUILT_SOURCES_bios_web_la = \
+                      src/include/git_details_override.h                 \
+                      src/web/src/auth.cpp  src/web/src/auth-verify.cpp  \
+                      src/web/src/auth-require.cpp                       \
+                      src/web/src/agent.cpp                              \
+                      src/web/src/power.cpp src/web/src/item.cpp         \
+                      src/web/src/json.cpp  src/web/src/list.cpp         \
+                      src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/datacenter_indicators.cpp              \
+                      src/web/src/average.cpp src/web/src/asset_import.cpp \
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp \
+					  src/web/src/asset_export.cpp
+
+bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
+                      src/web/src/location_helpers.cc                    \
+                      src/web/src/sasl.cc          \
+                      src/web/src/tokens.cc src/shared/data.cc           \
+                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
+					  src/web/src/dci_impl.h
+
+
+EXTRA_DIST +=		src/web/include/enc.h
+
+# Ensure these files are auto-made before others
+BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
+
+# Ensure these files are cleaned away too
+CLEANFILES +=		$(BUILT_SOURCES_bios_web_la)
+
+bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
+			${LIBCZMQ_CFLAGS} ${CXXTOOLS_CFLAGS} \
+			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
+			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
+			-I$(abs_top_srcdir)/src/web/include \
+			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/ \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src/persist
+
+bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
+			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
+			-module -lm -ltntdb -ltntnet -lcidr -lmagic -lbiosapi
+
+bios_web_la_LIBADD = \
+			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
+			libpriv-git-details-override.la \
+			libpriv-db-calculations.la \
+			libpriv-db-alerts.la \
+			libpriv-subprocess.la \
+			libpriv-utils-ymsg.la \
+			libpriv-db-measurements.la
+
+dist_noinst_HEADERS += \
+			src/shared/data.h \
+			src/web/include/sasl.h \
+			src/web/include/tokens.h \
+			src/persist/assetcrud.h \
+			tools/dbpath.h
+
+EXTRA_DIST +=		src/web/tntnet.xml
+
+### This file contains the TNTNET settings relevant for our test runs
+### Note: in non-daemon mode, stderr is logged to stderr
+tntnet.xml: src/web/tntnet.xml
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(abs_top_srcdir)/src/web</dir>\n\1<compPath><entry>$(abs_top_builddir)/.libs</entry></compPath>|' $< > $@ || \
+	rm -f $@
+
+### This file contains the TNTNET settings distributed as an example for users
+### Note: in daemon mode, "stderr > /dev/null" unless errorLog is defined
+tntnet.xml.example: src/web/tntnet.xml
+	${SED} -e 's|\(.*\)\(<!--.*<dir>/</dir>.*-->.*\)|\1<dir>$(datarootdir)/@PACKAGE@/web</dir>\n\1<compPath>\n\1\ \ \ <entry>$(pkglibdir)</entry>\n\1\ \ \ <entry>$(libdir)</entry>\n\1</compPath>|' \
+	       -e 's|<!-- <errorLog>/var/log/tntnet/error.log</errorLog> -->|<errorLog>/var/log/tntnet/error.log</errorLog>|' \
+	       -e 's|<!--\ <daemon>0</daemon>\ -->|<daemon>1</daemon>|' $< > $@ || \
+	rm -f $@
+
+exampleconfdir =	$(datarootdir)/@PACKAGE@/examples
+exampleconf_DATA =	tntnet.xml.example
+EXTRA_DIST +=		$(exampleconf_DATA)
+dist_noinst_DATA +=	tntnet.xml $(top_srcdir)/src/web/tntnet.xml
+
+CLEANFILES +=		tntnet.xml tntnet.xml.example tests/CI/tntnet.xml
+
+# Make sure needed files are up-to-date to test web-server for $BIOS REST API
+web-test-deps: tntnet.xml bios_web.la web-link-test
+
+### Execute the test web-server for $BIOS REST API
+# LD_PRELOAD=/path/to/libasan.so is needed for fair play with external libs,
+# otherwise "new mlm_stuff; throw(exception)" breaks in ASA as a function
+# without a proper return code-path (un-instrumented delete/free involved).
+# Note that the execution chain below is backslash-concatenated so that we
+# can both set, export and use the LD_PRELOAD value (independent lines are
+# executed as different shell scripts by make). That is why ultimate exec
+# of the tntnet program is done twice in the same manner.
+
+web-test: web-test-deps
+	@echo "=== Running target $@ with credentials of this user: "; \
+	id || true; echo "";
+if ENABLE_DEBUG_ASAN
+	@LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libasan | awk '{print $$3}'`" || true; \
+	LD_PRELOAD="$$LD_PRELOAD `ldd $(abs_top_builddir)/.libs/bios_web.so | grep libtsan | awk '{print $$3}'`" || true; \
+	echo "===== Using LD_PRELOAD='$$LD_PRELOAD' for Address Sanitizer"; \
+	export LD_PRELOAD; \
+	$(RUN_TNTNET)
+else
+	$(RUN_TNTNET)
+endif
 
 #----------------------------------------------------------------------
 #                        Extra files and sources
 #----------------------------------------------------------------------
 
-EXTRA_DIST +=				$(top_srcdir)/tools/gen-json-validator \
-					$(top_srcdir)/tools/dbpath.h.in \
-					$(top_builddir)/tools/dbpath.h \
-					$(top_srcdir)/src/*_msg.xml \
-					$(top_srcdir)/src/simple/*.h \
-					$(top_srcdir)/src/include/*.h \
-					$(top_srcdir)/src/drivers/netmon/*.h \
-					$(top_srcdir)/src/drivers/netmon/*/*.h \
-					$(top_srcdir)/src/drivers/netmon/*/*/*.h \
-					$(top_srcdir)/src/drivers/*/*.h \
-					$(top_srcdir)/src/cli/*.h \
-					$(top_srcdir)/src/shared/*.h \
-					$(top_srcdir)/src/web/include/*.h
+EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
+			$(top_srcdir)/tools/dbinit.h \
+			$(top_srcdir)/tools/dbpath.h \
+			$(top_srcdir)/tools/dbpath.cc.in \
+			$(top_builddir)/tools/dbpath.cc \
+			$(top_srcdir)/include/*.h \
+			$(top_srcdir)/src/msg/*.xml \
+			$(top_srcdir)/src/include/*.h \
+			$(top_srcdir)/src/agents/*/*.h \
+			$(top_srcdir)/src/cli/*.h \
+			$(top_srcdir)/src/shared/*.h \
+			$(top_srcdir)/src/web/include/*.h \
+			$(top_srcdir)/tests/shared/test-csv.cc.*sv
 
 # add CI tests to dist
-EXTRA_DIST +=				$(top_srcdir)/tests/CI
+EXTRA_DIST +=		$(top_srcdir)/tests/CI
 
-DISTCLEANFILES +=			$(top_builddir)/tools/dbpath.h
 
-if HAVE_DOXYGEN
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/html
+SYSTEMD_UNITS =
+SYSTEMD_UNITS_TIMERIMPL =
+SYSTEMD_TIMERS =
+SYSTEMD_PRESETS =
+
+# copy from autoconf manual, note single suffix rules can't be used there!!
+autopathedit = ${SED} \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
+	-e 's|@libexecdir[@]|$(libexecdir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g'
+
+# systemd integration enabled?
+if HAVE_SYSTEMD
+# Here we list the actual service-definition files that should be compiled
+SYSTEMD_UNITS += bios-agent-nut.service \
+                        bios-agent-dbstore.service bios-server-agent.service \
+                        bios-agent-inventory.service bios-agent-cm.service \
+                        bios-agent-alert.service \
+                        bios-agent-alert-smtp.service bios-agent-tpower.service \
+                        bios-agent-autoconfig.service bios-agent-th.service \
+                        bios-db-init.service bios-reset-button.service
+
+SYSTEMD_UNITS_TIMERIMPL += \
+                        biostimer-outage.service \
+                        biostimer-graphs-prefetch@.service
+
+# These files need no processing, delivered verbatim
+SYSTEMD_TIMERS +=       biostimer-outage.timer \
+                        biostimer-graphs-prefetch__realpower.default@15m.timer \
+                        biostimer-graphs-prefetch__realpower.default@24h.timer
+
+# This file is generated
+SYSTEMD_PRESETS +=      42-bios-systemd.preset
+
+### TODO? Add the build info (git commit, timestamp) to the header comment?
+$(abs_top_builddir)/42-bios-systemd.preset: Makefile
+	@( echo "### This is a generated file with a list of all BIOS services"; \
+	  for F in $(SYSTEMD_UNITS) $(SYSTEMD_TIMERS) ; do echo "enable $$F" ; done ) > $@
+
+# The rule to actually "compile" the service definition files
+$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL): Makefile
+	@echo "  SED      $@"
+	rm -f $@; $(autopathedit) < '$(abs_top_srcdir)/tools/$@.in' > $@
+
+# Per-file dependency definitions are semi-identical
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
+	$(eval ${m}: $(abs_top_srcdir)/tools/${m}.in ))
+
+# Explicit path desired by dependencies in systemdsystemunit_DATA below
+$(foreach m,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL), \
+	$(eval $(abs_top_builddir)/${m}: ${m} ))
+
+# $(systemdsystemunitdir) and $(systemdsystempresetdir) may be defined
+# externally by automake/autoconf; otherwise they are empty and should
+# effectively resolve to the top_builddir
+systemdsystemunit_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL))
+systemdsystemunit_DATA =	$(systemdsystemunit_generated) $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS))
+systemdsystempreset_generated =	$(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+systemdsystempreset_DATA =	$(systemdsystempreset_generated)
+
+# auto-cleanup and dist targets
+CLEANFILES += $(systemdsystemunit_generated) $(systemdsystempreset_generated)
+EXTRA_DIST += $(addsuffix .in,$(addprefix $(top_srcdir)/tools/,$(SYSTEMD_UNITS) $(SYSTEMD_UNITS_TIMERIMPL)))
+EXTRA_DIST += $(addprefix $(top_srcdir)/tools/,$(SYSTEMD_TIMERS))
 endif
-EXTRA_DIST +=				$(top_srcdir)/${myDOXDIR}/Doxyfile.in
-EXTRA_DIST +=				$(top_srcdir)/docs/man/*.txt
-EXTRA_DIST +=			$(top_srcdir)/INSTALL-referenceOS-debian8 \
-					$(top_srcdir)/CONTRIBUTING \
-					$(top_srcdir)/INSTALL
 
-BUILT_SOURCES +=			$(top_srcdir)/tools/dbinit.h
+# Quick links to build the systemd files (if enabled)
+systemd-units: systemd-daemons systemd-timers systemd-presets
+systemd-daemons: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS))
+systemd-timers:  $(addprefix $(abs_top_builddir)/,$(SYSTEMD_UNITS_TIMERIMPL))
+	for F in $(addprefix $(abs_top_srcdir)/tools/,$(SYSTEMD_TIMERS)) ; do cp -pf "$$F" $(abs_top_builddir)/ || exit $$?; done
+systemd-presets: $(addprefix $(abs_top_builddir)/,$(SYSTEMD_PRESETS))
+
+#----------------------------------------------------------------------
+#           list of text-based documentation files (rules below)
+# Note that the basic filenames in these variables are relative to the
+# project sources' root directory, but later in usage and actual targets
+# they are prefixed by the build directory (which may or may not be the
+# same as the checked-out source directory, both ways SHOULD work).
+#----------------------------------------------------------------------
+
+# For legacy/simplicity several types of file list variables are defined
+# below to reference the manually maintained and repository-tracked files
+# with documentation in text format, including the sources for automated
+# conversion from asciidoc to html (i.e. not doxygen, not manpages).
+# See comments below for path/extension expectations for different file types.
+# Variables below include:
+#
+# Auto-generated:
+#  TEXTS - list of *.txt files that are delivered by the project. Generated
+#	from MAPPED_TXT_DOCS_* lists. Required by "docs-txt" target.
+#  HTMLS_ASCIIDOC - list of files generated automatically from asciidoc
+#	into HTML (1:1 relation, same dirname/basename, changes extension);
+#	the list is generated from MAPPED_TXT_DOCS_ASCIIDOC.
+#  HTMLS - list of *.html files (except doxygen) that are delivered by the
+#	project (built via target rules if needed); currently this only
+#	includes HTMLS_ASCIIDOC. Required by "docs-html" target.
+#  CLEAN_TEXTS and CLEAN_HTMLS - list of files generated/copied by dynamic
+#	rules lower in this Makefile, so they can be cleaned up too.
+#
+# Half-manual, half automation:
+#  MAPPED_TXT_DOCS_PLAINTEXT and MAPPED_TXT_DOCS_ASCIIDOC - lists of all
+#	colon-separated couples of source and destination text filenames
+#	which may involve a copy to another directory, another naming,
+#	changes of extension, etc. Populated manually and then from the
+#	other lists (BASE_DOCS_*, TXT_DOCS_*) with simple deterministic
+#	conversion rules from list to mapping entry. These mappings are
+#	used to dynamically determine make-recipes and targets for files.
+#
+# Component lists (populated manually, reprocessed into MAPPED_* lists);
+# Note that these lists reference files tracked as part of the project
+# sources (not auto-copied, named or generated as in some lists above):
+#  BASE_DOCS_ASCIIDOC and BASE_DOCS_PLAINTEXT - the text files without
+#	extension, saved in the root of project sources. These variables
+#	are used to populate the relevant MAPPED_TXT_DOCS_* lists.
+#  TXT_DOCS_ASCIIDOC and TXT_DOCS_PLAINTEXT - lists of *.txt files that
+#	would actually be installed; as seen below, the list starts with
+#	some files already tracked in the needed location (under docs/).
+#	These variables are used to populate MAPPED_TXT_DOCS_* lists.
+#
+# The definition/processing order should be as follows:
+# * Populate the manually tracked lists (BASE_DOCS_*, TXT_DOCS_*) and the
+#   initial entries in MAPPED_TXT_DOCS_* (set those mappings which rename
+#   text files from tracked source to delivery under "docs/develop/").
+# * Define as empty (or very exceptionally pre-populated) the lists in
+#   HTMLS_ASCIIDOC, HTMLS, TEXTS as well as automated installation targets
+#   like develdoc_DATA.
+# * Run macros to populate the rest of MAPPED_TXT_DOCS_* with trivial
+#   conversions from BASE_DOCS_* and TXT_DOCS_*.
+# * Run macros to define the build targets and recipes for all text files
+#   (copying) and add to our targets (TEXTS) and other common lists like
+#   EXTRA_DIST and DISTCLEAN automatically.
+# * Run macros to define the build targets and recipes for the HTML files
+#   created from texts by asciidoc (append to HTMLS_ASCIIDOC).
+# * Add the resulting HTMLS_ASCIIDOC to HTMLS.
+# * Define the practical targets - to build or clean the whole set of our
+#   documentation files.
+
+# Documentation files saved in the project source-code root directory
+# as text files without extensions in the name (following GNU standards)
+# and written in asciidoc markup
+# Note these should have paths relative to project root dir.
+BASE_DOCS_ASCIIDOC =	INSTALL INSTALL-referenceOS-debian8 \
+			CONTRIBUTING 
+
+# Documentation files saved in the project source-code root directory
+# as text files without extensions in the name and written in plain
+# text with no expected transformation
+# Note these should have paths relative to project root dir.
+BASE_DOCS_PLAINTEXT =	AUTHORS COPYING NEWS ChangeLog
+
+# These two seem to have some markup or similar structuring,
+# but it is not asciidoc so consider them plaintext for now.
+# Note these should have paths relative to project root dir.
+BASE_DOCS_PLAINTEXT +=	TODO
+
+# The following files are saved into proper subdirectories, have an
+# extension in the filename, and contain asciidoc markup.
+# Note these should have paths relative to project root dir.
+TXT_DOCS_ASCIIDOC = 	$(myDEVDOCDIR)/README-builder.txt \
+			$(myDEVDOCDIR)/README-init-os-accounts.txt
+
+# List of text files that are installed as is (none so far, but see
+# below for MAPPED_TXT_DOCS_ASCIIDOC and MAPPED_TXT_DOCS_PLAINTEXT)
+TXT_DOCS_PLAINTEXT =
+
+
+#----------------------------------------------------------------------
+#  List of source texts dispersed in the code with automated targeting
+#----------------------------------------------------------------------
+# The list below is a colon-separated map of filenames copied from
+# sources relative to project root (first token) into different names
+# under the builddir and final installation (the second token, here
+# copied into "docs/develop"), and also maybe compiled into HTML
+# (as in case of the _ASCIIDOC list).
+# Filenames here should not have spaces and should have the '.txt' suffix.
+
+MAPPED_TXT_DOCS_PLAINTEXT = 
+
+MAPPED_TXT_DOCS_ASCIIDOC = \
+	tests/CI/web/README.txt:$(myDEVDOCDIR)/README-web-tests-ciAutomation.txt \
+	src/web/README.txt:$(myDEVDOCDIR)/README-web-tests-generalInfo.txt \
+	src/agents/nut/README:$(myDEVDOCDIR)/README-drivers-nut.txt
+
+if ENABLE_DOCKER_SUPPORT
+MAPPED_TXT_DOCS_ASCIIDOC += \
+	docker/README:$(myDEVDOCDIR)/README-docker.txt
+endif
+
+#################################################################
+# Items below are intended for automatic generation and appendage
+#################################################################
+# Historically some original docs have *.txt names and some don't
+# but we solve it by having a target to ensure presence of *.txt
+# copies now for all needed files in the same docs directory
+# See the MAPPED_TXT_DOCS_ASCIIDOC parsing around this Makefile.
+# Here we predefine the HTMLS_ASCIIDOC list as anything that is
+# not converted from the MAPPED_TXT_DOCS_ASCIIDOC list, so empty.
+HTMLS_ASCIIDOC =
+
+# Ultimate list of HTMLs from generally many sources (except doxygen,
+# since that list of targets is not known in advance). Predefined (and
+# empty) here, appended later on. Similarly for ultimate text files.
+HTMLS =
+TEXTS =
+
+# These variables track the compiled/generated/etc. text/html files
+# so they can be removed in *clean requests
+CLEAN_HTMLS =
+CLEAN_TEXTS =
+
+##################################################
+# Define delivery of developer documentation:
+##################################################
+# Target directory for developer documentation after installation
+develdocdir = $(datadir)/@PACKAGE@/develop
+
+# Install the non-doxygen docs here (doxygen has its subdir defined below).
+# Text files are "originals" or copies under a different name and are always
+# expected to be available (to fail the make otherwise is correct action).
+# Note that other HTML component targets must be listed explicitly as they
+# might appear in the project later on; as for example HTMLS_ASCIIDOC needs
+# a conditional enablement (try install only if generatable at all).
+# Like above, this list is initially empty (or maybe explicit later on)
+# and is appended by some macros below.
+develdoc_DATA =
+
+###----------------------------------------------------------------------
+###   Magic macros to expand the patterns for text to text file copying
+###----------------------------------------------------------------------
+# Magic below inspired by this blog post (see description/comments):
+#   http://blog.jgc.org/2012/01/using-gnu-makes-define-and-eval-to.html
+
+# Copies from "$1" to "$2", making the subdirectories as needed
+define copy-file-cp =
+	if test x"$(2)" != x"$(1)" ; then \
+	    { test -d "`dirname "$(2)"`" || mkdir -p "`dirname "$(2)"`"; } && \
+	    echo "Copy '$(1)' to '$(2)'" && \
+	    cp -pf "$(1)" "$(2)" || cp -f "$(1)" "$(2)"; \
+	else \
+	    echo "Not copying '$(1)' to '$(2)': same file"; \
+	fi
+endef
+
+# Another way to skin the cat...
+define copy-file-install =
+	$(INSTALL) -D -T -p -v -m 644 "$1" "$2"
+endef
+
+# Generalize the two solutions
+define copy-file =
+	$(call copy-file-install,$1,$2) || $(call copy-file-cp,$1,$2)
+endef
+
+# This macro defines the dependencies and rules to copy the text file
+# into the build area. Also adds the filename into lists for install,
+# cleanup, ultimately used dependencies, etc.
+define depend-copy-file =
+$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+$(eval override _MAP_SRC_ABS :=	$(addprefix $(abs_top_srcdir)/,$(_MAP_SRC_REL)) )
+$(eval override _MAP_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+
+# Define the dependency and the rule
+$(_MAP_DST_ABS): $(_MAP_SRC_ABS)
+	@$$(call copy-file,$$<,$$@)
+
+# Fake dependency for subdir/dist builds
+$(_MAP_DST_REL): $(_MAP_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
+
+### Target as a text file
+$(eval TEXTS +=			$(_MAP_DST_REL) )
+
+### Copy for installation:
+$(eval develdoc_DATA +=		$(_MAP_DST_REL) )
+
+### Copy in make dist
+$(eval EXTRA_DIST +=		$(_MAP_SRC_REL) )
+endef
+
+define canclean-txt-file =
+$(eval override _MAP_SRC_REL :=	$(firstword $(subst :, ,$(1))) )
+$(eval override _MAP_DST_REL :=	$(word 2,$(subst :, ,$(1))) )
+
+### Cleanup in build
+$(eval CLEANFILES +=		$(_MAP_DST_REL) )
+$(eval CLEAN_TEXTS +=		$(_MAP_DST_REL) )
+endef
+
+# Convert the simple lists defined above into the common mapping tables
+# for unprocessable and for asciidoc-able text files:
+
+$(foreach m,$(BASE_DOCS_ASCIIDOC), \
+	$(eval MAPPED_TXT_DOCS_ASCIIDOC += ${m}:${myDEVDOCDIR}/${m}.txt ))
+
+$(foreach m,$(BASE_DOCS_PLAINTEXT), \
+	$(eval MAPPED_TXT_DOCS_PLAINTEXT += ${m}:${myDEVDOCDIR}/${m}.txt ))
+
+# Add to automatic removal ONLY the files which are relocated while mapping
+# That is, TXT_DOCS_* which remain in-place should not be removed (i.e. the
+# originals during an in-tree build)
+
+$(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
+	$(eval $(call canclean-txt-file,$(m))))
+
+# Convert the 1:1 simple lists defined above into the common mapping tables
+# for unprocessable and for asciidoc-able text files:
+
+$(foreach m,$(TXT_DOCS_ASCIIDOC), \
+	$(eval MAPPED_TXT_DOCS_ASCIIDOC += ${m}:${m} ))
+
+$(foreach m,$(TXT_DOCS_PLAINTEXT), \
+	$(eval MAPPED_TXT_DOCS_PLAINTEXT += ${m}:${m} ))
+
+# Finally, run the logic for patterns that define file-copying
+# Note that for 1:1 mapped files there may be harmless messages like
+# "make: Circular...dependency dropped." during an in-directory build.
+$(foreach m,$(MAPPED_TXT_DOCS_PLAINTEXT) $(MAPPED_TXT_DOCS_ASCIIDOC), \
+	$(eval $(call depend-copy-file,$(m))))
+
+
+
+##################################################
+# The stuff HTML docs are made of...
+# Similar activity for ASCIIDOC-HTML mapping
+# The dependencies for the text file via patterns in the standard dir
+# were defined above. Now just add the dependency for HTML building
+# into the same basename...
+# Per dependencies, all the text files should be available in the
+# builddir/docs/develop/*.txt and the *.html will appear nearby
+
+define compile-asciidoc-to-html =
+if HAVE_ASCIIDOC
+	@test -d "`dirname $(2)`" || mkdir -p "`dirname $(2)`"
+	$(ASCIIDOC) -b html -o $(2) $(1)
+else
+	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped for '$(1)' -> '$(2)'!" >&2
+endif
+endef
+
+define depend-txt-html =
+$(eval override _MAP_DST_REL :=		$(word 2,$(subst :, ,$(1))) )
+$(eval override _HTML_DST_REL :=	$(_MAP_DST_REL:%.txt=%.html) )
+$(eval override _MAP_DST_ABS :=		$(addprefix $(abs_top_builddir)/,$(_MAP_DST_REL)) )
+$(eval override _HTML_DST_ABS :=	$(addprefix $(abs_top_builddir)/,$(_HTML_DST_REL)) )
+
+# Define the dependency and the rule
+$(_HTML_DST_ABS): $(_MAP_DST_ABS)
+	@$$(call compile-asciidoc-to-html,$$<,$$@)
+
+# Fake dependency for subdir/dist builds
+$(_HTML_DST_REL): $(_HTML_DST_ABS)
+	@#echo "DEBUG-MAKEFILE-FAKEDEP: Mapped target '$$@' to source '$$<'"
+
+$(eval CLEAN_HTMLS +=		$(_HTML_DST_REL) )
+
+$(eval HTMLS_ASCIIDOC +=	$(_HTML_DST_REL) )
+endef
+
+# Some HTMLS_ASCIIDOCs may have been defined above, maybe with other recipes
+# Convert the remainder of HTMLS_ASCIIDOC from MAPPED_TXT_DOCS_ASCIIDOC
+$(foreach m,$(MAPPED_TXT_DOCS_ASCIIDOC), $(eval $(call depend-txt-html,$(m))))
+
+
+if HAVE_ASCIIDOC
+HTMLS +=		$(HTMLS_ASCIIDOC)
+develdoc_DATA +=	$(HTMLS_ASCIIDOC)
+CLEANFILES +=		$(HTMLS_ASCIIDOC)
+endif
+
+
+
+#----------------------------------------------------------------------
+#                One rule to generate and wipe documentation
+#----------------------------------------------------------------------
+
+all-docs: man-docs doxygen-docs html-docs txt-docs
+
+# alias for manual typing errors
+docs-all: all-docs
+
+clean-docs: clean-man clean-doxygen clean-html clean-txt
+
+
+#----------------------------------------------------------------------
+#                        text to text copying
+# Some documents are by GNU standard stored in project root, and we
+# want to deliver them to common docs/devel subdirectory in install.
+#----------------------------------------------------------------------
+
+# A copy of TXT_DOCS_ASCIIDOC in the build area is needed for unified
+# rules of asciidoc to html parsing, defined below; see MAPPED_* above.
+txt-docs: $(addprefix $(abs_top_builddir)/,$(TEXTS))
+
+# alias for manual typing errors
+docs-txt: txt-docs
+
+clean-txt: clean-txt-built clean-txt-txt_docs
+
+clean-txt-built:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_TEXTS))
+
+# Only clean up the copies in the builddir, if applicable
+# Do not kill the originals in the source tree
+clean-txt-txt_docs:
+	if test x"$(abs_top_srcdir)" != x"$(abs_top_builddir)" -a \
+	    x"$(abs_top_srcdir)" != x -a x"$(abs_top_builddir)" != x ; then \
+	    /bin/rm -f $(addprefix $(abs_top_builddir)/,$(TXT_DOCS_ASCIIDOC) $(TXT_DOCS_PLAINTEXT)); \
+	else true; fi
+
+
+#----------------------------------------------------------------------
+#                       asciidoc html generation
+#----------------------------------------------------------------------
+
+# Technically we only implement building of HTMLS_ASCIIDOC now.
+# If others appear and are not handled, they will fail to make.
+# That is a good thing by design - we'll know to add more logic ;)
+
+
+html-docs: txt-docs $(addprefix $(abs_top_builddir)/,$(HTMLS))
+
+# alias for manual typing errors
+docs-html: html-docs
+
+clean-html:
+	/bin/rm -f $(addprefix $(abs_top_builddir)/,$(CLEAN_HTMLS))
 
 
 #----------------------------------------------------------------------
 #                        doxygen html generation
+# Note that unlike many other targets, doxygen seemingly has to use
+# relative paths and be generated in a directory near the source code 
 #----------------------------------------------------------------------
 
-all-docs: ${myDOXDIR}/html INSTALL.html CONTRIBUTING.html \
-		INSTALL-referenceOS-debian8.html man-docs
-
-man-docs:
-	( cd docs/man && $(MAKE) all )
+if HAVE_DOXYGEN
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/html
+BUILT_SOURCES +=	$(top_srcdir)/${myDOXDIR}/html
+endif
+EXTRA_DIST +=		$(top_srcdir)/${myDOXDIR}/Doxyfile.in
 
 CLEANFILES +=		$(top_srcdir)/${myDOXDIR}/doxygen_sqlite3.db \
 			$(top_srcdir)/${myDOXDIR}/${mydoxylog} \
 			${myDOXDIR}/doxygen_sqlite3.db \
 			${myDOXDIR}/${mydoxylog}
 
-${myDOXDIR}/html:
+$(top_srcdir)/${myDOXDIR}/html: $(abs_top_srcdir)/${myDOXDIR}/html
+doxygen-docs: $(abs_top_srcdir)/${myDOXDIR}/html
+
+# alias for manual typing errors
+docs-doxygen: doxygen-docs
+
+clean-doxygen:
+	( test -w $(abs_top_srcdir)/${myDOXDIR}/html && \
+	  /bin/rm -rf $(abs_top_srcdir)/${myDOXDIR}/html ) || /bin/true
+
+# Copy generated contents of "docs/doxygen/" into "/usr/share/core.../doxygen"
+develdocdoxygendir =	$(develdocdir)/doxygen
+develdocdoxygen: doxygen-docs
+
 if HAVE_DOXYGEN
-	@ if [ -f ${myDOXDIR}/Doxyfile ]; then \
-		test -d ${myDOXDIR}/html || \
-		$(DOXYGEN) ${myDOXDIR}/Doxyfile; \
-	else \
-		if [ -f $(top_srcdir)/${myDOXDIR}/Doxyfile ]; then \
-			test -d $(top_srcdir)/${myDOXDIR}/html || \
-			$(DOXYGEN) $(top_srcdir)/${myDOXDIR}/Doxyfile; \
-		else \
-			echo "FAIL: No '${myDOXDIR}/Doxyfile' nor '$(top_srcdir)/${myDOXDIR}/Doxyfile' found" >&2; \
-			/bin/false; \
-		fi; \
-	fi
+develdocdoxygen_DATA =	${myDOXDIR}/html/*
+
+# Such-named target is required by the _DATA above, so have a rule to build it
+${myDOXDIR}/html/*: doxygen-docs
+
+$(abs_top_srcdir)/${myDOXDIR}/html: $(abs_top_builddir)/${myDOXDIR}/Doxyfile
+	@test -d $(abs_top_srcdir)/${myDOXDIR}/html || \
+	{ cd $(abs_top_srcdir)/ && \
+	  echo "INFO: Generating Doxygen docs in '`pwd`' according to '$<'" >&2 && \
+	  $(DOXYGEN) "$<"; }
+	@touch -r "$<" "$@" || true
 else
+develdocdoxygen_DATA =
+
+${myDOXDIR}/html/*: $(abs_top_srcdir)/${myDOXDIR}/html
+
+$(abs_top_srcdir)/${myDOXDIR}/html:
 	@echo "SKIP: Missing 'doxygen' program, sourcecode-documentation generation skipped!" >&2
 endif
 
-if HAVE_ASCIIDOC
-INSTALL.html: INSTALL
-	$(ASCIIDOC) -b html -o $@ $^
+#----------------------------------------------------------------------
+#                 manpage generation (delegated to sub-make)
+#----------------------------------------------------------------------
 
-CONTRIBUTING.html: CONTRIBUTING
-	$(ASCIIDOC) -b html -o $@ $^
+EXTRA_DIST +=		$(top_srcdir)/${myMANDIR}/*.txt
+CLEANFILES +=		$(abs_top_builddir)/${myMANDIR}/*.?
 
-INSTALL-referenceOS-debian8.html: INSTALL-referenceOS-debian8
-	$(ASCIIDOC) -b html -o $@ $^
-else
-INSTALL.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+man-docs:
+	( cd $(abs_top_builddir)/$(myMANDIR) && $(MAKE) all )
 
-CONTRIBUTING.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
+# alias for manual typing errors
+docs-man: man-docs
 
-INSTALL-referenceOS-debian8.html:
-	@echo "SKIP: Missing 'asciidoc' program, generic HTML documentation generation skipped!" >&2
-endif
+clean-man:
+	( cd $(abs_top_builddir)/$(myMANDIR) && \
+	  { $(MAKE) clean || /bin/true; } && \
+	  /bin/rm -f *.[123456789] *.xml *.html )
+	/bin/rm -f $(abs_top_builddir)/$(myMANDIR)/*.?
 
 #----------------------------------------------------------------------
 #                        hook for make all => generate files too
 #----------------------------------------------------------------------
 
-all-local: all-docs
+# Just in case we don't have all dependencies properly spelled out,
+# try to ensure that certain files are built early in the process
+all-local: $(abs_top_builddir)/src/include/git_details_override.c \
+            libbiosapi.la bios_web.la $(client_PROGRAMS) \
+            all-docs sdk
 
+# Try to build everything buildable, e.g. for further warning counters
+all-buildproducts: all-local all sdk-tests web-test-deps \
+            $(check_LTLIBRARIES) $(check_PROGRAMS) $(check_SCRIPTS) \
+            $(SYSTEMD_UNITS) $(SYSTEMD_PRESETS) $(cibin_programs_list)
+
+# Note: variable cibin_PROGRAMS may be empty if not enabled via configure
+#   The variable cibin_programs holds the actual list of CI programs instead
+if ENABLE_CI_TESTS
+cibin_PROGRAMS: $(cibin_PROGRAMS)
+else
+cibin_PROGRAMS:
+endif
+cibin_programs: $(cibin_programs_list)
+
+#----------------------------------------------------------------------
+#                        hook for make check custom verifications
+#----------------------------------------------------------------------
+
+# Run compile/link tests defined in this Makefile
+# Note that check-gitignore should be the last target
+check-local: check-dlls web-link-test test-sdk \
+        check-gitignore
+
+# If git repo details are not available, or git program does not exist,
+# or if everything is properly GitIgnored - then succeed
+# If some not-gitignored files are found, then fail
+check-gitignore: all-buildproducts
+	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" \!= xno ]; then \
+	    echo "SKIP: $@ (by implicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
+	  else \
+	    if which git >/dev/null 2>&1 ; then \
+	        git status -s | egrep '^\?\? ' && \
+	        echo "FAIL: $@" && exit 1; \
+	        echo "PASS: $@"; exit 0 ; \
+	    fi ; \
+	    echo "SKIP: $@ (no git)"; exit 0 ; \
+	  fi )
+
+# Makes sense only for -shared builds
+check-dlls: check-dll-libs check-dll-progs
+
+CHECK_DLL_PROGS_TGT =
+CHECK_DLL_LIBS_TGT =
+
+define depend-check-dll-prog =
+check-dll-binfile-$(1): $(1)
+	@P="$$<"; \
+	[ -x "$(abs_top_builddir)/$$(<F)" ] && P="$(abs_top_builddir)/$$(<F)" ; \
+	[ -x "$(abs_top_builddir)/.libs/$$(<F)" ] && P="$(abs_top_builddir)/.libs/$$(<F)" ; \
+	[ -x "$(abs_top_builddir)/.libs/lt-$$(<F)" ] && P="$(abs_top_builddir)/.libs/lt-$$(<F)" ; \
+	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
+	echo "     DL_TRACE_EXE    $$$$P    $$$$PA"; \
+	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
+	echo "PASS: dynamic-link tracing EXE '$$$$P' OK : found no undefined symbols" || \
+	( RES=$$$$?; echo "FAIL: dynamic-link tracing EXE '$$$$P' failed ($$$$RES)"; exit $$$$RES )
+
+$(eval CHECK_DLL_PROGS_TGT +=	check-dll-binfile-$(1) )
+endef
+
+define depend-check-dll-lib =
+check-dll-libfile-$(1): $(1)
+	@P="$$(addprefix $(abs_top_builddir)/.libs/,$$(patsubst %.la,%.so,$$(<F)))"; \
+	PA=""; [ -n "$(2)" ] && PA="-l $(2)" ; \
+	echo "     DL_TRACE_LIB    $$$$P    $$$$PA"; \
+	$(abs_top_srcdir)/tools/ldd-tracer.sh $$$$PA -lp "$(abs_top_builddir)/.libs" "$$$$P" > /dev/null && \
+	echo "PASS: dynamic-link tracing LIB '$$$$P' OK : found no undefined symbols" || \
+	( RES=$$$$?; echo "FAIL: dynamic-link tracing LIB '$$$$P' failed ($$$$RES)"; exit $$$$RES )
+
+$(eval CHECK_DLL_LIBS_TGT +=	check-dll-libfile-$(1) )
+endef
+
+# Define the rulesets for specific targets dynamically
+$(foreach p,$(bin_PROGRAMS) $(check_PROGRAMS) $(client_PROGRAMS), $(eval $(call depend-check-dll-prog,$(p))))
+
+# TODO: Later consider building from pkglib_LTLIBRARIES or lib_LTLIBRARIES
+# if we get many of these...
+$(eval $(call depend-check-dll-lib,libbiosapi.la))
+$(eval $(call depend-check-dll-lib,bios_web.la,/usr/bin/tntnet))
+
+# Umbrella targets
+check-dll-progs: $(CHECK_DLL_PROGS_TGT)
+
+check-dll-libs: $(CHECK_DLL_LIBS_TGT)
+
+# Simplify tests for certain target names (e.g. our few libraries)
+# and their historical targets per below dependencies in e.g. SDK
+check-dll-libbiosapi: check-dll-libfile-libbiosapi.la
+
+check-dll-bios_web: check-dll-libfile-bios_web.la
+
+
+#----------------------------------------------------------------------
+#                        SDK - currently it is the public API library
+#----------------------------------------------------------------------
+
+sdk: libbiosapi.la
+
+sdk-link-test: sdk test-libbiosapiut
+
+sdk-tests: sdk sdk-link-test
+
+test-sdk: sdk sdk-tests check-dll-libbiosapi
+	cd $(abs_top_builddir) && ./test-libbiosapiut
 
 #----------------------------------------------------------------------
 #                        clean, what was not removed automatically
 #----------------------------------------------------------------------
 
-clean-man:
-	( cd docs/man && { $(MAKE) clean || /bin/true; } && /bin/rm -f *.[123456789] *.xml *.html )
-	/bin/rm -f docs/man/*.?
+clean-junit:
+	/bin/rm -rf $(abs_top_builddir)/tests/junit
 
-clean-local: clean-man
-	/bin/rm -rf $(top_builddir)/tests/junit
-	( test -w $(top_srcdir)/${myDOXDIR}/html && /bin/rm -rf $(top_srcdir)/${myDOXDIR}/html ) || /bin/true
-	/bin/rm -f INSTALL.html
-	/bin/rm -f CONTRIBUTING.html
-	/bin/rm -f INSTALL-referenceOS-debian8.html
+clean-local: clean-docs clean-junit
+
+# This may and should complain on non-empty dirs; "distclean-generic"
+# with proper list of DISTCLEANFILES should have taken care of that
+distclean-local-dirs: distclean-generic
+	for D in $(addprefix $(abs_top_builddir)/,$(DISTCLEANDIRS)); do \
+	  [ ! -d "$$D" ] || /bin/rmdir "$$D"; done || true
+
+distclean-local-deps: distclean-generic
+	cd $(abs_top_builddir)/ && { \
+	  find . -type f -name '*.Plo' -exec /bin/rm -f '{}' \; ; \
+	  find . -type f -name '*.Po' -exec /bin/rm -f '{}' \; ; \
+	  find . -type d -name '.deps' -exec /bin/rmdir '{}' \; || true ; \
+	}
+
+# BUILDER_RETAIN_CONFIGURE=yes may be exported by builder.sh
+distclean-local: distclean-local-dirs distclean-local-deps
+	@if [ x"$(BUILDER_RETAIN_CONFIGURE)" = xyes ]; then \
+	    echo "INFO: Retaining the configure script because I was asked to"; \
+	else \
+	    echo "INFO: Removing the configure script as part of distclean"; \
+	    /bin/rm -f $(abs_top_builddir)/configure; \
+	fi >&2 || true
+	@if [ x"$(abs_top_builddir)/.git_details" != x"$(abs_top_srcdir)/.git_details" ]; then \
+	    /bin/rm -f $(abs_top_builddir)/.git_details; \
+	fi || true
+
 
 #----------------------------------------------------------------------
 #                        astyle formating
 #----------------------------------------------------------------------
 if HAVE_ASTYLE
-EXTRA_DIST += $(top_srcdir)/tools/astyle.conf \
-	$(top_srcdir)/tools/astyle-bios
+EXTRA_DIST +=		$(top_srcdir)/tools/astyle.conf \
+			$(top_srcdir)/tools/astyle-bios
 checkstyle:
-	$(top_srcdir)/tools/astyle-bios -c $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(abs_top_srcdir)/tools/astyle-bios \
+	    -c $(abs_top_srcdir)/tools/astyle.conf $(abs_top_srcdir)/src
 style:
-	$(top_srcdir)/tools/astyle-bios $(top_srcdir)/tools/astyle.conf $(top_srcdir)/src
+	$(abs_top_srcdir)/tools/astyle-bios \
+	    $(abs_top_srcdir)/tools/astyle.conf $(abs_top_srcdir)/src
 endif
+
+#----------------------------------------------------------------------
+#                        some popular testing targets
+#----------------------------------------------------------------------
+
+ci-test-restapi: test-restapi
+test-restapi: all
+	$(abs_top_srcdir)/tests/CI/ci-test-restapi.sh
+
+
+#----------------------------------------------------------------------
+#                        SCM details
+#----------------------------------------------------------------------
+
+gitdetaildir =	        $(datarootdir)/@PACKAGE@
+gitdetail_DATA =	.git_details
+
+EXTRA_DIST +=		.git_details \
+			tools/git_details.sh \
+			tools/JSON.sh
+
+CLEANFILES +=		src/include/git_details_override.c \
+			src/include/git_details_override.h
+
+# The .git_details can be generated by OBS script which does the checkout of
+# sources to be packaged, or by the top-level make in a "make dist" running
+# in a Git workspace. Namely, this might not be regeneratable in each case,
+# i.e. when just a tarball with no SCM data is used for the build - then the
+# tarball should contain a current (latest generated) copy of this file.
+
+# This target ensures the .git_details file is always re-evaluated somehow
+.PHONY_GIT:
+
+.git_details: $(abs_top_builddir)/.git_details
+	@sync || true
+
+# NOTE that in the target routine below we filter out PACKAGE_BUILD_TSTAMP
+# changes because if nothing else changed, these don't matter much but do
+# cause a rebuild of the C/H files and those which depend on them, on every
+# "make" run. Just remove the file (distclean) to regenerate everything truly.
+# For tests, can 'export GIT_DETAILS_BLANK=yes' to succeed even on git errors.
+$(abs_top_builddir)/.git_details: .PHONY_GIT
+	@echo "INFO: Checking that '$@' is up-to-date..."
+	@/bin/rm -f "$@.tmp"
+	@if ( cd $(abs_top_srcdir) && ./tools/git_details.sh ) > "$@.tmp" && \
+	    [ -s "$@.tmp" ]; then \
+	    if [ ! -s "$@" ] || diff -bu "$@" "$@.tmp" | \
+	        egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]PACKAGE_BUILD_TSTAMP)' >/dev/null; then \
+	      echo "INFO: Replacing '$@' with newly generated data:" && \
+	      diff -bu "$@" "$@.tmp"; \
+	      mv -f "$@.tmp" "$@"; touch "$@"; \
+	    else echo "INFO: No substantial changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; \
+	    fi; \
+	 else \
+	   [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; \
+	 fi || true
+	@/bin/rm -f "$@.tmp"
+	@if [ -s "$@" ]; then true; else \
+	    if [ -s "$(abs_top_srcdir)/.git_details" ]; then \
+	      [ x"$(abs_top_srcdir)/.git_details" != x"$@" ] && \
+	      echo "INFO: Reusing existing '$(abs_top_srcdir)/.git_details':" && \
+	      ls -la "$(abs_top_srcdir)/.git_details" && \
+              cp -f "$(abs_top_srcdir)/.git_details" "$@" ; \
+	    else \
+	      if [ -f "$@" ]; then echo "WARNING: '$@' is empty already"; else \
+	      echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	      touch "$@"; fi; \
+	    fi; \
+	 fi
+	@sync || true
+
+src/include/git_details_override.c: $(abs_top_builddir)/src/include/git_details_override.c
+	@sync || true
+
+$(abs_top_builddir)/src/include/git_details_override.c: $(abs_top_builddir)/.git_details $(abs_top_builddir)/src/include/git_details_override.h
+	@echo "INFO: Checking that '$@' is up-to-date..."
+	@/bin/rm -f "$@.tmp" || true
+	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
+	  echo '#include <src/include/git_details_override.h>'; \
+	  grep '_ESCAPED=' "$<" | sed 's,^\(PACK.*;\)$$,char * \1,'; ) | sed 's,\\,\\\\,g' > "$@.tmp" || \
+	 /bin/rm -f "$@.tmp"
+	@if [ -s "$@.tmp" ]; then \
+	    if [ ! -s "$@" ]; then \
+	        echo "INFO: '$@' is missing, so using the newly generated file"; \
+	        mv -f "$@.tmp" "$@"; touch "$@"; \
+	    else \
+	        if  diff -bu "$@" "$@.tmp" | \
+	            egrep -v '^(\-\-\-|\+\+\+|[ @]|[\+\-]char . PACKAGE_BUILD_TSTAMP)' \
+	        >/dev/null ; then \
+	            echo "INFO: Replacing '$@' with newly generated data:"; \
+	            diff -bu "$@" "$@.tmp"; \
+	            mv -f "$@.tmp" "$@"; touch "$@"; \
+	        else echo "INFO: No changes in contents of '$@' (although ignored PACKAGE_BUILD_TSTAMP)"; fi; \
+	    fi; \
+	 else [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; \
+	 fi
+	@/bin/rm -f "$@.tmp"
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
+	@sync || true
+
+src/include/git_details_override.h: $(abs_top_builddir)/src/include/git_details_override.h
+	@sync || true
+
+$(abs_top_builddir)/src/include/git_details_override.h: $(abs_top_builddir)/.git_details
+	@echo "INFO: Checking that '$@' is up-to-date..."
+	@( echo '// WARNING: This file is generated during make, DO NOT EDIT'; \
+	  echo '#ifndef BIOS_GIT_DETAILS_OVERRIDE' && \
+	  echo '#define BIOS_GIT_DETAILS_OVERRIDE' && \
+	  [ -s "$<" ] && { \
+	    { echo '#ifdef HAVE_PACKAGE_GIT'; \
+	      echo '#undef HAVE_PACKAGE_GIT'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_GIT_BRANCH_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_GIT 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_HOST'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_HOST_OS_ESCAPED=".+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_HOST 1' || true; } && \
+	    { echo '#ifdef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#undef HAVE_PACKAGE_BUILD_TSTAMP'; \
+	      echo '#endif'; \
+	      egrep 'PACKAGE_BUILD_TSTAMP_ESCAPED="[0-9]+";' "$<" >/dev/null && \
+	        echo '#define HAVE_PACKAGE_BUILD_TSTAMP 1' || true; } && \
+	    grep '_ESCAPED=' "$<" | sed 's,^\(PACK[^=]*\)\(=.*\);$$,#ifdef \1\n#undef \1\n#endif\nextern char * \1;,'; \
+	  }; echo '#endif // BIOS_GIT_DETAILS_OVERRIDE'; ) > "$@.tmp" || \
+	 /bin/rm -f "$@.tmp"
+	@{ [ -s "$@.tmp" ] && { diff -bu "$@" "$@.tmp" && \
+	    echo "INFO: No changes in contents of '$@'" || \
+	    { echo "INFO: Replacing '$@' with newly generated data"; \
+	      mv -f "$@.tmp" "$@"; } } } || { \
+	  [ -s "$@" ] && echo "INFO: Reusing existing '$@'" && ls -la "$@"; }; \
+	  true
+	@/bin/rm -f "$@.tmp"
+	@[ -s "$@" ] || { echo "WARNING: Overriding absent '$@' with empty file to satisfy 'make'"; \
+	  touch -r "$<" "$@"; } || true
+	@sync || true
+
+##########################################################################
+### The following targets should enforce sequentially processed builds ###
+##########################################################################
+
+.NOTPARALLEL:
+
+MAKEFLAGS := -j 1
+

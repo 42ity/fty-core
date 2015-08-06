@@ -20,14 +20,11 @@
 #
 # Description: tests database files import
 
-[ "x$CHECKOUTDIR" = "x" ] && \
-    case "`dirname $0`" in
-       */tests/CI|tests/CI)
-           CHECKOUTDIR="$( cd `dirname $0`; pwd | sed 's|/tests/CI$||' )" || \
-           CHECKOUTDIR="" ;;
-    esac
-[ "x$CHECKOUTDIR" = "x" ] && CHECKOUTDIR=~/project
-echo "INFO: Test '$0 $@' will (try to) commence under CHECKOUTDIR='$CHECKOUTDIR'..."
+# Include our standard routines for CI scripts
+. "`dirname $0`"/scriptlib.sh || \
+    { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 set -u
 set -e
@@ -36,7 +33,6 @@ set -x
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/load_data.sql"
 
-
-mysql -u root < "$DB1"
-mysql -u root < "$DB2"
-echo "select * from t_bios_asset_element_type;" | mysql -u root box_utf8
+loaddb_file "$DB1"
+loaddb_file "$DB2"
+do_select "select * from t_bios_asset_element_type"
