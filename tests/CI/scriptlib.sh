@@ -63,7 +63,7 @@ export BIOS_USER BIOS_PASSWD SASL_SERVICE
 [ -z "${SUT_HOST-}" ] && SUT_HOST=""       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
-export SUT_IS_REMOTE SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
+export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no
