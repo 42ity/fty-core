@@ -53,7 +53,8 @@ Name: deploy-image
 BuildRequires: iproute iptables udhcpc openssh-server bash ifupdown udev tntnet ntp watchdog
 BuildRequires: iputils-ping apt udev mtd-utils systemd core sudo nut nut-snmp nut-xml bios-web
 BuildRequires: tntdb-mysql4 libtntdb4 systemd-sysv malamute mariadb-server-10.0 sasl2-bin
-BuildRequires: mime-support ncurses-base libgdbm3 zabbix-agent msmtp u-boot-tools ifplugd augeas-tools augeas-lenses
+BuildRequires: mime-support ncurses-base libgdbm3 zabbix-agent msmtp u-boot-tools ifplugd
+BuildRequires: augeas-tools augeas-lenses
 BuildRequires: libpam-cracklib libcrack2 cracklib-runtime wamerican
 
 %build
