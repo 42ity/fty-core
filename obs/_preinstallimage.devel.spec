@@ -19,4 +19,4 @@ BuildRequires: augeas-tools augeas-lenses
 BuildRequires: libpam-cracklib libcrack2 cracklib-runtime wamerican
 
 %build
-IMGTYPE=devel /usr/share/bios/obs/preinstallimage-bios.sh
+IMGTYPE=devel /usr/share/bios/obs/preinstallimage-bios.sh || exit 1
