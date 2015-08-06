@@ -149,7 +149,10 @@ static db_a_elmnt_t
     process_row
         (tntdb::Connection &conn,
          CsvMap cm,
-         size_t row_i)
+         size_t row_i,
+         std::map<std::string,int> TYPES,
+         std::map<std::string,int> SUBTYPES
+         )
 {
     LOG_START;
 
@@ -158,9 +161,6 @@ static db_a_elmnt_t
     static const std::set<std::string> STATUSES = \
         {"active", "nonactive", "spare", "retired"};
 
-    static auto TYPES = read_element_types (conn);
-
-    static auto SUBTYPES = read_device_types (conn);
 
     // This is used to track, which columns had been already processed,
     // because if they didn't yet,
@@ -543,10 +543,14 @@ void
         throw std::runtime_error(msg.c_str());
     }
 
+    auto TYPES = read_element_types (conn);
+
+    auto SUBTYPES = read_device_types (conn);
+
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
-            auto ret = process_row(conn, cm, row_i);
+            auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES);
             okRows.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }
