@@ -174,10 +174,10 @@ CMPJSON_SH="`pwd`/cmpjson.sh"
 CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
 [ -z "${CMP-}" ] && CMP="$CMPJSON_SH"
-[ -s "${CMP-}" ] || exit 5
+[ -s "${CMP-}" ] || CODE=5 die "Can not use comparator '$CMP'"
 
 # web/commands dir contains the request commands
-cd web/commands
+cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 # positive parameters are included to test, negative excluded
 POSITIVE=""
