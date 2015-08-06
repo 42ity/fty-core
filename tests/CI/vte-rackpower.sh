@@ -217,14 +217,14 @@ set_values_in_ups() {
 
             # * restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 1; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 30
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...' 
     # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
     N=20
     while [ "$N" -gt 0 ]; do
         OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
         if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=-$N; break; fi
-        sleep 1
+        sleep 3
         N="`expr $N - 1`"
     done
     [ "$N" = 0 ] && \
@@ -364,7 +364,7 @@ set_values_in_ups "$UPS" "$TYPE2" "0"
 
    # *** restart NUT server
     echo 'Restart NUT server with updated config'
-    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 1; systemctl start nut-driver; sleep 1; systemctl start nut-server";sleep 30
+    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...'
 
 # ***** TESTCASES *****
