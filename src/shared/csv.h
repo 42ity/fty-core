@@ -94,21 +94,21 @@ namespace shared {
              * \throws std::out_of_range if row_i > data.size() or title_name is not known
              */
             const std::string& get(size_t row_i, const std::string& title_name) const;
-            
+
             /**
              * \brief return the content on row with the given title name striped and in lower case
              *
              * \throws std::out_of_range if row_i > data.size() or title_name is not known
              */
             std::string get_strip(size_t row_i, const std::string& title_name) const;
-            
+
             /**
              * \brief return number of rows
              */
             size_t rows() const {
                 return _data.size();
             }
-            
+
             /**
              * \brief return number of columns
              */
@@ -117,7 +117,7 @@ namespace shared {
             }
 
             /**
-             * \brief return if given title does not exist
+             * \brief return if given title exists
              */
             bool hasTitle(const std::string& title_name) const;
 
