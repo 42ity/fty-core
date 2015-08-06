@@ -52,6 +52,7 @@ if(std::regex_match(request.getUrl(), match, rex)) {
 </%cpp>
 { "error" : "Can't save license acceptance or can't get license version." }
 <%cpp>
+			if(dest > 0) close(dest);
 			RETURN HTTP_INTERNAL_SERVER_ERROR;
 		} else {
 </%cpp>
