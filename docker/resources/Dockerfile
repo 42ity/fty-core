@@ -1,8 +1,8 @@
 FROM debian:jessie
 MAINTAINER gguillaume "geraldguillaume@eaton.com"
-RUN echo "Acquire::http::Proxy \"http://proxy.eur.etn.com:8080\";" > /etc/apt/apt.conf 
+RUN echo "Acquire::http::Proxy \"HTTP_PROXY\";" > /etc/apt/apt.conf 
 RUN echo "deb http://obs.roz.lab.etn.com:82/Pool:/master/Debian_8.0 /" > /etc/apt/sources.list.d/95bios-obs-roz-deb8.list 
-ENV http_proxy http://proxy.eur.etn.com:8080 
+ENV http_proxy HTTP_PROXY 
 RUN apt-get update && apt-get install -y --force-yes \
   nut-server nut-client nut \
   tntnet tntnet-runtime libtntnet12 libcxxtools9 libtntdb4 tntdb-mysql4 \
@@ -45,6 +45,10 @@ RUN mkdir -p /usr/local/share/bios/web
 ADD ./usr/share/compiled-webapp.tar /usr/share/
 RUN mv /usr/share/compiled-webapp /usr/share/bios-web
 #RUN mkdir /usr/share/bios-web
+RUN mkdir /var/bios
+RUN mkdir /var/license
+ADD ./usr/local/share/bios/docker/resources/license /var/license/1.0
+RUN ln -s /var/license/1.0 /var/license/current
 ENV LD_LIBRARY_PATH /usr/local/lib/
 
 #User PAM
