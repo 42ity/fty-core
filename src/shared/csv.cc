@@ -21,9 +21,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <set>
 #include <sstream>
 
+#include <cxxtools/csvdeserializer.h>
+
 #include "csv.h"
 #include "assetcrud.h"
 #include "dbpath.h"
+#include "log.h"
 
 namespace shared {
 
@@ -155,5 +158,28 @@ findDelimiter(
     }
     return '\x0';
 }
+
+CsvMap
+CsvMap_from_istream(
+        std::istream& in)
+{
+    std::vector <std::vector<cxxtools::String> > data;
+    cxxtools::CsvDeserializer deserializer(in);
+    char delimiter = findDelimiter(in);
+    if (delimiter == '\x0') {
+        const char* msg = "Cannot detect the delimiter, use comma (,) semicolon (;) or tabulator";
+        log_error("%s\n", msg);
+        LOG_END;
+        throw std::invalid_argument(msg);
+    }
+    log_debug("Using delimiter '%c'", delimiter);
+    deserializer.delimiter(delimiter);
+    deserializer.readTitle(false);
+    deserializer.deserialize(data);
+    CsvMap cm{data};
+    cm.deserialize();
+    return cm;
+}
+
 
 } //namespace shared

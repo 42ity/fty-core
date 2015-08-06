@@ -147,6 +147,19 @@ char
 findDelimiter(
         std::istream& i,
         std::size_t max_pos = 60);
-} //namespace shared
 
+
+/**
+ *  \brief read the data from istream
+ *
+ *  \param[in] input stream
+ *  \return CsvMap instance
+ *  \throws invalid_argument if delimiter was not autodetected
+ *          ... or various other exceptions ;-)
+ */
+CsvMap
+CsvMap_from_istream(
+        std::istream& in);
+
+} //namespace shared
 #endif // SRC_SHARED_CSV_H
