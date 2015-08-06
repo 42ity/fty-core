@@ -149,7 +149,7 @@ fi
 echo $$ > "$LOCKFILE"
 
     # ***  SET trap FOR EXIT SIGNALS
-trap cleanup EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+TRAP_SIGNALS=EXIT settraps cleanup
 
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 
