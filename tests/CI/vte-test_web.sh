@@ -101,6 +101,7 @@ SUT_IS_REMOTE=yes
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
 [ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -157,15 +158,21 @@ if [ $? != 0 -o -z "$LINE" ]; then
         "/etc/sasl2/bios.conf for some OS distributions)"
 fi
 
-# is web server running?
-curlfail_push_expect_404
-if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
-    CODE=4 die "Webserver is not running or has errors, please start it first!"
+if [ "$SKIP_SANITY" = yes ]; then
+    # This is hit e.g. when a wget-based "curl emulator" is used for requests
+    logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
+else
+    logmsg_info "Testing webserver ability to serve the REST API"
+    # is web server running?
+    curlfail_push_expect_404
+    if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
+        CODE=4 die "Webserver is not running or has errors, please start it first!"
+    fi
+    curlfail_pop
 fi
-curlfail_pop
 
 # log dir contents the real responses
-cd "`dirname "$0"`"
+cd "`dirname "$0"`" || die
 [ -n "${LOG_DIR-}" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
 
