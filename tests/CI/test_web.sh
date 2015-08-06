@@ -62,9 +62,9 @@ while [ $# -gt 0 ]; do
         ;;
     -s|--service)
         SASL_SERVICE="$2"
-        shift
+        shift 2
         ;;
-    *)
+    *)  # fall through - these are lists of tests to do
         break
         ;;
     esac
