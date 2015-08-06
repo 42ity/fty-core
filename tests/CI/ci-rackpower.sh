@@ -78,10 +78,13 @@ DBNGPID=$!
 TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
 TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
 
-DB1="$CHECKOUTDIR/tools/initdb.sql"
-DB2="$CHECKOUTDIR/tools/rack_power.sql"
-loaddb_file "$DB1"
-loaddb_file "$DB2"
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB1="initdb.sql"
+DB2="rack_power.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+loaddb_file "$DB_LOADDIR/$DB1"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
+loaddb_file "$DB_LOADDIR/$DB2"
 #
 # only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #

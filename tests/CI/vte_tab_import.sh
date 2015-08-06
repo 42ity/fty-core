@@ -124,6 +124,12 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
 set -o pipefail 2>/dev/null || true
 set -e
 loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+
+# NOTE: This test verifies that with our standard configuration of the VTE
+# and its database we can import our assets, so we do not apply hacks like
+# the DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql" used elsewhere.
+# If this test fails, then sources and/or sample SQL/CSV data must be fixed.
+
 set +e
 
 # ***** POST THE CSV FILE *****
