@@ -76,8 +76,8 @@ chown -R bios:bios /var/lib/bios
 
 # A few helper aliases
 cat > /etc/profile.d/bios_aliases.sh << EOF
-alias dbb=\"mysql -u root box_utf8 -t\"
-alias la=\"ls -la\"
+alias dbb='mysql -u root box_utf8 -t'
+alias la='ls -la'
 EOF
 
 # Setup u-Boot
