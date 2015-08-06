@@ -4,6 +4,7 @@
 # MIT / Apache 2 licenses (C) 2014 by "dominictarr" checked out 2015-01-04
 # MIT / Apache 2 licenses (C) 2015 by "dominictarr" merged 0.2.0 2015-04-01
 # further development (C) 2015 Jim Klimov <EvgenyKlimov@eaton.com>
+# at fork https://github.com/jimklimov/JSON.sh
 
 throw () {
   echo "$*" >&2
@@ -24,6 +25,39 @@ NORMALIZE_NUMBERS_STRIP=0
 EXTRACT_JPATH=""
 TOXIC_NEWLINE=0
 COOKASTRING=0
+
+findbin() {
+    # Locates a named binary or one from path, prints to stdout
+    local BIN
+    for P in "$@" ; do case "$P" in
+	/*) [ -x "$P" ] && BIN="$P" && break;;
+        *) BIN="`which "$P" 2>/dev/null | tail -1`" && [ -n "$BIN" ] && [ -x "$BIN" ] && break || BIN="";;
+    esac; done
+    [ -n "$BIN" ] && [ -x "$BIN" ] && echo "$BIN" && return 0
+    return 1
+}
+
+# May be passed by caller; also may pass AWK_OPTS *for it* then
+[ -z "$AWK" ] && AWK_OPTS="" && \
+    AWK="`findbin /usr/xpg4/bin/awk gawk nawk oawk awk`"
+# Error-checked in one optional place it may be needed
+
+# Different OSes have different greps... we like a GNU one
+[ -z "$GGREP" ] && \
+    GGREP="`findbin ggrep /usr/xpg4/bin/grep grep`"
+[ -n "$GGREP" ] && [ -x "$GGREP" ] || throw "No GNU GREP was found!"
+
+[ -z "$GEGREP" ] && \
+    GEGREP="`findbin gegrep /usr/xpg4/bin/egrep egrep`"
+[ -n "$GEGREP" ] && [ -x "$GEGREP" ] || throw "No GNU EGREP was found!"
+
+[ -z "$GSORT" ] && \
+    GSORT="`findbin gsort sort /usr/xpg4/bin/sort`"
+[ -n "$GSORT" ] && [ -x "$GSORT" ] || throw "No GNU SORT was found!"
+
+[ -z "$GSED" ] && \
+    GSED="`findbin /usr/xpg4/bin/sed gsed sed`"
+[ -n "$GSED" ] && [ -x "$GSED" ] || throw "No GNU SED was found!"
 
 usage() {
   echo
@@ -85,7 +119,8 @@ validate_debuglevel() {
 
 unquote() {
     # Remove single or double quotes surrounding the token
-    sed "s,^'\(.*\)'\$,\1," | sed 's,^\"\(.*\)\"$,\1,'
+    $GSED "s,^'\(.*\)'\$,\1," 2>/dev/null | \
+    $GSED 's,^\"\(.*\)\"$,\1,' 2>/dev/null
 }
 
 ### Empty and non-numeric and non-positive values should be filtered out here
@@ -147,55 +182,55 @@ parse_options() {
       -N) NORMALIZE=1
       ;;
       -N=*) NORMALIZE=1
-          SORTDATA_OBJ="sort `echo "$1" | sed 's,^-N=,,' | unquote `"
-          SORTDATA_ARR="sort `echo "$1" | sed 's,^-N=,,' | unquote `"
+          SORTDATA_OBJ="$GSORT `echo "$1" | $GSED 's,^-N=,,' 2>/dev/null | unquote `"
+          SORTDATA_ARR="$GSORT `echo "$1" | $GSED 's,^-N=,,' 2>/dev/null | unquote `"
       ;;
       -No=*) NORMALIZE=1
-          SORTDATA_OBJ="sort `echo "$1" | sed 's,^-No=,,' | unquote `"
+          SORTDATA_OBJ="$GSORT `echo "$1" | $GSED 's,^-No=,,' 2>/dev/null | unquote `"
       ;;
       -Na=*) NORMALIZE=1
-          SORTDATA_ARR="sort `echo "$1" | sed 's,^-Na=,,' | unquote `"
+          SORTDATA_ARR="$GSORT `echo "$1" | $GSED 's,^-Na=,,' 2>/dev/null | unquote `"
       ;;
       -Nnx) NORMALIZE_NUMBERS_STRIP=1
             NORMALIZE_NUMBERS=1
       ;;
       -Nnx=*) NORMALIZE_NUMBERS_STRIP=1
             NORMALIZE_NUMBERS=1
-            NORMALIZE_NUMBERS_FORMAT="`echo "$1" | sed 's,^-Nnx=,,' | unquote `"
+            NORMALIZE_NUMBERS_FORMAT="`echo "$1" | $GSED 's,^-Nnx=,,' 2>/dev/null | unquote `"
       ;;
       -Nn) NORMALIZE_NUMBERS=1
       ;;
       -Nn=*) NORMALIZE_NUMBERS=1
-          NORMALIZE_NUMBERS_FORMAT="`echo "$1" | sed 's,^-Nn=,,' | unquote `"
+          NORMALIZE_NUMBERS_FORMAT="`echo "$1" | $GSED 's,^-Nn=,,' 2>/dev/null | unquote `"
       ;;
-      -S) SORTDATA_OBJ="sort"
-          SORTDATA_ARR="sort"
+      -S) SORTDATA_OBJ="$GSORT"
+          SORTDATA_ARR="$GSORT"
       ;;
-      -So) SORTDATA_OBJ="sort"
+      -So) SORTDATA_OBJ="$GSORT"
       ;;
-      -Sa) SORTDATA_ARR="sort"
+      -Sa) SORTDATA_ARR="$GSORT"
       ;;
       -S=*)
-          SORTDATA_OBJ="sort `echo "$1" | sed 's,^-S=,,' | unquote `"
-          SORTDATA_ARR="sort `echo "$1" | sed 's,^-S=,,' | unquote `"
+          SORTDATA_OBJ="$GSORT `echo "$1" | $GSED 's,^-S=,,' 2>/dev/null | unquote `"
+          SORTDATA_ARR="$GSORT `echo "$1" | $GSED 's,^-S=,,' 2>/dev/null | unquote `"
       ;;
       -So=*)
-          SORTDATA_OBJ="sort `echo "$1" | sed 's,^-So=,,' | unquote `"
+          SORTDATA_OBJ="$GSORT `echo "$1" | $GSED 's,^-So=,,' 2>/dev/null | unquote `"
       ;;
       -Sa=*)
-          SORTDATA_ARR="sort `echo "$1" | sed 's,^-Sa=,,' | unquote `"
+          SORTDATA_ARR="$GSORT `echo "$1" | $GSED 's,^-Sa=,,' 2>/dev/null | unquote `"
       ;;
       -x) EXTRACT_JPATH="$2"
           shift
       ;;
-      -x=*) EXTRACT_JPATH="`echo "$1" | sed 's,^-x=,,'`"
+      -x=*) EXTRACT_JPATH="`echo "$1" | $GSED 's,^-x=,,' 2>/dev/null`"
       ;;
       --no-newline)
           TOXIC_NEWLINE=1
       ;;
       -d) DEBUG=$(($DEBUG+1))
       ;;
-      -d=*) DEBUG="`echo "$1" | sed 's,^-d=,,'`"
+      -d=*) DEBUG="`echo "$1" | $GSED 's,^-d=,,' 2>/dev/null`"
       ;;
       -Q) COOKASTRING=1
       ;;
@@ -217,7 +252,10 @@ parse_options() {
 awk_egrep () {
   local pattern_string=$1
 
-  gawk '{
+  [ -z "$AWK" ] && throw "No AWK found!"
+  [ ! -x "$AWK" ] && throw "Not executable AWK='$AWK'!"
+
+  ${AWK} $AWK_OPTS '{
     while ($0) {
       start=match($0, pattern);
       token=substr($0, start, RLENGTH);
@@ -236,8 +274,8 @@ strip_newlines() {
   local INSTRING=0
   local LINENUM=0
 
-  # The first "grep" should ensure that input has a trailing newline
-  grep '' | \
+  # The first "grep" should ensure that input for "while" has a trailing newline
+  $GGREP '' | \
   tee_stderr BEFORE_STRIP $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
   while IFS="" read -r ILINE; do
     # Remove escaped quotes:
@@ -279,7 +317,7 @@ strip_newlines() {
 
 cook_a_string() {
     ### Escape backslashes, double-quotes, tabs and newlines, in this order
-    grep '' | sed -e 's,\\,\\\\,g' -e 's,\",\\",g' -e 's,\t,\\t,g' | \
+    $GGREP '' | $GSED -e 's,\\,\\\\,g' -e 's,\",\\",g' -e 's,\t,\\t,g' 2>/dev/null | \
     { FIRST=''; while IFS="" read -r ILINE; do
       printf '%s%s' "$FIRST" "$ILINE"
       [ -z "$FIRST" ] && FIRST='\n'
@@ -288,23 +326,27 @@ cook_a_string() {
 }
 
 tokenize () {
-  local GREP
+  local GREP_O
   local ESCAPE
   local CHAR
 
-  if echo "test string" | egrep -ao --color=never "test" &>/dev/null
+  if echo "test string" | $GEGREP -ao --color=never "test" >/dev/null 2>/dev/null
   then
-    GREP='egrep -ao --color=never'
-  else
-    GREP='egrep -ao'
+    GREP_O="$GEGREP -ao --color=never"
+  elif echo "test string" | $GEGREP -ao "test" >/dev/null 2>/dev/null
+  then
+    GREP_O="$GEGREP -ao"
+  elif echo "test string" | $GEGREP -o "test" >/dev/null 2>/dev/null
+  then
+    GREP_O="$GEGREP -o"
   fi
 
-  if echo "test string" | egrep -o "test" &>/dev/null
+  if [ -n "$GREP_O" ] && echo "test string" | $GREP_O "test" >/dev/null
   then
     ESCAPE='(\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
     CHAR='[^[:cntrl:]"\\]'
   else
-    GREP=awk_egrep
+    GREP_O=awk_egrep
     ESCAPE='(\\\\[^u[:cntrl:]]|\\u[0-9a-fA-F]{4})'
     CHAR='[^[:cntrl:]"\\\\]'
   fi
@@ -318,7 +360,7 @@ tokenize () {
   local SPACE='[[:space:]]+'
 
   tee_stderr BEFORE_TOKENIZER $DEBUGLEVEL_PRINTTOKEN_PIPELINE | \
-  $GREP "$STRING|$NUMBER|$KEYWORD|$SPACE|." | egrep -v "^$SPACE$" | \
+  $GREP_O "$STRING|$NUMBER|$KEYWORD|$SPACE|." | $GEGREP -v "^$SPACE$" | \
   tee_stderr AFTER_TOKENIZER $DEBUGLEVEL_PRINTTOKEN_PIPELINE
 }
 
@@ -327,7 +369,7 @@ parse_array () {
   local ary=''
   local aryml=''
   read -r token
-  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(1):" "token=$token"
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(1):" "token='$token'"
   case "$token" in
     ']') ;;
     *)
@@ -341,19 +383,19 @@ parse_array () {
 $value"
         fi
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(2):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(2):" "token='$token'"
         case "$token" in
           ']') break ;;
           ',') ary="$ary," ;;
-          *) throw "EXPECTED , or ] GOT ${token:-EOF}" ;;
+          *) throw "EXPECTED ',' or ']' GOT '${token:-EOF}'" ;;
         esac
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(3):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_array(3):" "token='$token'"
       done
       ;;
   esac
   if [ -n "$SORTDATA_ARR" ]; then
-    ary="`echo -E "$aryml" | $SORTDATA_ARR | tr '\n' ',' | sed 's|,*$||' | sed 's|^,*||'`"
+    ary="`echo -E "$aryml" | $SORTDATA_ARR | tr '\n' ',' | $GSED 's|,*$||' 2>/dev/null | $GSED 's|^,*||' 2>/dev/null`"
   fi
   [ "$BRIEF" -eq 0 ] && value=`printf '[%s]' "$ary"` || value=
   :
@@ -364,7 +406,7 @@ parse_object () {
   local obj=''
   local objml=''
   read -r token
-  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(1):" "token=$token"
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(1):" "token='$token'"
   case "$token" in
     '}') ;;
     *)
@@ -372,16 +414,16 @@ parse_object () {
       do
         case "$token" in
           '"'*'"') key=$token ;;
-          *) throw "EXPECTED string GOT ${token:-EOF}" ;;
+          *) throw "EXPECTED string GOT '${token:-EOF}'" ;;
         esac
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(2):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(2):" "token='$token'"
         case "$token" in
           ':') ;;
-          *) throw "EXPECTED : GOT ${token:-EOF}" ;;
+          *) throw "EXPECTED : GOT '${token:-EOF}'" ;;
         esac
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(3):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(3):" "token='$token'"
         parse_value "$1" "$key"
         obj="$obj$key:$value"
         if [ -n "$SORTDATA_OBJ" ]; then
@@ -389,19 +431,19 @@ parse_object () {
 $key:$value"
         fi
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(4):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(4):" "token='$token'"
         case "$token" in
           '}') break ;;
           ',') obj="$obj," ;;
-          *) throw "EXPECTED , or } GOT ${token:-EOF}" ;;
+          *) throw "EXPECTED ',' or '}' GOT '${token:-EOF}'" ;;
         esac
         read -r token
-        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(5):" "token=$token"
+        print_debug $DEBUGLEVEL_PRINTTOKEN "parse_object(5):" "token='$token'"
       done
     ;;
   esac
   if [ -n "$SORTDATA_OBJ" ]; then
-    obj="`echo -E "$objml" | $SORTDATA_OBJ | tr '\n' ',' | sed 's|,*$||' | sed 's|^,*||'`"
+    obj="`echo -E "$objml" | $SORTDATA_OBJ | tr '\n' ',' | $GSED 's|,*$||' 2>/dev/null | $GSED 's|^,*||' 2>/dev/null`"
   fi
   [ "$BRIEF" -eq 0 ] && value=`printf '{%s}' "$obj"` || value=
   :
@@ -423,7 +465,7 @@ parse_value () {
                 'Got a NULL document as input (no jpath, no token)' >&2
             value='{}'
         else
-            throw "EXPECTED value GOT ${token:-EOF}"
+            throw "EXPECTED value GOT '${token:-EOF}'"
         fi ;;
     +*|-*|[0-9]*|.*)  # Potential number - separate hit in case for efficiency
        print_debug $DEBUGLEVEL_PRINTPATHVAL \
@@ -436,7 +478,7 @@ parse_value () {
             print_debug $DEBUGLEVEL_PRINTPATHVAL "normalized numeric token" \
                 "'$token' into '$value'" >&2
             if [ "$NORMALIZE_NUMBERS_STRIP" = 1 ]; then
-                local valuetmp="`echo "$value" | sed -e 's,0*$,,g' -e 's,\.$,,'`" && \
+                local valuetmp="`echo "$value" | $GSED -e 's,0*$,,g' -e 's,\.$,,' 2>/dev/null`" && \
                 value="$valuetmp"
                 unset valuetmp
                 print_debug $DEBUGLEVEL_PRINTPATHVAL "stripped numeric token" \
@@ -497,13 +539,13 @@ parse_value () {
 
 parse () {
   read -r token
-  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(1):" "token=$token"
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(1):" "token='$token'"
   parse_value
   read -r token
-  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(2):" "token=$token"
+  print_debug $DEBUGLEVEL_PRINTTOKEN "parse(2):" "token='$token'"
   case "$token" in
     '') ;;
-    *) throw "EXPECTED EOF GOT $token" ;;
+    *) throw "EXPECTED EOF GOT '$token'" ;;
   esac
 }
 
