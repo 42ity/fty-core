@@ -412,6 +412,11 @@ libpriv_nutscan_la_SOURCES = \
 			src/shared/nutscan.h \
 			src/shared/nutscan.cc
 
+noinst_LTLIBRARIES +=	libpriv-magic.la
+libpriv_magic_la_SOURCES = \
+			src/shared/magic.cc \
+			src/shared/bios-magic.h
+
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
 #----------------------------------------------------------------------
@@ -544,8 +549,8 @@ check_PROGRAMS += 	test-csv
 test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
-test_csv_LDADD = 		libpriv-log.la \
-						libpriv-csv.la \
+test_csv_LDADD = 		libpriv-csv.la \
+						libpriv-log.la \
 					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
@@ -872,21 +877,6 @@ bios_nutscan_LDADD = \
 
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
 
-cibin_programs += bios-exportcsv
-bios_exportcsv_SOURCES = tests/db/bios-exportcsv.cc
-bios_exportcsv_CPPFLAGS = \
-						  $(AM_CPPFLAGS) \
-						  -I $(abs_top_srcdir)/src/ \
-						  -I $(abs_top_srcdir)/src/persist/ \
-						  -I $(abs_top_srcdir)/src/share/
-bios_exportcsv_LDADD = \
-						 libpriv-db-alerts.la \
-						 libpriv-log.la \
-						 libpriv-db.la
-bios_exportcsv_LDFLAGS = \
-						 ${CXXTOOLS_LIBS} -ltntdb
-
-
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
 cibindir = ${pkgbindir}
@@ -1003,6 +993,21 @@ dshell_LDADD = \
 
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
+
+cibin_programs += bios-csv
+bios_csv_SOURCES = tests/db/bios-csv.cc
+bios_csv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_csv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la \
+						 libpriv-csv.la
+bios_csv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
 
 client_PROGRAMS +=	agent-nut
 
@@ -1213,11 +1218,7 @@ bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc         \
-					  src/web/src/dci_impl.h
-
-
-EXTRA_DIST +=		src/web/include/enc.h
+                      src/shared/upsstatus.cc src/web/src/dci_impl.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -1247,7 +1248,8 @@ bios_web_la_LIBADD = \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la
+			libpriv-db-measurements.la \
+			libpriv-magic.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \

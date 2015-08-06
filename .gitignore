@@ -115,6 +115,7 @@ agent-tpower
 generate_measurement
 outage
 test-outage
+bios-csv
 
 tests/junit/
 tests/CI/web/log/
