@@ -319,8 +319,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
-			src/persist/loadcsv.h \
-			src/persist/loadcsv.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -374,7 +372,10 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts.h \
 			src/db/assets/assetr.h \
 			src/db/assets/assetr.cc \
-			src/db/assets.h
+			src/db/assets.h \
+			src/db/inout.h \
+			src/db/inout/loadcsv.cc \
+			src/db/inout/exportcsv.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -653,9 +654,9 @@ cibin_programs += 	test-loadcsv
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
 			libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-log.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
@@ -665,6 +666,7 @@ test_loadcsv_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -849,7 +851,7 @@ bios_email_SOURCES = \
 bios_email_LDADD = \
 			libpriv-log.la \
 			libpriv-email.la \
-			libpriv-subprocess.la 
+			libpriv-subprocess.la
 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
@@ -866,6 +868,21 @@ bios_nutscan_LDADD = \
 			libpriv-subprocess.la
 
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
+
+cibin_programs += bios-exportcsv
+bios_exportcsv_SOURCES = tests/db/bios-exportcsv.cc
+bios_exportcsv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_exportcsv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la
+bios_exportcsv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
+
 
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
@@ -1186,7 +1203,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp
+                      src/web/src/uptime.cpp src/web/src/iface.cpp \
+					  src/web/src/asset_export.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
