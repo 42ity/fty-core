@@ -7,6 +7,8 @@
 #include "db/assets.h"
 #include "common_msg.h"
 
+#define UGLY_ASSET_TAG "0123456"
+
 #include "cleanup.h"
 
 TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ext_attribute][crud_test.sql]")
@@ -178,7 +180,8 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     a_dvc_tp_id_t subtype_id = 10;
 
     // first insert
-    auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority, bc, subtype_id);
+    auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+        parent_id, status, priority, bc, subtype_id, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     uint64_t rowid = reply_insert.rowid;
     CAPTURE (rowid);
@@ -199,7 +202,8 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (item.subtype_id == subtype_id);
 
     // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority, bc, 10);
+    reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+            parent_id, status, priority, bc, 10, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
@@ -358,7 +362,8 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+                parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -386,7 +391,8 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -434,7 +440,8 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -461,7 +468,8 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -504,12 +512,13 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
     expected_ext_attributes.insert (std::make_pair ("contact_name", "thisisanemailaddress@gmail.com"));
-    
+
     for ( auto &ea : expected_ext_attributes )
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG) ;
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -537,7 +546,8 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -590,7 +600,8 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -617,7 +628,9 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups,
+            UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -665,7 +678,9 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups,
+            UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -692,7 +707,8 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -749,7 +765,8 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     // first insert
     auto reply_insert = insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc);
+                            asset_device_type, status, priority, bc,
+                            UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -776,9 +793,10 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_device (conn, links, groups, name, parent_id, 
+    reply_insert = insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc);
+                            asset_device_type, status, priority, bc,
+                            UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 

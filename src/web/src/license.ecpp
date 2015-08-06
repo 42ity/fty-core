@@ -71,7 +71,7 @@ uint64_t tme;
 readlink(current_license, buff_r, sizeof(buff_r));
 FILE* src = fopen(accepted_license, "r");
 if(src != NULL) {
-	fscanf(src,"%ms\n%" PRIu64 "\n", &buff_a, &tme);
+	fscanf(src,"%ms\n%" SCNu64 "\n", &buff_a, &tme);
 	fclose(src);
 }
 rex = "^.*/license/status$";
