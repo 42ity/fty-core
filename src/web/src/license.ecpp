@@ -1,0 +1,103 @@
+<%pre>
+#include <unistd.h>
+#include <iostream>
+#include <stdio.h>
+#include <fstream>
+#include <regex>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include "config.h"
+
+#define RETURN free(current_license); free(accepted_license); return
+
+</%pre>
+<%cpp>
+// Basic operations
+char *current_license = getenv("LICENSE_DIR");
+char *accepted_license = getenv("DATADIR");
+if(current_license == NULL)
+   current_license = "/usr/share/bios/license";
+if(accepted_license == NULL)
+   current_license = "/var/lib/bios";
+asprintf(&current_license, "%s/current", current_license);
+asprintf(&accepted_license, "%s/license", accepted_license);
+std::regex rex;
+std::smatch match;
+rex = "^.*/license$";
+if(std::regex_match(request.getUrl(), match, rex)) {
+	if(request.isMethodGET()) {
+		std::ifstream source(current_license, std::ios::binary);
+		if(!source.good()) {
+</%cpp>
+{ "error" : "Error reading license file." }
+<%cpp>
+			RETURN HTTP_INTERNAL_SERVER_ERROR;
+		}
+		reply.out() << source.rdbuf();
+		RETURN HTTP_OK;
+	}
+	if(request.isMethodPOST()) {
+		char buff[512];
+		memset(buff, 0, sizeof(buff));
+		int dest = open(accepted_license, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		readlink(current_license, buff, sizeof(buff));
+		uint64_t tme = time(NULL);
+		if(dest < 0 || buff[0] == 0 ||
+		   dprintf(dest, "%s\n%" PRIu64 "\n", buff, tme) < 4) {
+</%cpp>
+{ "error" : "Can't save license acceptance or can't get license version." }
+<%cpp>
+			if(dest > 0) close(dest);
+			RETURN HTTP_INTERNAL_SERVER_ERROR;
+		} else {
+</%cpp>
+{ "success" : "License version <$ buff $> accepted." }
+<%cpp>
+			close(dest);
+			RETURN HTTP_OK;
+		}
+	}
+	RETURN HTTP_BAD_REQUEST;
+}
+char *buff_a = NULL;
+char buff_r[512];
+memset(buff_r, 0, sizeof(buff_r));
+uint64_t tme;
+readlink(current_license, buff_r, sizeof(buff_r));
+FILE* src = fopen(accepted_license, "r");
+if(src != NULL) {
+	fscanf(src,"%ms\n%" SCNu64 "\n", &buff_a, &tme);
+	fclose(src);
+}
+rex = "^.*/license/status$";
+if(std::regex_match(request.getUrl(), match, rex)) {
+</%cpp>
+{
+  "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"
+, "version" : "<$ buff_r $>"
+% if(buff_a != NULL) {
+, "accepted_version" : "<$ buff_a $>"
+, "accepted_at" : "<$ tme $>"
+% }
+}
+<%cpp>
+	RETURN HTTP_OK;
+}
+if(buff_a == NULL || strcmp(buff_a, buff_r) != 0) {
+</%cpp>
+% if(buff_a == NULL) {
+{ "error" : "License version not accepted yet, please accept it first." }
+% } else {
+{ "error" : "License accepted in version <$ buff_a $>, but current version is <$ buff_r $>. Please reaccept it." }
+% }
+<%cpp>
+	RETURN HTTP_UNAUTHORIZED;
+} else {
+	RETURN DECLINED;
+}
+</%cpp>

@@ -520,6 +520,13 @@ void
     CsvMap cm{data};
     cm.deserialize();
 
+    if (cm.hasTitle("id")) {
+        const char* msg = "Can't import csv with row named id, update is not yet implemented";
+        log_error(msg);
+        LOG_END;
+        throw std::invalid_argument(msg);
+    }
+
     auto m = mandatory_missing(cm);
     // TODO: do an apropriate arror handling
 

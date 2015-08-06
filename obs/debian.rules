@@ -55,6 +55,9 @@ install: build
 	# Add here commands to install the package
 	# The DESTDIR Has To Be Exactly  /usr/src/packages/BUILD/debian/<nameOfPackage>
 	make install DESTDIR=/usr/src/packages/BUILD/debian/core
+	mkdir -p /usr/src/packages/BUILD/debian/core/var/lib/bios
+	install -D COPYING /usr/src/packages/BUILD/debian/core/usr/share/bios/license/1.0
+	ln -s 1.0 /usr/src/packages/BUILD/debian/core/usr/share/bios/license/current
 	# --- end custom part for installing
 
 # Build architecture-independent files here.
