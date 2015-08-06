@@ -3,6 +3,7 @@
 
 #include <string>
 #include <utility>
+#include <iostream>
 
 namespace shared {
 /*
@@ -13,6 +14,13 @@ namespace shared {
  */
 std::pair<std::string, std::string>
 file_type_encoding(const char* path);
+
+// quick and dirty convert function, NEVER use it!!
+void
+convert_file(
+        std::string::const_iterator begin,
+        std::string::const_iterator end,
+        std::string& out);
 
 } //namespace shared
 
