@@ -41,7 +41,7 @@
 #   It is called as the "%build" recipe implementation from the OBS
 #   specfile, with an IMGTYPE envvar pre-set to "devel" or "deploy".
 
-echo "Executing $0 $*"
+echo "INFO: Executing $0 $*"
 echo "    IMGTYPE='$IMGTYPE'"
 
 # Protect against errors... such as maybe running on a dev workstation
@@ -362,3 +362,4 @@ esac
 # Timestamp the end of OS image generation
 LANG=C date -u > /usr/share/bios-web/image-version.txt
 
+echo "INFO: successfully reached the end of script: $0 $@"
