@@ -4,6 +4,7 @@
 #include <exception>
 #include <errno.h>
 #include <tntdb/connect.h>
+#include <preproc.h>
 
 #include "agent-tpower.h"
 #include "str_defs.h"
@@ -18,6 +19,12 @@ bool TotalPowerAgent::configuration( )
     tntdb::Connection connection;
 
     try {
+        log_info("loading power topology from database");
+        _racks.clear();
+        _affectedRacks.clear();
+        _DCs.clear();
+        _affectedDCs.clear();
+        
         connection = tntdb::connect(url);
         // reading racks
         db_reply <std::map<std::string, std::vector<std::string>>> ret =
@@ -46,12 +53,15 @@ bool TotalPowerAgent::configuration( )
             }
         }
         connection.close();
+        _reconfigPending = 0;
         return true;
     } catch (const std::exception& e) {
-        log_error ("Excepton caught: '%s'.", e.what ());
+        log_error("Failed to read configuration from database. Excepton caught: '%s'.", e.what ());
+        _reconfigPending = time(NULL) + 60;
         return false;
     } catch(...) {
-        log_error ("Unknown exception caught.");
+        log_error ("Failed to read configuration from database. Unknown exception caught.");
+        _reconfigPending = time(NULL) + 60;
         return false;
     }
 }
@@ -77,34 +87,39 @@ void TotalPowerAgent::addDeviceToMap(
 void TotalPowerAgent::onStart( )
 {
     _timeout = TPOWER_POLLING_INTERVAL;
-    if( ! configuration() ) {
-        log_error("Failed to read configuration from database");
-        zsys_interrupted = true;
-        _exitStatus = 1;
-    }
+    configuration();
 }
 
 void TotalPowerAgent::onSend( ymsg_t **message ) {
-    Measurement M = *message;
+    std::string topic = subject();
 
-    auto affected_it = _affectedRacks.find( M.deviceName() );
-    if( affected_it != _affectedRacks.end() ) {
-        // this device affects some total rack
-        auto rack_it = _racks.find( affected_it->second );
-        if( rack_it != _racks.end() ) {
-            // affected rack found
-            rack_it->second.setMeasurement(M);
-            sendMeasurement( _racks );
+    if( topic.compare(0,9,"configure") == 0 ) {
+        // something is beeing reconfigured, let things to settle down
+        if( _reconfigPending == 0 ) log_info("Reconfiguration scheduled");
+        _reconfigPending = time(NULL) + 60;
+    } else {
+        // measurement received
+        Measurement M = *message;
+
+        auto affected_it = _affectedRacks.find( M.deviceName() );
+        if( affected_it != _affectedRacks.end() ) {
+            // this device affects some total rack
+            auto rack_it = _racks.find( affected_it->second );
+            if( rack_it != _racks.end() ) {
+                // affected rack found
+                rack_it->second.setMeasurement(M);
+                sendMeasurement( _racks );
+            }
         }
-    }
-    affected_it = _affectedDCs.find( M.deviceName() );
-    if( affected_it != _affectedDCs.end() ) {
-        // this device affects some total DC
-        auto dc_it = _DCs.find( affected_it->second );
-        if( dc_it != _DCs.end() ) {
-            // affected dc found
-            dc_it->second.setMeasurement(M);
-            sendMeasurement( _DCs );
+        affected_it = _affectedDCs.find( M.deviceName() );
+        if( affected_it != _affectedDCs.end() ) {
+            // this device affects some total DC
+            auto dc_it = _DCs.find( affected_it->second );
+            if( dc_it != _DCs.end() ) {
+                // affected dc found
+                dc_it->second.setMeasurement(M);
+                sendMeasurement( _DCs );
+            }
         }
     }
     _timeout = getPollInterval();
@@ -148,6 +163,11 @@ time_t TotalPowerAgent::getPollInterval() {
         time_t Tx = dc_it.second.timeToAdvertisement();
         if( Tx > 0 && Tx < T ) T = Tx;
     }
+    if( _reconfigPending ) {
+        time_t Tx = _reconfigPending - time(NULL) + 1;
+        if( Tx <= 0 ) Tx = 1;
+        if( Tx < T ) T = Tx;
+    }
     return T * 1000;
 }
 
@@ -155,18 +175,17 @@ time_t TotalPowerAgent::getPollInterval() {
 void TotalPowerAgent::onPoll() {
     sendMeasurement( _racks );
     sendMeasurement( _DCs );
+    if( _reconfigPending && ( _reconfigPending <= time(NULL) ) ) configuration();
     _timeout = getPollInterval();
 }
 
-int main(int argc, char *argv[]){
-    if( argc > 0 ) {}; // silence compiler warnings
-    if( argv ) {};  // silence compiler warnings
-    
+int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] ) {
     int result = 1;
+    
     log_open();
     log_info ("tpower agent started");
     TotalPowerAgent agent("TPOWER");
-    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^measurement\\.realpower\\.default@") ) {
+    if( agent.connect(MLM_ENDPOINT, bios_get_stream_main(), "^(measurement\\.realpower\\.default|configure)@") ) {
         result = agent.run();
     }
     log_info ("tpower agent exited with code %i\n", result);
