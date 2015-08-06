@@ -212,17 +212,14 @@ test_web_topo_l() {
     test_web "$@"
 }
 
-# Try to accept the BIOS license on server
-( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
-    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
-
 # ***** PERFORM THE TESTCASES *****
 set +e
     # *** start default admin network(s) TC's
 
 RESULT_OVERALL=0
 # admin_network needs a clean state of database, otherwise it does not work
-test_web_default admin_networks admin_network || RESULT_OVERALL=$?
+# Also try to accept the BIOS license on server with 0* tests
+test_web_default 0* admin_networks admin_network || RESULT_OVERALL=$?
     # *** start the other default TC's instead of sysinfo
 test_web_default -topology -admin_network -admin_networks -sysinfo || RESULT_OVERALL=$?
     # *** start power topology TC's

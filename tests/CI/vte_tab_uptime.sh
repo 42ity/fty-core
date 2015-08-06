@@ -128,7 +128,7 @@ loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SC
 set +e
 
 # Try to accept the BIOS license on server
-( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
     logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** POST THE CSV FILE *****

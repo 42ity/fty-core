@@ -216,7 +216,8 @@ for UPS in $UPS1 $UPS2 ; do
         # TODO: use weblib.sh
         # Try to accept the BIOS license on server
         ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
-          . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+          . "`dirname $0`"/weblib.sh && \
+          . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
             logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
