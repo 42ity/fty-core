@@ -470,6 +470,28 @@ CREATE VIEW v_bios_asset_link AS
             v1.id_asset_device_dest AS id_asset_element_dest
     FROM t_bios_asset_link v1;
 
+DROP VIEW  if exists v_web_asset_link;
+CREATE VIEW v_web_asset_link AS
+    SELECT
+        v1.id_link,
+        v1.id_asset_link_type,
+        t3.name AS link_name,
+        v1.id_asset_element_src,
+        t1.name AS src_name,
+        v1.id_asset_element_dest,
+        t2.name AS dest_name,
+        v1.src_out,
+        v1.dest_in
+    FROM
+         v_bios_asset_link v1
+    JOIN t_bios_asset_element t1
+        ON v1.id_asset_element_src=t1.id_asset_element
+    JOIN t_bios_asset_element t2
+        ON v1.id_asset_element_dest=t2.id_asset_element
+    JOIN t_bios_asset_link_type t3
+        ON v1.id_asset_link_type=t3.id_asset_link_type;
+
+
 CREATE VIEW v_bios_asset_link_topology AS
     SELECT  v1.src_out,
             v1.dest_in,
