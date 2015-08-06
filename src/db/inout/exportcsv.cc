@@ -37,7 +37,7 @@ namespace persist {
 
 // names of element from v_web_asset_element - they'll be printed as the first ones
 static std::vector<std::string> ASSET_ELEMENT_KEYTAGS{
-    "id", "name", "type", "sub_type", "location", "status", "priority", "business_critical"};
+    "id", "name", "type", "sub_type", "location", "status", "priority", "business_critical", "asset_tag"};
 
 // get all keytags available in the system and update the s argument
 static void
@@ -224,6 +224,7 @@ void
 
         // 2.5      PRINT IT
         // 2.5.1    things from asset element table itself
+        // ORDER of fields added to the lcs IS SIGNIFICANT
         {
         std::string name;
         r["name"].get(name);
@@ -250,6 +251,10 @@ void
         uint32_t business_critical = 0;
         r["business_crit"].get(business_critical);
         lcs.add(business_critical == 1 ? "yes" : "no");
+
+        std::string asset_tag;
+        r["asset_tag"].get(asset_tag);
+        lcs.add(asset_tag);
         }
 
         // 2.5.2        power location
