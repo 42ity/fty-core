@@ -142,8 +142,9 @@ ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 # Import the bam_vte_tab_import.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
-    die "ERROR : 'Test of the number of imported lines			FAILED'"
+NUM_EXPECTED=19
+grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+    die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
 for NUM in 9 10 17 21 22 23 ; do
