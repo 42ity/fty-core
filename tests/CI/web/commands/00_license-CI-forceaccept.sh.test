@@ -1,8 +1,9 @@
 # Some REST API scripts just need to get THEIR job done,
 # so here is a way to force-accept the license
 
-api_auth_post_content '/admin/license' "foobar" >&5
+echo "Trying to accept the license on BIOS server '$BASE_URL'..."
+api_auth_post_content '/admin/license' "foobar" >&5 || true
 
-test_it "license_status_ok"
+test_it "license_forced_status_ok"
 api_get_json '/admin/license/status' | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
 print_result $?
