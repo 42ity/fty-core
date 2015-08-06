@@ -1,0 +1,156 @@
+<class
+    name = "asset_msg"
+    signature = "5"
+    title = "assets management protocol"
+    script = "zproto_codec_c_v1"
+    package_dir = "."
+    include = "czmq.h"
+    >
+
+<!-- this includes our Eaton license into the generated header and source files -->
+<include filename = "license.xml" />
+
+<!-- This is here for a purpose. DO CHANGE it if back-compatibility breaking change occurs -->
+<define name = "VERSION" value = "1.0" />
+
+<!-- Elements messages - elements are everything except devices -->
+
+<message name = "element" id = "1">
+Structure describing an asset element.
+    <field name = "name" type = "string">Name of the element</field>
+    <field name = "location" type = "number" size = "4">ID of the parent element</field>
+    <field name = "location_type" type = "number" size = "1">Type of the parent element, defined in asset_type</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
+    <field name = "ext" type = "hash">Hash map of extended attributes</field>
+</message>
+
+<message name = "device" id = "2">
+Structure describing an asset device.
+    <field name = "device_type" type = "string">Type of the device from t_bios_asset_device_type</field>
+    <field name = "groups" type = "strings">List of IDs of groups device belongs to</field>
+    <field name = "powers" type = "strings">List of strings in form src_socket:src_id:dst_socket:dst_id</field>
+    <field name = "ip" type = "string">IP of the device</field>
+    <field name = "hostname" type = "string">Hostname</field>
+    <field name = "fqdn" type = "string">Fully qualified domain name</field>
+    <field name = "mac" type = "string">MAC address of the device</field>
+    <field name = "msg" type = "msg">Element that we are extending to the device</field>
+</message>
+
+<message name = "get_element" id = "3">
+Ask for a specific element.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "type" type = "number" size = "1">Type of the element defined in asset_type (includes devices)</field>
+</message>
+
+<message name = "return_element" id = "4">
+Returns an element we were asked for.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "msg" type = "msg">Element (or device) to be delivered</field>
+</message>
+
+<message name = "update_element" id = "5">
+Updates an element.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "msg" type = "msg">Element (or device) to be updated</field>
+</message>
+
+<message name = "insert_element" id = "6">
+Inserts an element.
+    <field name = "msg" type = "msg">Element (or device) message to be inserted</field>
+</message>
+
+<message name = "delete_element" id = "7">
+Deletes an element.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the element to be deleted</field>
+    <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
+</message>
+
+<message name = "ok" id = "8">
+Message from database that everything was processed successfully.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the element that was proccessed</field>
+</message>
+
+<message name = "fail" id = "9">
+Message from database that something went wrong.
+    <field name = "error_id" type = "number" size = "1">Type of the error, enum defined in persistence header file</field>
+</message>
+
+<message name = "get_elements" id = "10">
+Ask for all elements of specific type.
+    <field name = "type" type = "number" size = "1">Type of the element, defined in asset_type</field>
+</message>
+
+<message name = "return_elements" id = "11">
+Returns elements we were asked for.
+    <field name = "element_ids" type = "hash">Unique IDs of the asset element (as a key) mapped to the elements name (as a value)</field>
+</message>
+
+<message name = "get_location_from" id = "12">
+Ask for location topology starting from the specified element.
+    <field name = "element_id"  type = "number" size = "4">Unique ID of the start asset element</field>
+    <field name = "recursive"   type = "number" size = "1">If the search should be recursive (=1) or not (=0)</field>
+    <field name = "filter_type" type = "number" size = "1">Type of the looked elements, if 7 take all</field>
+</message>
+
+<message name = "get_location_to" id = "13">
+Ask for a location topology for the specified element.
+    <field name = "element_id"  type = "number" size = "4">Unique ID of the asset element</field>
+</message>
+
+<message name = "return_location_to" id = "14">
+Reply for a location topology for the specified element.
+    <field name = "element_id"  type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "type"        type = "number" size = "1">Type of the element</field>
+    <field name = "name"        type = "string">Name of the asset element</field>
+    <field name = "type_name"   type = "string">Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string</field>
+    <field name = "msg"         type = "msg"> parent of the element, this msg</field>
+</message>
+
+<message name = "return_location_from" id = "15">
+Reply for the ask for a location topology for the specified element.
+    <field name = "element_id" type = "number" size = "4">Unique ID of the asset element</field>
+    <field name = "type"       type = "number" size = "1">Type of the element</field>
+    <field name = "name"       type = "string">Name of the asset element</field>
+    <field name = "type_name"  type = "string">Type of the device (or group), string from t_bios_asset_device_type (t_bios_asset_ext_attributes), if it is not a divece nor a group, then it is an empty string</field>
+    <field name = "dcs"        type = "frame">List of datacenters, matryoshka of this msg</field>
+    <field name = "rooms"      type = "frame">List of rooms, matryoshka of this msg</field>
+    <field name = "rows"       type = "frame">List of rows, matryoshka of this msg</field>
+    <field name = "racks"      type = "frame">List of racks, matryoshka of this msg</field>
+    <field name = "devices"    type = "frame">List of devices, matryoshka of this msg</field>
+    <field name = "grps"       type = "frame">List of groups, matryoshka of this msg</field>
+</message>
+
+<message name = "get_power_from" id = "16">
+Request for a list of devices directly powered from the specified device.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "powerchain_device" id = "17">
+Structure briefly describing the device contained in powerchain.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+    <field name = "type_name"   type = "string">Type of the device</field>
+    <field name = "name"        type = "string">Asset element name of the device</field>
+</message>
+
+<message name = "return_power" id = "18">
+Reply for any power topology request.
+    <field name = "devices" type = "frame">List of devices(id, name, typename), matroyska of he powerchain_device</field>
+    <field name = "powers"  type = "strings">List of strings in form "src_socket:src_id:dst_socket:dst_id"</field>
+</message>
+
+<message name = "get_power_to" id = "19">
+Request for a full power chain which powers the requested target device.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the device</field>
+</message>
+
+<message name = "get_power_group" id = "20">
+Request for a full power chain from the group.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the group</field>
+</message>
+
+<message name = "get_power_datacenter" id = "21">
+Request for a full power chains in the target datacenter.
+    <field name = "element_id"  type = "number" size = "4">Unique asset element ID of the datacenter</field>
+</message>
+
+</class>

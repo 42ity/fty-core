@@ -97,7 +97,7 @@ public:
    *   - "1.2.3.0/24"
    *   - "::1"
    */
-  CIDRAddress(const std::string address);
+  CIDRAddress(const std::string &address);
 
   /**
    * \brief Creates new object with specified network.
@@ -108,7 +108,7 @@ public:
    *   - "10.0.0.1","32" 
    *   - "1.2.3.0/24","8"
    */
-  CIDRAddress(const std::string address, const std::string prefix);
+  CIDRAddress(const std::string &address, const std::string &prefix);
 
   /**
    * \brief Creates new object with specified network.
@@ -120,7 +120,17 @@ public:
    *   - "1.2.3.0/24", 8
    *   - "::1",128
    */
-  CIDRAddress(const std::string address, const unsigned int prefix);
+  CIDRAddress(const std::string &address, const unsigned int prefix);
+
+  /**
+   * \brief Creates new object from in_addr.
+   * \param structure with ip address
+   *
+   * The address is set to accorting the parameter.
+   */
+  CIDRAddress(const struct in_addr* address);
+  CIDRAddress(const struct in6_addr* address);
+  CIDRAddress(const struct sockaddr* address);
 
   /**
    * \brief Creates new object with specified network.
@@ -176,7 +186,7 @@ public:
    *     A = "127.0.0.1/32";
    *
    */
-  CIDRAddress& operator=(const std::string address);
+  CIDRAddress& operator=(const std::string &address);
 
   /**
    * \brief set CIDRAddress from another CIDRAddress.
@@ -237,6 +247,23 @@ public:
    * Method returns prefix or -1 on error (invalid address).
    */
   int  prefix() const;
+
+  /**
+   * \brief netmask of CIDRAddress.
+   *
+   * Method returns netmask or "" on error (invalid address, IPv6).
+   */
+  std::string netmask() const;
+
+  /**
+   * \brief test if this addres can be netmask.
+   *
+   * Method returns true if address is netmask. Make sense for IPv4.
+   * for example
+   * * CIDRAddress("255.255.0.3").isNetmask() == false
+   * * CIDRAddress("255.128.0.0").isNetmask() == true
+   */
+  bool isNetmask() const;
 
   /**
    * \brief set IP address to invalid (You can imagine this address as 0.0.0.0 or ::)
@@ -327,13 +354,16 @@ public:
    * \brief set address according parameter
    * \return true on success (string is valid IP, we have enough memory, ...)
    */
-  bool set(const std::string text);
+  bool set(const std::string &text);
 
   /**
    * \brief set address according parameter
-   * \return true when from.valid()
+   * \return true when address is valid
    */
   bool set(const CIDRAddress& from);
+  bool set(const struct in_addr* address);
+  bool set(const struct in6_addr* address);
+  bool set(const struct sockaddr* address);
 
   /**
    * \brief converts address to string
@@ -417,7 +447,7 @@ public:
    * \brief Add new network to includes
    * \param string representing network address
    */
-  bool add(const std::string net);
+  bool add(const std::string &net);
 
   /**
    * \brief Add new network to includes
@@ -429,7 +459,7 @@ public:
    * \brief Add new exclude network
    * \param string representing network address
    */
-  bool exclude(const std::string net);
+  bool exclude(const std::string &net);
 
   /**
    * \brief Add new exclude network
@@ -470,42 +500,42 @@ public:
   /**
    * \brief find lowest address in list
    */
-  CIDRAddress firstAddress();
+  CIDRAddress firstAddress() const;
 
   /**
    * \brief Find highest address in list (broadcast excluded).
    */
-  CIDRAddress lastAddress();
+  CIDRAddress lastAddress() const;
 
   /**
    * \brief Find the network with largest prefix, where requested address is included.
    */
-  CIDRAddress bestNetworkFor(CIDRAddress& address);
+  CIDRAddress bestNetworkFor(CIDRAddress& address) const;
 
   /**
    * \brief Find prefix len for inclusion (-1 = not in list).
    */
-  int         bestNetworkPrefixFor(CIDRAddress& address);
+  int bestNetworkPrefixFor(CIDRAddress& address) const;
 
   /**
    * \brief find the network with largest prefix, where requested address is excluded.
    */
-  CIDRAddress bestExcludeFor(CIDRAddress& address);
+  CIDRAddress bestExcludeFor(CIDRAddress& address) const;
 
   /**
    * \brief Find prefix len for exclusion (-1 = not in list).
    */
-  int         bestExcludePrefixFor(CIDRAddress& address);
+  int  bestExcludePrefixFor(CIDRAddress& address) const;
 
   /**
    * \brief Simple evaluation if address is in included networks.
    */
-  bool includes(const CIDRAddress& address);
+  bool includes(const CIDRAddress& address) const;
 
   /**
    * \brief Simple evaluation if address is in excluded networks.
    */
-  bool excludes(const CIDRAddress& address);
+  bool excludes(const CIDRAddress& address) const;
 private:
   // list of includes
   std::vector<CIDRAddress> _networks;
@@ -515,9 +545,9 @@ private:
   CIDRAddress _last;
 
   // skipping gaps between networks
-  void _skipToNextPool(CIDRAddress& address);
+  void _skipToNextPool(CIDRAddress& address) const;
   // skipping to the end of exclude or to beginning of next include
-  void _skipToExcludeEnd(CIDRAddress& address);
+  void _skipToExcludeEnd(CIDRAddress& address) const;
   // simple increment address of 1 eventually go at the beginning
   bool _nextSimple(CIDRAddress& address);
 };

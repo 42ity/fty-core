@@ -1,0 +1,65 @@
+<%pre>
+#include "tokens.h"
+#include "auth_levels.h"
+#include <tnt/httpmessage.h>
+#include <tnt/httpheader.h>
+
+#ifdef DEBUG
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+#include <string>
+#endif
+
+</%pre>
+<%request scope="global">
+int8_t access_auth_level;
+</%request>
+<%cpp>
+
+#ifdef DEBUG
+	std::ostringstream os;
+	os << "access_auth_level=\"" << (int)access_auth_level << "\"";
+	reply.setHeader( (std::string)"X-Auth-Require: ", os.str() );
+#endif
+
+switch (access_auth_level) {
+case AUTH_LEVEL_ERROR_EMPTY:
+case AUTH_LEVEL_ANONYMOUS:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+	reply.setContentType("text/html;charset=UTF-8");
+
+	/* TODO: Return a JSON error here, and set a redirect (refresh header
+	    and/or a Location header) to point interactive browsers at a page
+	    with information about login error and the login service URL */
+</%cpp>
+<html><body><h1>Not authorized, <a href="/api/1.0/token">get token</a> first!</h1></body></html>
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+case AUTH_LEVEL_ERROR_INVALID:
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+</%cpp>
+{
+    "error":"invalid_token"
+}
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+	break;
+}
+
+if (access_auth_level<AUTH_LEVEL__MIN || access_auth_level>AUTH_LEVEL__MAX) {
+	/* Some other level of error that we do not know - mismatch with
+	    auth-verify.ecpp and/or RFC-11 definitions */
+	reply.setHeader(tnt::httpheader::wwwAuthenticate, "Bearer realm=\"bios\"");
+</%cpp>
+{
+    "error":"invalid_auth_level_determined"
+}
+<%cpp>
+	return HTTP_UNAUTHORIZED;
+}
+
+/* Go on to next module in tntnet.xml, user is authorized with a known level */
+return DECLINED;
+</%cpp>

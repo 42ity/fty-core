@@ -1,0 +1,136 @@
+<%pre>
+#include "cleanup.h"
+#include <czmq.h>
+#include <cxxtools/split.h>
+
+#include "assetcrud.h"
+#include "data.h"
+#include "calc_power.h"
+#include "dbpath.h"
+#include "db/measurements.h"
+
+static const std::map<const std::string, const std::string> PARAM_TO_SRC = {
+    {"total_power", "realpower.default"},
+    {"avg_power_last_day", "realpower.default_arithmetic_mean_24h"},
+    {"avg_power_last_week", "<zero>"},
+    {"avg_power_last_month", "<zero>"},
+    {"avg_power_last_year", "<zero>"}
+};
+
+float
+total_rack_power(
+    tntdb::Connection& conn,
+    const std::string& src,
+    a_elmnt_id_t id)
+{
+
+    if (src == "<zero>")
+        return 0.0f;
+
+    m_msrmnt_value_t value;
+    m_msrmnt_scale_t scale;
+    auto reply = persist::select_measurement_last_web_byElementId(conn, src, id, value, scale);
+
+    if (reply.rv != 0)
+        return 0.0f;
+
+    return value * pow(10,scale);
+}
+
+static bool
+s_is_valid_param(const std::string& p)
+{
+    return PARAM_TO_SRC.count(p) != 0;
+}
+
+</%pre>
+<%args>
+std::string arg1;
+std::string arg2;
+</%args>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%cpp>
+    // Check URL validity
+    if( arg1 == "" || arg2 == "" ) {
+</%cpp>
+{ "error":"bad_input", "msg":"missing argument" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> racks; // list of ids of racks from argument string
+    std::vector<std::string> rackNames;
+    std::vector<std::string> requestedParams;
+    cxxtools::split(",", arg1, std::back_inserter(racks));
+    // check that racks exists
+
+    auto allRacksShort= asset_mgr.get_items1("rack");
+    if ( allRacksShort.status == 0 )
+    {
+        // TODO better error handling by types
+</%cpp>
+{ "error":"internal error", "msg":"while reading information about racks"}
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;   
+    }
+    for ( size_t i = 0; i < racks.size() ; i++ )
+    {
+        // TODO add better converter
+        uint32_t real_id = atoi(racks[i].c_str());
+        if ( real_id == 0 )
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid rack id <$$ racks[i]$> (can not convert)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        auto it = allRacksShort.item.find(real_id);
+        if ( it != allRacksShort.item.end() )
+        {
+            rackNames.push_back(it->second);
+        }
+        else
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid rack id <$$ racks[i]$> (doesn't exist)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+    
+    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+    for(std::string &param: requestedParams) {
+        if (! s_is_valid_param(param)) {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid_parameter" }
+<%cpp>
+           return HTTP_BAD_REQUEST;
+       }
+    }
+    std::stringstream json;
+try {
+    tntdb::Connection conn = tntdb::connectCached (url);
+   json << "{\n  \"rack_total\": [\n";
+   for( size_t R = 0 ; R < racks.size(); R++ ) {
+       json   << "    {\n"
+              << "      \"id\":   \"" << racks[R] << "\",\n"
+              << "      \"name\": \"" << rackNames[R] << "\",\n";
+       for(size_t P = 0; P < requestedParams.size(); P++ ) {
+           const std::string& key = requestedParams[P];
+           const std::string& val = PARAM_TO_SRC.at(key);   //XXX: operator[] does not work here!
+           json  << "      \"" << key << "\": "<< total_rack_power(conn, val, atoi( racks[R].c_str() ) );
+           json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
+       };
+       json << "    }" << ( (R < racks.size() - 1) ? "," : "" ) << " \n";
+   }
+   json << "  ]\n}\n";
+} catch ( const std::invalid_argument& e ) {
+</%cpp>
+    { "error" : "<$$ e.what()$>" }
+<%cpp>
+      return HTTP_BAD_REQUEST;
+}
+</%cpp>
+<$$ json.str() $>

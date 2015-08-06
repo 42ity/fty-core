@@ -1,191 +1,206 @@
 <%pre>
 #include <czmq.h>
-#include <cxxtools/split.h>
 
-#include "asset_msg.h"
-#include "common_msg.h"
+#include "log.h"
 #include "data.h"
-#include "assetmsg.h"
+
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;
 </%thread>
+
 <%cpp>
+{
     // Check URL validity
-    std::string id;
-    if((id = request.getArg("id")).empty()) {
+    std::string typeNameArg = request.getArg("type");
+    std::string id = request.getArg("id");
+    if ( id.empty() ) {
 </%cpp>
-{ "error":"invalid_url" }
+        { "error":"invalid_url" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
     // Get data
-    zmsg_t *tmp = asset_mgr.get_item(request.getArg("type"), id);
-    asset_msg_t *dta = NULL;
-    asset_msg_t *device = NULL;
-    if ( tmp != NULL ) 
+    auto tmp = asset_mgr.get_item1(id);
+    if ( tmp.status == 0 )
     {
-        if ( is_asset_msg (tmp) )
+        switch ( tmp.errsubtype )
         {
-            asset_msg_t* element = asset_msg_decode (&tmp);
-            if ( asset_msg_id (element) == ASSET_MSG_DEVICE ) 
-            {
-                device = element;
-                zmsg_t *tmp_msg = asset_msg_get_msg (element);
-                dta = asset_msg_decode (&tmp_msg);
-            } else if (asset_msg_id (element) == ASSET_MSG_ELEMENT ) {
-                dta = element;
-            }
-            else
-            {
-                asset_msg_destroy (&element);
-                dta = NULL;
-                // TODO proper error handling
-            }
+            case DB_ERROR_NOTFOUND:
+</%cpp>
+                { "error":"item_not_found" }
+<%cpp>
+                return HTTP_NOT_FOUND;
+            case DB_ERROR_BADINPUT:
+</%cpp>
+                { "error":"bad_input" }
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            case DB_ERROR_INTERNAL:
+</%cpp>
+                { "error":"internal_error" }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
+            default:
+</%cpp>
+                { "error":"unknown error" }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;
         }
-        else if( is_common_msg (tmp) )
-        {
-            common_msg_t* commonmsg = common_msg_decode (&tmp);
-            if ( common_msg_id (commonmsg) == COMMON_MSG_FAIL )
-            {
-                switch ( common_msg_errorno (commonmsg) ) {
-                    case DB_ERROR_NOTFOUND:
+    } 
+    if ( !typeNameArg.empty() && 
+         (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
+    {
 </%cpp>
-{ "error":"item_not_found" }
+                { "error":"item_not_found" }
 <%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_NOT_FOUND;
-                    case DB_ERROR_BADINPUT:
-</%cpp>
-{ "error":"bad_input" }
-<%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_BAD_REQUEST;
-                    default:
-</%cpp>
-{ "error":"internal_error" }
-<%cpp>
-                        common_msg_destroy (&commonmsg);
-                        return HTTP_INTERNAL_SERVER_ERROR;
-                }
-            }
-            else
-            {
-                common_msg_destroy (&commonmsg);
-                dta = NULL;
-                //TODO proper error handling
-            }
-        }
-        else {
-            zmsg_destroy (&tmp);
-            dta = NULL;
-        }
-    }
-    if ( dta == NULL ) {
-</%cpp>
-{ "error":"internal_error" }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+        return HTTP_NOT_FOUND;
     }
 
     // Prepare the reply
-    char buff[16];
 </%cpp>
 {
-      "id": "<$ id $>"
-    , "name": "<$ asset_msg_name(dta) $>"
+      "id": "<$$ tmp.item.basic.id $>"
+    , "name": "<$$ tmp.item.basic.name $>"
+    , "status": "<$$ tmp.item.basic.status $>"
+%   if ( tmp.item.basic.bc == 0 )
+%   {
+    , "business_critical": "no"
+%   }
+%   else
+%   {
+    , "business_critical": "yes"
+%   }
+    , "priority": "P<$$ tmp.item.basic.priority $>"
 <%cpp>
-    zhash_t *ext = asset_msg_get_ext(dta);
-    assert (ext);
-    int ext_count = 0;
-    if ( ext != NULL ) {
-        ext_count = zhash_size (ext);
-    }
-    int i = 0;
-    void *it;
-
-    sprintf(buff, "%d", asset_msg_location (dta));
-    if ( ( asset_msg_location (dta) != 0 ) && 
-         ( asset_msg_location_type (dta) != asset_type::UNKNOWN ) ) {
+    // if element is located, then show the location
+    if ( tmp.item.basic.parent_id != 0 )
+    {
 </%cpp>
-    , "location_uri":"<$ "/api/v1/asset/" +
-                   asset_mgr.byte_to_type(asset_msg_location_type (dta)) + "/" +
-                   buff $>"
-<%cpp>
-    }
-    // Device is special element with more attributes
-    if ( asset_mgr.type_to_byte (request.getArg("type") ) == asset_type::DEVICE ) {
-        std::string temp_string;
-</%cpp>
-%       if ( !( temp_string = asset_msg_device_type(device)).empty() ) {
-    , "type": "<$ temp_string $>"
-%       }
-%       if(!(temp_string = asset_msg_ip(device)).empty()) {
-    , "ip": "<$ temp_string $>"
-%       }
-%       if(!(temp_string = asset_msg_hostname(device)).empty()) {
-    , "hostname": "<$ temp_string $>"
-%       }
-%       if(!(temp_string = asset_msg_fqdn(device)).empty()) {
-    , "fqdn": "<$ temp_string $>"
-%       }
-%       if(!(temp_string = asset_msg_mac(device)).empty()) {
-    , "mac": "<$ temp_string $>"
-%       }
-<%cpp>
-        zlist_t *groups = asset_msg_get_groups (device);
-        if ( groups != NULL ) {
-            void* last = zlist_last(groups);
-</%cpp>
+    , "location_uri":"<$$ "/api/v1/asset/" +
+                   asset_mgr.byte_to_type(tmp.item.basic.parent_type_id) + "/" +
+                   std::to_string (tmp.item.basic.parent_id) $>"
+%   }
     , "groups": [
-%           for(it = zlist_first(groups); it != 0;
-%               it = zlist_next(groups) ) {
-          "/api/v1/asset/group/<$ (char*)it $>"<? it != last ? "," ?>
-%           }
-       ]
 <%cpp>
+    // every element (except groups) can be placed in some group
+    if ( !tmp.item.groups.empty() )
+    {
+        uint32_t group_count = tmp.item.groups.size();
+        uint32_t i = 1;
+        for ( auto &oneGroup : tmp.item.groups )
+        {
+</%cpp>
+        "/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
+<%cpp>
+            i++;
+        }   
+    }
+</%cpp>
+    ]
+<%cpp>
+    // Device is special element with more attributes
+    if ( tmp.item.basic.type_id == asset_type::DEVICE )
+    {
+</%cpp>
+    , "type": "<$$ tmp.item.basic.subtype_name $>"
+<%cpp>
+        // from csv import ip.1, ip.2 ... can appear, but for now deal with one
+        auto it = tmp.item.ext.find("ip.1");
+        if ( it != tmp.item.ext.end() )
+        {
+</%cpp>
+    , "ip":"<$$ it->second.first $>"
+<%cpp>
+            tmp.item.ext.erase(it);
         }
-        zlist_destroy (&groups);
-        zlist_t *power = asset_msg_get_powers(device);
+        
+        it = tmp.item.ext.find("hostname.1");
+        if ( it != tmp.item.ext.end() )
+        {
+</%cpp>
+    , "hostname":"<$$ it->second.first $>"
+<%cpp>
+            tmp.item.ext.erase(it);
+        }
+        
+        it = tmp.item.ext.find("fdqn.1");
+        if ( it != tmp.item.ext.end() )
+        {
+</%cpp>
+    , "fdqn":"<$$ it->second.first $>"
+<%cpp>
+            tmp.item.ext.erase(it);
+        }
 
-        if ( power != NULL ) {
-            void* last = zlist_last(power);
+        it = tmp.item.ext.find("mac.1");
+        if ( it != tmp.item.ext.end() )
+        {
+</%cpp>
+    , "mac":"<$$ it->second.first $>"
+<%cpp>
+            tmp.item.ext.erase(it);
+        }
 </%cpp>
     , "powers": [
 <%cpp>
-            for(it = zlist_first(power); it != 0;
-                it = zlist_next(power) ) {
-                std::vector<std::string> tokens;
-                cxxtools::split(':', std::string((char*)it), std::back_inserter(tokens));
-
-                if(tokens.size() != 4) continue;
-</%cpp>
+        if ( !tmp.item.powers.empty() )
         {
-            "src_socket":"<$ tokens[0] $>",
-            "src_uri":"/api/v1/asset/device/<$ tokens[1] $>",
-            "dst_socket":"<$ tokens[2] $>"
-        }<? it != last ? "," ?>
-%           }
-        ]
+            uint32_t power_count = tmp.item.powers.size();
+            uint32_t i = 1;
+            for ( auto &oneLink : tmp.item.powers )
+            {
+</%cpp>
+        {"src_uri":"/api/v1/asset/device/<$$ oneLink.src_id $>"
 <%cpp>
+                if ( !oneLink.src_socket.empty() )
+                {
+</%cpp>
+        ,"src_socket":"<$$ oneLink.src_socket $>"
+<%cpp>
+                }
+                if ( !oneLink.dest_socket.empty() )
+                {
+</%cpp>
+        ,"dest_socket":"<$$ oneLink.dest_socket $>"
+%               }
+        }<? i != power_count ? "," ?>
+<%cpp>
+                i++;
+            }
         }
-        zlist_destroy (&power);
+</%cpp>
+    ]
+<%cpp>
     }
 
-    if ( ext_count > 0 ) {
+    if ( tmp.item.basic.type_id == asset_type::GROUP )
+    {
+        auto it = tmp.item.ext.find("type");
+        if ( it != tmp.item.ext.end() )
+        {
 </%cpp>
-    , "ext" : {
+    , "type":"<$$ it->second.first $>"
 <%cpp>
-        for ( i = 1, it = zhash_first(ext); it != 0;
-                    i++,   it = zhash_next(ext) ) {
-</%cpp>
-        "<$ (char*) zhash_cursor (ext) $>":"<$ (char*)it $>"<? i != ext_count ? "," ?>
-%       }
+            tmp.item.ext.erase(it);
+        }
     }
+    if ( !tmp.item.ext.empty() )
+    {
+</%cpp>
+    , "ext" : [
+<%cpp>
+        uint32_t ext_count = tmp.item.ext.size();
+        uint32_t i = 1;
+        for ( auto &oneExt : tmp.item.ext )
+        {
+</%cpp>
+        {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
+<%cpp>
+            i++;
+        }
+</%cpp>
+    ]
 %   }
 }
-<%cpp>
-    zhash_destroy (&ext);
-    asset_msg_destroy (&dta);
-    asset_msg_destroy (&device);
-</%cpp>
+% }

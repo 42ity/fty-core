@@ -1,6 +1,7 @@
 #include "cidr.h"
 #include <cstdio>
 #include <stdlib.h>
+#include <string.h>
 
 namespace shared {
 
@@ -8,19 +9,34 @@ CIDRAddress::CIDRAddress() {
   _cidr = NULL;
 }
 
-CIDRAddress::CIDRAddress(const std::string address) {
+CIDRAddress::CIDRAddress(const std::string &address) {
   _cidr = NULL;
   set(address);
 }
 
-CIDRAddress::CIDRAddress(const std::string address, const std::string prefix) {
+CIDRAddress::CIDRAddress(const std::string &address, const std::string &prefix) {
   _cidr = NULL;
   set(address + "/" + prefix);
 }
 
-CIDRAddress::CIDRAddress(const std::string address, const unsigned int prefix) {
+CIDRAddress::CIDRAddress(const std::string &address, const unsigned int prefix) {
   _cidr = NULL;
   set(address + "/" + std::to_string( prefix ) );
+}
+
+CIDRAddress::CIDRAddress(const struct in_addr* address) {
+  _cidr = NULL;
+  set(address);
+}
+
+CIDRAddress::CIDRAddress(const struct in6_addr* address) {
+  _cidr = NULL;
+  set(address);
+}
+
+CIDRAddress::CIDRAddress(const struct sockaddr* address) {
+  _cidr = NULL;
+  set(address);
 }
 
 CIDRAddress::CIDRAddress(const CIDRAddress& address) {
@@ -35,12 +51,14 @@ CIDRAddress::CIDRAddress(CIDRAddress&& other) {
 }
 
 CIDRAddress& CIDRAddress::operator++() {
+  
+  if( ! valid() ) return *this;
+  
   struct in_addr inaddr;
   struct in6_addr in6addr;
   unsigned char *bytes; 
   int i;
   
-  if( ! valid() ) return *this;
   // do nothing for networks?
   if( cidr_get_proto(_cidr) == CIDR_IPV4 ) {
     cidr_to_inaddr(_cidr, &inaddr);
@@ -63,12 +81,14 @@ CIDRAddress& CIDRAddress::operator++() {
 }
 
 CIDRAddress& CIDRAddress::operator--() {
+  
+  if( ! valid() ) return *this;
+  
   struct in_addr inaddr;
   struct in6_addr in6addr;
   unsigned char *bytes; 
   int i;
   
-  if( ! valid() ) return *this;
   // do nothing for networks?
   if( cidr_get_proto(_cidr) == CIDR_IPV4 ) {
     cidr_to_inaddr(_cidr, &inaddr);
@@ -130,15 +150,39 @@ int CIDRAddress::prefix() const {
   }
 }
 
+std::string CIDRAddress::netmask() const {
+  std::string result;
+
+  if( protocol() == 4 ) { // make sense only for IPv4
+    char *cstr = cidr_to_str(_cidr,CIDR_NETMASK);
+    if( cstr ) {
+      char *p = strchr(cstr,'/');
+      if( p ) {
+        result = ++p;
+      }
+      free(cstr);
+    }
+  }
+  return result;
+}
+
+bool CIDRAddress::isNetmask() const {
+  std::string result;
+
+  if( protocol() != 4 ) return false; // make sense only for IPv4
+  return CIDRAddress( "1.1.1.1/" + toString() ).valid();
+}
+
 void CIDRAddress::invalidate() {
   setCidrPtr(NULL);
 }
 
 bool CIDRAddress::valid() const {
+  if( _cidr == NULL ) return false;
+  
   in_addr in_addr4;
   in6_addr in_addr6;
   
-  if( _cidr == NULL ) return false;
   if( cidr_get_proto(_cidr) == CIDR_IPV4 ) {
     if( cidr_to_inaddr(_cidr,&in_addr4) ) {
       return (in_addr4.s_addr != 0); // 0.0.0.0 address
@@ -192,11 +236,13 @@ CIDRAddress CIDRAddress::hostMax() const {
 }
 
 CIDRAddress CIDRAddress::host() const {
+  
   CIDRAddress result;
+  if( ! valid() ) return result;
+  
   in_addr in_addr4;
   in6_addr in_addr6;
   
-  if( ! valid() ) return result;
   if( cidr_get_proto(_cidr) == CIDR_IPV4 ) {
     cidr_to_inaddr(_cidr,&in_addr4);
     result.setCidrPtr( cidr_from_inaddr(&in_addr4) );
@@ -225,7 +271,7 @@ CIDRAddress CIDRAddress::broadcast() const {
   return result;
 }
 
-bool CIDRAddress::set(const std::string text) {
+bool CIDRAddress::set(const std::string &text) {
   CIDR *newcidr = cidr_from_str(text.c_str());
   setCidrPtr(newcidr);
   return (_cidr != NULL);
@@ -234,6 +280,30 @@ bool CIDRAddress::set(const std::string text) {
 bool CIDRAddress::set(const CIDRAddress& from) {
   setCidrPtr(from._cidr ? cidr_dup(from._cidr) : NULL);
   return ( _cidr != NULL );
+}
+
+bool CIDRAddress::set(const struct in_addr* address) {
+    CIDR *newcidr = cidr_from_inaddr(address);
+    setCidrPtr(newcidr);
+    return (_cidr != NULL);
+}
+
+bool CIDRAddress::set(const struct in6_addr* address) {
+    CIDR *newcidr = cidr_from_in6addr(address);
+    setCidrPtr(newcidr);
+    return (_cidr != NULL);
+}
+
+bool CIDRAddress::set(const struct sockaddr* address) {
+    setCidrPtr(NULL);
+    if( ! address ) return false;
+    switch( address->sa_family ) {
+    case AF_INET:
+        return set( &( ((struct sockaddr_in *)address)->sin_addr ) );
+    case AF_INET6:
+        return set( &( ((struct sockaddr_in6 *)address)->sin6_addr ) );            
+    }
+    return false;
 }
 
 std::string CIDRAddress::toString() const {
@@ -270,7 +340,7 @@ std::string CIDRAddress::toString(CIDROptions opt) const {
   return addr;
 }
 
-  int CIDRAddress::compare(const CIDRAddress &a2) const {
+int CIDRAddress::compare(const CIDRAddress &a2) const {
   struct in_addr inaddr1, inaddr2;
   struct in6_addr in6addr1, in6addr2;
   unsigned char *bytes1, *bytes2;
@@ -322,7 +392,7 @@ std::string CIDRAddress::toString(CIDROptions opt) const {
   }
 }
 
-CIDRAddress& CIDRAddress::operator=(const std::string address) {
+CIDRAddress& CIDRAddress::operator=(const std::string &address) {
   set(address);
   return *this;
 }
@@ -427,7 +497,7 @@ bool CIDRList::next(CIDRAddress& address) {
   return address.valid();
 }
 
-bool CIDRList::add(const std::string net) {
+bool CIDRList::add(const std::string &net) {
   CIDRAddress cnet(net);
   return add(cnet);
 }
@@ -443,7 +513,7 @@ bool CIDRList::add(const CIDRAddress& net) {
   return true;
 }
 
-bool CIDRList::exclude(const std::string net) {
+bool CIDRList::exclude(const std::string &net) {
   CIDRAddress cnet(net);
   return exclude(cnet);
 }
@@ -457,7 +527,7 @@ bool CIDRList::exclude(const CIDRAddress& net) {
   return true;
 }
 
-CIDRAddress CIDRList::firstAddress() {
+CIDRAddress CIDRList::firstAddress() const {
   CIDRAddress addr, result;
   if( ! _networks.size() ) { return result; }
   result = _networks[0].host();
@@ -468,7 +538,7 @@ CIDRAddress CIDRList::firstAddress() {
   return result;
 }
 
-CIDRAddress CIDRList::lastAddress() {
+CIDRAddress CIDRList::lastAddress() const{
   CIDRAddress addr, result;
   if( ! _networks.size() ) { return result; }
   result = _networks[0].hostMax();
@@ -479,7 +549,7 @@ CIDRAddress CIDRList::lastAddress() {
   return result;
 }
 
-CIDRAddress CIDRList::bestNetworkFor(CIDRAddress& address) {
+CIDRAddress CIDRList::bestNetworkFor(CIDRAddress& address) const{
   int prefix, bestprefix = -1;
   CIDRAddress net;
 
@@ -495,7 +565,7 @@ CIDRAddress CIDRList::bestNetworkFor(CIDRAddress& address) {
   return net;
 }
 
-void CIDRList::_skipToNextPool(CIDRAddress& address) {
+void CIDRList::_skipToNextPool(CIDRAddress& address) const{
   CIDRAddress selected;
   for(unsigned int i=0; i<_networks.size(); i++ ) {
     // we should not walk trough ipv6
@@ -513,7 +583,7 @@ void CIDRList::_skipToNextPool(CIDRAddress& address) {
   address.set(selected);
 }
 
-void CIDRList::_skipToExcludeEnd(CIDRAddress& address) {
+void CIDRList::_skipToExcludeEnd(CIDRAddress& address) const {
   CIDRAddress currentExclude = bestExcludeFor(address);
   CIDRAddress excludeEnd = currentExclude.broadcast();
   CIDRAddress selected = excludeEnd;
@@ -534,13 +604,13 @@ void CIDRList::_skipToExcludeEnd(CIDRAddress& address) {
   address.set(selected);
 }
 
-int CIDRList::bestNetworkPrefixFor(CIDRAddress& address) {
+int CIDRList::bestNetworkPrefixFor(CIDRAddress& address) const{
   CIDRAddress bestnet = bestNetworkFor(address);
   if(bestnet.valid()) return bestnet.prefix();
   return -1;
 }
 
-CIDRAddress CIDRList::bestExcludeFor(CIDRAddress& address) {
+CIDRAddress CIDRList::bestExcludeFor(CIDRAddress& address) const {
   int prefix, bestprefix = -1;
   CIDRAddress net;
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ) {
@@ -555,20 +625,20 @@ CIDRAddress CIDRList::bestExcludeFor(CIDRAddress& address) {
   return net;
 }
 
-int CIDRList::bestExcludePrefixFor(CIDRAddress& address) {
+int CIDRList::bestExcludePrefixFor(CIDRAddress& address) const {
   CIDRAddress bestnet = bestExcludeFor(address);
   if(bestnet.valid()) return bestnet.prefix();
   return -1;
 }
 
-bool CIDRList::includes(const CIDRAddress& address) {
+bool CIDRList::includes(const CIDRAddress& address) const {
   for(unsigned int i=0; i<_networks.size(); i++ ){
     if( _networks[i].contains(address)  ) return true;
   }
   return false;
 }
 
-bool CIDRList::excludes(const CIDRAddress& address) {
+bool CIDRList::excludes(const CIDRAddress& address) const{
   for(unsigned int i=0; i<_excludedNetworks.size(); i++ ){
     if( _excludedNetworks[i].contains(address) ) {
       return true;

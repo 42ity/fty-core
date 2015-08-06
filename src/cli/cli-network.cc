@@ -145,7 +145,7 @@ do_network_show(
 FILE *stream, const char* message, const struct global_opts *gopts) {
 	assert(stream);
   if (stream == NULL) {
-    log_error("stream empty\n");
+    log_error("stream empty");
     return EXIT_FAILURE;
   }
 
@@ -167,7 +167,7 @@ FILE *stream, const char* message, const struct global_opts *gopts) {
 /*
   bool res = rd.parse(message, root, false);
   if (res == false) {
-      log_error("Error parsing json message:\n%s\n",
+      log_error("Error parsing json message:\n%s",
               rd.getFormattedErrorMessages().c_str());
       return EXIT_FAILURE;
   }
@@ -226,20 +226,20 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   }
 
 #ifndef NDEBUG
-  log_debug("####\tdo_network()\t####\n");
-  log_debug("# argc: '%d'\n# optind: '%d'\n", argc, optind);
-  log_debug("# **argv:\n");  
+  log_debug("####\tdo_network()\t####");
+  log_debug("# argc: '%d'\n# optind: '%d'", argc, optind);
+  log_debug("# **argv:");  
   for (int i = 0; i < argc; i++) {
-    log_debug("#\t[ %d ]\t%s\n", i, argv[i]);
+    log_debug("#\t[ %d ]\t%s", i, argv[i]);
   }
-  log_debug("# non-option ARGV-elements:\n");
+  log_debug("# non-option ARGV-elements:");
   {
     int i = optind;
     while (i < argc) {
-      log_debug("#\t%s\n", argv[i++]);
+      log_debug("#\t%s", argv[i++]);
     }
   }
-  log_debug("\n");
+  log_debug("");
 #endif
 
   if (optind >= argc) {
@@ -253,7 +253,7 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   const char *zmq_bus_env = getenv("ZMQ_BUS");
   if (zmq_bus_env == NULL || strlen(zmq_bus_env) == 0) {    
     ZMQ_BUS.assign(ZMQ_BUS_DEFAULT);
-    log_info("environmental variable ZMQ_BUS not set. Defaulting to '%s'\n",
+    log_info("environmental variable ZMQ_BUS not set. Defaulting to '%s'",
             ZMQ_BUS.c_str());    
   } else {
     ZMQ_BUS.assign(zmq_bus_env);
@@ -262,23 +262,23 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
   void *context = NULL;
   context = zmq_ctx_new();
   if (context == NULL) {
-    log_error("zmq_ctx_new() failed: %m.\n");
+    log_error("zmq_ctx_new() failed: %m.");
     return EXIT_FAILURE; // TODO KHR (?) : maybe create defines for various errors?
   }
   void *socket = NULL;
   socket = zmq_socket(context, ZMQ_DEALER);
   if (socket == NULL) {
-    log_error("zmq_socket() failed: %m.\n");
+    log_error("zmq_socket() failed: %m.");
     return EXIT_FAILURE;
   }
   int ret = zmq_setsockopt(socket, ZMQ_IDENTITY, "cli", strlen("cli")); // hmmptf  
   if (ret == -1) {
-    log_error("zmq_setsockopt() failed, errno ='%d': %m\n", zmq_errno());
+    log_error("zmq_setsockopt() failed, errno ='%d': %m", zmq_errno());
     return EXIT_FAILURE;
   }  
   ret =  zmq_connect(socket, ZMQ_BUS.c_str());
   if (ret == -1) {
-    log_error("zmq_connect() failed: %m.\n");
+    log_error("zmq_connect() failed: %m.");
     return EXIT_FAILURE;
   }
 
@@ -287,8 +287,8 @@ const int argc, const char **gargv, const struct global_opts *gopts) {
     return EXIT_FAILURE;    
   }
 #ifndef NDEBUG
-  log_debug("\n####do_network()\t####\n");
-  log_debug("# Sending json:\n# %s\n", message.c_str());
+  log_debug("\n####do_network()\t####");
+  log_debug("# Sending json:\n# %s", message.c_str());
 #endif
   ret = zmq_send(socket, message.c_str(), message.size(), 0); //(int) ZMQ_DONTWAIT);  
 /* Unfortunatelly, i wasn't able to finish this successfully
@@ -310,9 +310,9 @@ return define/enum... however in the time given, i wasn't able to make it work..
     ret = zmq_recv(socket, buffer, ZMQ_RECV_BUFFER_SIZE, 0);
     buffer[ZMQ_RECV_BUFFER_SIZE] = '\0';
     if (ret > ZMQ_RECV_BUFFER_SIZE) {
-      log_warning("buffer too small and the message was truncated.\n");
+      log_warning("buffer too small and the message was truncated.");
     } else if (ret == -1) {    
-      log_error("zmq_recv failed: %m.\n");
+      log_error("zmq_recv failed: %m.");
       return EXIT_FAILURE;
     }
     return do_network_show(stdout, buffer, gopts);

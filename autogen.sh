@@ -18,12 +18,22 @@
 #
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+#   Description: Script to generate all required files from fresh git
+#   checkout.
+#   NOTE: It expects to be run in the root of the project directory
+#   (probably the checkout directory, unless you use strange set-ups).
 
-#   Script to generate all required files from fresh git checkout.
+[ -z "$LANG" ] && LANG=C
+[ -z "$LANGUAGE" ] && LANGUAGE=C
+[ -z "$LC_ALL" ] && LC_ALL=C
+[ -z "$TZ" ] && TZ=UTC
+export LANG LANGUAGE LC_ALL TZ
 
-command -v libtool >/dev/null 2>&1
+command -v libtool >/dev/null 2>&1 || command -v libtoolize >/dev/null 2>&1
 if  [ $? -ne 0 ]; then
-    echo "autogen.sh: error: could not find libtool.  libtool is required to run autogen.sh." 1>&2
+    echo "autogen.sh: error: could not find libtool nor libtoolize." 1>&2
+    echo "ERROR: libtool(ize) is required to run autogen.sh." 1>&2
     exit 1
 fi
 
@@ -45,123 +55,171 @@ if [ ! -d ./config ]; then
 	echo "autogen.sh: error: could not create directory: ./config." 1>&2
 	exit 1
     fi
-    if [ -s ./configure.ac ]; then
-	echo "autogen.sh: info: touching configure.ac to ensure rebuilding of configure script."
-	touch ./configure.ac
-    fi
 fi
 
-_OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
-if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
-    echo "autogen.sh: info: configure does not exist or is older than configure.ac - rebuilding."
+# This flag changes to yes if some obsolete/missing files are found
+# and unless FORCE_AUTORECONF=no, will trigger an autoreconf/automake
+# For FORCE_AUTORECONF="no" or "auto", we trace all such dependencies
+# to be at least informed of whether changes should be done, anyhow.
+SHOULD_AUTORECONF=no
+[ x"$FORCE_AUTORECONF" != xyes -a x"$FORCE_AUTORECONF" != xno ] && \
+    FORCE_AUTORECONF=auto
+
+# Likewise, detect if prerequisite packages needed for the build should
+# automagically be installed (creates a core-build-deps_0.1_all.deb in
+# workspace directory); root privs or sudo permissions may be required
+SHOULD_MKBUILDDEPS=no
+[ x"$FORCE_MKBUILDDEPS" != xyes -a x"$FORCE_MKBUILDDEPS" != xno ] && \
+    FORCE_MKBUILDDEPS=auto
+
+if [ x"$FORCE_AUTORECONF" != xyes ]; then
+    if [ ! -s "./configure" ]; then
+	echo "autogen.sh: info: configure does not exist."
+	SHOULD_AUTORECONF=yes
+    else
+	_OUT="`find . -maxdepth 1 -type f -name configure -newer configure.ac`"
+	if [ $? != 0 -o x"$_OUT" != x"./configure" ]; then
+	    echo "autogen.sh: info: configure is older than configure.ac."
+	    SHOULD_AUTORECONF=yes
+	fi
+
+	if [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ]; then
+	    _OUT="`find ./m4/ -type f -name '*.m4' -newer configure`"
+	    if [ $? != 0 -o x"$_OUT" != x ]; then
+		echo "autogen.sh: info: configure is older than some ./m4/*.m4 files:"
+		echo "$_OUT"
+		SHOULD_AUTORECONF=yes
+	    fi
+	fi
+    fi
+
+    [ x"$SHOULD_AUTORECONF" = xno -o x"$FORCE_AUTORECONF" = xno ] && \
+    for M_am in `find . -name Makefile.am`; do
+	DIR="`dirname ${M_am}`"
+	if [ ! -s "$DIR/Makefile.in" ]; then
+	    echo "autogen.sh: info: Missing $DIR/Makefile.in"
+	    SHOULD_AUTORECONF=yes
+	else
+	    _OUT="`cd "$DIR" && find . -maxdepth 1 -type f -name Makefile.in -newer Makefile.am`"
+	    if [ $? != 0 -o x"$_OUT" != x"./Makefile.in" ]; then
+		echo "autogen.sh: info: $DIR/Makefile.in is older than $DIR/Makefile.am."
+		SHOULD_AUTORECONF=yes
+	    fi
+	fi
+    done
+fi
+
+case x"$FORCE_AUTORECONF" in
+    xauto)
+	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+	    FORCE_AUTORECONF=yes
+	else
+	    echo "autogen.sh: info: no prerequisite changes detected for the configure script or Makefiles."
+	fi
+	;;
+    xno)
+	if [ x"$SHOULD_AUTORECONF" = xyes ]; then
+	    echo "autogen.sh: info: not rebuilding the configure script due to explicit request, but prerequisite changes were detected for the configure script or Makefiles." >&2
+	fi # else = don't want and don't have to rebuild configure, noop
+	;;
+esac
+
+if [ x"$FORCE_AUTORECONF" = xyes ]; then
+    echo "autogen.sh: info: rebuilding the configure script and Makefiles."
     autoreconf --install --force --verbose -I config
-    if [ $? -ne 0 ]; then
-	echo "autogen.sh: error: autoreconf exited with status $?" 1>&2
+    RES=$?
+    if [ $RES -ne 0 ]; then
+	echo "autogen.sh: error: autoreconf exited with status $RES" 1>&2
 	exit 1
     fi
 fi
+
+chmod +x "./configure"
 
 if [ ! -s "./configure" -o ! -x "./configure" ]; then
     echo "autogen.sh: error: configure does not exist or is not executable!" 1>&2
     exit 1
 fi
 
-[ x"$BLDARCH" = x ] && BLDARCH="`uname -s`-`uname -m`"
-[ x"$DESTDIR" = x ] && DESTDIR="/var/tmp/bios-core-instroot-${BLDARCH}"
-[ x"$NCPUS" = x ] && { NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`" || NCPUS="`cat /proc/cpuinfo | grep -wc processor`" || NCPUS=1; }
-[ x"$NCPUS" != x -a "$NCPUS" -ge 1 ] || NCPUS=1
-[ x"$NPARMAKES" = x ] && { NPARMAKES="`echo "$NCPUS*2"|bc`" || NPARMAKES="$(($NCPUS*2))" || NPARMAKES=2; }
-[ x"$NPARMAKES" != x -a "$NPARMAKES" -ge 1 ] || NPARMAKES=2
+MKBD_DSC="`dirname $0`/obs/core.dsc"
+MKBD_DEB_PATTERN='*-build-deps_*_all.deb'
+MKBD_DEB="`ls -1 $MKBD_DEB_PATTERN 2>/dev/null | egrep 'bios|core' | head -1`" || \
+    MKBD_DEB=""
+[ -z "$MKBD_DEB" ] && MKBD_DEB="core-build-deps_0.1_all.deb"
 
-buildSamedir() {
-	make -k distclean
-	./configure && \
-	{ make -k clean; \
-	  if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; }
-}
+if which mk-build-deps >/dev/null && which apt-get > /dev/null && [ -s "$MKBD_DSC" ] ; then
+    # mk-build-deps and debian packaging are at all supported
+    if [ x"$FORCE_MKBUILDDEPS" != xyes ]; then
+        if [ ! -s "$MKBD_DEB" ]; then
+	    echo "autogen.sh: info: $MKBD_DEB does not exist."
+	    SHOULD_MKBUILDDEPS=yes
+        else
+	    _OUT="`find . -maxdepth 1 -type f -name "$MKBD_DEB_PATTERN" \! -newer "$MKBD_DSC"`"
+	    if [ $? != 0 -o x"$_OUT" != x"" ]; then
+	        echo "autogen.sh: info: $MKBD_DEB is older than $MKBD_DSC."
+	        SHOULD_MKBUILDDEPS=yes
+            fi
+	fi
+    fi
 
-buildSubdir() {
-	make -k distclean
-	( { rm -rf build-${BLDARCH}; \
-	  mkdir build-${BLDARCH}; \
-	  cd build-${BLDARCH}; } && \
-	../configure && \
-	{ if [ x"$NOPARMAKE" != xY ]; then echo "=== PARMAKE:"; make V=0 -j $NPARMAKES -k "$@"; fi; \
-	  echo "=== SEQMAKE:"; make "$@"; } && \
-	{ make DESTDIR=${DESTDIR} install; } )
-}
+    case x"$FORCE_MKBUILDDEPS" in
+    xauto)
+	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
+	    FORCE_MKBUILDDEPS=yesauto
+	else
+	    echo "autogen.sh: info: no prerequisite package requirement changes detected."
+	fi
+	;;
+    xno)
+	if [ x"$SHOULD_MKBUILDDEPS" = xyes ]; then
+	    echo "autogen.sh: info: not verifying and perhaps installing prerequisite packages, even though the system may be obsolete." >&2
+	fi # else = don't want and don't have to verify pkgs, noop
+	;;
+    esac
 
-installSamedir() {
-	{ make DESTDIR=${DESTDIR} install; }
-}
+    if [ x"$FORCE_MKBUILDDEPS" = xyes -o x"$FORCE_MKBUILDDEPS" = xyesauto ]; then
+        echo "autogen.sh: info: Making sure all needed packages are installed (note: may try to elevate privileges)."
+        { echo "apt-get: Trying direct invokation..."
+          apt-get update -q; } || \
+        { echo "apt-get: Retrying sudo..."
+          sudo apt-get update -q || { echo "Wipe metadata and retry"; sudo rm -rf /var/lib/apt/lists/* && sudo apt-get update -q; } ; } || \
+        { echo "apt-get: Retrying su..."
+          su - -c "apt-get update -q || { echo 'Wipe metadata and retry'; rm -rf /var/lib/apt/lists/*; apt-get update -q; } "; }
 
-installSubdir() {
-	( cd build-${BLDARCH} && \
-	  make DESTDIR=${DESTDIR} install )
-}
+        echo "mk-build-deps: generate package file" && \
+        mk-build-deps "$MKBD_DSC" && [ -s "$MKBD_DEB" ] && \
+        { echo "mk-build-deps install: Trying direct invokation..."
+          export DEBIAN_FRONTEND=noninteractive
+          dpkg --force-all -i "$MKBD_DEB" && \
+          apt-get --yes --force-yes -f -q \
+                -o Dpkg::Options::="--force-confdef" \
+                -o Dpkg::Options::="--force-confold" \
+                install && \
+          dpkg --configure -a ; } || \
+        { echo "mk-build-deps install: Retrying sudo..."
+          sudo sh -c "export DEBIAN_FRONTEND=noninteractive ; dpkg --force-all -i '$MKBD_DEB' && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install && dpkg --configure -a"; } || \
+        { echo "mk-build-deps install: Retrying su..."
+          su - -c "export DEBIAN_FRONTEND=noninteractive ; dpkg --force-all -i '$MKBD_DEB' && apt-get --yes --force-yes -f -q -o Dpkg::Options::='--force-confdef' -o Dpkg::Options::='--force-confold' install && dpkg --configure -a"; }
+        RES=$?
+        if [ $RES -ne 0 ]; then
+            echo "autogen.sh: error: mk-build-deps exited with status $RES" 1>&2
+            [ x"$FORCE_MKBUILDDEPS" = xyes ] && \
+                exit 1 || \
+                echo "...continuing with autogen, but it may fail later due to this." >&2
+        fi
+    fi
+fi # clause-if we try mk-build-deps at all?
 
-while [ $# -gt 0 ]; do
-	case "$1" in
-	    "--warnless-unused")
-		shift
-		CFLAGS="$CFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		CXXFLAGS="$CXXFLAGS -Wno-unused-variable -Wno-unused-parameter -Wno-unused-but-set-variable"
-		export CFLAGS CXXFLAGS
-		echo "INFO: Fixed up CFLAGS and CXXFLAGS to ignore warnings about unused code"
-		;;
-	    *)	break ;;
-	esac
-done
+if [ $# = 0 ]; then
+    # Ensure that an exit at this point is "successful"
+    exit 0
+fi
 
-case "$1" in
-    "")
-	# Ensure that an exit at this point is "successful"
-	true
-	;;
-    build-samedir|build|make|make-samedir)
-	shift
-	buildSamedir "$@"
-	exit
-	;;
-    build-subdir|make-subdir)
-	shift
-	buildSubdir "$@"
-	exit
-	;;
-    install-samedir|install)
-	shift
-	buildSamedir "$@" && \
-	installSamedir
-	exit
-	;;
-    install-subdir)
-	shift
-	buildSubdir "$@" && \
-	installSubdir
-	exit
-	;;
-    distclean)
-	./configure && \
-	make -k distclean
-	;;
-    distcheck)
-	make -k distclean
-	./configure && \
-	make distcheck
-	;;
-    conf|configure)
-	make -k distclean
-	./configure
-	;;
-    *)	echo "Usage: $0 [--warnless-unused] [ { build-samedir | build-subdir | install-samedir | install-subdir } [maketargets...]]"
-	echo "This script (re-)creates the configure script and optionally either just builds"
-	echo "or builds and installs into a DESTDIR the requested project targets."
-	echo "For output clarity you can avoid the parallel pre-build step with export NOPARMAKE=Y"
-	echo "Some uses without further parameters:"
-	echo "Usage: $0 distcheck	- execute the distclean, configure and make distcheck"
-	echo "Usage: $0 configure	- execute the distclean and configure step and exit"
-	echo "Usage: $0 distclean	- execute the distclean step and exit"
-	exit 2
-	;;
-esac
+# Use up the hook into the build-automation routine
+if [ -x "`dirname $0`/tools/builder.sh" ]; then
+    AUTOGEN_DONE=yes
+    export AUTOGEN_DONE
+    echo "autogen.sh: info: calling the builder script to automate the rest of compilation."
+    exec "`dirname $0`/tools/builder.sh" "$@"
+fi
+

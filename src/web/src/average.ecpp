@@ -1,0 +1,176 @@
+<%pre>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <stdexcept>
+#include <cstdlib>
+#include <ctime>
+#include <cxxtools/split.h>
+#include <sys/types.h>
+#include <sys/syscall.h>
+
+#include "utils.h"
+#include "bios_agent.h"
+#include "agents.h"
+#include "ymsg.h"
+#include "str_defs.h"
+#include "utils_ymsg.h"
+#include "cleanup.h"
+
+</%pre>
+<%args>
+    std::string start_ts;
+    std::string end_ts;
+    std::string type;
+    std::string step;
+    std::string source;
+    std::string element_id;
+</%args>
+<%cpp>
+
+    int64_t st;
+    int64_t end;
+    uint64_t eid;
+    std::string strmsg;
+    try {
+        // check both start_ts and end_ts
+        st = datetime_to_calendar (start_ts.c_str ());
+        if (st == -1) {
+            throw std::invalid_argument ("Format for start_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
+        }
+        end = datetime_to_calendar (end_ts.c_str ());
+        if (end == -1) {
+            throw std::invalid_argument ("Format for end_ts is 'YYYYMMDDhhmmssZ' where Z stands for UTC time zone.");
+        }
+        // check that start_ts < end_ts
+        if (end <= st) {
+            throw std::invalid_argument ("start_ts must be <= end_ts");
+        }
+
+        // type is optional, default type is arithmetic average
+        if (type.empty ()) {
+            type.assign (AVG_TYPES[0]);
+        }
+        else if (!is_average_type_supported (type.c_str ())) {
+            strmsg.assign ("Average type ").append (type).append (" not recognized.");
+            throw std::invalid_argument (strmsg);
+        }
+
+        if (step.empty ()) {
+            throw std::invalid_argument ("Field 'step' is empty.");
+        }
+        if (!is_average_step_supported (step.c_str ())) {
+            strmsg.assign ("Average step ").append (step).append (" not supported.");
+            throw std::invalid_argument (strmsg);
+        }
+
+        if (source.empty()) {
+            throw std::invalid_argument ("Key 'sources' is empty.");
+        }
+        if (element_id.empty()) {
+            throw std::invalid_argument ("Mandatory argument 'element_id' not specified.");
+        }
+        eid = std::stoull (element_id);
+    }
+    catch (const std::logic_error& e) { // invalid_argument, length_error, out_of_range
+</%cpp>
+        {
+            "msg" : "<$ e.what () $>"
+        }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    catch (const std::exception& e) {
+</%cpp>
+        {
+            "msg" : "<$ e.what () $>"
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    catch (...) {
+</%cpp>
+        {
+            "msg" : "Unknown internal error."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    std::string agent_name (BIOS_AGENT_PREFIX_REST);
+    agent_name.append (std::to_string (static_cast<int> (getpid ()))).append (".").append (std::to_string ( syscall(SYS_gettid) ));
+    _scoped_bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
+    if (agent == NULL) {
+</%cpp>
+        {
+            "msg" : "bios_agent_new () failed."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    _scoped_ymsg_t *msg = bios_web_average_request_encode (st, end, type.c_str(), step.c_str(), eid, source.c_str ());
+    if (msg == NULL) {
+</%cpp>
+        {
+            "msg" : "bios_web_average_request_encode() failed."
+        }
+<%cpp>
+        bios_agent_destroy (&agent);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    
+    }
+
+    int rv = bios_agent_sendto (agent, BIOS_AGENT_NAME_COMPUTATION, "metric/computed/average", &msg);
+    if (rv != 0) {
+</%cpp>
+        {
+            "msg" : "bios_web_average_request_encode() failed."
+        }
+<%cpp>
+        bios_agent_destroy (&agent);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    msg = bios_agent_recv (agent);
+    _scoped_char *json = NULL;
+    if (msg == NULL) {
+</%cpp>
+        {
+            "msg" : "Computation module didn't reply."
+        }
+<%cpp>
+        bios_agent_destroy (&agent);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    if (!ymsg_is_ok (msg)) {
+        if (ymsg_errmsg (msg))
+            strmsg.assign (ymsg_errmsg (msg));
+        else    
+            strmsg.assign ("Error requesting average data.");
+</%cpp>
+        {
+            "msg" : "<$ strmsg $>"
+        }
+<%cpp>
+        ymsg_destroy (&msg);
+        bios_agent_destroy (&agent);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    rv = bios_web_average_reply_extract (msg, &json);
+    ymsg_destroy (&msg);
+    if (rv != 0) {
+</%cpp>
+        {
+            "msg" : "Got incorect reply from computation module."
+        }
+<%cpp>
+        bios_agent_destroy (&agent);
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    bios_agent_destroy (&agent);
+</%cpp>
+<$$ json $>

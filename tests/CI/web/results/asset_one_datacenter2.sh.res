@@ -1,1 +1,1 @@
-{"id":"10","name":"DC2","ext":{"total_facility_load":"2","contact":"mike@nn.com"}}
+{"id":"10","name":"DC2","status":"nonactive","business_critical":"no","priority":"P5","groups":[],"ext":[{"total_facility_load":"2","read_only":false},{"contact_email":"mike@nn.com","read_only":false},{"contact_name":"Mike Ekim","read_only":false},{"contact_phone":"555-2323","read_only":false}]}

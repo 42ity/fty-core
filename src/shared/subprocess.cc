@@ -26,40 +26,66 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <sys/types.h>
 #include <signal.h>
-#include <time.h>
+#include <fcntl.h>
+#include <errno.h>
 
 namespace shared {
 
 // forward declaration of helper functions
 // TODO: move somewhere else
-char * const * _mk_argv(Argv vec);
+char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
         
-SubProcess::SubProcess(Argv cxx_argv) :
+SubProcess::SubProcess(Argv cxx_argv, int flags) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
     _cxx_argv(cxx_argv),
     _return_code(-1),
     _core_dumped(false)
 {
-    _outpair[0] = -1;
-    _outpair[1] = -1;
-    _errpair[0] = -1;
-    _errpair[1] = -1;
+    // made more verbose to increase readability of the code
+    int stdin_flag = PIPE_DISABLED;
+    int stdout_flag = PIPE_DISABLED;
+    int stderr_flag = PIPE_DISABLED;
+
+    if ((flags & SubProcess::STDIN_PIPE) != 0) {
+        stdin_flag = PIPE_DEFAULT;
+    }
+    if ((flags & SubProcess::STDOUT_PIPE) != 0) {
+        stdout_flag = PIPE_DEFAULT;
+    }
+    if ((flags & SubProcess::STDERR_PIPE) != 0) {
+        stderr_flag = PIPE_DEFAULT;
+    }
+
+    _inpair[0]  = stdin_flag;  _inpair[1]  = stdin_flag;
+    _outpair[0] = stdout_flag; _outpair[1] = stdout_flag;
+    _errpair[0] = stderr_flag; _errpair[1] = stderr_flag;
 }
 
 SubProcess::~SubProcess() {
     int _saved_errno = errno;
-    
-    //XXX: copy from cxxutils's Fork::~fork()
+  
+    // update a state
+    poll();
+    // Graceful shutdown
+    if (isRunning())
+        kill(SIGTERM);
+    for (int i = 0; i<20 && isRunning(); i++) {
+        usleep(100);
+        poll(); // update a state after awhile
+    }
     if (isRunning()) {
-        wait();
+        // wait is already inside terminate
+        terminate();
     }
 
     // close pipes
+    ::close(_inpair[0]);
     ::close(_outpair[0]);
     ::close(_errpair[0]);
+    ::close(_inpair[1]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
 
@@ -82,50 +108,65 @@ std::string SubProcess::argvString() const
 bool SubProcess::run() {
 
     // do nothing if some process has been already started
-    if (_outpair[0] != -1) {
+    if (_state != SubProcessState::NOT_STARTED) {
         return true;
     }
 
-    if (::pipe(_outpair) == -1) {
+    // create pipes
+    if (_inpair[0] != PIPE_DISABLED && ::pipe(_inpair) == -1) {
         return false;
     }
-    if (::pipe(_errpair) == -1) {
+    if (_outpair[0] != PIPE_DISABLED && ::pipe(_outpair) == -1) {
+        return false;
+    }
+    if (_errpair[0] != PIPE_DISABLED && ::pipe(_errpair) == -1) {
         return false;
     }
 
     _fork.fork();
     if (_fork.child()) {
 
-        //FIXME: error checking!
-        ::close(_outpair[0]);
-        ::close(_errpair[0]);
-        ::dup2(_outpair[1], STDOUT_FILENO);
-        ::dup2(_errpair[1], STDERR_FILENO);
+        if (_inpair[0] != PIPE_DISABLED) {
+            int o_flags = fcntl(_inpair[0], F_GETFL);
+            int n_flags = o_flags & (~O_NONBLOCK);
+            fcntl(_inpair[0], F_SETFL, n_flags);
+            ::dup2(_inpair[0], STDIN_FILENO);
+            ::close(_inpair[1]);
+        }
+        if (_outpair[0] != PIPE_DISABLED) {
+            ::close(_outpair[0]);
+            ::dup2(_outpair[1], STDOUT_FILENO);
+        }
+        if (_errpair[0] != PIPE_DISABLED) {
+            ::close(_errpair[0]);
+            ::dup2(_errpair[1], STDERR_FILENO);
+        }
 
         auto argv = _mk_argv(_cxx_argv);
         if (!argv) {
-            return false;
+            // need to exit from the child gracefully
+            exit(ENOMEM);
         }
 
-        // TODO: error checking and reporting to the parent
         ::execvp(argv[0], argv);
+        // We can get here only if execvp failed
+        exit(errno);
 
     }
     // we are in parent
     _state = SubProcessState::RUNNING;
+    ::close(_inpair[0]);
     ::close(_outpair[1]);
     ::close(_errpair[1]);
-    // set the returnCode
+    // update a state
     poll();
     return true;
 }
 
 int SubProcess::wait(bool no_hangup)
 {
-    int status;
-    
     //thanks tomas for the fix!
-    status=-1;
+    int status = -1;
 
     int options = no_hangup ? WNOHANG : 0;
 
@@ -133,7 +174,11 @@ int SubProcess::wait(bool no_hangup)
         return _return_code;
     }
 
-    ::waitpid(getPid(), &status, options);
+    int ret = ::waitpid(getPid(), &status, options);
+    if (no_hangup && ret == 0) {
+        // state did not change here
+        return _return_code;
+    }
 
     if (WIFEXITED(status)) {
         _state = SubProcessState::FINISHED;
@@ -154,13 +199,29 @@ int SubProcess::wait(bool no_hangup)
 }
         
 int SubProcess::kill(int signal) {
-    return ::kill(getPid(), signal); 
+    auto ret = ::kill(getPid(), signal);
+    poll();
+    return ret; 
 }
 
 int SubProcess::terminate() {
     auto ret = kill(SIGKILL);
     wait();
     return ret;
+}
+
+const char* SubProcess::state() const {
+    if (_state == SubProcess::SubProcessState::NOT_STARTED) {
+        return "not-started";
+    }
+    else if (_state == SubProcess::SubProcessState::RUNNING) {
+        return "running";
+    }
+    else if (_state == SubProcess::SubProcessState::FINISHED) {
+        return "finished";
+    }
+
+    return "unimplemented state";
 }
 
 ProcessQue::~ProcessQue() {
@@ -212,7 +273,7 @@ void ProcessQue::schedule(bool schedule_new) {
         auto args = _incomming[0];
         _incomming.pop_front();
 
-        auto proc = new SubProcess(args);
+        auto proc = new SubProcess(args, _flags);
         proc->run();
         _running.push_front(proc);
     }
@@ -314,7 +375,7 @@ void ProcCacheMap::_push_cstr(pid_t pid, const char* str, bool push_stdout) {
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
@@ -327,7 +388,7 @@ void ProcCacheMap::_push_str(pid_t pid, const std::string& str, bool push_stdout
         _map[pid].pushStdout(str);
     }
     else {
-        _map[pid].pushStdout(str);
+        _map[pid].pushStderr(str);
     }
 
 }
@@ -338,8 +399,84 @@ std::pair<std::string, std::string> ProcCacheMap::pop(pid_t pid) {
     return ret;
 }
 
+std::string read_all(int fd) {
+    static size_t BUF_SIZE = 4096;
+    char buf[BUF_SIZE+1];
+    ssize_t r;
+
+    std::stringbuf sbuf;
+
+    while (true) {
+        memset(buf, '\0', BUF_SIZE+1);
+        r = ::read(fd, buf, BUF_SIZE);
+        //TODO what to do if errno != EAGAIN | EWOULDBLOCK
+        if (r <= 0) {
+            break;
+        }
+        sbuf.sputn(buf, strlen(buf));
+    }
+    return sbuf.str();
+}
+
+std::string wait_read_all(int fd) {
+    static size_t BUF_SIZE = 4096;
+    char buf[BUF_SIZE+1];
+    ssize_t r;
+    int exit = 0;
+
+    int o_flags = fcntl(fd, F_GETFL);
+    int n_flags = o_flags | O_NONBLOCK;
+    fcntl(fd, F_SETFL, n_flags);
+
+    std::stringbuf sbuf;
+    memset(buf, '\0', BUF_SIZE+1);
+    errno = 0;
+    while (::read(fd, buf, BUF_SIZE) <= 0 &&
+           (errno == EAGAIN || errno == EWOULDBLOCK) && exit < 5000) {
+        usleep(1000);
+        errno = 0;
+        exit++;
+    }
+
+    sbuf.sputn(buf, strlen(buf));
+
+    exit = 0;
+    while (true) {
+        memset(buf, '\0', BUF_SIZE+1);
+        errno = 0;
+        r = ::read(fd, buf, BUF_SIZE);
+        if (r <= 0) {
+            if(exit > 0 || (errno != EAGAIN && errno != EWOULDBLOCK))
+                break;
+            usleep(1000);
+            exit = 1;
+        } else {
+            exit = 0;
+        }
+        sbuf.sputn(buf, strlen(buf));
+    }
+    fcntl(fd, F_SETFL, o_flags);
+    return sbuf.str();
+}
+
+int call(const Argv& args) {
+    SubProcess p(args);
+    p.run();
+    return p.wait();
+}
+
+int output(const Argv& args, std::string& o, std::string& e) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
+    p.run();
+    int ret = p.wait();
+
+    o.assign(read_all(p.getStdout()));
+    e.assign(read_all(p.getStderr()));
+    return ret;
+}
+
 // ### helper functions ###
-char * const * _mk_argv(Argv vec) {
+char * const * _mk_argv(const Argv& vec) {
 
     char ** argv = (char **) malloc(sizeof(char*) * (vec.size()+1));
     assert(argv);
@@ -347,7 +484,7 @@ char * const * _mk_argv(Argv vec) {
     for (auto i=0u; i != vec.size(); i++) {
 
         auto str = vec[i];
-        char* dest = (char*) malloc(sizeof(char) + (str.size() + 1));
+        char* dest = (char*) malloc(sizeof(char) * (str.size() + 1));
         memcpy(dest, str.c_str(), str.size());
         dest[str.size()] = '\0';
 

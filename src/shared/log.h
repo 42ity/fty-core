@@ -27,26 +27,42 @@ Example:
 
        log_open();
 
-       log_debug("debug level is invisible\n");
+       log_debug("debug level is invisible");
         
        log_set_level(LOG_DEBUG);
         
-       log_debug("%s", "debug level is visible\n");
+       log_debug("%s", "debug level is visible");
 
-       log_critical("%s", "critical level\n");
-       log_error("%s", "error level\n");
-       log_warning("%s", "warning level\n");
-       log_info("%s", "info level\n");
-       log_debug("%s", "debug level\n");
+       log_critical("%s", "critical level");
+       log_error("%s", "error level");
+       log_warning("%s", "warning level");
+       log_info("%s", "info level");
+       log_debug("%s", "debug level");
 
        log_close();
     }
  */
 
-#pragma once
+#ifndef _SHARED_SRC_LOG_H
+#define _SHARED_SRC_LOG_H
 
+// Trick to avoid conflict with CXXTOOLS logger, currently the BIOS code
+// prefers OUR logger macros
+#if defined(LOG_CXXTOOLS_H) || defined(CXXTOOLS_LOG_CXXTOOLS_H)
+# undef log_error
+# undef log_debug
+# undef log_info
+# undef log_fatal
+# undef log_warn
+#else
+# define LOG_CXXTOOLS_H
+# define CXXTOOLS_LOG_CXXTOOLS_H
+#endif
+
+#include <stdio.h>
 #include <syslog.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -140,6 +156,18 @@ int do_log(
 #define log_critical(...) \
         log_macro(LOG_CRIT, __VA_ARGS__)
 
+#define LOG_START \
+    log_info("start")
+
+#define LOG_END \
+    log_info("end::normal")
+
+#define LOG_END_ABNORMAL(exp) \
+    log_warning("end::abnormal with %s", (exp).what())
+
 #ifdef __cplusplus
 }
 #endif
+
+#endif
+

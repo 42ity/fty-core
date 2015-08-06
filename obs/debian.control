@@ -4,10 +4,21 @@ Priority: optional
 Maintainer: Michal Hrusecky <MichalHrusecky@eaton.com>
 Uploaders: Michal Hrusecky <MichalHrusecky@eaton.com>
 Standards-Version: 3.9.5
-Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-dev, libselinux1-dev, linux-libc-dev, linuxdoc-tools, lynx | lynx-cur, pkg-config, iproute2-dev, libzmq3-dev, automake, autoconf, libtool, libjsoncpp-dev, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc, libcxxtools-dev, libtntdb-dev, libcidr0-dev, libczmq-dev, libtntnet-dev, tntnet-runtime, tntnet, libsasl2-dev, libsodium-dev
+Build-Depends: bison, debhelper (>= 8), flex, iptables-dev, libatm1-dev, libdb-dev, libselinux1-dev, linux-libc-dev, linuxdoc-tools, lynx | lynx-cur, pkg-config, libzmq4-dev, automake, autoconf, libtool, libjsoncpp-dev, asciidoc, docbook-xsl-ns, docbook-xsl, docbook-xml, libxml2-utils, xsltproc, libcxxtools-dev, libtntdb-dev, libcidr0-dev, libczmq-dev, libtntnet-dev, tntnet-runtime, tntnet, libsasl2-dev, libsodium-dev, libmlm-dev, libmagic-dev, libnutscan-dev
 
 Package: core
 Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends} , tntdb-mysql4, libcidr0, tntnet-runtime
+Depends: ${misc:Depends}, ${shlibs:Depends} , augeas-tools, tntdb-mysql4, libcidr0, tntnet-runtime, nut, malamute, libsnmp30
+Recommends: msmtp
 Description: BIOS core
  Core functionality implemented for BIOS.
+
+Package: core-dbg
+Architecture: any
+Section: debug
+Priority: extra
+Depends:
+    core (= ${binary:Version}),
+    ${misc:Depends}
+Description: debugging symbols for BIOS core
+ This package contains the debugging symbols for core.

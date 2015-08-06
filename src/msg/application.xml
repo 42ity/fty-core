@@ -1,0 +1,33 @@
+<class
+    name = "app"
+    title = "draft"
+    signature = "1"
+    script = "zproto_codec_c_v1"
+    package_dir = "."   
+    include = "czmq.h"
+    export_macro = "BIOS_EXPORT"
+    export_header = "bios_export.h"
+    >
+
+    <include filename = "license.xml" />
+
+    <define name = "VERSION" value = "1" />
+
+    <define name = "OP_INSERT" value = "0" />
+    <define name = "OP_GET" value = "1" />
+    <define name = "OP_UPDATE" value = "2" />
+    <define name = "OP_DELETE" value = "3" />
+
+    <message name = "module">
+        <field name = "name"    type = "string"></field>
+        <field name = "params"  type = "strings">List of parameters for module</field>
+        <field name = "args"    type = "hash"></field>
+    </message>
+
+    <message name = "db">
+        <field name = "op"      type = "number" size = "4"></field>
+        <field name = "params"  type = "strings"></field>
+        <field name = "args"    type = "hash"></field>
+        <field name = "bin"     type = "chunk">In case we want to store pictures in db, etc...</field>
+    </message>
+</class>

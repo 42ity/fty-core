@@ -1,0 +1,17 @@
+<%pre>
+#include "auth_levels.h"
+#include "db/inout.h"
+</%pre>
+
+<%request scope="global">
+int8_t access_auth_level;
+</%request>
+<%cpp>
+if (access_auth_level <= AUTH_LEVEL_ANONYMOUS) {
+</%cpp>
+    {"error" : "not atuhorized"}
+<%cpp>
+    return HTTP_UNAUTHORIZED;
+}
+    persist::export_asset_csv(reply.out());
+</%cpp>

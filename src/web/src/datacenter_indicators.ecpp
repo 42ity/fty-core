@@ -1,0 +1,116 @@
+<%pre>
+#include <czmq.h>
+#include <cxxtools/split.h>
+#include <stdexcept>
+
+#include "assetcrud.h"
+#include "data.h"
+#include "calc_power.h"
+#include "dbpath.h"
+#include "cleanup.h"
+#include "db/measurements.h"
+
+#include "src/web/src/dci_impl.h"
+</%pre>
+<%args>
+std::string arg1;
+std::string arg2;
+</%args>
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+<%cpp>
+    // Check URL validity
+    if( arg1 == "" || arg2 == "" ) {
+</%cpp>
+{ "error":"bad_input", "msg":"missing argument" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> DCs;
+    std::vector<std::string> DCNames;
+    std::vector<std::string> requestedParams;
+    cxxtools::split(",", arg1, std::back_inserter(DCs));
+    
+    // check that DC exists
+    auto allDcsShort= asset_mgr.get_items1("datacenter");
+    if ( allDcsShort.status == 0 )
+    {
+        // TODO better error handling by types
+</%cpp>
+{ "error":"internal error", "msg":"while reading information about dcs"}
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;   
+    }
+    for ( size_t i = 0; i < DCs.size() ; i++ )
+    {
+        // TODO add better converter
+        uint32_t real_id = atoi(DCs[i].c_str());
+        if ( real_id == 0 )
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid dc id <$$ DCs[i]$> (can not convert)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        auto it = allDcsShort.item.find(real_id);
+        if ( it != allDcsShort.item.end() )
+        {
+            DCNames.push_back(it->second);
+        }
+        else
+        {
+</%cpp>
+{ "error":"bad_input", "msg":"invalid dc id <$$ DCs[i]$> (doesn't exist)"}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+
+    cxxtools::split(",", arg2, std::back_inserter(requestedParams));
+    for(std::string &param: requestedParams) {
+        if ( !s_is_valid_param(param) ) {
+</%cpp>
+{"error":"bad_input", "msg":"invalid parameter" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+
+    std::map<const std::string, double> SRC_TO_VALUE{};
+
+    std::stringstream json;
+try {
+    // TODO this can throw exceptions!!
+    tntdb::Connection conn = tntdb::connectCached (url);
+    json << "{\n\t\"datacenter_indicators\": [\n";
+    for( size_t D = 0 ; D < DCs.size(); D++ ) {
+        json << "\t\t{\n"
+             << "\t\t\t\"id\": \"" << DCs[D] << "\",\n"
+             << "\t\t\t\"name\": \"" << DCNames[D] << "\",\n";
+        for(size_t P = 0; P < requestedParams.size(); P++ ) {
+           const std::string& key = requestedParams[P];
+           double val = get_dc_indicator(conn, key, atoi( DCs[D].c_str() ), SRC_TO_VALUE );
+           SRC_TO_VALUE.insert(std::make_pair(key,val));
+           json  << "\t\t\t\"" << key << "\": "<< val;
+           json <<  ( ( P < requestedParams.size() - 1 ) ? "," : "" ) << "\n";
+        }
+        json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
+    }
+    json << "\t]\n}\n";
+} catch ( const std::invalid_argument& e ) {
+</%cpp>
+    { "error" : "<$$ e.what()$>" }
+<%cpp>
+      return HTTP_BAD_REQUEST;
+}
+catch ( const std::exception& e ) {
+</%cpp>
+    <h1>internal server error</h1>
+    <$ e.what() $>
+<%cpp>      
+      return HTTP_INTERNAL_SERVER_ERROR;   
+}
+</%cpp>
+<$$ json.str() $>

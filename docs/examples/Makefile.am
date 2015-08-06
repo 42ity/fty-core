@@ -3,7 +3,13 @@
 
 EXTRA_DIST =
 
-examplecfgdir	= $(datarootdir)/@PACKAGE@-@VERSION@/examples/config
-examplecfg_DATA	= bios_sudo_conf
+examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
+examplecfgsudo_DATA	= sudoers.d/bios_00_base sudoers.d/bios_01_citest
 
-EXTRA_DIST += $(examplecfg_DATA)
+examplecfgpamdir	= $(datarootdir)/@PACKAGE@/examples/config/pam.d
+examplecfgpam_DATA	= pam.d/bios
+
+examplecfgsecdir	= $(datarootdir)/@PACKAGE@/examples/config/security
+examplecfgsec_DATA	= security/bios_groups.conf
+
+EXTRA_DIST += $(examplecfgsudo_DATA) $(examplecfgpam_DATA) $(examplecfgsec_DATA)

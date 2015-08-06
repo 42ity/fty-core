@@ -1,0 +1,141 @@
+<%pre>
+#include <czmq.h>
+#include <cxxtools/split.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <vector>
+#include <string>
+
+#include "persistencelogic.h"
+#include "common_msg.h"
+#include "monitor.h"
+#include "data.h"
+#include "upsstatus.h"
+#include "cleanup.h"
+
+</%pre>
+<%thread scope="global">
+measures_manager mes_mgr;
+</%thread>
+<%args>
+std::string dev;
+</%args>
+<%cpp>
+    // Check URL validity
+    std::vector<std::string> devices;
+    cxxtools::split(",", dev, std::back_inserter(devices));
+    if(devices.empty()) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> measure;
+    for(auto i : devices) {
+        errno = 0;
+        uint32_t id = strtol(i.c_str(), NULL, 10);
+        if(errno != 0) {
+</%cpp>
+{ "error":"bad_input" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        _scoped_zmsg_t *req = common_msg_encode_get_last_measurements(id);
+        _scoped_zmsg_t *rep = get_last_measurements(&req);
+        if(!is_common_msg(rep)){
+</%cpp>
+{ "error":"internal_error" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        _scoped_common_msg_t *dta = common_msg_decode(&rep);
+        if(dta == NULL) {
+</%cpp>
+{ "error":"internal_error - decode fail" }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        if(common_msg_id(dta) != COMMON_MSG_RETURN_LAST_MEASUREMENTS) {
+
+            std::string error;
+            std::string msg;
+            unsigned code;
+
+            common_msg_to_rest_error(dta, error, msg, &code);
+
+            if(common_msg_id(dta) == COMMON_MSG_FAIL) {
+</%cpp>
+{ "error":"<$ error $>",
+  "type":"<$ (unsigned) common_msg_errtype(dta) $>",
+  "errno":"<$ common_msg_errorno(dta) $>",
+  "msg":"<$ msg $>" }
+<%cpp>
+            } else {
+</%cpp>
+{ "error":"<$ error $>",
+  "msg":"<$ msg $>" }
+<%cpp>
+            }
+            common_msg_destroy(&dta);
+            return code;
+        } else {
+            std::string json;
+            if(!measure.empty())
+                json = ", ";
+            else
+                json = "  ";
+            json += "{ \"id\":";
+            json += "\"" + std::to_string ( common_msg_device_id (dta) )+ "\"";
+            json += ", \"name\": \"" + std::string(common_msg_device_name(dta)) + "\"";
+
+            zlist_t *list = common_msg_measurements(dta);
+
+            for (void *it = zlist_first(list); it != nullptr; it = zlist_next(list)) {
+               std::vector<std::string> measurements;
+
+               cxxtools::split(":", std::string((char*)it),
+                                    std::back_inserter(measurements));
+
+               if ( measurements.size() != 3 )
+               {
+</%cpp>
+{ "error": "internal_error - malformed result (measurement)" }
+<%cpp>
+                    return HTTP_INTERNAL_SERVER_ERROR;
+               }
+               std::string name = measurements[2];
+               std::vector<std::string> topic_parts;
+               cxxtools::split("@", name,
+                                    std::back_inserter(topic_parts));
+               if ( topic_parts.size() != 2 )
+               {
+</%cpp>
+{ "error": "internal_error - malformed result (topic)" }
+<%cpp>
+                    return HTTP_INTERNAL_SERVER_ERROR;
+               }
+               std::string value;
+               if( topic_parts[0] == "status.ups" ) {
+                   value = "\"" + shared::upsstatus_to_string(measurements[0]) + "\"";
+               } else {
+                   value = mes_mgr.map_values(
+                       topic_parts[0],
+                       mes_mgr.apply_scale(
+                           measurements[0],
+                           measurements[1]));
+               }
+               json += ", \"" + topic_parts[0] +
+                   "\": " + value;
+            }
+            json += " }";
+            measure.push_back(json);
+        }
+    }
+</%cpp>
+{
+   "current":[
+%   for(auto i: measure) {
+    <$$ i $>
+%   }
+   ]
+}

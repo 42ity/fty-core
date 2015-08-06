@@ -9,39 +9,93 @@
     <!-- Serve static files -->
     <mapping>
       <target>static@tntnet</target>
-      <pathinfo>./static/$1</pathinfo>
-      <url>^/static/(.*)</url>
+      <pathinfo>./$1</pathinfo>
+      <url>^/((assets|[b-z]).*)</url>
+    </mapping>
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>./index.html</pathinfo>
+      <url>^/$</url>
+    </mapping>
+
+    <!-- Make sure everybody speaks json from now on -->
+    <mapping>
+      <target>json@bios_web</target>
     </mapping>
     <!-- We are getting authorized -->
     <mapping>
       <target>auth@bios_web</target>
       <url>^/api/v1/oauth2/token$</url>
     </mapping>
-    <!-- And from now on all modifying requests have to be authenticated -->
+    <!-- Set (int)access_auth_level variable if the request is authenticated -->
     <mapping>
       <target>auth-verify@bios_web</target>
+    </mapping>
+
+    <!-- SysInfo mapping -->
+    <!-- Implementation tests (int)access_auth_level variable to limit visibility of some data -->
+    <mapping>
+      <target>sysinfo@bios_web</target>
+      <url>^/api/v1/admin/sysinfo$</url>
+    </mapping>
+
+    <!-- And from now on all modifying requests have to be authenticated -->
+    <mapping>
+      <target>auth-require@bios_web</target>
       <method>(POST|PUT|DELETE)</method>
     </mapping>
-    <!-- Make sure everybody speaks json from now on -->
-    <mapping>
-      <target>json@bios_web</target>
-    </mapping>
+
     <!-- API itself -->
+
+    <!-- topology/location -->
+    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
+    <mapping>
+      <target>topology_inputcheck@bios_web</target>
+      <url>^/api/v1/topology/.*$</url>
+    </mapping>
+    -->     
+    <mapping>
+      <target>location@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
+    <!-- topology/power -->
+    <mapping>
+      <target>power@bios_web</target>
+      <url>^/api/v1/topology/power.*$</url>
+    </mapping>
+
+    <!-- Network configuration -->
+    <mapping>
+      <target>netcfg@bios_web</target>
+      <url>^/api/v1/admin/netcfgs$</url>
+    </mapping>
+    <mapping>
+      <target>netcfg@bios_web</target>
+      <url>^/api/v1/admin/netcfg/(.*)$</url>
+      <args>
+        <iface>$1</iface>
+      </args>
+    </mapping>
+    <mapping>
+      <target>iface@bios_web</target>
+      <url>^/api/v1/admin/ifaces$</url>
+    </mapping>
+    <mapping>
+      <target>iface@bios_web</target>
+      <url>^/api/v1/admin/iface/(.*)$</url>
+      <args>
+        <iface>$1</iface>
+      </args>
+    </mapping>
 
     <!-- Time settings -->
     <mapping>
       <target>time@bios_web</target>
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
+
     <!-- Asset management -->
-    <mapping>
-      <target>item@bios_web</target>
-      <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)/(.*)$</url>
-      <args>
-        <id>$2</id>
-        <type>$1</type>
-      </args>
-    </mapping>
     <mapping>
       <target>list@bios_web</target>
       <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)s$</url>
@@ -50,28 +104,87 @@
       </args>
     </mapping>
 
-    <!-- Network list -->
+    <!-- Asset import -->
     <mapping>
-      <target>networks@bios_web</target>
-      <url>^/api/v1/admin/networks.*$</url>
+      <target>asset_import@bios_web</target>
+      <method>POST</method>
+      <url>^/api/v1/asset/import.*</url>
     </mapping>
 
-    <!-- Network POST -->
+    <!-- Asset export -->
     <mapping>
-      <target>network@bios_web</target>
-      <method>POST</method>
-      <url>^/api/v1/admin/network.*$</url>
+      <target>asset_export@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/asset/export.*</url>
     </mapping>
-    
-    <!-- Network DELETE -->
+
+    <!--
+         Asset GET
+         XXX: This needs to be last position as this regexp matches all possible
+              asset API, like /asset/import!!!
+         -->
     <mapping>
-      <target>network@bios_web</target>
-      <method>DELETE</method>
-      <url>^/api/v1/admin/network/([0-9]+)$</url>
+      <target>item@bios_web</target>
+        <url>^/api/v1/asset/(datacenter|room|row|rack|group|device)?/?(.*)$</url>
       <args>
-        <id>$1</id>
+        <id>$2</id>
+        <type>$1</type>
       </args>
     </mapping>
+
+    <!-- Current meassurements -->
+    <mapping>
+      <target>current@bios_web</target>
+      <url>^/api/v1/metric/current.*$</url>
+    </mapping>
+
+    <!-- rack consumption -->
+    <mapping>
+      <target>rack_total@bios_web</target>
+      <url>^/api/v1/metric/computed/rack_total.*$</url>
+    </mapping>
+
+    <!-- datacenter indicators -->
+    <mapping>
+      <target>datacenter_indicators@bios_web</target>
+      <url>^/api/v1/metric/computed/datacenter_indicators.*$</url>
+    </mapping>
+    
+    <!-- uptime -->
+    <mapping>
+      <target>uptime@bios_web</target>
+      <url>^/api/v1/metric/computed/uptime.*$</url>
+    </mapping>
+
+
+    <!-- UI/properties -->
+    <mapping>
+      <target>ui_properties@bios_web</target>
+      <method>(GET|PUT)</method>
+      <url>^/api/v1/ui/properties.*$</url>
+    </mapping>
+
+    <!-- Make sure we have malamute connection -->
+    <!-- Currently doesn't work, needs to be debugged
+    <mapping>
+      <target>agent@bios_web</target>
+    </mapping> -->
+
+    <!-- Average GET -->
+    <mapping>
+      <target>average@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/metric/computed/average.*$</url>
+    </mapping>
+
+    <!-- Alerts -->
+    <mapping>
+      <target>alerts@bios_web</target>
+      <method>GET</method>
+      <url>^/api/v1/alerts.*$</url>
+    </mapping>
+
+
  </mappings>
 
   <!-- listen to a port (empty string means any local interface) -->
@@ -115,6 +228,7 @@
   <!-- <user>tntnet</user> -->
   <!-- <group>tntnet</group> -->
   <!-- <dir>/</dir> -->
+  <!-- <documentRoot>/var/www</documentRoot> -->
   <!-- <chrootdir>/var/safedir</chrootdir> -->
   <!-- <pidfile>/var/run/tntnet.pid</pidfile> -->
   <!-- <daemon>0</daemon> -->

@@ -1,0 +1,25 @@
+######################################################################
+# Short test to just get the authorized version / process status info
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
+
+###############################################################
+# Check getting server system info (authorized only?)
+test_it "sysinfo_get_auth=2_raw__version_procstatus"
+curlfail_push "warn" ""
+SYSINFOARAW="`api_auth_get '/admin/sysinfo'`"
+RES=$?
+curlfail_pop
+echo "=== SYSINFOARAW ($RES):" >&2
+echo "$SYSINFOARAW" >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW" | egrep 'HTTP/1\.. 401' && \
+    echo "Got HTTP-401 Unauthorized, this is no longer expected" && RES=124
+fi >&2
+if [ $RES = 0 ]; then
+    echo "$SYSINFOARAW" | egrep 'HTTP/1\.. 4' && \
+    echo "Got HTTP-4xx error" && RES=123
+fi >&2
+print_result $RES

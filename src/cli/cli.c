@@ -74,17 +74,15 @@ static void do_help() {
 
 int main(int argc, char **argv) {
 
-  int index = 0,
-      i = 0;
-  index = handle_global_options(argc, (const char**) argv, &gopts);
+  int index = handle_global_options(argc, (const char**) argv, &gopts);
 #ifndef NDEBUG
-  log_debug("####main()\t####\n");
-  log_debug("# argc: '%d'\n# index: '%d'\n", argc, index);
-  log_debug("# **argv:\n");
-  for (i = 0; i < argc; i++) {
-    log_debug("#\t[ %d ]\t%s\n", i, argv[i]);
+  log_debug("####main()\t####");
+  log_debug("# argc: '%d'\n# index: '%d'", argc, index);
+  log_debug("# **argv:");
+  for (int i = 0; i < argc; i++) {
+    log_debug("#\t[ %d ]\t%s", i, argv[i]);
   }
-  log_debug("\n");
+  log_debug("");
 #endif
 	if (index == HANDLE_GLOBAL_OPTIONS_BAD_INPUT || !argv[index]) {
 		if (!gopts.show_help) {
@@ -95,14 +93,14 @@ int main(int argc, char **argv) {
 		exit(EXIT_SUCCESS);
 	}
 	else if (index < 0) {
-		log_error("ERROR: unknown global argument '%s'\n", argv[-index]);
+		log_error("ERROR: unknown global argument '%s'", argv[-index]);
 		exit(EXIT_FAILURE);
 	}
 	else {
 		const struct command *cmd = get_builtin_command(builtin_commands, argv[index]);
 
 		if (cmd == NULL) {
-				log_error("unknown command '%s'\n", argv[index]);
+				log_error("unknown command '%s'", argv[index]);
 				exit(EXIT_FAILURE);
 		}
 		int ret = cmd->do_command((const int)(argc - index),
@@ -111,7 +109,7 @@ int main(int argc, char **argv) {
     exit(ret);
 	}
 #ifndef NDEBUG
-	log_critical("Can't reach here!\n");
+	log_critical("Can't reach here!");
 #endif
 	exit(EXIT_FAILURE);
 

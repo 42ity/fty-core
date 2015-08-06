@@ -1,0 +1,16 @@
+[Unit]
+Description=BIOS-Timer service that prefetches average computations for quicker graphs with custom config file (implementation for %I)
+# This service only relies on REST API server directly
+After=tntnet@bios.service bios-db-init.service
+Requires=tntnet@bios.service bios-db-init.service
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+ExecStart=@datadir@/@PACKAGE@/scripts/biostimer-graphs-prefetch.sh --STA "%I"
+
+[Install]
+WantedBy=multi-user.target

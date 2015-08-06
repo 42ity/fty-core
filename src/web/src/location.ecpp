@@ -1,0 +1,552 @@
+<%pre>
+#include "cleanup.h"
+#include <cstdlib>
+#include <string>
+#include <algorithm>
+#include <exception>
+#include <stack>
+#include <czmq.h>
+#include "log.h"
+#include "defs.h"
+#include "dbpath.h"
+#include "common_msg.h"
+#include "location_helpers.h"
+#include "asset_msg.h"
+#include "asset_types.h"
+#include "assettopology.h"
+</%pre>
+<%args>
+std::string from;
+std::string to;
+std::string recursive;
+std::string filter;
+</%args>
+<%cpp>    
+    log_open ();
+    // GET requests only
+    if (request.isMethodGET() == false) {
+        return HTTP_BAD_REQUEST;
+    }
+
+    // Exactly one variable has to be specified: 'from' or 'to'
+    if (!from.empty() && !to.empty()) {
+</%cpp>
+        {
+            "error" :   "bad_input",
+            "msg"   :   "You can specify 'from' OR 'to' variable, but not both."
+        }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    if (from.empty() && to.empty()) {
+</%cpp>
+        {
+            "error" :   "bad_input",
+            "msg"   :   "You have to specify one of the following variables: 'from=<element_id|none>', 'to=<element_id>'."
+        }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+    if (!to.empty()) {
+        // Check recursive
+        if (!recursive.empty()) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'recursive' can not be specified along with 'to'."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Check filter
+        if (!filter.empty()) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'filter' can not be specified along with 'to'."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Try to convert string to number
+        int element_id = -1;
+        try {
+            element_id = std::stoi (to);
+        } catch (std::out_of_range& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'to' contains number that falls out of the allowed range."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::invalid_argument& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Please specify an integer value for variable 'to'."
+            }
+<%cpp>       
+            return HTTP_BAD_REQUEST;
+        } catch (std::exception& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Error while converting <$ to $> to integer value: <$ e.what() $>."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        // Call persistence layer
+        _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_TO);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, element_id);
+        
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        if (return_msg == NULL) {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Function process_assettopology() returned a null pointer."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        assert (input_msg == NULL); // This is not testing czmq. It tests whether our code correctly nullifies a reference
+    
+        if (is_common_msg (return_msg)) {
+            _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
+            if (common_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "common_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;               
+            }
+
+            if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+                    {
+                        "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+                        "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+                        "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+                    }
+<%cpp>
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    return HTTP_BAD_REQUEST;
+                case(DB_ERROR_NOTFOUND):
+                    return HTTP_NOT_FOUND;
+                default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else if (is_asset_msg (return_msg)) {
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            if (asset_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "asset_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;               
+            }
+
+            // <element_id, type, contains, name, type_name>
+            std::stack<std::tuple <int, int, std::string, std::string, std::string>> stack; 
+            std::string contains;
+        
+            if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_TO) {
+                bool go = true;
+                do {
+                    element_id = asset_msg_element_id (asset_msg);
+                    int type_id = asset_msg_type (asset_msg);
+                    std::string name = asset_msg_name (asset_msg);
+                    std::string type_name = asset_msg_type_name (asset_msg);
+                    stack.push (make_tuple(element_id, type_id, contains, name, type_name));
+                    // I deliberately didn't want to use asset manager (unknown / ""; suffix s)
+                    switch (type_id) {                        
+                        case asset_type::DATACENTER:
+                        {
+                            contains = "datacenters";
+                            break;
+                        }
+                        case asset_type::ROOM:
+                        {
+                            contains = "rooms";
+                            break;
+                        }
+                        case asset_type::ROW:
+                        {
+                            contains = "rows";
+                            break;
+                        }
+                        case asset_type::RACK:
+                        {
+                            contains = "racks";
+                            break;
+                        }
+                        case asset_type::GROUP:
+                        {
+                            contains = "groups";
+                            break;
+                        }
+                        case asset_type::DEVICE:
+                        {
+                            contains = "devices";
+                            break;
+                        }
+                        default:
+                        {
+</%cpp>
+                            {
+                                "error" :   "internal_error",
+                                "msg"   :   "Unknown asset_element_type ID received: '<$ type_id $>'."
+                            }
+<%cpp>
+                            return HTTP_INTERNAL_SERVER_ERROR; 
+                        }
+                    }                 
+
+                    if (zmsg_size (asset_msg_msg (asset_msg)) != 0) {
+                        _scoped_zmsg_t *inner = asset_msg_get_msg (asset_msg); 
+                        asset_msg_destroy (&asset_msg);
+                        asset_msg = asset_msg_decode (&inner);
+
+                        if (asset_msg == NULL) {
+                            if (inner != NULL) {
+                                zmsg_destroy (&inner);
+                            }
+</%cpp>
+                            {
+                                "error" :   "internal_error",
+                                "msg"   :   "asset_msg_decode() failed."
+                            }
+<%cpp>
+                            return HTTP_INTERNAL_SERVER_ERROR;               
+                        }
+
+                        go = true;
+                    } else {
+                        asset_msg_destroy (&asset_msg);
+                        go = false;
+                    }
+                } while (go == true);
+
+                // Now go from top -> down
+                int counter = 0;
+                int indent = 0;
+                std::string json = "{\n";
+
+                while ( !stack.empty() ) {
+                    // <element_id, type, contains, name, type_name>
+                    std::tuple<int, int, std::string, std::string, std::string> row = stack.top();
+                    stack.pop();
+
+                    indent++;
+                    if (!std::get<2>(row).empty()) {
+                        counter++;
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"name\" : \"")
+                            .append(std::get<3>(row))
+                            .append("\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"id\" : \"")
+                            .append(std::to_string(std::get<0>(row)))
+                            .append("\",\n");
+                        if (std::get<4>(row) != "N_A") { // magic constant from initdb.sql
+                            for (int i = 0; i < indent; i++) {
+                                json.append ("\t");
+                            }
+                            json.append("\"type\" : \"")
+                                .append(std::get<4>(row))
+                                .append("\"\n");
+                        }
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"contains\" : { \"")
+                            .append(std::get<2>(row))
+                            .append("\" : [{\n");
+                    } else {
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"name\" : \"")
+                            .append(std::get<3>(row))
+                            .append("\",\n");
+                        for (int i = 0; i < indent; i++) {
+                            json.append ("\t");
+                        }
+                        json.append("\"id\" : \"")
+                            .append(std::to_string(std::get<0>(row)))
+                            .append("\"");
+                        if (std::get<4>(row) != "N_A") { // magic constant from initdb.sql
+                            json.append(",\n");
+                            for (int i = 0; i < indent; i++) {
+                                json.append ("\t");
+                            }
+                            json.append("\"type\" : \"")
+                                .append(std::get<4>(row))
+                                .append("\"\n");
+                        } else {
+                            json.append("\n");
+                        }
+
+                    }
+
+                }
+                for (int i = counter; i > 0; i--) {                    
+                    indent--;
+                    for (int j = 0; j < indent; j++) {
+                        json.append ("\t");
+                    }
+                    json.append ("}]}\n"); 
+                }
+                json.append ("}");
+</%cpp>
+    <$$ json $>                
+<%cpp>
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else {
+            log_error ("TODO Unknown protocol");
+            return HTTP_INTERNAL_SERVER_ERROR; 
+        }    
+    }
+    else if (!from.empty()) {
+        std::transform (recursive.begin(), recursive.end(), recursive.begin(), ::tolower);
+        std::transform (filter.begin(), filter.end(), filter.begin(), ::tolower);
+
+        // recursive
+        int is_recursive = 0;
+        if (recursive == "yes") {
+            is_recursive = 1;        
+        } else if (!recursive.empty() && recursive != "no") {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Invalid 'recursive' value. Please use 'yes' or 'no'."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;           
+        }
+
+        // filter_type
+        int filter_type = 0;
+        if (filter.empty()) {
+            filter_type = 7;
+        } else {
+            if (filter == "rooms") {
+                filter_type = asset_type::ROOM;
+            } else if (filter == "rows") {
+                filter_type = asset_type::ROW;
+            } else if (filter == "racks") {
+                filter_type = asset_type::RACK;
+            } else if (filter == "devices") {
+                filter_type = asset_type::DEVICE;
+            } else if (filter == "groups") {
+                filter_type = asset_type::GROUP;
+            } else {
+                // Note: datacenter is not a valid filter parameter according to rfc-11 4.1.13
+</%cpp>
+                    {
+                        "error" :   "bad input",
+                        "msg"   :   "Unrecognized or invalid filter value."
+                    }
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+            }
+        }
+
+        // element_id
+        int element_id = -1;
+        if (from == "none") {
+            element_id = 0;
+        }
+        else {
+        try {
+            element_id = std::stoi (from);
+        } catch (std::out_of_range& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Variable 'from' contains number that falls out of the allowed range."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        } catch (std::invalid_argument& e) {       
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Please specify an integer value for variable 'from'."
+            }
+<%cpp>       
+            return HTTP_BAD_REQUEST;
+        } catch (std::exception& e) {
+</%cpp>
+            {
+                "error" :   "bad_input",
+                "msg"   :   "Error while converting <$ from $> to integer value: <$ e.what() $>."
+            }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+        }
+
+        // Call persistence layer
+        _scoped_asset_msg_t *input_msg = asset_msg_new (ASSET_MSG_GET_LOCATION_FROM);
+        assert (input_msg);
+        asset_msg_set_element_id (input_msg, (uint32_t) element_id);
+        asset_msg_set_recursive (input_msg, (byte) is_recursive);
+        asset_msg_set_filter_type (input_msg, (byte) filter_type);
+
+        asset_msg_print(input_msg);
+        
+        _scoped_zmsg_t *return_msg = process_assettopology (url.c_str(), &input_msg);
+        if (return_msg == NULL) {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Function process_assettopology() returned a null pointer."
+            }
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        assert (input_msg == NULL);
+
+        if (is_common_msg (return_msg)) {
+            _scoped_common_msg_t *common_msg = common_msg_decode (&return_msg);
+            if (common_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "common_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;               
+            }
+
+            if (common_msg_id (common_msg) == COMMON_MSG_FAIL) {
+</%cpp>
+                    {
+                        "msg"   :   "<$ common_msg_errmsg (common_msg) $>",
+                        "errtype"   :  "<$ static_cast<int> (common_msg_errtype (common_msg)) $>",
+                        "errorno"   :   "<$ static_cast<int> (common_msg_errorno (common_msg)) $>"
+                    }
+<%cpp>
+            switch(common_msg_errorno(common_msg)) {
+                case(DB_ERROR_BADINPUT):
+                    return HTTP_BAD_REQUEST;
+                case(DB_ERROR_NOTFOUND):
+                    return HTTP_NOT_FOUND;
+                default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
+ 
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected common_msg received. Message ID = <$ common_msg_id (common_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }
+        }
+        else if (is_asset_msg (return_msg)) {
+            _scoped_asset_msg_t *asset_msg = asset_msg_decode (&return_msg);
+            if (asset_msg == NULL) {
+                if (return_msg != NULL) {
+                    zmsg_destroy (&return_msg);
+                }
+</%cpp>
+                {
+                    "error" :   "internal_error",
+                    "msg"   :   "asset_msg_decode() failed."
+                }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR;               
+            }
+
+            if (asset_msg_id (asset_msg) == ASSET_MSG_RETURN_LOCATION_FROM) {
+                std::string json;
+
+                if(asset_location_r(&asset_msg, json) == HTTP_OK) {
+</%cpp>
+    <$$ json $>
+<%cpp>
+                } else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected error occured during location reply parsing"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+ 
+                }
+            }
+            else {
+</%cpp>
+            {
+                "error" :   "internal_error",
+                "msg"   :   "Unexpected asset_msg received. Message ID = <$ asset_msg_id (asset_msg) $>"
+            }
+<%cpp>
+                return HTTP_INTERNAL_SERVER_ERROR; 
+            }  
+
+        }
+        else {
+            log_error ("TODO Unknown protocol");
+            return HTTP_INTERNAL_SERVER_ERROR; 
+        }
+    }   
+    else {
+        // should never reach here
+</%cpp>
+        {
+            "msg" : "Unreachable code segment."
+        }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+</%cpp>

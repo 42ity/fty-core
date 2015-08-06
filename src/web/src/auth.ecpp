@@ -1,6 +1,8 @@
 <%pre>
 #include "sasl.h"
 #include "tokens.h"
+#include <string>
+#include <iostream>
 #include <tnt/httpmessage.h>
 #include <tnt/httpheader.h>
 #include <stdio.h>
@@ -10,6 +12,8 @@ std::string grant_type="";
 std::string username="";
 std::string password="";
 std::string client_id="";
+std::string grant_reset="";
+std::string grant_reset_inst="";
 </%args>
 <%cpp>
 #ifndef VALID_FOR
@@ -18,21 +22,51 @@ std::string client_id="";
 
 int valid = VALID_FOR;
 
-reply.setContentType("application/json;charset=UTF-8");
-
-reply.setHeader(tnt::httpheader::cacheControl, "no-store");
-reply.setHeader(tnt::httpheader::pragma, "no-cache");
+if ( ! request.isSsl() ) {
+    std::cerr << "WARNING: non-SSL Auth Request was received!";
+#ifndef DEBUG
+</%cpp>
+{
+    "error":"non_ssl_auth"
+}
+<%cpp>
+    std::cerr << "\n";
+    return HTTP_UNAUTHORIZED;
+#endif // DEBUG
+    std::cerr << " Completing the request anyway for DEBUG build...\n";
+}
 </%cpp>
 % if(grant_type != "password") {
 {
-    "error":" unsupported_grant_type"
+    "error":"unsupported_grant_type"
 }
 % } else {
-% if(authenticate(username.c_str(), password.c_str())) {
+<%cpp>
+    if(authenticate(username.c_str(), password.c_str())) {
+    std::string aToken = "";
+    if(grant_reset == "true") {
+	// Token is based on a fresh timestamp (one-second precision)
+	if (grant_reset_inst == "true") {
+#ifdef DEBUG
+		aToken = tokens::get_instance(true)->gen_token(valid, false);
+#else
+		std::cerr << "WARNING: Asked to reset instance of token "
+			<< "generator, but this is disabled in non-DEBUG "
+			<< "builds - resetting only the password\n";
+#endif
+	}
+	if (aToken == "" ) {
+		aToken = tokens::get_instance(true)->gen_token(valid, false);
+	}
+    } else {
+	// Token is based on a timestamp rounded to ROUND(=60) seconds
+	aToken = tokens::get_instance()->gen_token(valid, true);
+    }
+</%cpp>
 {
-    "access_token":"<$ tokens::get_instance()->gen_token(valid) $>",
+    "access_token":"<$$ aToken $>",
     "token_type":"bearer",
-    "expires_in":"<$ valid $>",
+    "expires_in":<$ valid $>
 }
 % } else {
 {

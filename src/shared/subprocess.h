@@ -78,21 +78,23 @@ typedef std::vector<std::string> Argv;
 
 class SubProcess {
     public:
+
+        static const int STDIN_PIPE=0x01;
+        static const int STDOUT_PIPE=0x02;
+        static const int STDERR_PIPE=0x04;
        
-        static const int codeRunning = INT_MIN;
+        static const int PIPE_DEFAULT = -1;
+        static const int PIPE_DISABLED = -2;
 
         // \brief construct instance
         //
-        // @param argv - C-like string of argument, see execvpe(2) for details
+        // @param argv  - C-like string of argument, see execvpe(2) for details
+        // @param flags - controll the creation of stdin/stderr/stdout pipes, default no
         //
-        // \todo does not deal with a command line limit
-        explicit SubProcess(Argv cxx_argv);
+        // \todo TODO does not deal with a command line limit
+        explicit SubProcess(Argv cxx_argv, int flags=0);
 
-        // \brief close all pipes, waits on process termination
-        //
-        // \warning destructor calls wait, so can hand your program in a case
-        //          child process never ends. Better to call terminate() manually.
-        //
+        // \brief gracefully kill/terminate the process and close all pipes
         virtual ~SubProcess();
 
         // \brief return the commandline
@@ -104,17 +106,19 @@ class SubProcess {
         //! \brief return pid of executed command
         pid_t getPid() const { return _fork.getPid(); }
         
+        //! \brief get the pipe ends connected to stdin of started program, or -1 if not started
+        int getStdin() const { return _inpair[1]; }
+
         //! \brief get the pipe ends connected to stdout of started program, or -1 if not started
         int getStdout() const { return _outpair[0]; }
         
         //! \brief get the pipe ends connected to stderr of started program, or -1 if not started
         int getStderr() const { return _errpair[0]; }
-        
-        //! \brief does program run or not
+
+        //! \brief returns last checked status of the process 
         //
-        //  isRunning checks the status code, so wait/poll function calls are necessary
+        //  Checks the status field only, so wait/poll function calls are necessary
         //  in order to see the real state of a process
-        //  \todo - call kill(0) + wait if not running?
         bool isRunning() const { return _state == SubProcessState::RUNNING; }
 
         //! \brief get the return code, \see wait for meaning
@@ -127,9 +131,6 @@ class SubProcess {
         // can be started only once, all subsequent calls becames nooop and return true.
         //
         // @return true if exec was successfull, otherwise false and reason is in errno
-        //
-        // \todo error reporting from a child
-        //
         bool run();
 
         //! \brief wait on program terminate
@@ -137,16 +138,16 @@ class SubProcess {
         //  @param no_hangup if false (default) wait indefinitelly, otherwise return immediatelly
         //  @return positive return value of a process
         //          negative is a number of a signal which terminates process
-        //          or codeRunning constant indicating code is still running
         int wait(bool no_hangup=false);
 
-        //! \brief no hanging varint of /see wait
+        //! \brief no hanging variant of /see wait
         int poll() {  return wait(true); }
 
         //! \brief kill the subprocess with defined signal, default SIGTERM/15
         //
+        //  @param signal - signal, defaul is SIGTERM
+        //
         //  @return see kill(2)
-        //  \todo - to throw an exception (signal != 0)?
         int kill(int signal=SIGTERM);
 
         //! \brief terminate the subprocess with SIGKILL/9
@@ -155,6 +156,8 @@ class SubProcess {
         //
         //  @return \see kill
         int terminate();
+
+        const char* state() const;
     
     protected:
 
@@ -163,13 +166,13 @@ class SubProcess {
             RUNNING,
             FINISHED
         };
-        const char* str_state(SubProcessState state);
 
         cxxtools::posix::Fork _fork;
         SubProcessState _state;
         Argv _cxx_argv;
         int _return_code;
         bool _core_dumped;
+        int _inpair[2];
         int _outpair[2];
         int _errpair[2];
 
@@ -181,6 +184,8 @@ class SubProcess {
 
 };
 
+
+// TODO legacy code
 class ProcessQue {
 
     public:
@@ -190,9 +195,11 @@ class ProcessQue {
         // \brief construct instance
         //
         // @param argv - maximum number of processes to run in parallel
+        // @param flags - flags passed to the SubProcess constructor
         //
-        explicit ProcessQue(std::size_t limit = 4) :
+        explicit ProcessQue(std::size_t limit = 4, int flags = 0) :
             _running_limit(limit),
+            _flags{flags},
             _incomming(),
             _running(),
             _done()
@@ -228,6 +235,7 @@ class ProcessQue {
 
     protected:
         std::size_t _running_limit;
+        int _flags;
         std::deque<Argv> _incomming;
         std::deque<SubProcess*> _running;
         std::deque<SubProcess*> _done;
@@ -239,6 +247,8 @@ class ProcessQue {
         ProcessQue& operator=(ProcessQue&& p) = delete;
 };
 
+
+// TODO and this one also is a legacy code
 //! caches process's stdout/stderr in std::ostringstream
 class ProcCache {
     public:
@@ -285,6 +295,7 @@ class ProcCache {
         std::ostringstream _ecache;
 };
 
+// TODO seems this on is a legacy code
 //! map<pid_t, ProcCache> with ProcCache-like API
 class ProcCacheMap {
 
@@ -318,6 +329,33 @@ class ProcCacheMap {
         void _push_str(pid_t pid, const std::string& str, bool push_stdout);
 };
 
+// \brief read all things from file descriptor
+//
+// try to read as much as possible from file descriptor and return it as std::string
+std::string read_all(int fd);
+
+// \brief read all things from file descriptor while compensating for dealys
+//
+// Try to read as much as possible from file descriptor and return it as
+// std::string. But waits for the first string to appear (5s max) and reads
+// till the input stops for more than 1ms
+std::string wait_read_all(int fd);
+
+// \brief Run command with arguments.  Wait for complete and return the return value.
+//
+// @return see \SubProcess.wait
+int call(const Argv& args);
+
+// \brief Run command with arguments and return its output as a string.
+//
+// @param args list of command line arguments
+// @param o reference to variable will contain stdout
+// @param e reference to variable will contain stderr
+// @return see \SubProcess.wait for meaning
+//
+// \warning use only for commands producing less than default pipe capacity (65536 on Linux).
+//          Otherwise this call would be blocked indefinitelly.
+int output(const Argv& args, std::string& o, std::string& e);
 
 } //namespace shared
 

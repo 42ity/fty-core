@@ -1,0 +1,1 @@
+{"name":"ROW_LOC_01","id":"7004","contains":{"racks":[{"name":"RACK_LOC_010","id":"7009","contains":{"devices":[{"name":"srv_LOC_10","id":"7020","type":"server"},{"name":"ups_LOC_010","id":"7022","type":"ups"}]}},{"name":"RACK_LOC_011","id":"7010","contains":{"devices":[{"name":"srv_LOC_11","id":"7021","type":"server"}]}}]}}

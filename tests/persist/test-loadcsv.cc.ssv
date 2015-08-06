@@ -1,0 +1,20 @@
+name;type;sub_type;description;location;group.1;group.2;power_source.1;power_plug_src.1;power_input.1;power_source.2;power_plug_src.2;power_input.2;status;business_critical;priority;company;site_name;region;country;address;contact_name;contact_email;contact_phone;maximum_number_racks;u_size;manufacturer;model;asset_tag;serial_no;runtime;phase;installation_date;maintenance_date;maintenance_due;service_contact_name;service_contact_mail;service_contact_phone;location_front_pos;location_rear_pos;location_u_pos;location_w_pos;location_d_pos;end_warranty_date;battery_type;battery_installation_date;battery_maintenance_date;IP.1;hostname.1;http_link.1
+DC-LAB;datacenter;;Lab DC(тест);;;;;;;;;;;yes;P1;EATON;Eaton DC 1;EMEA;Switzerland;Place de la Gare, 1345 Le Lieu;John Smith;john.smith@company.com;476010203;;;;;;;;;;;;;;;;;;;;;;;;;;
+DC-LAB;datacenter;;Lab DC(тест);;;;;;;;;;noactive;yes;P1;EATON;Eaton DC 1;EMEA;Switzerland;Place de la Gare, 1345 Le Lieu;John Smith;john.smith@company.com;476010203;;;;;;;;;;;;;;;;;;;;;;;;;;
+ROOM-01;room;;main room;DC-LAB;;;;;;;;;spare;no;P1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ANNEX-01;room;;Annex;DC-LAB;;;;;;;;;retired;yes;P2;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CAGE-01;group;cage;cage 01;ROOM-01;;;;;;;;;active;yes;P1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ROW-01;row;;row in a cage;ROOM-01;CAGE-01;CUSTOMER_01;;;;;;;active;yes;P4;;;;;;;;;10;;;;;;;;;;;;;;;;;;;;;;;;;
+ROW-02;row;;row in a room;ROOM-01;;;;;;;;;active;yes;P3;;;;;;;;;10;;;;;;;;;;;;;;;;;;;;;;;;;
+RACK-01;rack;;rack 01;ROW-01;;;;;;;;;active;yes;P1;;;;;;;;;;42U;Cooper;RESSPU4210KB 600mm x 1000mm - 42U Rack;EATON123455;21545212HGFV2;;;;;;;;;;;;;;;;;;;;
+RACK1-LAB;rack;;rack Lab;ROW-01;;;;;;;;;active;no;P5;;;;;;;;;;42U;Cooper;RESSPU4210KB 600mm x 1000mm - 42U Rack;EATON123456;21545212HGFV2;;;;;;;;;;;;;;;;;;;;
+GROUP1-LAB;group;input_power;input_power chain;DC-LAB;;;;;;;;;;yes;P1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+CUSTOMER_01;group;customer;customer X (IT);DC-LAB;;;;;;;;;;yes;P1;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+MAIN_LAB;device;main;MAIN 240V;DC-LAB;GROUP1-LAB;;;;;;;;active;yes;P1;;;;;;;;;;;;;;;;1;;;;;;;;;;;;;;;;;;
+MAIN3P_LAB;device;main;MAIN 380V 3Ph;DC-LAB;GROUP1-LAB;;;;;;;;active;no;P1;;;;;;;;;;;;;;;;3;;;;;;;;;;;;;;;;;;
+GENSET_01;device;genset;Genset;ANNEX-01;GROUP1-LAB;;;;;;;;active;yes;P1;;;;;;;;;;;Generac;45kW NG/LG 240V 3 Phase;EATON123457;G789456;8;;4-Jun-2014;4-Jun-2014;4-Sep-2014;Bob Jones;Bob.Jones@company.com;476010203;;;;;;;;;;;;
+ATS_01;device;sts;Automatic transfer switch;ANNEX-01;GROUP1-LAB;;MAIN_LAB;;;GENSET_01;;;active;yes;P1;;;;;;;;;;;eaton;ATC-100;EATON123458;ATC1235;;;;;;;;;;;;;;;;;;;;
+UPS1-MAIN;device;ups;UPS1 9PX 6kVA;ANNEX-01;GROUP1-LAB;;ATS_01;;;;;;active;yes;P1;;;;;;;;;;3U;EATON;9PX 6kVA;EATON123459;G214D17012;;;4-Jun-2014;4-Jun-2014;;;;;;;;;;4-Jun-2014;4-Jun-2014;4-Jun-2014;4-Jun-2014;;;
+ePDU1-LAB;device;epdu;ePDU1 eMAA10;RACK1-LAB;CUSTOMER_01;;UPS1-MAIN;;;;;;active;yes;P1;;;;;;;;;;;EATON;Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19;EATON123460;U051B43007;;;4-Jun-2014;;;;;;;sor1;9R;;;4-Jun-2014;;;;10.130.32.15;MApdu-BiosLeft.Bios.Labo.Kalif.com;https://MApdu-BiosLeft.Bios.Labo.Kalif.com:8080
+ePDU2-LAB;device;epdu;ePDU2 eMAA10;RACK1-LAB;CUSTOMER_01;;UPS1-MAIN;;;;;;active;yes;P1;;;;;;;;;;;EATON;Eaton ePDU MA 1P IN:IEC309 16A OUT:21xC13, 3xC19;EATON123460;U051B43007;;;4-Jun-2014;;;;;;;sor2;8U;;;4-Jun-2014;;;;10.130.32.15;MApdu-BiosLeft.Bios.Labo.Kalif.com;https://MApdu-BiosLeft.Bios.Labo.Kalif.com:8080
+SRV1_LAB;device;server;SRV1 PRIMERGY RX100 G8;RACK1-LAB;CUSTOMER_01;;ePDU2-LAB;B6;1;ePDU1-LAB;B6;2;active;yes;P1;;;;;;;;;;1U;Fujisu;RX100 G8;EATON123461;G789456;;;4-Jun-2014;;;;;;;;6;;;4-Jun-2014;;;;10.130.32.16;srv1.Bios.Labo.Kalif.com;htps://srv1.Bios.Labo.Kalif.com

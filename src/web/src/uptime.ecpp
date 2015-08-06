@@ -1,0 +1,119 @@
+<%pre>
+
+#include <cxxtools/split.h>
+#include "data.h"
+#include "dbpath.h"
+#include "db/calculation.h"
+
+</%pre>
+
+<%args>
+std::string arg1;
+</%args>
+
+<%thread scope="global">
+asset_manager asset_mgr;
+</%thread>
+
+<%cpp>
+    // Check URL validity
+    if ( arg1 == "" ) {
+</%cpp>
+{  
+    "error":"bad_input",
+    "msg":"missing argument"
+}
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    std::vector<std::string> DCs;
+    std::vector<std::string> DCNames;
+    cxxtools::split(",", arg1, std::back_inserter(DCs));
+    
+    // check that DC exists
+    auto allDcsShort= asset_mgr.get_items1("datacenter");
+    if ( allDcsShort.status == 0 )
+    {
+        // TODO better error handling by types
+</%cpp>
+{
+    "error":"internal error",
+    "msg":"while reading information about dcs"
+}
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;   
+    }
+    for ( size_t i = 0; i < DCs.size() ; i++ )
+    {
+        // TODO add better converter
+        uint32_t real_id = atoi(DCs[i].c_str());
+        if ( real_id == 0 )
+        {
+</%cpp>
+{
+    "error":"bad_input",
+    "msg":"invalid dc id <$$ DCs[i]$> (can not convert)"
+}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+
+        auto it = allDcsShort.item.find(real_id);
+        if ( it != allDcsShort.item.end() )
+        {
+            DCNames.push_back(it->second);
+        }
+        else
+        {
+</%cpp>
+{
+    "error":"bad_input",
+    "msg":"invalid dc id <$$ DCs[i]$> (doesn't exist)"
+}
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+
+    std::stringstream json;
+    try {
+        tntdb::Connection conn = tntdb::connectCached (url);
+
+        json << "{\n\t\"outage\": [\n";
+
+        for ( size_t D = 0 ; D < DCs.size(); D++ ) 
+        {
+
+            int64_t uptime = 0;
+            int64_t total = 0 ;
+            int rv = persist::calculate_uptime_total_byDcId
+                (conn, atoi(DCs[D].c_str()), uptime, total);
+
+            json << "\t\t{\n"
+                 << "\t\t\t\"id\": \""   << DCs[D]           << "\",\n"
+                 << "\t\t\t\"name\": \"" << DCNames[D]       << "\",\n"
+                 << "\t\t\t\"outage\" : "<<  total - uptime  <<   ",\n"
+                 << "\t\t\t\"total\" : " <<  total           <<    "\n";
+            json << "\t\t}" << (  D < DCs.size() -1 ? ",\n" : "\n" );
+        }
+        json << "\t]\n}\n";
+    }
+    catch ( const std::invalid_argument& e ) {
+</%cpp>
+{ 
+    "error" : "<$$ e.what()$>"
+}
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    catch ( const std::exception& e ) {
+</%cpp>
+{
+    "error" : "internal server error",
+    "msg" : <$$ e.what() $>
+}
+<%cpp>      
+        return HTTP_INTERNAL_SERVER_ERROR;   
+    }
+</%cpp>
+<$$ json.str() $>

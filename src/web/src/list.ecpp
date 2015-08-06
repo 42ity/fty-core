@@ -1,10 +1,6 @@
 <%pre>
-#include <czmq.h>
-
-#include "asset_msg.h"
-#include "common_msg.h"
 #include "data.h"
-#include "assetmsg.h"
+#include "assetcrud.h"
 </%pre>
 <%thread scope="global">
 asset_manager asset_mgr;
@@ -14,50 +10,17 @@ asset_manager asset_mgr;
     std::string id;
 
     // Get data
-    zmsg_t* dta = asset_mgr.get_items (request.getArg("type"));
+   auto allDcsShort = asset_mgr.get_items1 (request.getArg("type"));
 
     // Error handling
-    if ( dta == NULL ) {
+    if ( allDcsShort.status == 0 )
+    {
 </%cpp>
-{ "error":"item_not_found" }
+{
+    "error":"item_not_found"
+}
 <%cpp>
         return HTTP_NOT_FOUND;
-    }
-
-    if ( is_common_msg(dta) )
-    {
-        common_msg_t* dtacommon = common_msg_decode (&dta);
-        if ( common_msg_id (dtacommon) == COMMON_MSG_FAIL ) 
-        {
-            switch ( common_msg_errorno (dtacommon) ) {
-                case DB_ERROR_NOTFOUND:
-</%cpp>
-{ "error":"item_not_found" }
-<%cpp>
-                    common_msg_destroy (&dtacommon);
-                    return HTTP_NOT_FOUND;
-                case DB_ERROR_BADINPUT:
-</%cpp>
-{ "error":"bad_input" }
-<%cpp>
-                    common_msg_destroy (&dtacommon);
-                    return HTTP_BAD_REQUEST;
-                default:
-</%cpp>
-{ "error":"internal_error" }
-<%cpp>    
-                    common_msg_destroy (&dtacommon);
-                    return HTTP_INTERNAL_SERVER_ERROR;
-            }
-        }
-        else
-        {   // unexpected message
-</%cpp>
-{ "error":"internal_error" }
-<%cpp>    
-            common_msg_destroy (&dtacommon);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
     }
 
     // Prepare the reply
@@ -65,22 +28,16 @@ asset_manager asset_mgr;
 {
     "<$ request.getArg("type") $>s": [
 <%cpp>
-    asset_msg_t* dtaasset = asset_msg_decode (&dta);
-    zhash_t *ids = asset_msg_get_element_ids (dtaasset);
-    if(ids != NULL) {
-        int count = zhash_size(ids);
-        int i = 0;
-        void *it = NULL;
-        for(i = 1, it = zhash_first(ids); it != 0;
-            i++,   it = zhash_next(ids) ) {
+    size_t count = allDcsShort.item.size();
+    size_t i = 0;
+    for ( auto &oneDc : allDcsShort.item )
+    {
+        i++;
 </%cpp>
         {
-            "id":"<$ (char*)zhash_cursor(ids) $>",
-            "name":"<$ (char*)it $>"
-        }<? i != count ? "," ?>
-%       }
-    ]
+            "id" : "<$$ oneDc.first $>",
+            "name":"<$$ oneDc.second $>"
+        } <? i != count ? "," ?>
 %   }
+    ]
 }
-%   asset_msg_destroy (&dtaasset);
-%   zhash_destroy (&ids);

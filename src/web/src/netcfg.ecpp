@@ -1,0 +1,291 @@
+<%pre>
+#include <cxxtools/split.h>
+#include <cxxtools/jsondeserializer.h>
+#include <vector>
+#include <string>
+#include <regex>
+#include <string.h>
+
+#include "subprocess.h"
+#include "cidr.h"
+
+using namespace shared;
+
+// Helper function to parse output of augtool
+std::string real_out(std::string in, bool key_value = true, std::string sep = "") {
+    std::vector<std::string> spl;
+    bool not_first = false;
+    std::string out;
+    cxxtools::split("\n", in, std::back_inserter(spl));
+    if(spl.size() >= 3) {
+        spl.erase(spl.begin());
+        spl.pop_back();
+    } else {
+        return out;
+    }
+    for(auto i : spl) {
+        auto pos = i.find_first_of("=");
+        if(pos == std::string::npos) {
+            if(key_value)
+                continue;
+            if(not_first)
+                out += sep;
+            out += i;
+        } else {
+            if(not_first)
+                out += sep;
+            out += i.substr(pos+2);
+        }
+        not_first = true;
+    }
+    return out;
+}
+
+</%pre>
+<%thread scope="global">
+// TODO: Figure out how to make it work without -e
+Argv exe = { "sudo", "augtool", "-e" };
+SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
+</%thread>
+<%cpp>
+std::string command;
+std::string nil;
+std::regex rex;
+std::smatch match;
+
+// Initialization of augtool subprocess if needed
+if(!augtool.isRunning()) {
+    augtool.run();
+    command = "help\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    if(!augtool.isRunning() || nil.find("match") == nil.npos) {
+</%cpp>
+{ "error": "Can't start augtool" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+}
+
+// Make sure we have the fresh data
+command = "load\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = wait_read_all(augtool.getStdout());
+
+// Make sure we have data that works
+command = "ls /augeas/files/etc/network/interfaces/error\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = real_out(wait_read_all(augtool.getStdout()));
+if(!nil.empty()) {
+</%cpp>
+{ "error": "Syntax error in /etc/network/interfaces config file" }
+<%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+command = "ls /augeas/files/etc/resolv.conf/error\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = real_out(wait_read_all(augtool.getStdout()));
+if(!nil.empty()) {
+</%cpp>
+{ "error": "Syntax error in /etc/resolv.conf config file" }
+<%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+
+// Are we asked to just list possible configurations?
+rex = "^.*/netcfgs$";
+if(std::regex_match(request.getUrl(), match, rex)) {
+    std::string in;
+    command = "match /files/etc/network/interfaces/iface[*]\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    in = real_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+    if(in.empty()) {
+</%cpp>
+{ "error": "No configurable interfaces found" }
+<%cpp>
+        return HTTP_NOT_FOUND;
+    }
+</%cpp>
+{ "netcfgs": [ "<$$ in $>" ] }
+<%cpp>
+    return HTTP_OK;
+}
+
+// We are discussing interface configuration, are we asked about real interface?
+std::string iface = request.getArg("iface");
+rex = "^[a-z0-9]+$";
+if(!std::regex_match(iface, match, rex)) {
+</%cpp>
+{ "error": "Wrong interface name" }
+<%cpp>
+    return HTTP_BAD_REQUEST;
+}
+
+// Where is the tree reflecting the interface?
+std::string address;
+command = "match /files/etc/network/interfaces/iface[*] " + iface + "\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+address = real_out(wait_read_all(augtool.getStdout()), false);
+if(address.empty()) {
+</%cpp>
+{ "error": "No configuration for interface <$ iface $> found" }
+<%cpp>
+    return HTTP_NOT_FOUND;
+}
+
+#define AUG_GET(NAME, VAL) \
+    command = "get " + address + "/" NAME "\n"; \
+    write(augtool.getStdin(), command.c_str(), command.length()); \
+    VAL = real_out(wait_read_all(augtool.getStdout()));
+
+std::string method;
+AUG_GET("method", method);
+
+// Modifications requested?
+if(request.getMethod() == "PUT") {
+    std::stringstream input(request.getBody(), std::ios_base::in);
+    cxxtools::SerializationInfo si;
+    cxxtools::SerializationInfo rsi;
+    cxxtools::JsonDeserializer deserializer(input);
+    std::string val;
+    try {
+        deserializer.deserialize(si);
+    } catch(const std::exception& e) {
+</%cpp>
+{ "error": "Wrong json on input - <$ e.what() $>" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+    try {
+        rsi = si.getMember(iface);
+    } catch(const std::exception& e) {
+</%cpp>
+{ "error": "No configuration for interface <$ iface $> provided" }
+<%cpp>
+        return HTTP_BAD_REQUEST;
+    }
+
+
+// Gets configuration from json and sets it in config while verifying it matches regexp
+#define AUG_SET(NAME, CHECK)         \
+    if(it.name() == NAME) { \
+        it.getValue(val); \
+        if(! CHECK ) { \
+            reply.out() << std::string("{ \"error\": \"Wrong value for '" NAME \
+                                       "' setting or setting '" NAME "' not " \
+                                       " expected.\" }"); \
+            return HTTP_BAD_REQUEST; \
+        } \
+        command = "set " + address + "/" NAME " " + val + "\n"; \
+        write(augtool.getStdin(), command.c_str(), command.length()); \
+        nil = wait_read_all(augtool.getStdout()); \
+        handled = true; \
+    }
+
+    // All the things we need to set
+    for(auto it : rsi) {
+        bool handled = false;
+        AUG_SET("method",  std::regex_match(method = val, match,
+                           std::regex("^(dhcp|static|none|manual)$")));
+        AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
+        AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
+        AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
+
+        if(method != "static") {
+            command = "rm " + address + "/address\n"
+                      "rm " + address + "/netmask\n"
+                      "rm " + address + "/gateway\n";
+            write(augtool.getStdin(), command.c_str(), command.length()); \
+            nil = wait_read_all(augtool.getStdout()); \
+        }
+
+        //DNS is array, handle differently
+        if(it.name() == "nameservers") {
+            if(it.category() != cxxtools::SerializationInfo::Category::Array) {
+</%cpp>
+{ "error": "Wrong value for DNS setting - array expected" }
+<%cpp>
+                return HTTP_BAD_REQUEST;
+            }
+            command = "rm /files/etc/resolv.conf/nameserver\n";
+            write(augtool.getStdin(), command.c_str(), command.length());
+            for(auto i : it) {
+                i.getValue(val);
+                if(!CIDRAddress(val).valid()) {
+</%cpp>
+{ "error": "Wrong value for DNS setting - array of IPs expected" }
+<%cpp>
+                    return HTTP_BAD_REQUEST;
+                }
+                command = "set /files/etc/resolv.conf/nameserver[0] " + val + "\n";
+                printf("%s\n", command.c_str());
+                write(augtool.getStdin(), command.c_str(), command.length());
+            }
+            nil = wait_read_all(augtool.getStdout());
+            handled = true;
+        }
+        if(!handled) {
+</%cpp>
+{ "error": "Invalid option '<$ it.name() $>'" }
+<%cpp>
+            return HTTP_BAD_REQUEST;
+        }
+    }
+
+    // Commit everything
+    command = "save\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    command = "load\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+
+    // Make sure we have data that works
+    command = "ls /augeas/files/etc/network/interfaces/error\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = real_out(wait_read_all(augtool.getStdout()));
+    if(!nil.empty()) {
+</%cpp>
+{ "error": "Syntax error in /etc/network/interfaces config file" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    command = "ls /augeas/files/etc/resolv.conf/error\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = real_out(wait_read_all(augtool.getStdout()));
+    if(!nil.empty()) {
+</%cpp>
+{ "error": "Syntax error in /etc/resolv.conf config file" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+}
+
+std::string ip, netmask, gateway, dns;
+AUG_GET("method", method);
+AUG_GET("address", ip);
+AUG_GET("netmask", netmask);
+AUG_GET("gateway", gateway);
+command = "match /files/etc/resolv.conf/nameserver\n";
+write(augtool.getStdin(), command.c_str(), command.length()); \
+dns = real_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+
+</%cpp>
+{ "<$ iface $>":
+    {
+        "method": "<$ method $>"
+% if(!ip.empty()) {
+      , "address": "<$ ip $>"
+% }
+% if(!netmask.empty()) {
+      , "netmask": "<$ netmask $>"
+% }
+% if(!gateway.empty()) {
+      , "gateway": "<$ gateway $>"
+% }
+% if(!dns.empty()) {
+      , "nameservers": [ "<$$ dns $>" ]
+% }
+    }
+}
