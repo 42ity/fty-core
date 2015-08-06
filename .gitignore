@@ -189,6 +189,7 @@ src/web/src/json.cpp
 src/web/src/list.cpp
 src/web/src/netcfg.cpp
 src/web/src/iface.cpp
+src/web/src/license.cpp
 src/web/src/netcfg-list.cpp
 src/web/src/time.cpp
 src/web/src/network.cpp
