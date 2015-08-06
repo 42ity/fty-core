@@ -213,6 +213,12 @@ for UPS in $UPS1 $UPS2 ; do
         esac
         TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
         # TODO: parametrize
+        # TODO: use weblib.sh
+        # Try to accept the BIOS license on server
+        ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
+          . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
