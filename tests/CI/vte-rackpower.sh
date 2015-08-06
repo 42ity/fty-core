@@ -173,6 +173,11 @@ set -e
   loaddb_file ./tools/initdb_ci_patch.sql && \
   loaddb_file ./tools/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
 set +e
 
 # ***** COMMON FUNCTIONS ***

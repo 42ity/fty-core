@@ -1,0 +1,8 @@
+# Some REST API scripts just need to get THEIR job done,
+# so here is a way to force-accept the license
+
+api_auth_post_content '/admin/license' "foobar" >&5
+
+test_it "license_status_ok"
+api_get_json '/admin/license/status' | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
+print_result $?
