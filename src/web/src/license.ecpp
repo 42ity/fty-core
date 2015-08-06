@@ -23,7 +23,7 @@ char *accepted_license = getenv("DATADIR");
 if(current_license == NULL)
    current_license = "/usr/share/bios/license";
 if(accepted_license == NULL)
-   current_license = "/var/lib/bios";
+   accepted_license = "/var/lib/bios";
 asprintf(&current_license, "%s/current", current_license);
 asprintf(&accepted_license, "%s/license", accepted_license);
 std::regex rex;
