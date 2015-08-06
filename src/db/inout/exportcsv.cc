@@ -27,6 +27,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <cxxtools/csvserializer.h>
 #include <tntdb/row.h>
+#include <tntdb/transaction.h>
 
 #include "db/assets.h"
 #include "dbpath.h"
