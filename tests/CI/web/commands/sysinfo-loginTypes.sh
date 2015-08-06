@@ -1,5 +1,8 @@
 ###############################################################
-[ -z "$JSONSH" -o ! -x "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
 
 ### Verify that logins are authorized for both tokens with a plus and without
 testLoginSysinfo() {

@@ -155,11 +155,6 @@ I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_ext_attributes|grep INSERT 
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_ext_attributes FAILED'"
 echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-ELEMENT="\(1,11,6\),\(2,12,6\),\(3,13,2\),\(4,14,1\),\(5,15,4\),\(6,16,7\),\(7,17,1\),\(8,18,3\),\(9,20,5\),\(10,21,5\)"
-I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
-[ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device FAILED'"
-echo 'Test of the table t_bios_asset_device			PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
-
 ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'main'\),\(4,'pdu'\),\(5,'server'\),\(7,'sts'\),\(1,'ups'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device_type FAILED'"
