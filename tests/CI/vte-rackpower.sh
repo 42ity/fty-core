@@ -378,8 +378,8 @@ echo "Start time is "$TIME
         # * set TC1 specific variables
 SAMPLES=(
    50.56
-#   30.85
-#   40.43
+   30.85
+   40.43
 )
 UPS1="epdu101_1"
 UPS2="epdu101_2"
