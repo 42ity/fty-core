@@ -75,8 +75,8 @@ ${BUILDSUBDIR}/agent-dbstore &
 DBNGPID=$!
 
 # Ensure that no processes remain dangling when test completes
-trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' EXIT
-trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' SIGHUP SIGINT SIGQUIT SIGTERM
+TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
+TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
 
 DB1="$CHECKOUTDIR/tools/initdb.sql"
 DB2="$CHECKOUTDIR/tools/rack_power.sql"
