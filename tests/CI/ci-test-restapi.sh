@@ -73,15 +73,15 @@ while [ $# -gt 0 ] ; do
     case "$1" in
         --user|-u)
             BIOS_USER="$2"
-            shift
+            shift 2
             ;;
         --passwd|-p)
             BIOS_PASSWD="$2"
-            shift
+            shift 2
             ;;
 	--service|-s)
 	    SASL_SERVICE="$2"
-	    shift
+	    shift 2
 	    ;;
         --help|-h)
             usage
@@ -92,7 +92,6 @@ while [ $# -gt 0 ] ; do
             break
             ;;
     esac
-    shift
 done
 
 set -u
