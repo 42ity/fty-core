@@ -377,7 +377,7 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/assets/assetr.cc \
 			src/db/assets.h \
 			src/db/inout.h \
-			src/db/inout/loadcsv.cc \
+			src/db/inout/importcsv.cc \
 			src/db/inout/exportcsv.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
@@ -416,6 +416,24 @@ noinst_LTLIBRARIES +=	libpriv-magic.la
 libpriv_magic_la_SOURCES = \
 			src/shared/magic.cc \
 			src/shared/bios-magic.h
+
+noinst_LTLIBRARIES += 	libpriv-configure-inform.la
+
+libpriv_configure_inform_la_SOURCES = \
+			src/agents/configure_inform/configure_inform.cc \
+			src/agents/configure_inform/configure_inform.h
+
+libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist
+
+#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
+#			libpriv-log.la libpriv-csv.la
+
+
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -1235,7 +1253,8 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/agents/configure_inform
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
@@ -1249,7 +1268,8 @@ bios_web_la_LIBADD = \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-db-measurements.la \
-			libpriv-magic.la
+			libpriv-magic.la \
+			libpriv-configure-inform.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
