@@ -44,7 +44,7 @@ sudo docker build --no-cache=true --rm=true -t eaton/bios $temp_dir
 echo "cleaning .."
 set +e
 sudo docker rmi $(sudo docker images -q -f dangling=true)
-sudo python $build_dir/tools/docker_clean_vfs.py
+sudo python "$build_dir/tools/docker_clean_vfs.py"
 set -e
 #rm -r $temp_dir
 
