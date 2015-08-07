@@ -22,19 +22,45 @@
 # which have the command line hardcoded (and to bad defaults).
 # Should be installed into "/usr/local/sbin/udhcpc" to take effect.
 
-# TODO: inspect the caller and do the evil magic below only if it is
-# among (ifup*|ifdown|ifquery|ifplug*)
+# Inspect the caller and do the evil magic below only if it is "ifup" et al.
+# If none of the suspects are found in call stack, fulfill original request
+pstree -plsaA $$ | grep -v grep | egrep '(ifup.*|ifdown|ifquery|ifplug.*)' >/dev/null \
+    || exec /sbin/udhcpc "$@"
+
+# For "ifup" and friends, fix up the call
+echo "WARN: $0 $@: will hack the command-line for proper DHCP support..." >&2
+
+UDHCPC_ARGS=""
+UDHCPC_IFACE=""
 UDHCPC_OPTS=""
+UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6"
+
 while [ $# -gt 0 ]; do
-        case "$1" in
-                -n) ;; # ignore quit-if-not-leased
-                -p|-i) UDHCPC_OPTS="$UDHCPC_OPTS $1 $2"; shift;;
-                *) UDHCPC_OPTS="$UDHCPC_OPTS $1" ;;
-        esac
-        shift
+    case "$1" in
+        -n) ;; # ignore quit-if-not-leased
+        -p) UDHCPC_ARGS="$UDHCPC_ARGS $1 $2"; shift;;
+        -i) UDHCPC_ARGS="$UDHCPC_ARGS $1 $2"
+            UDHCPC_IFACE="$2"
+            shift;;
+        *) UDHCPC_ARGS="$UDHCPC_ARGS $1" ;;
+    esac
+    shift
 done
 
-# First shot for testing: hardcoded override
-# TODO: inspect /etc/network/interfaces for udhcpc_opts with augtool
-exec /sbin/udhcpc $UDHCPC_OPTS -b -t 4 -T 6
+if [ -n "$UDHCPC_IFACE" ]; then
+    # Run augtools once to speed up the process
+    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool`"
+    if [ $? = 0 ] && [ -n "$AUGOUT" ]; then
+        AUGOUT_IFACE="`echo "$AUGOUT" | grep " = $UDHCPC_IFACE" | sed 's, = .*$,,'`" && \
+        [ -n "$AUGOUT_IFACE" ] && \
+        UDHCPC_OPTS="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/udhcpc_opts" | sed 's,^.*/udhcpc_opts = ,,'`" && \
+        echo "INFO: Detected UDHCPC_OPTS='$UDHCPC_OPTS' for interface '$UDHCPC_IFACE'" >&2 && \
+        [ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS=" " || \
+        UDHCPC_OPTS=""
+    fi
+fi
 
+[ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS="$UDHCPC_OPTS_DEFAULT"
+
+echo "WARN: command-line changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >&2
+exec /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS
