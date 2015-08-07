@@ -1,0 +1,19 @@
+[Unit]
+Description=Preconfigures ifplugd with currently known DHCP interfaces
+Requires=networking.service
+ReloadPropagatedFrom=networking.service
+Before=ifplugd.service
+PropagatesReloadTo=ifplugd.service
+
+[Service]
+Type=simple
+### the service shall be considered active even when all its processes exited
+RemainAfterExit=yes
+EnvironmentFile=-/etc/default/bios
+EnvironmentFile=-/etc/sysconfig/bios
+EnvironmentFile=-/etc/default/bios__%n.conf
+EnvironmentFile=-/etc/sysconfig/bios__%n.conf
+ExecStart=@datadir@/@PACKAGE@/scripts/ifplug-dhcp-autoconf.sh
+
+[Install]
+WantedBy=multi-user.target
