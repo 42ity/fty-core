@@ -448,7 +448,8 @@ int
             " SELECT"
             "   v.id, v.name, v.type_name,"
             "   v.subtype_name, v.id_parent,"
-            "   v.business_crit, v.status, v.priority"
+            "   v.business_crit, v.status, v.priority,"
+            "   v.asset_tag"
             " FROM"
             "   v_web_element v"
         );
