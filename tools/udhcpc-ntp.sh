@@ -65,7 +65,7 @@ ntp_servers_setup() {
 }
 
 [ -z "${reason-}" -a -n "$1" ] && reason="$1"
-[ -z "${new_ntp_servers-}" -a -n "${ntpsrv-}" ] && \
+[ -z "${new_ntp_servers-}" ] && new_ntp_servers="" && [ -n "${ntpsrv-}" ] && \
         new_ntp_servers="`for S in $ntpsrv; do echo "$S"; done | sort | uniq`"
 if [ -z "${old_ntp_servers-}" ]; then
         old_ntp_servers=""
@@ -77,7 +77,7 @@ if [ -z "${old_ntp_servers-}" ]; then
 fi
 
 #set >&2
-#set +x
+#set -x
 
 ntp_servers_setup
 
