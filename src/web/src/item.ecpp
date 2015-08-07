@@ -185,10 +185,16 @@ asset_manager asset_mgr;
             tmp.item.ext.erase(it);
         }
     }
-    if ( !tmp.item.ext.empty() )
-    {
 </%cpp>
     , "ext" : [
+% // ACE: to be consistent with RFC-11 this was put here
+        {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": "true"}
+<%cpp>
+    if ( !tmp.item.ext.empty() )
+    {
+        // this , is in JSON!!!!
+</%cpp>
+    ,
 <%cpp>
         uint32_t ext_count = tmp.item.ext.size();
         uint32_t i = 1;
@@ -199,8 +205,8 @@ asset_manager asset_mgr;
 <%cpp>
             i++;
         }
+    }
 </%cpp>
     ]
-%   }
 }
 % }
