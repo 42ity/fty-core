@@ -8,6 +8,7 @@
 
 SQL_INIT="initdb.sql"
 SQL_LOAD="ci-DC-power-UC1.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 XML_TNTNET="tntnet.xml"
 
 # Include our standard routines for CI scripts
@@ -111,6 +112,11 @@ fill_database(){
     else
         die "$SQL_INIT not found"
     fi
+    if [ -f "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE" ] ; then
+        loaddb_file "$CHECKOUTDIR/tools/$DB_ASSET_TAG_NOT_UNIQUE"
+    else
+        die "$DB_ASSET_TAG_NOT_UNIQUE not found"
+    fi
     if [ -f "$CHECKOUTDIR/tools/$SQL_LOAD" ] ; then
         loaddb_file "$CHECKOUTDIR/tools/$SQL_LOAD"
     else
@@ -177,6 +183,10 @@ create_nut_config
 fill_database
 start_bios_daemons
 start_tntnet
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 logmsg_info "starting the test"
 
