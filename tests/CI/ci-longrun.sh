@@ -330,6 +330,7 @@ case "$ACTION" in
         $SCRIPTDIR/ci-rc-bios.sh --stop
         create_nut_config
         $SCRIPTDIR/ci-empty-db.sh
+        loaddb_file "$CHECKOUTDIR/tools/initdb_ci_patch.sql"
         loaddb_file "$CHECKOUTDIR/tools/rack_power.sql"
         $SCRIPTDIR/ci-rc-bios.sh --start
         produce_events
