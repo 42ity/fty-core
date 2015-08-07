@@ -318,6 +318,9 @@ chmod a+rx /etc/zabbix/scripts/queryDisks.sh
 echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
+# Help ifup and ifplugd do the right job
+install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
+
 # More space saving
 SPACERM="rm -rf"
 $SPACERM /usr/share/nmap/nmap-os-db /usr/bin/{aria_read_log,aria_dump_log,aria_ftdump,replace,resolveip,myisamlog,myisam_ftdump}
