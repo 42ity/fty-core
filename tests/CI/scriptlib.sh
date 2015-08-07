@@ -28,6 +28,11 @@
 # in a pipeline, otherwise e.g. exitcode("false | true") == 0
 if [ -n "${BASH-}" ]; then
     set -o pipefail 2>/dev/null || true
+    echo_E() { echo -E "$@"; }
+    echo_e() { echo -e "$@"; }
+else
+    echo_E() { /bin/echo -E "$@"; }
+    echo_e() { /bin/echo -e "$@"; }
 fi
 
 ### Some variables might not be initialized
@@ -181,7 +186,7 @@ logmsg_echo() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "$@"
+    echo_E "$@"
     :
 }
 
@@ -193,7 +198,7 @@ logmsg_info() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
+    echo_E "${LOGMSG_PREFIX}INFO: ${_SCRIPT_PATH}:" "$@"
     :
 }
 
@@ -205,7 +210,7 @@ logmsg_warn() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
+    echo_E "${LOGMSG_PREFIX}WARN: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -217,7 +222,7 @@ logmsg_error() {
     else if [ x"$1" = x"" ]; then shift; fi
     fi
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
-    echo -E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
+    echo_E "${LOGMSG_PREFIX}ERROR: ${_SCRIPT_PATH}:" "$@" >&2
     :
 }
 
@@ -233,7 +238,7 @@ logmsg_debug() {
 
     [ "$CI_DEBUG" -ge "$WANT_DEBUG_LEVEL" ] 2>/dev/null && \
         for LINE in "$@"; do
-            echo -E "${LOGMSG_PREFIX}DEBUG[$WANT_DEBUG_LEVEL<=$CI_DEBUG]: $LINE"
+            echo_E "${LOGMSG_PREFIX}DEBUG[$WANT_DEBUG_LEVEL<=$CI_DEBUG]: $LINE"
         done >&2
     :
 }
@@ -250,8 +255,8 @@ tee_stderr() {
     ### If debug is not enabled, skip tee'ing quickly with little impact
     [ "$CI_DEBUG" -lt "$TEE_DEBUG" ] 2>/dev/null && cat || \
     while IFS= read -r LINE; do
-        echo -E "$LINE"
-        echo -E "${LOGMSG_PREFIX}$TEE_TAG" "$LINE" >&2
+        echo_E "$LINE"
+        echo_E "${LOGMSG_PREFIX}$TEE_TAG" "$LINE" >&2
     done
     :
 }
@@ -267,7 +272,7 @@ die() {
     fi
     [ "$CODE" -ge 0 ] 2>/dev/null || CODE=1
     for LINE in "$@" ; do
-        echo -E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
+        echo_E "${LOGMSG_PREFIX}FATAL: ${_SCRIPT_PATH}:" "$LINE" >&2
     done
     exit $CODE
 }
