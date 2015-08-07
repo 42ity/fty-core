@@ -46,17 +46,19 @@ ifplugd_on() {
 
 ifplugd_off() {
     logmsg_info "Stopping ifplugd..."
-    systemctl disable ifplugd.service && \
+    systemctl disable ifplugd.service
     systemctl stop ifplugd.service
     logmsg_info "Disabled and perhaps stopped systemd ifplugd.service"
 }
 
 # Run augtools once to speed up the process
-AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method dhcp' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ) | augtool`" || die $?
+AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ; echo 'match /files/etc/default/ifplugd/INTERFACES' ) | augtool`" || die $?
 logmsg_debug "AUGOUT = " "$AUGOUT"
 
+# Note: This may be revised or option-switched to find not DHCP interfaces,
+# but something like "non-off, non-loopback" to monitor all active ones.
 INTLIST=""
-for INTNUM in `echo "$AUGOUT" | egrep '/method$' | sed 's,/method$,,'` ; do
+for INTNUM in `echo "$AUGOUT" | egrep '/method *= *dhcp$' | sed 's,/method .*$,,'` ; do
     INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
         || continue
     logmsg_debug "Found interface $INTNAME with method DHCP"
