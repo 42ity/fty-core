@@ -244,7 +244,7 @@ done
 
 # BIOS emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
-    install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/resolveip
+    install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
 
 
 #########################################################################
