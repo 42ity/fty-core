@@ -96,9 +96,13 @@ allow-hotplug eth0 eth1 eth2
 iface lo inet loopback
 iface eth0 inet dhcp
 iface eth1 inet static
-    address 192.168.1.1
+    address 192.168.1.10
     netmask 255.255.255.0
-iface eth2 inet manual
+    gateway 192.168.1.1
+iface eth2 inet static
+    address 192.168.2.10
+    netmask 255.255.255.0
+    gateway 192.168.2.1
 EOF
 
 cat > /etc/resolv.conf <<EOF
@@ -317,6 +321,9 @@ chmod a+rx /etc/zabbix/scripts/queryDisks.sh
 # Set lang
 echo 'export LANG="C"' > /etc/profile.d/lang.sh
 for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
+
+# Help ifup and ifplugd do the right job
+install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
 
 # More space saving
 SPACERM="rm -rf"

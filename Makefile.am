@@ -1343,20 +1343,25 @@ autopathedit = ${SED} \
 
 # systemd integration enabled?
 if HAVE_SYSTEMD
+
 # Here we list the actual service-definition files that should be compiled
+# Enabled as part of BIOS presets
 SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service bios-reset-button.service
+                        bios-db-init.service bios-reset-button.service \
+                        ifplug-dhcp-autoconf.service
 
+# These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
                         biostimer-graphs-prefetch@.service
 
 # These files need no processing, delivered verbatim
+# Enabled as part of BIOS presets
 SYSTEMD_TIMERS +=       biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
                         biostimer-graphs-prefetch__realpower.default@24h.timer
