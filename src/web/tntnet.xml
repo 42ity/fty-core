@@ -45,31 +45,6 @@
       <method>(POST|PUT|DELETE)</method>
     </mapping>
 
-    <!-- License management -->
-    <mapping>
-      <target>license@bios_web</target>
-    </mapping>
-
-    <!-- API itself -->
-
-    <!-- topology/location -->
-    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
-    <mapping>
-      <target>topology_inputcheck@bios_web</target>
-      <url>^/api/v1/topology/.*$</url>
-    </mapping>
-    -->     
-    <mapping>
-      <target>location@bios_web</target>
-      <url>^/api/v1/topology/location.*$</url>
-    </mapping>
-
-    <!-- topology/power -->
-    <mapping>
-      <target>power@bios_web</target>
-      <url>^/api/v1/topology/power.*$</url>
-    </mapping>
-
     <!-- Network configuration -->
     <mapping>
       <target>netcfg@bios_web</target>
@@ -136,6 +111,32 @@
         <type>$1</type>
       </args>
     </mapping>
+
+    <!-- License management -->
+    <mapping>
+      <target>license@bios_web</target>
+    </mapping>
+
+    <!-- API itself -->
+
+    <!-- topology/location -->
+    <!-- TODO: If location grows, move input validation into separate file, e.g. topology_inputcheck
+    <mapping>
+      <target>topology_inputcheck@bios_web</target>
+      <url>^/api/v1/topology/.*$</url>
+    </mapping>
+    -->
+    <mapping>
+      <target>location@bios_web</target>
+      <url>^/api/v1/topology/location.*$</url>
+    </mapping>
+
+    <!-- topology/power -->
+    <mapping>
+      <target>power@bios_web</target>
+      <url>^/api/v1/topology/power.*$</url>
+    </mapping>
+
 
     <!-- Current meassurements -->
     <mapping>
