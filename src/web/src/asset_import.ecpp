@@ -9,10 +9,7 @@
 #include "log.h"
 #include "db/inout.h"
 #include "bios-magic.h"
-#include "bios_agent.h"
-#include "cleanup.h"
-#include "str_defs.h"
-#include "agents.h"
+#include "configure_inform.h"
 
 </%pre>
 
@@ -23,7 +20,7 @@ if (request.getMethod() != "POST") {
 
 //HARDCODED limit: can't import things larger than 128K
 // this prevents DoS attacks against the box - can be raised if needed
-// don't forget internal processing is in UCS-32, therefor the
+// don't forget internal processing is in UCS-32, therefore the
 // real memory requirements are ~640kB
 if (request.getContentSize() > 128*1024) {
     </%cpp>
@@ -56,62 +53,26 @@ try {
 
     log_debug ("ok size is %zu", okRows.size());
     log_debug ("fail size is %lu", failRows.size());
-    
-    // TODO: vybrat jmeno agenta
-    std::string agent_name("MY_AGENT");
-    bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
-    if ( agent == NULL )
-    {
-</%cpp>
-        {
-            "msg" : "bios_agent_new () failed."
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
 
+    // ACE: TODO
+    // ATTENTION:  1. sending messages is "hidden functionality" from user
+    //             2. if any error would occur during the sending message,
+    //                user will never know what was actually imported or not
     // TODO get rid of hardcoded constants
-    uint8_t action_type = 1; 
-    // TODO rename  m
-    for ( auto &m : okRows )
-    {
-        ymsg_t *msg = bios_asset_encode (m.name.c_str(), m.type_id, m.parent_id, m.status.c_str(), m.priority, action_type);
-        if ( msg == NULL )
-        {
-</%cpp>
-        {
-            "msg" : "bios_asset_encode () failed."
-        }
-<%cpp>
-            bios_agent_destroy (&agent);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-        const std::string topic = "configure@" + m.name;
-        bios_agent_set_producer (agent, bios_get_stream_main());
-        int rv = bios_agent_send (agent, topic.c_str(), &msg);
-        if ( rv != 0 )
-        {
-</%cpp>
-        {
-            "msg" : "bios_agent_send () failed."
-        }
-<%cpp>
-            bios_agent_destroy (&agent);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-    }
-    bios_agent_destroy (&agent);
+    uint8_t action_type = 1;
+    std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+    send_configure (okRows, action_type, agent_name);
 </%cpp>
 {
     "imported_lines" : <$$ okRows.size() $>,
     "errors" : [
 <%cpp>
     size_t cnt = 0;
-    for ( auto &m : failRows )
+    for ( auto &oneRow : failRows )
     {
         cnt++;
 </%cpp>
-            [ <$$ m.first$>, "<$$ m.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
+            [ <$$ oneRow.first$>, "<$$ oneRow.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
 %   }
     ]
 }
