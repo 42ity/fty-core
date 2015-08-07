@@ -58,19 +58,19 @@ logmsg_debug "AUGOUT = " "$AUGOUT"
 # Note: This may be revised or option-switched to find not DHCP interfaces,
 # but something like "non-off, non-loopback" to monitor all active ones.
 INTLIST=""
-for INTNUM in `echo "$AUGOUT" | egrep '/method *= *dhcp$' | sed 's,/method .*$,,'` ; do
+for INTNUM in `echo "$AUGOUT" | egrep '/method *= *(dhcp|static|manual)$' | sed 's,/method .*$,,'` ; do
     INTNAME="`echo "$AUGOUT" | fgrep "$INTNUM = " | sed 's,^[^=]* = *,,'`" \
         || continue
-    logmsg_debug "Found interface $INTNAME with method DHCP"
+    logmsg_debug "Found configured interface $INTNAME"
     [ -z "$INTLIST" ] && INTLIST="$INTNAME" || INTLIST="$INTLIST $INTNAME"
 done
 
 # We should first disable ifplugd with its old list of tracked interfaces,
 # then change it, then maybe start it back up if the list is not empty
 if [ -z "$INTLIST" ]; then
-    logmsg_info "No interfaces were currently detected as DHCP clients (will clear the ifplugd list)"
+    logmsg_info "No interfaces were currently detected as DHCP clients, static or manual (will clear the ifplugd list)"
 else
-    logmsg_info "The following interfaces were currently detected as DHCP clients: $INTLIST"
+    logmsg_info "The following interfaces were currently detected as DHCP clients, static or manual: $INTLIST"
 fi
 
 OLDINTLIST="`echo "$AUGOUT" | grep ifplugd/INTERFACES | sed 's,^[^=]* = *,,' | sed 's,^\"\(.*\)\"$,\1,'`"
