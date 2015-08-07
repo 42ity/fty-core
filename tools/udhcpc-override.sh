@@ -53,14 +53,17 @@ if [ -n "$UDHCPC_IFACE" ]; then
     if [ $? = 0 ] && [ -n "$AUGOUT" ]; then
         AUGOUT_IFACE="`echo "$AUGOUT" | grep " = $UDHCPC_IFACE" | sed 's, = .*$,,'`" && \
         [ -n "$AUGOUT_IFACE" ] && \
-        UDHCPC_OPTS="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/udhcpc_opts" | sed 's,^.*/udhcpc_opts = ,,'`" && \
+        UDHCPC_OPTS="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/udhcpc_opts"`" && \
+        UDHCPC_OPTS="`echo "$UDHCPC_OPTS" | sed 's,^.*/udhcpc_opts = ,,'`" && \
         echo "INFO: Detected UDHCPC_OPTS='$UDHCPC_OPTS' for interface '$UDHCPC_IFACE'" >&2 && \
         [ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS=" " || \
         UDHCPC_OPTS=""
     fi
 fi
 
-[ -z "$UDHCPC_OPTS" ] && UDHCPC_OPTS="$UDHCPC_OPTS_DEFAULT"
+[ -z "$UDHCPC_OPTS" ] && \
+    echo "INFO: No UDHCPC_OPTS were detected in /etc/network/interfaces, using script defaults" >&2 && \
+    UDHCPC_OPTS="$UDHCPC_OPTS_DEFAULT"
 
-echo "WARN: command-line changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >&2
+echo "INFO: udhcpc command-line was changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >&2
 exec /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS
