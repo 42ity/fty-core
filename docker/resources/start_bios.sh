@@ -32,8 +32,15 @@ mysql < /usr/local/share/bios/docker/resources/patch.sql
 echo "Starting SASL auth .."
 service saslauthd start
 
+echo "Starting network dummy interface"
+ip link add eth1 type dummy
+ip link set eth1 up
+ip link add eth2 type dummy
+ip link set eth2 up
+
 echo "Starting web srv .."
-#service tntnet start
+export LICENSE_DIR=/var/license
+export DATADIR=/var/bios
 tntnet -c /etc/tntnet/tntnet.xml &
 
 echo "starting nut .."
