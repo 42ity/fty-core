@@ -324,6 +324,7 @@ for V in LANG LANGUAGE LC_ALL ; do echo "$V="'"C"'; done > /etc/default/locale
 
 # Help ifup and ifplugd do the right job
 install -m 0755 /usr/share/bios/scripts/udhcpc-override.sh /usr/local/sbin/udhcpc
+echo '[ -s /usr/share/bios/scripts/udhcpc-ntp.sh ] && . /usr/share/bios/scripts/udhcpc-ntp.sh' >> /etc/udhcpc/default.script
 
 # More space saving
 SPACERM="rm -rf"
