@@ -3,7 +3,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <fstream>
-#include <regex>
+#include <cxxtools/regex.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -26,10 +26,8 @@ if(accepted_license == NULL)
    accepted_license = "/var/lib/bios";
 asprintf(&current_license, "%s/current", current_license);
 asprintf(&accepted_license, "%s/license", accepted_license);
-std::regex rex;
-std::smatch match;
-rex = "^.*/license$";
-if(std::regex_match(request.getUrl(), match, rex)) {
+static cxxtools::Regex rex_lic("^.*/license$");
+if(rex_lic.match(request.getUrl())) {
 	if(request.isMethodGET()) {
 		std::ifstream source(current_license, std::ios::binary);
 		if(!source.good()) {
@@ -74,8 +72,8 @@ if(src != NULL) {
 	fscanf(src,"%ms\n%" SCNu64 "\n", &buff_a, &tme);
 	fclose(src);
 }
-rex = "^.*/license/status$";
-if(std::regex_match(request.getUrl(), match, rex)) {
+static cxxtools::Regex rex_st("^.*/license/status$");
+if(rex_st.match(request.getUrl())) {
 </%cpp>
 {
   "accepted" : "<$ (buff_a == NULL || strcmp(buff_a, buff_r) != 0) ? "no" : "yes" $>"

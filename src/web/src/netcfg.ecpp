@@ -1,9 +1,9 @@
 <%pre>
 #include <cxxtools/split.h>
 #include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
 #include <vector>
 #include <string>
-#include <regex>
 #include <string.h>
 
 #include "subprocess.h"
@@ -50,8 +50,6 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 <%cpp>
 std::string command;
 std::string nil;
-std::regex rex;
-std::smatch match;
 
 // Initialization of augtool subprocess if needed
 if(!augtool.isRunning()) {
@@ -93,8 +91,8 @@ if(!nil.empty()) {
 }
 
 // Are we asked to just list possible configurations?
-rex = "^.*/netcfgs$";
-if(std::regex_match(request.getUrl(), match, rex)) {
+static cxxtools::Regex rex_ncfg("^.*/netcfgs$");
+if(rex_ncfg.match(request.getUrl())) {
     std::string in;
     command = "match /files/etc/network/interfaces/iface[*]\n";
     write(augtool.getStdin(), command.c_str(), command.length());
@@ -113,8 +111,8 @@ if(std::regex_match(request.getUrl(), match, rex)) {
 
 // We are discussing interface configuration, are we asked about real interface?
 std::string iface = request.getArg("iface");
-rex = "^[a-z0-9]+$";
-if(!std::regex_match(iface, match, rex)) {
+static cxxtools::Regex rex_anum("^[a-z0-9]+$");
+if(!rex_anum.match(iface)) {
 </%cpp>
 { "error": "Wrong interface name" }
 <%cpp>
@@ -185,8 +183,8 @@ if(request.getMethod() == "PUT") {
     // All the things we need to set
     for(auto it : rsi) {
         bool handled = false;
-        AUG_SET("method",  std::regex_match(method = val, match,
-                           std::regex("^(dhcp|static|none|manual)$")));
+        static cxxtools::Regex rex_mtd("^(dhcp|static|none|manual)$");
+        AUG_SET("method",  rex_mtd.match(method));
         AUG_SET("address", (CIDRAddress(val).valid()     && method == "static"));
         AUG_SET("netmask", (CIDRAddress(val).isNetmask() && method == "static"));
         AUG_SET("gateway", (CIDRAddress(val).valid()     && method == "static"));
