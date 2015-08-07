@@ -96,9 +96,13 @@ allow-hotplug eth0 eth1 eth2
 iface lo inet loopback
 iface eth0 inet dhcp
 iface eth1 inet static
-    address 192.168.1.1
+    address 192.168.1.10
     netmask 255.255.255.0
-iface eth2 inet manual
+    gateway 192.168.1.1
+iface eth2 inet static
+    address 192.168.2.10
+    netmask 255.255.255.0
+    gateway 192.168.2.1
 EOF
 
 cat > /etc/resolv.conf <<EOF
