@@ -18,7 +18,8 @@ RUN apt-get update && apt-get install -y --force-yes \
   libmlm1 \
   malamute \
   libnutclient0 \
-  augeas-tools
+  augeas-tools \
+  mime-support
   
 #RUN apt-get install -y apt-utils
 RUN apt-get clean
