@@ -17,6 +17,11 @@
       <pathinfo>./index.html</pathinfo>
       <url>^/$</url>
     </mapping>
+    <mapping>
+      <target>static@tntnet</target>
+      <pathinfo>./favicon.ico</pathinfo>
+      <url>^/favicon.ico</url>
+    </mapping>
 
     <!-- Make sure everybody speaks json from now on -->
     <mapping>
@@ -115,6 +120,7 @@
     <!-- License management -->
     <mapping>
       <target>license@bios_web</target>
+      <url>^/api/v1/.*</url>
     </mapping>
 
     <!-- API itself -->
