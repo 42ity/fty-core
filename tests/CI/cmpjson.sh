@@ -13,7 +13,7 @@
 determineDirs || true
 
 [ -z "${JSONSH-}" ] && \
-    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh" "$SCRIPTDIR/../../tools/JSON.sh"; do
         [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
     done
 
