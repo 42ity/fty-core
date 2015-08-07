@@ -64,7 +64,7 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"
             shift 2
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
@@ -78,6 +78,10 @@ while [ $# -gt 0 ]; do
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
             shift 2
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
@@ -108,7 +112,7 @@ SUT_IS_REMOTE=yes
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 # ***** GLOBAL VARIABLES *****
 TIME_START=$(date +%s)
@@ -166,8 +170,14 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
 set -o pipefail 2>/dev/null || true
 set -e
 { loaddb_file ./tools/initdb.sql && \
+  loaddb_file ./tools/initdb_ci_patch.sql && \
   loaddb_file ./tools/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
 set +e
 
 # ***** COMMON FUNCTIONS ***

@@ -1,3 +1,5 @@
+sut_run "rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license" || true
+
 test_it "license_status_not_ok"
 api_get_json '/admin/license/status' >&5
 print_result $?

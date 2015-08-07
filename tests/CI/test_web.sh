@@ -60,7 +60,11 @@ while [ $# -gt 0 ]; do
         BIOS_PASSWD="$2"
         shift 2
         ;;
-    *)
+    -s|--service)
+        SASL_SERVICE="$2"
+        shift 2
+        ;;
+    *)  # fall through - these are lists of tests to do
         break
         ;;
     esac
@@ -68,6 +72,7 @@ done
 
 [ -n "$BIOS_USER"   ] || BIOS_USER="bios"
 [ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="@PASSWORD@"
+[ -n "$SASL_SERVICE" ] || SASL_SERVICE="bios"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -97,10 +102,9 @@ SASLTEST="`which testsaslauthd`"
 [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
 [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
 
-if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+$SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
     CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
         "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-fi
 
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests

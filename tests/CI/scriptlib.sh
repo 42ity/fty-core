@@ -54,7 +54,8 @@ export DBUSER DATABASE
 ### REST API (and possibly non-privileged SSH) user credentials
 [ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
 [ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="@PASSWORD@"
-export BIOS_USER BIOS_PASSWD
+[ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
+export BIOS_USER BIOS_PASSWD SASL_SERVICE
 
 ### Variables for remote testing - avoid "variable not defined" errors
 [ -z "${SUT_IS_REMOTE-}" ] && SUT_IS_REMOTE="auto" # auto|yes|no
@@ -62,7 +63,7 @@ export BIOS_USER BIOS_PASSWD
 [ -z "${SUT_HOST-}" ] && SUT_HOST=""       # Hostname or IP address
 [ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT=""       # SSH (maybe via NAT)
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT=""       # TNTNET (maybe via NAT)
-export SUT_IS_REMOTE SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
+export SUT_IS_REMOTE SUT_USER SUT_HOST SUT_SSH_PORT SUT_WEB_PORT
 
 ### Should the test suite break upon first failed test?
 [ x"${CITEST_QUICKFAIL-}" != xyes ] && CITEST_QUICKFAIL=no

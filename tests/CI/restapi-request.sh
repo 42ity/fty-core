@@ -33,6 +33,7 @@ logmsg_info "Using CHECKOUTDIR='$CHECKOUTDIR' to run the requests"
 # Defaults; note that SUT_WEB_PORT is guessed below based on ultimate SUT_HOST
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 
 [ -z "$WEBLIB_FUNC" ] && WEBLIB_FUNC="api_auth_get_content"
@@ -76,7 +77,7 @@ while [ $# -gt 0 ] ; do
             SUT_WEB_PORT="$2"
             shift
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift
             ;;
@@ -86,6 +87,10 @@ while [ $# -gt 0 ] ; do
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
+            shift
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
             shift
             ;;
         -m|--method)

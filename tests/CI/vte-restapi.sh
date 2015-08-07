@@ -37,6 +37,7 @@
 # ***** USE BIOS_USER AND BIOS_PASSWD *****
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 usage(){
     echo "Usage: $(basename $0) [options...] [test_name...]"
@@ -56,7 +57,7 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"
             shift 2
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
@@ -70,6 +71,10 @@ while [ $# -gt 0 ]; do
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
             shift 2
             ;;
         --help|-h)
@@ -119,6 +124,7 @@ DB_DATA="load_data.sql"
 DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 
 # Set up weblib test engine preference defaults for automated CI tests
 [ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
@@ -159,7 +165,7 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
 # ***** AUTHENTICATION ISSUES *****
 # check SASL is working
 logmsg_info "Checking remote SASL Auth Daemon"
-sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
+sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'" && \
   logmsg_info "saslauthd is responsive and configured well!" || \
   logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
@@ -168,7 +174,7 @@ sut_run "testsaslauthd -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios" && \
 test_web() {
     echo "============================================================"
     /bin/bash $CHECKOUTDIR/tests/CI/vte-test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" \
-        -s $SUT_HOST -su $SUT_USER -sp $SUT_SSH_PORT "$@"
+        -s "$SASL_SERVICE" -sh "$SUT_HOST" -su "$SUT_USER" -sp "$SUT_SSH_PORT" "$@"
     RESULT=$?
     echo "==== RESULT: ($RESULT) ==========================================="
     return $RESULT
@@ -178,6 +184,7 @@ test_web() {
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_LOADDIR/$DB_DATA" && \
     loaddb_file "$DB_LOADDIR/$DB_DATA_TESTREST"
 }
@@ -191,6 +198,7 @@ test_web_default() {
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_LOADDIR/$DB_TOPOP" && \
     test_web "$@"
 }
@@ -199,9 +207,14 @@ test_web_topo_p() {
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
     loaddb_file "$DB_LOADDIR/$DB_BASE" && \
+    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE" && \
     loaddb_file "$DB_LOADDIR/$DB_TOPOL" && \
     test_web "$@"
 }
+
+# Try to accept the BIOS license on server
+SKIP_SANITY=yes test_web 00_license-CI-forceaccept.sh.test || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** PERFORM THE TESTCASES *****
 set +e
