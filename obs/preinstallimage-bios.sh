@@ -91,7 +91,7 @@ sed -i 's|.*Storage.*|Storage=volatile|'                  /etc/systemd/journald.
 mkdir -p /etc/network
 
 cat > /etc/network/interfaces <<EOF
-auto lo eth0 eth1 eth2
+auto lo
 allow-hotplug eth0 eth1 eth2
 iface lo inet loopback
 iface eth0 inet dhcp
