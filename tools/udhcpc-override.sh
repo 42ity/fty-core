@@ -65,5 +65,14 @@ fi
     echo "INFO: No UDHCPC_OPTS were detected in /etc/network/interfaces, using script defaults" >&2 && \
     UDHCPC_OPTS="$UDHCPC_OPTS_DEFAULT"
 
+case "$UDHCPC_OPTS" in
+    *hostname*) ;;
+    *)  # Give hint about my non-default name
+        [ x"`hostname`" != xeaton-rc3 ] && \
+        UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`"
+        ;;
+esac
+
 echo "INFO: udhcpc command-line was changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >&2
 exec /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS
+
