@@ -33,7 +33,7 @@ echo "WARN: $0 $@: will hack the command-line for proper DHCP support..." >&2
 UDHCPC_ARGS=""
 UDHCPC_IFACE=""
 UDHCPC_OPTS=""
-UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6"
+UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6 -O ntpsrv"
 
 while [ $# -gt 0 ]; do
     case "$1" in
