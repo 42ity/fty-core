@@ -31,11 +31,11 @@ public:
      * @param valid How long should be token valid
      * @return Token
      */
-    std::string gen_token(int& valid, bool do_round = true);
+    std::string gen_token(int& valid, const char* user, bool do_round = true);
     /**
      * \brief Verifies whether supplied token is valid
      */
-    bool verify_token(const std::string token);
+    bool verify_token(const std::string token, long int* uid = NULL);
     /**
      * \brief Decodes token, useful for debugging
      */
