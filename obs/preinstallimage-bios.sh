@@ -193,6 +193,7 @@ systemctl enable mysql
 echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
 sed -i 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license|' /lib*/systemd/system/ssh.service
 systemctl enable ssh
 
 # Workaround nutscanner's ldopen
