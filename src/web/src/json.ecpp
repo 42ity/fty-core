@@ -1,7 +1,6 @@
 <%pre>
 #include <locale.h>
 #include <stdlib.h>
-#include <iostream>
 </%pre>
 <%cpp>
 	// Get rid of locales
