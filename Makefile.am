@@ -19,6 +19,7 @@ EXTRA_DIST =
 bin_PROGRAMS =
 check_PROGRAMS =
 check_LTLIBRARIES =
+client_SCRIPTS =
 noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
@@ -963,7 +964,7 @@ generate_measurement_LDADD = \
 
 generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_SCRIPTS =	tools/db-init
+client_SCRIPTS +=	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
@@ -1208,7 +1209,7 @@ outage_LDADD = \
 
 
 outage_LDFLAGS =	-ltntdb
-
+client_SCRIPTS += tools/bios-passwd
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
