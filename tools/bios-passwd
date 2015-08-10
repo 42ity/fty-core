@@ -24,7 +24,6 @@
 #       to maintain stable protocol, script requires it
 
 set -e
-set -x
 
 export PATH=
 export LC_ALL=C
