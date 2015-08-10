@@ -34,15 +34,6 @@ die() {
 }
 
 
-is_root() {
-    local user
-    user=${1}
-
-    [[ $(/usr/bin/id -u ${user}) == 0 ]]
-    return $?
-}
-
-
 # used to simplify the declaration of do_passwd below
 source /etc/os-release || :
 
