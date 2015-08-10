@@ -48,7 +48,7 @@ if ( ! request.isSsl() ) {
 	// Token is based on a fresh timestamp (one-second precision)
 	if (grant_reset_inst == "true") {
 #ifdef DEBUG
-		aToken = tokens::get_instance(true)->gen_token(valid, false);
+		aToken = tokens::get_instance(true)->gen_token(valid, username.c_str(), false);
 #else
 		std::cerr << "WARNING: Asked to reset instance of token "
 			<< "generator, but this is disabled in non-DEBUG "
@@ -56,11 +56,11 @@ if ( ! request.isSsl() ) {
 #endif
 	}
 	if (aToken == "" ) {
-		aToken = tokens::get_instance(true)->gen_token(valid, false);
+		aToken = tokens::get_instance(true)->gen_token(valid, username.c_str(), false);
 	}
     } else {
 	// Token is based on a timestamp rounded to ROUND(=60) seconds
-	aToken = tokens::get_instance()->gen_token(valid, true);
+	aToken = tokens::get_instance()->gen_token(valid, username.c_str(), true);
     }
 </%cpp>
 {
