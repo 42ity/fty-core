@@ -1,6 +1,7 @@
 <%pre>
 #include <locale.h>
 #include <stdlib.h>
+#include <iostream>
 </%pre>
 <%cpp>
 	// Get rid of locales
@@ -19,7 +20,12 @@
 	request.keepAlive();
 
 	// No matter what, we are speaking JSON
-	reply.setContentType("application/json;charset=UTF-8");
+    if (request.getUrl() == "/api/v1/asset/export") {
+	    reply.setContentType("text/plain;charset=UTF-8");
+    }
+    else {
+	    reply.setContentType("application/json;charset=UTF-8");
+    }
 	reply.setHeader(tnt::httpheader::cacheControl, "no-store");
 	reply.setHeader(tnt::httpheader::pragma, "no-cache");
 
