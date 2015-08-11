@@ -92,8 +92,5 @@ s_passwd(
 <%cpp>
     return HTTP_BAD_REQUEST;
     }
-    std::string msg = "password updated successfully for user '" + user + "'";
 </%cpp>
-{
-    "passwd": "<$$ msg $>"
-}
+return HTTP_OK;
