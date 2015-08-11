@@ -31,6 +31,7 @@ logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the REST API webserver"
 
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 [ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
 [ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
@@ -51,6 +52,7 @@ DB_DATA="load_data.sql"
 DB_DATA_TESTREST="load_data_test_restapi.sql"
 DB_TOPOP="power_topology.sql"
 DB_TOPOL="location_topology.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 
 PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
 export PATH
@@ -65,28 +67,32 @@ usage(){
     echo "options:"
     echo "  -u|--user   username for SASL (Default: '$BIOS_USER')"
     echo "  -p|--passwd password for SASL (Default: '$BIOS_PASSWD')"
+    echo "  -s|--service service for SASL/PAM (Default: '$SASL_SERVICE')"
 }
 
 while [ $# -gt 0 ] ; do
     case "$1" in
         --user|-u)
             BIOS_USER="$2"
-            shift
+            shift 2
             ;;
         --passwd|-p)
             BIOS_PASSWD="$2"
-            shift
+            shift 2
             ;;
+	--service|-s)
+	    SASL_SERVICE="$2"
+	    shift 2
+	    ;;
         --help|-h)
             usage
             exit 1
             ;;
         *)  # Assume that list of test names follows
-                # (positive or negative, see test_web.sh)
+            # (positive or negative, see test_web.sh)
             break
-                ;;
+            ;;
     esac
-    shift
 done
 
 set -u
@@ -163,7 +169,7 @@ kill_daemons() {
   fi
   # check SASL is working
   logmsg_info "Checking local SASL Auth Daemon"
-  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios && \
+  testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" && \
     logmsg_info "saslauthd is responsive and configured well!" || \
     logmsg_error "saslauthd is NOT responsive or not configured!" >&2
 
@@ -188,7 +194,7 @@ kill_daemons() {
 # do the webserver
   LC_ALL=C
   LANG=C
-  export BIOS_USER BIOS_PASSWD LC_ALL LANG
+  export BIOS_USER BIOS_PASSWD SASL_SERVICE LC_ALL LANG
   logmsg_info "Ensuring files for web-test exist and are up-to-date..."
 
   if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
@@ -209,8 +215,10 @@ kill_daemons() {
   DBNGPID=$!
 
   # Ensure that no processes remain dangling when test completes
-  trap 'TR=$?; echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons && exit $TR' EXIT
-  trap 'TR=$?; [ "$TR" = 0 ] && TR=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons && exit $TR' SIGHUP SIGINT SIGQUIT SIGTERM
+  # The ERRCODE is defined by settraps() as the program exitcode
+  # as it enters the trap
+  TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
+  TRAP_SIGNALS="HUP INT QUIT TERM" settraps '[ "$ERRCODE" = 0 ] && ERRCODE=123; echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons && exit $ERRCODE'
 
   logmsg_info "Waiting for web-server to begin responding..."
   wait_for_web && \
@@ -222,7 +230,7 @@ kill_daemons() {
 
 test_web() {
     echo "============================================================"
-    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" "$@"
+    /bin/bash tests/CI/test_web.sh -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" "$@"
     RESULT=$?
     echo "============================================================"
     return $RESULT
@@ -230,7 +238,7 @@ test_web() {
 
 loaddb_default() {
     echo "--------------- reset db: default ----------------"
-    for data in "$DB_BASE" "$DB_DATA" "$DB_DATA_TESTREST"; do
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_DATA" "$DB_DATA_TESTREST"; do
         loaddb_file "$DB_LOADDIR/$data" || return $?
     done
     return 0
@@ -243,15 +251,17 @@ test_web_default() {
 
 test_web_topo_p() {
     echo "----------- reset db: topology : power -----------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOP" && \
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOP"; do
+        loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
     test_web "$@"
 }
 
 test_web_topo_l() {
     echo "---------- reset db: topology : location ---------"
-    loaddb_file "$DB_LOADDIR/$DB_BASE" && \
-    loaddb_file "$DB_LOADDIR/$DB_TOPOL" && \
+    for data in "$DB_BASE" "$DB_ASSET_TAG_NOT_UNIQUE" "$DB_TOPOL"; do
+        loaddb_file "$DB_LOADDIR/$data" || return $?
+    done
     test_web "$@"
 }
 

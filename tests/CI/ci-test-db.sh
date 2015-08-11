@@ -49,6 +49,8 @@ DB_RACK_POWER="rack_power.sql"
 DB_DC_POWER="dc_power.sql"
 DB_CRUD="crud_test.sql"
 DB_OUTAGE="test_outage.sql"
+DB_ALERT="test_alert.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
 
 RESULT=0
 FAILED=""
@@ -69,11 +71,11 @@ trap_exit() {
     exit $TRAP_RESULT
 }
 
-trap "trap_exit" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+settraps "trap_exit"
 
 echo "-------- ensure bins to test are up to date -------"
 ./autogen.sh --optseqmake --nodistclean ${AUTOGEN_ACTION_MAKE} \
-    test-db test-db2 test-db-alert \
+    test-db2 test-db-alert \
     test-db-asset-crud test-dbtopology test-outage test-totalpower \
     || FAILED="compilation"
 sleep 1
@@ -94,22 +96,8 @@ if [ "$?" != 0 ] ; then
 fi
 sleep 1
 
-echo "-------------------- reset db --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
 loaddb_file "$DB_LOADDIR/$DB_DATA"
-echo "-------------------- test-db --------------------"
-set +e
-"$BUILDSUBDIR"/test-db
-if [ "$?" != 0 ] ; then
-    echo "----------------------------------------"
-    echo "ERROR: test-db failed"
-    echo "----------------------------------------"
-    RESULT=1
-    FAILED="$FAILED test-db"
-    [ x"$CITEST_QUICKFAIL" = xyes ] && exit $RESULT
-fi
-sleep 1
-
 echo "-------------------- test-db2 --------------------"
 "$BUILDSUBDIR"/test-db2
 if [ "$?" != 0 ] ; then
@@ -123,6 +111,9 @@ fi
 sleep 1
 
 echo "-------------------- test-db-alert --------------------"
+loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
+loaddb_file "$DB_LOADDIR/$DB_ALERT"
 "$BUILDSUBDIR"/test-db-alert
 if [ "$?" != 0 ] ; then
     echo "----------------------------------------"
@@ -137,6 +128,7 @@ sleep 1
 echo "-------------------- test-db-asset-crud-----"
 echo "-------------------- reset db --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
 loaddb_file "$DB_LOADDIR/$DB_CRUD"
 "$BUILDSUBDIR"/test-db-asset-crud
 if [ "$?" != 0 ] ; then
@@ -152,6 +144,7 @@ sleep 1
 for P in "$DB_TOPO" "$DB_TOPO1"; do
     echo "-------------------- fill db for topology $P --------------------"
     loaddb_file "$DB_LOADDIR/$DB_BASE"
+    loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
     loaddb_file "$DB_LOADDIR/$P"
     echo "-------------------- test-dbtopology $P --------------------"
     set +e
@@ -170,6 +163,7 @@ done
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for rack power --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
 loaddb_file "$DB_LOADDIR/$DB_RACK_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_RACK_POWER]"
 if [ "$?" != 0 ] ; then
@@ -185,6 +179,7 @@ sleep 1
 echo "-------------------- test-total-power --------------------"
 echo "-------------------- fill db for dc power --------------------"
 loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
 loaddb_file "$DB_LOADDIR/$DB_DC_POWER"
 "$BUILDSUBDIR"/test-totalpower "[$DB_DC_POWER]"
 if [ "$?" != 0 ] ; then
@@ -198,6 +193,7 @@ fi
 sleep 1
 
 loaddb_file "$DB_LOADDIR/$DB_BASE"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
 loaddb_file "$DB_LOADDIR/$DB_OUTAGE"
 echo "-------------------- test-db-outage --------------------"
 "$BUILDSUBDIR"/test-outage

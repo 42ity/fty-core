@@ -64,7 +64,7 @@ if [ ! -f "$BUILDSUBDIR/Makefile" ] ; then
         "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
         ${AUTOGEN_ACTION_CONFIG}
 fi
-./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut agent-netmon
+./autogen.sh ${AUTOGEN_ACTION_MAKE} web-test-deps agent-dbstore agent-nut 
 ./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test \
     >> ${BUILDSUBDIR}/web-test.log 2>&1 &
 WEBTESTPID=$!
@@ -75,13 +75,16 @@ ${BUILDSUBDIR}/agent-dbstore &
 DBNGPID=$!
 
 # Ensure that no processes remain dangling when test completes
-trap 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons' EXIT
-trap 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons' SIGHUP SIGINT SIGQUIT SIGTERM
+TRAP_SIGNALS=EXIT settraps 'echo "CI-EXIT: $0: test finished (up to the proper exit command)..." >&2; kill_daemons'
+TRAP_SIGNALS="HUP INT QUIT TERM" settraps 'echo "CI-EXIT: $0: got signal, aborting test..." >&2; kill_daemons'
 
-DB1="$CHECKOUTDIR/tools/initdb.sql"
-DB2="$CHECKOUTDIR/tools/rack_power.sql"
-loaddb_file "$DB1"
-loaddb_file "$DB2"
+DB_LOADDIR="$CHECKOUTDIR/tools"
+DB1="initdb.sql"
+DB2="rack_power.sql"
+DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql"
+loaddb_file "$DB_LOADDIR/$DB1"
+loaddb_file "$DB_LOADDIR/$DB_ASSET_TAG_NOT_UNIQUE"
+loaddb_file "$DB_LOADDIR/$DB2"
 #
 # only one parameter - ups.realpower for ups ot outlet.realpower for epdu is used for the total rack power value counting
 #
@@ -210,6 +213,13 @@ for UPS in $UPS1 $UPS2 ; do
         esac
         TP=$(awk -vX=${LASTPOW[0]} -vY=${LASTPOW[1]} 'BEGIN{ print X + Y; }')
         # TODO: parametrize
+        # TODO: use weblib.sh
+        # Try to accept the BIOS license on server
+        ( BASE_URL='http://127.0.0.1:8000/api/v1'; export BASE_URL
+          . "`dirname $0`"/weblib.sh && \
+          . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+            logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
         URL="http://127.0.0.1:8000/api/v1/metric/computed/rack_total?arg1=$RACK&arg2=total_power"
         POWER=$(curl -s "$URL" | awk '/total_power/{ print $NF; }')
         STR1="$(printf "%f" $TP)"  # this returns "2000000.000000"
