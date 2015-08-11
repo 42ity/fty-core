@@ -20,8 +20,9 @@
 #              it does expect all the information on stdin to not accidentally leak it
 #              /usr/bin/printf "%s\n%s\n%s\n" "user" "old_password" "new_password"
 # TODO: it acually DO NOT check the old password, because unix2_chkpwd has been
-#       designed by very paranoid ppl and I am lazy to write own binary. But in order
-#       to maintain stable protocol, script requires it
+#       designed by very paranoid ppl and I am lazy to write own binary, so the check
+#       is going to be on REST API level. But in order to maintain stable protocol, script
+#       requires it.
 
 set -e
 
@@ -56,7 +57,7 @@ if [[ -x /usr/bin/expect ]]; then
         /bin/cat <<EOF | /usr/bin/expect -
 #!/usr/bin/expect
 
-spawn /usr/bin/passwd bios
+spawn /usr/bin/passwd ${user}
 expect "New password:"
 send "${new_passwd}"
 send "\r"
