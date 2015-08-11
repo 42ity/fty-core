@@ -17,6 +17,7 @@ std::string access_token="";
 </%args>
 <%request scope="global">
 int8_t access_auth_level;
+long int uid = 0;
 </%request>
 <%cpp>
 access_auth_level=AUTH_LEVEL_ANONYMOUS;
@@ -69,7 +70,7 @@ if(!access_token.empty()) {
 	    that of a power-user == 2 */
 	access_auth_level=AUTH_LEVEL_POWERUSER;
 
-	if(!tokens::get_instance()->verify_token(access_token)) {
+	if(!tokens::get_instance()->verify_token(access_token, &uid)) {
 //			"error":"invalid_token"
 //			return HTTP_UNAUTHORIZED;
 		access_auth_level=AUTH_LEVEL_ERROR_INVALID;

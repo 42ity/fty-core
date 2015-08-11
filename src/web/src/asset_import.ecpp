@@ -1,22 +1,15 @@
 <%pre>
 #include <string>
-#include <sstream>
-#include <fstream>
 #include <stdexcept>
 #include <cxxtools/jsondeserializer.h>
+#include <fstream>
 
-#include <cerrno>
 #include <cstring>
-#include <unistd.h>
 
-#include "db/inout.h"
-#include "enc.h"
 #include "log.h"
-#include "subprocess.h"
-#include "bios_agent.h"
-#include "cleanup.h"
-#include "str_defs.h"
-#include "agents.h"
+#include "db/inout.h"
+#include "bios-magic.h"
+#include "configure_inform.h"
 
 </%pre>
 
@@ -27,7 +20,7 @@ if (request.getMethod() != "POST") {
 
 //HARDCODED limit: can't import things larger than 128K
 // this prevents DoS attacks against the box - can be raised if needed
-// don't forget internal processing is in UCS-32, therefor the
+// don't forget internal processing is in UCS-32, therefore the
 // real memory requirements are ~640kB
 if (request.getContentSize() > 128*1024) {
     </%cpp>
@@ -49,126 +42,43 @@ if (it == mp.end()) {
     <%cpp>
         return HTTP_BAD_REQUEST;
 }
-
-char path[22] = "/tmp/import-csvXXXXXX";
-char new_path[22] = "/tmp/import-csvXXXXXX";
-char* path_p = path;
-LOG_START;
 try {
-    int r = ::mkstemp(path);
-    if (r == -1) {
-        throw std::runtime_error( ::strerror(errno) );
-    }
-    ::close(r);
-
-    std::ofstream out(path);
-    // store the content in temporary location
-    for (tnt::Part::const_iterator pi = it->getBodyBegin(); pi != it->getBodyEnd(); ++pi)
-        out << *pi;
-
-    out.flush();
-    out.close();
-
-    // check the encoding
-    auto magic = file_type_encoding(path);
-    const auto& encoding = magic.second;
-    if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
-        std::string msg = "This file (" + magic.first + ") is not supported please try again with a different file.";
-        throw std::invalid_argument( msg.c_str() );
-    }
-
-    if (encoding == "utf-16le") {
-        // convert utf-16le using iconv
-        int r2 = ::mkstemp(new_path);
-        if (r2 == -1) {
-            throw std::runtime_error( ::strerror(errno) );
-        }
-        ::close(r2);
-
-        // iconv -f utf-16le -t utf-8 Book1.txt > Book1.utf8.txt
-        shared::Argv args = {"/usr/bin/iconv", "-f", encoding, "-t", "utf-8", path, "-o", new_path};
-        int res = shared::call(args);
-        if (res != 0) {
-            ::unlink(new_path);
-            throw std::runtime_error("Can't convert input file to utf-8");
-        }
-        ::unlink(path);
-        path_p = new_path;
-    }
-
-    //load the file and make the import
-    std::ifstream inp(path_p);
+    std::string path_p;
+    shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
+    std::ifstream inp{path_p};
     std::vector<db_a_elmnt_t> okRows{};
     std::map<int,std::string> failRows{};
     persist::load_asset_csv(inp, okRows, failRows);
     inp.close();
-    ::unlink(path_p);
-    log_debug ("ok size is %lu", okRows.size());
-    log_debug ("fail size is %lu", failRows.size());
-    
-    // TODO: vybrat jmeno agenta
-    std::string agent_name("MY_AGENT");
-    bios_agent_t *agent = bios_agent_new (MLM_ENDPOINT, agent_name.c_str ());
-    if ( agent == NULL )
-    {
-</%cpp>
-        {
-            "msg" : "bios_agent_new () failed."
-        }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
 
+    log_debug ("ok size is %zu", okRows.size());
+    log_debug ("fail size is %lu", failRows.size());
+
+    // ACE: TODO
+    // ATTENTION:  1. sending messages is "hidden functionality" from user
+    //             2. if any error would occur during the sending message,
+    //                user will never know what was actually imported or not
     // TODO get rid of hardcoded constants
-    uint8_t action_type = 1; 
-    // TODO rename  m
-    for ( auto &m : okRows )
-    {
-        ymsg_t *msg = bios_asset_encode (m.name.c_str(), m.type_id, m.parent_id, m.status.c_str(), m.priority, action_type);
-        if ( msg == NULL )
-        {
-</%cpp>
-        {
-            "msg" : "bios_asset_encode () failed."
-        }
-<%cpp>
-            bios_agent_destroy (&agent);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-        const std::string topic = "configure@" + m.name;
-        bios_agent_set_producer (agent, bios_get_stream_main());
-        int rv = bios_agent_send (agent, topic.c_str(), &msg);
-        if ( rv != 0 )
-        {
-</%cpp>
-        {
-            "msg" : "bios_agent_send () failed."
-        }
-<%cpp>
-            bios_agent_destroy (&agent);
-            return HTTP_INTERNAL_SERVER_ERROR;
-        }
-    }
-    bios_agent_destroy (&agent);
+    uint8_t action_type = 1;
+    std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+    send_configure (okRows, action_type, agent_name);
 </%cpp>
 {
     "imported_lines" : <$$ okRows.size() $>,
     "errors" : [
 <%cpp>
     size_t cnt = 0;
-    for ( auto &m : failRows )
+    for ( auto &oneRow : failRows )
     {
         cnt++;
 </%cpp>
-            [ <$$ m.first$>, "<$$ m.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
+            [ <$$ oneRow.first$>, "<$$ oneRow.second.c_str()$>"]<$ cnt != failRows.size() ? ',' : ' ' $>
 %   }
     ]
 }
 <%cpp>
 }
 catch (const std::logic_error &e) {
-    ::unlink(path);
-    ::unlink(new_path);
 </%cpp>
 {
     "error" : "<$$ e.what() $>"
@@ -177,8 +87,6 @@ catch (const std::logic_error &e) {
     return HTTP_BAD_REQUEST;
 }
 catch (const std::runtime_error &e) {
-    ::unlink(path);
-    ::unlink(new_path);
 </%cpp>
 {
     "error" : "<$$ e.what() $>"

@@ -19,6 +19,7 @@ EXTRA_DIST =
 bin_PROGRAMS =
 check_PROGRAMS =
 check_LTLIBRARIES =
+client_SCRIPTS =
 noinst_LTLIBRARIES =
 pkglib_LTLIBRARIES =
 check_SCRIPTS =
@@ -62,10 +63,13 @@ myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools obs
 
 # run tntnet from Makefile
-RUN_TNTNET = ${TNTNET} tntnet.xml
+RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
+             export DATADIR="$(abs_top_builddir)/var/bios"; \
+	     rm -rf "$(abs_top_builddir)/var"; \
+	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
@@ -161,6 +165,15 @@ LIBBIOSAPI_CURRENT=0
 LIBBIOSAPI_REVISION=0
 # How many previous interfaces are still supported
 LIBBIOSAPI_AGE=0
+
+# copy from autoconf manual, note single suffix rules can't be used there!!
+autopathedit = ${SED} \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
+	-e 's|@libexecdir[@]|$(libexecdir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g'
+
 
 # Note the public API binary library files are installed to the system
 # common $(libdir), not private $(pkglibdir) like e.g. REST API module
@@ -374,7 +387,7 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/assets/assetr.cc \
 			src/db/assets.h \
 			src/db/inout.h \
-			src/db/inout/loadcsv.cc \
+			src/db/inout/importcsv.cc \
 			src/db/inout/exportcsv.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
@@ -408,6 +421,29 @@ noinst_LTLIBRARIES +=	libpriv-nutscan.la
 libpriv_nutscan_la_SOURCES = \
 			src/shared/nutscan.h \
 			src/shared/nutscan.cc
+
+noinst_LTLIBRARIES +=	libpriv-magic.la
+libpriv_magic_la_SOURCES = \
+			src/shared/magic.cc \
+			src/shared/bios-magic.h
+
+noinst_LTLIBRARIES += 	libpriv-configure-inform.la
+
+libpriv_configure_inform_la_SOURCES = \
+			src/agents/configure_inform/configure_inform.cc \
+			src/agents/configure_inform/configure_inform.h
+
+libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist
+
+#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
+#			libpriv-log.la libpriv-csv.la
+
+
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -541,8 +577,8 @@ check_PROGRAMS += 	test-csv
 test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
-test_csv_LDADD = 		libpriv-log.la \
-						libpriv-csv.la \
+test_csv_LDADD = 		libpriv-csv.la \
+						libpriv-log.la \
 					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
@@ -869,21 +905,6 @@ bios_nutscan_LDADD = \
 
 bios_nutscan_LDFLAGS = $(CXXTOOLS_LIBS) -lcidr $(LIBNUTSCAN_LIBS)
 
-cibin_programs += bios-exportcsv
-bios_exportcsv_SOURCES = tests/db/bios-exportcsv.cc
-bios_exportcsv_CPPFLAGS = \
-						  $(AM_CPPFLAGS) \
-						  -I $(abs_top_srcdir)/src/ \
-						  -I $(abs_top_srcdir)/src/persist/ \
-						  -I $(abs_top_srcdir)/src/share/
-bios_exportcsv_LDADD = \
-						 libpriv-db-alerts.la \
-						 libpriv-log.la \
-						 libpriv-db.la
-bios_exportcsv_LDFLAGS = \
-						 ${CXXTOOLS_LIBS} -ltntdb
-
-
 # Do we build and install CI programs by default? (see configure)
 cibin_programs_list := $(cibin_programs)
 cibindir = ${pkgbindir}
@@ -952,7 +973,7 @@ generate_measurement_LDADD = \
 
 generate_measurement_CPPFLAGS =	$(AM_CPPFLAGS)
 
-client_SCRIPTS =	tools/db-init
+client_SCRIPTS +=	tools/db-init
 
 client_PROGRAMS +=	agent-dbstore
 
@@ -980,7 +1001,8 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/tools/bios-passwd.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1000,6 +1022,21 @@ dshell_LDADD = \
 
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
+
+cibin_programs += bios-csv
+bios_csv_SOURCES = tests/db/bios-csv.cc
+bios_csv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_csv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la \
+						 libpriv-csv.la
+bios_csv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
 
 client_PROGRAMS +=	agent-nut
 
@@ -1183,10 +1220,16 @@ outage_LDADD = \
 
 outage_LDFLAGS =	-ltntdb
 
+client_SCRIPTS += tools/bios-passwd
+
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
 pkglib_LTLIBRARIES += bios_web.la
+
+#src/web/src/admin_passwd.ecpp: Makefile src/web/src/admin_passwd.ecpp.in
+#	@echo "  SED      $@"
+#	rm -f $@; $(autopathedit) < '$(abs_top_srcdir)/$@.in' > $@
 
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
 # List them explicitly as separate sets, so that generated files can be cleaned
@@ -1198,23 +1241,20 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
-                      src/web/src/uptime.cpp src/web/src/iface.cpp \
-					  src/web/src/asset_export.cpp
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp       \
+                      src/web/src/license.cpp src/web/src/asset_export.cpp \
+                      src/web/src/admin_passwd.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc		 \
-					  src/web/src/dci_impl.h
-
-
-EXTRA_DIST +=		src/web/include/enc.h
+                      src/shared/upsstatus.cc src/web/src/dci_impl.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -1231,7 +1271,8 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/agents/configure_inform
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
@@ -1244,7 +1285,9 @@ bios_web_la_LIBADD = \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la
+			libpriv-db-measurements.la \
+			libpriv-magic.la \
+			libpriv-configure-inform.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -1253,7 +1296,9 @@ dist_noinst_HEADERS += \
 			src/persist/assetcrud.h \
 			tools/dbpath.h
 
-EXTRA_DIST +=		src/web/tntnet.xml
+EXTRA_DIST += \
+			src/web/tntnet.xml \
+			src/web/src/admin_passwd.ecpp.in
 
 ### This file contains the TNTNET settings relevant for our test runs
 ### Note: in non-daemon mode, stderr is logged to stderr
@@ -1328,30 +1373,27 @@ SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
 
-# copy from autoconf manual, note single suffix rules can't be used there!!
-autopathedit = ${SED} \
-	-e 's|@datadir[@]|$(datadir)|g' \
-	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
-	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
-	-e 's|@libexecdir[@]|$(libexecdir)|g' \
-	-e 's|@libdir[@]|$(libdir)|g'
-
 # systemd integration enabled?
 if HAVE_SYSTEMD
+
 # Here we list the actual service-definition files that should be compiled
+# Enabled as part of BIOS presets
 SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service bios-reset-button.service
+                        bios-db-init.service bios-reset-button.service \
+                        ifplug-dhcp-autoconf.service
 
+# These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
                         biostimer-graphs-prefetch@.service
 
 # These files need no processing, delivered verbatim
+# Enabled as part of BIOS presets
 SYSTEMD_TIMERS +=       biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
                         biostimer-graphs-prefetch__realpower.default@24h.timer

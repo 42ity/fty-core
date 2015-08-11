@@ -1,6 +1,10 @@
 <%pre>
+#include <string>
+#include <time.h>
+
 #include "auth_levels.h"
 #include "db/inout.h"
+#include "utils.h"
 </%pre>
 
 <%request scope="global">
@@ -13,5 +17,9 @@ if (access_auth_level <= AUTH_LEVEL_ANONYMOUS) {
 <%cpp>
     return HTTP_UNAUTHORIZED;
 }
+    char buf[16];
+    calendar_to_datetime(time(NULL), buf, 16);
+    buf[14] = '\x0';   //kill last Z
+	reply.setHeader(tnt::httpheader::contentDisposition, "asset_export" + std::string{buf} + ".csv");
     persist::export_asset_csv(reply.out());
 </%cpp>

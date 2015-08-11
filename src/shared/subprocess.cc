@@ -1,16 +1,16 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 3 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
+
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -28,6 +28,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <unistd.h>
 
 namespace shared {
 
@@ -36,7 +37,7 @@ namespace shared {
 char * const * _mk_argv(const Argv& vec);
 void _free_argv(char * const * argv);
 std::size_t _argv_hash(Argv args);
-        
+
 SubProcess::SubProcess(Argv cxx_argv, int flags) :
     _fork(false),
     _state(SubProcessState::NOT_STARTED),
@@ -66,7 +67,7 @@ SubProcess::SubProcess(Argv cxx_argv, int flags) :
 
 SubProcess::~SubProcess() {
     int _saved_errno = errno;
-  
+
     // update a state
     poll();
     // Graceful shutdown
@@ -197,11 +198,11 @@ int SubProcess::wait(bool no_hangup)
 
     return _return_code;
 }
-        
+
 int SubProcess::kill(int signal) {
     auto ret = ::kill(getPid(), signal);
     poll();
-    return ret; 
+    return ret;
 }
 
 int SubProcess::terminate() {
@@ -230,7 +231,7 @@ ProcessQue::~ProcessQue() {
         taskp->wait();
         delete taskp;
     }
-    
+
     for (auto taskp: _done) {
         //avoids zombies, calls ::waitpid at least once
         taskp->poll();
@@ -475,6 +476,19 @@ int output(const Argv& args, std::string& o, std::string& e) {
     return ret;
 }
 
+int output(const Argv& args, std::string& o, std::string& e, const std::string& i) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
+    p.run();
+    ::write(p.getStdin(), i.c_str(), i.size());
+    ::fsync(p.getStdin());
+    ::close(p.getStdin());
+    int ret = p.wait();
+
+    o.assign(read_all(p.getStdout()));
+    e.assign(read_all(p.getStderr()));
+    return ret;
+}
+
 // ### helper functions ###
 char * const * _mk_argv(const Argv& vec) {
 
@@ -511,14 +525,15 @@ std::size_t _argv_hash(Argv args) {
 
     std::hash<std::string> hash;
     size_t ret = hash("");
-    
+
     for (auto str : args) {
         size_t foo = hash(str);
         ret = ret ^ (foo << 1);
     }
-    
+
     return ret;
 }
+
 
 } //namespace shared
 

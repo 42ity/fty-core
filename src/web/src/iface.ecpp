@@ -15,7 +15,7 @@
 #include <string>
 #include <string.h>
 #include <unistd.h>
-#include <regex>
+#include <cxxtools/regex.h>
 
 struct iface {
    std::vector<std::string> ip;
@@ -101,10 +101,8 @@ iface get_iface(std::string iface) {
 </%pre>
 <%cpp>
 // Are we asked to just list possible configurations?
-std::regex rex;
-std::smatch match;
-rex = "^.*/ifaces$";
-if(std::regex_match(request.getUrl(), match, rex)) {
+cxxtools::Regex rex("^.*/ifaces$");
+if(rex.match(request.getUrl())) {
     bool first = true;
 </%cpp>
 { "ifaces": [

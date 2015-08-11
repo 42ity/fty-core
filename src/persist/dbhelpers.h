@@ -101,13 +101,14 @@ struct db_msrmnt_t {
  * \brief helper structure for results of v_bios_asset_element
  */
 struct db_a_elmnt_t {
-    a_elmnt_id_t     id;        
-    std::string      name;      
-    std::string      status;    
-    a_elmnt_id_t     parent_id; 
+    a_elmnt_id_t     id;
+    std::string      name;
+    std::string      status;
+    a_elmnt_id_t     parent_id;
     a_elmnt_pr_t     priority;
     a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
+    std::string      asset_tag;
 };
 
 /** 

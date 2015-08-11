@@ -1,0 +1,12 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+iface eth0 inet dhcp
+iface eth1 inet static
+   address 192.168.1.10
+   netmask 255.255.255.0
+   gateway 192.168.1.1
+iface eth2 inet static
+   address 192.168.2.10
+   netmask 255.255.255.0
+   gateway 192.168.2.1
+
