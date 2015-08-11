@@ -418,7 +418,7 @@ _api_get_token() {
 	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
-	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
+	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
