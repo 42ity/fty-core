@@ -60,8 +60,9 @@ for(
     jobName in [
         "vtetest_restapi",
         "vtetest_rackpower",
-        "vtetest_netmon",
         "vte_tab_import",
+        "vte_tab_uptime",
+        "vte_tab_wpos",
     ]
 ){
     println "=== Starting $jobName ===";

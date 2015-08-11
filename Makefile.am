@@ -62,10 +62,13 @@ myMANDIR =	docs/man
 myDEVDOCDIR =	docs/develop
 
 # Locations of child Makefiles
-SUBDIRS =	$(myMANDIR) docs/examples tools
+SUBDIRS =	$(myMANDIR) docs/examples tools obs
 
 # run tntnet from Makefile
-RUN_TNTNET = ${TNTNET} tntnet.xml
+RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
+             export DATADIR="$(abs_top_builddir)/var/bios"; \
+	     rm -rf "$(abs_top_builddir)/var"; \
+	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
 # Integrate packaging of resource files for management of Docker containers
@@ -298,15 +301,6 @@ libpriv_csv_la_LIBADD = ${CXXTOOLS_LIBS}
 noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = \
-			src/persist/persistence.h \
-			src/persist/databaseobject.cc \
-			src/persist/databaseobject.h \
-			src/persist/databasetimeobject.cc \
-			src/persist/databasetimeobject.h \
-			src/persist/ip.cc \
-			src/persist/ip.h \
-			src/persist/nethistory.cc \
-			src/persist/nethistory.h \
 			src/persist/assetcrud.cc \
 			src/persist/assetcr.cc \
 			src/persist/assetd.cc \
@@ -328,8 +322,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
-			src/persist/loadcsv.h \
-			src/persist/loadcsv.cc \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -383,7 +375,10 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts.h \
 			src/db/assets/assetr.h \
 			src/db/assets/assetr.cc \
-			src/db/assets.h
+			src/db/assets.h \
+			src/db/inout.h \
+			src/db/inout/importcsv.cc \
+			src/db/inout/exportcsv.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -416,6 +411,29 @@ noinst_LTLIBRARIES +=	libpriv-nutscan.la
 libpriv_nutscan_la_SOURCES = \
 			src/shared/nutscan.h \
 			src/shared/nutscan.cc
+
+noinst_LTLIBRARIES +=	libpriv-magic.la
+libpriv_magic_la_SOURCES = \
+			src/shared/magic.cc \
+			src/shared/bios-magic.h
+
+noinst_LTLIBRARIES += 	libpriv-configure-inform.la
+
+libpriv_configure_inform_la_SOURCES = \
+			src/agents/configure_inform/configure_inform.cc \
+			src/agents/configure_inform/configure_inform.h
+
+libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_builddir)/src/persist
+
+#libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
+#			libpriv-log.la libpriv-csv.la
+
+
 
 DISTCLEANFILES +=	docs/doxygen/Doxyfile
 
@@ -549,8 +567,8 @@ check_PROGRAMS += 	test-csv
 test_csv_SOURCES =		src/shared/csv.h \
 					    tests/shared/test-csv.cc
 
-test_csv_LDADD = 		libpriv-log.la \
-						libpriv-csv.la \
+test_csv_LDADD = 		libpriv-csv.la \
+						libpriv-log.la \
 					    libpriv-test-run.la
 
 test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
@@ -657,34 +675,14 @@ test_autoconfig_CPPFLAGS = $(AM_CPPFLAGS) \
 #                        CI tests
 #----------------------------------------------------------------------
 
-cibin_programs += 	test-db
-
-test_db_SOURCES = 	tests/persist/test-nethistory.cc
-
-test_db_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
-			libpriv-cidr.la \
-			libpriv-test-run.la
-
-test_db_CPPFLAGS = \
-			$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/tests/include/ \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_builddir)/tools
-
-test_db_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr
-
-
 cibin_programs += 	test-loadcsv
 
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
-			libpriv-log.la \
-			libpriv-db.la \
 			libpriv-db-alerts.la \
+			libpriv-db.la \
+			libpriv-log.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-csv.la \
@@ -694,6 +692,7 @@ test_loadcsv_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -878,7 +877,7 @@ bios_email_SOURCES = \
 bios_email_LDADD = \
 			libpriv-log.la \
 			libpriv-email.la \
-			libpriv-subprocess.la 
+			libpriv-subprocess.la
 
 bios_email_LDFLAGS = $(CXXTOOLS_LIBS)
 
@@ -928,22 +927,6 @@ TESTS += $(check_SCRIPTS)
 #------------------------------~/bin/$1----------------------------------------
 #                        binaries
 #----------------------------------------------------------------------
-
-client_PROGRAMS += 	agent-netmon
-agent_netmon_SOURCES = \
-			src/agents/netmon/linux \
-			src/agents/netmon/agent-netmon.c
-
-agent_netmon_CPPFLAGS =	$(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/agents/netmon
-
-agent_netmon_LDADD = \
-			libpriv-defs.la \
-			libpriv-log.la \
-			libpriv-utils.la \
-			libbiosapi.la
-
-agent_netmon_LDFLAGS =	-lnetlink $(LIBCZMQ_LIBS)
 
 client_PROGRAMS += 	server-agent
 
@@ -1028,6 +1011,21 @@ dshell_LDADD = \
 
 dshell_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(top_srcdir)/src/include
+
+cibin_programs += bios-csv
+bios_csv_SOURCES = tests/db/bios-csv.cc
+bios_csv_CPPFLAGS = \
+						  $(AM_CPPFLAGS) \
+						  -I $(abs_top_srcdir)/src/ \
+						  -I $(abs_top_srcdir)/src/persist/ \
+						  -I $(abs_top_srcdir)/src/share/
+bios_csv_LDADD = \
+						 libpriv-db-alerts.la \
+						 libpriv-log.la \
+						 libpriv-db.la \
+						 libpriv-csv.la
+bios_csv_LDFLAGS = \
+						 ${CXXTOOLS_LIBS} -ltntdb
 
 client_PROGRAMS +=	agent-nut
 
@@ -1209,7 +1207,7 @@ outage_LDADD = \
 			libpriv-utils-ymsg.la
 
 
-outage_LDFLAGS =	-lnetlink -ltntdb
+outage_LDFLAGS =	-ltntdb
 
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
@@ -1226,22 +1224,19 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/power.cpp src/web/src/item.cpp         \
                       src/web/src/json.cpp  src/web/src/list.cpp         \
                       src/web/src/time.cpp  src/web/src/sysinfo.cpp      \
-                      src/web/src/network.cpp src/web/src/networks.cpp   \
-                      src/web/src/current.cpp src/web/src/ui_properties.cpp  \
-                      src/web/src/rack_total.cpp src/web/src/location.cpp    \
+                      src/web/src/current.cpp src/web/src/ui_properties.cpp \
+                      src/web/src/rack_total.cpp src/web/src/location.cpp \
                       src/web/src/datacenter_indicators.cpp              \
                       src/web/src/average.cpp src/web/src/asset_import.cpp \
-                      src/web/src/alerts.cpp src/web/src/netcfg.cpp \
-                      src/web/src/uptime.cpp
+                      src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
+                      src/web/src/uptime.cpp src/web/src/iface.cpp       \
+		      src/web/src/license.cpp src/web/src/asset_export.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
                       src/web/src/sasl.cc          \
                       src/web/src/tokens.cc src/shared/data.cc           \
-                      src/shared/upsstatus.cc src/web/src/enc.cc		 
-
-
-EXTRA_DIST +=		src/web/include/enc.h
+                      src/shared/upsstatus.cc src/web/src/dci_impl.h
 
 # Ensure these files are auto-made before others
 BUILT_SOURCES +=	$(BUILT_SOURCES_bios_web_la)
@@ -1258,7 +1253,8 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/ \
 			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src/persist
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/agents/configure_inform
 
 bios_web_la_LDFLAGS = 	${LIBCZMQ_LIBS}	${CXXTOOLS_LIBS} \
 			${LIBSODIUM_LIBS} ${LIBSASL2_LIBS} \
@@ -1271,7 +1267,9 @@ bios_web_la_LIBADD = \
 			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-db-measurements.la
+			libpriv-db-measurements.la \
+			libpriv-magic.la \
+			libpriv-configure-inform.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
@@ -1340,8 +1338,6 @@ EXTRA_DIST +=		$(top_srcdir)/tools/gen-json-validator \
 			$(top_srcdir)/include/*.h \
 			$(top_srcdir)/src/msg/*.xml \
 			$(top_srcdir)/src/include/*.h \
-			$(top_srcdir)/src/agents/netmon/*/*.h \
-			$(top_srcdir)/src/agents/netmon/*/*/*.h \
 			$(top_srcdir)/src/agents/*/*.h \
 			$(top_srcdir)/src/cli/*.h \
 			$(top_srcdir)/src/shared/*.h \
@@ -1367,20 +1363,25 @@ autopathedit = ${SED} \
 
 # systemd integration enabled?
 if HAVE_SYSTEMD
+
 # Here we list the actual service-definition files that should be compiled
-SYSTEMD_UNITS += bios-agent-nut.service bios-agent-netmon.service \
+# Enabled as part of BIOS presets
+SYSTEMD_UNITS += bios-agent-nut.service \
                         bios-agent-dbstore.service bios-server-agent.service \
                         bios-agent-inventory.service bios-agent-cm.service \
                         bios-agent-alert.service \
                         bios-agent-alert-smtp.service bios-agent-tpower.service \
                         bios-agent-autoconfig.service bios-agent-th.service \
-                        bios-db-init.service
+                        bios-db-init.service bios-reset-button.service \
+                        ifplug-dhcp-autoconf.service
 
+# These unit files are compiled, but are not enabled via BIOS presets
 SYSTEMD_UNITS_TIMERIMPL += \
                         biostimer-outage.service \
                         biostimer-graphs-prefetch@.service
 
 # These files need no processing, delivered verbatim
+# Enabled as part of BIOS presets
 SYSTEMD_TIMERS +=       biostimer-outage.timer \
                         biostimer-graphs-prefetch__realpower.default@15m.timer \
                         biostimer-graphs-prefetch__realpower.default@24h.timer
@@ -1892,8 +1893,8 @@ check-local: check-dlls web-link-test test-sdk \
 # or if everything is properly GitIgnored - then succeed
 # If some not-gitignored files are found, then fail
 check-gitignore: all-buildproducts
-	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" = xyes ]; then \
-	    echo "SKIP: $@ (by explicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
+	@(if [ x"$(SKIP_MAKE_CHECK_GITIGNORE)" \!= xno ]; then \
+	    echo "SKIP: $@ (by implicit SKIP_MAKE_CHECK_GITIGNORE=yes)"; exit 0 ; \
 	  else \
 	    if which git >/dev/null 2>&1 ; then \
 	        git status -s | egrep '^\?\? ' && \

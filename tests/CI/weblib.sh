@@ -26,18 +26,19 @@
 # ***********************************************
 echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 
-[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
-[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
-[ -z "$BIOS_USER" ] && BIOS_USER="bios"
-[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
-[ -z "$BASE_URL" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
-#[ -z "$BASE_URL" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
-#[ -z "$BASE_URL" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
+[ -z "${SUT_HOST-}" ] && SUT_HOST="127.0.0.1"
+[ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"
+[ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
+[ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
+[ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
+#[ -z "${BASE_URL-}" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
+#[ -z "${BASE_URL-}" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
 
 echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 
 # Should the test suite abort if "curl" errors out?
-[ -z "$WEBLIB_CURLFAIL" ] && WEBLIB_CURLFAIL=yes
+[ -z "${WEBLIB_CURLFAIL-}" ] && WEBLIB_CURLFAIL=yes
 
 # Should the test suite abort if "curl" sees HTTP error codes?
 # This can be overridden on a per-call basis for those api_get's
@@ -46,15 +47,15 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 #       expect  Fail if stderr is not empty but result is OK
 #       ignore  Don't care, and don't test
 #       warn    Anything else (*) gives a warning if error was matched and goes on
-[ -z "$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT" ] && \
+[ -z "${WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT-}" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="warn"
-[ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && \
+[ -z "${WEBLIB_CURLFAIL_HTTPERRORS-}" ] && \
     WEBLIB_CURLFAIL_HTTPERRORS="$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT"
 
 # If set to "protected", then _api_get_token will automatically expect
 # success headers and fail the test otherwise; set it to anything else
 # only to test failures in the token-work routines
-[ -z "$WEBLIB_CURLFAIL_GETTOKEN" ] && \
+[ -z "${WEBLIB_CURLFAIL_GETTOKEN-}" ] && \
     WEBLIB_CURLFAIL_GETTOKEN="protected"
 
 # Flag (yes|no|onerror) to print CURL trace on any HTTP error mismatch
@@ -65,20 +66,20 @@ echo "INFO-WEBLIB: Will use BASE_URL = '$BASE_URL'"
 # Regexp of HTTP header contents that is considered an error;
 # one may test for specific codes with custom regexps for example
 # NOTE: Must be single-line for push/pop to work well.
-[ -z "$WEBLIB_HTTPERRORS_REGEX_DEFAULT" ] && \
+[ -z "${WEBLIB_HTTPERRORS_REGEX_DEFAULT-}" ] && \
     WEBLIB_HTTPERRORS_REGEX_DEFAULT='HTTP/[^ ]+ [45]'
-[ -z "$WEBLIB_HTTPERRORS_REGEX" ] && \
+[ -z "${WEBLIB_HTTPERRORS_REGEX-}" ] && \
     WEBLIB_HTTPERRORS_REGEX="$WEBLIB_HTTPERRORS_REGEX_DEFAULT"
 
 # Print out the CURL stdout and stderr (via FD#3)?
-[ -z "$WEBLIB_TRACE_CURL" ] && WEBLIB_TRACE_CURL=no
+[ -z "${WEBLIB_TRACE_CURL-}" ] && WEBLIB_TRACE_CURL=no
 
-[ -n "$SCRIPTDIR" -a -d "$SCRIPTDIR" ] || \
+[ -n "${SCRIPTDIR-}" ] && [ -d "$SCRIPTDIR" ] || \
         SCRIPTDIR="$(cd "`dirname "$0"`" && pwd)" || \
         SCRIPTDIR="`pwd`/`dirname "$0"`" || \
         SCRIPTDIR="`dirname "$0"`"
 
-if [ -z "$CHECKOUTDIR" ]; then
+if [ -z "${CHECKOUTDIR-}" ]; then
     case "$SCRIPTDIR" in
         */tests/CI|tests/CI)
             CHECKOUTDIR="$(realpath $SCRIPTDIR/../..)" || \
@@ -92,8 +93,31 @@ if [ -z "$CHECKOUTDIR" ]; then
     esac
 fi
 
-# TODO: Support delivery of weblib.sh into distro so that paths are different
+# Detect needed real curl or its wget-based emulator which suffices in
+# a limited way (e.g. no parsing of output headers in "< Line" format)
+# Not good for CI tests, but is sufficient for command-line automation.
+
+# SKIP_SANITY=(yes|no|onlyerrors)
+#   yes = skip sanity tests in certain ultimate request/test scripts
+#   no  = do all tests
+#   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ -z "${SKIP_SANITY-}" ] && SKIP_SANITY=no
+
+( which curl >/dev/null 2>&1 ) || {
+    [ -x "$SCRIPTDIR/curlbbwget.sh" ] && \
+    SKIP_SANITY=onlyerrors && \
+    curl() {
+        "$SCRIPTDIR/curlbbwget.sh" "$@"
+    } || {
+        echo "FATAL-WEBLIB: neither curl program nor curlbbwget.sh emulator" \
+            "were found and one is required for requests!" >&2
+        exit 127
+    }
+}
+
+# Support delivery of weblib.sh into distro so that paths are different
 # and testlib may be not available (avoid kill $_PID_TESTER in traps below)
+[ x"${NEED_TESTLIB-}" != xno ] && \
 if [ -n "$CHECKOUTDIR" ] && [ -d "$CHECKOUTDIR/tests/CI" ]; then
         . "$CHECKOUTDIR/tests/CI"/testlib.sh || exit
 else
@@ -103,11 +127,14 @@ fi
 ### Should the test suite break upon first failed test?
 ### Legacy weblib value (may be set by caller/includer)
 ### overrides the common testlib variable
-[ x"$WEBLIB_QUICKFAIL" = xno -o x"$WEBLIB_QUICKFAIL" = xyes ] && \
+[ x"${WEBLIB_QUICKFAIL-}" = xno -o x"${WEBLIB_QUICKFAIL-}" = xyes ] && \
         echo "CI-WEBLIB-INFO: Overriding CITEST_QUICKFAIL with WEBLIB_QUICKFAIL='$WEBLIB_QUICKFAIL'" && \
         CITEST_QUICKFAIL="$WEBLIB_QUICKFAIL"
 
-[ -z "$JSONSH" ] && JSONSH="$CHECKOUTDIR/tools/JSON.sh"
+[ -z "${JSONSH-}" ] && \
+    for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
+        [ -x "$F" -a -s "$F" ] && JSONSH="$F" && break
+    done
 
 _TOKEN_=""
 
@@ -126,7 +153,8 @@ trap_break_weblib() {
 
     exit $RES_CURL
 }
-trap "trap_break_weblib" SIGUSR1
+trap "trap_break_weblib" SIGUSR1 || \
+trap "trap_break_weblib" USR1
 
 STACKED_HTTPERRORS_ACTIONS=""
 STACKED_HTTPERRORS_REGEX=""
@@ -143,12 +171,12 @@ curlfail_push() {
         "and WEBLIB_HTTPERRORS_REGEX='$2' instead of '$WEBLIB_HTTPERRORS_REGEX'" \
         "on top of $STACKED_HTTPERRORS_COUNT items already in stack"
 
-    [ -z "$STACKED_HTTPERRORS_ACTIONS" ] && \
+    [ -z "${STACKED_HTTPERRORS_ACTIONS-}" ] && \
         STACKED_HTTPERRORS_ACTIONS="$WEBLIB_CURLFAIL_HTTPERRORS" || \
         STACKED_HTTPERRORS_ACTIONS="$WEBLIB_CURLFAIL_HTTPERRORS
 $STACKED_HTTPERRORS_ACTIONS"
 
-    [ -z "$STACKED_HTTPERRORS_REGEX" ] && \
+    [ -z "${STACKED_HTTPERRORS_REGEX-}" ] && \
         STACKED_HTTPERRORS_REGEX="$WEBLIB_HTTPERRORS_REGEX" || \
         STACKED_HTTPERRORS_REGEX="$WEBLIB_HTTPERRORS_REGEX
 $STACKED_HTTPERRORS_REGEX"
@@ -168,27 +196,27 @@ curlfail_pop() {
     ### pops "$WEBLIB_HTTPERRORS_REGEX" from the stack (empty val = default);
     ### if the stack is empty, resets the popped values to their defaults
 
-    if [ -z "$STACKED_HTTPERRORS_ACTIONS" ]; then
+    if [ -z "${STACKED_HTTPERRORS_ACTIONS-}" ]; then
         WEBLIB_CURLFAIL_HTTPERRORS=""
     else
         WEBLIB_CURLFAIL_HTTPERRORS="`echo "$STACKED_HTTPERRORS_ACTIONS" | head -1`" || \
         WEBLIB_CURLFAIL_HTTPERRORS=""
         STACKED_HTTPERRORS_ACTIONS="`echo "$STACKED_HTTPERRORS_ACTIONS" | tail -n +2`"
     fi
-    [ -z "$WEBLIB_CURLFAIL_HTTPERRORS" ] && \
+    [ -z "${WEBLIB_CURLFAIL_HTTPERRORS-}" ] && \
         WEBLIB_CURLFAIL_HTTPERRORS="$WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT"
 
-    if [ -z "$STACKED_HTTPERRORS_REGEX" ]; then
+    if [ -z "${STACKED_HTTPERRORS_REGEX-}" ]; then
         WEBLIB_HTTPERRORS_REGEX=""
     else
         WEBLIB_HTTPERRORS_REGEX="`echo "$STACKED_HTTPERRORS_REGEX" | head -1`" || \
         WEBLIB_HTTPERRORS_REGEX=""
         STACKED_HTTPERRORS_REGEX="`echo "$STACKED_HTTPERRORS_REGEX" | tail -n +2`"
     fi
-    [ -z "$WEBLIB_HTTPERRORS_REGEX" ] && \
+    [ -z "${WEBLIB_HTTPERRORS_REGEX-}" ] && \
         WEBLIB_HTTPERRORS_REGEX="$WEBLIB_HTTPERRORS_REGEX_DEFAULT"
 
-    if [ "$STACKED_HTTPERRORS_COUNT" -le 1 ]; then
+    if [ "${STACKED_HTTPERRORS_COUNT-}" -le 1 ]; then
         STACKED_HTTPERRORS_COUNT=0
         STACKED_HTTPERRORS_REGEX=""
         STACKED_HTTPERRORS_ACTIONS=""
@@ -197,7 +225,7 @@ curlfail_pop() {
         STACKED_HTTPERRORS_COUNT="`echo "$STACKED_HTTPERRORS_ACTIONS" | wc -l`"
     fi
 
-    [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes -o x"$WEBLIB_TRACE_CURL" = xyes ] && \
+    [ x"${WEBLIB_CURLFAIL_HTTPERRORS_DEBUG-}" = xyes -o x"${WEBLIB_TRACE_CURL-}" = xyes ] && \
     echo "CI-WEBLIB-TRACE-CURL: curlfail_pop(): returned to " \
         "WEBLIB_CURLFAIL_HTTPERRORS='$WEBLIB_CURLFAIL_HTTPERRORS'" \
         "and WEBLIB_HTTPERRORS_REGEX='$WEBLIB_HTTPERRORS_REGEX';" \
@@ -272,15 +300,21 @@ CURL() {
 
     _PRINT_CURL_TRACE=no
     if [ $RES_CURL != 0 ]; then
-        ### Based on caller redirections, this output may never be seen
-        echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
-            "perhaps the web server is not available or has crashed?" >&3
-        _PRINT_CURL_TRACE=yes
+        if [ -n "$ERR_CURL" ] && ( echo "$ERR_CURL"; echo "" ) | grep wget >/dev/null ; then
+            # Busybox wget returns non-zero for non-success HTTP result codes
+            # and returns the header part with code in its stderr message
+            RES_CURL=0
+        else
+            ### Based on caller redirections, this output may never be seen
+            echo "CI-WEBLIB-ERROR-CURL: 'curl $@' program failed ($RES_CURL)," \
+                "perhaps the web server is not available or has crashed?" >&3
+            _PRINT_CURL_TRACE=yes
+        fi
     fi
 
     ERR_MATCH=""
     if [ -n "$ERR_CURL" -a x"$WEBLIB_CURLFAIL_HTTPERRORS" != xignore ]; then
-        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^ *< '"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
+        ERR_MATCH="`( echo "$ERR_CURL"; echo "" ) | tr '\r' '\n' | egrep '^( *< |wget: server returned error: )'"$WEBLIB_HTTPERRORS_REGEX"`" 2>&3 || true
         if [ -n "$ERR_MATCH" ]; then
             if [ x"$WEBLIB_CURLFAIL_HTTPERRORS" = xexpect ]; then
                 [ x"$WEBLIB_CURLFAIL_HTTPERRORS_DEBUG" = xyes ] && \
@@ -460,7 +494,7 @@ api_auth_post() {
     data=$2
     shift 2
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$data" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
@@ -483,7 +517,7 @@ api_auth_post_file() {
     data=$2
     shift 2
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" --form "$data" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" --form "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
 }
 
@@ -492,7 +526,7 @@ api_auth_post_content() {
     #	$1	Relative URL for API call
     #	$2	POST data
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$2" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" \
         "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
@@ -515,7 +549,7 @@ api_auth_post_content_wToken() {
 
 api_auth_delete() {
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" -X "DELETE" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -X "DELETE" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
 
@@ -524,13 +558,13 @@ api_auth_put() {
     #	$1	Relative URL for API call
     #	$2	PUT data
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
 
 api_auth_get() {
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" \
+    CURL --insecure --header "Authorization: Bearer $TOKEN" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
 
@@ -546,7 +580,7 @@ api_auth_get_wToken() {
 
 api_auth_get_content() {
     TOKEN="`_api_get_token`"
-    CURL --insecure -H "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
+    CURL --insecure --header "Authorization: Bearer $TOKEN" "$BASE_URL$1" 3>&2 2>/dev/null
 }
 
 api_auth_get_content_wToken() {
@@ -560,7 +594,7 @@ api_auth_get_content_wToken() {
 
 api_auth_get_json() {
     TOKEN="`_api_get_token`"
-    CURL --insecure -v --progress-bar -H "Authorization: Bearer $TOKEN" \
+    CURL --insecure -v --progress-bar --header "Authorization: Bearer $TOKEN" \
         "$BASE_URL$1" 3>&2 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
 }

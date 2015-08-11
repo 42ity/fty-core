@@ -55,7 +55,7 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"
             shift 2
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
@@ -69,6 +69,10 @@ while [ $# -gt 0 ]; do
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
             shift 2
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
@@ -116,6 +120,7 @@ logmsg_info "Will use BASE_URL = '$BASE_URL'"
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 # ***** GLOBAL VARIABLES *****
     # *** config dir for the nut dummy driver parameters allocated in config files
@@ -146,6 +151,8 @@ echo $$ > "$LOCKFILE"
     # ***  SET trap FOR EXIT SIGNALS
 TRAP_SIGNALS=EXIT settraps cleanup
 
+logmsg_info "Will use BASE_URL = '$BASE_URL'"
+
 # TODO: replace by calls to proper rc-bios script
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
 sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
@@ -158,8 +165,14 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql tntnet@bios bios-agent-dbstore
 set -o pipefail 2>/dev/null || true
 set -e
 { loaddb_file ./tools/initdb.sql && \
+  loaddb_file ./tools/initdb_ci_patch.sql && \
   loaddb_file ./tools/rack_power.sql \
 ; } 2>&1 | tee $CHECKOUTDIR/ci-rackpower-vte.log
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
+
 set +e
 
 sut_run 'systemctl restart bios-agent-tpower'

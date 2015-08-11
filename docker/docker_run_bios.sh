@@ -36,7 +36,7 @@ then
 fi
 if [[ "x$1" == "x-ti" ]]
 then
-  sudo docker run -ti --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash
+  sudo docker run -ti --cap-add=ALL --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash
 else
-  sudo docker run --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash -c /usr/local/libexec/bios/start_bios.sh
+  sudo docker run --cap-add=ALL --name bios --link mysql:db -p 8000:8000 eaton/bios /bin/bash -c /usr/local/libexec/bios/start_bios.sh
 fi

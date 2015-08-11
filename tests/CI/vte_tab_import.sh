@@ -67,6 +67,10 @@ while [ $# -gt 0 ]; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
+        -s|--service)
+            SASL_SERVICE="$2"
+            shift 2
+            ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
             break
             ;;
@@ -95,6 +99,7 @@ SUT_IS_REMOTE=yes
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -109,9 +114,9 @@ determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl start $SVC ; done'
 sleep 5
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-netmon bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory ; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 # ***** INIT DB *****
@@ -119,7 +124,17 @@ sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server
 set -o pipefail 2>/dev/null || true
 set -e
 loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+
+# NOTE: This test verifies that with our standard configuration of the VTE
+# and its database we can import our assets, so we do not apply hacks like
+# the DB_ASSET_TAG_NOT_UNIQUE="initdb_ci_patch.sql" used elsewhere.
+# If this test fails, then sources and/or sample SQL/CSV data must be fixed.
+
 set +e
+
+# Try to accept the BIOS license on server
+( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+    logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
 # ***** POST THE CSV FILE *****
 ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
@@ -127,8 +142,9 @@ ASSET="$CHECKOUTDIR/tools/bam_vte_tab_import.csv"
 # Import the bam_vte_tab_import.csv file
 api_auth_post_file /asset/import assets=@$ASSET -H "Expect:" | tee $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
-grep -q '"imported_lines" : 19' $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
-    die "ERROR : 'Test of the number of imported lines			FAILED'"
+NUM_EXPECTED=19
+grep -q '"imported_lines" : '"$NUM_EXPECTED" $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log || \
+    die "ERROR : 'Test of the number of imported lines			FAILED  (not $NUM_EXPECTED)'"
 echo "Test of the number of imported lines			PASSED"
 
 for NUM in 9 10 17 21 22 23 ; do
@@ -154,11 +170,6 @@ ELEMENT="VALUES \(1,'company','EATON',1,0\),\(2,'description','Lab DC',1,0\),\(3
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_ext_attributes|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
 [ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_ext_attributes FAILED'"
 echo 'Test of the table t_bios_asset_ext_attributes		PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
-
-ELEMENT="\(1,11,6\),\(2,12,6\),\(3,13,2\),\(4,14,1\),\(5,15,4\),\(6,16,7\),\(7,17,1\),\(8,18,3\),\(9,20,5\),\(10,21,5\)"
-I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
-[ "$I" = 1 ] || die "ERROR : 'Test of the table t_bios_asset_device FAILED'"
-echo 'Test of the table t_bios_asset_device			PASSED' | tee -a $CHECKOUTDIR/DC008-${_SCRIPT_NAME}.log
 
 ELEMENT="\(3,'epdu'\),\(2,'genset'\),\(6,'main'\),\(4,'pdu'\),\(5,'server'\),\(7,'sts'\),\(1,'ups'\)"
 I=$(sut_run 'mysqldump -u root box_utf8 t_bios_asset_device_type|grep INSERT | egrep "'"$ELEMENT"'"|wc -l' 2>/dev/null)
