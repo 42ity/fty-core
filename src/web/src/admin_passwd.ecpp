@@ -6,6 +6,7 @@
 
 #include "subprocess.h"
 #include "cidr.h"
+#include "sasl.h"
 using namespace shared;
 
 static int
@@ -39,9 +40,35 @@ s_passwd(
     } catch (const std::exception& e) {
         bad_request = true;
     }
-    if (bad_request || user.empty() || old_passwd.empty() || new_passwd.empty()) {
+    if (bad_request || user.empty() || old_passwd.empty() || new_passwd.empty() || \
+        user == "root" || !authenticate(user.c_str(), old_passwd.c_str())) {
+#ifdef DEBUG
+            std::string debug;
+            if (bad_request)
+                debug = "exception when reading JSON file";
+            else if (user.empty())
+                debug = "user is empty";
+            else if (old_passwd.empty())
+                debug = "old_passwd is empty";
+            else if (new_passwd.empty())
+                debug = "new_passwd is empty";
+            else if (user == "root")
+                debug = "user == root";
+            else
+                debug = "can't authenticate '" + user + "'";
+#endif
 </%cpp>
-    {"error" : "user, old_passwd or new_passwd is empty"}
+{
+    "errors" : [
+        {
+            "message" : "user, old password or new password is invalid"
+            "code" : 42
+#ifdef DEBUG
+            ,"debug" : "<$$ debug $>"
+#endif
+        },
+    ]
+}
 <%cpp>
     return HTTP_BAD_REQUEST;
     }
@@ -52,12 +79,21 @@ s_passwd(
         std::string msg = "changing passwd for user '" + user + "' failed with code " + std::to_string(r);
 </%cpp>
 {
-    "error" : "<$$ msg $>"
-    "stderr" : "<$$ err $>"
+    "errors" : [
+        {
+            "message" : "<$$ msg $>",
+            "code" : 42
+#ifdef DEBUG
+            ,"debug" : "<$$ err $>"
+#endif
+        },
+    ]
 }
 <%cpp>
     return HTTP_BAD_REQUEST;
     }
-    std::string msg = "password updated successfully for user '" + user;
+    std::string msg = "password updated successfully for user '" + user + "'";
 </%cpp>
-{"passwd": "<$$ msg $>"}
+{
+    "passwd": "<$$ msg $>"
+}
