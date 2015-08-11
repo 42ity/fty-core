@@ -80,6 +80,13 @@
       <url>^/api/v1/admin/time.*$</url>
     </mapping>
 
+    <!-- Change password -->
+    <mapping>
+      <target>admin_passwd@bios_web</target>
+      <url>^/api/v1/admin/passwd(/)?</url>
+      <method>POST</method>
+    </mapping>
+
     <!-- Asset management -->
     <mapping>
       <target>list@bios_web</target>
