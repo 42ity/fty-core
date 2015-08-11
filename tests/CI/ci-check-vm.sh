@@ -102,7 +102,8 @@ compare_revisions() {
 
 copy_project() {
     echo "-- copying files ($CHECKOUTDIR)"
-    scp -r -P "$SUT_SSH_PORT" "$CHECKOUTDIR" "${SUT_USER}@$SUT_HOST:~/"
+    ( cd "`dirname "$CHECKOUTDIR"`" && tar cf - "`basename "$CHECKOUTDIR"`" | \
+      ssh -p "$SUT_SSH_PORT" "${SUT_USER}@$SUT_HOST" 'cd ~/ && tar xf -' )
 }
 
 copy_keys() {

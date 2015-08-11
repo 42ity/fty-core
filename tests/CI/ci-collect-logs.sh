@@ -86,7 +86,7 @@ cppcheck_list() {
     sut_run "find . -type f -name cppcheck.xml"
 }
 
-echo -e "\n\n\n\n======================== collecting log files ========================"
+/bin/echo -e "\n\n\n\n======================== collecting log files ========================"
 LOGS=$(log_list | wc -l)
 if [ $LOGS = 0 ] ; then
     echo "no log files"

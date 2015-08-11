@@ -60,7 +60,11 @@ while [ $# -gt 0 ]; do
         BIOS_PASSWD="$2"
         shift 2
         ;;
-    *)
+    -s|--service)
+        SASL_SERVICE="$2"
+        shift 2
+        ;;
+    *)  # fall through - these are lists of tests to do
         break
         ;;
     esac
@@ -68,6 +72,7 @@ done
 
 [ -n "$BIOS_USER"   ] || BIOS_USER="bios"
 [ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="@PASSWORD@"
+[ -n "$SASL_SERVICE" ] || SASL_SERVICE="bios"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -97,30 +102,27 @@ SASLTEST="`which testsaslauthd`"
 [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
 [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
 
-if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+$SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
     CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
         "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-fi
 
 if [ "$SKIP_SANITY" = yes ]; then
     # This is hit e.g. when a wget-based "curl emulator" is used for requests
     logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
 else
     logmsg_info "Testing webserver ability to serve the REST API"
-    curlfail_push_expect_404
-    if [ -n "`api_get "" 2>&1 | grep 'HTTP/.* 500'`" ]; then
+    if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
         logmsg_error "api_get() returned an error:"
         api_get "" >&2
         CODE=4 die "Webserver code is deeply broken, please fix it first!"
     fi
 
-    if [ -z "`api_get "" 2>&1 | grep 'HTTP/.* 404 Not Found'`" ]; then
+    if [ -z "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
         # We do expect an HTTP-404 on the API base URL
         logmsg_error "api_get() returned an error:"
         api_get "" >&2
         CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
     fi
-    curlfail_pop
 
     if [ "$SKIP_SANITY" != onlyerrors ]; then
         curlfail_push_expect_noerrors

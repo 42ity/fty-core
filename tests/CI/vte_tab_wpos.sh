@@ -56,7 +56,7 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"
             shift 2
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
@@ -70,6 +70,10 @@ while [ $# -gt 0 ]; do
             ;;
         -p|--passwd|--bios-passwd)
             BIOS_PASSWD="$2"
+            shift 2
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
             shift 2
             ;;
         *)  echo "$0: Unknown param and all after it are ignored: $@"
@@ -100,6 +104,7 @@ SUT_IS_REMOTE=yes
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="@PASSWORD@"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -114,9 +119,9 @@ determineDirs_default || true
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 
 logmsg_info "Ensuring that needed remote daemons are running on VTE"
-sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
+sut_run 'systemctl daemon-reload; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl start $SVC ; done'
 sleep 3
-sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent  bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
+sut_run 'R=0; for SVC in saslauthd malamute mysql bios-agent-dbstore bios-server-agent bios-agent-nut bios-agent-inventory bios-agent-cm; do systemctl status $SVC >/dev/null 2>&1 && echo "OK: $SVC" || { R=$?; echo "FAILED: $SVC"; }; done; exit $R' || \
     die "Some required services are not running on the VTE"
 
 subtest() {
@@ -125,7 +130,12 @@ subtest() {
     set -o pipefail 2>/dev/null || true
     set -e
     loaddb_file ./tools/initdb.sql 2>&1 | tee $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
+    loaddb_file ./tools/initdb_ci_patch.sql 2>&1 | tee -a $CHECKOUTDIR/vte-tab-${_SCRIPT_NAME}.log
     set +e
+
+    # Try to accept the BIOS license on server
+    ( . $CHECKOUTDIR/tests/CI/web/commands/00_license-CI-forceaccept.sh.test 5>&2 ) || \
+        logmsg_warn "BIOS license not accepted on the server, subsequent tests may fail"
 
     # ***** POST THE CSV FILE *****
     ASSET="$CHECKOUTDIR/tools/$1"
