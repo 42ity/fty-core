@@ -166,6 +166,15 @@ LIBBIOSAPI_REVISION=0
 # How many previous interfaces are still supported
 LIBBIOSAPI_AGE=0
 
+# copy from autoconf manual, note single suffix rules can't be used there!!
+autopathedit = ${SED} \
+	-e 's|@datadir[@]|$(datadir)|g' \
+	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
+	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
+	-e 's|@libexecdir[@]|$(libexecdir)|g' \
+	-e 's|@libdir[@]|$(libdir)|g'
+
+
 # Note the public API binary library files are installed to the system
 # common $(libdir), not private $(pkglibdir) like e.g. REST API module
 lib_LTLIBRARIES +=		libbiosapi.la
@@ -992,7 +1001,8 @@ agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist
 
 EXTRA_DIST +=		$(top_srcdir)/tools/dbinit.h \
-			$(top_srcdir)/tools/db-init.in
+			$(top_srcdir)/tools/db-init.in \
+			$(top_srcdir)/tools/bios-passwd.in
 
 dist_noinst_HEADERS += \
 			src/msg/asset_msg.h \
@@ -1209,11 +1219,17 @@ outage_LDADD = \
 
 
 outage_LDFLAGS =	-ltntdb
+
 client_SCRIPTS += tools/bios-passwd
+
 ###################################################################
 # Web Library (tntnet dynamic module for $BIOS REST API)
 ###################################################################
 pkglib_LTLIBRARIES += bios_web.la
+
+#src/web/src/admin_passwd.ecpp: Makefile src/web/src/admin_passwd.ecpp.in
+#	@echo "  SED      $@"
+#	rm -f $@; $(autopathedit) < '$(abs_top_srcdir)/$@.in' > $@
 
 # Many but not all of CPP files with bios_web.la are generated from ECPP files
 # List them explicitly as separate sets, so that generated files can be cleaned
@@ -1280,7 +1296,9 @@ dist_noinst_HEADERS += \
 			src/persist/assetcrud.h \
 			tools/dbpath.h
 
-EXTRA_DIST +=		src/web/tntnet.xml
+EXTRA_DIST += \
+			src/web/tntnet.xml \
+			src/web/src/admin_passwd.ecpp.in
 
 ### This file contains the TNTNET settings relevant for our test runs
 ### Note: in non-daemon mode, stderr is logged to stderr
@@ -1354,14 +1372,6 @@ SYSTEMD_UNITS =
 SYSTEMD_UNITS_TIMERIMPL =
 SYSTEMD_TIMERS =
 SYSTEMD_PRESETS =
-
-# copy from autoconf manual, note single suffix rules can't be used there!!
-autopathedit = ${SED} \
-	-e 's|@datadir[@]|$(datadir)|g' \
-	-e 's|@PACKAGE[@]|$(PACKAGE)|g' \
-	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
-	-e 's|@libexecdir[@]|$(libexecdir)|g' \
-	-e 's|@libdir[@]|$(libdir)|g'
 
 # systemd integration enabled?
 if HAVE_SYSTEMD
