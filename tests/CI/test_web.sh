@@ -37,6 +37,12 @@ FAILED=""
 [ -z "$SKIP_NONSH_TESTS" ] && SKIP_NONSH_TESTS=yes
 SKIPPED_NONSH_TESTS=0
 
+# SKIP_SANITY=(yes|no|onlyerrors)
+#   yes = skip sanity tests in ultimate request/test scripts
+#   no  = do all tests
+#   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
@@ -54,7 +60,11 @@ while [ $# -gt 0 ]; do
         BIOS_PASSWD="$2"
         shift 2
         ;;
-    *)
+    -s|--service)
+        SASL_SERVICE="$2"
+        shift 2
+        ;;
+    *)  # fall through - these are lists of tests to do
         break
         ;;
     esac
@@ -62,6 +72,7 @@ done
 
 [ -n "$BIOS_USER"   ] || BIOS_USER="bios"
 [ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="nosoup4u"
+[ -n "$SASL_SERVICE" ] || SASL_SERVICE="bios"
 
 PATH="$PATH:/sbin:/usr/sbin"
 
@@ -91,36 +102,41 @@ SASLTEST="`which testsaslauthd`"
 [ -x "$SASLTEST" ] || SASLTEST="/usr/sbin/testsaslauthd"
 [ -x "$SASLTEST" ] || SASLTEST="/sbin/testsaslauthd"
 
-if ! $SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s bios > /dev/null; then
+$SASLTEST -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" > /dev/null || \
     CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
         "Check the existence of /etc/pam.d/bios (and maybe /etc/sasl2/bios.conf for some OS distributions)"
-fi
 
-logmsg_info "Testing webserver ability to serve the REST API"
-curlfail_push_expect_404
-if [ -n "`api_get "" 2>&1 | grep '< HTTP/.* 500'`" ]; then
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver code is deeply broken, please fix it first!"
-fi
+if [ "$SKIP_SANITY" = yes ]; then
+    # This is hit e.g. when a wget-based "curl emulator" is used for requests
+    logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
+else
+    logmsg_info "Testing webserver ability to serve the REST API"
+    if [ -n "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 500'`" ]; then
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver code is deeply broken, please fix it first!"
+    fi
 
-if [ -z "`api_get "" 2>&1 | grep '< HTTP/.* 404 Not Found'`" ]; then
-    # We do expect an HTTP-404 on the API base URL
-    logmsg_error "api_get() returned an error:"
-    api_get "" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
-fi
-curlfail_pop
+    if [ -z "`api_get "/oauth2/token" 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
+        # We do expect an HTTP-404 on the API base URL
+        logmsg_error "api_get() returned an error:"
+        api_get "" >&2
+        CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    fi
 
-curlfail_push_expect_noerrors
-if [ -z "`api_get '/oauth2/token' 2>&1 | grep '< HTTP/.* 200 OK'`" ]; then
-    # We expect that the login service responds
-    logmsg_error "api_get() returned an error:"
-    api_get "/oauth2/token" >&2
-    CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+    if [ "$SKIP_SANITY" != onlyerrors ]; then
+        curlfail_push_expect_noerrors
+        if [ -z "`api_get '/oauth2/token' 2>&1 | grep 'HTTP/.* 200 OK'`" ]; then
+            # We expect that the login service responds
+            logmsg_error "api_get() returned an error:"
+            api_get "/oauth2/token" >&2
+            CODE=4 die "Webserver is not running or serving the REST API, please start it first!"
+        fi
+        curlfail_pop
+    fi
+
+    logmsg_info "Webserver seems basically able to serve the REST API"
 fi
-curlfail_pop
-logmsg_info "Webserver seems basically able to serve the REST API"
 
 cd "`dirname "$0"`"
 [ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
@@ -161,7 +177,7 @@ while [ "$1" ]; do
 done
 [ -n "$POSITIVE" ] || POSITIVE="*"
 
-trap "summarizeResults" EXIT SIGHUP SIGINT SIGQUIT SIGTERM
+settraps "summarizeResults"
 
 for i in $POSITIVE; do
     for NAME in *$i*; do
