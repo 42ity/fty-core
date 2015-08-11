@@ -1,7 +1,8 @@
 # Install these documents with example configurations to (typically)
 # someplace under /usr/share
 
-EXTRA_DIST =
+
+EXTRA_DIST = sudoers.d/bios_00_base.in
 
 examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
 examplecfgsudo_DATA	= sudoers.d/bios_00_base sudoers.d/bios_01_citest

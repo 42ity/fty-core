@@ -28,6 +28,8 @@ set -e
 
 export PATH=
 export LC_ALL=C
+#hack for Makefile.am and make distcheck
+export PROG=@libexecdir@/@PACKAGE@/bios-passwd
 
 die() {
     echo "${@}" >&2

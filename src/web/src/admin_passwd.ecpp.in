@@ -16,7 +16,7 @@ s_passwd(
     const std::string& new_passwd,
     std::string& err)
 {
-    Argv args{"/usr/bin/sudo", "/usr/libexec/bios/bios-passwd"};
+    Argv args{"/usr/bin/sudo", "@libexecdir@/@PACKAGE@/bios-passwd"};
     std::string out;
 
     std::string inp = user + "\n" + old_passwd + "\n" + new_passwd + "\n";
@@ -76,7 +76,7 @@ s_passwd(
     std::string err;
     int r = s_passwd(user, old_passwd, new_passwd, err);
     if (r != 0) {
-        std::string msg = "changing passwd for user '" + user + "' failed with code " + std::to_string(r);
+        std::string msg = "@libexecdir@/@PACKAGE@/bios-passwd: changing passwd for user '" + user + "' failed with code " + std::to_string(r);
 </%cpp>
 {
     "errors" : [
@@ -93,4 +93,3 @@ s_passwd(
     return HTTP_BAD_REQUEST;
     }
 </%cpp>
-return HTTP_OK;
