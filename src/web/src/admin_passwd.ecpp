@@ -61,12 +61,12 @@ s_passwd(
 {
     "errors" : [
         {
-            "message" : "user, old password or new password is invalid"
+            "message" : "user, old password or new password is invalid",
             "code" : 42
 #ifdef DEBUG
             ,"debug" : "<$$ debug $>"
 #endif
-        },
+        }
     ]
 }
 <%cpp>
@@ -86,7 +86,7 @@ s_passwd(
 #ifdef DEBUG
             ,"debug" : "<$$ err $>"
 #endif
-        },
+        }
     ]
 }
 <%cpp>
