@@ -259,6 +259,7 @@ AS_IF([test -s "$_curdir_abs/.git_details"],
 		PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TAGGED \
 		PACKAGE_GIT_TSTAMP PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L \
 		PACKAGE_GIT_STATUS PACKAGE_BUILD_TSTAMP \
+		PACKAGE_GIT_TSTAMP_ISO8601 PACKAGE_BUILD_TSTAMP_ISO8601 \
 		PACKAGE_BUILD_HOST_UNAME PACKAGE_BUILD_HOST_NAME \
 		PACKAGE_BUILD_HOST_OS ; do
 			eval $V='$'${V}_ESCAPED || eval $V=""
@@ -621,7 +622,7 @@ Summary:
         Git origin URL:          ${PACKAGE_GIT_ORIGIN}
         Git branch:              ${PACKAGE_GIT_BRANCH}
         Git tag:                 ${PACKAGE_GIT_TAGGED}
-        Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP}
+        Git last-commit tstamp:  ${PACKAGE_GIT_TSTAMP} ${PACKAGE_GIT_TSTAMP_ISO8601}
         Git last-commit hash(S): ${PACKAGE_GIT_HASH_S}
         Git last-commit hash(L): ${PACKAGE_GIT_HASH_L}
         Git status (uncommitted files):	'${PACKAGE_GIT_STATUS}'
@@ -629,7 +630,7 @@ Summary:
         Build-host 'uname -a':   ${PACKAGE_BUILD_HOST_UNAME}
         Build-host system name:  ${PACKAGE_BUILD_HOST_NAME}
         Build-host OS/kernel:    ${PACKAGE_BUILD_HOST_OS}
-        Build-host timestamp:    ${PACKAGE_BUILD_TSTAMP}
+        Build-host timestamp:    ${PACKAGE_BUILD_TSTAMP} ${PACKAGE_BUILD_TSTAMP_ISO8601}
 
         prefix:                  ${prefix}
         sysconf dir:             ${sysconfdir}
