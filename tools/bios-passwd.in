@@ -1,0 +1,106 @@
+#!/bin/bash
+# Copyright (C) 2014 Eaton
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>
+
+# Description: helper script for REST API /admin/passwd
+#              it does expect all the information on stdin to not accidentally leak it
+#              /usr/bin/printf "%s\n%s\n%s\n" "user" "old_password" "new_password"
+# TODO: it acually DO NOT check the old password, because unix2_chkpwd has been
+#       designed by very paranoid ppl and I am lazy to write own binary, so the check
+#       is going to be on REST API level. But in order to maintain stable protocol, script
+#       requires it.
+
+set -e
+
+export PATH=
+export LC_ALL=C
+#hack for Makefile.am and make distcheck
+export PROG=@libexecdir@/@PACKAGE@/bios-passwd
+
+die() {
+    echo "${@}" >&2
+    exit 1
+}
+
+
+# used to simplify the declaration of do_passwd below
+source /etc/os-release || :
+
+if [[ -x /usr/bin/expect ]]; then
+    do_passwd() {
+        echo "using expect"
+        local user old_passwd new_passwd ret
+        user=${1}
+        old_passwd=${2}
+        new_passwd=${3}
+
+        # run the expect script
+        # if passwd prompts the BAD (PASSWORD), script exists with 1
+        # else is checks for password updated successfully
+
+        # note the password itself is sent twice, this is because expect prints
+        # previous send line if subsequent expects fails, which will leak the password
+        # we are so protective about
+
+        /bin/cat <<EOF | /usr/bin/expect -
+#!/usr/bin/expect
+
+spawn /usr/bin/passwd ${user}
+expect "New password:"
+send "${new_passwd}"
+send "\r"
+expect "Retype new password:" {
+    send "${new_passwd}"
+    send "\r"
+    expect "passwd: password updated successfully"
+} \
+       "BAD" {
+    exit 1
+    }
+EOF
+    }
+elif [[ x${NAME} == "xDebian GNU/Linux" ]]; then
+    do_passwd() {
+        local user old_passwd new_passwd
+        user=${1}
+        old_passwd=${2}
+        new_passwd=${3}
+        /usr/bin/printf "%s\n%s" "${new_passwd}" "${new_passwd}" | /usr/bin/passwd "${user}"
+    }
+else
+    do_passwd() {
+        die "You need either /usr/bin/expect installed, either installation of Debian GNU/Linux with passwd accepting passwords from stdin, to continue"
+}
+fi
+
+if [[ $(/usr/bin/id -u) != 0 ]]; then
+    die "${0}: must run as root!"
+fi
+
+read USER
+read OLD_PASSWD
+read NEW_PASSWD
+
+[[ -n "${USER}" ]] || die "user is empty"
+[[ -n "${OLD_PASSWD}" ]] || die "old password is empty"
+[[ -n "${NEW_PASSWD}" ]] || die "new password is empty"
+
+if ! /usr/bin/getent passwd ${USER} >/dev/null; then
+    die "User ${USER} not found by /usr/bin/getent passwd"
+fi
+
+do_passwd ${USER} ${OLD_PASSWD} ${NEW_PASSWD}

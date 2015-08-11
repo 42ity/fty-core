@@ -357,6 +357,23 @@ int call(const Argv& args);
 //          Otherwise this call would be blocked indefinitelly.
 int output(const Argv& args, std::string& o, std::string& e);
 
+// \brief Run command with arguments and input on stdin and return its output as a string.
+//
+// @param args list of command line arguments
+// @param o reference to variable will contain stdout
+// @param e reference to variable will contain stderr
+// @param i const reference to variable will contain stdin
+// @return see \SubProcess.wait for meaning
+//
+// \warning use only for commands producing less than default pipe capacity (65536 on Linux).
+//          Otherwise this call would be blocked indefinitelly.
+int
+output(
+    const Argv& args,
+    std::string& o,
+    std::string& e,
+    const std::string& i);
+
 } //namespace shared
 
 #endif //_SRC_SHARED_SUBPROCESS_H

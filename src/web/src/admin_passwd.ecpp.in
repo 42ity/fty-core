@@ -1,0 +1,95 @@
+<%pre>
+#include <string>
+
+#include <cxxtools/serializationinfo.h>
+#include <cxxtools/jsondeserializer.h>
+
+#include "subprocess.h"
+#include "cidr.h"
+#include "sasl.h"
+using namespace shared;
+
+static int
+s_passwd(
+    const std::string& user,
+    const std::string& old_passwd,
+    const std::string& new_passwd,
+    std::string& err)
+{
+    Argv args{"/usr/bin/sudo", "@libexecdir@/@PACKAGE@/bios-passwd"};
+    std::string out;
+
+    std::string inp = user + "\n" + old_passwd + "\n" + new_passwd + "\n";
+    return output(args, out, err, inp);
+}
+
+</%pre>
+<%cpp>
+    std::stringstream input(request.getBody(), std::ios_base::in);
+    cxxtools::SerializationInfo si;
+    cxxtools::JsonDeserializer deserializer(input);
+    std::string user;
+    std::string old_passwd;
+    std::string new_passwd;
+    bool bad_request = false;
+    try {
+        deserializer.deserialize(si);
+        si.getMember("user") >>= user;
+        si.getMember("old_passwd") >>= old_passwd;
+        si.getMember("new_passwd") >>= new_passwd;
+    } catch (const std::exception& e) {
+        bad_request = true;
+    }
+    if (bad_request || user.empty() || old_passwd.empty() || new_passwd.empty() || \
+        user == "root" || !authenticate(user.c_str(), old_passwd.c_str())) {
+#ifdef DEBUG
+            std::string debug;
+            if (bad_request)
+                debug = "exception when reading JSON file";
+            else if (user.empty())
+                debug = "user is empty";
+            else if (old_passwd.empty())
+                debug = "old_passwd is empty";
+            else if (new_passwd.empty())
+                debug = "new_passwd is empty";
+            else if (user == "root")
+                debug = "user == root";
+            else
+                debug = "can't authenticate '" + user + "'";
+#endif
+</%cpp>
+{
+    "errors" : [
+        {
+            "message" : "user, old password or new password is invalid",
+            "code" : 42
+#ifdef DEBUG
+            ,"debug" : "<$$ debug $>"
+#endif
+        }
+    ]
+}
+<%cpp>
+    return HTTP_BAD_REQUEST;
+    }
+
+    std::string err;
+    int r = s_passwd(user, old_passwd, new_passwd, err);
+    if (r != 0) {
+        std::string msg = "@libexecdir@/@PACKAGE@/bios-passwd: changing passwd for user '" + user + "' failed with code " + std::to_string(r);
+</%cpp>
+{
+    "errors" : [
+        {
+            "message" : "<$$ msg $>",
+            "code" : 42
+#ifdef DEBUG
+            ,"debug" : "<$$ err $>"
+#endif
+        }
+    ]
+}
+<%cpp>
+    return HTTP_BAD_REQUEST;
+    }
+</%cpp>

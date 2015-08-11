@@ -225,17 +225,9 @@ INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VA
 
 /* DEVICES*/
 /* ups102_1 */
-/*
-<<<<<<< HEAD
-INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent) VALUES (8109, "ups102_1", @ae_device, 8108); 
-INSERT INTO t_bios_asset_device  (id_asset_device, id_asset_element, id_asset_device_type) VALUES (9109, 8109, @device_ups);
-INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10109, "ups102_1", @dvc_ups);
-=======
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8109, "ups102_1", @ae_device, 8108, @device_ups); 
 INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type) VALUES (10109, "ups102_1", @dvc_ups);
->>>>>>> upstream/master
 INSERT INTO t_bios_monitor_asset_relation  (id_discovered_device, id_asset_element) VALUES (10109, 8109);
-*/
 
 /* epdu102_1 */
 INSERT INTO t_bios_asset_element (id_asset_element, name, id_type, id_parent, id_subtype) VALUES (8110, "epdu102_1", @ae_device, 8108, @device_epdu); 
