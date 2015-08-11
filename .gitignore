@@ -72,6 +72,9 @@ docs/doxygen/html/
 docs/doxygen/doxygen_sqlite3.db
 docs/doxygen/*.tmp
 
+docs/examples/sudoers.d/bios_00_base
+!docs/examples/sudoers.d/bios_00_base.in
+
 .test.log
 .test.trs
 test-log.*
@@ -144,6 +147,8 @@ tools/run-test-doc.sh.log
 tools/run-test-doc.sh.trs
 tools/db-init
 !tools/db-init.in
+tools/bios-passwd
+!tools/bios-passwd.in
 
 tools/42-bios-systemd.preset
 !tools/bios-db-init.service.in
@@ -178,6 +183,8 @@ tools/biostimer-graphs-prefetch@.service
 tools/biostimer-graphs-prefetch__realpower.default@.service
 !tools/biostimer-outage.service.in
 tools/biostimer-outage.service
+!tools/ifplug-dhcp-autoconf.service.in
+tools/ifplug-dhcp-autoconf.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
