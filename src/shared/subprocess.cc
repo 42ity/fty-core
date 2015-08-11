@@ -475,6 +475,19 @@ int output(const Argv& args, std::string& o, std::string& e) {
     return ret;
 }
 
+int output(const Argv& args, std::string& o, std::string& e, const std::string& i) {
+    SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
+    p.run();
+    ::write(p.getStdin(), i.c_str(), i.size());
+    ::fsync(p.getStdin());
+    ::close(p.getStdin());
+    int ret = p.wait();
+
+    o.assign(read_all(p.getStdout()));
+    e.assign(read_all(p.getStderr()));
+    return ret;
+}
+
 // ### helper functions ###
 char * const * _mk_argv(const Argv& vec) {
 

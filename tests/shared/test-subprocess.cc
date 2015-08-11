@@ -164,6 +164,25 @@ TEST_CASE("subprocess-output", "[subprocess][fd]") {
 
 }
 
+TEST_CASE("subprocess-output3", "[subprocess][fd]") {
+    Argv argv{"/usr/bin/cat", "-n"};
+    std::string o;
+    std::string e;
+
+    int r = output(argv, o, e, "the test\n");
+    CHECK(r == 0);
+    CHECK(o == "     1\tthe test\n");
+    CHECK(e == "");
+
+    Argv argv2{"/usr/bin/cat", "-d"};
+
+    r = output(argv2, o, e, "the test");
+    CHECK(r == 1);
+    CHECK(o == "");
+    CHECK(e.size() > 0);
+
+}
+
 TEST_CASE("subprocess-call", "[subprocess]") {
     int ret = call({"/bin/false"});
     CHECK(ret == 1);
