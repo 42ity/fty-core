@@ -216,22 +216,23 @@ set_values_in_ups() {
     rem_copy_file ups.new ups.conf
 
             # * restart NUT server
-    echo 'Restart NUT server with updated config'
+#    echo 'Restart NUT server with updated config'
     rem_cmd "systemctl stop nut-server; sleep 5; systemctl stop nut-driver; sleep 5; systemctl start nut-driver; sleep 5; systemctl start nut-server"
-    echo 'Wait for NUT to start responding...' 
-    sleep 40
-    # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
-    N=20
-    while [ "$N" -gt 0 ]; do
-        OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
-        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=-$N; break; fi
-        sleep 3
-        N="`expr $N - 1`"
-    done
-    [ "$N" = 0 ] && \
-        echo "NOTE: The wait loop for NUT response has expired without success"
-
-    # *** start upsrw (output hidden because this can fail for some target variables)
+#    echo 'Wait for NUT to start responding...' 
+    sleep 60
+#    # some agents may be requesting every 5 sec, so exceed that slightly to be noticed
+#    N=20
+#    while [ "$N" -gt 0 ]; do
+#        OUT="$(sut_run "upsrw -u $USR -p $PSW $UPS@localhost")"
+#        if [ "$?" = 0 ] || [ -n "$OUT" ]; then N=-$N; break; fi
+#        sleep 3
+#        N="`expr $N - 1`"
+#    rem_cmd "systemctl stop nut-server; sleep 5; systemctl stop nut-driver; sleep 5; systemctl start nut-driver; sleep 5; systemctl start nut-server";sleep 15
+#    done
+#    [ "$N" = 0 ] && \
+#        echo "NOTE: The wait loop for NUT response has expired without success"
+#
+#    # *** start upsrw (output hidden because this can fail for some target variables)
 #    echo "Execute upsrw to try set $PARAM=$VALUE on $UPS@localhost"
 #    rem_cmd "upsrw -s $PARAM=$VALUE -u $USR -p $PSW $UPS@localhost 2>/dev/null"
 }
@@ -366,6 +367,7 @@ set_values_in_ups "$UPS" "$TYPE2" "0"
    # *** restart NUT server
     echo 'Restart NUT server with updated config'
     rem_cmd "systemctl stop nut-server; sleep 5; systemctl stop nut-driver; sleep 5; systemctl start nut-driver; sleep 5; systemctl start nut-server"
+    sleep 60
 #    rem_cmd "systemctl stop nut-server; systemctl stop nut-driver; sleep 3; systemctl start nut-driver; sleep 3; systemctl start nut-server";sleep 30
     echo 'Wait for NUT to start responding...'
 
