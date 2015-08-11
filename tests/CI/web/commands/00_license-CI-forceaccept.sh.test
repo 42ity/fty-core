@@ -1,9 +1,16 @@
 # Some REST API scripts just need to get THEIR job done,
 # so here is a way to force-accept the license
 
-echo "Trying to accept the license on BIOS server '$BASE_URL'..."
-api_auth_post_content '/admin/license' "foobar" >&5 || true
+test_it "license_initial_status_ok"
+if api_get_json '/admin/license/status' | grep "accepted_at" >&5 ; then
+    print_result $?
+else
+    echo "Trying to accept the license on BIOS server '$BASE_URL'..."
+    api_auth_post_content '/admin/license' "foobar" >&5 || true
 
-test_it "license_forced_status_ok"
-api_get_json '/admin/license/status' | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
-print_result $?
+    test_it "license_forced_status_ok"
+    OUT="`api_get_json '/admin/license/status' | grep "accepted"`"
+    RES=$?
+    [ "$RES" = 0 ] && echo "$OUT" | sed 's|\(accepted_at":"\)[0-9]*"|\1XXX"|' >&5
+    print_result $RES
+fi
