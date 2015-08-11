@@ -46,6 +46,8 @@ fi
 [ -z "$DATE" -o ! -x "$DATE" ] && DATE="$(which gdate 2>/dev/null | head -1)"
 [ -n "$DATE" -a -x "$DATE" ] || DATE=date
 
+PACKAGE_BUILD_TSTAMP_ISO8601=""
+
 reportVar() {
     # Argument is the name of the variable to report in "original"
     # and "escaped" form
@@ -79,7 +81,15 @@ reportBuildTimestamp() {
         return 1
     fi
 
-    reportVar PACKAGE_BUILD_TSTAMP
+    [ -n "$PACKAGE_BUILD_TSTAMP" ] && [ -z "$PACKAGE_BUILD_TSTAMP_ISO8601" ] && \
+        PACKAGE_BUILD_TSTAMP_ISO8601="`TZ=UTC date -u -d "@${PACKAGE_BUILD_TSTAMP}" '+%Y%m%dT%H%M%SZ'`"
+
+    for PV in \
+        PACKAGE_BUILD_TSTAMP                    \
+        PACKAGE_BUILD_TSTAMP_ISO8601            \
+    ; do
+        reportVar "$PV"
+    done
     return 0
 }
 
@@ -94,9 +104,9 @@ reportBuildHost() {
     PACKAGE_BUILD_HOST_OS="`uname -s -r -v`"
 
     for PV in \
-        PACKAGE_BUILD_HOST_UNAME        \
-        PACKAGE_BUILD_HOST_NAME                \
-        PACKAGE_BUILD_HOST_OS                \
+        PACKAGE_BUILD_HOST_UNAME                \
+        PACKAGE_BUILD_HOST_NAME                 \
+        PACKAGE_BUILD_HOST_OS                   \
     ; do
         reportVar "$PV"
     done
@@ -111,6 +121,7 @@ reportGitInfo() {
     PACKAGE_GIT_ORIGIN=""
     PACKAGE_GIT_BRANCH=""
     PACKAGE_GIT_TSTAMP=""
+    PACKAGE_GIT_TSTAMP_ISO8601=""
     PACKAGE_GIT_HASH_S=""
     PACKAGE_GIT_HASH_L=""
     PACKAGE_GIT_STATUS=""
@@ -137,7 +148,8 @@ reportGitInfo() {
         # Packaging metadata: Git branch in the build workspace repository
         PACKAGE_GIT_BRANCH="$($GIT rev-parse --abbrev-ref HEAD)"
         # Packaging metadata: Git timestamp of the commit used for the build
-        PACKAGE_GIT_TSTAMP="$($GIT log -n 1 --format='%ct')"
+        PACKAGE_GIT_TSTAMP="$($GIT log -n 1 --format='%ct')" && \
+        PACKAGE_GIT_TSTAMP_ISO8601="`TZ=UTC date -u -d "@${PACKAGE_GIT_TSTAMP}" '+%Y%m%dT%H%M%SZ'`"
         # Packaging metadata: Git short-hash of the commit used for the build
         PACKAGE_GIT_HASH_S="$($GIT log -n 1 --format='%h')"
         # Packaging metadata: Git long-hash of the commit used for the build
@@ -207,7 +219,7 @@ reportGitInfo() {
         for PV in \
             PACKAGE_GIT_ORIGIN PACKAGE_GIT_BRANCH PACKAGE_GIT_TSTAMP \
             PACKAGE_GIT_HASH_S PACKAGE_GIT_HASH_L PACKAGE_GIT_STATUS \
-            PACKAGE_GIT_TAGGED \
+            PACKAGE_GIT_TAGGED PACKAGE_GIT_TSTAMP_ISO8601 \
         ; do
             reportVar "$PV"
         done

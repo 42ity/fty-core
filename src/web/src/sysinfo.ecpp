@@ -123,6 +123,7 @@ int8_t access_auth_level;
           "branch": "<$ PACKAGE_GIT_BRANCH_ESCAPED $>",
           "commit": "<$ PACKAGE_GIT_HASH_L_ESCAPED $>",
           "commit-timestamp": "<$ PACKAGE_GIT_TSTAMP_ESCAPED $>",
+          "commit-timestamp-iso8601": "<$ PACKAGE_GIT_TSTAMP_ISO8601_ESCAPED $>",
           "status": "<$$ PACKAGE_GIT_STATUS_ESCAPED $>"
         }
 <%cpp>
@@ -142,12 +143,17 @@ int8_t access_auth_level;
 	std::string BTS = "";
 # if defined(HAVE_PACKAGE_BUILD_TSTAMP)
 	BTS = PACKAGE_BUILD_TSTAMP_ESCAPED;
+	BTS_ISO = PACKAGE_BUILD_TSTAMP_ISO8601_ESCAPED;
 # endif // HAVE_PACKAGE_BUILD_TSTAMP
 	if (BTS=="") {
 		BTS = UNKNOWN;
 	}
+	if (BTS_ISO=="") {
+		BTS_ISO = UNKNOWN;
+	}
 </%cpp>
-          "build-timestamp": "<$ BTS $>"
+          "build-timestamp": "<$ BTS $>",
+          "build-timestamp-iso8601": "<$ BTS_ISO $>"
         }
 <%cpp>
 #endif // HAVE_PACKAGE_BUILD_*: HOST and/or TSTAMP
