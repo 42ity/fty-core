@@ -165,7 +165,7 @@ TEST_CASE("subprocess-output", "[subprocess][fd]") {
 }
 
 TEST_CASE("subprocess-output3", "[subprocess][fd]") {
-    Argv argv{"/usr/bin/cat", "-n"};
+    Argv argv{"/bin/cat", "-n"};
     std::string o;
     std::string e;
 
@@ -174,7 +174,7 @@ TEST_CASE("subprocess-output3", "[subprocess][fd]") {
     CHECK(o == "     1\tthe test\n");
     CHECK(e == "");
 
-    Argv argv2{"/usr/bin/cat", "-d"};
+    Argv argv2{"/bin/cat", "-d"};
 
     r = output(argv2, o, e, "the test");
     CHECK(r == 1);
