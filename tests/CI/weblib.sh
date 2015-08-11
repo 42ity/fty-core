@@ -30,6 +30,7 @@ echo "INFO-WEBLIB: Initial  BASE_URL = '$BASE_URL'"
 [ -z "${SUT_WEB_PORT-}" ] && SUT_WEB_PORT="8000"
 [ -z "${BIOS_USER-}" ] && BIOS_USER="bios"
 [ -z "${BIOS_PASSWD-}" ] && BIOS_PASSWD="nosoup4u"
+[ -z "${SASL_SERVICE-}" ] && SASL_SERVICE="bios"
 [ -z "${BASE_URL-}" ] && BASE_URL="http://$SUT_HOST:$SUT_WEB_PORT/api/v1"
 #[ -z "${BASE_URL-}" ] && BASE_URL="http://127.0.0.1:8000/api/v1"
 #[ -z "${BASE_URL-}" ] && BASE_URL="http://root@debian.roz.lab.etn.com:8007/api/v1"
@@ -472,7 +473,7 @@ _api_get_token() {
 	[ x"$LOGIN_RESET" = xyes ] && AUTH_URL="${AUTH_URL}&grant_reset=true&grant_reset_inst=true"
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_push_expect_noerrors
-	_TOKEN_RAW_="`api_get "$AUTH_URL"`" || _RES_=$?
+	_TOKEN_RAW_="`set +x; api_get "$AUTH_URL"`" || _RES_=$?
         [ x"$WEBLIB_CURLFAIL_GETTOKEN" = xprotected ] && \
             curlfail_pop
 	_TOKEN_="`echo "$_TOKEN_RAW_" | sed -n 's|.*\"access_token\"[[:blank:]]*:[[:blank:]]*\"\([^\"]*\)\".*|\1|p'`" || _RES_=$?
