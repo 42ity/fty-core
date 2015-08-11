@@ -5,7 +5,8 @@ PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile obs/Makefile src/api/libbiosapi.pc tools/db-init])
+# Sub-makefiles: do not forget to update SUBDIRS list in root Makefile.am
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile obs/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -486,6 +487,15 @@ AC_SUBST([HAVE_DOXYGEN])
 AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
+
+# Scripts processed with automake macros
+AC_CONFIG_FILES([tools/db-init],[chmod +x tools/db-init])
+AC_CONFIG_FILES([tools/bios-passwd],[chmod +x tools/bios-passwd])
+
+# Sources processed with automake macros
+AC_CONFIG_FILES([src/api/libbiosapi.pc])
+AC_CONFIG_FILES([docs/examples/sudoers.d/bios_00_base])
+AC_CONFIG_FILES([src/web/src/admin_passwd.ecpp])
 
 #test-db-run-path
 AC_CONFIG_FILES([tools/dbpath.cc])
