@@ -26,7 +26,7 @@ Cmnd_Alias DATE_NTP	= /usr/sbin/ntpdate,/etc/init.d/ntp
 Cmnd_Alias DATE_CLOCK	= /usr/bin/rdate
 Cmnd_Alias DATE		= DATE_MANUAL,DATE_HWCLOCK,DATE_NTP,DATE_CLOCK
 Cmnd_Alias AUGTOOL      = /usr/bin/augtool
-Cmnd_Alias BIOS_PASSWD = /usr/libexec/bios/bios-passwd
+Cmnd_Alias BIOS_PASSWD  = @libexecdir@/@PACKAGE@/bios-passwd
 
 ### Update firmware on this device (disabled by default):
 Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
