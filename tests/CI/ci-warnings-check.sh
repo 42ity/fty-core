@@ -115,7 +115,7 @@ set +e
 cat "$BUILDSUBDIR/.git_details" | grep PACKAGE_GIT_STATUS_ESCAPED | \
     grep -v 'PACKAGE_GIT_STATUS_ESCAPED=""'
 if [ $? = 0 ]; then
-    RESULT=1 && RES_GITIGNORE=1 && \
+    RES_GITIGNORE=1 && \
     logmsg_warn "Some build products (above) are not in a .gitignore" && \
     echo "" && sleep 1  # Sleep to not mix stderr and stdout in Jenkins
 else
