@@ -249,6 +249,23 @@ public:
   int  prefix() const;
 
   /**
+   * \brief netmask of CIDRAddress.
+   *
+   * Method returns netmask or "" on error (invalid address, IPv6).
+   */
+  std::string netmask() const;
+
+  /**
+   * \brief test if this addres can be netmask.
+   *
+   * Method returns true if address is netmask. Make sense for IPv4.
+   * for example
+   * * CIDRAddress("255.255.0.3").isNetmask() == false
+   * * CIDRAddress("255.128.0.0").isNetmask() == true
+   */
+  bool isNetmask() const;
+
+  /**
    * \brief set IP address to invalid (You can imagine this address as 0.0.0.0 or ::)
    */
   void invalidate();

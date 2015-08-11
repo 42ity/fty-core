@@ -30,7 +30,7 @@
 # ***** PREREQUISITES *****
     # *** dealing with external parameter, some are mandatory. Te script must be
         # * The script must be called in the following format:
-        # * test_web.sh -u "<user on SUT>" -p "<pasword>" \
+        # * test_web.sh -u "<user on SUT>" -p "<pasword>" -s "<SASL service>" \
         # * "<substring for the testcase filtering>"
    # *** no parameters? ERROR!
 if [ $# -eq 0 ]; then
@@ -51,7 +51,7 @@ while [ $# -gt 0 ]; do
             SUT_WEB_PORT="$2"
             shift 2
             ;;
-        --host|--machine|-s|-sh|--sut|--sut-host)
+        --host|--machine|-sh|--sut|--sut-host)
             SUT_HOST="$2"
             shift 2
             ;;
@@ -67,24 +67,28 @@ while [ $# -gt 0 ]; do
             BIOS_PASSWD="$2"
             shift 2
             ;;
-        *)  # fall through
+        -s|--service)
+            SASL_SERVICE="$2"
+            shift 2
+            ;;
+        *)  # fall through - these are lists of tests to do
             break
             ;;
     esac
 done
 
 # default values:
-[ -z "$SUT_USER" ] && SUT_USER="root"
-[ -z "$SUT_HOST" ] && SUT_HOST="debian.roz.lab.etn.com"
+[ -z "${SUT_USER-}" ] && SUT_USER="root"
+[ -z "${SUT_HOST-}" ] && SUT_HOST="debian.roz.lab.etn.com"
 # port used for ssh requests:
-[ -z "$SUT_SSH_PORT" ] && SUT_SSH_PORT="2206"
+[ -z "${SUT_SSH_PORT-}" ] && SUT_SSH_PORT="2206"
 # port used for REST API requests:
-if [ -z "$SUT_WEB_PORT" ]; then
-    if [ -n "$BIOS_PORT" ]; then
+if [ -z "${SUT_WEB_PORT-}" ]; then
+    if [ -n "${BIOS_PORT-}" ]; then
         SUT_WEB_PORT="$BIOS_PORT"
     else
         SUT_WEB_PORT=$(expr $SUT_SSH_PORT + 8000)
-        [ "$SUT_SSH_PORT" -ge 2200 ] && \
+        [ "${SUT_SSH_PORT-}" -ge 2200 ] && \
             SUT_WEB_PORT=$(expr $SUT_WEB_PORT - 2200)
     fi
 fi
@@ -96,6 +100,8 @@ SUT_IS_REMOTE=yes
     # *** if used set BIOS_USER and BIOS_PASSWD for tests where it is used:
 [ -z "$BIOS_USER" ] && BIOS_USER="bios"
 [ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
+[ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -114,6 +120,7 @@ echo '**************************************************************************
 logmsg_info "Will use BASE_URL = '$BASE_URL'"
 echo $BIOS_USER
 echo $BIOS_PASSWD
+echo $SASL_SERVICE
 echo $SUT_HOST
 echo $SUT_SSH_PORT
 echo $SUT_WEB_PORT
@@ -144,34 +151,40 @@ fi >&2
 
 # is bios access to sasl right?
 SASLTEST=$(sut_run "which testsaslauthd")
-LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s bios")"
+LINE="$(sut_run "$SASLTEST -u '$BIOS_USER' -p '$BIOS_PASSWD' -s '$SASL_SERVICE'")"
 if [ $? != 0 -o -z "$LINE" ]; then
     CODE=3 die "SASL autentication for user '$BIOS_USER' has failed." \
         "Please check the existence of /etc/pam.d/bios (and maybe" \
         "/etc/sasl2/bios.conf for some OS distributions)"
 fi
 
-# is web server running?
-curlfail_push_expect_404
-if [ -z "`api_get "" | grep '< HTTP/.* 404 Not Found'`" ]; then
-    CODE=4 die "Webserver is not running or has errors, please start it first!"
+if [ "$SKIP_SANITY" = yes ]; then
+    # This is hit e.g. when a wget-based "curl emulator" is used for requests
+    logmsg_info "$0: REST API sanity checks skipped due to SKIP_SANITY=$SKIP_SANITY"
+else
+    logmsg_info "Testing webserver ability to serve the REST API"
+    # is web server running?
+    curlfail_push_expect_404
+    if [ -z "`api_get "" | grep 'HTTP/.* 404 Not Found'`" ]; then
+        CODE=4 die "Webserver is not running or has errors, please start it first!"
+    fi
+    curlfail_pop
 fi
-curlfail_pop
 
 # log dir contents the real responses
-cd "`dirname "$0"`"
-[ "$LOG_DIR" ] || LOG_DIR="`pwd`/web/log"
+cd "`dirname "$0"`" || die
+[ -n "${LOG_DIR-}" ] || LOG_DIR="`pwd`/web/log"
 mkdir -p "$LOG_DIR" || exit 4
 
 # cmpjson.sh compares json like files
 CMPJSON_SH="`pwd`/cmpjson.sh"
 CMPJSON_PY="`pwd`/cmpjson.py"
 #[ -z "$CMP" ] && CMP="`pwd`/cmpjson.py"
-[ -z "$CMP" ] && CMP="$CMPJSON_SH"
-[ -s "$CMP" ] || exit 5
+[ -z "${CMP-}" ] && CMP="$CMPJSON_SH"
+[ -s "${CMP-}" ] || CODE=5 die "Can not use comparator '$CMP'"
 
 # web/commands dir contains the request commands
-cd web/commands
+cd web/commands || CODE=6 die "Can not change to `pwd`/web/commands"
 
 # positive parameters are included to test, negative excluded
 POSITIVE=""

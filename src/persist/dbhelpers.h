@@ -34,7 +34,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define MAX_KEYTAG_LENGTH       40
 // t_bios_asset_ext_attributes.value
 #define MAX_VALUE_LENGTH        255
-// t_bios_asset_device.mac   and t_bios_net_history.mac
+// t_bios_asset_device.mac
 #define MAX_MAC_LENGTH          17
 // t_bios_asset_device.ip    and t_bios_discovered_ip.ip
 #define MAX_IP_LENGTH           45
@@ -101,13 +101,14 @@ struct db_msrmnt_t {
  * \brief helper structure for results of v_bios_asset_element
  */
 struct db_a_elmnt_t {
-    a_elmnt_id_t     id;        
-    std::string      name;      
-    std::string      status;    
-    a_elmnt_id_t     parent_id; 
+    a_elmnt_id_t     id;
+    std::string      name;
+    std::string      status;
+    a_elmnt_id_t     parent_id;
     a_elmnt_pr_t     priority;
     a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
+    std::string      asset_tag;
 };
 
 /** 

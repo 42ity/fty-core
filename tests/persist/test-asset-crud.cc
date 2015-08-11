@@ -7,6 +7,8 @@
 #include "db/assets.h"
 #include "common_msg.h"
 
+#define UGLY_ASSET_TAG "0123456"
+
 #include "cleanup.h"
 
 TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][asset_ext_attribute][crud_test.sql]")
@@ -175,9 +177,11 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     const char *status = "active";
     a_elmnt_pr_t priority   = 4;
     a_elmnt_bc_t bc         = 0;
+    a_dvc_tp_id_t subtype_id = 10;
 
     // first insert
-    auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority, bc);
+    auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+        parent_id, status, priority, bc, subtype_id, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     uint64_t rowid = reply_insert.rowid;
     CAPTURE (rowid);
@@ -195,10 +199,11 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 2);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == subtype_id);
 
     // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_element (conn, element_name, element_type_id, parent_id, status, priority, bc);
+    reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+            parent_id, status, priority, bc, 10, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
@@ -220,70 +225,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     log_close();
 }
 
-TEST_CASE("asset device INSERT/DELETE #4","[db][CRUD][insert][delete][asset_device][crud_test.sql]")
-{
-    log_open ();
 
-    log_info ("=============== ASSET DEVICE DELETE/INSERT #4 ==================");
-    
-    tntdb::Connection conn;
-    REQUIRE_NOTHROW ( conn = tntdb::connectCached(url) );
-
-    a_elmnt_id_t   asset_element_id = 2; // it is written in crud_test.sql file
-    a_dvc_tp_id_t  asset_device_type_id = 4; // TODO deal with map id to name
-    const char*    asset_device_type = "pdu";
-
-    // first insert
-    auto reply_insert = insert_into_asset_device (conn, asset_element_id, asset_device_type_id);
-    REQUIRE ( reply_insert.affected_rows == 1 );
-    REQUIRE ( reply_insert.status == 1 );
-    uint64_t rowid = reply_insert.rowid;
-
-    auto reply_select = persist::select_asset_element_web_byId(conn, asset_element_id);
-    REQUIRE (reply_select.status == 1);
-    auto item = reply_select.item;
-    REQUIRE (item.type_id == asset_type::DEVICE);
-    REQUIRE (item.type_name == "device");
-
-    // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_device (conn, asset_element_id, asset_device_type_id);
-    REQUIRE ( reply_insert.affected_rows == 0 );
-    REQUIRE ( reply_insert.status == 1 );
-
-    // first delete
-    auto reply_delete = delete_asset_device (conn, asset_element_id);
-    REQUIRE ( reply_delete.affected_rows == 1 );
-    REQUIRE ( reply_delete.status == 1 );
-    // ACE: redo in future, BIOS 745
-    /*
-    // check select
-    reply_select = select_asset_device (conn, asset_element_id);
-    REQUIRE ( is_common_msg (reply_select) );
-    _scoped_common_msg_t *creply_select_decode = common_msg_decode (&reply_select);
-    REQUIRE ( common_msg_id (creply_select_decode) == COMMON_MSG_FAIL );
-    REQUIRE ( common_msg_errtype (creply_select_decode) == BIOS_ERROR_DB );
-    REQUIRE ( common_msg_errorno (creply_select_decode) == DB_ERROR_NOTFOUND );
-    // selects don't return count
-    zmsg_destroy (&reply_select);
-    common_msg_destroy (&creply_select_decode);
-*/
-    //MVY: does not work, there is a mismatch between t_bios_asset_device and t_bios_asset_element between select_asset_element and delete_asset_device - we don't need delete operations now, so can postpone
-    /*
-    reply_select = persist::select_asset_element_web_byId(conn, rowid);
-    REQUIRE (reply_select.status == 0);
-    REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
-    REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
-    */
-
-    // must handle second delete without crash
-    reply_delete = delete_asset_device (conn, asset_element_id);
-    REQUIRE ( reply_delete.affected_rows == 0 );
-    REQUIRE ( reply_delete.status == 1 );
-
-    log_close();
-}
-
- 
 TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_element][crud_test.sql]")
 {
     log_open ();
@@ -420,7 +362,8 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+                parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -437,7 +380,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE (item.type_name == "datacenter");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == 10); // 10 magic->default from initdb.sql
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -448,7 +391,8 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -496,7 +440,8 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -513,7 +458,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE (item.type_name == "room");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == 10); //magic
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -523,7 +468,8 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -566,12 +512,13 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     std::set<std::pair<std::string, std::string>> expected_ext_attributes;
     expected_ext_attributes.insert (std::make_pair ("description", "Hello people"));
     expected_ext_attributes.insert (std::make_pair ("contact_name", "thisisanemailaddress@gmail.com"));
-    
+
     for ( auto &ea : expected_ext_attributes )
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG) ;
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -588,7 +535,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE (item.type_name == "row");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == 10); //magic
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -599,7 +546,8 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -652,7 +600,8 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -669,7 +618,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     REQUIRE (item.type_name == "rack");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == 10); // magic
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -679,7 +628,9 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups,
+            UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -727,7 +678,9 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+            parent_id, ext_attributes, status, priority, bc, groups,
+            UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -744,7 +697,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE (item.type_name == "group");
     REQUIRE (item.parent_id == parent_id);
     REQUIRE (item.parent_type_id == 0);     // in crud_test.sql
-    REQUIRE (item.subtype_id == 0);
+    REQUIRE (item.subtype_id == 10);  //magic
 
     auto reply_ext = persist::select_ext_attributes(conn, rowid);
     REQUIRE (reply_ext.status == 1);
@@ -754,7 +707,8 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id, ext_attributes, status, priority, bc, groups);
+    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+            ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
@@ -811,7 +765,8 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     // first insert
     auto reply_insert = insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc);
+                            asset_device_type, status, priority, bc,
+                            UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -838,9 +793,10 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_device (conn, links, groups, name, parent_id, 
+    reply_insert = insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
-                            asset_device_type, status, priority, bc);
+                            asset_device_type, status, priority, bc,
+                            UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 

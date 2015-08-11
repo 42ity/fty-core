@@ -62,6 +62,7 @@ Example:
 #include <stdio.h>
 #include <syslog.h>
 #include <stdarg.h>
+#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {

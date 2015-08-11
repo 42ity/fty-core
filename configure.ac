@@ -5,7 +5,7 @@ PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile src/api/libbiosapi.pc tools/db-init])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile obs/Makefile src/api/libbiosapi.pc tools/db-init])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
@@ -412,14 +412,9 @@ AS_IF([test -n "$_CC_ORIG"], [
 	AC_MSG_NOTICE([NOTE: Restored default compiler settings: $CC])])
 
 # Checks for the header files
-AC_CHECK_HEADERS([libnetlink.h], [], AC_MSG_ERROR([cannot find required header libnetlink.h]))
 AC_CHECK_HEADERS([magic.h], [], AC_MSG_ERROR([cannot find required header magic.h]))
 
 AC_LANG_PUSH([C++])
-AC_SEARCH_LIBS([ll_remember_index], [netlink],
-		AC_DEFINE_UNQUOTED([HAVE_LIBNETLINK__ll_remember_index],[1],[libnetlink does implement ll_remember_index()]),
-		AC_MSG_ERROR([cannot find required function ll_remember_index() that should be in libnetlink]))
-AC_CHECK_HEADERS([ll_map.h], [], AC_MSG_NOTICE([cannot find (optional) header ll_map.h]))
 AC_CHECK_HEADERS([tntdb.h],
                  [],
                  AC_MSG_ERROR([cannot find required header tntdb.h]))
@@ -438,8 +433,6 @@ PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find ma
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
 dnl Checks for libraries.
-dnl FIXME: Replace `main' with a function in `-lnetlink':
-dnl AC_CHECK_LIB([netlink], [main])
 dnl FIXME: Replace `main' with a function in `-lzmq':
 dnl AC_CHECK_LIB([zmq], [main])
 

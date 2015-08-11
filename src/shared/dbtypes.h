@@ -70,10 +70,6 @@ typedef uint32_t a_grp_rltn_id_t;
 // uint16_t
 typedef uint16_t  a_elmnt_tp_id_t;
 
-// ----- table:  t_bios_asset_device ------------------
-// ----- column: id_asset_device ----------------------
-typedef uint32_t a_dvc_id_t;
-
 // ----- table:  t_bios_asset_device_type -------------
 // ----- column: id_asset_device_type -----------------
 // TODO tntdb can't manage uint8_t, so for now there is
@@ -151,13 +147,5 @@ typedef uint16_t  m_msrmnt_tpc_id_t;
 // ----- table:  t_bios_discovered_ip -----------------
 // ----- column: id_ip --------------------------------
 typedef uint32_t m_ip_id_t;
-
-// ----- table:  t_bios_net_history -------------------
-// ----- column: id_net_history -----------------------
-typedef uint32_t m_nt_hstr_id_t;
-
-// ----- table:  t_bios_nethistory --------------------
-// ----- column: mask ---------------------------------
-typedef uint8_t  m_nt_hstr_mask_t;
 
 #endif // SRC_PERSIST_DVTYPES_H_

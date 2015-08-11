@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 /*! \file alert.cc
     \brief Pure DB API for CRUD operations on alerts
 
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@eaton.com>
 */
 
 #include <tntdb/row.h>
@@ -26,14 +26,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include <tntdb/error.h>
 #include <tntdb/transaction.h>
 #include "log.h"
-#include "defs.h"
 #include "db/alerts/alert_basic.h"
-#include "agents.h"
-#include "dbpath.h"
-#include "bios_agent.h"
-#include "cleanup.h"
-#include "utils.h"
-#include "db/types.h"
 #include "assetcrud.h"
 #include "db/assets.h"
 
@@ -524,6 +517,8 @@ db_reply_t
 }
 
 //=============================================================================
+// TODO this function has a logic and represents one operation.
+// Consider removing conn parametr and moving the function somewhere
 db_reply_t
     insert_new_alert 
         (tntdb::Connection  &conn,
@@ -780,26 +775,25 @@ db_reply <db_alert_t>
         tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "   v.id, v.rule_name, v.priority, v.state,"
-                "   v.descriprion, v.notification,"
+                "   v.description, v.notification,"
                 "   v.date_from, v.date_till"
                 " FROM"
                 "   v_bios_alert v"
                 " INNER JOIN"
                 "       (SELECT"
-                "          rule_name, max(dateFrom) AS date_max"
+                "          rule_name, max(date_from) AS date_max"
                 "        FROM"
                 "          v_bios_alert v"
                 "        GROUP BY (rule_name)"
                 "       ) v1"
                 " WHERE v.rule_name = :rule AND"
                 "   v.rule_name = v1.rule_name AND"
-                "   v.date_from = v2.date_max"
+                "   v.date_from = v1.date_max"
         );
         tntdb::Row res = st.set("rule", rule_name).
                             selectRow();
         
         log_debug ("[t_bios_alert]: was %u rows selected", 1);
-
         res[0].get(m.id);
         res[1].get(m.rule_name);
         res[2].get(m.priority);
@@ -819,6 +813,8 @@ db_reply <db_alert_t>
             log_error ("end: %s, %s", "ignore select", ret.msg);
             return ret;
         }
+        m.device_ids = reply_internal.item;
+        ret.item = m;
         ret.status = 1;
         LOG_END;
         return ret;
@@ -858,7 +854,7 @@ db_reply <db_alert_t>
         tntdb::Statement st = conn.prepareCached(
                 " SELECT"
                 "   v.id, v.rule_name, v.priority, v.state,"
-                "   v.descriprion, v.notification,"
+                "   v.description, v.notification,"
                 "   v.date_from, v.date_till"
                 " FROM"
                 "   v_bios_alert v"
@@ -890,6 +886,8 @@ db_reply <db_alert_t>
             log_error ("end: %s, %s", "ignore select", ret.msg);
             return ret;
         }
+        m.device_ids = reply_internal.item;
+        ret.item = m;
         ret.status = 1;
         LOG_END;
         return ret;
@@ -917,7 +915,7 @@ db_reply_t
     update_alert_notification_byRuleName 
         (tntdb::Connection  &conn,
          m_alrt_ntfctn_t     notification,
-         const char *rule_name)
+         const char         *rule_name)
 {
     LOG_START;
     db_reply_t ret = db_reply_new();
