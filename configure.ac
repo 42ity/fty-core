@@ -5,7 +5,7 @@ PACKAGE_VENDOR="Eaton"
 
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile obs/Makefile src/api/libbiosapi.pc tools/db-init])
+AC_CONFIG_FILES([Makefile docs/man/Makefile tools/Makefile docs/examples/Makefile obs/Makefile src/api/libbiosapi.pc tools/db-init tools/bios-passwd docs/examples/sudoers.d/bios_00_base])
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax no-dist-gzip dist-xz subdir-objects])
 
