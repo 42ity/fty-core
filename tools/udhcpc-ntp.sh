@@ -11,6 +11,13 @@ ntp_server_restart() {
 }
 
 
+ntp_server_status() {
+	invoke-rc.d ntp status
+	# NOTE: successful return means the daemon is running, but
+	# it does guarantee we've picked up time from any source
+}
+
+
 ntp_servers_setup_remove() {
 	if [ ! -e "$NTP_DHCP_CONF" ]; then
 		return
@@ -49,7 +56,9 @@ ntp_servers_setup_add() {
 
 	mv "$tmp" "$NTP_DHCP_CONF"
 
-	ntp_server_restart
+	ntp_server_restart && \
+	    echo "NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
+	    sleep 60 && ntp_server_status && hwclock -w
 }
 
 
