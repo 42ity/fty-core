@@ -481,7 +481,6 @@ mydoxylog="doxylog.txt"
 mysrcDIR="src" 
 dnl the directory to search source file that must be included in documentation
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile])])
 AC_SUBST([HAVE_DOXYGEN])
 AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
