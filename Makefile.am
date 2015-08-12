@@ -1314,7 +1314,8 @@ bios_web_la_LIBADD = \
 			libpriv-utils-ymsg.la \
 			libpriv-db-measurements.la \
 			libpriv-magic.la \
-			libpriv-configure-inform.la
+			libpriv-configure-inform.la \
+			libpriv-utils-plusplus.la
 
 dist_noinst_HEADERS += \
 			src/shared/data.h \
