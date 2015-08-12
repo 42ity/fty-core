@@ -393,10 +393,65 @@ api_get_json() {
     | $JSONSH -N
 }
 
+# Returns:
+#   1 on error
+#   0 on success
+# Arguments:
+#   $1 - rest api call
+#   $2 - output
+#   $3 - HTTP code
+# TODO:
+#   check args
+simple_get_json_code() {
+    if [ -z "$JSONSH" -o ! -x "$JSONSH" ] ; then
+        simple_get_json_code_sed "$@"
+        return $?
+    fi
+
+    local __out
+    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+
+    local __resultcode=$3
+    local __resultout=$2
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
+}
+
 api_get_json_sed() {
     ### Old approach to strip any whitespace including linebreaks from JSON
     CURL --insecure -v --progress-bar "$BASE_URL$1" 3>&2 2> /dev/null \
     | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'
+}
+
+# Returns:
+#   1 on error
+#   0 on success
+# Arguments:
+#   $1 - rest api call
+#   $2 - output
+#   $3 - HTTP code
+# TODO:
+#   check args
+simple_get_json_code_sed() {
+    ### Old approach to strip any whitespace including linebreaks from JSON
+    local __out
+    __out=$( curl -s --insecure -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|' )
+    local __resultcode=$3
+    local __resultout=$2
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
 }
 
 api_get_jsonv() {
@@ -560,6 +615,34 @@ api_auth_put() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+# Returns:
+#   1 on error
+#   0 on success
+# Arguments:
+#   $1 - rest api call
+#   $2 - input
+#   $3 - output
+#   $4 - HTTP code
+# TODO:
+#   check args
+simple_auth_put () {
+    TOKEN="`_api_get_token`"
+
+    local __out=
+    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "PUT"  -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+
+    local __resultcode=$4
+    local __resultout=$3
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
 }
 
 api_auth_get() {
