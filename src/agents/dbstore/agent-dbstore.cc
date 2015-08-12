@@ -90,7 +90,7 @@ int main (int argc, char *argv []) {
             if (strncmp(bios_agent_subject(client), "inventory.", 10) == 0 ) {
                 log_debug ("inventory message recieved, ingore it. In future this should never happen");
             }
-            else if (strncmp(bios_agent_subject(client), "configure.", 10) == 0 ) {
+            else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
                 log_debug ("configure message recieved, ingore it. In future this should never happen");
             }
             else if (strncmp(bios_agent_subject(client), "alert.", 6) == 0 ) {
