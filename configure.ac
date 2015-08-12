@@ -488,24 +488,13 @@ mydoxylog="doxylog.txt"
 mysrcDIR="src" 
 dnl the directory to search source file that must be included in documentation
 AM_CONDITIONAL([HAVE_DOXYGEN],[test -n "$DOXYGEN"])
-AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([$myDOXDIR/Doxyfile])])
-AC_CONFIG_FILES([tools/run-test-doc.sh],[chmod +x tools/run-test-doc.sh])
 AC_SUBST([HAVE_DOXYGEN])
 AC_SUBST([myDOXDIR])
 AC_SUBST([mydoxylog])
 AC_SUBST([mysrcDIR])
 
-# Scripts processed with automake macros
-AC_CONFIG_FILES([tools/db-init],[chmod +x tools/db-init])
-AC_CONFIG_FILES([tools/bios-passwd],[chmod +x tools/bios-passwd])
-
-# Sources processed with automake macros
-AC_CONFIG_FILES([src/api/libbiosapi.pc])
-AC_CONFIG_FILES([docs/examples/sudoers.d/bios_00_base])
-AC_CONFIG_FILES([src/web/src/admin_passwd.ecpp])
-
 #test-db-run-path
-AC_CONFIG_FILES([tools/dbpath.cc])
+#AC_CONFIG_FILES([tools/dbpath.cc])
 dnl sqlite
 dnl myDBPath="sqlite:""@srcdir""@/tools/my1db.db"
 dnl mariadb/mysql
