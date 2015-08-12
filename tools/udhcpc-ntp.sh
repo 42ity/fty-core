@@ -29,10 +29,12 @@ ntp_servers_setup_remove() {
 
 ntp_servers_setup_add() {
 	if [ -e $NTP_DHCP_CONF ] && [ "$new_ntp_servers" = "$old_ntp_servers" ]; then
+		echo "Got no changes to apply to DHCP-announced NTP config"
 		return
 	fi
 
 	if [ -z "$new_ntp_servers" ]; then
+		echo "DHCP announced no NTP servers, falling back to static NTP configs..."
 		ntp_servers_setup_remove
 		return
 	fi
@@ -41,6 +43,7 @@ ntp_servers_setup_add() {
 	chmod --reference="$NTP_CONF" "$tmp"
 	chown --reference="$NTP_CONF" "$tmp"
 
+	echo "DHCP announced NTP servers '$new_ntp_servers' different from old NTP config '$old_ntp_servers', applying..."
 	(
 	  echo "# This file was copied from $NTP_CONF with the server options changed"
 	  echo "# to reflect the information sent by the DHCP server.  Any changes made"
@@ -58,19 +61,24 @@ ntp_servers_setup_add() {
 
 	ntp_server_restart && \
 	    echo "NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
-	    sleep 60 && ntp_server_status && hwclock -w
+	    sleep 60 && ntp_server_status && hwclock -w && echo "Applied current OS clock value to HW clock"
 }
 
 
 ntp_servers_setup() {
+	RES=1
 	case "$reason" in
 		bound|renew|BOUND|RENEW|REBIND|REBOOT)
 			ntp_servers_setup_add
+			RES=$?
 			;;
 		deconfig|leasefail|nak|EXPIRE|FAIL|RELEASE|STOP)
 			ntp_servers_setup_remove
+			RES=$?
 			;;
 	esac
+	echo "Completed $0 for DHCP state $reason, exit code $RES"
+	return $RES
 }
 
 [ -z "${reason-}" -a -n "$1" ] && reason="$1"
