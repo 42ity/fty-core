@@ -7,6 +7,9 @@
 #include "subprocess.h"
 #include "cidr.h"
 #include "sasl.h"
+#include "filesystem.h"
+
+#define SSH_NOT_TO_BE_RUN "/etc/ssh/sshd_not_to_be_run"
 using namespace shared;
 
 static int
@@ -91,5 +94,11 @@ s_passwd(
 }
 <%cpp>
     return HTTP_BAD_REQUEST;
+    }
+    if (is_file(SSH_NOT_TO_BE_RUN)) {
+        call({"/usr/bin/sudo", "rm", "-f", SSH_NOT_TO_BE_RUN});
+        //TODO: once generic service manipulating REST API will be implemented, remove line below
+        //      we can't return meaningfull errors in this phase
+        call({"/usr/bin/sudo", "systemctl", "restart", "ssh.service"});
     }
 </%cpp>
