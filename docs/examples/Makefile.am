@@ -2,7 +2,11 @@
 # someplace under /usr/share
 
 
-EXTRA_DIST = sudoers.d/bios_00_base.in
+EXTRA_DIST =
+
+# Ugly hack - root Makefile defines SED transformations for any .in template
+%:: %.in $(abs_top_builddir)/Makefile Makefile
+	cd ../.. && make `echo "$(CURDIR)/$@" | sed 's,^$(abs_top_builddir)/,,'`
 
 examplecfgsudodir	= $(datarootdir)/@PACKAGE@/examples/config/sudoers.d
 examplecfgsudo_DATA	= sudoers.d/bios_00_base sudoers.d/bios_01_citest

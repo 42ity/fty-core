@@ -236,6 +236,8 @@ void
 
         std::string subtype_name;
         r["subtype_name"].get(subtype_name);
+        if ( subtype_name == "N_A" )
+            subtype_name = "";
         lcs.add(subtype_name);
 
         lcs.add(location);
