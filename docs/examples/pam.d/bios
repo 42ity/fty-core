@@ -33,7 +33,9 @@
 
 @include	common-account
 
-    #requirements for passwod - 8 characters, one digit and one 'other' character - enforce_for_root is for bios-passwd, which run under root
+# The $BIOS requirements for password:
+#   8 characters, including one digit and one 'other' character
+#   flag 'enforce_for_root' is for 'bios-passwd' tool, which runs under root
     password	requisite	pam_cracklib.so minlen=8 dcredit=1 ocredit=1 enforce_for_root
     password	required	pam_unix.so	use_authtok shadow try_first_pass
 
