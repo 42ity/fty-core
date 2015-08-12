@@ -1,0 +1,70 @@
+#!/bin/sh
+
+# /etc/network/if-pre-up.d/ethtool-static-nolink
+# (script name must have no extension!)
+# Copyright (C) 2015 by Eaton, GPLv2+
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# Description: Running as part of "ifplugd" processing, this script
+# detects whether the interface is configured as static and has an
+# active link. If the link is down, it aborts with a nonzero exit
+# code, which signals "ifplugd" to not proceed to "ifup" that would
+# assign the IP address and routing table entries - preventing comms
+# to the subnet in question possibly reachable over other interfaces.
+
+ETHTOOL=/sbin/ethtool
+case "$IFACE" in 
+    "lo"*|"") exit 0 ;;
+esac
+
+if [ -z "$METHOD" ]; then
+    ( which augtool >/dev/null 2>&1 ) || exit 0
+    AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/method' ) | augtool`" && \
+        [ -n "$AUGOUT" ] && \
+        AUGOUT_IFACE="`echo "$AUGOUT" | grep " = $IFACE" | sed 's, = .*$,,'`" && \
+        [ -n "$AUGOUT_IFACE" ] && \
+        METHOD="`echo "$AUGOUT" | fgrep "$AUGOUT_IFACE/method"`" && \
+        METHOD="`echo "$METHOD" | sed 's,^.*/method = ,,'`" && \
+        echo "INFO: Detected METHOD='$METHOD' for interface '$IFACE'" >&2
+fi
+
+case "$METHOD" in
+    "static") ;;
+    *) exit 0 ;;
+esac
+
+_LINK_STATE=""
+if [ -d "/sys/class/net/$IFACE" ] && \
+   [ -f "/sys/class/net/$IFACE/operstate" -o \
+     -f "/sys/class/net/$IFACE/carrier" ] \
+; then
+    case "`cat "/sys/class/net/$IFACE/carrier" 2>/dev/null`" in
+        0) _LINK_STATE="down" ;;
+        1) _LINK_STATE="up" ;;
+    esac
+    case "`cat "/sys/class/net/$IFACE/operstate" 2>/dev/null`" in
+        unknown|down) _LINK_STATE="down" ;;
+        up) # do not consider a known-downed interface as enabled
+            [ -z "$_LINK_STATE" ] && _LINK_STATE="up" ;;
+    esac
+fi
+if [ -z "$_LINK_STATE" ]; then
+    test -x $ETHTOOL || exit 0
+    case "`LC_ALL=C LANG=C $ETHTOOL "$IFACE" | grep "Link detected" | awk '{print $NF}'`" in
+        no)  _LINK_STATE="down" ;;
+        yes) _LINK_STATE="up" ;;
+    esac
+fi
+
+[ -z "$_LINK_STATE" ] && exit 0
+
+# So we have an interface configured with a known METHOD among those that
+# we want to limit from auto-configuring in vain, and a known _LINK_STATE
+
+echo "INFO: Interface $IFACE is configured as $METHOD and its link state is $_LINK_STATE" >&2
+
+case "$_LINK_STATE" in
+    up) exit 0;;
+    down) echo "FATAL: We want to not assign an IP address and route table entries to inactive interfaces!"
+        exit 1;;
+esac
