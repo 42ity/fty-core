@@ -565,7 +565,7 @@ select_v_web_asset_power_link_src_byId(
             "   v.src_out, "
             "   v.dest_in "
             " FROM v_web_asset_link v "
-            " WHERE v.id_asset_element_src=:id "
+            " WHERE v.id_asset_element_dest=:id "
             " AND v.link_name = 'power chain' "
         );
 
