@@ -275,27 +275,14 @@ static db_a_elmnt_t
     std::set <a_elmnt_id_t>  groups{};
     for ( int group_index = 1 ; true; group_index++ )
     {
+        std::string grp_col_name = "";
         try {
             // column name
-            auto grp_col_name = "group." + std::to_string(group_index);
+            grp_col_name = "group." + std::to_string(group_index);
             // remove from unused
             unused_columns.erase(grp_col_name);
             // take value
             group = cm.get(row_i, grp_col_name);
-            log_debug ("group_name = '%s'", group.c_str());
-            // if group was not specified, just skip it
-            if ( !group.empty() )
-            {
-                // find an id from DB
-                auto ret = select_asset_element_by_name(conn, group.c_str());
-                if ( ret.status == 1 )
-                    groups.insert(ret.item.id);  // if OK, then take ID
-                else
-                {
-                    log_warning ("'%s' - the group was ignored, "
-                            "because doesn't exist in DB", group.c_str());
-                }
-            }
         }
         catch (const std::out_of_range &e)
         // if column doesn't exist, then break the cycle
@@ -304,35 +291,37 @@ static db_a_elmnt_t
             log_debug (e.what());
             break;
         }
+        log_debug ("group_name = '%s'", group.c_str());
+        // if group was not specified, just skip it
+        if ( !group.empty() )
+        {
+            // find an id from DB
+            auto ret = select_asset_element_by_name(conn, group.c_str());
+            if ( ret.status == 1 )
+                groups.insert(ret.item.id);  // if OK, then take ID
+            else
+            {
+                log_error ("group '%s' is not present in DB, rejected", group.c_str());
+                throw std::invalid_argument
+                    ("The group " + group + " is not present in DB");
+            }
+        }
     }
 
     std::vector <link_t>  links{};
+    std::string  link_source = "";
     for ( int link_index = 1; true; link_index++ )
     {
         link_t one_link{0, 0, NULL, NULL, 0};
+        std::string link_col_name = "";
         try {
             // column name
-            auto link_col_name = "power_source." +
+            link_col_name = "power_source." +
                                                 std::to_string(link_index);
             // remove from unused
             unused_columns.erase(link_col_name);
             // take value
-            auto link_source = cm.get(row_i, link_col_name);
-            log_debug ("power_source_name = '%s'", link_source.c_str());
-            if ( !link_source.empty() ) // if power source is not specified
-            {
-                // find an id from DB
-                auto ret = select_asset_element_by_name
-                                                (conn, link_source.c_str());
-                if ( ret.status == 1 )
-                    one_link.src = ret.item.id;  // if OK, then take ID
-                else
-                {
-                    log_warning ("'%s' - the unknown power source, "
-                        "all information would be ignored "
-                        "(doesn't exist in DB)", link_col_name.c_str());
-                }
-            }
+            link_source = cm.get(row_i, link_col_name);
         }
         catch (const std::out_of_range &e)
         // if column doesn't exist, then break the cycle
@@ -340,6 +329,23 @@ static db_a_elmnt_t
             log_debug ("end of power links processing");
             log_debug (e.what());
             break;
+        }
+
+        log_debug ("power_source_name = '%s'", link_source.c_str());
+        if ( !link_source.empty() ) // if power source is not specified
+        {
+            // find an id from DB
+            auto ret = select_asset_element_by_name
+                (conn, link_source.c_str());
+            if ( ret.status == 1 )
+                one_link.src = ret.item.id;  // if OK, then take ID
+            else
+            {
+                log_warning ("power source '%s' is not present in DB, rejected",
+                    link_source.c_str());
+                throw std::invalid_argument
+                    ("The power source " + link_source + " is not present in DB");
+            }
         }
 
         // column name
