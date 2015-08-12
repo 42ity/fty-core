@@ -87,7 +87,7 @@ int main (int argc, char *argv []) {
         else if (streq (command, "STREAM DELIVER")) {
 
             const char *stream = bios_agent_address(client);
-            if (strncmp(bios_agent_subject(client), "inventory.", 10) == 0 ) {
+            if (strncmp(bios_agent_subject(client), "inventory", 9) == 0 ) {
                 log_debug ("inventory message recieved, ingore it. In future this should never happen");
             }
             else if (strncmp(bios_agent_subject(client), "configure", 9) == 0 ) {
