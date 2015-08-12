@@ -94,6 +94,8 @@ bios_agent_send (bios_agent_t *self, const char *subject, ymsg_t **msg_p) {
         return -1;
     }
     int rc = mlm_client_send (self->client, subject, &zmsg);
+    // FIXME: remove sleep as soon as malamute is fixed
+    zclock_sleep(1);
     return rc;
 }
 
@@ -108,6 +110,8 @@ bios_agent_sendto (bios_agent_t *self, const char *address, const char *subject,
         return -1;
     }
     int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);
+    // FIXME: remove sleep as soon as malamute is fixed
+    zclock_sleep(1);
     return rc;
 }
 
@@ -128,6 +132,8 @@ bios_agent_replyto (bios_agent_t *self, const char *address, const char *subject
         return -1;
     }
     int rc = mlm_client_sendto (self->client, address, subject, NULL, TIMEOUT, &zmsg);
+    // FIXME: remove sleep as soon as malamute is fixed
+    zclock_sleep(1);
     return rc;
 }
 
@@ -142,6 +148,8 @@ bios_agent_sendfor (bios_agent_t *self, const char *address, const char *subject
         return -1;
     }
     int rc = mlm_client_sendfor (self->client, address, subject, NULL, TIMEOUT, &zmsg);
+    // FIXME: remove sleep as soon as malamute is fixed
+    zclock_sleep(1);
     return rc;
 }
 
