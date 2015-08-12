@@ -74,9 +74,9 @@ s_power_links(
     row_cb_f foo = \
         [&out](const tntdb::Row& r)
         {
-            std::string src_name;
-            std::string src_out;
-            std::string dest_in;
+            std::string src_name{""};
+            std::string src_out{""};
+            std::string dest_in{""};
             r["src_name"].get(src_name);
             r["src_out"].get(src_out);
             r["dest_in"].get(dest_in);
