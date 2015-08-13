@@ -16,11 +16,12 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#! \file   ci-check-vm.sh
-#  \brief  checks files on VM, whether they are sync with local checkout.
-#  \brief  If they are not, files re copied to vitrual machine and compiled.
-#  \author Tomas Halman <TomasHalman@eaton.com>,
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#! \file    ci-check-vm.sh
+#  \brief   Checks files on VM
+#  \author  Tomas Halman <TomasHalman@eaton.com>,
+#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \details Checks files on VM, whether they are sync with local checkout.
+#           If they are not, files re copied to virtual machine and compiled.
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
