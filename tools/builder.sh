@@ -1,33 +1,35 @@
 #!/bin/sh
 #
-#   Copyright (c) 2014-2015 Eaton Corporation <www.eaton.com>
+#   Copyright (c) 2014-2015 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
-#   This is free software; you can redistribute it and/or modify
+#   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
+#   the Free Software Foundation; either version 2 of the License, or
 #   (at your option) any later version.
 #
-#   This software is distributed in the hope that it will be useful,
+#   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#   Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
-#
-#   Description: Script to generate all required files from fresh
-#   git checkout and automate the fastest possible build (parallel
-#   for speed, then sequential for reliability).
-#   Supports automation of an "in-place" build in the current directory,
-#   a "relocated" build in a sub-directory, and of a "distcheck" build.
-#   NOTE: It expects to be run from the root of the project directory
-#   (probably the checkout directory, unless you use strange set-ups)
-#   i.e. as "./tools/builder.sh" or, for simplicity, by passing its
-#   supported command-line parameters to the main "autogen.sh" script.
+#! \file    builder.sh
+#  \brief   Script to generate all required files from fresh git checkout
+#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \details Script to generate all required files from fresh
+#           git checkout and automate the fastest possible build (parallel
+#           for speed, then sequential for reliability).
+#           Supports automation of an "in-place" build in the current directory,
+#           a "relocated" build in a sub-directory, and of a "distcheck" build.
+#  \note    It expects to be run from the root of the project directory
+#           (probably the checkout directory, unless you use strange set-ups)
+#           i.e. as "./tools/builder.sh" or, for simplicity, by passing its
+#           supported command-line parameters to the main "autogen.sh" script.
 
 [ -z "$LANG" ] && LANG=C
 [ -z "$LANGUAGE" ] && LANGUAGE=C
