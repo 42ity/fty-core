@@ -95,10 +95,32 @@ s_passwd(
 <%cpp>
     return HTTP_BAD_REQUEST;
     }
+
+    /* Verify the new password and so flush the SASLAUTHD cache that trusts the old one still */
+    if (!authenticate(user.c_str(), new_passwd.c_str())) {
+#ifdef DEBUG
+            std::string debug;
+            debug = "can't authenticate '" + user + "' with the newly changed password";
+#endif
+</%cpp>
+{
+    "errors" : [
+        {
+            "message" : "could not verify application of the new password",
+            "code" : 42
+%#ifdef DEBUG
+            ,"debug" : "<$$ debug $>"
+%#endif
+        }
+    ]
+}
+<%cpp>
+    return HTTP_BAD_REQUEST;
+    }
     if (is_file(SSH_NOT_TO_BE_RUN)) {
         shared::call({"/usr/bin/sudo", "/bin/rm", "-f", SSH_NOT_TO_BE_RUN});
         //TODO: once generic service manipulating REST API will be implemented, remove line below
-        //      we can't return meaningfull errors in this phase
+        //      we can't return meaningful errors in this phase
         shared::call({"/usr/bin/sudo", "/bin/systemctl", "restart", "ssh.service"});
     }
 </%cpp>
