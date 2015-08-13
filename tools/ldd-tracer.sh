@@ -20,7 +20,7 @@
 #
 #! \file    ldd-tracer.sh
 #  \brief   Script to trace dynamically-linked objects
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Script to trace dynamically-linked objects (bin, lib)
 #           to find the libraries which define a target object's symbols
 #           and if there are some undefined symbols as well.

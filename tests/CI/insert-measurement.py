@@ -18,7 +18,7 @@
 #
 #! \file    insert-measurement.py
 #  \brief   tests for inserting measurement from command line
-#  \author  Tomas Halman <TomasHalman@eaton.com>
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
 #  \details inserting measurement from command line
 #           automatically creates topic item, discovered device item
 #           and link in t_bios_monitor_asset_relation

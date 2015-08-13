@@ -18,7 +18,7 @@
 #
 #! \file    ci-test-netcfg.sh
 #  \brief   rfc-11 admin/netcfg admin/netcfgs automated test
-#  \author  Karol Hrdina <KarolHrdina@eaton.com>
+#  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \version 1.3
 #
 # Requirements:

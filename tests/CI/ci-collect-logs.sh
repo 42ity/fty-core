@@ -19,7 +19,7 @@
 #! \file   ci-collect-logs.sh
 #  \brief  Downloads log files from VM and prints them on stdout.
 #  \brief  Supposed to be post build step.
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \

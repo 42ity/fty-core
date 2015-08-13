@@ -18,7 +18,7 @@
 #
 #! \file   ci-test-libbiosapi.sh
 #  \brief  Tests build and run against libbiosapi.so
-#  \author Michal Vyskocil <MichalVyskocil@eaton.com>
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 #
 # Requirements:
 #   - devel tools and source code

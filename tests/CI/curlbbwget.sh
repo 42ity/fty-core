@@ -18,7 +18,7 @@
 #
 #! \file    curlbbwget.sh
 #  \brief   Emulator of certain curl functionality by using BusyBox limited WGET
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details The intended use is in $BIOS REST API testing/usage, so
 #           implements just as much BASH required due to use of arrays
 

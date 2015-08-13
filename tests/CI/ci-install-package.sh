@@ -18,7 +18,7 @@
 #
 #! \file   ci-install-package.sh
 #  \brief  Installs packages on virtual machine
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 install_packages() {
     # if debian

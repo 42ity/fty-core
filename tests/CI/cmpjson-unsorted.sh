@@ -18,7 +18,7 @@
 #
 #! \file    cmpjson-unsorted.sh
 #  \brief   Simple wrapper for cmpjson.sh
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Simple wrapper for cmpjson.sh to do comparison of two
 #           JSON markups in their original ordering of items.
 

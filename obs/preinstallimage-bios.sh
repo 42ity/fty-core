@@ -20,8 +20,8 @@
 #
 #! \file    restapi-request.sh
 #  \brief   Script to generate the expected directory structure and configuration files
-#  \author  Michal Hrusecky <MichalHrusecky@eaton.com>
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Script to generate the expected directory structure
 #   and configuration files "baked into" the read-only OS images that
 #   are prepared by OBS for dev/test X86 containers as well as the

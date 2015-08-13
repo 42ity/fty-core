@@ -18,7 +18,7 @@
 #
 #! \file   ci-warnings-check.sh
 #  \brief  installs dependencies and compiles the project
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 # list of warnings we know
 # if any of them appears, build is marked as unstable

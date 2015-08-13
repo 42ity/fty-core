@@ -21,7 +21,7 @@ import hudson.utils.*
 
 /*! \file    jenkins-run-vtetests.groovy
     \brief   starts the VM reset jobs for all hypervisors
-    \author  Tomas Halman <TomasHalman@eaton.com>
+    \author  Tomas Halman <TomasHalman@Eaton.com>
 */
 
 def startJob(name,params) {

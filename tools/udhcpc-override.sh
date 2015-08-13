@@ -18,7 +18,7 @@
 #
 #! \file    udhcpc-override.sh
 #  \brief   This script overrides "udhcpc"
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details This script overrides "udhcpc" as called by "ifup" and friends
 #           which have the command line hardcoded (and to bad defaults).
 #           Should be installed into "/usr/local/sbin/udhcpc" to take effect.

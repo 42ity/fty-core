@@ -18,8 +18,8 @@
 #
 #! \file   vte-restapi.sh
 #  \brief  Sets up the sandbox and runs the tests of REST API for the $BIOS project.
-#  \author Tomas Halman <TomasHalman@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 # ***** ABBREVIATIONS *****
     # *** abbreviation SUT - System Under Test - remote server with BIOS ***

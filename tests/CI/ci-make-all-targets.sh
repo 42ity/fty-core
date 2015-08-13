@@ -18,7 +18,7 @@
 #
 #! \file   ci-fill-db.sh
 #  \brief  installs dependencies and compiles the project
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 CPPCHECK=$(which cppcheck)
 

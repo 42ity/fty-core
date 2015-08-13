@@ -18,8 +18,8 @@
 #
 #! \file   ci-test-restapi.sh
 #  \brief  sets up the sandbox and runs the tests of REST API for the $BIOS project.
-#  \author Tomas Halman <TomasHalman@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
