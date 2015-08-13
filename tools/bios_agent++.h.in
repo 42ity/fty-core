@@ -15,9 +15,9 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file bios_agent++.h
-    \brief Class implementing basic agent.
-    \author Tomas Halman <tomashalman@eaton.com>
+/*! \\file   bios_agent++.h
+    \\brief  Class implementing basic agent.
+    \\author Tomas Halman <tomashalman@eaton.com>
 */
 
 #ifndef INCLUDE_BIOS_AGENTPP_H__
