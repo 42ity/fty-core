@@ -23,8 +23,6 @@ s_die_usage()
     exit(EXIT_FAILURE);
 }
 
-// TODO compare
-
 static bool
 s_compare(
         const char* file1,
