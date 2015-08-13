@@ -18,7 +18,7 @@
 #
 #! \file   vte-tab_import.sh
 #  \brief  tests the csv import
-#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>,
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #
 # Description: tests the csv import
 
