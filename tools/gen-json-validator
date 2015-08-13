@@ -1,43 +1,29 @@
 #!/bin/bash
-
-# Header
-################################################################################
-#                                                                              #
-#  FILE        : gen-json-validator                                            #
-#  VERSION     : 1.0                                                           #
-#  CREATED     : 9.9.2014                                                      #
-#  REVISION    : 10.9.2014                                                     #
-#  AUTHOR      : Karol Hrdina (karolhrdina@eaton.com)                          #
-#  COMPANY     : Eaton EEIC                                                    #
-#                                                                              #
-#  USAGE                                                                       #
-#      gen-json-validator <path_to_topsrc_dir>                                 #
-#                                                                              #
-#  OPTIONS                                                                     #
-#    self-describing                                                           #
-#                                                                              #
-#  DESCRIPTION                                                                 #
-#  --------------------------------------------------------------------------  #
-#    Generate c++ header file with functionality for automatic json            #
-#  validation.                                                                 #
-#  Produces 'json_schemas.h' in $(topsrc_dir)/src/utils/messages               #
-#  --------------------------------------------------------------------------  #
-#                                                                              #
-#  TODOS                                                                       #
-#    - Implement cleanup/trap                                                  #
-#                                                                              #
-#  BUGS                                                                        #
-#    None known                                                                #
-#                                                                              #
-#  NOTES                                                                       #
-#    When adding any further major features please consider python.            #
-#                                                                              #
-################################################################################
-
-
-
-# Grandma friendly explanation (TODO i need to rewrite this, my grandma wouldn't
-# undestand this yet :( )
+#
+# Copyright (C) 2014 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    gen-json-validator
+#  \brief   Generate c++ header file with functionality for automatic json validation
+#  \brief   Produces 'json_schemas.h' in $(topsrc_dir)/src/utils/messages
+#  \author  Karol Hrdina <karolhrdina@eaton.com>
+#  \version 1.0
+#  \todo    Implement cleanup/trap
+#  \note    When adding any further major features please consider python
+#
 # Requirements
 # - files need to be in format '<message_name>Message.json'
 # - contents of the file ( the json schema ) needs to have 'schema' property
