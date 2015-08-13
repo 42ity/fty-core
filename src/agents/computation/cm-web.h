@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   cm-web.h
     \brief  Header file of functions for processing logic of rest api request 
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef SRC_AGENTS_COMPUTATION_CM_WEB_H__

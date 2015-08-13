@@ -18,7 +18,7 @@
 #
 #! \file    bios-passwd.in
 #  \brief   Helper script for REST API /admin/passwd
-#  \author  Michal Vyskocil <MichalVyskocil@eaton.com>
+#  \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
 #  \details Helper script for REST API /admin/passwd
 #           it does expect all the information on stdin to not accidentally leak it
 #           /usr/bin/printf "%s\n%s\n%s\n" "user" "old_password" "new_password"

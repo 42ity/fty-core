@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   alert_measurement.h
     \brief  Object representing one rack or DC
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_TPOWER_TP_UNIT_H__

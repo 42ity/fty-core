@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   utils_ymsg++.h
     \brief  ymsg_t helper functions for c++
-    \author Karol Hrdina <karolhrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef SRC_SHARED_UTILS_YMSG_PLUSPLUS_H__

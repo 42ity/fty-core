@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   measurement.h
     \brief  Functions to work with t_bios_measurement and t_bios_measurement_topic
-    \author MichalVyskocil <michalvyskocil@eaton.com>
-    \author AlenaChernikava <alenachernikava@eaton.com>
+    \author MichalVyskocil <MichalVyskocil@Eaton.com>
+    \author AlenaChernikava <AlenaChernikava@Eaton.com>
  */
 
 #ifndef SRC_PERSIST_MEASUREMENT_H_

@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   utils_app.h
     \brief  TODO
-    \author Tomas Halman <TomasHalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef SRC_SHARED_UTILS_APP_H__

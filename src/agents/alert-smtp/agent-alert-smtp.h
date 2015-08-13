@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   agent-alert-smtp.h
     \brief  Agent that sends notifications through smtp
-    \author Alena Chernikava <AlenaChernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_AGENTS_ALERT_SMTP_AGENT_H__

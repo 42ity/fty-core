@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   nut-driver.h
     \brief  Classes for communicating with NUT daemon
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef SRC_DRIVERS_NUT_NUT_DRIVER_H_

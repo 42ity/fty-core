@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file    test-libbiosapi.c
     \brief   CI script to validate libbiosapi
-    \author  Michal Vyskocil <MichalVyskocil@eaton.com>
+    \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
     \details This program is compiled by the CI scripts as a way to
              validate that the "-lbiosapi" linker flag and headers do still provide
              all that we need for an API-client program to work in the $BIOS project,

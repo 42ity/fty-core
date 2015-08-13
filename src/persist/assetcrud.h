@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   assecrud.h
     \brief  Basic functions for assets
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_PERSIST_ASSETCRUD_H_

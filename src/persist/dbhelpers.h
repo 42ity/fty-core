@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   dbhelpers.h
     \brief  Helper function for direct interact with DB
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_PERSIST_DBHELPERS_H_

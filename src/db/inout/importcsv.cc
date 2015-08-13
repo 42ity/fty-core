@@ -16,10 +16,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file  loadcsv.cc
+/*! \file  importcsv.cc
     \brief Implementation of csv import
-    \author Michal Vyskocil   <michalvyskocil@eaton.com>
-    \author Alena  Chernikava <alenachernikava@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>

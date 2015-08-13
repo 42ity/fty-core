@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   assetr.h
     \brief  Basic select-functions for assets
-    \author Alena Chernikava <alenachernikava@eaton.com>
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H

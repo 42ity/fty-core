@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file utils++.h
     \brief c++ utilities 
-    \author Karol Hrdina <karolhrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef SRC_SHARED_UTILS_PLUSPLUS_H__

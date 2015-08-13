@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   bios_agent.h
     \brief  Thin mlm_client.h wrapper to incorporate ymsg_t transport message
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef INCLUDE_BIOS_AGENT_H__

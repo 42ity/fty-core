@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file  alert.h
     \brief Header file for all low level functions for alerts
 
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 #ifndef SRC_DB_ALERTS_H
 #define SRC_DB_ALERTS_H

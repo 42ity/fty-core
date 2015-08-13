@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   measurement.h
     \brief  high level db api for measurements
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef SRC_DB_MEASUREMENTS_MEASUREMENT_H__

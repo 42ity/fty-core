@@ -18,9 +18,9 @@
 #
 #! \file   test_web.sh
 #  \brief  This script automates tests of REST API for the $BIOS project
-#  \author Michal Hrusecky <MichalHrusecky@eaton.com>
-#  \author Tomas Halman <TomasHalman@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 if [ $# -eq 0 ]; then
     echo "ERROR: test_web.sh is no longer suitable to run all REST API tests"

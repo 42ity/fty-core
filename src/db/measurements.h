@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   measurements.h
     \brief  Header file for functions for measurement
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef SRC_DB_MEASUREMENTS_H__

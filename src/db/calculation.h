@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   calculation.h
     \brief  Computation of outage/uptime/totaltime
 
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 #ifndef SRC_DB_CALCULATION_H
 #define SRC_DB_CALCULATION_H

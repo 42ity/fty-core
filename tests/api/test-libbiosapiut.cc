@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   test-libbiosapiut.cc
     \brief  Unit test for libbiosapi functionality during "make distcheck"
-    \author Michal Hrusecky <MichalHrusecky@eaton.com>
+    \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 */
 
 #include <catch.hpp>

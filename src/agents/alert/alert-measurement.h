@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   alert_measurement.h
     \brief  Object representing one measurement
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_ALERT_ALERT_MEASUREMENT_H__

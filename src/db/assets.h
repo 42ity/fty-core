@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file  asset.h
     \brief Header file for all low level functions for asset
 
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 #ifndef SRC_DB_ASSETS_H
 #define SRC_DB_ASSETS_H

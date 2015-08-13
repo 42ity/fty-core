@@ -18,7 +18,7 @@
 #
 #! \file    cmpjson.sh
 #  \brief   Compare REST API call outputs with expected ones
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Compare REST API call outputs with expected ones - it assumes
 #           one normalized JSON document per line to support more results
 #           in one file! That is, file1:lineN is compared to file2:lineN.

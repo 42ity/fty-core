@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   configure_inform.h
     \brief  Agent body for sending configure messages
 
-    \author Alena Chernikava <AlenaChernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #include <string>

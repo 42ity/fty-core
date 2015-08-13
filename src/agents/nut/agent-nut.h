@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   agent-nut.h
     \brief  TODO
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef SRC_AGENTS_NUT_NUT_AGENT_H__

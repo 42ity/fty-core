@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file csv.h
     \brief Read values from CSV files
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 
 Example:
 

@@ -18,7 +18,7 @@
 #
 #! \file   ci-setup-test-machine.sh
 #  \brief  installs basic components we need
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 #  \note   This script may be standalone, so we do not depend it on scriptlib.sh
 
 SCRIPTDIR=$(dirname $0)

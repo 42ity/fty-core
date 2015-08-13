@@ -20,7 +20,7 @@
 #
 #! \file    builder.sh
 #  \brief   Script to generate all required files from fresh git checkout
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Script to generate all required files from fresh
 #           git checkout and automate the fastest possible build (parallel
 #           for speed, then sequential for reliability).

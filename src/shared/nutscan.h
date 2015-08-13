@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file nutscan.h
     \brief Wrapper for libnutscan/nut-scanner
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 
 Example:
     #include "nutscan.h"

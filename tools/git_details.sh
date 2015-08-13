@@ -20,7 +20,7 @@
 #
 #! \file    git_details.sh
 #  \brief   Print the details of the current repository
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Print the details of the current repository, if any,
 #           and of build-host and curent build-timestamp, to the stdout
 #           as a shell-includable markup.

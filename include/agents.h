@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   agents.h
     \brief  TODO
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #ifndef INCLUDE_AGENTS_H__

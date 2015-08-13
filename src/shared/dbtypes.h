@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   dbtypes.h
     \brief  Contains type definitions for database entities and some constants.
             Should be used for all manipulations with database.
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_PERSIST_DBTYPES_H_

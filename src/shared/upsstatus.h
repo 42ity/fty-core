@@ -21,7 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file upsstatus.h
     \brief  functions to work with ups status string representation
             as it is used in networkupstools
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #include<string>

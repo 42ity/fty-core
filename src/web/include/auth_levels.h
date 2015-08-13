@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   auth_levels.h
     \brief  TODO
-    \author Jim Klimov <EvgenyKlimov@eaton.com>
+    \author Jim Klimov <EvgenyKlimov@Eaton.com>
 */
 
 #ifndef SRC_WEB_INCLUDE_AUTH_LEVELS_H

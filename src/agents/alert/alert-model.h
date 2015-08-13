@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   alert-model.h
     \brief  Class representing overall datacenter alerts
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_ALERT_ALERT_MODEL_H__

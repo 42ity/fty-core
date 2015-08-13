@@ -19,7 +19,7 @@
 #! \file   ci-nut.sh
 #  \brief  tests the nut driver and propagation of events
 #  \author Barbora Stepankova <BarboraStepankova@Eaton.com>
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 #
 # requirements:

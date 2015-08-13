@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   ymsg-asset.h
     \brief  TODO
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef SRC_PERSIST_YMSG_ASSET_H__

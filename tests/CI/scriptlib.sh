@@ -18,7 +18,7 @@
 #
 #! \file    scriptlib.sh
 #  \brief   Base library for scripts
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Determine the directory name variables relevant for compiled
 #           workspace which is under test. Mainly for inclusion in $BIOS
 #           ./tests/CI scripts.

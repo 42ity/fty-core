@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   email.h
     \brief  Simple wrapper on top of msmtp to send an email
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 
 Example:
 

@@ -19,7 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   alert_basic.h
     \brief  Pure DB API for CRUD operations on alerts
 
-    \author Alena Chernikava <AlenaChernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_DB_ALERTS_ALERT_BASIC

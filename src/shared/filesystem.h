@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   filesystem.h
     \brief  various random C and project wide helpers
-    \author Tomas Halman <TomasHalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef SRC_SHARED_FILESYSTEM_H

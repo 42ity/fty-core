@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   bios-email.cc
     \brief  Simple command line client as an example on how Smtp class should be used
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
 #include "log.h"
 #include "subprocess.h"

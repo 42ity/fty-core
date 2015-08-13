@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   cli-network.c
     \brief  command line interface - network command
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
-    \author Karol Hrdina <karolhrdina@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
 #include <getopt.h>

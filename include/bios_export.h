@@ -18,9 +18,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   bios_export.h
     \brief  Bios public application interface export macro
-    \author Karol Hrdina <KarolHrdina@eaton.com>
-    \author Alena Chernikava <alenachernikava@eaton.com>
-    \author Tomas Halman <TomasHalman@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef INCLUDE_BIOS_EXPORT_H__

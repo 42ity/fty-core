@@ -18,10 +18,10 @@
 #
 #! \file   vte-test_web.sh
 #  \brief  REST API automated tests for the $BIOS project
-#  \author Michal Hrusecky <MichalHrusecky@eaton.com>
-#  \author Tomas Halman <TomasHalman@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
-#  \author Radomir Vrajik <RadomirVrajik@eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #  \details This script automates tests of REST API for the $BIOS project
 # It works with the image installation of the BIOS on SUT (System Under Test) 
 # server and is started on another server - MS (test Management Station)

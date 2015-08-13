@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   exportcsv.cc
     \brief  Export assets via csv
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
 
 #include <iostream>

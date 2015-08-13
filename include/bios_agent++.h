@@ -20,7 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   bios_agent++.h
     \brief  Class implementing basic agent.
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #ifndef INCLUDE_BIOS_AGENTPP_H__

@@ -18,11 +18,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   test-agents.cc
     \brief  TODO
-    \author Michal Vyskocil <MichalVyskocil@eaton.com>
-    \author Alena Chernikava <alenachernikava@eaton.com>
-    \author Michal Hrusecky <MichalHrusecky@eaton.com>
-    \author Karol Hrdina <karolhrdina@eaton.com>
-    \author Tomas Halman <TomasHalman@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
 
 #include <catch.hpp>

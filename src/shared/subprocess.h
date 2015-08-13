@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file subprocess.h
     \brief (sub) process C++ API
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  */
 
 #ifndef _SRC_SHARED_SUBPROCESS_H

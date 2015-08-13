@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   agent-autoconfig.h
     \brief  autoconfiguration agent
-    \author Tomas Halman <tomashalman@eaton.com>
+    \author Tomas Halman <TomasHalman@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_AUTOCONFIG_AGENT_H__

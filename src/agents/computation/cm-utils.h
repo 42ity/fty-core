@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   cm-utils.h
     \brief  Header file for utility functions and helpers for computation module
-    \author Karol Hrdina <KarolHrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 #ifndef SRC_AGENTS_COMPUTATION_CM_UTILS_H__
 #define SRC_AGENTS_COMPUTATION_CM_UTILS_H__

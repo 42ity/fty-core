@@ -18,8 +18,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   persistencelogic.h
     \brief  TODO
-    \author Alena Chernikava <alenachernikava@eaton.com>
-    \author Michal Hrusecky <MichalHrusecky@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \author Michal Hrusecky <MichalHrusecky@Eaton.com>
     \todo   Ip address is being stored as string at the moment; Store it as two byte arrays (hi, lo).
 */
 
