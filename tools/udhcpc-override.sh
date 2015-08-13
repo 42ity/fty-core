@@ -33,7 +33,7 @@ echo "WARN: $0 $@: will hack the command-line for proper DHCP support..." >&2
 UDHCPC_ARGS=""
 UDHCPC_IFACE=""
 UDHCPC_OPTS=""
-UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6 -O ntpsrv"
+UDHCPC_OPTS_DEFAULT="-b -t 4 -T 6 -O ntpsrv -a"
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -69,7 +69,7 @@ case "$UDHCPC_OPTS" in
     *hostname*) ;;
     *)  # Give hint about my non-default name
         [ x"`hostname`" != xeaton-rc3 ] && \
-        UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`"
+        UDHCPC_OPTS="$UDHCPC_OPTS -F -x hostname:`hostname`"
         ;;
 esac
 
