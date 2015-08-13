@@ -66,9 +66,9 @@ s_passwd(
         {
             "message" : "user, old password or new password is invalid",
             "code" : 42
-#ifdef DEBUG
+%#ifdef DEBUG
             ,"debug" : "<$$ debug $>"
-#endif
+%#endif
         }
     ]
 }
@@ -86,9 +86,9 @@ s_passwd(
         {
             "message" : "<$$ msg $>",
             "code" : 42
-#ifdef DEBUG
+%#ifdef DEBUG
             ,"debug" : "<$$ err $>"
-#endif
+%#endif
         }
     ]
 }
