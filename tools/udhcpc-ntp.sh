@@ -88,6 +88,8 @@ ntp_servers_setup() {
 	return $RES
 }
 
+[ -n "${domainname}" ] && domainname "${domainname}"
+
 [ -z "${reason-}" -a -n "$1" ] && reason="$1"
 [ -z "${new_ntp_servers-}" ] && new_ntp_servers="" && [ -n "${ntpsrv-}" ] && \
         new_ntp_servers="`for S in $ntpsrv; do echo "$S"; done | sort | uniq`"
