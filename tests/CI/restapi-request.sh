@@ -204,4 +204,4 @@ wait_for_web() {
   fi
 
   logmsg_info "Requesting: '$BASE_URL$RELATIVE_URL' with '$WEBLIB_FUNC' $*"
-  eval "$WEBLIB_FUNC" "$RELATIVE_URL" "$@"
+  "$WEBLIB_FUNC" "$RELATIVE_URL" "$@"
