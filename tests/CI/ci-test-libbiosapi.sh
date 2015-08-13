@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   ci-test-libbiosapi.sh
-#  \brief  ests build and run against libbiosapi.so
+#  \brief  Tests build and run against libbiosapi.so
 #  \author Michal Vyskocil <MichalVyskocil@eaton.com>
 #
 # Requirements:
