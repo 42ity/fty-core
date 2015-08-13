@@ -1,4 +1,5 @@
 <%pre>
+#include <stdexcept>
 #include <stdio.h>
 #include <stdbool.h>
 #include <ifaddrs.h>
@@ -15,11 +16,15 @@
 #include <string>
 #include <string.h>
 #include <unistd.h>
+#include <fstream>
+#include <sstream>
 #include <cxxtools/regex.h>
 
 struct iface {
    std::vector<std::string> ip;
+   std::vector<std::string> netmask;
    std::string state;
+    std::string gateway;
    std::string cable;
    std::string mac;
 };
@@ -49,7 +54,6 @@ iface get_iface(std::string iface) {
          continue;
       }
       ret.state = (it->ifa_flags & IFF_UP) ? "up" : "down";
-
       struct ifreq ifr;
       struct ethtool_value edata;
 
@@ -78,7 +82,7 @@ iface get_iface(std::string iface) {
             sleep(5);
          ifr.ifr_data = (caddr_t) &edata;
          if(ioctl(fd, SIOCETHTOOL, &ifr) != -1) {
-            ret.cable = edata.data ? "in" : "out";
+            ret.cable = edata.data ? "yes" : "no";
          }
          if((it->ifa_flags & IFF_UP) == 0) {
             ifr.ifr_data = NULL;
@@ -92,6 +96,7 @@ iface get_iface(std::string iface) {
 
       if(it->ifa_addr->sa_family == AF_INET) {
          ret.ip.push_back(inet_ntoa(((struct sockaddr_in*)(it->ifa_addr))->sin_addr));
+         ret.netmask.push_back(inet_ntoa(((struct sockaddr_in*)(it->ifa_netmask))->sin_addr));
       }
       it = it->ifa_next;
    }
@@ -100,6 +105,7 @@ iface get_iface(std::string iface) {
 }
 </%pre>
 <%cpp>
+
 // Are we asked to just list possible configurations?
 cxxtools::Regex rex("^.*/ifaces$");
 if(rex.match(request.getUrl())) {
@@ -114,24 +120,126 @@ if(rex.match(request.getUrl())) {
 <%cpp>
     return HTTP_OK;
 }
+
 std::string iface = request.getArg("iface");
+if (iface.empty ()) {
+    </%cpp>
+{
+    "errors" : [
+        {
+            "code" : 00,
+            "message" : "Interface name required: 'admin/iface/<interface_name>'.",
+            "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
+        }
+    ]
+}
+    <%cpp>
+    return HTTP_BAD_REQUEST;
+}
 auto dta = get_iface(iface);
 if(dta.mac.empty()) {
-</%cpp>
-{ "error": "Can't get configuration of interface '<$ iface $>', possibly typo?" }
-<%cpp>
-    return HTTP_NOT_FOUND;
-}
-bool first = true;
-</%cpp>
-{ "<$ iface $>": {
-    "ether": "<$ dta.mac $>",
-    "state": "<$ dta.state $>",
-    "cable": "<$ dta.cable $>",
-    "ip": [
-%   for(auto i: dta.ip) {
-    <$ first ? "  " : ", " $>"<$ i $>"
-%   }
+    </%cpp>
+{
+    "errors" : [
+        {
+            "code" : 00,
+            "message" : "Interface '<$ iface $>' does not exist.",
+            "hint" : "Perform GET 'admin/ifaces' to see a list of valid interface names."
+        }
     ]
-  }
 }
+    <%cpp>
+    return HTTP_BAD_REQUEST;
+}
+
+if (dta.ip.size () != dta.netmask.size ()) {
+    </%cpp>
+{
+    "errors" : [
+        {
+            "code" : 00,
+            "message" : "Number of ip addresses '<$ dta.ip.size () $>' do not match number of netmasks '<$ dta.netmask.size () $>'."
+        }
+    ]
+}
+    <%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+
+bool first = true;
+std::string nameservers, gateway, ipaddrs;
+// IP addresses
+ipaddrs.assign ("[");
+for (std::vector<std::string>::size_type i = 0; i < dta.ip.size (); ++i) {
+    ipaddrs.append (first ? " " : ", ").append ("{ \"address\" : \"").append (dta.ip.at (i)).
+            append ("\", \"netmask\" : \"").append (dta.netmask.at (i)).append ("\" }");
+    first = false;
+}
+ipaddrs.append (" ]");
+
+try {
+    // Nameservers
+    cxxtools::RegexSMatch smatch;
+    cxxtools::Regex rex2("^\\s*nameserver\\s+(\\S+).*$");
+
+    std::ifstream infile("/etc/resolv.conf");
+    std::string fline;
+    first = true;
+    nameservers.assign ("[");
+    while (std::getline(infile, fline))
+    {
+        if (rex2.match (fline, smatch)) {
+            nameservers.append (first ? " " : ", ").append ("\"").append (smatch.get (1)).append ("\"");
+            first = false;
+        } 
+    }
+    nameservers.append (" ]");
+    // No need to close ifstream.
+
+    // Gateway
+    FILE* pipe = popen ("ip route show", "r");
+    if (!pipe) {
+        throw std::runtime_error ("popen ('ip route show', 'r') failed.");
+    }
+    char buffer[256];
+    std::string result;
+
+    while (!feof (pipe)) {
+        if (fgets (buffer, 256, pipe) != NULL)
+            result += buffer;
+    }
+    pclose(pipe);    
+    cxxtools::Regex rex3("default\\s+via\\s+(\\S+)");
+    if (rex3.match (result, smatch)) {
+        gateway.assign (smatch.get (1));
+    }
+    else {
+        throw std::runtime_error ("Could not match default gateway from `ip route show`.");
+    }
+} catch (const std::exception& e) {
+    </%cpp>
+{
+    "errors" : [
+        {
+            "code" : 00,
+            "message" : "Unknown exception caught: '<$ e.what () $>'."
+        }
+    ]
+}
+    <%cpp>
+    return HTTP_INTERNAL_SERVER_ERROR;
+}
+
+// Print out the result
+</%cpp>
+{
+    "<$ iface $>": {
+        "state": "<$ dta.state $>",
+        "ip": <$$ ipaddrs $>,
+        "gateway": "<$ gateway $>",
+        "link": "<$ dta.cable $>",
+        "mac" : "<$ dta.mac $>",
+        "nameservers" : <$$ nameservers $>
+    }
+}
+
