@@ -40,7 +40,8 @@ test_it "change_password"
 api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$BIOS_PASSWD"'", "new_passwd" : "'"$NEW_BIOS_PASSWD"'" }'
 print_result $?
 
-curlfail_push_expect_400
+
+curlfail_push_expect_401
 
 test_it "wrong_password_completely"
 _test_auth "$BIOS_USER" "not$BIOS_PASSWD" >/dev/null
@@ -52,15 +53,22 @@ print_result $?
 
 curlfail_pop
 
+
 test_it "good_password_new"
 _test_auth "$BIOS_USER" "$NEW_BIOS_PASSWD" >/dev/null
 print_result $?
 
-test_it "change_password_back"
+curlfail_push_expect_400
+test_it "wrong_change_password_back_badold"
+BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "bad'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
+print_result $?
+curlfail_pop
+
+test_it "change_password_back_goodold"
 BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
 print_result $?
 
-curlfail_push_expect_400
+curlfail_push_expect_401
 test_it "wrong_password_temporaryNoLonger"
 _test_auth "$BIOS_USER" "$NEW_BIOS_PASSWD" >/dev/null
 print_result $?
