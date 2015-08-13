@@ -18,7 +18,7 @@
 #
 #! \file   reset-button.sh
 #  \brief  Simple button handling script to provide reset and factory reset features.
-#  \author Michal Hrusecky <MichalHrusecky@eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 
 RESET_DOWN="AQBUAAEAAAA="
 RESET_UP="AQBUAAAAAAA="

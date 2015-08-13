@@ -19,8 +19,8 @@
 #! \file    ci-test-db.sh
 #  \brief   tests database setup
 #  \author  Barbora Stepankova <BarboraStepankova@Eaton.com>
-#  \author  Tomas Halman <TomasHalman@eaton.com>
-#  \author  Alena Chernikava <AlenaChernikava@eaton.com>
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Alena Chernikava <AlenaChernikava@Eaton.com>
 #  \details Every database test has its own requirements regarding input data.
 #       That is why before every database test database should be initialised
 #       and appropriate testing data should be filled.

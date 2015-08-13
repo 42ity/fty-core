@@ -19,7 +19,7 @@
 #! \file    gen-json-validator
 #  \brief   Generate c++ header file with functionality for automatic json validation
 #  \brief   Produces 'json_schemas.h' in $(topsrc_dir)/src/utils/messages
-#  \author  Karol Hrdina <karolhrdina@eaton.com>
+#  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \version 1.0
 #  \todo    Implement cleanup/trap
 #  \note    When adding any further major features please consider python
@@ -118,7 +118,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file   json_schemas.h
     \brief  generator of automated json validator using libvirt
-    \author Karol Hrdina <karolhrdina@eaton.com>
+    \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r LICENSE_BOILERPLATE="$tmp"
@@ -209,7 +209,7 @@ Detailed description TODO
 \\param[in] code 
 \\return ${ENUM_NAME} 
 \\see
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r CODETABLE_FNC_DOXY="$tmp"
@@ -253,7 +253,7 @@ Detailed description TODO
 
 \\return ${ENUM_NAME}
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r ENUMTABLE_FNC_DOXY="$tmp"
@@ -315,7 +315,7 @@ json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in ca
 of syntax error in json schema of the given message type) and assign error string
 to strerr parameter.
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_PARSE_DOXY="$tmp"
@@ -363,7 +363,7 @@ Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of inp
 json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
 of syntax error in json schema of the given message type).
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_PARSE_OVRLD1_DOXY="$tmp"
@@ -409,7 +409,7 @@ json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in ca
 of syntax error in json schema of the given message type) and assign error string
 to strerr parameter.
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_DOXY="$tmp"
@@ -456,7 +456,7 @@ Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of inp
 json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
 of syntax error in json schema of the given message type)
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_OVRLD1_DOXY="$tmp"
@@ -500,7 +500,7 @@ deserialized json being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError 
 case of syntax error in json schema of the given message type) and assign error string
 to strerr parameter.
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_PARSE_OVRLD2_DOXY="$tmp"
@@ -541,7 +541,7 @@ Otherwise, return either ${VALIDATOR_FNC_RET_TYPE_NAME}::Invalid (in case of inp
 json string being invalid) or ${VALIDATOR_FNC_RET_TYPE_NAME}::SchemaError (in case
 of syntax error in json schema of the given message type).
 
-\\author Karol Hrdina <karolhrdina@eaton.com>
+\\author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 EOF
 declare -r VALIDATE_PARSE_OVRLD3_DOXY="$tmp"

@@ -18,8 +18,8 @@
 #
 #! \file    ci-check-vm.sh
 #  \brief   Checks files on VM
-#  \author  Tomas Halman <TomasHalman@eaton.com>
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Checks files on VM, whether they are sync with local checkout.
 #           If they are not, files re copied to virtual machine and compiled.
 

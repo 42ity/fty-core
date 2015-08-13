@@ -18,7 +18,7 @@
 #
 #! \file   ci-rc-bios.sh
 #  \brief  starts or stops the $BIOS daemons installed in $HOME
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \

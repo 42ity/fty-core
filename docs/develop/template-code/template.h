@@ -18,7 +18,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 /*! \file    template.h
     \brief   ...
-    \author  XXX <XXX@eaton.com>
+    \author  XXX <XXX@Eaton.com>
     \details ...
 */
 

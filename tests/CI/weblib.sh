@@ -18,9 +18,9 @@
 #
 #! \file    weblib.sh
 #  \brief   library of functions usefull for REST API testing
-#  \author  Michal Hrusecky <MichalHrusecky@eaton.com>
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
-#  \author  Karol Hrdina <KarolHrdina@eaton.com>
+#  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \details This is library of functions usefull for REST API testing,
 #           which can be sourced to interactive shell
 #           You can 'export TESTWEB_QUICKFAIL=yes' to abort on first failure

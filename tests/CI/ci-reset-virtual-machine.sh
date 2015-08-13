@@ -19,9 +19,9 @@
 #! \file   ci-reset-virtual-machine.sh
 #  \brief  Destroys VM "latest" (or one named by -m), deploys a new
 #  \brief  one from image prepared by OBS, and starts it
-#  \author Michal Hrusecky <MichalHrusecky@eaton.com>
-#  \author Tomas Halman <TomasHalman@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \todo   more VM instances support? (multiple VMs in one call?)
 #          set debian proxy from parameter or $http_proxy
 #

@@ -31,7 +31,7 @@
 #
 #! \file    rc-bios-ci-container-delayedstart
 #  \brief   Auto-start wrapper for $BIOS containers delayed start up
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details /etc/init.d/rc-bios-ci-container-delayedstart
 #           Auto-start wrapper for $BIOS containers to start up a bit
 #           after the host OS is up, so they can pull new images (if any).

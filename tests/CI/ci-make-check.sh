@@ -18,7 +18,7 @@
 #
 #! \file   ci-make-check.sh
 #  \brief  installs dependecies and compiles the project
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
