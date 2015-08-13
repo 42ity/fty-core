@@ -128,9 +128,13 @@ array_contains () {
 cleanup() {
     local __exit=$?    
     rm -f "$LOCKFILE";
-    if [ -n "$TMP_DIR" ]; then
-        echo "Cleaning up '$TMP_DIR'"
-        rm -rf "$TMP_DIR"
+    if [[ -n "$TMP_DIR" && -e "$TMP_DIR" ]]; then
+        if [ $__exit -ne 0 ]; then
+            echo "Test failed => no cleanup; so it's possible to look at files."        
+        else
+            echo "Cleaning up '$TMP_DIR'"
+            rm -rf "$TMP_DIR"
+        fi
     fi
     exit $__exit
 }
@@ -194,11 +198,11 @@ perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 # 3.1 Parse out into array iface names of the initial /etc/network/interfaces
 declare -a tmp_arr
 while IFS='' read -r line || [[ -n "$line" ]]; do
-    if [[ "$line" =~ ^auto.+$ ]]; then
-        line=${line#auto }
-        for i in $line; do
-            tmp_arr+=($i)
-        done
+    if [[ $line =~ ^[[:space:]]*iface[[:space:]]+([[:alnum:]]+)[[:space:]]+ ]]; then
+        tmp_arr+=( "${BASH_REMATCH[1]}" )
+#        for i in $line; do
+#            tmp_arr+=($i)
+#        done
     fi
 done < "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 declare -ar INITIAL_IFACE_NAMES=("${tmp_arr[@]}")
@@ -236,7 +240,7 @@ bash ./cmpjson.sh "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED
 for i in "1 2 3 4 5"; do 
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash ./cmpjson.sh "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    bash ./cmpjson.sh -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
     [[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 done
@@ -340,9 +344,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     template=${template/\#\#ADDITIONAL\#\#/$additional}
     echo "$template" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
   
-set -x    
     simple_get_json_code "${REST_NETCFG}/${i}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
-set +x    
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
     bash ./cmpjson.sh -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
@@ -358,7 +360,8 @@ echo "SUCCESS"
 TEST_CASE="Netcfg_Read_002"
 echo -e "=====\t\tTEST_CASE: $TEST_CASE\t\t====="
 
-bad_name="$(mktemp XXXX)1"
+bad_name=$(mktemp -u XXXX)
+bad_name="${bad_name}1"
 
 # Request non-existing interface
 # Implementation returns 404 or 400 depending on the iface name
