@@ -19,7 +19,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   cli.h
     \brief  definitions for command line interface, global argument handling, subcommand execution
     \author Michal Vyskocil <michalvyskocil@eaton.com>
-    \remark Jira BIOS-245
 */
 
 #ifndef SRC_CLI_CLI_H

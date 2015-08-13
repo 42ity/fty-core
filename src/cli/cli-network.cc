@@ -20,7 +20,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \brief  command line interface - network command
     \author Michal Vyskocil <michalvyskocil@eaton.com>,
     \author Karol Hrdina <karolhrdina@eaton.com>
-    \remark Jira BIOS-245, BIOS-126
 */
 
 #include <getopt.h>
