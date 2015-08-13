@@ -431,6 +431,11 @@ static db_a_elmnt_t
             {
                 if  ( unique_keytag (conn, key, value) == 0 )
                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
+                else
+                {
+                    std::string errmsg = "serial_no '" + value + "' is already used";
+                    throw std::invalid_argument(errmsg);
+                }
                 continue;
             }
             zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
