@@ -1,29 +1,32 @@
 #!/bin/bash
 #
-#   Copyright (c) 2015 Eaton Corporation <www.eaton.com>
+#   Copyright (c) 2015 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
-#   This is free software; you can redistribute it and/or modify
+#   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
+#   the Free Software Foundation; either version 2 of the License, or
 #   (at your option) any later version.
 #
-#   This software is distributed in the hope that it will be useful,
+#   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#   Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
-#   Inspired by https://stackoverflow.com/questions/5108079/how-do-i-find-out-which-functions-of-a-shared-object-are-used-by-a-program-or-an/5108205#5108205?newreg=952b5d1d5de74317971e1fea530f27cf
+#! \file    ldd-tracer.sh
+#  \brief   Script to trace dynamically-linked objects
+#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \details Script to trace dynamically-linked objects (bin, lib)
+#           to find the libraries which define a target object's symbols
+#           and if there are some undefined symbols as well.
+#  \note    Uses bash syntax in the code (math, echo -e) and GNU nm.
+#           Inspired by https://stackoverflow.com/questions/5108079/how-do-i-find-out-which-functions-of-a-shared-object-are-used-by-a-program-or-an/5108205#5108205?newreg=952b5d1d5de74317971e1fea530f27cf
 #
-#   Description: Script to trace dynamically-linked objects (bin, lib)
-#   to find the libraries which define a target object's symbols and
-#   if there are some undefined symbols as well.
-#   NOTE: Uses bash syntax in the code (math, echo -e) and GNU nm.
 
 ### Input (see also command-line parameters below):
 target_default="bios_web.so"
