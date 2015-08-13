@@ -1,0 +1,14 @@
+[Unit]
+Description=Last resort ssh if we messed up with licenses of passwd, for DEVEL purposes only!
+After=auditd.service network.service
+
+[Service]
+EnvironmentFile=-/etc/default/ssh
+ExecStartPre=/usr/bin/ssh-keygen -A
+ExecStart=/usr/sbin/sshd -D $SSHD_OPTS -p 4222
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
