@@ -18,7 +18,7 @@
 #
 #! \file   ci-empty-db.sh
 #  \brief  tests database files import
-#  \author Barbora Stepankova <BarboraStepankova@Eaton.com>,
+#  \author Barbora Stepankova <BarboraStepankova@Eaton.com>
 #  \author Tomas Halman <TomasHalman@eaton.com>
 
 # Include our standard routines for CI scripts

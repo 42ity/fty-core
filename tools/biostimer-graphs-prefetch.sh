@@ -18,7 +18,7 @@
 #
 #! \file   biostimer-graphs-prefetch.sh
 #  \brief  Speed up power-average graphs displaying in the Web UI
-#  \author Karol Hrdina <KarolHrdina@eaton.com>,
+#  \author Karol Hrdina <KarolHrdina@eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@eaton.com>
 #
 # USAGE
