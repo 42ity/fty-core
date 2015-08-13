@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Copyright (C) 2015 by Eaton, GPLv2+; based on Debian 8 scripts
+# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#
+# /etc/ifplugd/action.d/ifupdown-force "$IFACE" "$NEWSTATE"
+# Enhanced for more reliable "down" actions compared to Debian8 default
+# /etc/ifplugd/action.d/ifupdown and does not conflict on success nor fail
+
+set -e
+
+case "$2" in
+up)
+        /sbin/ifup $1
+        ;;
+down)
+        /sbin/ifdown $1 || \
+	/sbin/ifdown --force $1 || \
+	/sbin/ifconfig "$1" "$2"
+        ;;
+esac
+
