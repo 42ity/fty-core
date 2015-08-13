@@ -18,7 +18,7 @@
 #
 #! \file   vte_tab_uptime.sh
 #  \brief  tests the csv import
-#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>,
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 # ***** ABBREVIATIONS *****
     # *** SUT - System Under Test - remote server with BIOS

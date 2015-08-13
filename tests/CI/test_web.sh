@@ -18,8 +18,8 @@
 #
 #! \file   test_web.sh
 #  \brief  This script automates tests of REST API for the $BIOS project
-#  \author Michal Hrusecky <MichalHrusecky@eaton.com>,
-#  \author Tomas Halman <TomasHalman@eaton.com>,
+#  \author Michal Hrusecky <MichalHrusecky@eaton.com>
+#  \author Tomas Halman <TomasHalman@eaton.com>
 #  \author Jim Klimov <EvgenyKlimov@eaton.com>
 
 if [ $# -eq 0 ]; then
