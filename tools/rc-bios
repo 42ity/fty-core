@@ -19,8 +19,8 @@
 #! \file    rc-bios
 #  \brief   Tool for starting processes with proper dependencies and in a
 #  \brief   user/developer friendly way
-#  \author  Michal Vyskocil <MichalVyskocil@eaton.com>,
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>,
+#  \author  Michal Vyskocil <MichalVyskocil@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
 #  \author  Tomas Halman <TomasHalman@eaton.com>
 #  \details Tool for starting processes with proper dependencies and in a
 #           user/developer friendly way

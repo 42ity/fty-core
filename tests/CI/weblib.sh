@@ -18,7 +18,7 @@
 #
 #! \file    weblib.sh
 #  \brief   library of functions usefull for REST API testing
-#  \author  Michal Hrusecky <MichalHrusecky@eaton.com>,
+#  \author  Michal Hrusecky <MichalHrusecky@eaton.com>
 #  \author  Jim Klimov <EvgenyKlimov@eaton.com>
 #  \author  Karol Hrdina <KarolHrdina@eaton.com>
 #  \details This is library of functions usefull for REST API testing,

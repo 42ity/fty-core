@@ -18,7 +18,7 @@
 #
 #! \file   vte_tab_wpos.sh
 #  \brief  tests the csv import
-#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>,
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 # ***** HOW TO RUN IT *****
 # test/CI/vte_tab_wpos.sh

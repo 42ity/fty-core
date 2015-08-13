@@ -18,7 +18,7 @@
 #
 #! \file   ci-rackpower.sh
 #  \brief  tests the total rack power
-#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>,
+#  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 #
 # requirements:
 #   Must run as root (nut configuration)
