@@ -69,7 +69,7 @@ case "$UDHCPC_OPTS" in
     *hostname*) ;;
     *)  # Give hint about my non-default name
         [ x"`hostname`" != xeaton-rc3 ] && \
-        UDHCPC_OPTS="$UDHCPC_OPTS -F -x hostname:`hostname`"
+        UDHCPC_OPTS="$UDHCPC_OPTS -x hostname:`hostname`"
         ;;
 esac
 
