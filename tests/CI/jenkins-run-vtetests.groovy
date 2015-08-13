@@ -21,7 +21,7 @@ import hudson.utils.*
 
 /*! \file    jenkins-run-vtetests.groovy
     \brief   Test plan for VTE
-    \author  Tomas Halman <TomasHalman@eaton.com>
+    \author  Tomas Halman <TomasHalman@Eaton.com>
     \details Runs the "Test plan". Necessary jobs first (like compiling),
              later on functional/integration tests. If one of necessary jobs
              fails, Test plan fails immediatelly too. If one of functional/integration

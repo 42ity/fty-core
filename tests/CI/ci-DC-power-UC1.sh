@@ -19,8 +19,8 @@
 #! \file   ci-DC-power-UC1.sh
 #  \brief  Tests to validate Datacentre power
 #  \author Yves Clauzel <ClauzelYves@Eaton.com>
-#  \author Michal Vyskocil <michalvyskocil@eaton.com>
-#  \author Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 #
 # requirements:
 #   Must run as root (nut configuration)

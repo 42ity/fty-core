@@ -18,8 +18,8 @@
 #
 #! \file    ci-make-distcheck.sh
 #  \brief   "make distcheck" verification
-#  \author  Tomas Halman <TomasHalman@eaton.com>
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Installs dependecies and compiles the project with "make
 #           distcheck", which allows to verify that Makefiles are sane.
 #           Takes a lot of time, so this is just an occasional CI task

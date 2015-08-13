@@ -18,7 +18,7 @@
 #
 #! \file    ifplug-dhcp-autoconf.sh
 #  \brief   discover DHCP configured interfaces and put into ifplugd
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details This script uses augeas-tools to discover interfaces
 #           currently configured as DHCP clients, and puts them into ifplugd
 #           configuration so they can reconfigure upon link up/down events.

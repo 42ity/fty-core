@@ -18,7 +18,7 @@
 #
 #! \file    resetdb-bios-rc-demo.sh
 #  \brief   Automates cloning of database contents from bios-rc-demo
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details This script automates cloning of database contents from bios-rc-demo
 #           onto a box or container, and restarting of all services involved.
 #           Used for internal testing.

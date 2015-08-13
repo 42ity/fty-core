@@ -18,7 +18,7 @@
 #
 #! \file    resolveip.sh
 #  \brief   Replacement for the huge MySQL resolveip
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details Replacement for the huge MySQL resolveip which is required
 #           for hands-off creation of a default database
 

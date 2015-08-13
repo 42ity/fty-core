@@ -18,7 +18,7 @@
 #
 #! \file    init-os-accounts.sh
 #  \brief   Initialize group and user accounts used by the $BIOS project
-#  \author  Jim Klimov <EvgenyKlimov@eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
 #  \details This script adds the group and user accounts used by
 #  the $BIOS project, and should work under relocated $ALTROOT dir too.
 #  You can export ALTROOT_MAKEFAKE=Y to have the script prepare some

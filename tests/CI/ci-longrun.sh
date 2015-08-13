@@ -18,7 +18,7 @@
 #
 #! \file   ci-longrun.sh
 #  \brief  tests the bios system stability for longer period
-#  \author Tomas Halman <TomasHalman@eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
 
 #
 # requirements:
