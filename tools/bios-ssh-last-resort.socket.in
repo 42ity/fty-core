@@ -1,0 +1,11 @@
+[Unit]
+Description=Last resort ssh if we messed up with licenses of passwd, for DEVEL purposes only!
+Before=bios-ssh-last-resort.service
+Conflicts=bios-ssh-last-resort.service
+
+[Socket]
+ListenStream=4222
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

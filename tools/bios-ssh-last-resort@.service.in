@@ -1,0 +1,11 @@
+[Unit]
+Description=Last resort ssh(%I) if we messed up with licenses of passwd, for DEVEL purposes only!
+After=auditd.service
+
+[Service]
+EnvironmentFile=-/etc/default/ssh
+ExecStart=-/usr/sbin/sshd -i $SSHD_OPTS -p 4222
+StandardInput=socket
+
+[Install]
+WantedBy=multi-user.target
