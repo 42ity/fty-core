@@ -31,7 +31,8 @@ NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 ntp_server_restart_do() (
 	invoke-rc.d ntp try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
-	    sleep 60 && ntp_server_status && hwclock -w && echo "$0: INFO: Applied current OS clock value to HW clock; done with NTP restart"
+	    sleep 60 && ntp_server_status && hwclock -w -u && \
+	    echo "$0: INFO: Applied current OS clock value (`TZ=UTC date -u`) to HW clock (`TZ=UTC hwclock -r -u`); done with NTP restart"
 )
 
 ntp_server_restart() {
