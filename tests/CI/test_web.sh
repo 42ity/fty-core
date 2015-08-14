@@ -44,32 +44,42 @@ SKIPPED_NONSH_TESTS=0
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-web|--sut-port-web|-wp|--port)
+            SUT_WEB_PORT="$2"
+            shift
+            ;;
+        --host|--machine|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
+            shift
+            ;;
+        -q|--quick) SKIP_SANITY=yes ;;
+        *)  # fall through - these are lists of tests to do
+            break
+            ;;
+    esac
+    shift
+done
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
-while [ $# -gt 0 ]; do
-    case "$1" in
-    -u|--user)
-        BIOS_USER="$2"
-        shift 2
-        ;;
-    -p|--passwd)
-        BIOS_PASSWD="$2"
-        shift 2
-        ;;
-    -s|--service)
-        SASL_SERVICE="$2"
-        shift 2
-        ;;
-    *)  # fall through - these are lists of tests to do
-        break
-        ;;
-    esac
-done
 
 [ -n "$BIOS_USER"   ] || BIOS_USER="bios"
 [ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="nosoup4u"
