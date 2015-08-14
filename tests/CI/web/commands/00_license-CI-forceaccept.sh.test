@@ -1,5 +1,10 @@
-# Some REST API scripts just need to get THEIR job done,
-# so here is a way to force-accept the license
+# Some REST API scripts just need to get THEIR job done, so here is
+# a way to force-accept the license and toggle a password change
+
+### Command-line usage example for a VTE/RC3 remote host:
+###   ${CHECKOUTDIR}/tests/CI/test_web.sh -q --host bios-rc-seedX --port 80 00_license-CI-forceaccept.sh.test
+### or for a dev's localhost:8000 :
+###   ${CHECKOUTDIR}/tests/CI/test_web.sh -q 00_license-CI-forceaccept.sh.test
 
 [ -z "${JSONSH-}" ] && \
     for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
@@ -37,38 +42,30 @@ if [ "$RES" = 0 ]; then
     test_it "change_password_back"
     BIOS_PASSWD="$NEW_BIOS_PASSWD" api_auth_post /admin/passwd '{"user" : "'"$BIOS_USER"'", "old_passwd" : "'"$NEW_BIOS_PASSWD"'", "new_passwd" : "'"$BIOS_PASSWD"'" }'
     print_result $?
+
+
+    echo "Some info about running server version:"
+
+    test_it "sysinfo_get_auth=2"
+    SYSINFOA="`api_auth_get_content '/admin/sysinfo'`"
+    RES=$?
+    #echo "=== SYSINFOA ($RES):" >&2
+    #echo "$SYSINFOA" >&2
+    [ $RES = 0 -a -n "$SYSINFOA" ]
+    print_result $?
+
+
+    test_it "sysinfo_auth=2__parse__source_build_package__info"
+    JPATH='"\$BIOS","packages",[0-9]*,".*"$'
+    SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH" -l`"
+    RES=$?
+    { echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
+    [ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
+        x"$SYSINFO_VERSION" != x'""' ]
+    print_result $?
+
+else
+    echo "REST API server has a non-default password, OK for our needs"
 fi
-
-( echo "Some info about running server version:"
-# Subprocess so as not to pollute namespaces
-
-test_it "sysinfo_get_auth=2"
-SYSINFOA="`api_auth_get_content '/admin/sysinfo'`"
-RES=$?
-#echo "=== SYSINFOA ($RES):" >&2
-#echo "$SYSINFOA" >&2
-[ $RES = 0 -a -n "$SYSINFOA" ]
-print_result $?
-
-
-test_it "sysinfo_auth=2_build_version_package"
-JPATH='"\$BIOS","packages",[0-9]*,"package-(name|version)"$'
-SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH"`"
-RES=$?
-{ echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
-[ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
-    x"$SYSINFO_VERSION" != x'""' ]
-print_result $?
-
-test_it "sysinfo_auth=2_build_version_source"
-JPATH='"\$BIOS","packages",[0-9]*,"(source-repo|build-info)"$'
-SYSINFO_VERSION="`echo "$SYSINFOA" | ${JSONSH} -x="$JPATH"`"
-RES=$?
-{ echo "=== SYSINFO_VERSION ($RES):"; echo "$SYSINFO_VERSION"; } >&2
-[ $RES = 0 -a -n "$SYSINFO_VERSION" -a \
-    x"$SYSINFO_VERSION" != x'""' ]
-print_result $?
-
-)
 
 curlfail_pop
