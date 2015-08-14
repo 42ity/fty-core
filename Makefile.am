@@ -76,7 +76,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 # How to run tntnet from Makefile
 RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
 	     export DATADIR="$(abs_top_builddir)/var/bios"; \
-	     rm -rf "$(abs_top_builddir)/var"; \
+	     [ ! "x${KEEP_LICENSE}" = "xyes" ] && rm -rf "$(abs_top_builddir)/var"; \
 	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
