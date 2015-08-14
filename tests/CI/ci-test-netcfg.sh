@@ -143,6 +143,7 @@ cleanup() {
 declare -r HOST="$SUT_HOST"
 declare -r PORT_SSH="$SUT_SSH_PORT"
 declare -r PORT_HTTP="$SUT_WEB_PORT"
+export BASE_URL="${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 if [[ -z "$PORT_SSH" || -z "$PORT_HTTP" || -z "$HOST" ]]; then
     usage
