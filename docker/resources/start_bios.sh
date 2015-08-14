@@ -1,28 +1,27 @@
 #!/bin/sh
 #
-#   Copyright (c) 1991-2012 iMatix Corporation <www.imatix.com>
-#   Copyright (c) 2015 Eaton Corporation <www.eaton.com>
-#   Copyright other contributors as noted in the AUTHORS file.
+# Copyright (c) 2014-2015 Eaton
 #
-#   This file is part of the Eaton $BIOS project.
+# This file is part of the Eaton $BIOS project.
 #
-#   This is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-#   This software is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#   Description: Script to generate all required files from fresh git
-#   checkout.
-#   NOTE: It expects to be run in the root of the project directory
-#   (probably the checkout directory, unless you use strange set-ups).
+#! \file    start_bios.sh
+#  \brief   Tool for initializing and starting BIOS processes 
+#  \author  Gerald Guillaume <GeraldGuillaume@Eaton.com>
+
 echo  "initializing db .."
 mysql < /usr/local/share/bios/sql/mysql/initdb.sql
 mysql < /usr/local/share/bios/examples/sql/mysql/load_data.sql

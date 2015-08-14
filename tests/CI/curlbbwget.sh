@@ -1,10 +1,26 @@
 #!/bin/bash
-
-# Emulator of certain curl functionality by using BusyBox limited WGET
-# Intended use: in $BIOS REST API testing/usage, so implements just as much
-# BASH required due to use of arrays
-# Copyright (C) 2015, Eaton, GPLv2+
-# Written by Jim Klimov <EvgenyKlimov@eaton.com>
+#
+#   Copyright (c) 2015 Eaton
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 2 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    curlbbwget.sh
+#  \brief   Emulator of certain curl functionality by using BusyBox limited WGET
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details The intended use is in $BIOS REST API testing/usage, so
+#           implements just as much BASH required due to use of arrays
 
 [ -z "$MULTIPART_BOUNDARY" ] && \
     MULTIPART_BOUNDARY='--------------------------b10c0fda7a424242'
