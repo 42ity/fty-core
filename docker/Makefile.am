@@ -25,5 +25,8 @@ dockerres_DATA = 	resources/Dockerfile \
 			resources/interfaces \
 			resources/license
 
+resources/license: $(top_srcdir)/COPYING
+	/bin/cp $(top_srcdir)/COPYING resources/license
+
 EXTRA_DIST += $(docker_SCRIPTS) $(dockerres_SCRIPTS) $(dockerres_DATA)
 
