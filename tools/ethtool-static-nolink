@@ -65,6 +65,6 @@ echo "INFO: Interface $IFACE is configured as $METHOD and its link state is $_LI
 
 case "$_LINK_STATE" in
     up) exit 0;;
-    down) echo "FATAL: We want to not assign an IP address and route table entries to inactive interfaces!"
+    down) echo "FATAL: We want to not assign an IP address and route table entries to inactive interfaces ($IFACE)!"
         exit 1;;
 esac
