@@ -88,7 +88,7 @@ db_reply <db_web_basic_element_t>
         row[10].get(ret.item.priority);
         log_debug ("priority = %" PRIi16, ret.item.priority);
         row[11].get(ret.item.asset_tag);
-        log_debug ("priority = %s", ret.item.asset_tag.c_str());
+        log_debug ("asset_tag = %s", ret.item.asset_tag.c_str());
 
         ret.status = 1;
         LOG_END;
