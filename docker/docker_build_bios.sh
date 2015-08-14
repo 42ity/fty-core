@@ -1,24 +1,27 @@
 #!/bin/sh
 #
-#   Copyright (c) 2015 Eaton Corporation <www.eaton.com>
-#   Copyright other contributors as noted in the AUTHORS file.
+# Copyright (c) 2014-2015 Eaton
 #
-#   This file is part of the Eaton $BIOS project.
+# This file is part of the Eaton $BIOS project.
 #
-#   This is free software; you can redistribute it and/or modify
-#   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
-#   (at your option) any later version.
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
 #
-#   This software is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#   Description: Script to generate eaton/bios container
+#! \file    docker_build_bios.sh
+#  \brief   Script to generate eaton/bios Docker container
+#  \author  Gerald Guillaume <GeraldGuillaume@Eaton.com>
+
 set -e
 
 export build_dir=..
@@ -39,6 +42,7 @@ mkdir -p "$temp_dir/usr/share"
 cp ~/compiled-webapp.tar $temp_dir/usr/share
 
 echo "building docker eaton/bios .."
+
 sudo docker build --no-cache=true --rm=true -t eaton/bios $temp_dir
 
 echo "cleaning .."

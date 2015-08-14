@@ -1,36 +1,38 @@
 #!/bin/sh
-
+#
 # Copyright (C) 2014 Eaton
 #
-# This program is free software: you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#! \file    init-os-accounts.sh
+#  \brief   Initialize group and user accounts used by the $BIOS project
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details This script adds the group and user accounts used by
+#  the $BIOS project, and should work under relocated $ALTROOT dir too.
+#  You can export ALTROOT_MAKEFAKE=Y to have the script prepare some
+#  files needed for the user management programs to perform (i.e. to
+#  generate the snippets in a temporary directory and later copy them
+#  elsewhere as part of the image generation or installation procedure).
+#  The CREATE_HOME=yes envvar or setting in logins.def is honoured.
+#  See also: tests/CI/test_web.sh
+#  See the variables set below. Can also use DEBUG=Y for more output
+#  including sensitive data (like the password or its hash).
 #
-# Description: This script adds the group and user accounts used by
-# the $BIOS project, and should work under relocated $ALTROOT dir too.
-# You can export ALTROOT_MAKEFAKE=Y to have the script prepare some
-# files needed for the user management programs to perform (i.e. to
-# generate the snippets in a temporary directory and later copy them
-# elsewhere as part of the image generation or installation procedure).
-# The CREATE_HOME=yes envvar or setting in logins.def is honoured.
-# See also: tests/CI/test_web.sh
-# See the variables set below. Can also use DEBUG=Y for more output
-# including sensitive data (like the password or its hash).
-#
-# Note: This should be run as root or with a user that can elevate;
-#       for now we just treat errors (that are not "already-exist")
-#       as fatal...
+#  \note This should be run as root or with a user that can elevate;
+#        for now we just treat errors (that are not "already-exist")
+#        as fatal...
 
 # Default settings
 DEF_USER_PASS="nosoup4u"
