@@ -318,7 +318,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     tmp=$(echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/'"$regex"'/gs; print $1')
 
     method=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/iface\s+\S+\s+\S+\s+(\S+)/gs; print $1' )
-    address=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/address\s+(\S+)/gs; print $1' )
+    address=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/\baddress\s+(\S+)/gs; print $1' )
     netmask=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/netmask\s+(\S+)/gs; print $1' )
     gateway=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/gateway\s+(\S+)/gs; print $1' )
 
