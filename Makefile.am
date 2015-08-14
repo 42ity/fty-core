@@ -421,7 +421,9 @@ libpriv_db_alerts_la_SOURCES = \
 			src/db/assets.h \
 			src/db/inout.h \
 			src/db/inout/importcsv.cc \
-			src/db/inout/exportcsv.cc
+			src/db/inout/exportcsv.cc \
+			src/db/agentstate/agentstate.h \
+			src/db/agentstate/agentstate.cc
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -744,7 +746,6 @@ cibin_programs += 	test-db2
 
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
-			tests/persist/test-monitor-clientinfo.cc \
 			tests/persist/test-measurement.cc \
 			tests/persist/test-realdatamonitor.cc
 
