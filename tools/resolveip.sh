@@ -1,13 +1,10 @@
 #!/bin/sh
-
-# Description: Replacement for the huge MySQL resolveip which
-# is required for hands-off creation of a default database
 #
 # Copyright (C) 2014 Eaton
 #
-# This program is free software: you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -15,10 +12,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
+#! \file    resolveip.sh
+#  \brief   Replacement for the huge MySQL resolveip
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Replacement for the huge MySQL resolveip which is required
+#           for hands-off creation of a default database
 
 RES=0
 SILENT=0

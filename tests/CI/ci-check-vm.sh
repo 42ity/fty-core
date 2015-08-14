@@ -2,9 +2,9 @@
 
 # Copyright (C) 2014 Eaton
 #
-# This program is free software: you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -12,14 +12,16 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Author(s): Tomas Halman <TomasHalman@eaton.com>,
-#            Jim Klimov <EvgenyKlimov@eaton.com>
-#
-# Description: checks files on VM, whether they are sync with local checkout.
-#              If they are not, files re copied to vitrual machine and compiled.
+#! \file    ci-check-vm.sh
+#  \brief   Checks files on VM
+#  \author  Tomas Halman <TomasHalman@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Checks files on VM, whether they are sync with local checkout.
+#           If they are not, files re copied to virtual machine and compiled.
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
