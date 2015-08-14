@@ -235,11 +235,11 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
-    _weblib_result_printed=notest
+    _testlib_result_printed=notest
     . ./"$NAME" 5> "$REALLIFE_RESULT"
     RES=$?
 
-    [ "$_weblib_result_printed" = notest ] && \
+    [ "$_testlib_result_printed" = notest ] && \
         logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
             "to begin logging, amending that omission now by assigning filename" \
             "as the test name:" && \
@@ -273,7 +273,7 @@ for i in $POSITIVE; do
         print_result $RES
     else
         # This might do nothing, if the test file already ended with a print_result
-        if [ "$_weblib_result_printed" != yes ]; then
+        if [ "$_testlib_result_printed" != yes ]; then
         logmsg_info "No expected-results file was found for test script '$NAME'," \
             "so nothing to compare real-life output against. Note that the result" \
             "below ($RES) may refer to execution of the test script itself and" \
