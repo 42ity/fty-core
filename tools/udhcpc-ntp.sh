@@ -74,6 +74,7 @@ ntp_servers_setup_add() {
 
 ntp_servers_setup() {
 	RES=1
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state $reason..."
 	case "$reason" in
 		bound|renew|BOUND|RENEW|REBIND|REBOOT)
 			ntp_servers_setup_add
@@ -84,7 +85,7 @@ ntp_servers_setup() {
 			RES=$?
 			;;
 	esac
-	echo "Completed $0 for DHCP state $reason, exit code $RES"
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state $reason, exit code $RES"
 	return $RES
 }
 
@@ -102,6 +103,11 @@ if [ -z "${old_ntp_servers-}" ]; then
         fi
 fi
 
+if [ "`grep -lw debug /proc/cmdline`" ]; then
+    set > /dev/console
+fi
+
+#exec >> /dev/console 2>&1
 #set >&2
 #set -x
 
