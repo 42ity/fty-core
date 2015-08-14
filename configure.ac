@@ -349,11 +349,13 @@ AS_IF([test -n "$CXX"], [], AC_MSG_ERROR([cannot find C++ compiler ($CXX)]))
 AC_PATH_PROGS([_TMP_GXX], [`basename $CXX` g++], [])
 AS_IF([test -n "$_TMP_GXX" -a -x "$_TMP_GXX"], [], AC_MSG_ERROR([cannot find C++ compiler]))
 
+AC_MSG_CHECKING([presence of ccache])
 AS_IF([which ccache >/dev/null 2>&1], [
+	AC_MSG_RESULT([yes])
 	AC_MSG_NOTICE([Detected presence of ccache in PATH])
 	AS_IF([diff "`which ccache`" "$_TMP_GCC"], [AC_MSG_NOTICE([The C compiler program ($_TMP_GCC) is a symlink to ccache])], [AC_MSG_WARN([The C compiler program ($_TMP_GCC) is not a symlink to ccache, you miss out on build speed])])
 	AS_IF([diff "`which ccache`" "$_TMP_GXX"], [AC_MSG_NOTICE([The C++ compiler program ($_TMP_GXX) is a symlink to ccache])], [AC_MSG_WARN([The C++ compiler program ($_TMP_GXX) is not a symlink to ccache, you miss out on build speed])])
-])
+	],[AC_MSG_RESULT([no])])
 
 unset _TMP_GCC
 unset _TMP_GXX
