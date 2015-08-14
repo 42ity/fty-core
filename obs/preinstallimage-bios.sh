@@ -114,13 +114,18 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
+DEFAULT_IFPLUGD_INTERFACES="eth0 eth1 eth2"
 mkdir -p /etc/default
+[ -s "/etc/default/networking" ] && \
+    sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
+    || echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking
 cat > /etc/default/ifplugd <<EOF
-INTERFACES="eth0 eth1 eth2"
+INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
 HOTPLUG_INTERFACES=""
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
 EOF
+
 
 # Setup APT package sources
 mkdir -p /etc/apt/sources.list.d

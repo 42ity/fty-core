@@ -1,8 +1,8 @@
 [Unit]
-Description=Preconfigures ifplugd with currently known DHCP interfaces
-Requires=networking.service
+Description=Preconfigure ifplugd with currently tracked interfaces and yank them from default networking
+DefaultDependencies=no
 ReloadPropagatedFrom=networking.service
-Before=ifplugd.service
+Before=ifplugd.service networking.service
 PropagatesReloadTo=ifplugd.service
 
 [Service]
