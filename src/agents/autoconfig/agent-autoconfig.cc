@@ -36,10 +36,11 @@ void Autoconfig::onSend( ymsg_t **message )
 
     char *device_name = NULL;
     uint32_t type = 0;
+    uint32_t subtype = 0;
     int8_t operation;
 
     int x;
-    if( (x = bios_asset_extract( *message, &device_name, &type, NULL, NULL, NULL, &operation )) == 0 ) {
+    if( (x = bios_asset_extract( *message, &device_name, &type, &subtype, NULL, NULL, NULL, &operation )) == 0 ) {
         log_debug("Asset message for %s type %" PRIu32, device_name, type );
         if( type == asset_type::DEVICE ) {
             ymsg_t *extended = bios_asset_extra_encode( device_name, NULL, 0, 0, NULL, 0, 0, operation );

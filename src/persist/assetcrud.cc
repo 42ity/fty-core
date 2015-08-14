@@ -514,7 +514,7 @@ db_reply <db_a_elmnt_t>
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
 
-    db_a_elmnt_t item{0,"","",0,5,0,0,""};
+    db_a_elmnt_t item{0,"","",0,5,0,0,0,""};
     db_reply <db_a_elmnt_t> ret = db_reply_new(item);
 
     if ( !is_ok_name (element_name) )
@@ -585,7 +585,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id"
+            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id, v.id_subtype"
             " FROM"
             "   v_bios_asset_element v"
             " WHERE v.id_type = :typeid"
@@ -599,7 +599,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         // Go through the selected elements
         for ( auto &row: result )
         {
-            db_a_elmnt_t m{0,"","",0,5,0,0,""};
+            db_a_elmnt_t m{0,"","",0,5,0,0,0,""};
             
             row[0].get(m.name);
             assert ( !m.name.empty() );  // database is corrupted
@@ -609,6 +609,7 @@ db_reply <std::vector<db_a_elmnt_t>>
             row[3].get(m.priority);
             row[4].get(m.bc);
             row[5].get(m.id);
+            row[6].get(m.subtype_id);
 
             ret.item.push_back(m);
         }

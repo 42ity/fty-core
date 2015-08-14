@@ -324,8 +324,6 @@ DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
 DROP view if exists v_bios_asset_ext_attributes;
 DROP view if exists v_bios_asset_group_relation;
-DROP view if exists v_bios_asset_element;
-DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
@@ -478,7 +476,22 @@ CREATE VIEW v_bios_asset_link_topology AS
 create view v_bios_asset_device_type as select id_asset_device_type as id, name from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
-create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority, v1.asset_tag from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
+DROP VIEW IF EXISTS v_bios_asset_element;
+CREATE VIEW v_bios_asset_element AS
+    SELECT  v1.id_asset_element AS id,
+            v1.name,
+            v1.id_type,
+            v1.id_subtype,
+            v1.id_parent,
+            v2.id_type AS id_parent_type,
+            v1.business_crit,
+            v1.status,
+            v1.priority,
+            v1.asset_tag
+        FROM t_bios_asset_element v1
+        LEFT JOIN  t_bios_asset_element v2
+            ON (v1.id_parent = v2.id_asset_element) ;
+
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 

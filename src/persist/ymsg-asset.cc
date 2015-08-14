@@ -30,7 +30,7 @@ void process_get_asset(ymsg_t** out, char** out_subj,
     try{
         conn = tntdb::connectCached(url);
         char *devname = NULL;
-        if( bios_asset_extract( in, &devname, NULL, NULL, NULL, NULL, NULL ) == 0 ) {
+        if( bios_asset_extract( in, &devname, NULL, NULL, NULL, NULL, NULL, NULL ) == 0 ) {
             auto element = select_asset_element_by_name(conn, devname);
             if( element.status ) {
                 app_t *app = app_new(APP_MODULE);
