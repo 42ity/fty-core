@@ -1,9 +1,9 @@
 /*
 Copyright (C) 2014-2015 Eaton
 
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -11,13 +11,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-/*! \file   assetr.cc
-    \brief  Basic select-functions for assets
-    \author Alena Chernikava <alenachernikava@eaton.com>
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 // ATTENTION: there is no easy way of getting last deleted id,
@@ -92,7 +88,7 @@ db_reply <db_web_basic_element_t>
         row[10].get(ret.item.priority);
         log_debug ("priority = %" PRIi16, ret.item.priority);
         row[11].get(ret.item.asset_tag);
-        log_debug ("priority = %s", ret.item.asset_tag.c_str());
+        log_debug ("asset_tag = %s", ret.item.asset_tag.c_str());
 
         ret.status = 1;
         LOG_END;

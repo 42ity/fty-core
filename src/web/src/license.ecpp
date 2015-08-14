@@ -23,6 +23,8 @@ long int uid = 0;
 </%request>
 <%cpp>
 // Basic operations
+
+/* NOTE: This must be kept in sync with admin_passwd.ecpp(.in) */
 char *current_license = getenv("LICENSE_DIR");
 char *accepted_license = getenv("DATADIR");
 if(current_license == NULL)

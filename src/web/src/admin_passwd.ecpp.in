@@ -66,9 +66,9 @@ s_passwd(
         {
             "message" : "user, old password or new password is invalid",
             "code" : 42
-#ifdef DEBUG
+%#ifdef DEBUG
             ,"debug" : "<$$ debug $>"
-#endif
+%#endif
         }
     ]
 }
@@ -86,19 +86,53 @@ s_passwd(
         {
             "message" : "<$$ msg $>",
             "code" : 42
-#ifdef DEBUG
+%#ifdef DEBUG
             ,"debug" : "<$$ err $>"
-#endif
+%#endif
         }
     ]
 }
 <%cpp>
     return HTTP_BAD_REQUEST;
     }
-    if (is_file(SSH_NOT_TO_BE_RUN)) {
+
+    /* Verify the new password and so flush the SASLAUTHD cache that trusts the old one still */
+    if (!authenticate(user.c_str(), new_passwd.c_str())) {
+#ifdef DEBUG
+            std::string debug;
+            debug = "can't authenticate '" + user + "' with the newly changed password";
+#endif
+</%cpp>
+{
+    "errors" : [
+        {
+            "message" : "could not verify application of the new password",
+            "code" : 42
+%#ifdef DEBUG
+            ,"debug" : "<$$ debug $>"
+%#endif
+        }
+    ]
+}
+<%cpp>
+    return HTTP_BAD_REQUEST;
+    }
+
+    /* NOTE: This must be kept in sync with license.ecpp */
+    char *accepted_license = getenv("DATADIR");
+    if(accepted_license == NULL)
+        accepted_license = "/var/lib/bios";
+    asprintf(&accepted_license, "%s/license", accepted_license);
+
+    if (is_file(SSH_NOT_TO_BE_RUN) && is_file(accepted_license)) {
+        /* If the user of REST API manages to change the password before
+         * accepting the license - SSH will not be enabled and restarted
+         * by the tntnet webserver. However the RC3 reboot procedure will
+         * unblock the SSH service if both actions were done well.
+         */
         shared::call({"/usr/bin/sudo", "/bin/rm", "-f", SSH_NOT_TO_BE_RUN});
         //TODO: once generic service manipulating REST API will be implemented, remove line below
-        //      we can't return meaningfull errors in this phase
+        //      we can't return meaningful errors in this phase
         shared::call({"/usr/bin/sudo", "/bin/systemctl", "restart", "ssh.service"});
     }
 </%cpp>

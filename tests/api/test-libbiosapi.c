@@ -1,10 +1,29 @@
-/* Description: This program is compiled by the CI scripts as a way to
- * validate that the "-lbiosapi" linker flag and headers do still provide
- * all that we need for an API-client program to work in the $BIOS project,
- * and that some basic message-passing works as expected.
- *
- * Author(s): Michal Vyskocil <MichalVyskocil@eaton.com>
- */
+/*
+Copyright (C) 2014 Eaton
+ 
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
+
+/*! \file    test-libbiosapi.c
+    \brief   CI script to validate libbiosapi
+    \author  Michal Vyskocil <MichalVyskocil@Eaton.com>
+    \details This program is compiled by the CI scripts as a way to
+             validate that the "-lbiosapi" linker flag and headers do still provide
+             all that we need for an API-client program to work in the $BIOS project,
+             and that some basic message-passing works as expected.
+*/
 
 #include <bios_agent.h>
 #include <stdio.h>

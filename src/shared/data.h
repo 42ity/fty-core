@@ -38,8 +38,10 @@ class measures_manager {
 
 class ui_props_manager {
     public:
-        std::string get(std::string& result);
-        std::string put(const std::string& props);
+        int get(std::string &result);
+        int put(const std::string &properties, std::string &result);
+    private:
+        std::string agent_name(void);
 };
 
 #endif // SRC_SHARED_DATA_H
