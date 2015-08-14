@@ -306,52 +306,6 @@ common_msg_t* update_device_type(const char* url,
     }
 }
 
-db_reply_t
-    select_monitor_device_type_id
-        (tntdb::Connection &conn, 
-         const char *device_type_name)
-{
-    LOG_START;
-    
-    log_debug ("  device_type_name = %s", device_type_name);
-
-    db_reply_t ret = db_reply_new();
-
-    try{
-        tntdb::Statement st = conn.prepareCached(
-            " SELECT"
-            "   v.id"
-            " FROM"
-            "   v_bios_device_type v"
-            " WHERE v.name = :name"
-        );
-          
-        tntdb::Value val = st.set("name", device_type_name).
-                              selectValue();
-        log_debug ("[t_bios_monitor_device]: was selected 1 rows");
-        
-        val.get(ret.item);
-        ret.status = 1;
-        LOG_END;
-        return ret;
-    }
-    catch (const tntdb::NotFound &e){
-        ret.status     = 0; 
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_NOTFOUND;
-        ret.msg        = e.what();
-        log_info ("end: discovered device type was not found with '%s'", e.what());
-        return ret;
-    }
-    catch (const std::exception &e) {
-        ret.status     = 0; 
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL (e);
-        return ret;
-    }
-}
 
 ////////////////////////////////////////////////////////////////////////
 /////////////////           DEVICE                   ///////////////////
@@ -704,54 +658,7 @@ common_msg_t* insert_disc_device(const char* url, const char* device_type_name,
     }
 }
 
-db_reply_t 
-    insert_into_monitor_device
-        (tntdb::Connection &conn,
-         m_dvc_tp_id_t device_type_id,
-         const char* device_name)
-{
-    LOG_START;
-
-    db_reply_t ret = db_reply_new();
-
-    if ( !is_ok_name (device_name) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "device name length is not in range [1, MAX_NAME_LENGTH]";
-        log_warning (ret.msg);
-        return ret;
-    }
-
-    try{
-        tntdb::Statement st = conn.prepareCached(
-            " INSERT INTO"
-            "   v_bios_discovered_device (name, id_device_type)"
-            " VALUES (:name, :iddevicetype)"
-        );
-
-        // Insert one row or nothing
-        ret.affected_rows = st.set("name", device_name).
-                               set("iddevicetype", device_type_id).
-                               execute();
-        log_debug ("[t_bios_discovered_device]: was inserted %" 
-                                        PRIu64 " rows", ret.affected_rows);
-        ret.rowid = conn.lastInsertId();
-        ret.status = 1;
-        LOG_END;
-        return ret;
-    }
-    catch (const std::exception &e) {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_INTERNAL;
-        ret.msg        = e.what();
-        LOG_END_ABNORMAL(e);
-        return ret;
-    }
-}
-
+/*
 db_reply_t 
     insert_into_monitor_device
         (tntdb::Connection &conn,
@@ -798,7 +705,7 @@ db_reply_t
     }
 
     return ret; //make gcc happy
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////
 /////////////////           MEASUREMENT              ///////////////////

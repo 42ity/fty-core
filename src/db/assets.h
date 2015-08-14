@@ -1,6 +1,5 @@
 /*
 Copyright (C) 2014-2015 Eaton
- 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -25,5 +24,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_DB_ASSETS_H
 
 #include "assets/assetr.h"
+#include "assets/assetu.h"
+#include "assets/assetd.h"
+#include "assets/assetcr.h"
 
 #endif // SRC_DB_ASSETS_H

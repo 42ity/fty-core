@@ -5,6 +5,7 @@
 
 #include "assetcrud.h"
 #include "db/assets.h"
+#include "db/asset_general.h"
 #include "common_msg.h"
 
 #define UGLY_ASSET_TAG "0123456"
@@ -27,7 +28,7 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
     bool          read_only        = true; // -> second insert should be update
 
     // first insert
-    auto reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
+    auto reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 1 ); // 0 fail  , 1 ok
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -41,14 +42,14 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
 
     // true -> true 
     // must handle duplicate insert with the same value
-    reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 1 ); // 0 fail  , 1 ok
     uint64_t rowid1 = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 0 );// the iserted row must not be updated
     REQUIRE ( rowid1 == rowid );
 
     // must handle duplicate insert with different value1
-    reply_insert = insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 1 ); // 0 fail  , 1 ok
     rowid1 = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 2 ); // as update statement was used
@@ -56,12 +57,12 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
 
     // true -> false
     // must handle duplicate insert with different value1
-    reply_insert = insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, !read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, !read_only);
     REQUIRE ( reply_insert.status == 0 ); // 0 fail  , 1 ok
     REQUIRE ( reply_insert.affected_rows == 0 );
 
     // first delete
-    auto reply_delete = delete_asset_ext_attribute (conn, keytag, asset_element_id);
+    auto reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     REQUIRE ( reply_delete.status == 1 ); // 0 fail  , 1 ok
     REQUIRE ( reply_delete.affected_rows == 1 );
 
@@ -71,7 +72,7 @@ TEST_CASE("asset ext attribute INSERT/DELETE #1","[db][CRUD][insert][delete][ass
     REQUIRE ( reply_select.item.size() == 0 );
 
     // must handle second delete without crash
-    reply_delete = delete_asset_ext_attribute (conn, keytag, asset_element_id);
+    reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     REQUIRE ( reply_delete.status == 1 ); // 0 fail  , 1 ok
     REQUIRE ( reply_delete.affected_rows == 0 );
 
@@ -95,7 +96,7 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
     bool          read_only        = false; // -> second insert should be update
 
     // first insert
-    auto reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
+    auto reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 1 ); // 0 fail  , 1 ok
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -110,26 +111,26 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
 
     // -------------------------------  false -> false
     // must handle duplicate insert with the same value
-    reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 0 );        // 0 fail, 1 ok
     REQUIRE ( reply_insert.affected_rows == 0 ); // for pure insert 0 affected rows is unexpected value ->
                                                  // status = 0
 
     // must handle duplicate insert with different value1
-    reply_insert = insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, read_only);
     REQUIRE ( reply_insert.status == 0 );        // 0 fail, 1 ok
     REQUIRE ( reply_insert.affected_rows == 0 );
 
     // ------------------------------- false -> true , same
     // must handle duplicate insert with the same value 
-    reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, !read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, !read_only);
     REQUIRE ( reply_insert.status == 1 );        // 0 fail, 1 ok
     uint64_t rowid1 = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 2 ); // insert_update should be uset, row should be updated
     REQUIRE ( rowid == rowid1 );
 
     // first delete
-    auto reply_delete = delete_asset_ext_attribute (conn, keytag, asset_element_id);
+    auto reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     REQUIRE ( reply_delete.status == 1 );        // 0 fail, 1 ok
     REQUIRE ( reply_delete.affected_rows == 1 );
 
@@ -138,22 +139,22 @@ TEST_CASE("asset ext attribute INSERT/DELETE #2","[db][CRUD][insert][delete][ass
     REQUIRE ( reply_select.item.size() == 0 );
 
     // must handle second delete without crash
-    reply_delete = delete_asset_ext_attribute (conn, keytag, asset_element_id);
+    reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     REQUIRE ( reply_delete.status == 1 ); // 0 fail  , 1 ok
     REQUIRE ( reply_delete.affected_rows == 0 );
 
     // ------------------------------- false ->true, different
-    reply_insert = insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value, keytag, asset_element_id, read_only);
     rowid = reply_insert.rowid;
 
     // must handle duplicate insert with different value1
-    reply_insert = insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, !read_only);
+    reply_insert = persist::insert_into_asset_ext_attribute (conn, value1, keytag, asset_element_id, !read_only);
     REQUIRE ( reply_insert.status == 1 );        // 0 fail, 1 ok
     REQUIRE ( reply_insert.affected_rows == 2 );
     rowid1 = reply_insert.rowid;
     REQUIRE ( rowid == rowid1 );
 
-    reply_delete = delete_asset_ext_attribute (conn, keytag, asset_element_id);
+    reply_delete = persist::delete_asset_ext_attribute (conn, keytag, asset_element_id);
     
     log_close();
 }
@@ -180,7 +181,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     a_dvc_tp_id_t subtype_id = 10;
 
     // first insert
-    auto reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+    auto reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
         parent_id, status, priority, bc, subtype_id, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     uint64_t rowid = reply_insert.rowid;
@@ -202,13 +203,13 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (item.subtype_id == subtype_id);
 
     // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_element (conn, element_name, element_type_id,
+    reply_insert = persist::insert_into_asset_element (conn, element_name, element_type_id,
             parent_id, status, priority, bc, 10, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.status == 1 );
     REQUIRE ( reply_insert.affected_rows == 0 );
 
     // first delete
-    auto reply_delete = delete_asset_element (conn, rowid);
+    auto reply_delete = persist::delete_asset_element (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -218,7 +219,7 @@ TEST_CASE("asset element INSERT/DELETE #3","[db][CRUD][insert][delete][asset_ele
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
 
     // must handle second delete without crash
-    reply_delete = delete_asset_element (conn, rowid);
+    reply_delete = persist::delete_asset_element (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -239,7 +240,7 @@ TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_el
     a_elmnt_id_t asset_group_id = 3; // it is written in crud_test.sql file
 
     // first insert
-    auto reply_insert = insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
+    auto reply_insert = persist::insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
     REQUIRE ( reply_insert.status == 1 );
@@ -251,12 +252,12 @@ TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_el
     REQUIRE ( reply_select.count(asset_element_id) == 1 );
        
     // must handle duplicate insert without insert
-    reply_insert = insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
+    reply_insert = persist::insert_asset_element_into_asset_group (conn, asset_group_id, asset_element_id);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
+    auto reply_delete = persist::delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -266,7 +267,7 @@ TEST_CASE("into asset group INSERT/DELETE #5","[db][CRUD][insert][delete][grp_el
     REQUIRE ( reply_select.size() == 0 );
 
     // must handle second delete without crash
-    reply_delete = delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
+    reply_delete = persist::delete_asset_element_from_asset_group (conn, asset_group_id, asset_element_id);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -289,7 +290,7 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     const a_lnk_src_out_t src_out = SRCOUT_DESTIN_IS_NULL;
     const a_lnk_dest_in_t dest_in = SRCOUT_DESTIN_IS_NULL;
     // first insert
-    auto reply_insert = insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
+    auto reply_insert = persist::insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
                                        src_out, dest_in);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.status == 1 );
@@ -304,13 +305,13 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     
        
     // must handle duplicate insert without insert
-    reply_insert = insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
+    reply_insert = persist::insert_into_asset_link (conn, asset_element_id_src, asset_element_id_dest, INPUT_POWER_CHAIN,
                                        src_out, dest_in);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_asset_link (conn, asset_element_id_src, asset_element_id_dest);
+    auto reply_delete = persist::delete_asset_link (conn, asset_element_id_src, asset_element_id_dest);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -320,7 +321,7 @@ TEST_CASE("into asset link INSERT/DELETE #6","[db][CRUD][insert][delete][asset_l
     zlist_purge (reply_select);
 
     // must handle second delete without crash
-    reply_delete = delete_asset_link  (conn, asset_element_id_src, asset_element_id_dest);
+    reply_delete = persist::delete_asset_link  (conn, asset_element_id_src, asset_element_id_dest);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
     
@@ -362,7 +363,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+    auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
                 parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -391,13 +392,13 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_dc_room_row_rack (conn, rowid);
+    auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -406,7 +407,7 @@ TEST_CASE("dc unlockated INSERT/DELETE #7","[db][CRUD][insert][delete][dc][unloc
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_dc_room_row_rack (conn, rowid);
+    reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -440,7 +441,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+    auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
             parent_id, ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -468,13 +469,13 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_dc_room_row_rack (conn, rowid);
+    auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -483,7 +484,7 @@ TEST_CASE("room unlockated INSERT/DELETE #8","[db][CRUD][insert][delete][unlocka
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_dc_room_row_rack (conn, rowid);
+    reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -517,7 +518,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG) ;
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -546,13 +547,13 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     }
 
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_dc_room_row_rack (conn, rowid);
+    auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -561,7 +562,7 @@ TEST_CASE("row unlockated INSERT/DELETE #9","[db][CRUD][insert][delete][unlockat
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_dc_room_row_rack (conn, rowid);
+    reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -600,7 +601,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
     REQUIRE ( reply_insert.affected_rows == 1 );
@@ -628,14 +629,14 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+    reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
             parent_id, ext_attributes, status, priority, bc, groups,
             UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_dc_room_row_rack (conn, rowid);
+    auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -644,7 +645,7 @@ TEST_CASE("rack unlockated INSERT/DELETE #10","[db][CRUD][insert][delete][unlock
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_dc_room_row_rack (conn, rowid);
+    reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -678,7 +679,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         zhash_insert (ext_attributes, ea.first.c_str(), (void *)ea.second.c_str());
 
     // first insert
-    auto reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id,
+    auto reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id,
             parent_id, ext_attributes, status, priority, bc, groups,
             UGLY_ASSET_TAG);
     uint64_t rowid = reply_insert.rowid;
@@ -707,13 +708,13 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
+    reply_insert = persist::insert_dc_room_row_rack_group (conn, name, element_type_id, parent_id,
             ext_attributes, status, priority, bc, groups, UGLY_ASSET_TAG);
     REQUIRE ( reply_insert.affected_rows == 0 );
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_dc_room_row_rack (conn, rowid);
+    auto reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -722,7 +723,7 @@ TEST_CASE("group unlockated INSERT/DELETE #11","[db][CRUD][insert][delete][unloc
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_dc_room_row_rack (conn, rowid);
+    reply_delete = persist::delete_dc_room_row_rack (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -763,7 +764,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     const char    *asset_device_type = "pdu";
 
     // first insert
-    auto reply_insert = insert_device (conn, links, groups, name, parent_id,
+    auto reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
                             asset_device_type, status, priority, bc,
                             UGLY_ASSET_TAG);
@@ -793,7 +794,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
         //TODO: check the read_only attribute
     }
     // second insert
-    reply_insert = insert_device (conn, links, groups, name, parent_id,
+    reply_insert = persist::insert_device (conn, links, groups, name, parent_id,
                             ext_attributes, asset_device_type_id,
                             asset_device_type, status, priority, bc,
                             UGLY_ASSET_TAG);
@@ -801,7 +802,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     REQUIRE ( reply_insert.status == 1 );
 
     // first delete
-    auto reply_delete = delete_device (conn, rowid);
+    auto reply_delete = persist::delete_device (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -810,7 +811,7 @@ TEST_CASE("device unlockated INSERT/DELETE #12","[db][CRUD][insert][delete][unlo
     REQUIRE (reply_select.errtype == BIOS_ERROR_DB);
     REQUIRE (reply_select.errsubtype == DB_ERROR_NOTFOUND);
     // second delete
-    reply_delete = delete_device (conn, rowid);
+    reply_delete = persist::delete_device (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 0 );
     REQUIRE ( reply_delete.status == 1 );
     

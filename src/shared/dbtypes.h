@@ -1,6 +1,5 @@
 /*
 Copyright (C) 2014 Eaton
- 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -25,9 +24,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_PERSIST_DBTYPES_H_
 #define SRC_PERSIST_DBTYPES_H_
 
+#include <inttypes.h>
+
 #define SRCOUT_DESTIN_IS_NULL "999"
 #define INPUT_POWER_CHAIN     1
-
 
 // ----- table:  t_bios_alert -------------------------
 // ----- column: id -----------------------------------

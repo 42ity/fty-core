@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <czmq.h>
 #include <vector>
+#include <string>
 #include "dbtypes.h"
 
 #include "preproc.h"
