@@ -361,7 +361,8 @@ rm -f /usr/bin/qemu*
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
-        /usr/sbin/update-ccache-symlinks
+        [ -x /usr/sbin/update-ccache-symlinks ] && \
+		/usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
         mkdir -p /home/bios/.ccache
         chown -R bios:bios /home/bios/.ccache
