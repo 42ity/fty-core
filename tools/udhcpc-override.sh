@@ -24,6 +24,11 @@
 
 # Inspect the caller and do the evil magic below only if it is "ifup" et al.
 # If none of the suspects are found in call stack, fulfill original request
+
+if [ "`grep -lw debug /proc/cmdline`" ]; then
+    (echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: $0 $@"; set) >/dev/console 2>&1
+fi
+
 pstree -plsaA $$ | grep -v grep | egrep '(ifup.*|ifdown|ifquery|ifplug.*)' >/dev/null \
     || exec /sbin/udhcpc "$@"
 
@@ -47,7 +52,10 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -n "$UDHCPC_IFACE" ]; then
+# Skip search if we do not have a definite interface or that keyword is missing
+if [ -n "$UDHCPC_IFACE" ] && \
+   grep udhcpc_opts /etc/network/interfaces /etc/network/interfaces.d/*.conf >/dev/null 2>&1 \
+; then
     # Run augtools once to speed up the process
     AUGOUT="`(echo 'match /files/etc/network/interfaces/iface[*]'; echo 'match /files/etc/network/interfaces/iface[*]/udhcpc_opts' ) | augtool`"
     if [ $? = 0 ] && [ -n "$AUGOUT" ]; then
@@ -74,5 +82,9 @@ case "$UDHCPC_OPTS" in
 esac
 
 echo "INFO: udhcpc command-line was changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >&2
+if [ "`grep -lw debug /proc/cmdline`" ]; then
+    echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]:" \
+        "udhcpc command-line was changed to: /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS" >/dev/console
+fi
 exec /sbin/udhcpc $UDHCPC_ARGS $UDHCPC_OPTS
 
