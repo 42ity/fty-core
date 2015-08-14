@@ -26,11 +26,6 @@ select @asset_element_device := id_asset_element_type from t_bios_asset_element_
 /* t_bios_asset_link_type; */
 select @asset_link_powerchain := id_asset_link_type from t_bios_asset_link_type where name = 'power chain';
 
-/* t_bios_client */
-select @client_mymodule := id_client from t_bios_client where name = 'mymodule';
-select @client_admin := id_client from t_bios_client where name = 'admin';
-select @client_nut := id_client from t_bios_client where name = 'NUT';
-
 /*  testing device  */
 insert into t_bios_discovered_device (name, id_device_type) values ("select_device", @device_unclassified);
 insert into t_bios_discovered_device (name, id_device_type) values ("monitor_asset_measure", @device_unclassified);
@@ -663,8 +658,7 @@ values
     "2"
 );
 
-SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
-UPDATE t_bios_client_info SET timestamp=UTC_TIMESTAMP(), ext='{"key1" : "value1", "key2" : "value2", "indicators_gauges" : { "power":{ "gauge_min" : 0, "gauge_max" : 50, "threshold_1" : 30, "threshold_2" : 40, "constant_tendency_threshold" : 1 }, "temperature":{ "gauge_min" : 10, "gauge_max" : 60, "threshold_1" : 36, "threshold_2" : 48, "constant_tendency_threshold" : 1 }, "humidity":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "compute":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "network":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "storage":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "space":{ "gauge_min" : 0, "gauge_max" : 420, "threshold_1" : 252, "threshold_2" : 336, "constant_tendency_threshold" : 1 } }, "rack_gauge_power": { "gauge_min": 0, "gauge_max": 5, "threshold_1": 3, "threshold_2": 4 }, "ups_gauge_power": { "gauge_min": 0, "gauge_max": 50, "threshold_1": 30, "threshold_2": 40 } } ' WHERE id_client=@client_ui_properties;
+INSERT INTO t_bios_agent_info (info,agent_name) values ('{"key1" : "value1", "key2" : "value2", "indicators_gauges" : { "power":{ "gauge_min" : 0, "gauge_max" : 50, "threshold_1" : 30, "threshold_2" : 40, "constant_tendency_threshold" : 1 }, "temperature":{ "gauge_min" : 10, "gauge_max" : 60, "threshold_1" : 36, "threshold_2" : 48, "constant_tendency_threshold" : 1 }, "humidity":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "compute":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "network":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "storage":{ "gauge_min" : 0, "gauge_max" : 100, "threshold_1" : 60, "threshold_2" : 80, "constant_tendency_threshold" : 1 }, "space":{ "gauge_min" : 0, "gauge_max" : 420, "threshold_1" : 252, "threshold_2" : 336, "constant_tendency_threshold" : 1 } }, "rack_gauge_power": { "gauge_min": 0, "gauge_max": 5, "threshold_1": 3, "threshold_2": 4 }, "ups_gauge_power": { "gauge_min": 0, "gauge_max": 50, "threshold_1": 30, "threshold_2": 40 } } ' , "UI_PROPERTIES" );
 
 
 /* A manual propagate an asset part to monitor part*/

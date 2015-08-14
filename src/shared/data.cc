@@ -25,6 +25,8 @@
 #include "upsstatus.h"
 #include "utils.h"
 
+#include "db/agentstate.h"
+
 typedef std::string (*MapValuesTransformation)(std::string);
 
 byte asset_manager::type_to_byte(std::string type) {
@@ -125,71 +127,63 @@ std::string measures_manager::map_values(std::string name, std::string value) {
     return value;
 }
 
-std::string ui_props_manager::get(std::string& result) {
+int
+    ui_props_manager::get
+        (std::string& result)
+{
+    char *data = NULL;
+    int size = 0;
 
-    //FIXME: where to put the constant?
-    _scoped_common_msg_t *reply = select_ui_properties(url.c_str());
-    if (!reply)
-        return std::string("{\"error\" : \"Can't load ui/properties from database!\"}");
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        auto ret = select_agent_info (conn, agent_name(), &data, size);
+        if ( ret )
+        {
+            result = std::string("Can't load ui/properties from database");
+            FREE0 (data);
+            return 2;
+        }
 
-    uint32_t msg_id = common_msg_id(reply);
+        result = std::string(data, size);
 
-    if (msg_id == COMMON_MSG_FAIL) {
-        auto ret = std::string{"{\"error\" : \""};
-        ret.append(common_msg_errmsg(reply));
-        ret.append("\"}");
-        common_msg_destroy(&reply);
-        return ret;
+        FREE0 (data);
+        return 0;
     }
-    else if (msg_id != COMMON_MSG_RETURN_CINFO) {
-        common_msg_destroy(&reply);
-        return std::string("{\"error\" : \"Unexpected msg_id delivered, expected COMMON_MSG_RETURN_CINFO\"}");
+    catch (const std::exception &e) {
+        FREE0 (data);
+        LOG_END_ABNORMAL(e);
+        return 1;
     }
-
-    _scoped_zmsg_t *zmsg = common_msg_get_msg(reply);
-    if (!zmsg) {
-        common_msg_destroy(&reply);
-        return std::string("{\"error\" : \"Can't extract inner message from reply!\"}");
-    }
-
-    _scoped_common_msg_t *msg = common_msg_decode(&zmsg);
-    common_msg_destroy(&reply);
-    if (!msg)
-        return std::string("{\"error\" : \"Can't decode inner message from reply!\"}");
-    
-    _scoped_zchunk_t *info = common_msg_get_info(msg);
-    common_msg_destroy(&msg);
-    if (!info)
-        return std::string("{\"error\" : \"Can't get chunk from reply!\"}");
-
-    _scoped_char *s = zchunk_strdup(info);
-    zchunk_destroy(&info);
-    if (!s)
-        return std::string("{\"error\" : \"Can't get string from reply!\"}");
-    
-    result = s;
-    FREE0 (s)
-
-    return std::string{};
 }
 
-std::string ui_props_manager::put(const std::string& ext) {
+std::string
+    ui_props_manager::agent_name()
+{
+    return "UI_PROPERTIES";
+}
 
-    const char* s = ext.c_str();
-
-    _scoped_zchunk_t *chunk = zchunk_new(s, strlen(s));
-    if (!chunk)
-        return std::string("fail to create zchunk");
-
-    //FIXME: where to store client_id?
-    _scoped_common_msg_t *reply = update_ui_properties(url.c_str(), &chunk);
-    uint32_t msg_id = common_msg_id(reply);
-    common_msg_destroy(&reply);
-
-    if (msg_id != COMMON_MSG_DB_OK)
-        return std::string("msg_id != COMMON_MSG_DB_OK");
-
-    return "";
+int
+    ui_props_manager::put(
+        const std::string &properties,
+        std::string &result
+        )
+{
+ 
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        uint16_t affected_rows = 0;
+        auto ret = update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
+        if ( ret )
+        {
+            result = std::string("{\"error\" : \"Can't import ui/properties to database\"}");
+            return 2;
+        }
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
 }
 
 /**
