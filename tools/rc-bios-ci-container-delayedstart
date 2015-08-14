@@ -15,9 +15,9 @@
 
 # Copyright (C) 2015 Eaton
 #
-# This program is free software: you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -25,15 +25,17 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
-#
-# Description: /etc/init.d/rc-bios-ci-container-delayedstart
-#       Auto-start wrapper for $BIOS containers to start up a bit
-#       after the host OS is up, so they can pull new images (if any).
-#       Intended for hosts involved in CI and test infrastructure.
+#! \file    rc-bios-ci-container-delayedstart
+#  \brief   Auto-start wrapper for $BIOS containers delayed start up
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details /etc/init.d/rc-bios-ci-container-delayedstart
+#           Auto-start wrapper for $BIOS containers to start up a bit
+#           after the host OS is up, so they can pull new images (if any).
+#           Intended for hosts involved in CI and test infrastructure.
 
 [ -n "$CONTAINERS" ] || \
 	CONTAINERS="`virsh -c lxc:// list --all | tail -n +3 | awk '{print $2}' | egrep '^latest$|^demo$|^test-debian-'`" || \

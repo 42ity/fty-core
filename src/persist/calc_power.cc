@@ -15,12 +15,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/*! \file calc_power.cc
-    \brief Functions for calculating a total rack and DC power from 
-     database values.
-    \author Alena Chernikava <alenachernikava@eaton.com>
-            Michal Vyskocil  <michalvyskocil@eaton.com>
-*/
 #include <set>
 
 #include "log.h"

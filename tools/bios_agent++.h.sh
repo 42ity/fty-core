@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 DIR=$(dirname $0)
 DIR=$(realpath $DIR)
@@ -72,7 +72,7 @@ while IFS='' read "line" ; do
     if [ "$line" = "@extract_bios_agent_h@" ] ; then
         extract_bios_h
     else
-        echo "$line"
+        echo -E "$line"
     fi
 done <$TEMPLATE
 ) >$OUTPUT
