@@ -1,6 +1,7 @@
 <%pre>
 #include <locale.h>
 #include <stdlib.h>
+#include <cxxtools/regex.h>
 </%pre>
 <%cpp>
 	// Get rid of locales
@@ -18,13 +19,13 @@
 	// Silence the warning about unused "request" variable
 	request.keepAlive();
 
-	// No matter what, we are speaking JSON
-    if (request.getUrl() == "/api/v1/asset/export") {
-	    reply.setContentType("text/plain;charset=UTF-8");
-    }
-    else {
-	    reply.setContentType("application/json;charset=UTF-8");
-    }
+	// No matter what, we are speaking JSON for most of the URLs
+	static cxxtools::Regex rex_GET_text_plain("^/api/v1(/asset/export|/admin/license)$");
+	if(request.getMethod() == "GET" && rex_GET_text_plain.match(request.getUrl())) {
+		reply.setContentType("text/plain;charset=UTF-8");
+	} else {
+		reply.setContentType("application/json;charset=UTF-8");
+	}
 	reply.setHeader(tnt::httpheader::cacheControl, "no-store");
 	reply.setHeader(tnt::httpheader::pragma, "no-cache");
 

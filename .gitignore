@@ -185,6 +185,8 @@ tools/biostimer-graphs-prefetch__realpower.default@.service
 tools/biostimer-outage.service
 !tools/ifplug-dhcp-autoconf.service.in
 tools/ifplug-dhcp-autoconf.service
+!tools/bios-ssh-last-resort.service.in
+tools/bios-ssh-last-resort.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
