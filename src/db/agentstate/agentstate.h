@@ -29,17 +29,17 @@ int
     update_agent_info(
         tntdb::Connection &conn,
         const std::string &agent_name,
-        const char        *data,
-        int                size,
+        const void        *data,
+        size_t             size,
         uint16_t          &affected_rows
         );
 
 int
     select_agent_info(
-        tntdb::Connection &conn,
-        const std::string &agent_name,
-        char              **data,
-        int               &size
+        tntdb::Connection  &conn,
+        const std::string  &agent_name,
+        void              **data,
+        size_t             &size
         );
 
 #endif // SRC_DB_AGENTSTATE_AGENTSTATE_H_

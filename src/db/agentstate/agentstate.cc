@@ -34,8 +34,8 @@ int
     update_agent_info(
         tntdb::Connection &conn,
         const std::string &agent_name,
-        const char        *data,
-        int                size,
+        const void        *data,
+        size_t             size,
         uint16_t          &affected_rows
         )
 {
@@ -50,7 +50,7 @@ int
             "   UPDATE "
             "       info = :info "
         );
-        tntdb::Blob blobData(data, size);
+        tntdb::Blob blobData((const char *)data, size);
 
         affected_rows = st.set("name", agent_name).
                            setBlob("info", blobData).
@@ -69,8 +69,8 @@ int
     select_agent_info(
         tntdb::Connection &conn,
         const std::string &agent_name,
-        char             **data,
-        int               &size
+        void             **data,
+        size_t             &size
         )
 {
     LOG_START;
@@ -96,9 +96,6 @@ int
         size = myBlob.size();
         *data = new char[size];
         memcpy(*data, myBlob.data(), size);
-        //*data = strdup ( myBlob.data());
-        log_debug ("  data = %s", *data);
-        log_debug ("  size = %i", size);
         LOG_END;
         return 0;
     }

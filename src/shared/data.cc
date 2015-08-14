@@ -131,8 +131,8 @@ int
     ui_props_manager::get
         (std::string& result)
 {
-    char *data = NULL;
-    int size = 0;
+    void *data = NULL;
+    size_t size = 0;
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
@@ -144,7 +144,7 @@ int
             return 2;
         }
 
-        result = std::string(data, size);
+        result = std::string((const char *)data, size);
 
         FREE0 (data);
         return 0;
