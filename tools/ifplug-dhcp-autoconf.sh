@@ -88,6 +88,9 @@ else
         [ -n "$OLDINTLIST" ] && ifplugd_on
         die "Could not apply changes to ifplugd config"
     fi
+    if ! /bin/echo -E set /files/etc/default/networking/EXCLUDE_INTERFACES "\"\\\"$INTLIST\\\"\"" | augtool -e -s ; then
+        logmsg_info "WARN: Could not apply changes to networking config, oh well"
+    fi
 fi
 
 if [ -n "$INTLIST" ]; then
