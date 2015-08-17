@@ -334,6 +334,7 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
     ymsg_t *msg = bios_asset_encode(
         "device1",
         1,
+	3,
         2,
         "ok",
         1,
@@ -342,15 +343,18 @@ TEST_CASE ("bios alsset message encoded & decoded", "[agents][public_api]") {
     REQUIRE ( msg );
 
     char *device = NULL, *status = NULL;
-    uint32_t type_id = 0, parent_id = 0;
+    uint32_t type_id = 0;
+    uint32_t subtype_id = 0;
+    uint32_t parent_id = 0;
     uint8_t priority = 0;
     int8_t action_type = 0;
 
-    int x = bios_asset_extract( msg, &device, &type_id, &parent_id, &status, &priority, &action_type);
+    int x = bios_asset_extract( msg, &device, &type_id, &subtype_id, &parent_id, &status, &priority, &action_type);
     REQUIRE( msg );
     REQUIRE ( x == 0 );
     CHECK ( str_eq( device, "device1") );
     CHECK ( type_id == 1 );
+    CHECK ( subtype_id == 3 );
     CHECK ( parent_id == 2 );
     CHECK ( str_eq( status, "ok" ) );
     CHECK ( priority == 1 );

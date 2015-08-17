@@ -522,6 +522,7 @@ static db_a_elmnt_t
     m.priority = priority;
     m.bc = bc;
     m.type_id = type_id;
+    m.subtype_id = subtype_id;
     m.asset_tag = asset_tag;
 
     LOG_END;

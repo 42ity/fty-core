@@ -110,6 +110,7 @@ struct db_a_elmnt_t {
     a_elmnt_pr_t     priority;
     a_elmnt_bc_t     bc;        // business critical
     a_elmnt_tp_id_t  type_id;
+    a_elmnt_stp_id_t subtype_id;
     std::string      asset_tag;
 };
 

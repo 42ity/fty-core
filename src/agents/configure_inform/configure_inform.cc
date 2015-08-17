@@ -38,7 +38,8 @@ void
     for ( auto &oneRow : rows )
     {
         ymsg_t *msg = bios_asset_encode (oneRow.name.c_str(), oneRow.type_id,
-            oneRow.parent_id, oneRow.status.c_str(), oneRow.priority, action_type);
+		oneRow.subtype_id, oneRow.parent_id, oneRow.status.c_str(),
+		oneRow.priority, action_type);
         if ( msg == NULL )
         {
             bios_agent_destroy (&agent);
