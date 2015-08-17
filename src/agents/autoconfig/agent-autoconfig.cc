@@ -28,11 +28,108 @@ Description: autoconfiguration agent
 #include "asset_types.h"
 #include "utils_ymsg.h"
 
+#include <cxxtools/jsonserializer.h>
+#include <cxxtools/jsondeserializer.h>
+#include <preproc.h>
+
+// FIXME: move to shared
+
+std::map<std::string,std::string> zhash_to_map(zhash_t *hash)
+{
+    std::map<std::string,std::string> map;
+    char *item = (char *)zhash_first(hash);
+    while(item) {
+        const char * key = zhash_cursor(hash);
+        const char * val = (const char *)zhash_lookup(hash,key);
+        if( key && val ) map[key] = val;
+        item = (char *)zhash_next(hash);
+    }
+    return map;
+}
+
+inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
+{
+    si.setTypeName("AutoConfigurationInfo");
+    // si.setName(info.name);
+    si.addMember("name") <<= info.name;
+    si.addMember("type") <<= info.type;
+    si.addMember("configured") <<= info.configured;
+    si.addMember("date") <<= std::to_string(info.date); // there are some issues on (int) serialization
+}
+
+inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfigurationInfo& info)
+{
+    si.getMember("name") >>= info.name;
+    si.getMember("type") >>= info.type;
+    si.getMember("configured") >>= info.configured;
+    {
+        std::string date;
+        si.getMember("date") >>= date;
+        info.date = atoi(date.c_str());
+    }
+}
+
+void Autoconfig::loadState()
+{
+    std::string json = R"#([{"first":"mydevice","second":{"name":"mydevice","type":"ups","configured":false, "date":"42"}}])#";
+
+    std::istringstream in(json);
+
+    try {
+        _configurableDevices.clear();
+        cxxtools::JsonDeserializer deserializer(in);
+        std::vector<AutoConfigurationInfo> items;
+        deserializer.deserialize(_configurableDevices);
+    } catch( std::exception &e ) {
+        log_error( "Can't load state from database: %s", e.what() );
+    }
+    // log
+    for( auto a : _configurableDevices) {
+        std::cout << a.first << " " << a.second.type << "\n";
+    }
+}
+
+void Autoconfig::saveState()
+{
+    std::ostringstream stream;
+    cxxtools::JsonSerializer serializer(stream);
+
+    serializer.serialize( _configurableDevices ).finish();
+    std::cout <<">"<< stream.str() << "<\n";
+}
+
+void Autoconfig::onStart( )
+{
+    loadState();
+}
+
 void Autoconfig::onReply( ymsg_t **message )
 {
     if( ! message || ! *message ) return;
+    char *name = NULL;
+    zhash_t *extAttributes = NULL;
+    uint32_t type_id;
+    int8_t event_type;
 
-    ConfigFactory().configureAsset( *message );
+    int extract = bios_asset_extra_extract( *message, &name, &extAttributes, &type_id, NULL, NULL, NULL, NULL, &event_type );
+    log_debug("bios_asset_extra_extract result %i, device type %i", extract, type_id );
+    if(
+        extract  == 0 &&
+        type_id == asset_type::DEVICE
+    ) {
+        // TODO: add subtype to asset message and decide according it
+        // use something like deviceType = zhash_lookup(extAttributes,"subtype");
+        AutoConfigurationInfo device = { .name = name, .type = "ups", .configured = false, .date = 0, .attributes = zhash_to_map(extAttributes) };
+         _configurableDevices[name] = device;
+        /*
+        Configurator *C = getConfigurator( deviceType );
+        C->configure( name, extAttributes, event_type );
+        delete C;
+        */
+    }
+    FREE0(name);
+
+    //ConfigFactory().configureAsset( *message );
 }
 
 void Autoconfig::onSend( ymsg_t **message )
@@ -60,11 +157,19 @@ void Autoconfig::onSend( ymsg_t **message )
     FREE0( device_name );
 }
 
-int main( int argc, char *argv[] )
+void Autoconfig::onPoll( )
 {
-    if( argc > 0 ) {}; // silence compiler warnings
-    if( argv ) {};  // silence compiler warnings
-    
+    _timeout = 0;
+    for( auto &it : _configurableDevices) {
+        if( ! it.second.configured ) {
+            
+
+        }
+    }
+}
+
+int main( UNUSED_PARAM int argc, UNUSED_PARAM char *argv[] )
+{
     int result = 1;
     log_open();
     log_info ("autoconfig agent started");

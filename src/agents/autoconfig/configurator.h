@@ -30,10 +30,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "log.h"
 #include "nutscan.h"
 
+struct AutoConfigurationInfo
+{
+    std::string name;
+    std::string type;
+    bool configured;
+    time_t date;
+    std::map<std::string,std::string> attributes;
+};
+
 class Configurator {
  public:
     virtual ~Configurator() {};
-    virtual bool configure( const char *name, zhash_t *extendedAttributes, int8_t eventType );
+    virtual bool configure( const char *name, const std::map<std::string,std::string> &extendedAttributes, int8_t eventType );
 };
 
 class NUTConfigurator : public Configurator {
@@ -41,7 +50,7 @@ class NUTConfigurator : public Configurator {
     virtual ~NUTConfigurator() {};
     std::vector<std::string>::const_iterator selectBest( const std::vector<std::string> &configs);
     void updateNUTConfig();
-    bool configure(  const char *name, zhash_t *extendedAttributes, int8_t eventType );
+    bool configure(  const char *name, const std::map<std::string,std::string> &extendedAttributes, int8_t eventType );
  private:
     std::vector<std::string>::const_iterator stringMatch( const std::vector<std::string> &texts, const char *pattern);
     bool match( const std::vector<std::string> &texts, const char *pattern);
@@ -54,7 +63,7 @@ class NUTConfigurator : public Configurator {
 
 class ConfigFactory {
  public:
-    bool configureAsset(ymsg_t *message);
+    bool configureAsset(AutoConfigurationInfo &info);
  private:
     Configurator * getConfigurator(std::string type);
 };

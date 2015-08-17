@@ -28,6 +28,7 @@ Description: Clases for autoconfiguration
 #include <iostream>
 #include <fstream>
 #include <cxxtools/regex.h>
+#include <preproc.h>
 
 #include "log.h"
 #include "subprocess.h"
@@ -140,7 +141,7 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
-bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType ) {
+bool NUTConfigurator::configure( const char *name, const std::map<std::string,std::string> &extendedAttributes, int8_t eventType ) {
     log_debug("NUT configurator");
     if( eventType != 1 && eventType != 2 ) {
         // TODO: enum? numbers come from agents.h bios_asset_encode/extract
@@ -148,11 +149,12 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
         return false;
     }
 
-    const char *IP = (const char *)zhash_lookup( extendedAttributes, "ip.1" );
-    if( ! IP ) {
+    auto ipit = extendedAttributes.find("ip.1");
+    if( ipit == extendedAttributes.end() ) {
         log_debug("device %s has no IP address", name);
         return false;
     }
+    std::string IP = ipit->second;
 
     std::vector<std::string> configs;
     shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
@@ -174,9 +176,8 @@ bool NUTConfigurator::configure( const char *name, zhash_t *extendedAttributes, 
     return true;
 }
 
-bool Configurator::configure( const char *name, zhash_t *extendedAttributes, int8_t eventType )
+bool Configurator::configure( UNUSED_PARAM const char *name, UNUSED_PARAM const std::map<std::string,std::string> &extenedAttributes, UNUSED_PARAM int8_t eventType )
 {
-    if( name || extendedAttributes || eventType ) { } // silence compiler warning
     log_debug("dummy configurator");
     return false;
 }
@@ -192,28 +193,11 @@ Configurator * ConfigFactory::getConfigurator(std::string type) {
     return new Configurator();
 }
 
-bool ConfigFactory::configureAsset(ymsg_t *message) {
-    if( ! message ) return false;
-    char *name = NULL;
-    zhash_t *extAttributes = NULL;
-    uint32_t type_id;
-    int8_t event_type;
-    bool result = false;
-
-    int extract = bios_asset_extra_extract( message, &name, &extAttributes, &type_id, NULL, NULL, NULL, NULL, &event_type );
-    log_debug("bios_asset_extra_extract result %i, device type %i", extract, type_id );
-    if(
-        extract  == 0 &&
-        type_id == asset_type::DEVICE
-    ) {
-        // TODO: add subtype to asset message and decide according it
-        // use something like deviceType = zhash_lookup(extAttributes,"subtype");
-        const char *deviceType = "ups";
-        // result = getConfigurator( deviceType ).configure( name, extAttributes, event_type );
-        Configurator *C = getConfigurator( deviceType );
-        C->configure( name, extAttributes, event_type );
-        delete C;
-    }
-    FREE0(name);
+bool ConfigFactory::configureAsset(AutoConfigurationInfo &info) {
+    log_debug("configuration attempt device name %s type %s", info.name.c_str(), info.type.c_str() );
+    // result = getConfigurator( deviceType ).configure( name, extAttributes, event_type );
+    Configurator *C = getConfigurator( info.type );
+    bool result = C->configure( info.name.c_str(), info.attributes, 0 );
+    delete C;
     return result;
 }

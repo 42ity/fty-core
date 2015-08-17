@@ -31,10 +31,16 @@ class Autoconfig : public BIOSAgent {
     explicit Autoconfig( const char *agentName ) :BIOSAgent( agentName ) {  };
     explicit Autoconfig( const std::string &agentName ) :BIOSAgent( agentName ) { };
 
+    void onStart( );
+    void onEnd( ) { saveState(); };
     void onReply( ymsg_t **message );
     void onSend( ymsg_t **message );
+    void onPoll( );
  private:
+    void saveState();
+    void loadState();
     ConfigFactory _configurator;
+    std::map<std::string,AutoConfigurationInfo> _configurableDevices;
 };
 
 #endif // SRC_AGENTS_AUTOCONFIG_AGENT_H__
