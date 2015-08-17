@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # Copyright (c) 2014 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
@@ -15,115 +15,142 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-#! \file    ci-test-netcfg.sh
-#  \brief   rfc-11 admin/netcfg admin/netcfgs automated test
-#  \author  Karol Hrdina <KarolHrdina@Eaton.com>
-#  \version 1.3
-#
+
+# \file    ci-test-netcfg.sh
+# \brief   rfc-11 admin/netcfg admin/netcfgs automated test
+# \author  Karol Hrdina <KarolHrdina@Eaton.com>
+# \version 1.3
+
 # Requirements:
 #   Following environment variables are expected to be exported:
 #   SUT_HOST
-#   SUT_SSH_PORT
 #   SUT_WEB_PORT
 # Todos:
-#   flock
+#   flock - http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 #   netcfg PUT tests - license issue
+
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
+[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "FATAL: $0: Could not include script library" >&2; exit 1; }
+
+# Set up weblib test engine
+WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
+WEBLIB_QUICKFAIL=no
+WEBLIB_CURLFAIL=no
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
+export BASE_URL="http://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
+
 # Include our standard web routines for CI scripts
 . "`dirname $0`"/weblib.sh || \
     { echo "FATAL: $0: Could not include web script library" >&2; exit 1; }
 
+# Setting BUILDSUBDIR and CHECKOUTDIR
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
+
+PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+export PATH
+
+
+
 declare -r REST_NETCFGS="/admin/netcfgs"
 declare -r REST_NETCFG="/admin/netcfg"
+
 declare -r IFACES_PATH="/etc/network"
 declare -r IFACES_FILE="interfaces"
 declare -r IFACES_FILE_INITIAL="${IFACES_FILE}_initial"
+
 declare -r RESOLV_PATH="/etc"
 declare -r RESOLV_FILE="resolv.conf"
 declare -r RESOLV_FILE_INITIAL="${RESOLV_FILE}_initial"
+
 declare -r JSON_EXPECTED_FILE="json_expected"
 declare -r JSON_RECEIVED_FILE="json_received"
+
 declare -r LOCKFILE="/tmp/ci-test-netcfg.lock"
 
-usage () {
-cat << EOF
-USAGE: `basename $0`  
 
-DESCRIPTION:
-    Performs automated tests for 'admin/netcfg', 'admin/netcfgs' rest api calls
+test_web_port() {
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
+}
+test_web_process() {
+    [ -z "$MAKEPID" ] && return 0
 
-REQUIREMENTS:
-    Following environemnt variables are expected to be set
-        SUT_HOST
-        SUT_SSH_PORT
-        SUT_WEB_PORT
-EOF
+    if [ ! -d /proc/$MAKEPID ]; then
+        logmsg_error "Web-server process seems to have died!" >&2
+        # Ensure it is dead though, since we abort the tests now
+        kill $MAKEPID >/dev/null 2>&1
+        wait $MAKEPID >/dev/null 2>&1
+        return
+    fi
+    return 0
+}
+wait_for_web() {
+    for a in $(seq 60) ; do
+        sleep 5
+        test_web_process || exit
+        if ( test_web_port ) ; then
+            return 0
+        fi
+    done
+    logmsg_error "Port ${SUT_WEB_PORT} still not in LISTEN state" >&2
+    return 1
 }
 
-# Restore config file on remote host to initial state
+# Restore config file to initial state 
+# Backup of initial /etc/resolv.conf and /etc/network/interfaces are stored in $TMP_DIR upon start of this test. 
 #
-# Expectes the following variables to be non-empty: TMP_DIR, HOST, PORT_SSH
+# Expects the following variables to be non-empty: TMP_DIR
+#
 # Arguments
 #   $1 - config file name; accepts: "interfaces", "resolv.conf"
 # Returns:
 #   1 - error
 #   0 - success
-restore_config() {
+restore_config() {  
     # arguments check
-    [[ -z "$TMP_DIR" || -z "$HOST" || -z "$PORT_SSH" ]] && return 1
+    [[ -z "$TMP_DIR" ]] && return 1
     if [ $# -lt 1 ]; then
         logmsg_error "restore_config(): wrong number of arguments."
         return 1
     fi
     if [[ "$1" != "$IFACES_FILE" && "$1" != "$RESOLV_FILE" ]]; then
-        logmsg_error "restore_config(): bad argument."
+        logmsg_error "restore_config(): bad argument '$1'. Valid values: '${IFACES_FILE}', '${RESOLV_FILE}'."        
         return 1
     fi
-    [[ ! -e "${TMP_DIR}" ]]
 
-    local __remote=
-    local __initial="${TMP_DIR}"
+    local __to=
+    local __from="${TMP_DIR}"
     case "$1" in
         "$IFACES_FILE")
-            __remote="${IFACES_PATH}/${IFACES_FILE}"
-            __initial="${__initial}/${IFACES_FILE_INITIAL}"
+            __to="${IFACES_PATH}/${IFACES_FILE}"
+            __from="${__from}/${IFACES_FILE_INITIAL}"
             ;;
         "$RESOLV_FILE")
-            __remote="${RESOLV_PATH}/${RESOLV_FILE}"
-            __initial="${__initial}/${RESOLV_FILE_INITIAL}"
+            __to="${RESOLV_PATH}/${RESOLV_FILE}"
+            __from="${__from}/${RESOLV_FILE_INITIAL}"
             ;;
     esac
-    scp -q -P "${PORT_SSH}" "${__initial}" "root@${HOST}:${__remote}"
+    cp -f "$__from" "$__to"
     if [[ $? -ne 0 ]]; then
-        logmsg_error "restore_config(): restoring config file on ${__remote} on ${HOST} failed; scp failed."
+        logmsg_error "restore_config(): Copying "$__from" to "$__to" failed."
         return 1
     else
         return 0
     fi
 }
 
-array_contains () {
-    # TODO arg check?
-    local __arr_name="$1[@]"
-    local __needle="$2"
-    local __element=
-    local __contains=1;
-    for __element in "${!__arr_name}"; do
-        if [[ "${__element}" == "${__needle}" ]]; then
-            __contains=0
-            break
-        fi
-    done
-    return $__contains
-}
-
 cleanup() {
     local __exit=$?    
-    rm -f "$LOCKFILE";
+    rm -f "$LOCKFILE"
     if [[ -n "$TMP_DIR" && -e "$TMP_DIR" ]]; then
         if [ $__exit -ne 0 ]; then
             echo "Test failed => no cleanup; so it's possible to look at files."        
@@ -132,39 +159,73 @@ cleanup() {
             rm -rf "$TMP_DIR"
         fi
     fi
+    if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
+        logmsg_info "Killing make web-test PID $MAKEPID to exit."
+        kill -INT "$MAKEPID"
+    fi   
+    killall -INT tntnet 2>/dev/null
+    sleep 1
+    killall      tntnet 2>/dev/null
+    sleep 1
+    ps -ef | grep -v grep | egrep "tntnet" | egrep "^`id -u -n` " && \
+        ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
+        logmsg_error "tntnet still alive, trying SIGKILL" && \
+        { killall -KILL tntnet 2>/dev/null ; exit 1; }
+
     exit $__exit
 }
 
-### Script starts here ###
-declare -r HOST="$SUT_HOST"
-declare -r PORT_SSH="$SUT_SSH_PORT"
-declare -r PORT_HTTP="$SUT_WEB_PORT"
-export BASE_URL="${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
-
-if [[ -z "$PORT_SSH" || -z "$PORT_HTTP" || -z "$HOST" ]]; then
-    usage
-    exit 1
-fi
+### Environment preparation ###
+# Assumptions:
+#   `ci-rc-bios.sh --stop` is called prior to invoking this script
+#   script is called as root
 
 # Previous executions should execute successfully
 [ -f "$LOCKFILE" ] && exit 0
 trap "cleanup" EXIT
-# TODO flock here
-# http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 touch "$LOCKFILE"
+ 
+test_web_port && die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free."
 
-echo "HOST: '$HOST'"$'\n'"PORT_HTTP: '$PORT_HTTP'"$'\n'"PORT_SSH: '$PORT_SSH'"
-
-# Placeholder
-
-# 0. Sanity check
-read -r -d '' SSH_CMD <<EOF-CMD
-if [[ ! -e "${IFACES_PATH}/${IFACES_FILE}" ]]; then
-    exit 1
+# make sure sasl is running
+if ! systemctl --quiet is-active saslauthd; then
+    logmsg_info "Starting saslauthd..."
+    systemctl start saslauthd || die "Could not start saslauthd."
 fi
-EOF-CMD
-ssh -p "${PORT_SSH}" "root@${HOST}" "${SSH_CMD}" || \
-    die "ssh connection error OR  '${IFACES_PATH}/${IFACES_FILE}' not found on remote '$HOST'."
+
+# check sasl is working
+testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" || \
+    die "saslauthd is NOT responsive or not configured!"
+
+# make sure database is running
+if ! systemctl --quiet is-active mysql; then
+    logmsg_info "Starting mysql..."
+    systemctl start mysql || die "Could not start mysql."
+fi
+
+# do the webserver
+LC_ALL=C
+LANG=C
+export BIOS_USER BIOS_PASSWD SASL_SERVICE LC_ALL LANG
+if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
+    ./autogen.sh --nodistclean --configure-flags \
+    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    ${AUTOGEN_ACTION_CONFIG} || exit
+fi
+./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+
+./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
+MAKEPID=$!
+
+wait_for_web || die "Web-server is NOT responsive!"
+sleep 5
+test_web_process || die "test_web_process() failed."
+
+### Script starts here ###
+
+# 0. Sanity check: /etc/network/interfaces must exist
+[[ -e "${IFACES_PATH}/${IFACES_FILE}" ]] || \
+    die "'${IFACES_PATH}/${IFACES_FILE}' does not exist."
 
 # 1. Create temporary dir under /tmp
 declare -r TMP_DIR=$(mktemp -d)
@@ -176,20 +237,19 @@ echo "Temporary directory created successfully: '${TMP_DIR}'."
 
 # 2. Store the initial /etc/resolv.conf
 # If /etc/resolv.conf not present it is functionally equivalent to being empty
-read -r -d '' SSH_CMD <<EOF-CMD
 if [[ ! -e "${RESOLV_PATH}/${RESOLV_FILE}" ]]; then
-    touch "${RESOLV_PATH}/${RESOLV_FILE}"
+    touch "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
+else
+    cp -f "${RESOLV_PATH}/${RESOLV_FILE}" "${TMP_DIR}/${RESOLV_FILE_INITIAL}" || \
+        die "copying '${RESOLV_PATH}/${RESOLV_FILE}' to '${TMP_DIR}/${RESOLV_FILE_INITIAL}' failed."
 fi
-EOF-CMD
-ssh -p "${PORT_SSH}" "root@${HOST}" "${SSH_CMD}" || \
-    die "ERROR: TODO ssh "
-scp -q -P "${PORT_SSH}" "root@${HOST}:${RESOLV_PATH}/${RESOLV_FILE}" "${TMP_DIR}/${RESOLV_FILE_INITIAL}" || \
-    die "ERROR: TODO scp"
+# Remove comments
 perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
 
 # 3. Store the initial /etc/network/interfaces
-scp -q -P "${PORT_SSH}" "root@${HOST}:${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_INITIAL}" || \
-    die "ERROR: scp failed"
+cp -f "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_INITIAL}" || \
+    die "copying '${IFACES_PATH}/${IFACES_FILE}' to '${TMP_DIR}/${IFACES_FILE_INITIAL}' failed."
+# Remove comments
 perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 
 # 3.1 Parse out into array iface names of the initial /etc/network/interfaces
@@ -197,9 +257,6 @@ declare -a tmp_arr
 while IFS='' read -r line || [[ -n "$line" ]]; do
     if [[ $line =~ ^[[:space:]]*iface[[:space:]]+([[:alnum:]]+)[[:space:]]+ ]]; then
         tmp_arr+=( "${BASH_REMATCH[1]}" )
-#        for i in $line; do
-#            tmp_arr+=($i)
-#        done
     fi
 done < "${TMP_DIR}/${IFACES_FILE_INITIAL}"
 declare -ar INITIAL_IFACE_NAMES=("${tmp_arr[@]}")
@@ -248,22 +305,19 @@ echo "SUCCESS"
 ########################
 TEST_CASE="Netcfgs_Read_002"
 echo -e "=====\t\tTEST_CASE: $TEST_CASE\t\t====="
-# Make a copy of the interfaces_initial that we'll modify
-cat "${TMP_DIR}/${IFACES_FILE_INITIAL}" > "${TMP_DIR}/${IFACES_FILE}"
 
 for i in "${INITIAL_IFACE_NAMES[@]}"; do
-    # remove interface ${i} from 'tmp/tmp.XXXXX/interfaces'
-    perl -pi -e "s/auto(.+?)${i}(.*?)\n/auto\1\2\n/gs" "${TMP_DIR}/${IFACES_FILE}"
-    perl -pi -e "s/allow-hotplug(.+?)${i}(.*?)\n/allow-hotplug\1\2\n/gs" "${TMP_DIR}/${IFACES_FILE}"
-    perl -pi -e "BEGIN{undef $/;} s/iface(\s+)${i}.*?(iface|\Z)/\2/gs" "${TMP_DIR}/${IFACES_FILE}"
-    perl -pi -e "s/allow-hotplug\s*\n*$//gs" "${TMP_DIR}/${IFACES_FILE}"
-    perl -pi -e "s/^auto\s*\n*$//gs" "${TMP_DIR}/${IFACES_FILE}"
-    perl -pi -e "s/^[\s\n]*\Z//gs" "${TMP_DIR}/${IFACES_FILE}"
+    # remove interface ${i}
+    perl -pi -e "s/auto(.+?)${i}(.*?)\n/auto\1\2\n/gs" "${IFACES_PATH}/${IFACES_FILE}"
+    perl -pi -e "s/allow-hotplug(.+?)${i}(.*?)\n/allow-hotplug\1\2\n/gs" "${IFACES_PATH}/${IFACES_FILE}"
+    perl -pi -e "BEGIN{undef $/;} s/iface(\s+)${i}.*?(iface|\Z)/\2/gs" "${IFACES_PATH}/${IFACES_FILE}"
+    perl -pi -e "s/allow-hotplug\s*\n*$//gs" "${IFACES_PATH}/${IFACES_FILE}"
+    perl -pi -e "s/^auto\s*\n*$//gs" "${IFACES_PATH}/${IFACES_FILE}"
+    perl -pi -e "s/^[\s\n]*\Z//gs" "${IFACES_PATH}/${IFACES_FILE}"
 
-    scp -q -P "${PORT_SSH}" "${TMP_DIR}/${IFACES_FILE}" "root@${HOST}:${IFACES_PATH}/${IFACES_FILE}" || \
-        die "scp TODO"
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
+    # File "${TMP_DIR}/${JSON_EXPECTED_FILE}" is present and correctly set from previous 'Netcfgs_Read_001' test execution
     perl -pi -e "s/,\s*\"${i}\"//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\"${i}\"\s*,//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\[\s*\"${i}\"\s*\]/[]/g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
@@ -276,7 +330,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
         [ $HTTP_CODE -eq 404  ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 404, received: $HTTP_CODE."
     fi
 done
-restore_config "$IFACES_FILE" || die "Restoring $IFACES_FILE failed."
+restore_config "$IFACES_FILE" || die "Restoring '$IFACES_FILE' failed."
 echo "SUCCESS"
 
 ########################
@@ -309,7 +363,7 @@ read -r -d '' TEMPLATE <<'EOF-TMPL'
 }
 EOF-TMPL
 for i in "${INITIAL_IFACE_NAMES[@]}"; do
-    tmp=$( cat "${TMP_DIR}/${IFACES_FILE_INITIAL}" )
+    tmp=$( cat "${IFACES_PATH}/${IFACES_FILE}" )
     regex="(iface\s+$i.+?)(iface|\Z)"
     tmp=$(echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/'"$regex"'/gs; print $1')
 
