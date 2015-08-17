@@ -1,38 +1,34 @@
 #!/bin/bash
-
-###############################################################################
-#                                                                             #
-# Copyright (C) 2014 Eaton                                                    #
-#                                                                             #
-# This program is free software: you can redistribute it and/or modify        #
-# it under the terms of the GNU General Public License as published by        #
-# the Free Software Foundation; either version 3 of the License, or           #
-# (at your option) any later version.                                         #
-#                                                                             #
-# This program is distributed in the hope that it will be useful,             #
-# but WITHOUT ANY WARRANTY; without even the implied warranty of              #
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the               #
-# GNU General Public License for more details.                                #
-#                                                                             #
-# You should have received a copy of the GNU General Public License           #
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.       #
-#                                                                             #
-###############################################################################
-
-###############################################################################
-#                                                                             #
-# Author: Karol Hrdina <KarolHrdina@eaton.com>                                #
-# Description: rfc-11 admin/netcfg admin/netcfgs automated test               #
-# Version: 1.3                                                                #
-# Requirements:                                                               #
-#   Following environment variables are expected to be exported:              #
-#   SUT_HOST                                                                  #
-#   SUT_SSH_PORT                                                              #
-#   SUT_WEB_PORT                                                              #
-# Todos:                                                                      #
-#   flock                                                                     #
-#   netcfg PUT tests - license issue                                          #
-###############################################################################
+#
+# Copyright (c) 2014 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    ci-test-netcfg.sh
+#  \brief   rfc-11 admin/netcfg admin/netcfgs automated test
+#  \author  Karol Hrdina <KarolHrdina@Eaton.com>
+#  \version 1.3
+#
+# Requirements:
+#   Following environment variables are expected to be exported:
+#   SUT_HOST
+#   SUT_SSH_PORT
+#   SUT_WEB_PORT
+# Todos:
+#   flock
+#   netcfg PUT tests - license issue
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
@@ -143,6 +139,7 @@ cleanup() {
 declare -r HOST="$SUT_HOST"
 declare -r PORT_SSH="$SUT_SSH_PORT"
 declare -r PORT_HTTP="$SUT_WEB_PORT"
+export BASE_URL="${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
 
 if [[ -z "$PORT_SSH" || -z "$PORT_HTTP" || -z "$HOST" ]]; then
     usage
@@ -317,7 +314,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     tmp=$(echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/'"$regex"'/gs; print $1')
 
     method=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/iface\s+\S+\s+\S+\s+(\S+)/gs; print $1' )
-    address=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/address\s+(\S+)/gs; print $1' )
+    address=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/\baddress\s+(\S+)/gs; print $1' )
     netmask=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/netmask\s+(\S+)/gs; print $1' )
     gateway=$( echo "$tmp" | perl -lne 'BEGIN{undef $/;} m/gateway\s+(\S+)/gs; print $1' )
 

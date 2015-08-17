@@ -1,9 +1,11 @@
 [Unit]
-Description=Preconfigures ifplugd with currently known DHCP interfaces
-Requires=networking.service
-ReloadPropagatedFrom=networking.service
-Before=ifplugd.service
+Description=Preconfigure ifplugd with currently tracked interfaces and yank them from default networking
+DefaultDependencies=no
+After=mountkernfs.service local-fs.target urandom.service
+Before=ifplugd.service networking.service
+Conflicts=shutdown.target
 PropagatesReloadTo=ifplugd.service
+ReloadPropagatedFrom=networking.service
 
 [Service]
 Type=simple

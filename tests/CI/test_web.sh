@@ -1,10 +1,10 @@
 #!/bin/bash
-
+#
 # Copyright (C) 2014 Eaton
 #
-# This program is free software: you can redistribute it and/or modify
+# This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
+# the Free Software Foundation; either version 2 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
@@ -12,14 +12,15 @@
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-# Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>,
-#            Tomas Halman <TomasHalman@eaton.com>,
-#            Jim Klimov <EvgenyKlimov@eaton.com>
-#
-# Description: This script automates tests of REST API for the $BIOS project
+#! \file   test_web.sh
+#  \brief  This script automates tests of REST API for the $BIOS project
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
 
 if [ $# -eq 0 ]; then
     echo "ERROR: test_web.sh is no longer suitable to run all REST API tests"
@@ -43,32 +44,42 @@ SKIPPED_NONSH_TESTS=0
 #   onlyerrors = do only tests expected to fail (not for curlbbwget.sh)
 [ -z "$SKIP_SANITY" ] && SKIP_SANITY=no
 
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --port-web|--sut-port-web|-wp|--port)
+            SUT_WEB_PORT="$2"
+            shift
+            ;;
+        --host|--machine|-sh|--sut|--sut-host)
+            SUT_HOST="$2"
+            shift
+            ;;
+        -u|--user|--bios-user)
+            BIOS_USER="$2"
+            shift
+            ;;
+        -p|--passwd|--bios-passwd)
+            BIOS_PASSWD="$2"
+            shift
+            ;;
+        -s|--service)
+            SASL_SERVICE="$2"
+            shift
+            ;;
+        -q|--quick) SKIP_SANITY=yes ;;
+        *)  # fall through - these are lists of tests to do
+            break
+            ;;
+    esac
+    shift
+done
+
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "CI-FATAL: $0: Can not include script library" >&2; exit 1; }
 NEED_BUILDSUBDIR=no determineDirs_default || true
 . "`dirname $0`/weblib.sh" || CODE=$? die "Can not include web script library"
 #cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
-
-while [ $# -gt 0 ]; do
-    case "$1" in
-    -u|--user)
-        BIOS_USER="$2"
-        shift 2
-        ;;
-    -p|--passwd)
-        BIOS_PASSWD="$2"
-        shift 2
-        ;;
-    -s|--service)
-        SASL_SERVICE="$2"
-        shift 2
-        ;;
-    *)  # fall through - these are lists of tests to do
-        break
-        ;;
-    esac
-done
 
 [ -n "$BIOS_USER"   ] || BIOS_USER="bios"
 [ -n "$BIOS_PASSWD" ] || BIOS_PASSWD="nosoup4u"
@@ -224,11 +235,11 @@ for i in $POSITIVE; do
     ### Default value for logging the test items
     TNAME="$NAME"
 
-    _weblib_result_printed=notest
+    _testlib_result_printed=notest
     . ./"$NAME" 5> "$REALLIFE_RESULT"
     RES=$?
 
-    [ "$_weblib_result_printed" = notest ] && \
+    [ "$_testlib_result_printed" = notest ] && \
         logmsg_error "NOTE: Previous test(s) apparently did not use test_it()" \
             "to begin logging, amending that omission now by assigning filename" \
             "as the test name:" && \
@@ -262,7 +273,7 @@ for i in $POSITIVE; do
         print_result $RES
     else
         # This might do nothing, if the test file already ended with a print_result
-        if [ "$_weblib_result_printed" != yes ]; then
+        if [ "$_testlib_result_printed" != yes ]; then
         logmsg_info "No expected-results file was found for test script '$NAME'," \
             "so nothing to compare real-life output against. Note that the result" \
             "below ($RES) may refer to execution of the test script itself and" \
