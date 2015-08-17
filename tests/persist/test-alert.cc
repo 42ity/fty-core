@@ -4,6 +4,8 @@
 #include "log.h"
 
 #include "db/alerts.h"
+#include "db/assets.h"
+#include "db/asset_general.h"
 #include "assetcrud.h"
 #include "monitor.h"
 
@@ -274,7 +276,7 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     a_elmnt_bc_t     bc = 3;
     a_dvc_tp_id_t    subtype_id = 3;
 
-    auto reply_insert_element = insert_into_asset_element (conn, element_name,
+    auto reply_insert_element = persist::insert_into_asset_element (conn, element_name,
         element_type_id, parent_id, status, priority_el, bc, subtype_id,
         UGLY_ASSET_TAG2);
     uint64_t rowid_element = reply_insert_element.rowid;
@@ -287,11 +289,11 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     uint64_t rowid_device = common_msg_rowid (o_reply_insert_device);
 
     //insert monitor_asset relation
-    auto reply_insert_ma = insert_into_monitor_asset_relation (conn, rowid_device, rowid_element);
+    auto reply_insert_ma = persist::insert_into_monitor_asset_relation (conn, rowid_device, rowid_element);
     uint64_t rowid_ma = reply_insert_ma.rowid;
 
     // first insert
-    auto reply_insert1 = insert_into_alert_device (conn, rowid_alert, element_name);
+    auto reply_insert1 = persist::insert_into_alert_device (conn, rowid_alert, element_name);
     REQUIRE ( reply_insert1.status == 1 );
     uint64_t rowid = reply_insert1.rowid;
     CAPTURE ( rowid );
@@ -304,12 +306,12 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     REQUIRE ( reply_select.item.at(0) == rowid_device );
 
     // must handle duplicate insert without insert
-    reply_insert1 = insert_into_alert_device (conn, rowid_alert, element_name);
+    reply_insert1 = persist::insert_into_alert_device (conn, rowid_alert, element_name);
     REQUIRE ( reply_insert1.status == 1 );
     REQUIRE ( reply_insert1.affected_rows == 0 );
 
     // first delete
-    auto reply_delete = delete_from_alert_device (conn, rowid);
+    auto reply_delete = persist::delete_from_alert_device (conn, rowid);
     REQUIRE ( reply_delete.affected_rows == 1 );
     REQUIRE ( reply_delete.status == 1 );
 
@@ -467,7 +469,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
     std::vector <link_t> links{};
     std::set <a_elmnt_id_t> groups{};
     
-    auto reply_insert_element1 = insert_device
+    auto reply_insert_element1 = persist::insert_device
        (conn, links, groups, element_name1, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
@@ -477,7 +479,7 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
 
     //insert element
     const char *element_name2 = "test_element_name6.2";
-    auto reply_insert_element2 = insert_device
+    auto reply_insert_element2 = persist::insert_device
        (conn, links, groups, element_name2, parent_id,
         NULL, asset_device_type_id, asset_device_type_name,
         status, priority_el, bc, UGLY_ASSET_TAG2);
@@ -527,8 +529,8 @@ TEST_CASE("insert_alert_new #6","[db][CRUD][insert][delete][alert][crud_test.sql
     delete_from_alert_device_byalert (conn, rowid_alert);
     delete_from_alert (conn, rowid_alert);
 
-    delete_device (conn, rowid_element1);
-    delete_device (conn, rowid_element2);
+    persist::delete_device (conn, rowid_element1);
+    persist::delete_device (conn, rowid_element2);
 
     log_close();
 }

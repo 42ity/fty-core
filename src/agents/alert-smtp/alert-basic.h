@@ -17,7 +17,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 /*! \file alert.h
     \brief Class for basic alert
-    \author Chernikava Alena <AlenaChernikava@eaton.com>
+    \author Chernikava Alena <AlenaChernikava@Eaton.com>
 */
  
 #ifndef SRC_AGENTS_ALERT_SMTP_ALERT_BASIC_H__

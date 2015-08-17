@@ -1,32 +1,33 @@
 /*
 Copyright (C) 2014 Eaton
- 
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 /*! \file   dbtypes.h
     \brief  Contains type definitions for database entities and some constants.
             Should be used for all manipulations with database.
-    \author Alena Chernikava <alenachernikava@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #ifndef SRC_PERSIST_DBTYPES_H_
 #define SRC_PERSIST_DBTYPES_H_
 
+#include <inttypes.h>
+
 #define SRCOUT_DESTIN_IS_NULL "999"
 #define INPUT_POWER_CHAIN     1
-
 
 // ----- table:  t_bios_alert -------------------------
 // ----- column: id -----------------------------------
@@ -69,6 +70,12 @@ typedef uint32_t a_grp_rltn_id_t;
 // TODO tntdb can't manage uint8_t, so for now there is
 // uint16_t
 typedef uint16_t  a_elmnt_tp_id_t;
+
+// ----- table:  t_bios_asset_element_type ------------
+// ----- column: id_asset_element_type  ---------------
+// TODO tntdb can't manage uint8_t, so for now there is
+// uint16_t
+typedef uint16_t  a_elmnt_stp_id_t;
 
 // ----- table:  t_bios_asset_device_type -------------
 // ----- column: id_asset_device_type -----------------

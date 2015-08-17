@@ -1,24 +1,19 @@
 /* 
 Copyright (C) 2014 - 2015 Eaton
  
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
-/*
-Author(s): Tomas Halman <tomashalman@eaton.com>
-
-Description: autoconfiguration agent
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 #include "agent-autoconfig.h"
@@ -138,10 +133,11 @@ void Autoconfig::onSend( ymsg_t **message )
 
     char *device_name = NULL;
     uint32_t type = 0;
+    uint32_t subtype = 0;
     int8_t operation;
 
     int x;
-    if( (x = bios_asset_extract( *message, &device_name, &type, NULL, NULL, NULL, &operation )) == 0 ) {
+    if( (x = bios_asset_extract( *message, &device_name, &type, &subtype, NULL, NULL, NULL, &operation )) == 0 ) {
         log_debug("Asset message for %s type %" PRIu32, device_name, type );
         if( type == asset_type::DEVICE ) {
             ymsg_t *extended = bios_asset_extra_encode( device_name, NULL, 0, 0, NULL, 0, 0, operation );

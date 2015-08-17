@@ -1,9 +1,9 @@
 /*
 Copyright (C) 2014 - 2015 Eaton
 
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -11,8 +11,9 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 #include <czmq.h>
@@ -423,6 +424,7 @@ bios_alert_extract(ymsg_t *self,
 ymsg_t *
 bios_asset_encode( const char *devicename,
                    uint32_t type_id,
+                   uint32_t subtype_id,
                    uint32_t parent_id,
                    const char* status,
                    uint8_t priority,
@@ -436,6 +438,7 @@ bios_asset_encode( const char *devicename,
     app_set_name( app, "ASSET" );
     app_args_set_string( app, "devicename", devicename );
     if( type_id ) app_args_set_uint32( app, "type_id", type_id );
+    if( subtype_id ) app_args_set_uint32( app, "subtype_id", subtype_id );
     if( parent_id ) app_args_set_uint32( app, "parent_id", parent_id );
     if( status ) app_args_set_string( app, "status", status );
     if( priority ) app_args_set_uint8( app, "priority", priority );
@@ -448,6 +451,7 @@ int
 bios_asset_extract(ymsg_t *message,
                    char **devicename,
                    uint32_t *type_id,
+                   uint32_t *subtype_id,
                    uint32_t *parent_id,
                    char **status,
                    uint8_t *priority,
@@ -491,6 +495,11 @@ bios_asset_extract(ymsg_t *message,
         *type_id = app_args_uint32( app, "type_id" );
         if( errno ) goto bios_asset_extract_err;
     }
+    if( subtype_id ) {
+        *subtype_id = app_args_uint32( app, "subtype_id" );
+        if( errno ) goto bios_asset_extract_err;
+    }
+
     if( parent_id ) {
         *parent_id = app_args_uint32( app, "parent_id" );
         if( errno ) goto bios_asset_extract_err;

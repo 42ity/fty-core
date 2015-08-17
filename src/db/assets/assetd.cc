@@ -1,24 +1,24 @@
 /*
 Copyright (C) 2014-2015 Eaton
  
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file assetcr.cc
-    \brief Pure DB API for delete for different tables
-
-    \author Alena Chernikava <alenachernikava@eaton.com>
+/*! \file   assetd.cc
+    \brief  Pure DB API for delete for different tables
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
 #include <tntdb/connect.h>
@@ -42,6 +42,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //=============================================================================
 // ATTENTION: in theory there could exist more than one link 
 // between two devices
+
+namespace persist {
+
 db_reply_t
     delete_asset_link
         (tntdb::Connection &conn, 
@@ -709,148 +712,4 @@ db_reply_t
     }
 }
 
-//=============================================================================
-db_reply_t
-    delete_dc_room_row_rack
-        (tntdb::Connection &conn,
-        a_elmnt_id_t element_id)
-{
-    LOG_START;
-    tntdb::Transaction trans(conn);
-
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.affected_rows == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
-    
-    auto reply_delete2 = delete_asset_element_from_asset_groups
-                                                        (conn, element_id);
-    if ( reply_delete2.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing from groups");
-        return reply_delete2;
-    }
-    
-    auto reply_delete3 = delete_monitor_asset_relation_by_a 
-                                                (conn, element_id);
-    if ( reply_delete3.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing ma relation");
-        return reply_delete3;
-    }
-
-    auto reply_delete4 = delete_asset_element (conn, element_id);
-    if ( reply_delete4.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing element");
-        return reply_delete4;
-    }
- 
-    trans.commit();
-    LOG_END;
-    return reply_delete4;
-}
-
-//=============================================================================
-db_reply_t
-    delete_group
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id)
-{
-    LOG_START;
-    tntdb::Transaction trans(conn);
-
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
- 
-    auto reply_delete2 = delete_asset_group_links (conn, element_id);
-    if ( reply_delete2.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing from groups");
-        return reply_delete2;
-    }
-    
-    auto reply_delete3 = delete_asset_element (conn, element_id);
-    if ( reply_delete3.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing element");
-        return reply_delete3;
-    }
-    
-    trans.commit();
-    LOG_END;
-    return reply_delete3;
-}
-
-//=============================================================================
-db_reply_t
-    delete_device
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id)
-{
-    LOG_START;
-    tntdb::Transaction trans(conn);
-
-    // delete m_a_relation ????
-
-    auto reply_delete1 = delete_asset_ext_attributes (conn, element_id);
-    if ( reply_delete1.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during deleting ext attributes");
-        return reply_delete1;
-    }
-
-    auto reply_delete2 = delete_asset_group_links (conn, element_id);
-    if ( reply_delete2.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing from groups");
-        return reply_delete2;
-    }
-
-    // links ????
-    auto reply_delete3 = delete_asset_links_all (conn, element_id);
-    if ( reply_delete3.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing links");
-        return reply_delete3;
-    }
-
-    auto reply_delete5 = delete_monitor_asset_relation_by_a
-                                                (conn, element_id);
-    if ( reply_delete5.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing ma relation");
-        return reply_delete5;
-    }
-
-    auto reply_delete6 = delete_asset_element (conn, element_id);
-    if ( reply_delete6.status == 0 )
-    {
-        trans.rollback();
-        log_info ("end: error occured during removing element");
-        return reply_delete6;
-    }
-
-    trans.commit();
-    LOG_END;
-    return reply_delete6;
-}
-
-
+} // end namespace

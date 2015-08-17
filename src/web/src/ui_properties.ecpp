@@ -1,25 +1,24 @@
 <%pre>
-#include <czmq.h>
 #include <string>
 #include <cxxtools/jsondeserializer.h>
 
 #include "data.h"
-#include "persistencelogic.h"
-#include "common_msg.h"
 </%pre>
 <%thread scope="global">
 ui_props_manager mgr;
 </%thread>
 <%cpp>
-    std::string meth = request.getMethod();
+    std::string method = request.getMethod();
 
-    if (meth == "GET") {
+    if ( method == "GET") {
 
         std::string res;
-        std::string err = mgr.get(res);
-        if (err != "") {
+        int rv = mgr.get(res);
+        if ( rv != 0 ) {
 </%cpp>
-<$$ err $>
+{
+    "error" : "<$$ res $>"
+}
 <%cpp>
             return HTTP_INTERNAL_SERVER_ERROR;
         }
@@ -28,7 +27,7 @@ ui_props_manager mgr;
 <%cpp>
 
     }
-    else if (meth == "PUT") {
+    else if ( method == "PUT") {
 
         std::stringstream input(request.getBody(), std::ios_base::in);
         cxxtools::SerializationInfo si;
@@ -47,23 +46,23 @@ ui_props_manager mgr;
 <%cpp>
         return HTTP_BAD_REQUEST;
         }
-
-        std::string errmsg = mgr.put(request.getBody());
-        if (errmsg != "") {
+        std::string errmsg = "";
+        int rv = mgr.put(request.getBody(), errmsg);
+        if ( rv != 0 ) {
 </%cpp>
-{ "error" : "database update has failed",
-  "what"  : "<$$ errmsg $>"
+{
+    "error" : "<$$ errmsg $>"
 }
 <%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
+            return HTTP_INTERNAL_SERVER_ERROR;
         }
-
     }
     else {
 </%cpp>
-{ "error" : "invalid request method" }
+{
+    "error" : "invalid request method"
+}
 <%cpp>
         return HTTP_METHOD_NOT_ALLOWED;
     }
-
 </%cpp>

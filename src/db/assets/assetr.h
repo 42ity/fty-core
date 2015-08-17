@@ -1,9 +1,9 @@
 /*
 Copyright (C) 2014-2015 Eaton
 
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
 
 This program is distributed in the hope that it will be useful,
@@ -11,14 +11,15 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 /*! \file   assetr.h
     \brief  Basic select-functions for assets
-    \author Alena Chernikava <alenachernikava@eaton.com>
-    \author Michal Vyskocil <michalvyskocil@eaton.com>
+    \author Alena Chernikava <AlenaChernikava@Eaton.com>
+    \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 */
 #ifndef SRC_DB_ASSETS_ASSETR_H
 #define SRC_DB_ASSETS_ASSETR_H
@@ -82,7 +83,7 @@ db_reply <db_web_basic_element_t>
 
 db_reply < std::map <std::string, std::pair<std::string, bool> > >
     select_ext_attributes
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 int
 select_ext_attributes(
@@ -99,12 +100,12 @@ db_reply <std::vector <db_tmp_link_t> >
 
 db_reply <std::vector <a_elmnt_id_t> >
     select_asset_element_groups
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_tp_id_t type_id);
 
 reply_t
@@ -221,5 +222,9 @@ unique_keytag(
         const std::string &keytag,
         const std::string &value);
 
+db_reply_t
+    select_monitor_device_type_id
+        (tntdb::Connection &conn,
+         const char *device_type_name);
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H

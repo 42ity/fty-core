@@ -76,7 +76,7 @@ CLEANFILES +=	$(GENERATEDSCRIPTS) $(GENERATEDDATA)
 # How to run tntnet from Makefile
 RUN_TNTNET = export LICENSE_DIR="$(abs_top_srcdir)/tests/fixtures/license"; \
 	     export DATADIR="$(abs_top_builddir)/var/bios"; \
-	     rm -rf "$(abs_top_builddir)/var"; \
+	     [ ! "x${KEEP_LICENSE}" = "xyes" ] && rm -rf "$(abs_top_builddir)/var"; \
 	     mkdir -p "$$DATADIR"; ${TNTNET} tntnet.xml
 
 if ENABLE_DOCKER_SUPPORT
@@ -345,8 +345,6 @@ noinst_LTLIBRARIES += 		libpriv-db.la
 
 libpriv_db_la_SOURCES = \
 			src/persist/assetcrud.cc \
-			src/persist/assetcr.cc \
-			src/persist/assetd.cc \
 			src/persist/assetcrud.h \
 			src/persist/assettopology.cc \
 			src/persist/assettopology.h \
@@ -381,7 +379,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
-						libpriv-csv.la
+						libpriv-csv.la \
+						libpriv-db-assets.la
 
 noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 
@@ -415,13 +414,9 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
 			src/db/alerts/alert_basic.h \
-			src/db/alerts.h \
-			src/db/assets/assetr.h \
-			src/db/assets/assetr.cc \
-			src/db/assets.h \
-			src/db/inout.h \
-			src/db/inout/importcsv.cc \
-			src/db/inout/exportcsv.cc
+			src/db/agentstate/agentstate.h \
+			src/db/agentstate/agentstate.cc \
+			src/db/alerts.h
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
@@ -433,6 +428,28 @@ libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
 #libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
 #			libpriv-log.la libpriv-csv.la
 
+noinst_LTLIBRARIES += 		libpriv-db-assets.la
+
+libpriv_db_assets_la_SOURCES = \
+			src/db/assets/assetr.h \
+			src/db/assets/assetu.h \
+			src/db/assets/assetcr.h \
+			src/db/assets/assetu.cc \
+			src/db/assets/assetr.cc \
+			src/db/assets/assetd.cc \
+			src/db/assets/assetcr.cc \
+			src/db/assets.h \
+			src/db/inout.h \
+			src/db/inout/importcsv.cc \
+			src/db/inout/exportcsv.cc \
+			src/db/asset_general.cc \
+			src/db/asset_general.h
+
+libpriv_db_assets_la_CPPFLAGS = $(AM_CPPFLAGS) \
+			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_builddir)/tools
 
 #####
 noinst_LTLIBRARIES +=	libpriv-proto.la
@@ -721,7 +738,7 @@ cibin_programs += 	test-loadcsv
 test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
-			libpriv-db-alerts.la \
+			libpriv-db-assets.la \
 			libpriv-db.la \
 			libpriv-log.la \
 			libpriv-cidr.la \
@@ -744,7 +761,6 @@ cibin_programs += 	test-db2
 
 test_db2_SOURCES = \
 			tests/persist/test-monitor.cc \
-			tests/persist/test-monitor-clientinfo.cc \
 			tests/persist/test-measurement.cc \
 			tests/persist/test-realdatamonitor.cc
 
@@ -823,11 +839,12 @@ test_dbtopology_LDFLAGS = \
 cibin_programs += 	test-db-asset-crud
 
 test_db_asset_crud_SOURCES = \
-			tests/persist/test-asset-crud.cc
+			tests/persist/test-asset-crud.cc \
+			tests/persist/test-asset-crud1.cc
 
 test_db_asset_crud_LDADD = \
 			libpriv-db.la \
-			libpriv-db-alerts.la \
+			libpriv-db-assets.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -1017,6 +1034,7 @@ agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 agent_dbstore_LDADD = \
 			libpriv-db.la \
 			libpriv-db-alerts.la \
+			libpriv-db-assets.la \
 			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
 			libpriv-log.la \
@@ -1294,9 +1312,9 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 			-I$(abs_top_srcdir)/src/web/include \
-			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/ \
+			-I$(abs_top_builddir)/src \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/agents/configure_inform

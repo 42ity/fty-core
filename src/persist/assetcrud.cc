@@ -1,23 +1,19 @@
 /*
 Copyright (C) 2014 Eaton
  
-This program is free software: you can redistribute it and/or modify
+This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
+the Free Software Foundation; either version 2 of the License, or
 (at your option) any later version.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
- 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
 
-/*! \file assetcrud.cc
-    \brief Basic functions for assets
-    \author Alena Chernikava <alenachernikava@eaton.com>
+You should have received a copy of the GNU General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
 // ATTENTION: there is no easy way of getting last deleted id,
@@ -43,38 +39,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "persist_error.h"
 #include "asset_types.h"
 #include "cleanup.h"
+#include "db/assets.h"
 
-static const std::string  ins_upd_ass_ext_att_QUERY =
-        " INSERT INTO"
-        "   t_bios_asset_ext_attributes"
-        "   (keytag, value, id_asset_element, read_only)" 
-        " VALUES"
-        "  ( :keytag, :value, :element, :readonly)"
-        " ON DUPLICATE KEY"
-        "   UPDATE"
-        "       value = VALUES (value),"
-        "       read_only = 1,"
-        "       id_asset_ext_attribute = LAST_INSERT_ID(id_asset_ext_attribute)";
-// update doesnt return id of updated row -> use workaround
-
-static const std::string  ins_ass_ext_att_QUERY =
-        " INSERT INTO"
-        "   t_bios_asset_ext_attributes"
-        "   (keytag, value, id_asset_element, read_only)"
-        " SELECT"
-        "   :keytag, :value, :element, :readonly"
-        " FROM"
-        "   t_empty"
-        " WHERE NOT EXISTS"
-        "   ("
-        "       SELECT"
-        "           id_asset_element"
-        "       FROM"
-        "           t_bios_asset_ext_attributes"
-        "       WHERE"
-        "           keytag = :keytag AND"
-        "           id_asset_element = :element"
-        "   )";
 
 
 db_reply_t
@@ -103,7 +69,7 @@ db_reply_t
         }
         else
         {
-            ret = insert_into_asset_ext_attributes (conn, ext_attributes, element_id, true);
+            ret = persist::insert_into_asset_ext_attributes (conn, ext_attributes, element_id, true);
             if ( ret.status == 0 )
             {
                 ret.affected_rows = 0;
@@ -116,207 +82,6 @@ db_reply_t
     LOG_END;
     return ret;
 }
-static db_reply_t insert_into_asset_ext_attribute_template (tntdb::Connection &conn,
-                                         const char   *value,
-                                         const char   *keytag,
-                                         a_elmnt_id_t  asset_element_id,
-                                         bool          read_only,
-                                         std::string   query)
-{
-    LOG_START;
-
-    log_debug ("value = '%s'", value);
-    log_debug ("keytag = '%s'", keytag);
-    log_debug ("asset_element_id = %" PRIu32, asset_element_id);
-    log_debug ("read_only = %d", read_only);
-
-    a_ext_attr_id_t newid = 0;
-    a_ext_attr_id_t n     = 0; // number of rows affected
-
-    db_reply_t ret = db_reply_new();
-    // input parameters control 
-    if ( asset_element_id == 0 )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "apropriate asset element is not specified";
-        log_error ("end: ignore insert, apropriate asset element is "
-                                                         "not specified");
-        return ret;
-    }
-    if ( !is_ok_value (value) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "unexepetable value";
-        log_error ("end: ignore insert, unexeptable value '%s'", value);
-        return ret;
-    }
-    if ( !is_ok_keytag (keytag) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "unexepetable keytag";
-        log_error ("end: ignore insert, unexeptable keytag '%s'", keytag);
-        return ret;
-    }
-    log_debug ("input parameters are correct");
-
-    try {
-        
-        tntdb::Statement st = conn.prepareCached(query);
-   
-        n = st.set("keytag"  , keytag).
-               set("value"   , value).
-               set("readonly", read_only).
-               set("element" , asset_element_id).
-               execute();
-        newid = conn.lastInsertId();
-        log_debug ("was inserted %" PRIu32 " rows", n);
-        ret.affected_rows = n;
-        ret.rowid = newid;
-        // attention: 
-        //  -- 0 rows can be inserted
-        //        - there is no free space
-        //        - FK on id_asset_element
-        //        - row is already inserted
-        //        - in some other, but not normal cases
-        //  -- 1 row is inserted - a usual case
-        //  -- more than one row, it is not normal and it is not expected 
-        //       due to nature of the insert statement 
-    }
-    catch (const std::exception &e) {
-        ret.affected_rows = n;
-        ret.status     = 0;
-        ret.errtype       = DB_ERR;
-        ret.errsubtype    = DB_ERROR_INTERNAL;
-        ret.msg           = e.what();
-        LOG_END_ABNORMAL(e);
-        return ret;
-    } 
-    // a statement "insert on duplicate update
-    // return 2 affected rows when update is used and updated value was different from previos
-    // return 0 affected rows when update is used and updated value is the same as previos
-    if ( ( n == 1 ) ||
-         ( ( ( n == 2 ) || ( n == 0 ) )&& ( read_only) ) )
-    {
-        ret.status = 1;
-        LOG_END;
-    }
-    else
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "unexpected number of returned rows";
-        log_info ("end: %" PRIu32 " - unexpected number of rows returned", n);
-    }
-    return ret;
-}
-
-
-db_reply_t
-    insert_into_asset_ext_attribute (tntdb::Connection &conn,
-                                     const char   *value,
-                                     const char   *keytag,
-                                     a_elmnt_id_t  asset_element_id,
-                                     bool          read_only)
-{
-    if ( !read_only )
-    {
-        log_debug ("use pure insert");
-        return insert_into_asset_ext_attribute_template
-            (conn, value, keytag, asset_element_id, read_only,
-             ins_ass_ext_att_QUERY);
-    }
-    else
-    {
-        log_debug ("use insert on duplicate update");
-        return insert_into_asset_ext_attribute_template
-            (conn, value, keytag, asset_element_id, read_only,
-             ins_upd_ass_ext_att_QUERY);
-    }
-}
-
-
-// hash left untouched
-db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn, 
-                                     zhash_t      *attributes,
-                                     a_elmnt_id_t  asset_element_id,
-                                     bool          read_only)
-{
-    LOG_START;
-    
-    m_msrmnt_id_t n = 0; // number of rows affected
-    db_reply_t ret = db_reply_new();
-
-    // input parameters control 
-    if ( asset_element_id == 0 )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "apropriate asset element is not specified";
-        log_error ("end: ignore insert, apropriate asset element is "
-                                                         "not specified");
-        return ret;
-    }
-    if ( attributes == NULL )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "ext attributes are not specified (NULL)";
-        log_error ("end: ignore insert, ext attributes are "
-                                                    "not specified (NULL)");
-    }
-    if ( zhash_size (attributes) == 0 )
-    {
-        ret.status     = 1;
-        log_info ("end: nothing to insert");
-        // actually, if there is nothing to insert, then insert was ok :)
-        // but we need to return an id, so the only available non valid 
-        // value is zero.
-        return ret;
-    }
-    log_debug ("input parameters are correct");
-
-    char *value = (char *) zhash_first (attributes);   // first value
-    
-    // there is no supported bulk operations, 
-    // so if there is more than one ext 
-    // atrtribute we will insert them all iteratevely
-    // the hash "attributes" is a finite set, so the cycle will 
-    // end in finite number of steps
-
-    // it possible to generate insert as "insert into table values (),(),();" But here it
-    // can cause a secuire problems, because SQL injection can be abused here,
-    // bcause keytag and value are unknown strings
-    while ( value != NULL )
-    {
-        char *key = (char *) zhash_cursor (attributes);   // key of this value
-        ret       = insert_into_asset_ext_attribute (conn, value, key, asset_element_id, read_only);
-        if ( ret.status == 1 )
-            n++;
-        value     = (char *) zhash_next (attributes);   // next value
-    }
-    ret.affected_rows = n;
-    if ( n == zhash_size (attributes) )
-        LOG_END;
-    else
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "not all ext attributes were inserted";
-        log_error ("end: not all ext attributes were inserted");
-    }
-    return ret;
-}
-
 
 
 zlist_t* select_asset_device_links_all(tntdb::Connection &conn,
@@ -518,7 +283,7 @@ db_reply <db_a_elmnt_t>
     LOG_START;
     log_debug ("  element_name = '%s'", element_name);
 
-    db_a_elmnt_t item{0,"","",0,5,0,0,""};
+    db_a_elmnt_t item{0,"","",0,5,0,0,0,""};
     db_reply <db_a_elmnt_t> ret = db_reply_new(item);
 
     if ( !is_ok_name (element_name) )
@@ -589,7 +354,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id"
+            "   v.name , v.id_parent, v.status, v.priority, v.business_crit, v.id, v.id_subtype"
             " FROM"
             "   v_bios_asset_element v"
             " WHERE v.id_type = :typeid"
@@ -603,7 +368,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         // Go through the selected elements
         for ( auto &row: result )
         {
-            db_a_elmnt_t m{0,"","",0,5,0,0,""};
+            db_a_elmnt_t m{0,"","",0,5,0,0,0,""};
             
             row[0].get(m.name);
             assert ( !m.name.empty() );  // database is corrupted
@@ -613,6 +378,7 @@ db_reply <std::vector<db_a_elmnt_t>>
             row[3].get(m.priority);
             row[4].get(m.bc);
             row[5].get(m.id);
+            row[6].get(m.subtype_id);
 
             ret.item.push_back(m);
         }
