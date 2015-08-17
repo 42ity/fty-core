@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "assetcrud.h"
 #include "dbpath.h"
 #include "cleanup.h"
+#include "db/asset_general.h"
 #include "db/assets.h"
 
 using namespace shared;
@@ -158,15 +159,18 @@ static db_a_elmnt_t
     LOG_START;
 
     log_debug ("row number is %zu", row_i);
-    // TODO move somewhere else
     static const std::set<std::string> STATUSES = \
         {"active", "nonactive", "spare", "retired"};
 
-
     // This is used to track, which columns had been already processed,
-    // because if they didn't yet,
-    // then they should be treated as external attribute
+    // because if they was't processed yet,
+    // then they should be treated as external attributes
     auto unused_columns = cm.getTitles();
+
+    // because id is definitely is not an ext attribute
+    auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
+    unused_columns.erase("id");
+
 
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
@@ -264,7 +268,7 @@ static db_a_elmnt_t
         if ( ret )
             throw std::invalid_argument
                                 ("some problem with db, see log for more details");
-        if ( pdu_epdu_count > 1 )
+        if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
             throw std::invalid_argument
                                 ("more than 2 PDU is not supported");
     }
@@ -460,31 +464,58 @@ static db_a_elmnt_t
         zhash_insert (extattributes, "type", (void*) subtype.c_str() );
 
     db_a_elmnt_t m;
-    if ( type != "device" )
+
+    if ( !id_str.empty() )
     {
-        // this is a transaction
-        auto ret = insert_dc_room_row_rack_group
-                (conn, name.c_str(), type_id, parent_id,
-                 extattributes, status.c_str(), priority, bc, groups, asset_tag);
-        if ( ret.status != 1 )
+        m.id = atoi(id_str.c_str());
+        std::string errmsg = "";
+        if (type != "device" )
         {
-            throw std::invalid_argument("insertion was unsuccess");
+            auto ret = update_dc_room_row_rack_group
+                (conn, m.id, name.c_str(), type_id, parent_id,
+                 extattributes, status.c_str(), priority, bc, groups, asset_tag, errmsg);
+            if ( ( ret ) || ( !errmsg.empty() ) )
+            {
+                throw std::invalid_argument(errmsg);
+            }
         }
-        m.id = ret.rowid;
+        else
+        {
+            auto ret = update_device
+                (conn, m.id, name.c_str(), type_id, parent_id,
+                 extattributes, status.c_str(), priority, bc, groups, links, asset_tag, errmsg);
+            if ( ( ret ) || ( !errmsg.empty() ) )
+            {
+                throw std::invalid_argument(errmsg);
+            }
+        }
+
     }
     else
     {
-        // this is a transaction
-        auto ret = insert_device (conn, links, groups, name.c_str(),
-                parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
-                priority, bc, asset_tag);
-        if ( ret.status != 1 )
+        if ( type != "device" )
         {
-            throw std::invalid_argument("insertion was unsuccess");
+            // this is a transaction
+            auto ret = insert_dc_room_row_rack_group
+                (conn, name.c_str(), type_id, parent_id,
+                 extattributes, status.c_str(), priority, bc, groups, asset_tag);
+            if ( ret.status != 1 )
+            {
+                throw std::invalid_argument("insertion was unsuccessful");
+            }
         }
-        m.id = ret.rowid;
+        else
+        {
+            // this is a transaction
+            auto ret = insert_device (conn, links, groups, name.c_str(),
+                    parent_id, extattributes, subtype_id, subtype.c_str(), status.c_str(),
+                    priority, bc, asset_tag);
+            if ( ret.status != 1 )
+            {
+                throw std::invalid_argument("insertion was unsuccessful");
+            }
+        }
     }
-
     m.name = name;
     m.status = status;
     m.parent_id = parent_id;
@@ -513,7 +544,7 @@ mandatory_missing
 {
     static std::vector<std::string> MANDATORY = {
         "name", "type", "sub_type", "location", "status",
-        "business_critical", "priority"
+        "business_critical", "priority", "asset_tag"
     };
 
     auto all_fields = cm.getTitles();
@@ -550,16 +581,7 @@ void
     CsvMap cm{data};
     cm.deserialize();
 
-    if (cm.hasTitle("id")) {
-        const char* msg = "Can't import csv with row named id, update is not yet implemented";
-        log_error(msg);
-        LOG_END;
-        throw std::invalid_argument(msg);
-    }
-
     auto m = mandatory_missing(cm);
-    // TODO: do an apropriate arror handling
-
     if ( m != "" )
     {
         std::string msg{"column '" + m + "' is missing, import is aborted"};

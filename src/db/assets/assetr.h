@@ -83,7 +83,7 @@ db_reply <db_web_basic_element_t>
 
 db_reply < std::map <std::string, std::pair<std::string, bool> > >
     select_ext_attributes
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 int
 select_ext_attributes(
@@ -100,12 +100,12 @@ db_reply <std::vector <db_tmp_link_t> >
 
 db_reply <std::vector <a_elmnt_id_t> >
     select_asset_element_groups
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_id_t element_id);
 
 db_reply <std::map <uint32_t, std::string> >
     select_short_elements
-        (tntdb::Connection &conn, 
+        (tntdb::Connection &conn,
          a_elmnt_tp_id_t type_id);
 
 reply_t
@@ -222,5 +222,9 @@ unique_keytag(
         const std::string &keytag,
         const std::string &value);
 
+db_reply_t
+    select_monitor_device_type_id
+        (tntdb::Connection &conn,
+         const char *device_type_name);
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H

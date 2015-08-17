@@ -31,14 +31,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "asset_types.h"
 #include "calc_power.h"
 
-typedef struct _asset_link
-{
-    a_elmnt_id_t    src;     //!< id of src element
-    a_elmnt_id_t    dest;    //!< id of dest element
-    a_lnk_src_out_t src_out; //!< outlet in src
-    a_lnk_src_out_t dest_in; //!< inlet in dest
-    a_lnk_tp_id_t   type;    //!< link type id
-} link_t;
 
 
 
@@ -65,17 +57,6 @@ typedef struct _asset_link
 zlist_t* select_asset_element_groups(const char* url,
                                    a_elmnt_id_t element_id);
 
-db_reply_t insert_into_asset_ext_attribute (tntdb::Connection &conn,
-                                   const char   *value,
-                                   const char   *keytag,
-                                   a_elmnt_id_t  asset_element_id,
-                                   bool          read_only);
-
-db_reply_t insert_into_asset_ext_attributes (tntdb::Connection &conn,
-                                   zhash_t      *attributes,
-                                   a_elmnt_id_t  asset_element_id,
-                                   bool          read_only);
-
 db_reply_t delete_asset_ext_attributes(tntdb::Connection &conn,
                                    a_elmnt_id_t  asset_element_id);
 
@@ -98,161 +79,6 @@ db_reply <db_a_elmnt_t>
         (tntdb::Connection &conn,
          const char *element_name);
 
-/// insert
-
-db_reply_t
-    insert_asset_element_into_asset_group 
-        (tntdb::Connection &conn,
-         a_elmnt_id_t group_id,
-         a_elmnt_id_t asset_element_id);
-
-
-db_reply_t
-    insert_into_asset_link
-        (tntdb::Connection &conn,
-         a_elmnt_id_t    asset_element_src_id,
-         a_elmnt_id_t    asset_element_dest_id,
-         a_lnk_tp_id_t   link_type_id,
-         const a_lnk_src_out_t src_out,
-         const a_lnk_dest_in_t dest_in);
-/*
-db_reply_t
-    insert_into_asset_ext_attribute
-        (tntdb::Connection &conn,
-         const char   *keytag,
-         a_elmnt_id_t  asset_element_id);
-
-db_reply_t
-    insert_into_asset_ext_attributes
-        (tntdb::Connection &conn, 
-         zhash_t      *attributes,
-         a_elmnt_id_t  asset_element_id);
-*/
-db_reply_t
-    insert_into_asset_element
-        (tntdb::Connection &conn, 
-         const char      *element_name, 
-         a_elmnt_tp_id_t  element_type_id,
-         a_elmnt_id_t     parent_id,
-         const char      *status,
-         a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
-         a_dvc_tp_id_t    subtype_id,
-         const char      *asset_tag);
-
-db_reply_t
-    insert_into_asset_links
-        (tntdb::Connection       &conn,
-         std::vector <link_t> const &links);
-
-db_reply_t
-    insert_dc_room_row_rack_group
-         (tntdb::Connection  &conn,
-         const char      *element_name,
-         a_elmnt_tp_id_t  element_type_id,
-         a_elmnt_id_t     parent_id,
-         zhash_t         *extattributes,
-         const char      *status,
-         a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
-         std::set <a_elmnt_id_t> const &groups,
-         const std::string &asset_tag);
-
-db_reply_t
-    insert_device
-        (tntdb::Connection &conn,
-         std::vector <link_t> &links,
-         std::set <a_elmnt_id_t> const &groups,
-         const char    *element_name,
-         a_elmnt_id_t   parent_id,
-         zhash_t       *extattributes,
-         a_dvc_tp_id_t  asset_device_type_id,
-         const char    *asset_device_type_name,
-         const char      *status,
-         a_elmnt_pr_t     priority,
-         a_elmnt_bc_t     bc,
-         const std::string &asset_tag);
-
-////////////////// DELETE
-
-db_reply_t
-    delete_asset_link
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id_src,
-         a_elmnt_id_t asset_element_id_dest);
-
-db_reply_t
-    delete_asset_links_all
-        (tntdb::Connection &conn,
-         a_elmnt_id_t asset_element_id);
-
-db_reply_t
-    delete_asset_links_to
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_device_id);
-
-db_reply_t
-    delete_asset_links_from
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_device_id);
-
-db_reply_t
-    delete_asset_group_links
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_group_id);
-
-db_reply_t
-    delete_asset_ext_attribute
-        (tntdb::Connection &conn, 
-         const char   *keytag,
-         a_elmnt_id_t  asset_element_id);
-
-db_reply_t
-    delete_asset_ext_attributes
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id);
-
-db_reply_t
-    delete_asset_element
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id);
-
-db_reply_t
-    delete_asset_element_from_asset_groups
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_element_id);
-
-db_reply_t
-    delete_asset_element_from_asset_group
-        (tntdb::Connection &conn, 
-         a_elmnt_id_t asset_group_id,
-         a_elmnt_id_t asset_element_id);
-
-db_reply_t
-    delete_dc_room_row_rack
-        (tntdb::Connection &conn,
-        a_elmnt_id_t element_id);
-
-db_reply_t
-    delete_group
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id);
-
-db_reply_t
-    delete_device
-        (tntdb::Connection &conn,
-         a_elmnt_id_t element_id);
-
-db_reply_t
-    delete_monitor_asset_relation
-        (tntdb::Connection &conn, 
-         ma_rltn_id_t id);
-
-db_reply_t
-    insert_into_monitor_asset_relation
-        (tntdb::Connection &conn,
-         m_dvc_id_t   monitor_id,
-         a_elmnt_id_t element_id);
 
 // dictionaries
 
