@@ -1,6 +1,28 @@
-# Based on /etc/dhcp/dhclient-exit-hooks.d/ntp from Debian8 dhclient package
-# Included from (patched) /etc/udhcpc/default.script for $BIOS project
-# Adapted by Jim Klimov <EvgenyKlimov@eaton.com>, Copyright (C) 2015, Eaton
+#!/bin/bash
+#
+# Copyright (c) 2010 Debian
+# Copyright (c) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+#! \file    udhcpc-ntp.sh
+#  \brief   NTP synchronization for udhcpc
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Based on /etc/dhcp/dhclient-exit-hooks.d/ntp from Debian8 ntp
+#           package, adapted for the $BIOS project.
+#           Included from (patched) /etc/udhcpc/default.script for $BIOS project
 
 NTP_CONF=/etc/ntp.conf
 NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
@@ -9,7 +31,8 @@ NTP_DHCP_CONF=/var/lib/ntp/ntp.conf.dhcp
 ntp_server_restart_do() (
 	invoke-rc.d ntp try-restart && \
 	    echo "$0: INFO: NTP service restarted; waiting for it to pick up time (if not failed) so as to sync it onto hardware RTC" && \
-	    sleep 60 && ntp_server_status && hwclock -w && echo "$0: INFO: Applied current OS clock value to HW clock; done with NTP restart"
+	    sleep 60 && ntp_server_status && hwclock -w -u && \
+	    echo "$0: INFO: Applied current OS clock value (`TZ=UTC date -u`) to HW clock (`TZ=UTC hwclock -r -u`); done with NTP restart"
 )
 
 ntp_server_restart() {
@@ -74,6 +97,7 @@ ntp_servers_setup_add() {
 
 ntp_servers_setup() {
 	RES=1
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Starting $0 (NTP) for DHCP state $reason..."
 	case "$reason" in
 		bound|renew|BOUND|RENEW|REBIND|REBOOT)
 			ntp_servers_setup_add
@@ -84,7 +108,7 @@ ntp_servers_setup() {
 			RES=$?
 			;;
 	esac
-	echo "Completed $0 for DHCP state $reason, exit code $RES"
+	echo "[`awk '{print $1}' < /proc/uptime`] `date` [$$]: Completed $0 (NTP) for DHCP state $reason, exit code $RES"
 	return $RES
 }
 
@@ -102,6 +126,11 @@ if [ -z "${old_ntp_servers-}" ]; then
         fi
 fi
 
+if [ "`grep -lw debug /proc/cmdline`" ]; then
+    set > /dev/console
+fi
+
+#exec >> /dev/console 2>&1
 #set >&2
 #set -x
 

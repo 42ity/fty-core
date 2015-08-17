@@ -8,8 +8,8 @@ dnl You can use the SASLAUTHD_MUX variable in your Makefile.in,
 dnl with @SASLAUTHD_MUX@.
 dnl
 dnl @category SASL
-dnl @author Michal Vyskocil <MichalVyskocil@eaton.com>
-dnl @author Jim Klimov <EvgenyKlimov@eaton.com>
+dnl @author Michal Vyskocil <MichalVyskocil@Eaton.com>
+dnl @author Jim Klimov <EvgenyKlimov@Eaton.com>
 dnl @version 2014-12-16
 dnl @license AllPermissive
 

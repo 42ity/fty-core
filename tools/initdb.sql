@@ -13,8 +13,6 @@ DROP TABLE if exists t_bios_monitor_asset_relation;
 drop table if exists t_bios_discovered_ip;
 drop table if exists t_bios_measurement;
 drop table if exists t_bios_measurement_topic;
-drop table if exists t_bios_client_info;
-drop table if exists t_bios_client;
 drop table if exists t_bios_discovered_device;
 drop table if exists t_bios_device_type;
 drop table if exists t_bios_alert_device;
@@ -127,34 +125,14 @@ CREATE TABLE t_bios_discovered_ip(
 );
 
 
-CREATE TABLE t_bios_client(
-    id_client   TINYINT UNSIGNED    NOT NULL AUTO_INCREMENT,
-    name        VARCHAR(50)         NOT NULL,
+CREATE TABLE t_bios_agent_info(
+    id          SMALLINT UNSIGNED   NOT NULL AUTO_INCREMENT,
+    agent_name  VARCHAR(50)         NOT NULL,
+    info        BLOB                NOT NULL,
 
-    PRIMARY KEY(id_client),
+    PRIMARY KEY(id),
+    UNIQUE INDEX `UI_t_bios_agent_info` (`agent_name` ASC)
 
-    UNIQUE INDEX `UI_t_bios_client_name` (`name` ASC)
-) AUTO_INCREMENT = 1;
-
-CREATE TABLE t_bios_client_info(
-    id_client_info          BIGINT UNSIGNED     NOT NULL AUTO_INCREMENT,
-    id_client               TINYINT UNSIGNED    NOT NULL,
-    id_discovered_device    SMALLINT UNSIGNED   NOT NULL,
-    timestamp               BIGINT              NOT NULL,
-    ext                     BLOB                NOT NULL,
-
-    PRIMARY KEY(id_client_info),
-
-    INDEX(id_discovered_device),
-    INDEX(id_client),
-
-    FOREIGN KEY (id_discovered_device)
-        REFERENCEs t_bios_discovered_device(id_discovered_device)
-        ON DELETE RESTRICT,
-
-    FOREIGN KEY (id_client)
-        REFERENCES t_bios_client(id_client)
-        ON DELETE RESTRICT
 );
 
 DROP TABLE if exists t_bios_asset_link;
@@ -325,50 +303,30 @@ CREATE TABLE t_bios_monitor_asset_relation(
 
 drop view if exists v_bios_device_type;
 drop view if exists v_bios_discovered_device;
-drop view if exists v_bios_client;
-drop view if exists v_bios_client_info;
 drop view if exists v_bios_discovered_ip;
 
 create view v_bios_device_type as select id_device_type id, name from t_bios_device_type;
 
 create view v_bios_discovered_device as select id_discovered_device id, name , id_device_type from t_bios_discovered_device;
 
-create view v_bios_client as select id_client id, name from t_bios_client;
-
-create view v_bios_client_info as select id_client_info id, id_discovered_device , ext , timestamp , id_client from t_bios_client_info;
+DROP VIEW IF EXISTS v_bios_agent_info;
+CREATE VIEW v_bios_agent_info AS
+    SELECT id, info, agent_name
+    FROM t_bios_agent_info;
 
 create view v_bios_discovered_ip as select id_ip id, id_discovered_device, ip, timestamp from t_bios_discovered_ip;
 
 drop view if exists v_bios_ip_last;
-drop view if exists v_bios_client_info_last;
-drop view if exists v_bios_info_lastdate;
 
 create view v_bios_ip_last as select max(timestamp) datum, id_discovered_device,  ip,id from v_bios_discovered_ip group by ip;
-
-create view v_bios_info_lastdate as SELECT max(p.timestamp) maxdate, p.id_discovered_device, p.id_client FROM v_bios_client_info p  GROUP BY p.id_discovered_device, p.id_client;
-
-create view v_bios_client_info_last as
-SELECT  v.id,
-        v.id_discovered_device,
-        v.id_client,
-        v.ext,
-        v.timestamp
-FROM    v_bios_client_info v
-        INNER JOIN v_bios_info_lastdate grp 
-              ON v.id_client = grp.id_client AND
-                 v.timestamp = grp.maxdate  AND
-                 v.id_discovered_device = grp.id_discovered_device;
 
 DROP view if exists v_bios_asset_device;
 DROP view if exists v_bios_asset_device_type;
 DROP view if exists v_bios_asset_ext_attributes;
 DROP view if exists v_bios_asset_group_relation;
-DROP view if exists v_bios_asset_element;
-DROP view if exists v_bios_asset_element_type;
 DROP view if exists v_bios_asset_link_type;
 DROP view if exists v_bios_asset_link;
 DROP VIEW IF EXISTS v_bios_monitor_asset_relation;
-
 
 DROP VIEW IF EXISTS v_bios_alert_device;
 CREATE VIEW v_bios_alert_device AS
@@ -398,10 +356,11 @@ DROP VIEW IF EXISTS v_bios_asset_element_type;
 CREATE VIEW v_bios_asset_element_type AS
     SELECT
         t1.id_asset_element_type AS id,
-        t1.name 
+        t1.name
     FROM
         t_bios_asset_element_type t1;
 
+DROP VIEW IF EXISTS v_bios_asset_device;
 CREATE VIEW v_bios_asset_device AS
     SELECT  t1.id_asset_element,
             t2.id_asset_device_type,
@@ -460,7 +419,7 @@ CREATE VIEW v_web_alert_all AS
             ON t3.id_asset_element = v4.id
     ORDER BY v1.id;
 
-
+DROP VIEW IF EXISTS v_bios_asset_link;
 CREATE VIEW v_bios_asset_link AS
     SELECT  v1.id_link,
             v1.src_out,
@@ -517,7 +476,22 @@ CREATE VIEW v_bios_asset_link_topology AS
 create view v_bios_asset_device_type as select id_asset_device_type as id, name from t_bios_asset_device_type ;
 create view v_bios_asset_ext_attributes as select * from t_bios_asset_ext_attributes ;
 create view v_bios_asset_group_relation as select * from t_bios_asset_group_relation ;
-create view v_bios_asset_element as select v1.id_asset_element as id, v1.name, v1.id_type, v1.id_parent, v2.id_type as id_parent_type, v1.business_crit, v1.status, v1.priority, v1.asset_tag from t_bios_asset_element v1 LEFT JOIN  t_bios_asset_element v2 on (v1.id_parent = v2.id_asset_element) ;
+DROP VIEW IF EXISTS v_bios_asset_element;
+CREATE VIEW v_bios_asset_element AS
+    SELECT  v1.id_asset_element AS id,
+            v1.name,
+            v1.id_type,
+            v1.id_subtype,
+            v1.id_parent,
+            v2.id_type AS id_parent_type,
+            v1.business_crit,
+            v1.status,
+            v1.priority,
+            v1.asset_tag
+        FROM t_bios_asset_element v1
+        LEFT JOIN  t_bios_asset_element v2
+            ON (v1.id_parent = v2.id_asset_element) ;
+
 create view v_bios_monitor_asset_relation as select * from t_bios_monitor_asset_relation;
 
 CREATE VIEW v_bios_asset_element_super_parent AS 
@@ -656,13 +630,6 @@ INSERT INTO t_bios_discovered_device (id_discovered_device, name, id_device_type
     (1, "DUMMY_DEVICE", @device_unclassified);
 SELECT @dummy_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "DUMMY_DEVICE";
 
-/* t_bios_client */
-INSERT INTO t_bios_client (name) VALUES ("nmap"); /* remove this ONLY if you are sure noone uses hard coded contast and it won't break ;-)*/
-INSERT INTO t_bios_client (name) VALUES ("mymodule");
-INSERT INTO t_bios_client (name) VALUES ("admin");
-INSERT INTO t_bios_client (name) VALUES ("NUT");
-INSERT INTO t_bios_client (name) VALUES ("ui_properties");
-
 /* t_bios_asset_element_type */
 INSERT INTO t_bios_asset_element_type (name) VALUES ("group");
 INSERT INTO t_bios_asset_element_type (name) VALUES ("datacenter");
@@ -687,5 +654,8 @@ INSERT INTO t_bios_asset_device_type (id_asset_device_type, name) VALUES (10, "N
 INSERT INTO t_bios_asset_link_type (name) VALUES ("power chain");
 
 /* ui/properties are somewhat special */
+/* TODO REMOVE IT
 SELECT @client_ui_properties := id_client FROM t_bios_client WHERE name = 'ui_properties';
+
 INSERT INTO t_bios_client_info (id_client, id_discovered_device, timestamp, ext) VALUES (@client_ui_properties, @dummy_device, UNIX_TIMESTAMP(), "{}");
+*/

@@ -1,26 +1,28 @@
 #!/bin/sh
-
-#   Copyright (c) 2014-2015 Eaton Corporation <www.eaton.com>
+#
+#   Copyright (c) 2014-2015 Eaton
 #
 #   This file is part of the Eaton $BIOS project.
 #
-#   This is free software; you can redistribute it and/or modify
+#   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
-#   the Free Software Foundation; either version 3 of the License, or
+#   the Free Software Foundation; either version 2 of the License, or
 #   (at your option) any later version.
 #
-#   This software is distributed in the hope that it will be useful,
+#   This program is distributed in the hope that it will be useful,
 #   but WITHOUT ANY WARRANTY; without even the implied warranty of
 #   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #   GNU General Public License for more details.
 #
-#   You should have received a copy of the GNU General Public License
-#   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#   You should have received a copy of the GNU General Public License along
+#   with this program; if not, write to the Free Software Foundation, Inc.,
+#   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-#   Author(s): Michal Hrusecky <MichalHrusecky@eaton.com>
-#              Jim Klimov <EvgenyKlimov@eaton.com>
-#
-#   Description: Script to generate the expected directory structure
+#! \file    restapi-request.sh
+#  \brief   Script to generate the expected directory structure and configuration files
+#  \author  Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author  Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \details Script to generate the expected directory structure
 #   and configuration files "baked into" the read-only OS images that
 #   are prepared by OBS for dev/test X86 containers as well as the
 #   ultimate RC3 environments. Any changes to the files "hardcoded"
@@ -114,13 +116,18 @@ cat > /etc/hosts <<EOF
 127.0.0.1 localhost bios
 EOF
 
+DEFAULT_IFPLUGD_INTERFACES="eth0 eth1 eth2"
 mkdir -p /etc/default
+[ -s "/etc/default/networking" ] && \
+    sed -e 's,^[ \t\#]*\(EXCLUDE_INTERFACES=\)$,\1"'"$DEFAULT_IFPLUGD_INTERFACES"'",' -i /etc/default/networking \
+    || echo 'EXCLUDE_INTERFACES="'"$DEFAULT_IFPLUGD_INTERFACES"'"' >> /etc/default/networking
 cat > /etc/default/ifplugd <<EOF
-INTERFACES="eth0 eth1 eth2"
+INTERFACES="$DEFAULT_IFPLUGD_INTERFACES"
 HOTPLUG_INTERFACES=""
 ARGS="-q -f -u0 -d10 -w -I"
 SUSPEND_ACTION="stop"
 EOF
+
 
 # Setup APT package sources
 mkdir -p /etc/apt/sources.list.d
@@ -354,7 +361,8 @@ rm -f /usr/bin/qemu*
 # Prepare the ccache (for development image type)
 case "$IMGTYPE" in
     devel)
-        /usr/sbin/update-ccache-symlinks
+        [ -x /usr/sbin/update-ccache-symlinks ] && \
+		/usr/sbin/update-ccache-symlinks || true
         # If this image ends up on an RC3, avoid polluting NAND with ccache
         mkdir -p /home/bios/.ccache
         chown -R bios:bios /home/bios/.ccache
@@ -366,10 +374,12 @@ esac
 
 # Prepate the source-code details excerpt, if available
 [ -s "/usr/share/bios/.git_details" ] && \
-    grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
+    /bin/grep ESCAPE "/usr/share/bios/.git_details" > /usr/share/bios-web/git_details.txt || \
     echo "WARNING: Do not have /usr/share/bios/.git_details"
 
 # Timestamp the end of OS image generation
-LANG=C date -u > /usr/share/bios-web/image-version.txt
+[ -x /bin/date ] && \
+    LANG=C /bin/date -u > /usr/share/bios-web/image-version.txt || \
+    echo "WARNING: Could not record OBS image-building timestamp"
 
 echo "INFO: successfully reached the end of script: $0 $@"
