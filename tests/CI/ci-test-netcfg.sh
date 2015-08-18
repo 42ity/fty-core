@@ -56,9 +56,8 @@ cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
 cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
 logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
 
-PATH=/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
 export PATH
-
 
 
 declare -r REST_NETCFGS="/admin/netcfgs"
@@ -287,14 +286,14 @@ echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 HTTP_CODE=
 simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
 echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash ./cmpjson.sh "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
     die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
 [[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 # Repeated requests
 for i in "1 2 3 4 5"; do 
     simple_get_json_code "${REST_NETCFGS}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash ./cmpjson.sh -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
     [[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 done
@@ -321,8 +320,8 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     perl -pi -e "s/,\s*\"${i}\"//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\"${i}\"\s*,//g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
     perl -pi -e "s/\[\s*\"${i}\"\s*\]/[]/g" "${TMP_DIR}/${JSON_EXPECTED_FILE}"
-    if [[ -s "${TMP_DIR}/${IFACES_FILE}" ]]; then    
-        bash ./cmpjson.sh -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    if [[ -s "${IFACES_PATH}/${IFACES_FILE}" ]]; then    
+        bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
             die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
         [ $HTTP_CODE -eq 200  ] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
     else
@@ -331,6 +330,9 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
     fi
 done
 restore_config "$IFACES_FILE" || die "Restoring '$IFACES_FILE' failed."
+# Sanity check
+diff -s "${IFACES_PATH}/${IFACES_FILE}" "${TMP_DIR}/${IFACES_FILE_INITIAL}" || die "Restore of '${IFACES_PATH}/${IFACES_FILE}' failed." 
+
 echo "SUCCESS"
 
 ########################
@@ -397,7 +399,7 @@ for i in "${INITIAL_IFACE_NAMES[@]}"; do
   
     simple_get_json_code "${REST_NETCFG}/${i}" tmp HTTP_CODE || die "'api_get_json ${REST_NETCFGS}' failed."
     echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-    bash ./cmpjson.sh -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+    bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" -f "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
         die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
     HTTP_EXPECTED=200
     [[ $HTTP_CODE -eq $HTTP_EXPECTED ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: $HTTP_EXPECTED, received: $HTTP_CODE."
