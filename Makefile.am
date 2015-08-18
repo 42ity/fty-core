@@ -1080,7 +1080,6 @@ bios_csv_CPPFLAGS = \
 						  -I $(abs_top_srcdir)/src/persist/ \
 						  -I $(abs_top_srcdir)/src/share/
 bios_csv_LDADD = \
-						 libpriv-db-alerts.la \
 						 libpriv-db-assets.la \
 						 libpriv-db.la \
 						 libpriv-proto.la \
