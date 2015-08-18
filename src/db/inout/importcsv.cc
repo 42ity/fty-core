@@ -34,6 +34,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "csv.h"
 #include "log.h"
 #include "assetcrud.h"
+#include "asset_types.h"
 #include "dbpath.h"
 #include "cleanup.h"
 #include "db/asset_general.h"
@@ -128,13 +129,24 @@ int
         (tntdb::Connection &conn,
          a_elmnt_id_t parent_id,
          int &pdu_epdu_count,
-         std::string &last_position)
+         std::string  &last_position,
+         a_elmnt_id_t &element_id)
 {
     LOG_START;
+
+    db_reply <db_web_basic_element_t> parent = select_asset_element_web_byId
+        (conn, parent_id);
+    if ( parent.status == 0 )
+        return 1;
+    if ( parent.item.type_id != asset_type::RACK )
+        return 2;
     db_reply <std::vector<device_info_t>> devices =
         select_asset_device_by_container
          (conn, parent_id);
     pdu_epdu_count = 0;
+    element_id = 0;
+    if ( devices.status == 0 )
+        return 3;
     for ( auto &adevice : devices.item )
     {
         if ( ( std::get<2>(adevice) == "pdu" ) || ( std::get<2>(adevice) == "epdu" ) )
@@ -144,7 +156,10 @@ int
                 ext_attributes = persist::select_ext_attributes (conn, std::get<0>(adevice));
             auto it = ext_attributes.item.find("location_w_pos");
             if ( it != ext_attributes.item.cend() )
+            {
                 last_position = it->second.first;
+                element_id = std::get<0>(adevice);
+            }
             else
             {
                 log_warning ("inconsistent state: epdu/pdu without location_w_pos, use 'right'");
@@ -267,16 +282,25 @@ static db_a_elmnt_t
     // BIOS-991 --start
     int pdu_epdu_count = 0;
     std::string last_position = "";
+    a_elmnt_id_t last_position_element_id = 0;
+    bool in_rack = true;
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
         // find a number of pdu/epdu in the rack
-        int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position);
-        if ( ret )
-            throw std::invalid_argument
-                                ("some problem with db, see log for more details");
-        if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
-            throw std::invalid_argument
-                                ("more than 2 PDU is not supported");
+        int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
+        if ( ret == 1 )
+        {
+            // it is not in rack -> nothing to check
+            in_rack = false;
+        }
+        else{
+            if ( ret != 0 )
+                throw std::invalid_argument
+                    ("some problem with db, see log for more details");
+            if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
+                throw std::invalid_argument
+                    ("more than 2 PDU is not supported");
+        }
     }
     // BIOS-991 --end
 
@@ -413,8 +437,7 @@ static db_a_elmnt_t
 
         if ( match_ext_attr (value, key) )
         {
-            // may be lambda can perfectly be used here
-            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) )
+            if ( ( ( subtype == "pdu" ) || ( subtype == "epdu" ) ) && ( key == "location_w_pos" ) && ( in_rack ) )
             {
                 // BIOS-991 --start
                 switch ( pdu_epdu_count ) {
@@ -431,8 +454,11 @@ static db_a_elmnt_t
                             }
                     default:
                             {
-                                throw std::invalid_argument
-                                    ("this should never happen: position of pdu/epdu");
+                                if ( id_str.empty() )
+                                    throw std::invalid_argument
+                                        ("this should never happen: position of pdu/epdu");
+                                else
+                                    zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                             }
                 }
                 // BIOS-991 --end
