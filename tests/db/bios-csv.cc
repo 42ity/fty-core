@@ -63,7 +63,35 @@ s_compare(
             else
             {
                 // c1 has column named AAAA and c2 does
-                if (c1.get(line, title) != c2.get(line, title)) {
+                bool equals = false;
+                if (title == "priority")
+                {
+                    auto p1 = persist::get_priority(c1.get(line, title));
+                    auto p2 = persist::get_priority(c2.get(line, title));
+                    equals = (p1 == p2);
+                }
+                else if (title == "business_critical") {
+                    auto b1 = persist::get_business_critical(c1.get(line, title));
+                    auto b2 = persist::get_business_critical(c2.get(line, title));
+                    equals = (b1 == b2);
+                }
+                else if (title == "type" || title == "sub_type" || title == "status") {
+                    std::string foo1;
+                    std::string i;
+
+                    i = c1.get(line, title);
+                    std::transform(i.cbegin(), i.cend(), foo1.begin(), ::tolower);
+
+                    std::string foo2;
+                    i = c2.get(line, title);
+                    std::transform(i.cbegin(), i.cend(), foo2.begin(), ::tolower);
+
+                    equals = (foo1 == foo2);
+                }
+                else {
+                    equals = (c1.get(line, title) == c2.get(line, title));
+                }
+                if (!equals) {
                     log_error("%s[%zu][%s] = %s != %s[%zu][%s] = %s",
                             file1, line, title.c_str(), c1.get(line, title).c_str(),
                             file2, line, title.c_str(), c2.get(line, title).c_str()
