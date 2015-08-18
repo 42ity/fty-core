@@ -32,8 +32,6 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "filesystem.h"
 #include "asset_types.h"
 
-using namespace asset_type;
-
 #define NUT_PART_STORE "/etc/bios/nut/devices"
 
 static const char * NUTConfigXMLPattern = "[[:blank:]]driver[[:blank:]]+=[[:blank:]]+\"netxml-ups\"";
