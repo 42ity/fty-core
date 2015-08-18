@@ -38,6 +38,7 @@ using namespace asset_type;
 inline void operator<<= (cxxtools::SerializationInfo& si, const AutoConfigurationInfo& info)
 {
     si.setTypeName("AutoConfigurationInfo");
+    // serializing integer doesn't work for unknown reason
     si.addMember("type") <<= std::to_string(info.type);
     si.addMember("subtype") <<= std::to_string(info.subtype);
     si.addMember("operation") <<= std::to_string(info.operation);
@@ -48,6 +49,7 @@ inline void operator>>= (const cxxtools::SerializationInfo& si, AutoConfiguratio
 {
     si.getMember("configured") >>= info.configured;
     {
+        // serializing integer doesn't work
         std::string tmp;
         si.getMember("type") >>= tmp;
         info.type = atoi(tmp.c_str());
