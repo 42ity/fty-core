@@ -302,7 +302,7 @@ SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WH
 /* DC-LAB */
 insert into t_bios_asset_element (name , id_type, id_parent, asset_tag)values ("DC-LAB", @asset_element_datacenter,  NULL, "myasset19");
 set @last_asset_element := LAST_INSERT_ID();
-set @last_datacenter := @last_asset_element; 
+set @last_datacenter := @last_asset_element;
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description",    "EATON Montobonnot Datacenter (тест)", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("company",    "EATON", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("site",       "Montbonnot", @last_asset_element);
@@ -423,7 +423,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 
 insert into t_bios_asset_element (name , id_type, id_subtype, id_parent, asset_tag) values ("KAROL-LAB", @asset_element_device, @asset_device_server, @last_rack, "myasset28");
 set @last_asset_element = LAST_INSERT_ID();
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Server for Karol's average testing data", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("description","Server for Karols average testing data", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("creator", "Vaporware", @last_asset_element);
 
 
@@ -477,7 +477,7 @@ insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("u_size",  "1",        @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("location_u_pos",     "11",       @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("manufacturer", "Dell", @last_asset_element);
-insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "D'Artagnan", @last_asset_element);
+insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_name",    "D Artagnan", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_email",    "dartagnan@mousquetaires.defense.gouv.fr", @last_asset_element);
 insert into t_bios_asset_ext_attributes (keytag, value, id_asset_element) values ("contact_phone",    "+33 (0)4 42 42 42 42", @last_asset_element);
 
