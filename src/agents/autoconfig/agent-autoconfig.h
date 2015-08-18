@@ -33,11 +33,15 @@ class Autoconfig : public BIOSAgent {
     explicit Autoconfig( const std::string &agentName ) :BIOSAgent( agentName ) { };
 
     void onStart( );
-    void onEnd( ) { saveState(); };
+    void onEnd( ) { cleanupState(); saveState(); };
     void onReply( ymsg_t **message );
     void onSend( ymsg_t **message );
     void onPoll( );
  private:
+    void setPollingInterval();
+    void addDeviceIfNeeded(const char *name, uint32_t type, uint32_t subtype);
+    void requestExtendedAttributes( const char *name );
+    void cleanupState();
     void saveState();
     void loadState();
     ConfigFactory _configurator;

@@ -78,6 +78,8 @@ int
     if ( data == NULL )
         return 5;
     try{
+        *data = NULL;
+        size = 0;
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
             "   v.info "

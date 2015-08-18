@@ -30,6 +30,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "asset_types.h"
 #include "utils.h"
 #include "filesystem.h"
+#include "asset_types.h"
+
+using namespace asset_type;
 
 #define NUT_PART_STORE "/etc/bios/nut/devices"
 
@@ -37,6 +40,8 @@ static const char * NUTConfigXMLPattern = "[[:blank:]]driver[[:blank:]]+=[[:blan
 static const char * NUTConfigEpduPattern = "[[:blank:]](mibs[[:blank:]]+=[[:blank:]]+\"(eaton_epdu|aphel_genesisII)\"|"
                                            "desc[[:blank:]]+=[[:blank:]]+\"[^\"]+ epdu [^\"]+\")";
 static const char * NUTConfigCanSnmpPattern = "[[:blank:]]driver[[:blank:]]+=[[:blank:]]+\"snmp-ups\"";
+
+using namespace asset_type;
 
 std::vector<std::string>::const_iterator NUTConfigurator::stringMatch(const std::vector<std::string> &texts, const char *pattern) {
     log_debug("regex: %s", pattern );
@@ -136,51 +141,65 @@ void NUTConfigurator::updateNUTConfig() {
     }
 }
 
-bool NUTConfigurator::configure( const char *name, const std::map<std::string,std::string> &extendedAttributes, int8_t eventType ) {
-    log_debug("NUT configurator");
-    if( eventType != 1 && eventType != 2 ) {
-        // TODO: enum? numbers come from agents.h bios_asset_encode/extract
-        log_debug("Wrong eventType %d", eventType);
-        return false;
-    }
+bool NUTConfigurator::configure( const std::string &name, const AutoConfigurationInfo info ) {
+    log_debug("NUT configurator created");
 
-    auto ipit = extendedAttributes.find("ip.1");
-    if( ipit == extendedAttributes.end() ) {
-        log_debug("device %s has no IP address", name);
-        return false;
-    }
-    std::string IP = ipit->second;
+    switch( info.operation ) {
+    case asset_operation::INSERT:
+    case asset_operation::UPDATE:
+        {
+            auto ipit = info.attributes.find("ip.1");
+            if( ipit == info.attributes.end() ) {
+                log_error("device %s has no IP address", name.c_str() );
+                return true;
+            }
+            std::string IP = ipit->second;
 
-    std::vector<std::string> configs;
-    shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
-    shared::nut_scan_xml_http( name, shared::CIDRAddress(IP), configs );
+            std::vector<std::string> configs;
+            shared::nut_scan_snmp( name, shared::CIDRAddress(IP), configs );
+            shared::nut_scan_xml_http( name, shared::CIDRAddress(IP), configs );
 
-    auto it = selectBest( configs );
-    if( it == configs.end() ) {
-        log_debug("nut-scanner failed, no suitable configuration found");
-        return false;
+            auto it = selectBest( configs );
+            if( it == configs.end() ) {
+                log_error("nut-scanner failed, no suitable configuration found");
+                return false; // try again later
+            }
+            std::string deviceDir = NUT_PART_STORE;
+            shared::mkdir_if_needed( deviceDir.c_str() );
+            std::ofstream cfgFile;
+            log_info("creating new config file %s/%s", NUT_PART_STORE, name.c_str() );
+            cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
+            cfgFile << *it;
+            cfgFile.close();
+            updateNUTConfig();
+            return true;
+        }
+    case asset_operation::DELETE:
+        {
+            log_info("removing configuration file %s/%s", NUT_PART_STORE, name.c_str() );
+            std::string fileName = std::string(NUT_PART_STORE)
+                + shared::path_separator()
+                + name;
+            remove( fileName.c_str() );
+            updateNUTConfig();
+            return true;
+        }
+    default:
+        log_error("invalid configuration operation %" PRIi8, info.operation);
+        return true; // true means do not try again this
     }
-    std::string deviceDir = NUT_PART_STORE;
-    shared::mkdir_if_needed( deviceDir.c_str() );
-    std::ofstream cfgFile;
-    log_debug("creating new config file %s/%s", NUT_PART_STORE, name );
-    cfgFile.open(std::string(NUT_PART_STORE) + shared::path_separator() + name );
-    cfgFile << *it;
-    cfgFile.close();
-    updateNUTConfig();
+}
+
+bool Configurator::configure(
+    UNUSED_PARAM const std::string &name,
+    UNUSED_PARAM const AutoConfigurationInfo info )
+{
+    log_error("don't know how to configure device %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
     return true;
 }
 
-bool Configurator::configure( UNUSED_PARAM const char *name, UNUSED_PARAM const std::map<std::string,std::string> &extenedAttributes, UNUSED_PARAM int8_t eventType )
-{
-    log_debug("dummy configurator");
-    return false;
-}
-
-Configurator * ConfigFactory::getConfigurator(std::string type) {
-    std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-    log_debug("device type is %s", type.c_str() );
-    if( type == "epdu" || type == "ups" ) {
+Configurator * ConfigFactory::getConfigurator( uint32_t type, uint32_t subtype ) {
+    if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
         return new NUTConfigurator();
     }
     // if( type == "server" ) return ServerConfigurator();
@@ -188,11 +207,11 @@ Configurator * ConfigFactory::getConfigurator(std::string type) {
     return new Configurator();
 }
 
-bool ConfigFactory::configureAsset(AutoConfigurationInfo &info) {
-    log_debug("configuration attempt device name %s type %s", info.name.c_str(), info.type.c_str() );
+bool ConfigFactory::configureAsset( const std::string &name, AutoConfigurationInfo &info) {
+    log_debug("configuration attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
     // result = getConfigurator( deviceType ).configure( name, extAttributes, event_type );
-    Configurator *C = getConfigurator( info.type );
-    bool result = C->configure( info.name.c_str(), info.attributes, 0 );
+    Configurator *C = getConfigurator( info.type, info.subtype );
+    bool result = C->configure( name, info );
     delete C;
     return result;
 }
