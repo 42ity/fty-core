@@ -79,7 +79,7 @@ void Autoconfig::onReply( ymsg_t **message )
     int8_t event_type;
 
     int extract = bios_asset_extra_extract( *message, &name, &extAttributes, &type, &subtype, NULL, NULL, NULL, &event_type );
-    log_debug("Received extended attributes for device %s, device type %" PRIu32 "/%" PRIu32 ", extract result %i",
+    log_debug("received extended attributes for device %s, device type %" PRIu32 "/%" PRIu32 ", extract result %i",
               name, type, subtype, extract );
     if(
         extract  == 0 &&
@@ -101,7 +101,7 @@ void Autoconfig::onSend( ymsg_t **message )
 
     int extract = bios_asset_extract( *message, &device_name, &type, &subtype, NULL, NULL, NULL, &operation );
     if( ! extract ) {
-        log_debug("Asset message for %s type %" PRIu32 " subtype %" PRIu32, device_name, type, subtype );
+        log_debug("asset message for %s type %" PRIu32 " subtype %" PRIu32, device_name, type, subtype );
         if( type == asset_type::DEVICE && ( subtype == asset_subtype::UPS || subtype == asset_subtype::EPDU ) ) {
             // this is a device that we should configure, we need extended attributes (ip.1 particulary)
             addDeviceIfNeeded( device_name, type, subtype );
@@ -113,7 +113,7 @@ void Autoconfig::onSend( ymsg_t **message )
             requestExtendedAttributes( device_name );
         }
     } else {
-        log_debug("This is not bios_asset message (error %i)", extract);
+        log_debug("this is not bios_asset message (error %i)", extract);
     }
     FREE0( device_name );
 }
@@ -174,7 +174,7 @@ void Autoconfig::requestExtendedAttributes( const char *name )
 {
     ymsg_t *extended = bios_asset_extra_encode( name, NULL, 0, 0, NULL, 0, 0, 0 );
     if( extended ) {
-        log_debug("Requesting extended attributes for %s", name);
+        log_debug("requesting extended attributes for %s", name);
         sendto(BIOS_AGENT_NAME_DB_MEASUREMENT,"get_asset_extra", &extended );
         ymsg_destroy( &extended );
     }
@@ -182,7 +182,7 @@ void Autoconfig::requestExtendedAttributes( const char *name )
 
 void Autoconfig::loadState()
 {
-    std::string json = load_agent_info(AUTOCONFIG);
+    std::string json = load_agent_info( AUTOCONFIG );
     std::istringstream in(json);
 
     try {
@@ -191,7 +191,7 @@ void Autoconfig::loadState()
         std::vector<AutoConfigurationInfo> items;
         deserializer.deserialize(_configurableDevices);
     } catch( std::exception &e ) {
-        log_error( "Can't load state from database: %s", e.what() );
+        log_error( "can't load state from database: %s", e.what() );
     }
 }
 
