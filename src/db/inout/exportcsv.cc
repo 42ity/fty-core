@@ -41,17 +41,21 @@ static std::vector<std::string> ASSET_ELEMENT_KEYTAGS{
     "id", "name", "type", "sub_type", "location", "status", "priority", "business_critical", "asset_tag"};
 
 // get all keytags available in the system and update the s argument
+// + remove the duplicate names from v_web_asset_element/t_bios_asset_element table
+//   so you can't export ext/name even if it's in the database
 static void
 s_update_keytags(
         tntdb::Connection& conn,
+        const std::vector<std::string>& aek,
         std::vector<std::string>& s) {
 
-    // gcc 4.8 did not allowed me to declare the lamda in func call!
     std::function<void(const tntdb::Row&)> \
-        foo = [&s](const tntdb::Row& r)
+        foo = [&s, &aek](const tntdb::Row& r)
         {
             std::string keytag;
             r["keytag"].get(keytag);
+            if (std::find(aek.cbegin(), aek.cend(), keytag) != aek.end())
+                return;
             if (std::find(s.cbegin(), s.cend(), keytag) == s.end())
                 s.push_back(keytag);
         };
@@ -160,7 +164,7 @@ void
         max_groups = 1;
 
     // put all remaining keys from the database
-    s_update_keytags(conn, KEYTAGS);
+    s_update_keytags(conn, ASSET_ELEMENT_KEYTAGS, KEYTAGS);
 
     // 1 print the first row with names
     // 1.1      names from asset element table itself
@@ -226,17 +230,26 @@ void
         // 2.5      PRINT IT
         // 2.5.1    things from asset element table itself
         // ORDER of fields added to the lcs IS SIGNIFICANT
+        std::string type_name;
         {
         std::string name;
         r["name"].get(name);
         lcs.add(name);
 
-        std::string type_name;
         r["type_name"].get(type_name);
         lcs.add(type_name);
 
-        std::string subtype_name;
-        r["subtype_name"].get(subtype_name);
+        std::string subtype_name = "";
+        // subtype for groups is stored as ext/type
+        if (type_name == "group") {
+            if (ext_attrs.count("type") == 1) {
+                subtype_name = ext_attrs["type"].first;
+                ext_attrs.erase("type");
+            }
+        }
+        else {
+            r["subtype_name"].get(subtype_name);
+        }
         if ( subtype_name == "N_A" )
             subtype_name = "";
         lcs.add(subtype_name);
