@@ -131,8 +131,10 @@ AM_CPPFLAGS = \
 		-include $(abs_top_builddir)/config.h \
 		-I$(abs_top_builddir)/include \
 		-I$(abs_top_srcdir)/include \
+		-I$(abs_top_builddir)/src \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
+		-I$(abs_top_srcdir)/src \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
 		-I$(abs_top_builddir)/src/msg \
@@ -1131,7 +1133,8 @@ client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
-			src/agents/autoconfig/configurator.cc
+			src/agents/autoconfig/configurator.cc \
+			src/db/agentstate_hl.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
@@ -1143,12 +1146,16 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-plusplus.la
+			libpriv-utils-plusplus.la \
+			libpriv-db.la \
+			libpriv-db-alerts.la
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
 
-agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
+				-I$(abs_top_srcdir)/tools \
+				-I$(abs_top_builddir)/tools
 
 
 
