@@ -646,14 +646,15 @@ int
 unique_keytag(
         tntdb::Connection &conn,
         const std::string &keytag,
-        const std::string &value)
+        const std::string &value,
+        a_elmnt_id_t       element_id)
 {
     LOG_START;
 
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT "
-            "   COUNT(*) "
+            "   id_asset_element "
             " FROM "
             "   t_bios_asset_ext_attributes "
             " WHERE keytag = :keytag AND"
@@ -664,10 +665,18 @@ unique_keytag(
                            .set("value", value)
                            .selectRow();
 
-        int r = 0;
+        a_elmnt_id_t r = 0;
         row[0].get(r);
+
         LOG_END;
-        return r;
+        if ( element_id == r )
+            return 0; // is ok
+        else
+            return 1; // is not ok
+    }
+    catch (const tntdb::NotFound &e) {
+        LOG_END_ABNORMAL(e);
+        return 0; // ok
     }
     catch (const std::exception &e) {
         LOG_END_ABNORMAL(e);

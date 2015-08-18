@@ -130,7 +130,7 @@ static const std::vector<std::string> inventoryBIOS {
     "model",
     "manufacturer",
     "serial_no",
-    "type",
+//    "type",
     "device.description",
     "device.contact",
     "device.location",

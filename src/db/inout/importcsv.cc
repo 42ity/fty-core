@@ -434,7 +434,11 @@ static db_a_elmnt_t
             }
             if ( key == "serial_no" )
             {
-                if  ( unique_keytag (conn, key, value) == 0 )
+                a_elmnt_id_t  id = 0;
+                if ( !id_str.empty() )
+                    id = atoi(id_str.c_str());
+
+                if  ( unique_keytag (conn, key, value, id) == 0 )
                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
                 else
                 {
