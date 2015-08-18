@@ -1081,8 +1081,10 @@ bios_csv_CPPFLAGS = \
 						  -I $(abs_top_srcdir)/src/share/
 bios_csv_LDADD = \
 						 libpriv-db-alerts.la \
-						 libpriv-log.la \
+						 libpriv-db-assets.la \
 						 libpriv-db.la \
+						 libpriv-proto.la \
+						 libpriv-log.la \
 						 libpriv-csv.la
 bios_csv_LDFLAGS = \
 						 ${CXXTOOLS_LIBS} -ltntdb
