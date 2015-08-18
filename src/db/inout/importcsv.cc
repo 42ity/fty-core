@@ -21,6 +21,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \author Michal Vyskocil <MichalVyskocil@Eaton.com>
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
+
+#include <string>
+#include <algorithm>
+#include <ctype.h>
+
 #include <tntdb/connect.h>
 #include <cxxtools/regex.h>
 
@@ -37,8 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 using namespace shared;
 
 namespace persist {
-// convert input '?[1-5]' to 1-5
-static int
+int
     get_priority
         (const std::string& s)
 {
@@ -51,6 +55,18 @@ static int
         }
     }
     return 5;
+}
+
+bool
+    get_business_critical(
+            const std::string& s)
+{
+    log_debug ("s = '%s'", s.c_str());
+    std::string bs_critical;
+    std::transform(s.cbegin(), s.cend(), bs_critical.begin(), ::tolower);
+    if ( bs_critical == "yes" )
+        return true;
+    return false;
 }
 
 static std::map<std::string,int>
@@ -195,19 +211,9 @@ static db_a_elmnt_t
     }
     unused_columns.erase("status");
 
-    auto bs_critical = cm.get_strip(row_i, "business_critical");
-    log_debug ("bc = '%s'", bs_critical.c_str());
-    if ( bs_critical != "yes" && bs_critical != "no")
-    {
-        log_warning ( "Business critical '%s' is not allowed, use default",
-                                                        bs_critical.c_str());
-        bs_critical = "no";
-    }
+    bool bs_critical = get_business_critical(cm.get_strip(row_i, "business_critical"));
     unused_columns.erase("business_critical");
-    // TODO function
-    int bc = 1;
-    if (bs_critical == "no")
-        bc = 0;
+    int bc = bs_critical ? 1 : 0;
 
     auto asset_tag = cm.get(row_i, "asset_tag");
     log_debug ("asset_tag = '%s'", asset_tag.c_str());

@@ -30,6 +30,37 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "dbhelpers.h"
 namespace persist {
+
+/*
+ * \brief Converts the string priority to number
+ *
+ * get_priority("0") -> 0
+ * get_priority("P3") -> 3
+ * get_priority("X4") -> 4
+ * get_priority("777") -> 5
+ *
+ * \param input[s]     - string with content
+ * \return numeric value of priority or 5 if not detected
+ *
+ */
+int
+get_priority(
+        const std::string& s);
+
+/*
+ * \brief Converts the string yes/no to boolean value
+ *
+ * get_priority("yEs") -> true
+ * get_priority("No") -> false
+ * get_priority("spam") -> false
+ *
+ * \param input[s]     - string with content
+ * \return boolean value
+ *
+ */
+bool
+    get_business_critical(
+            const std::string& bs_critical);
 /*
  * \brief Processes a csv file
  *
