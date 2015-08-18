@@ -207,7 +207,6 @@ Configurator * ConfigFactory::getConfigurator( uint32_t type, uint32_t subtype )
 
 bool ConfigFactory::configureAsset( const std::string &name, AutoConfigurationInfo &info) {
     log_debug("configuration attempt device name %s type %" PRIu32 "/%" PRIu32, name.c_str(), info.type, info.subtype );
-    // result = getConfigurator( deviceType ).configure( name, extAttributes, event_type );
     Configurator *C = getConfigurator( info.type, info.subtype );
     bool result = C->configure( name, info );
     delete C;
