@@ -220,7 +220,8 @@ int
 unique_keytag(
         tntdb::Connection &conn,
         const std::string &keytag,
-        const std::string &value);
+        const std::string &value,
+        a_elmnt_id_t       element_id);
 
 db_reply_t
     select_monitor_device_type_id
