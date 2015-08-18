@@ -283,6 +283,15 @@ values
     (select id_asset_element from t_bios_asset_element where name = 'ROOM4')
 );
 
+insert into t_bios_asset_ext_attributes
+    (keytag, value, id_asset_element)
+values
+(
+    "type",
+    "power_chain",
+    (select id_asset_element from t_bios_asset_element where name = 'group1')
+);
+
 INSERT INTO t_bios_discovered_device (id_device_type, name) values (@device_unclassified, "measures");
 SELECT @measures_device := id_discovered_device FROM t_bios_discovered_device WHERE name = "measures";
 
