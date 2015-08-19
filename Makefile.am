@@ -390,7 +390,8 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 libpriv_db_la_LIBADD =	libbiosapi.la \
 						libpriv-log.la \
 						libpriv-csv.la \
-						libpriv-db-assets.la
+						libpriv-db-assets.la \
+						libpriv-topic-cache.la
 
 noinst_LTLIBRARIES += 		libpriv-db-measurements.la
 
@@ -478,6 +479,11 @@ noinst_LTLIBRARIES +=	libpriv-magic.la
 libpriv_magic_la_SOURCES = \
 			src/shared/magic.cc \
 			src/shared/bios-magic.h
+
+noinst_LTLIBRARIES +=	libpriv-topic-cache.la
+libpriv_topic_cache_la_SOURCES = \
+			src/shared/topic_cache.cc \
+			src/shared/topic_cache.h
 
 noinst_LTLIBRARIES += 	libpriv-configure-inform.la
 
