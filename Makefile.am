@@ -1298,7 +1298,7 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
                       src/web/src/uptime.cpp src/web/src/iface.cpp       \
                       src/web/src/license.cpp src/web/src/asset_export.cpp \
-                      src/web/src/admin_passwd.cpp
+                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
