@@ -381,6 +381,7 @@ libpriv_db_la_SOURCES = \
 			src/db/alerts/alert_basic.h \
 			src/db/agentstate/agentstate.cc \
 			src/db/agentstate/agentstate.h \
+			src/db/agentstate.h \
 			src/db/alerts.h \
 			tools/dbpath.cc
 
