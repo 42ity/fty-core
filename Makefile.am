@@ -416,8 +416,6 @@ noinst_LTLIBRARIES += 		libpriv-db-alerts.la
 libpriv_db_alerts_la_SOURCES = \
 			src/db/alerts/alert.cc \
 			src/db/alerts/alert_basic.h \
-			src/db/agentstate/agentstate.h \
-			src/db/agentstate/agentstate.cc \
 			src/db/alerts.h
 
 libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
@@ -1134,7 +1132,7 @@ client_PROGRAMS +=	agent-autoconfig
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
 			src/agents/autoconfig/configurator.cc \
-			src/db/agentstate_hl.cc
+			src/db/agentstate/agentstate.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
