@@ -432,16 +432,20 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 noinst_LTLIBRARIES += 		libpriv-db-assets.la
 
-libpriv_db_assets_la_SOURCES = \
+HEADERS_ASSETS = \
+			src/db/assets.h \
+			src/db/assets/assetcr.h \
 			src/db/assets/assetr.h \
 			src/db/assets/assetu.h \
 			src/db/assets/assetd.h \
-			src/db/assets/assetcr.h \
-			src/db/assets/assetu.cc \
-			src/db/assets/assetr.cc \
-			src/db/assets/assetd.cc \
+			src/db/assetdef.h
+
+libpriv_db_assets_la_SOURCES = \
+			$(HEADERS_ASSETS) \
 			src/db/assets/assetcr.cc \
-			src/db/assets.h \
+			src/db/assets/assetr.cc \
+			src/db/assets/assetu.cc \
+			src/db/assets/assetd.cc \
 			src/db/inout.h \
 			src/db/inout/importcsv.cc \
 			src/db/inout/exportcsv.cc \
