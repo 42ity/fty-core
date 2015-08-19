@@ -27,11 +27,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "utils++.h"
 #include "asset_types.h"
 #include "utils_ymsg.h"
-#include "db/agentstate_hl.h"
+#include "db/agentstate.h"
 
 #define AUTOCONFIG "AUTOCONFIG"
 
 using namespace asset_type;
+using namespace persist;
 
 // cxxtool serialization operators
 
