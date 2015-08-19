@@ -52,6 +52,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
  * Example:
  * \code
  * SubProcess proc("/bin/true");
+ * proc.run();
  * proc.wait();
  * std::cout "process pid: " << proc.getPid() << std::endl;
  * \endcode

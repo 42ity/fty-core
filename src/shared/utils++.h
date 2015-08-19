@@ -25,6 +25,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_SHARED_UTILS_PLUSPLUS_H__
 
 #include <string>
+#include <map>
+#include <czmq.h>
 
 namespace utils {
 
@@ -63,6 +65,15 @@ escape (
 std::string
 sql_escape(
         const std::string& in);
+
+/*
+ * \brief convert zhash to map<string,string>
+ *
+ * \param zhash to convert
+ * \return std::map
+ */
+std::map<std::string,std::string>
+zhash_to_map(zhash_t *hash);
 
 } // namespace utils
 
