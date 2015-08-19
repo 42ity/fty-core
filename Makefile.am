@@ -204,7 +204,7 @@ autopathedit = ${SED} \
 	-e 's|@libdir[@]|$(libdir)|g'
 
 define process-in-file =
-	echo "  SED      $(2)"; rm -f $(2); mkdir -p "`dirname "$(2)"`"; $(autopathedit) < "$(1)" > "$(2)"
+	echo "  SED      $(1) => $(2)"; rm -f $(2); mkdir -p "`dirname "$(2)"`"; $(autopathedit) < "$(1)" > "$(2)"
 endef
 
 # Catch-all undetailed recipes for .in files to be converted into sources
