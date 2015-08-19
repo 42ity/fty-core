@@ -1126,8 +1126,7 @@ client_PROGRAMS +=	agent-autoconfig
 
 agent_autoconfig_SOURCES = \
 			src/agents/autoconfig/agent-autoconfig.cc \
-			src/agents/autoconfig/configurator.cc \
-			src/db/agentstate/agentstate.cc
+			src/agents/autoconfig/configurator.cc
 
 agent_autoconfig_LDADD = \
 			libpriv-log.la \
