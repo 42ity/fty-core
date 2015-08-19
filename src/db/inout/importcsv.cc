@@ -137,9 +137,9 @@ int
     db_reply <db_web_basic_element_t> parent = select_asset_element_web_byId
         (conn, parent_id);
     if ( parent.status == 0 )
-        return 1;
-    if ( parent.item.type_id != asset_type::RACK )
         return 2;
+    if ( parent.item.type_id != asset_type::RACK )
+        return 1;
     db_reply <std::vector<device_info_t>> devices =
         select_asset_device_by_container
          (conn, parent_id);
@@ -295,8 +295,11 @@ static db_a_elmnt_t
         }
         else{
             if ( ret != 0 )
+            {
+                log_error ( "ret = %d", ret);
                 throw std::invalid_argument
                     ("some problem with db, see log for more details");
+            }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
                 throw std::invalid_argument
                     ("more than 2 PDU is not supported");
@@ -448,7 +451,7 @@ static db_a_elmnt_t
                     case 1: {
                                 std::string new_value = ( last_position == "left" ) ? "right" : "left";
                                 if ( new_value != value )
-                                    log_warning (" location_w_pow changed to '%s'", new_value.c_str());
+                                    log_warning (" location_w_pos changed to '%s'", new_value.c_str());
                                 zhash_insert (extattributes, key.c_str(), (void*)new_value.c_str());
                                 break;
                             }
