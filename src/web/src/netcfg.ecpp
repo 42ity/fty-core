@@ -7,39 +7,11 @@
 #include <string.h>
 
 #include "subprocess.h"
+#include "augtool.h"
 #include "cidr.h"
 
 using namespace shared;
 
-// Helper function to parse output of augtool
-std::string real_out(std::string in, bool key_value = true, std::string sep = "") {
-    std::vector<std::string> spl;
-    bool not_first = false;
-    std::string out;
-    cxxtools::split("\n", in, std::back_inserter(spl));
-    if(spl.size() >= 3) {
-        spl.erase(spl.begin());
-        spl.pop_back();
-    } else {
-        return out;
-    }
-    for(auto i : spl) {
-        auto pos = i.find_first_of("=");
-        if(pos == std::string::npos) {
-            if(key_value)
-                continue;
-            if(not_first)
-                out += sep;
-            out += i;
-        } else {
-            if(not_first)
-                out += sep;
-            out += i.substr(pos+2);
-        }
-        not_first = true;
-    }
-    return out;
-}
 
 </%pre>
 <%thread scope="global">
@@ -50,25 +22,6 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 <%cpp>
 std::string command;
 std::string nil;
-
-// Initialization of augtool subprocess if needed
-if(!augtool.isRunning()) {
-    augtool.run();
-    command = "help\n";
-    write(augtool.getStdin(), command.c_str(), command.length());
-    nil = wait_read_all(augtool.getStdout());
-    if(!augtool.isRunning() || nil.find("match") == nil.npos) {
-</%cpp>
-{ "error": "Can't start augtool" }
-<%cpp>
-        return HTTP_INTERNAL_SERVER_ERROR;
-    }
-}
-
-// Make sure we have the fresh data
-command = "load\n";
-write(augtool.getStdin(), command.c_str(), command.length());
-nil = wait_read_all(augtool.getStdout());
 
 // Make sure we have data that works
 command = "ls /augeas/files/etc/network/interfaces/error\n";
