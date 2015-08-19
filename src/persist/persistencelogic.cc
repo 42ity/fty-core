@@ -106,12 +106,10 @@ free_mem_toto:
 void process_mailbox_deliver(ymsg_t** out, char** out_subj, ymsg_t* in, const char* in_subj) {
     if (!in_subj)
         return;
-
-    if (strncmp(in_subj, "get_measurements", 17) == 0) {
-        persist::get_measurements(out, out_subj, in, in_subj);
-        return;
-    }
-    else if (strncmp(in_subj, "alert.", 6) == 0 ) {
+    // subject "get_measurements exists, we have a message for it, but nobody
+    // used this message to get data, every one uses directly acces to db
+    // for now
+    if (strncmp(in_subj, "alert.", 6) == 0 ) {
         persist::process_alert(out, out_subj, in, in_subj);
         return;
     }
