@@ -32,10 +32,20 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "log.h"
 #include "nutscan.h"
 
+struct AutoConfigurationInfo
+{
+    uint32_t type = 0;
+    uint32_t subtype = 0;
+    int8_t operation = 0;
+    bool configured = false;
+    time_t date = 0;
+    std::map<std::string,std::string> attributes;
+};
+
 class Configurator {
  public:
     virtual ~Configurator() {};
-    virtual bool configure( const char *name, zhash_t *extendedAttributes, int8_t eventType );
+    virtual bool configure( const std::string &name, const AutoConfigurationInfo info );
 };
 
 class NUTConfigurator : public Configurator {
@@ -43,7 +53,7 @@ class NUTConfigurator : public Configurator {
     virtual ~NUTConfigurator() {};
     std::vector<std::string>::const_iterator selectBest( const std::vector<std::string> &configs);
     void updateNUTConfig();
-    bool configure(  const char *name, zhash_t *extendedAttributes, int8_t eventType );
+    bool configure( const std::string &name, const AutoConfigurationInfo info );
  private:
     std::vector<std::string>::const_iterator stringMatch( const std::vector<std::string> &texts, const char *pattern);
     bool match( const std::vector<std::string> &texts, const char *pattern);
@@ -56,9 +66,9 @@ class NUTConfigurator : public Configurator {
 
 class ConfigFactory {
  public:
-    bool configureAsset(ymsg_t *message);
+    bool configureAsset( const std::string &name, AutoConfigurationInfo &info );
  private:
-    Configurator * getConfigurator(std::string type);
+    Configurator * getConfigurator( uint32_t type, uint32_t subtype );
 };
 
 #endif // SRC_AGENTS_AUTOCONFIG_CONFIGURATOR_H__

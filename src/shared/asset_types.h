@@ -13,6 +13,26 @@ enum asset_type {
     DEVICE      = 6
 };
 
+enum asset_subtype {
+    UPS = 1,
+    GENSET,
+    EPDU,
+    PDU,
+    SERVER,
+    MAIN,
+    STS,
+    SWITCH,
+    STORAGE,
+    N_A = 10
+};
+
+enum asset_operation {
+    INSERT = 1,
+    DELETE,
+    UPDATE,
+    GET
+};
+
 };
 
 #endif //SRC_SHARED_ASSET_TYPES_H

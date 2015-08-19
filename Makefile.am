@@ -134,8 +134,10 @@ AM_CPPFLAGS = \
 		-include $(abs_top_builddir)/config.h \
 		-I$(abs_top_builddir)/include \
 		-I$(abs_top_srcdir)/include \
+		-I$(abs_top_builddir)/src \
 		-I$(abs_top_builddir)/src/shared \
 		-I$(abs_top_builddir)/src/include \
+		-I$(abs_top_srcdir)/src \
 		-I$(abs_top_srcdir)/src/shared \
 		-I$(abs_top_srcdir)/src/include \
 		-I$(abs_top_builddir)/src/msg \
@@ -366,6 +368,11 @@ libpriv_db_la_SOURCES = \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
 			src/persist/ymsg-asset.cc \
+			src/db/alerts/alert.cc \
+			src/db/alerts/alert_basic.h \
+			src/db/agentstate/agentstate.cc \
+			src/db/agentstate/agentstate.h \
+			src/db/alerts.h \
 			tools/dbpath.cc
 
 # "configure"-generated source with connection string needed for any programs
@@ -412,21 +419,12 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 
 #####
-noinst_LTLIBRARIES += 		libpriv-db-alerts.la
-
-libpriv_db_alerts_la_SOURCES = \
-			src/db/alerts/alert.cc \
-			src/db/alerts/alert_basic.h \
-			src/db/agentstate/agentstate.h \
-			src/db/agentstate/agentstate.cc \
-			src/db/alerts.h
-
-libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
-			-I$(abs_top_srcdir)/src/persist \
-			-I$(abs_top_srcdir)/tools \
-			-I$(abs_top_srcdir)/src \
-			-I$(abs_top_builddir)/tools \
-			-I$(abs_top_builddir)/src/persist
+#libpriv_db_alerts_la_CPPFLAGS = $(AM_CPPFLAGS) \
+#			-I$(abs_top_srcdir)/src/persist \
+#			-I$(abs_top_srcdir)/tools \
+#			-I$(abs_top_srcdir)/src \
+#			-I$(abs_top_builddir)/tools \
+#			-I$(abs_top_builddir)/src/persist
 
 #libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
 #			libpriv-log.la libpriv-csv.la
@@ -771,7 +769,6 @@ test_db2_SOURCES = \
 test_db2_LDADD = \
 			libpriv-log.la \
 			libpriv-db.la \
-			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
 			libpriv-utils.la \
@@ -871,7 +868,6 @@ test_db_alert_SOURCES = \
 			tests/persist/test-alert.cc
 
 test_db_alert_LDADD = \
-			libpriv-db-alerts.la \
 			libpriv-db.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
@@ -1037,7 +1033,6 @@ agent_dbstore_LDFLAGS =		${LIBCZMQ_LIBS} ${CXXTOOLS_LIBS} \
 
 agent_dbstore_LDADD = \
 			libpriv-db.la \
-			libpriv-db-alerts.la \
 			libpriv-db-assets.la \
 			libpriv-utils-ymsg.la \
 			libpriv-cidr.la \
@@ -1147,12 +1142,16 @@ agent_autoconfig_LDADD = \
 			libpriv-defs.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
-			libpriv-utils-plusplus.la
+			libpriv-utils-plusplus.la \
+			libpriv-db.la
+
 # FIXME remove utils ymsg
 
-agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi
+agent_autoconfig_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} -lcidr -lbiosapi -ltntdb
 
-agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS)
+agent_autoconfig_CPPFLAGS =	$(AM_CPPFLAGS) \
+				-I$(abs_top_srcdir)/tools \
+				-I$(abs_top_builddir)/tools
 
 
 
@@ -1168,7 +1167,6 @@ agent_inventory_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS}  -ltntdb -lbiosapi -lci
 ### But now it is required, because of "huge" libpriv-db
 agent_inventory_LDADD = \
 			libpriv-db.la \
-			libpriv-db-alerts.la \
 			libpriv-cidr.la \
 			libpriv-defs.la \
 			libpriv-log.la \
@@ -1332,7 +1330,6 @@ bios_web_la_LIBADD = \
 			libpriv-db.la libpriv-cidr.la libpriv-proto.la \
 			libpriv-git-details-override.la \
 			libpriv-db-calculations.la \
-			libpriv-db-alerts.la \
 			libpriv-subprocess.la \
 			libpriv-utils-ymsg.la \
 			libpriv-db-measurements.la \

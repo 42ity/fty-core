@@ -136,7 +136,7 @@ int
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        auto ret = select_agent_info (conn, agent_name(), &data, size);
+        auto ret = persist::select_agent_info (conn, agent_name(), &data, size);
         if ( ret )
         {
             result = std::string("Can't load ui/properties from database");
@@ -172,7 +172,7 @@ int
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
         uint16_t affected_rows = 0;
-        auto ret = update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
+        auto ret = persist::update_agent_info (conn, agent_name(), properties.c_str(), properties.size(), affected_rows);
         if ( ret )
         {
             result = std::string("{\"error\" : \"Can't import ui/properties to database\"}");
