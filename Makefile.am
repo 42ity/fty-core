@@ -436,6 +436,7 @@ noinst_LTLIBRARIES += 		libpriv-db-assets.la
 libpriv_db_assets_la_SOURCES = \
 			src/db/assets/assetr.h \
 			src/db/assets/assetu.h \
+			src/db/assets/assetd.h \
 			src/db/assets/assetcr.h \
 			src/db/assets/assetu.cc \
 			src/db/assets/assetr.cc \
