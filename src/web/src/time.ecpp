@@ -42,14 +42,20 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
 	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
 	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
 
-		printf("\n%s\n", time.c_str());
-
-	    if(!time.empty() && (!t_rex.match(time) ||
-	        system((std::string("sudo date -s ") + time).c_str()) != 0)) {
+	    if(time.empty() && ntp.empty()) {
+</%cpp>
+{ "error":"You need to specify either time or ntp" }
+<%cpp>
+	        return HTTP_BAD_REQUEST;
+		}
+	    if(!time.empty()) {
+		    if((!t_rex.match(time) ||
+	            system((std::string("sudo date -s ") + time).c_str()) != 0)) {
 </%cpp>
 { "error":"invalid_format" }
 <%cpp>
-		    return HTTP_BAD_REQUEST;
+		        return HTTP_BAD_REQUEST;
+			}
 	    }
 	    if(!ntp.empty()) {
 		    if(!n_rex.match(ntp)) {
