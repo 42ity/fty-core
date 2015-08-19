@@ -29,12 +29,14 @@ Cmnd_Alias AUGTOOL      = /usr/bin/augtool
 Cmnd_Alias BIOS_PASSWD  = @libexecdir@/@PACKAGE@/bios-passwd
 Cmnd_Alias SSH_RM = /bin/rm -f /etc/ssh/sshd_not_to_be_run
 Cmnd_Alias SSH_RESTART = /bin/systemctl restart ssh.service
+### TODO: Make command aliases for systemctl [list-units, show, start, stop, restart, enable, disable]
+Cmnd_Alias SYSTEMCTL = /bin/systemctl
 
 ### Update firmware on this device (disabled by default):
 Cmnd_Alias APT		= /usr/bin/apt-get update,/usr/bin/apt-get upgrade
 
 # Overall, what is currently allowed with different privileges?
-Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,SSH_RM,SSH_RESTART
+Cmnd_Alias BIOS_PROGS	= DATE,AUGTOOL,BIOS_PASSWD,SSH_RM,SSH_RESTART,SYSTEMCTL
 
 # Who is allowed to elevate?
 User_Alias BIOS_USERS	= bios,%bios
