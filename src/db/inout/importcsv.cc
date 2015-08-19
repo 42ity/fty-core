@@ -63,9 +63,9 @@ bool
             const std::string& s)
 {
     log_debug ("s = '%s'", s.c_str());
-    std::string bs_critical;
-    std::transform(s.cbegin(), s.cend(), bs_critical.begin(), ::tolower);
-    if ( bs_critical == "yes" )
+    std::string s1 = s;
+    std::transform(s1.cbegin(), s1.cend(), s1.begin(), ::tolower);
+    if ( s1 == "yes" )
         return true;
     return false;
 }
@@ -220,9 +220,7 @@ static db_a_elmnt_t
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
-        log_warning ("Status '%s' is not allowed, use default",
-                                                            status.c_str());
-        status = "nonactive";    // default
+        throw std::invalid_argument("Status '" + status + "' is not allowed");
     }
     unused_columns.erase("status");
 

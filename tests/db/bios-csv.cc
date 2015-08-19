@@ -76,15 +76,11 @@ s_compare(
                     equals = (b1 == b2);
                 }
                 else if (title == "type" || title == "sub_type" || title == "status") {
-                    std::string foo1;
-                    std::string i;
+                    std::string foo1 = c1.get(line, title);
+                    std::transform(foo1.cbegin(), foo1.cend(), foo1.begin(), ::tolower);
 
-                    i = c1.get(line, title);
-                    std::transform(i.cbegin(), i.cend(), foo1.begin(), ::tolower);
-
-                    std::string foo2;
-                    i = c2.get(line, title);
-                    std::transform(i.cbegin(), i.cend(), foo2.begin(), ::tolower);
+                    std::string foo2 = c2.get(line, title);
+                    std::transform(foo2.cbegin(), foo2.cend(), foo2.begin(), ::tolower);
 
                     equals = (foo1 == foo2);
                 }
