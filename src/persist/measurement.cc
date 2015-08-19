@@ -1,38 +1,11 @@
-#include <vector>
-#include <tntdb.h>
-#include <errno.h>
-#include <czmq.h>
-#include <zchunk.h>
 #include <inttypes.h>
+#include <tntdb.h>
 
 #include "log.h"
 #include "measurement.h"
-#include "ymsg.h"
-#include "log.h"
 #include "dbpath.h"
-#include "bios_agent.h"
-#include "agents.h"
-#include "utils_ymsg.h"
-#include "cleanup.h"
-#include "utils.h"
 
 namespace persist {
-
-bool TopicCache::has(const std::string& topic) const {
-    if (_cache.count(topic) == 1)
-        return true;
-
-    return false;
-}
-
-void TopicCache::add(const std::string& topic) {
-    if (_max <= _cache.size())
-    {
-        _cache.clear();
-    }
-
-    _cache.insert(topic);
-}
 
 //Notice for future developers - this functions is ugly and better to split to smaller
 //functions doing only one thing. Please try to avoid adding even more logic here, thanks
