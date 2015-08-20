@@ -75,7 +75,7 @@
     <!-- Network configuration -->
     <mapping>
       <target>augtool@bios_web</target>
-      <url>^/api/v1/admin/(netcfg|time)*$</url>
+      <url>^/api/v1/admin/(netcfg|time).*</url>
     </mapping>
     <mapping>
       <target>netcfg@bios_web</target>
