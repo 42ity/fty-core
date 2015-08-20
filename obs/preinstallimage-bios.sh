@@ -199,8 +199,12 @@ systemctl enable mysql
 # Enable ssh
 echo "UseDNS no" >> /etc/ssh/sshd_config
 rm /etc/ssh/*key*
-sed -i 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh.service
-systemctl enable ssh
+mkdir -p /etc/systemd/system
+sed 's|\[Service\]|[Service]\nExecStartPre=/usr/bin/ssh-keygen -A|' /lib*/systemd/system/ssh@.service > /etc/systemd/system/ssh@.service
+sed -i 's|\[Unit\]|[Unit]\nConditionPathExists=/var/lib/bios/license\nConditionPathExists=/mnt/nand/overlay/etc/shadow|' /etc/systemd/system/ssh@.service
+systemctl disable ssh.service
+systemctl mask ssh.service
+systemctl enable ssh.socket
 
 # Workaround nutscanner's ldopen
 ln -sr /usr/lib/*/libnetsnmp.so.*.* /usr/lib/libnetsnmp.so
