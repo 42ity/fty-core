@@ -465,6 +465,22 @@ api_get_jsonv() {
 api_post() {
     CURL --insecure -v -d "$2" --progress-bar "$BASE_URL$1" 3>&2 2>&1
 }
+simple_post_code() {
+
+    local __out=
+    __out=$( curl -s --insecure -v --progress-bar -d "$2" -X POST "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+
+    local __resultcode=$4
+    local __resultout=$3
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
+}
 
 ### Flag for _api_get_token_certainPlus()
 LOGIN_RESET="no"
@@ -553,6 +569,26 @@ api_auth_post() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" -d "$data" \
         -v --progress-bar "$BASE_URL$url" "$@" 3>&2 2>&1
+}
+
+simple_auth_post_code () {
+    # WARNING: At the moment does not fill in $3... WIP
+    TOKEN="`_api_get_token`"
+
+    local __out=
+    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -d "$2" -X "POST" -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+
+    local __resultcode=$4
+    local __resultout=$3
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
+
 }
 
 # POST the file to the server with Content-Type multipart/form-data according
@@ -651,6 +687,24 @@ api_auth_get() {
     TOKEN="`_api_get_token`"
     CURL --insecure --header "Authorization: Bearer $TOKEN" \
         -v --progress-bar "$BASE_URL$1" 3>&2 2>&1
+}
+
+simple_auth_get_code() {
+    TOKEN="`_api_get_token`"
+
+    local __out=
+    __out=$( curl -s --insecure --header "Authorization: Bearer $TOKEN" -v --progress-bar "$BASE_URL$1" 2>&1 )
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
+    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+
+    local __resultcode=$3
+    local __resultout=$2
+    eval $__resultcode="'$__code'"
+    eval $__resultout="'$__out'"
+    return 0
 }
 
 api_auth_get_wToken() {
