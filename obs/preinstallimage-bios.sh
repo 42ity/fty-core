@@ -257,6 +257,13 @@ for i in vi tftp wget; do
    ln -s busybox /bin/$i
 done
 
+# Simplify ntp.conf
+augtool << EOF
+rm /files/etc/ntp.conf/server
+set /files/etc/ntp.conf/server[1] pool.ntp.org
+save
+EOF
+
 # BIOS emulator script which can fake some of the curl behaviour with wget
 [ ! -x /usr/bin/curl ] && [ -x /usr/share/bios/scripts/curlbbwget.sh ] && \
     install -m 0755 /usr/share/bios/scripts/curlbbwget.sh /usr/bin/curl
