@@ -991,13 +991,13 @@ CLEANFILES += $(cibin_programs_list)
 ### Note that this creates no retainable output file
 web-link-test: bios_web.la
 			@$(CXX) $(AM_CPPFLAGS) $(AM_CXXFLAGS) -o /dev/null \
-			$(abs_top_srcdir)/tests/web-linking-test.cpp \
+			$(abs_top_srcdir)/tests/web-linking-test.cc \
 			${CXXTOOLS_LIBS} -ltntnet \
 			$(abs_top_builddir)/.libs/bios_web.so && \
 			echo "PASS: dynamic-link compilation test: everything for bios_web.so does link ok!" || \
 			( R=$$?; echo "FAIL ($$R): dynamic-link compilation test: bios_web.so unusable"; exit $$R; )
 
-EXTRA_DIST +=		tests/web-linking-test.cpp
+EXTRA_DIST +=		tests/web-linking-test.cc
 
 TESTS += $(check_PROGRAMS)
 TESTS += $(check_SCRIPTS)
