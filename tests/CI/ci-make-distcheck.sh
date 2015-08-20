@@ -144,7 +144,7 @@ if [ "$REQUIRE_DISTCHECK" = no ]; then
         ./tools/git_details.sh 2>&1 | egrep 'PACKAGE_GIT_(ORIGIN|BRANCH|HASH_L)=' && \
         logmsg_echo "Compare OLD_COMMIT='$OLD_COMMIT'"
         [ -n "${OLD_COMMIT}" ] && \
-            logmsg_info "Following flies were changed between these commits:" &&\
+            logmsg_info "Following files were changed between these commits:" &&\
             git diff "${OLD_COMMIT}" | egrep '^diff '
         echo "====================================="
         echo ""
