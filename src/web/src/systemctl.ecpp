@@ -9,6 +9,7 @@
 #include <cstring>
 #include <algorithm>
 
+#include "auth_levels.h"
 #include "subprocess.h"
 
 #define LoadState       "LoadState"     // loaded/
@@ -108,18 +109,14 @@ unsigned int process_get (const std::string& operation, const std::string& servi
     //////////////////////
     if (operation.compare ("status") == 0) {
         if (service_name_valid (service_name.c_str ())) {
-            // TODO (MVY): Would this be possible? I mean the pipe inside SubProcess
-            //shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name, "|", "grep", "-e", LoadState,
-            //                       "-e", ActiveState, "-e", UnitFileState, "-e", SubState};
             shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name};
-            shared::SubProcess proc (proc_cmd, shared::SubProcess::STDOUT_PIPE);
-            proc.run ();
-            int proc_rv = proc.wait ();
+            std::string proc_out, proc_err;
+            int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
+
             if (proc_rv != 0) {
                 message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
                 return HTTP_INTERNAL_SERVER_ERROR;    
             }
-            std::string proc_out = shared::read_all(proc.getStdout());
 
             std::string active_state, sub_state, load_state, unit_file_state;
             if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
@@ -133,7 +130,7 @@ unsigned int process_get (const std::string& operation, const std::string& servi
 "\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
 "\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
 "\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
-"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\",\n"
+"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
 "\t}\n"
 "}");
             return HTTP_OK; 
@@ -185,24 +182,21 @@ unsigned int process_post (const std::string& operation, const std::string& body
         }
         //
         shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name};
-        shared::SubProcess proc (proc_cmd, shared::SubProcess::STDERR_PIPE);
-        proc.run ();
-        int proc_rv = proc.wait ();
+
+        std::string proc_out, proc_err;
+        int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
         if (proc_rv != 0) {
-            std::string proc_err = shared::read_all(proc.getStderr());
             message.assign ("TODO executing systemctl failed: ").append (proc_err); // TODO change error message
             return HTTP_INTERNAL_SERVER_ERROR;    
         }
 
         shared::Argv proc_cmd2 {"sudo", "systemctl", "show", service_name};
-        shared::SubProcess proc2 (proc_cmd2, shared::SubProcess::STDOUT_PIPE);
-        proc2.run ();
-        proc_rv = proc2.wait ();
+
+        proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
         if (proc_rv != 0) {
             message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
             return HTTP_INTERNAL_SERVER_ERROR;    
         }
-        std::string proc_out = shared::read_all(proc2.getStdout());
 
         std::string active_state, sub_state, load_state, unit_file_state;
         if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
@@ -215,7 +209,7 @@ unsigned int process_post (const std::string& operation, const std::string& body
 "\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
 "\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
 "\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
-"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\",\n"
+"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
 "\t}\n"
 "}");
         
@@ -234,7 +228,29 @@ unsigned int process_post (const std::string& operation, const std::string& body
 }
 
 </%pre>
+
+<%request scope="global">
+int8_t access_auth_level;
+</%request>
+
 <%cpp>
+// min. level 2 required
+if (access_auth_level < AUTH_LEVEL_POWERUSER) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 0,
+            "message" : "Not authorized!",
+            "hint" : "Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."
+        }
+    ]
+}
+<%cpp>     
+    return HTTP_UNAUTHORIZED;
+}
+
+
 std::string operation = request.getArg("operation");
 std::string service_name = request.getArg("service_name");
 
@@ -267,7 +283,7 @@ if (http_rc == 200) {
 else {
 </%cpp>
 {
-    errors: [
+    "errors": [
         {
             "code" : <$ error_code $>,
             "message" : "<$$ message $>"
