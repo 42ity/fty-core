@@ -19,12 +19,16 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 /*! \file   agentstate.h
     \brief  API for storing agent state as binary entity
     \author Alena Chernikava <AlenaChernikava@eaton.com>
+    \author TomasHalman <TomasHalman@eaton.com>
 */
 
 #ifndef SRC_DB_AGENTSTATE_AGENTSTATE_H_
 #define SRC_DB_AGENTSTATE_AGENTSTATE_H_
 
 #include <tntdb/connect.h>
+
+namespace persist {
+
 int
     update_agent_info(
         tntdb::Connection &conn,
@@ -42,4 +46,76 @@ int
         size_t             &size
         );
 
+/**
+ * \brief save agent state
+ * \param database connection
+ * \param agent name
+ * \param data to store
+ *
+ * Function saves data (stored as blob in db) under unique name.
+ * It can be used for saving agent state or any other data under
+ * unique identifier.
+ */
+int
+    save_agent_info(
+        tntdb::Connection& conn,
+        const std::string& agent_name,
+        const std::string& data
+    );
+
+/**
+ * \brief save agent state
+ * \param agent name
+ * \param data to store
+ *
+ * Function saves data (stored as blob in db) under unique name.
+ * It can be used for saving agent state or any other data under
+ * unique identifier.
+ *
+ * Database connection is hadled inside this function. It connects,
+ * saves data and disconnects.
+ */
+int
+    save_agent_info(
+        const std::string& agent_name,
+        const std::string& data
+    );
+
+/**
+ * \brief load agent state
+ * \param database connection
+ * \param agent name
+ * \return previously stored data or "" in case of error
+ *
+ * Function reads data (stored previously in db under unique name).
+ * It can be used for loading agent state or any other data under
+ * unique identifier.
+ */
+std::string
+    load_agent_info(
+        tntdb::Connection& conn,
+        const std::string& agent_name
+    );
+
+/**
+ * \brief load agent state
+ * \param database connection
+ * \param agent name
+ * \return previously stored data or "" in case of error
+ *
+ * Function reads data (stored previously in db under unique name).
+ * It can be used for loading agent state or any other data under
+ * unique identifier.
+ *
+ * Database connection is hadled inside this function. It connects,
+ * loads data and disconnects.
+ */
+std::string
+    load_agent_info(
+        const std::string& agent_name
+    );
+
+} // namespace persist
+
 #endif // SRC_DB_AGENTSTATE_AGENTSTATE_H_
+

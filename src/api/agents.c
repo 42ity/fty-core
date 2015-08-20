@@ -416,7 +416,7 @@ bios_alert_extract(ymsg_t *self,
    return 0;
 }
 
-// action type
+// action type (operation), see asset_type::asset_operation
 // 1 insert
 // 2 delete (the content of the message in this case is not specified)
 // 3 update

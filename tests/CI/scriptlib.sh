@@ -336,19 +336,23 @@ isRemoteSUT() {
 }
 
 sut_run() {
-    ### This tries to run a command either locally or externally via SSH
-    ### depending on what we are testing (local or remote System Under Test)
+    ### This tries to run a command either locally or externally via SSH,
+    ### depending on what we are testing (local or remote System Under Test).
+    ### If the first argument ($1) is "-t" then this requests a TTY for SSH.
     ### NOTE: By current construction this may fail for parameters that are
-    ### not one token aka "$1"
+    ### not one token aka "$1".
     if isRemoteSUT ; then
         logmsg_info "$CI_DEBUGLEVEL_RUN" \
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
+        SSH_TERMINAL_REQUEST=""
+        [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
         [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
             REMCMD="sh -x -c \"$@\"" ||
             REMCMD="sh -c \"$@\""
-        ssh -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
+        ssh $SSH_TERMINAL_REQUEST -p "${SUT_SSH_PORT}" -l "${SUT_USER}" "${SUT_HOST}" "$@"
         return $?
     else
+        [ "$1" = "-t" ] && shift        # Ignore for local host
         logmsg_info "$CI_DEBUGLEVEL_RUN" \
             "sut_run()::local: $@" >&2
         if [ "$CI_DEBUG" -gt 0 ] 2>/dev/null ; then
