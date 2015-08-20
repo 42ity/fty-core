@@ -1,0 +1,299 @@
+<%pre>
+#include <cxxtools/serializationinfo.h>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/split.h>
+
+#include <stdexcept>
+#include <vector>
+#include <string>
+#include <cstring>
+#include <algorithm>
+
+#include "auth_levels.h"
+#include "subprocess.h"
+
+#define LoadState       "LoadState"     // loaded/
+#define ActiveState     "ActiveState"   // active/
+#define UnitFileState   "UnitFileState" // enabled/disabled
+#define SubState        "SubState"      // running/
+
+// List of hardcoded services that we allow to be manipulated through REST API
+static const char *list[] =
+{
+// SYSTEM services
+    "networking", "mysql", "ntp", "saslauthd", "malamute",
+// BIOS services
+    "bios-reset-button", "bios-ssh-last-resort", "tntnet@bios", "bios-agent-alert-smtp", "bios-agent-alert", "bios-agent-autoconfig",
+    "bios-agent-cm", "bios-agent-dbstore", "bios-agent-inventory", "bios-agent-nut", "bios-agent-th", "bios-agent-tpower", "bios-db-init",
+    "bios-server-agent"
+// NUT services
+    "nut-driver", "nut-monitor", "nut-server", 
+    NULL
+};
+
+bool service_name_valid (const char *service_name) {
+    int i = 0;
+    while (list[i] != NULL) {
+        if (strcmp (list[i], service_name) == 0)
+            return true;
+        i++;    
+    }
+    return false;
+}
+
+bool
+parse_systemctl_status
+(const std::string& in, std::string& active_state, std::string& sub_state, std::string& load_state, std::string& unit_file_state) {
+    // Expected `systemctl show` format is:
+    //      key=value
+    //      ...
+    //      key=value
+    if (in.empty ())
+        return false;
+
+    std::vector<std::string> tokens;
+    cxxtools::split("\n", in, std::back_inserter(tokens));
+    for (auto&& i : tokens) {
+        if (i.empty ())
+            continue; 
+        std::size_t found = i.find ("=");
+        if (found == std::string::npos) {
+            return false;
+        }
+        std::string key = i.substr (0, found);
+        std::string value  = i.substr (found+1, std::string::npos);
+
+        if (key.compare (LoadState) == 0) {
+            load_state = value;
+        }
+        else if (key.compare (ActiveState) == 0) {
+            active_state = value;
+        }
+        else if (key.compare (UnitFileState) == 0) {
+            unit_file_state = value;
+        }
+        else if (key.compare (SubState) == 0) {
+            sub_state = value;
+        }
+    }
+    return true;
+}
+
+unsigned int process_get (const std::string& operation, const std::string& service_name, std::string& message, uint64_t& code) {
+    code = 0;
+    message.clear ();
+
+    ////////////////
+    //    LIST    //
+    ////////////////
+    if (operation.compare ("list") == 0) {
+        message.assign (
+"{\n"
+"\t\"systemctl_services\" : [\n");
+        bool last = false;
+        int i = 0;
+        while (list[i] != NULL) {
+            if (list [i+1] == NULL)
+                last = true;
+            message.append ("\t\t\"").append (list[i]).append (last ? "\"\n" : "\",\n");
+            i++;
+        }
+        message.append (
+"\t]\n"
+"}");
+        return HTTP_OK;
+    }
+    
+    //////////////////////
+    //      STATUS      //    
+    //////////////////////
+    if (operation.compare ("status") == 0) {
+        if (service_name_valid (service_name.c_str ())) {
+            shared::Argv proc_cmd {"sudo", "systemctl", "show", service_name};
+            std::string proc_out, proc_err;
+            int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
+
+            if (proc_rv != 0) {
+                message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
+                return HTTP_INTERNAL_SERVER_ERROR;    
+            }
+
+            std::string active_state, sub_state, load_state, unit_file_state;
+            if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
+                message.assign ("TODO Expected different format of systemctl show"); // TODO: change error message
+                return HTTP_INTERNAL_SERVER_ERROR;
+            }
+
+            message.assign (
+"{\n"
+"\t\"" + service_name + "\" : {\n" + 
+"\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
+"\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
+"\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
+"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
+"\t}\n"
+"}");
+            return HTTP_OK; 
+        }
+        message.assign ("TODO Bad service name"); // TODO change error message
+        return HTTP_NOT_FOUND;
+    }
+
+    //////////////////////////////////
+    //      BAD: empty / unknown    // 
+    //////////////////////////////////
+    message.assign (
+"<operation> is empty or unknown in 'admin/systemctl/<operation>'. "
+"Supported operations for GET requests: 'list', 'status/<service_name>'");
+    return 0; 
+}
+
+unsigned int process_post (const std::string& operation, const std::string& body, std::string& message, uint64_t& code) {
+    code = 0;
+    message.clear ();
+    if (operation.compare ("start") != 0 &&         
+        operation.compare ("stop") != 0 && 
+        operation.compare ("restart") != 0 && 
+        operation.compare ("enable") != 0 && 
+        operation.compare ("disable") != 0) {
+        message.assign (
+"<operation> is empty or unknown in 'admin/systemctl/<operation>'. "
+"Supported operations for POST requests: 'start', 'stop', 'restart', 'enable', 'disable'.");
+        return HTTP_NOT_FOUND; 
+    }
+
+    if (body.empty ()) {
+        message.assign ("Required format for POST request data is a JSON document: { \"service_name\" : \"<service_name>\" }");
+        return HTTP_BAD_REQUEST;       
+    }
+
+    try {
+        std::stringstream input (body, std::ios_base::in);
+        cxxtools::JsonDeserializer deserializer (input);
+        cxxtools::SerializationInfo si;
+        deserializer.deserialize (si);
+        if (si.category () != cxxtools::SerializationInfo::Object) {        
+            throw cxxtools::SerializationError ("TODO Root object TODO"); // TODO change error message
+        }
+        std::string service_name;
+        si.getMember("service_name") >>= service_name;
+        if (! service_name_valid (service_name.c_str ())) {
+            throw cxxtools::SerializationError ("TODO service_name empty or invalid"); // TODO change error message
+        }
+        //
+        shared::Argv proc_cmd {"sudo", "systemctl", operation, service_name};
+
+        std::string proc_out, proc_err;
+        int proc_rv = shared::output (proc_cmd, proc_out, proc_err);
+        if (proc_rv != 0) {
+            message.assign ("TODO executing systemctl failed: ").append (proc_err); // TODO change error message
+            return HTTP_INTERNAL_SERVER_ERROR;    
+        }
+
+        shared::Argv proc_cmd2 {"sudo", "systemctl", "show", service_name};
+
+        proc_rv = shared::output (proc_cmd2, proc_out, proc_err);
+        if (proc_rv != 0) {
+            message.assign ("TODO executing `systemctl show` failed: " + std::to_string (proc_rv)); // TODO change error message
+            return HTTP_INTERNAL_SERVER_ERROR;    
+        }
+
+        std::string active_state, sub_state, load_state, unit_file_state;
+        if (!parse_systemctl_status (proc_out, active_state, sub_state, load_state, unit_file_state)) {
+            message.assign ("TODO Expected different format of systemctl show"); // TODO: change error message
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        message.assign (
+"{\n"
+"\t\"" + service_name + "\" : {\n" + 
+"\t\t\"ActiveState\"\t:\t\"" + active_state  + "\",\n"
+"\t\t\"SubState\"\t:\t\"" + sub_state + "\",\n"
+"\t\t\"LoadState\"\t:\t\"" + load_state + "\",\n"
+"\t\t\"UnitFileState\"\t:\t\"" + unit_file_state + "\"\n"
+"\t}\n"
+"}");
+        
+        return HTTP_OK;
+    }
+    catch (const cxxtools::SerializationError& e) {
+        message.assign ("Required format for POST request data is a JSON document: { \"service_name\" : \"<service_name>\" }: ")
+               .append (e.what ());
+        return HTTP_BAD_REQUEST;
+    }
+    catch (const std::exception& e) {
+        message.assign ("Exception caught: '").append(e.what ()).append("'.");
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+    return 0;
+}
+
+</%pre>
+
+<%request scope="global">
+int8_t access_auth_level;
+</%request>
+
+<%cpp>
+// min. level 2 required
+if (access_auth_level < AUTH_LEVEL_POWERUSER) {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : 0,
+            "message" : "Not authorized!",
+            "hint" : "Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."
+        }
+    ]
+}
+<%cpp>     
+    return HTTP_UNAUTHORIZED;
+}
+
+
+std::string operation = request.getArg("operation");
+std::string service_name = request.getArg("service_name");
+
+// convert to lower case; 'admin/systemctl/list' request is equivalent to 'admin/systemctl/LIST' request
+std::transform (operation.begin(), operation.end(), operation.begin(), ::tolower);
+std::transform (service_name.begin(), service_name.end(), service_name.begin(), ::tolower);
+
+// arguments check
+unsigned int http_rc = 0;
+uint64_t error_code = 0;
+std::string message;
+
+if (request.getMethod() == "GET") {
+    http_rc = process_get (operation, service_name, message, error_code);
+}
+else if (request.getMethod() == "POST") {
+    http_rc = process_post (operation, request.getBody(), message, error_code);
+}
+else {
+    error_code = 00;
+    message = "Following HTTP methods are supported for 'admin/systemctl/<operation>': GET, POST.";
+    http_rc = HTTP_METHOD_NOT_ALLOWED;
+}
+
+if (http_rc == 200) {
+</%cpp>
+<$$ message $>
+<%cpp>
+}
+else {
+</%cpp>
+{
+    "errors": [
+        {
+            "code" : <$ error_code $>,
+            "message" : "<$$ message $>"
+        }
+    ]
+}
+<%cpp>
+}
+return http_rc;
+</%cpp>
+
+
+

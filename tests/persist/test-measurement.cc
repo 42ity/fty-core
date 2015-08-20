@@ -1,19 +1,14 @@
 #include <catch.hpp>
 #include <tntdb/connection.h>
-#include <tntdb/connect.h>
 #include <tntdb/value.h>
 
 #include <vector>
-#include <cxxtools/serializationinfo.h>
-#include <cxxtools/jsondeserializer.h>
-#include <errno.h>
 
-#include "measurement.h"
+#include "measurements.h"
+#include "dbhelpers.h"
 #include "dbpath.h"
 #include "log.h"
-#include "bios_agent.h"
 #include "persistencelogic.h"
-#include "utils.h"
 #include "cleanup.h"
 
 using namespace persist;
@@ -93,74 +88,4 @@ TEST_CASE("measurement INSERT/SELECT/DELETE #1", "[db][CRUD][insert][delete][sel
         REQUIRE(ret2.affected_rows == 1);
     }
 
-}
-
-TEST_CASE("measurement_getter", "[db][select][t_bios_measurement][t_bios_measurement_topic][measurement_getter]")
-{
-    _scoped_ymsg_t *in = ymsg_new(YMSG_SEND);
-    ymsg_t *out = NULL;
-    _scoped_char *out_s = NULL;
-    const char *in_s = NULL;
-    REQUIRE ( in != NULL);
-
-#define GET_MEASUREMENTS_BEGIN \
-    { \
-        persist::get_measurements(&out, &out_s, in, in_s); \
-\
-        REQUIRE ( out_s != NULL ); \
-        REQUIRE ( str_eq (out_s, "return_measurements") ); \
-        FREE0(out_s); \
-\
-        _scoped_zchunk_t *ch = ymsg_get_response(out); \
-        REQUIRE ( ch != NULL); \
-\
-        std::string json ((char *) zchunk_data (ch), zchunk_size (ch)); \
-        std::stringstream str (json, std::ios_base::in); \
-\
-        cxxtools::SerializationInfo si; \
-        cxxtools::JsonDeserializer ds(str); \
-        ds.deserialize(si); \
-
-#define GET_MEASUREMENTS_END \
-        ymsg_destroy(&out); \
-    }
-
-    errno = 0;
-    ymsg_set_int64(in, "element_id", 26);
-    ymsg_set_int64(in, "start_ts", 0);
-    ymsg_set_int64(in, "end_ts", time(NULL));
-    ymsg_set_string(in, "source", "temperature.thermal_zone0");
-    ymsg_set_string(in, "step", "8h");
-    ymsg_set_string(in, "type", "arithmetic_mean");
-    REQUIRE(errno == 0);
-    in_s = "get_measurements";
-
-GET_MEASUREMENTS_BEGIN
-    std::string test;
-    REQUIRE(si.getMember("unit", test));
-    REQUIRE(test == "C");
-    REQUIRE(si.getMember("data").memberCount() > 2);
-GET_MEASUREMENTS_END
-
-    in_s = "get_measurements<>";
-
-GET_MEASUREMENTS_BEGIN
-    std::string test;
-    REQUIRE(si.getMember("unit", test));
-    REQUIRE(test == "C");
-    REQUIRE(si.getMember("data").memberCount() > 2);
-GET_MEASUREMENTS_END
-
-    errno = 0;
-    ymsg_set_int64(in, "start_ts", 1426203733);
-    ymsg_set_int64(in, "end_ts", 1426203733);
-    REQUIRE(errno == 0);
-    in_s = "get_measurements<>";
-
-GET_MEASUREMENTS_BEGIN
-    std::string test;
-    REQUIRE(si.getMember("unit", test));
-    REQUIRE(test == "C");
-    REQUIRE(si.getMember("data").memberCount() == 1);
-GET_MEASUREMENTS_END
 }

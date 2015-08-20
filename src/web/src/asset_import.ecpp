@@ -42,14 +42,17 @@ if (it == mp.end()) {
     <%cpp>
         return HTTP_BAD_REQUEST;
 }
-try {
     std::string path_p;
+    int http_code = HTTP_OK;
+    const char* msg = NULL;
+try {
     shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
     std::ifstream inp{path_p};
     std::vector<db_a_elmnt_t> okRows{};
     std::map<int,std::string> failRows{};
     persist::load_asset_csv(inp, okRows, failRows);
     inp.close();
+    ::unlink(path_p.c_str());
 
     log_debug ("ok size is %zu", okRows.size());
     log_debug ("fail size is %lu", failRows.size());
@@ -79,19 +82,20 @@ try {
 <%cpp>
 }
 catch (const std::logic_error &e) {
-</%cpp>
-{
-    "error" : "<$$ e.what() $>"
-}
-<%cpp>
-    return HTTP_BAD_REQUEST;
+    http_code = HTTP_BAD_REQUEST;
+    msg = e.what();
 }
 catch (const std::runtime_error &e) {
+    http_code = HTTP_INTERNAL_SERVER_ERROR;
+    msg = e.what();
+}
+
+if (!path_p.empty())
+    ::unlink(path_p.c_str());
+if (http_code == HTTP_OK)
+    return HTTP_OK;
 </%cpp>
 {
-    "error" : "<$$ e.what() $>"
+    "error" : "<$$ msg $>"
 }
-<%cpp>
-    return HTTP_INTERNAL_SERVER_ERROR;
-}
-</%cpp>
+return http_code;

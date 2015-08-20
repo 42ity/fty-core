@@ -26,36 +26,13 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define SRC_PERSIST_MEASUREMENT_H_
 
 #include <tntdb/connect.h>
-#include <set>
+#include <vector>
 
 #include "defs.h"
 #include "dbhelpers.h"
-#include "ymsg.h"
+#include "topic_cache.h"
 
 namespace persist {
-
-class TopicCache {
-    public:
-        explicit TopicCache(size_t max = 1024):
-            _cache{},
-            _max{max}
-        {};
-
-        TopicCache (const TopicCache& other) = delete;
-        TopicCache (const TopicCache&& other) = delete;
-        TopicCache& operator=(TopicCache& other) = delete;
-        TopicCache& operator=(TopicCache&& other) = delete;
-
-        //\brief check if value is in cache or not
-        bool has(const std::string& topic) const;
-
-         //\brief add a key to cache
-        void add(const std::string& topic);
-
-    private:
-        std::set<std::string> _cache;
-        size_t _max;
-};
 
 /**
  * \brief Inserts measurements data into t_bios_measurement_topic, t_bios_measurement
@@ -95,19 +72,7 @@ db_reply_t
         const char        *units,
         const char        *device_name);
 
-db_reply<std::vector<db_msrmnt_t>>
-    select_from_measurement_by_topic(
-        tntdb::Connection &conn,
-        const char        *topic);
 
-db_reply_t
-    delete_from_measurement_by_id(
-        tntdb::Connection &conn,
-        m_msrmnt_id_t      id);
-
-//! Process get measurement message and creates an answer
-void get_measurements(ymsg_t** out, char** out_subj,
-                      ymsg_t* in, const char* in_subj);
 
 } //namespace persist
 

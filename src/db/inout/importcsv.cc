@@ -63,9 +63,9 @@ bool
             const std::string& s)
 {
     log_debug ("s = '%s'", s.c_str());
-    std::string bs_critical;
-    std::transform(s.cbegin(), s.cend(), bs_critical.begin(), ::tolower);
-    if ( bs_critical == "yes" )
+    std::string s1 = s;
+    std::transform(s1.cbegin(), s1.cend(), s1.begin(), ::tolower);
+    if ( s1 == "yes" )
         return true;
     return false;
 }
@@ -137,9 +137,9 @@ int
     db_reply <db_web_basic_element_t> parent = select_asset_element_web_byId
         (conn, parent_id);
     if ( parent.status == 0 )
-        return 1;
-    if ( parent.item.type_id != asset_type::RACK )
         return 2;
+    if ( parent.item.type_id != asset_type::RACK )
+        return 1;
     db_reply <std::vector<device_info_t>> devices =
         select_asset_device_by_container
          (conn, parent_id);
@@ -183,13 +183,14 @@ static db_a_elmnt_t
         (tntdb::Connection &conn,
          CsvMap cm,
          size_t row_i,
-         std::map<std::string,int> TYPES,
-         std::map<std::string,int> SUBTYPES
+         const std::map<std::string,int> TYPES,
+         const std::map<std::string,int> SUBTYPES,
+         std::set<a_elmnt_id_t> &ids
          )
 {
     LOG_START;
 
-    log_debug ("row number is %zu", row_i);
+    log_debug ("################ Row number is %zu", row_i);
     static const std::set<std::string> STATUSES = \
         {"active", "nonactive", "spare", "retired"};
 
@@ -198,10 +199,17 @@ static db_a_elmnt_t
     // then they should be treated as external attributes
     auto unused_columns = cm.getTitles();
 
-    // because id is definitely is not an ext attribute
+    // because id is definitely not an external attribute
     auto id_str = unused_columns.count("id") ? cm.get(row_i, "id") : "";
     unused_columns.erase("id");
-
+    a_elmnt_id_t id = 0;
+    if ( !id_str.empty() )
+    {
+        id = atoi(id_str.c_str());
+        if ( ids.count(id) == 1 )
+            throw std::invalid_argument("Second time during the import you are trying to update the element with id "+ id_str);
+        ids.insert(id);
+    }
 
     auto name = cm.get(row_i, "name");
     log_debug ("name = '%s'", name.c_str());
@@ -220,9 +228,7 @@ static db_a_elmnt_t
     log_debug ("status = '%s'", status.c_str());
     if ( STATUSES.find(status) == STATUSES.end() )
     {
-        log_warning ("Status '%s' is not allowed, use default",
-                                                            status.c_str());
-        status = "nonactive";    // default
+        throw std::invalid_argument("Status '" + status + "' is not allowed");
     }
     unused_columns.erase("status");
 
@@ -279,6 +285,30 @@ static db_a_elmnt_t
     auto subtype_id = SUBTYPES.find(subtype)->second;
     unused_columns.erase("sub_type");
 
+    // now we have read all basic information about element
+    // if id is set, then it is right time to check what is going on in DB
+    if ( !id_str.empty() )
+    {
+        db_reply <db_web_basic_element_t> element_in_db = select_asset_element_web_byId
+                                                        (conn, id);
+        if ( element_in_db.status == 0 )
+            throw std::invalid_argument
+                                ("Element with id '" + id_str + "' is not found in DB");
+        else
+        {
+            if ( element_in_db.item.name != name )
+                throw std::invalid_argument
+                                ("For now it is forbidden to rename assets");
+            if ( element_in_db.item.type_id != type_id )
+                throw std::invalid_argument
+                                ("It is forbidden to change asset's type");
+            if ( ( element_in_db.item.subtype_id != subtype_id ) &&
+                 ( element_in_db.item.subtype_name != "N_A" ) )
+                throw std::invalid_argument
+                                ("It is forbidden to change asset's subtype");
+        }
+    }
+
     // BIOS-991 --start
     int pdu_epdu_count = 0;
     std::string last_position = "";
@@ -295,8 +325,11 @@ static db_a_elmnt_t
         }
         else{
             if ( ret != 0 )
+            {
+                log_error ( "ret = %d", ret);
                 throw std::invalid_argument
                     ("some problem with db, see log for more details");
+            }
             if ( ( pdu_epdu_count > 1 ) && ( id_str.empty() ) )
                 throw std::invalid_argument
                     ("more than 2 PDU is not supported");
@@ -448,7 +481,7 @@ static db_a_elmnt_t
                     case 1: {
                                 std::string new_value = ( last_position == "left" ) ? "right" : "left";
                                 if ( new_value != value )
-                                    log_warning (" location_w_pow changed to '%s'", new_value.c_str());
+                                    log_warning (" location_w_pos changed to '%s'", new_value.c_str());
                                 zhash_insert (extattributes, key.c_str(), (void*)new_value.c_str());
                                 break;
                             }
@@ -466,9 +499,6 @@ static db_a_elmnt_t
             }
             if ( key == "serial_no" )
             {
-                a_elmnt_id_t  id = 0;
-                if ( !id_str.empty() )
-                    id = atoi(id_str.c_str());
 
                 if  ( unique_keytag (conn, key, value, id) == 0 )
                     zhash_insert (extattributes, key.c_str(), (void*)value.c_str());
@@ -643,10 +673,11 @@ void
 
     auto SUBTYPES = read_device_types (conn);
 
+    std::set<a_elmnt_id_t> ids{};
     for (size_t row_i = 1; row_i != cm.rows(); row_i++)
     {
         try{
-            auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES);
+            auto ret = process_row(conn, cm, row_i, TYPES, SUBTYPES, ids);
             okRows.push_back (ret);
             log_info ("row %zu was imported successfully", row_i);
         }

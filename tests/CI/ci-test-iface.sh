@@ -1,5 +1,5 @@
 #!/bin/bash
-#
+
 # Copyright (c) 2014 Eaton
 #
 # This program is free software; you can redistribute it and/or modify
@@ -15,53 +15,83 @@
 # You should have received a copy of the GNU General Public License along
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-#! \file    ci-test-iface.sh
+
+#  \file    ci-test-iface.sh
 #  \brief   rfc-11 admin/iface admin/ifaces automated test
 #  \author  Karol Hrdina <KarolHrdina@Eaton.com>
 #  \version 1.3
-#
-# Requirements:
-#   Following environment variables are expected to be exported:
-#   SUT_HOST
-#   SUT_SSH_PORT 
-#   SUT_WEB_PORT
-# Todos:
-#   flock
+
+[ -z "$BIOS_USER" ] && BIOS_USER="bios"
+[ -z "$BIOS_PASSWD" ] && BIOS_PASSWD="nosoup4u"
+[ -z "$SASL_SERVICE" ] && SASL_SERVICE="bios"
+[ -z "$SUT_HOST" ] && SUT_HOST="127.0.0.1"
+[ -z "$SUT_WEB_PORT" ] && SUT_WEB_PORT="8000"
 
 # Include our standard routines for CI scripts
 . "`dirname $0`"/scriptlib.sh || \
     { echo "FATAL: $0: Could not include script library" >&2; exit 1; }
+
+# Set up weblib test engine
+WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT="ignore" # we do this in-script
+WEBLIB_QUICKFAIL=no
+WEBLIB_CURLFAIL=no
+export WEBLIB_CURLFAIL_HTTPERRORS_DEFAULT WEBLIB_QUICKFAIL WEBLIB_CURLFAIL
+export BASE_URL="http://${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
+
 # Include our standard web routines for CI scripts
 . "`dirname $0`"/weblib.sh || \
     { echo "FATAL: $0: Could not include web script library" >&2; exit 1; }
 
+# Setting BUILDSUBDIR and CHECKOUTDIR
+NEED_BUILDSUBDIR=no determineDirs_default || true
+cd "$BUILDSUBDIR" || die "Unusable BUILDSUBDIR='$BUILDSUBDIR'"
+cd "$CHECKOUTDIR" || die "Unusable CHECKOUTDIR='$CHECKOUTDIR'"
+logmsg_info "Using BUILDSUBDIR='$BUILDSUBDIR' to run the `basename $0` REST API webserver"
+
+PATH="/sbin:/usr/sbin:/usr/local/sbin:/bin:/usr/bin:/usr/local/bin:$PATH"
+export PATH
+
 declare -r REST_IFACES="/admin/ifaces"
 declare -r REST_IFACE="/admin/iface"
+
 declare -r RESOLV_PATH="/etc"
 declare -r RESOLV_FILE="resolv.conf"
+
 declare -r JSON_EXPECTED_FILE="json_expected"
 declare -r JSON_RECEIVED_FILE="json_received"
+
 declare -r LOCKFILE="/tmp/ci-test-iface.lock"
 
-usage () {
-cat << EOF
-USAGE: `basename $0`  
+test_web_port() {
+    netstat -tan | grep -w "${SUT_WEB_PORT}" | egrep 'LISTEN' >/dev/null
+}
+test_web_process() {
+    [ -z "$MAKEPID" ] && return 0
 
-DESCRIPTION:
-    Performs automated tests for 'admin/iface', 'admin/ifaces' rest api calls
-
-REQUIREMENTS:
-    Following environemnt variables are expected to be set
-        SUT_HOST
-        SUT_SSH_PORT
-        SUT_WEB_PORT
-EOF
+    if [ ! -d /proc/$MAKEPID ]; then
+        logmsg_error "Web-server process seems to have died!" >&2
+        # Ensure it is dead though, since we abort the tests now
+        kill $MAKEPID >/dev/null 2>&1
+        wait $MAKEPID >/dev/null 2>&1
+        return
+    fi
+    return 0
+}
+wait_for_web() {
+    for a in $(seq 60) ; do
+        sleep 5
+        test_web_process || exit
+        if ( test_web_port ) ; then
+            return 0
+        fi
+    done
+    logmsg_error "Port ${SUT_WEB_PORT} still not in LISTEN state" >&2
+    return 1
 }
 
 cleanup() {
     local __exit=$?
-    rm -f "$LOCKFILE";
+    rm -f "$LOCKFILE"
     if [[ -n "$TMP_DIR" && -e "$TMP_DIR" ]]; then
         if [ $__exit -ne 0 ]; then
             echo "Test failed => no cleanup; so it's possible to look at files."        
@@ -70,28 +100,69 @@ cleanup() {
             rm -rf "$TMP_DIR"
         fi
     fi
+    if [ -n "$MAKEPID" -a -d "/proc/$MAKEPID" ]; then
+        logmsg_info "Killing make web-test PID $MAKEPID to exit."
+        kill -INT "$MAKEPID"
+    fi
+    killall -INT tntnet 2>/dev/null
+    sleep 1
+    killall      tntnet 2>/dev/null
+    sleep 1
+    ps -ef | grep -v grep | egrep "tntnet" | egrep "^`id -u -n` " && \
+        ps -ef | egrep -v "ps|grep" | egrep "$$|make" && \
+        logmsg_error "tntnet still alive, trying SIGKILL" && \
+        { killall -KILL tntnet 2>/dev/null ; exit 1; }
+
     exit $__exit
 }
 
-### Script starts here ###
-declare -r HOST="$SUT_HOST"
-declare -r PORT_SSH="$SUT_SSH_PORT"
-declare -r PORT_HTTP="$SUT_WEB_PORT"
-export BASE_URL="${SUT_HOST}:${SUT_WEB_PORT}/api/v1"
-
-if [[ -z "$PORT_SSH" || -z "$PORT_HTTP" || -z "$HOST" ]]; then
-    usage
-    exit 1
-fi
+### Environment preparation ###
+# Assumptions:
+#   `ci-rc-bios.sh --stop` is called prior to invoking this script
+#   script is called as root
 
 # Previous executions should execute successfully
 [ -f "$LOCKFILE" ] && exit 0
 trap "cleanup" EXIT
-# TODO flock here
-# http://stackoverflow.com/questions/169964/how-to-prevent-a-script-from-running-simultaneously
 touch "$LOCKFILE"
 
-echo "HOST: '$HOST'"$'\n'"PORT_HTTP: '$PORT_HTTP'"$'\n'"PORT_SSH: '$PORT_SSH'"
+test_web_port && die "Port ${SUT_WEB_PORT} is in LISTEN state when it should be free."
+
+# make sure sasl is running
+if ! systemctl --quiet is-active saslauthd; then
+    logmsg_info "Starting saslauthd..."
+    systemctl start saslauthd || die "Could not start saslauthd."
+fi
+
+# check sasl is working
+testsaslauthd -u "$BIOS_USER" -p "$BIOS_PASSWD" -s "$SASL_SERVICE" || \
+    die "saslauthd is NOT responsive or not configured!"
+
+# make sure database is running
+if ! systemctl --quiet is-active mysql; then
+    logmsg_info "Starting mysql..."
+    systemctl start mysql || die "Could not start mysql."
+fi
+
+# do the webserver
+LC_ALL=C
+LANG=C
+export BIOS_USER BIOS_PASSWD SASL_SERVICE LC_ALL LANG
+if [ ! -x "${BUILDSUBDIR}/config.status" ]; then
+    ./autogen.sh --nodistclean --configure-flags \
+    "--prefix=$HOME --with-saslauthd-mux=/var/run/saslauthd/mux" \
+    ${AUTOGEN_ACTION_CONFIG} || exit
+fi
+./autogen.sh ${AUTOGEN_ACTION_MAKE} V=0 web-test-deps || exit
+
+./autogen.sh --noparmake ${AUTOGEN_ACTION_MAKE} web-test &
+MAKEPID=$!
+
+wait_for_web || die "Web-server is NOT responsive!"
+sleep 5
+test_web_process || die "test_web_process() failed."
+
+### Script starts here ###
 
 # 1. Create temporary dir under /tmp
 declare -r TMP_DIR=$(mktemp -d)
@@ -103,17 +174,14 @@ echo "Temporary directory created successfully: '${TMP_DIR}'."
 
 # 2. Nameservers
 # If /etc/resolv.conf not present it is functionally equivalent to being empty
-read -r -d '' SSH_CMD <<EOF-CMD
 if [[ ! -e "${RESOLV_PATH}/${RESOLV_FILE}" ]]; then
-    touch "${RESOLV_PATH}/${RESOLV_FILE}"
+    touch "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
+else
+    cp -f "${RESOLV_PATH}/${RESOLV_FILE}" "${TMP_DIR}/${RESOLV_FILE_INITIAL}" || \
+        die "copying '${RESOLV_PATH}/${RESOLV_FILE}' to '${TMP_DIR}/${RESOLV_FILE_INITIAL}' failed."
 fi
-EOF-CMD
-ssh -p "${PORT_SSH}" "root@${HOST}" "${SSH_CMD}" || \
-    die "ERROR: TODO ssh "
-scp -q -P "${PORT_SSH}" "root@${HOST}:${RESOLV_PATH}/${RESOLV_FILE}" "${TMP_DIR}/" || \
-    die "ERROR: TODO scp"
-# remove comments from the file
-#perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
+# Remove comments
+perl -pi -e 's/^#.*\n$//g' "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
 
 nameservers=
 while IFS='' read -r line || [[ -n "$line" ]]; do
@@ -124,19 +192,13 @@ while IFS='' read -r line || [[ -n "$line" ]]; do
             nameservers="${nameservers}, \"${BASH_REMATCH[1]}\""
         fi
     fi
-done < "${TMP_DIR}/${RESOLV_FILE}"
+done < "${TMP_DIR}/${RESOLV_FILE_INITIAL}"
 
 # 3. Interfaces
-read -r -d '' SSH_CMD <<EOF-CMD
-ip addr > /tmp/ip_addr
-EOF-CMD
-ssh -p "${PORT_SSH}" "root@${HOST}" "${SSH_CMD}" || \
-    die "ERROR: TODO ssh "
-scp -q -P "${PORT_SSH}" "root@${HOST}:/tmp/ip_addr" "${TMP_DIR}/ip_addr" || \
-    die "ERROR: TODO scp"
+ip addr > "${TMP_DIR}/ip_addr" || \
+    die "Error executing 'ip addr > \"${TMP_DIR}/ip_addr\"'."
 
 declare -a tmp_arr
-ip_addr=$(ip addr)
 while read -r line || [[ -n "$line" ]]; do
     if [[ "$line" =~ ^[[:space:]]*[0-9]+:[[:space:]]+([[:alnum:]]+): ]]; then
         tmp_arr+=( "${BASH_REMATCH[1]}" )
@@ -167,7 +229,7 @@ echo "$tmp" > "${TMP_DIR}/${JSON_EXPECTED_FILE}"
 HTTP_CODE=
 simple_get_json_code "${REST_IFACES}" tmp HTTP_CODE || die "'api_get_json ${REST_IFACES}' failed."
 echo "$tmp" > "${TMP_DIR}/${JSON_RECEIVED_FILE}"
-bash ./cmpjson.sh "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
+bash "${CHECKOUTDIR}/tests/CI/cmpjson.sh" "${TMP_DIR}/${JSON_RECEIVED_FILE}" "${TMP_DIR}/${JSON_EXPECTED_FILE}" || \
     die "Test case '$TEST_CASE' failed. Expected and returned json do not match."
 [[ $HTTP_CODE -eq 200 ]] || die "Test case '$TEST_CASE' failed. Expected HTTP return code: 200, received: $HTTP_CODE."
 

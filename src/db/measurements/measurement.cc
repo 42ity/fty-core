@@ -4,6 +4,7 @@
 #include "cleanup.h"
 #include "utils.h"
 #include "dbtypes.h"
+#include "defs.h"
 
 #include "measurement.h"
 
@@ -392,6 +393,156 @@ select_measurement_last_web_byTopic (
         return ret;
     }
 }
+
+int
+    delete_measurements(
+        tntdb::Connection &conn,
+        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_id_t     &affected_rows
+        )
+{
+    LOG_START;
+    log_debug ("  topic_id = %" PRIu16, topic_id);
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE"
+            " FROM"
+            "   t_bios_measurement"
+            " WHERE"
+            "   topic_id = :topicid"
+        );
+
+        affected_rows = st.set("topicid", topic_id).
+                           execute();
+        log_debug ("[t_bios_measurement]: was deleted %"
+                                PRIu64 " rows", affected_rows);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
+int
+    delete_measurement_topic(
+        tntdb::Connection &conn,
+        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_tp_id_t  &affected_rows
+        )
+{
+    LOG_START;
+    log_debug ("  topic_id = %" PRIu16, topic_id);
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE"
+            " FROM"
+            "   t_bios_measurement_topic"
+            " WHERE"
+            "   id = :topicid"
+        );
+
+        affected_rows = st.set("topicid", topic_id).
+                           execute();
+        log_debug ("[t_bios_measurement_topic]: was deleted %"
+                                PRIu16 " rows", affected_rows);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
+db_reply <std::vector<db_msrmnt_t>>
+    select_from_measurement_by_topic(
+        tntdb::Connection &conn,
+        const char        *topic)
+{   
+    LOG_START;
+    std::vector<db_msrmnt_t> item{};
+    db_reply<std::vector<db_msrmnt_t>> ret = db_reply_new(item);
+
+    if ( !topic ) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_BADINPUT;
+        ret.msg = "NULL value of topic is not allowed";
+        log_error("end: %s", ret.msg);
+        return ret;
+    }
+    
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " SELECT id, timestamp, value, scale, device_id, units, topic"
+                " FROM v_bios_measurement"
+                " WHERE topic LIKE :topic");
+        tntdb::Result res = st.set("topic", topic)
+                              .select();
+        
+        log_debug ("was %u rows selected", res.size());
+
+        for ( auto &r : res ) {
+
+            db_msrmnt_t m = {0, 0, 0, 0, 0, "", ""};
+
+            r[0].get(m.id);
+            r[1].get(m.timestamp);
+            r[2].get(m.value);
+            r[3].get(m.scale);
+            r[4].get(m.device_id);
+            r[5].get(m.units);
+            r[6].get(m.topic);
+
+            ret.item.push_back(m);
+        }
+        ret.status = 1;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        ret.item.clear();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    LOG_END;
+    return ret;
+}
+
+db_reply_t
+    delete_from_measurement_by_id(
+        tntdb::Connection &conn,
+        m_msrmnt_id_t      id)
+{
+    LOG_START;
+    db_reply_t ret = db_reply_new();
+    try {
+        tntdb::Statement st = conn.prepareCached(
+                " DELETE FROM"
+                "   t_bios_measurement"
+                " WHERE id = :id"
+                );
+
+        ret.affected_rows = st.set("id", id)
+                              .execute();
+        ret.status = 1;
+    } catch(const std::exception &e) {
+        ret.status     = 0;
+        ret.errtype    = DB_ERR;
+        ret.errsubtype = DB_ERROR_INTERNAL;
+        ret.msg        = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    }
+    LOG_END;
+    return ret;
+}
+
 
 } // namespace persist
 

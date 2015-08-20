@@ -86,6 +86,7 @@ convert_file(
     const auto& encoding = magic.second;
     if (encoding != "utf-8" && encoding != "utf-16le" && encoding != "us-ascii") {
         std::string msg = "This file (" + magic.first + ") is not supported please try again with a different file.";
+        ::unlink(path);
         throw std::invalid_argument( msg.c_str() );
     }
 
@@ -100,11 +101,11 @@ convert_file(
         // iconv -f utf-16le -t utf-8 Book1.txt > Book1.utf8.txt
         shared::Argv args = {"/usr/bin/iconv", "-f", encoding, "-t", "utf-8", path, "-o", new_path};
         int res = shared::call(args);
+        ::unlink(path);
         if (res != 0) {
             ::unlink(new_path);
             throw std::runtime_error("Can't convert input file to utf-8");
         }
-        ::unlink(path);
         path_p = new_path;
     }
     out_path = path_p;
