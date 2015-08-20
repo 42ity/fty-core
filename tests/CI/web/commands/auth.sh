@@ -56,7 +56,7 @@ curlfail_pop
 # is referenced in PAM/SASL/SUDOERS setup of the OS to give certain privileges
 # to processes running as this user account.
 
-ORIG_PASSWD=$BIOS_PASSWD
+ORIG_PASSWD="$BIOS_PASSWD"
 NEW_BIOS_PASSWD="new$BIOS_PASSWD"'@'
 
 test_it "change_password"
