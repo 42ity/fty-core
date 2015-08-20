@@ -218,6 +218,7 @@ src/web/src/asset_export.cpp
 src/web/src/admin_passwd.cpp
 src/web/src/admin_passwd.ecpp
 !src/web/src/admin_passwd.ecpp.in
+src/web/src/systemctl.cpp
 tntnet.xml.example
 !src/web/tntnet.xml
 tntnet.xml
