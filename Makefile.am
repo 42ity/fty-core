@@ -349,6 +349,7 @@ libpriv_csv_la_SOURCES =	src/shared/csv.h \
 
 libpriv_csv_la_CPPFLAGS =$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_src_dir)/src/msg
@@ -364,7 +365,6 @@ libpriv_db_la_SOURCES = \
 			src/persist/assettopology.h \
 			src/persist/persist_error.cc \
 			src/persist/persist_error.h \
-			src/persist/assettopology.h \
 			src/persist/persistencelogic.cc \
 			src/persist/persistencelogic.h \
 			src/persist/monitor.cc \
@@ -393,6 +393,7 @@ DISTCLEANFILES +=	tools/dbpath.cc
 libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/persist
@@ -414,7 +415,10 @@ libpriv_db_measurements_la_SOURCES = \
 libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools
+
+#libpriv_db_measurements_la_LIBADD =	libpriv-utils.la
 
 noinst_LTLIBRARIES +=		libpriv-db-calculations.la
 
@@ -426,6 +430,7 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/persist/
 
 
@@ -466,6 +471,7 @@ libpriv_db_assets_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools
 
 #####
@@ -509,6 +515,7 @@ libpriv_configure_inform_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src/persist
 
@@ -705,6 +712,7 @@ test_computation_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/agents/computation \
 			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/src
 
@@ -772,6 +780,7 @@ test_loadcsv_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
@@ -791,6 +800,7 @@ test_db2_LDADD = \
 			libpriv-db.la \
 			libpriv-cidr.la \
 			libpriv-proto.la \
+			libpriv-db-measurements.la \
 			libpriv-utils.la \
 			libpriv-defs.la \
 			libpriv-test-run.la \
@@ -801,6 +811,7 @@ test_db2_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src
 
 test_db2_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS} -lcidr ${LIBCZMQ_LIBS}
@@ -825,6 +836,7 @@ test_outage_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src
 
 test_outage_LDFLAGS =	-ltntdb ${CXXTOOLS_LIBS}
@@ -851,6 +863,7 @@ test_dbtopology_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/tools
 
 test_dbtopology_LDFLAGS = \
@@ -875,6 +888,7 @@ test_db_asset_crud_CPPFLAGS = \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
 			-I$(abs_top_srcdir)/src/ \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -897,6 +911,7 @@ test_db_alert_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/ \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
@@ -923,6 +938,7 @@ test_totalpower_CPPFLAGS = \
 			$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/tests/include/ \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -1065,6 +1081,7 @@ agent_dbstore_LDADD = \
 agent_dbstore_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_builddir)/src/persist \
 			-I$(abs_top_srcdir)/src/persist
 
@@ -1198,6 +1215,7 @@ agent_inventory_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src/persist
 
 client_PROGRAMS +=	agent-cm
@@ -1222,6 +1240,7 @@ agent_cm_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -lbiosapi -lt
 
 agent_cm_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools \
 			-I$(abs_top_builddir)/tools
 
@@ -1245,6 +1264,7 @@ agent_tpower_LDFLAGS =	${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -
 agent_tpower_CPPFLAGS =	$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/agents/alert \
 			-I$(abs_top_srcdir)/src/persist \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/tools
 
 client_PROGRAMS +=      agent-alert
@@ -1269,6 +1289,7 @@ agent_alert_LDFLAGS =  ${LIBCZMQ_LIBS} ${LIBMLM_LIBS} ${CXXTOOLS_LIBS} -ltntdb -
 
 agent_alert_CPPFLAGS = $(AM_CPPFLAGS) \
                        -I$(abs_top_srcdir)/src/persist \
+                       -I$(abs_top_srcdir)/src/db \
                        -I$(abs_top_srcdir)/tools
 
 client_PROGRAMS += 	outage
@@ -1335,6 +1356,7 @@ bios_web_la_CPPFLAGS =	$(AM_CPPFLAGS) \
 			${LIBSODIUM_CFLAGS} ${LIBSASL2_CFLAGS} \
 			-DSASLAUTHD_MUX=${SASLAUTHD_MUX} \
 			-I$(abs_top_srcdir)/src/web/include \
+			-I$(abs_top_srcdir)/src/db \
 			-I$(abs_top_srcdir)/src \
 			-I$(abs_top_builddir)/tools \
 			-I$(abs_top_builddir)/src \
