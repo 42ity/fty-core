@@ -42,14 +42,15 @@ if (it == mp.end()) {
     <%cpp>
         return HTTP_BAD_REQUEST;
 }
-try {
     std::string path_p;
+try {
     shared::convert_file(it->getBodyBegin(), it->getBodyEnd(), path_p);
     std::ifstream inp{path_p};
     std::vector<db_a_elmnt_t> okRows{};
     std::map<int,std::string> failRows{};
     persist::load_asset_csv(inp, okRows, failRows);
     inp.close();
+    ::unlink(path_p.c_str());
 
     log_debug ("ok size is %zu", okRows.size());
     log_debug ("fail size is %lu", failRows.size());
@@ -79,6 +80,8 @@ try {
 <%cpp>
 }
 catch (const std::logic_error &e) {
+    if (!path_p.empty())
+        ::unlink(path_p.c_str());
 </%cpp>
 {
     "error" : "<$$ e.what() $>"

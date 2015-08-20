@@ -80,6 +80,7 @@ convert_file(
 
     temp.flush();
     temp.close();
+    ::unlink(path);
 
     // check the encoding
     auto magic = shared::file_type_encoding(path);
