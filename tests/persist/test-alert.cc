@@ -330,7 +330,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     //delete ma
     delete_monitor_asset_relation (conn, rowid_ma);
     //delete device
-    delete_disc_device (url.c_str(), rowid_device);
+    m_dvc_id_t affected_rows = 0;
+    delete_disc_device (conn, rowid_device, affected_rows);
+    REQUIRE (affected_rows == 1 );
     //delete element
     delete_asset_element (conn, rowid_element);
 
@@ -437,8 +439,11 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     delete_monitor_asset_relation (conn, rowid_ma1);
     delete_monitor_asset_relation (conn, rowid_ma2);
     //delete device
-    delete_disc_device (url.c_str(), rowid_device1);
-    delete_disc_device (url.c_str(), rowid_device2);
+    m_dvc_id_t affected_rows = 0;
+    delete_disc_device (conn, rowid_device1, affected_rows);
+    REQUIRE ( affected_rows == 1 );
+    delete_disc_device (conn, rowid_device2, affected_rows);
+    REQUIRE ( affected_rows == 1 );
     //delete element
     delete_asset_element (conn, rowid_element1);
     delete_asset_element (conn, rowid_element2);

@@ -94,5 +94,11 @@ db_reply_t
         (tntdb::Connection &conn,
          a_elmnt_id_t id);
 
+int
+    delete_disc_device(
+        tntdb::Connection &conn,
+        m_dvc_id_t         device_id,
+        m_dvc_id_t        &affected_rows);
+
 } // end namespace
 #endif // SRC_DB_ASSETS_ASSETD_H_

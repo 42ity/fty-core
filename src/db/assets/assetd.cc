@@ -688,4 +688,32 @@ db_reply_t
     }
 }
 
+int
+    delete_disc_device(
+        tntdb::Connection &conn,
+        m_dvc_id_t         device_id,
+        m_dvc_id_t        &affected_rows)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM "
+            "   t_bios_discovered_device "
+            " WHERE "
+            "   id_discovered_device = :id "
+        );
+
+        affected_rows = st.set("id", device_id).
+                           execute();
+        log_debug ("[t_bios_discovered_device]: was deleted %" PRIu32 " rows",
+                        affected_rows);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
+    }
+}
+
 } // end namespace

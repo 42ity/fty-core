@@ -412,10 +412,10 @@ db_reply_t
         log_info ("end: error occured during removing from groups");
         return reply_delete2;
     }
-    
-    // delete discovered device
-    // delete topics
+    // 
     // delete measurements
+    // delete topics
+    // delete discovered device
 
     auto reply_delete3 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);
