@@ -130,7 +130,7 @@ static const std::vector<std::string> inventoryBIOS {
     "model",
     "manufacturer",
     "serial_no",
-//    "type",
+    "device.type",
     "device.description",
     "device.contact",
     "device.location",
@@ -312,6 +312,7 @@ void NUTDevice::updateInventory(const std::string& varName, std::vector<std::str
 void NUTDevice::update(std::map<std::string,std::vector<std::string>> vars, bool forceUpdate ) {
     // log_debug("force update: %i\n",forceUpdate);
     assert( physicsNUT.size() == physicsBIOS.size() );
+    assert( inventoryNUT.size() == inventoryBIOS.size() );
     for(size_t i = 0; i < physicsNUT.size(); ++i) {
         if( vars.count(physicsNUT[i]) ) {
             // variable found in received data
