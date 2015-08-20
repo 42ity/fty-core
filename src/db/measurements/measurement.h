@@ -24,9 +24,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_DB_MEASUREMENTS_MEASUREMENT_H__
 #define SRC_DB_MEASUREMENTS_MEASUREMENT_H__
 
-#include <tntdb/connect.h>
-#include <map>
 #include <string>
+#include <functional>
+#include <map>
+
+#include <tntdb/connect.h>
+
 #include "dbhelpers.h"
 #include "db/types.h"
 #include "dbtypes.h"
@@ -127,6 +130,14 @@ db_reply_t
     delete_from_measurement_by_id(
         tntdb::Connection &conn,
         m_msrmnt_id_t      id);
+
+int
+    select_for_element_topics_all(
+            tntdb::Connection& conn,
+            a_elmnt_id_t element_id,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb);
 
 } // namespace persist
 
