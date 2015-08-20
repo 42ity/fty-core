@@ -401,12 +401,12 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
-						libpriv-log.la \
-						libpriv-csv.la \
-						libpriv-db-assets.la \
-						libpriv-topic-cache.la
+			libpriv-log.la \
+			libpriv-csv.la \
+			libpriv-db-assets.la \
+			libpriv-topic-cache.la
 
-noinst_LTLIBRARIES += 		libpriv-db-measurements.la
+noinst_LTLIBRARIES += 	libpriv-db-measurements.la
 
 libpriv_db_measurements_la_SOURCES = \
 			src/db/measurements/measurement.cc \
@@ -422,7 +422,7 @@ libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 #libpriv_db_measurements_la_LIBADD =	libpriv-utils.la
 
-noinst_LTLIBRARIES +=		libpriv-db-calculations.la
+noinst_LTLIBRARIES +=	libpriv-db-calculations.la
 
 libpriv_db_calculations_la_SOURCES = \
 			src/db/calculation.h \
@@ -447,7 +447,7 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 #libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
 #			libpriv-log.la libpriv-csv.la
 
-noinst_LTLIBRARIES += 		libpriv-db-assets.la
+noinst_LTLIBRARIES += 	libpriv-db-assets.la
 
 HEADERS_ASSETS = \
 			src/db/assets.h \
