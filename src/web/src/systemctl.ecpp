@@ -237,7 +237,15 @@ int8_t access_auth_level;
 // min. level 2 required
 if (access_auth_level < AUTH_LEVEL_POWERUSER) {
 </%cpp>
-<html><h1>Not authorized!</h1></html>
+{
+    "errors": [
+        {
+            "code" : 0,
+            "message" : "Not authorized!",
+            "hint" : "Please use '/oauth2/token?username=<user_name>&password=<password>&grant_type=password' GET request to authorize."
+        }
+    ]
+}
 <%cpp>     
     return HTTP_UNAUTHORIZED;
 }
