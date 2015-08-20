@@ -98,3 +98,4 @@ if (http_code == HTTP_OK)
 {
     "error" : "<$$ msg $>"
 }
+return http_code;
