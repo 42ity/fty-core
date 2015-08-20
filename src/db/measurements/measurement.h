@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2015 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -27,7 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <tntdb/connect.h>
 #include <map>
 #include <string>
-
+#include "dbhelpers.h"
 #include "db/types.h"
 #include "dbtypes.h"
 
@@ -70,6 +70,7 @@ select_measurements_sampled (
         std::map <int64_t, double>& measurements,
         std::string& unit);
 
+// this do not belong to this file
 reply_t
 select_device_name_from_element_id (
         tntdb::Connection &conn,
@@ -101,6 +102,31 @@ select_measurement_last_web_byTopic (
         m_msrmnt_scale_t& scale,
         int minutes_back = 10,
         bool fuzzy = false);
+
+int
+    delete_measurements(
+        tntdb::Connection &conn,
+        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_id_t     &affected_rows
+        );
+
+
+int
+    delete_measurement_topic(
+        tntdb::Connection &conn,
+        m_msrmnt_tp_id_t   topic_id,
+        m_msrmnt_tp_id_t  &affected_rows
+        );
+
+db_reply<std::vector<db_msrmnt_t>>
+    select_from_measurement_by_topic(
+        tntdb::Connection &conn,
+        const char        *topic);
+
+db_reply_t
+    delete_from_measurement_by_id(
+        tntdb::Connection &conn,
+        m_msrmnt_id_t      id);
 
 } // namespace persist
 

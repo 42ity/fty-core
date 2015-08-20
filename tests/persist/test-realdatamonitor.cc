@@ -16,6 +16,7 @@
 #include "dbpath.h"
 #include <time.h>
 #include "cleanup.h"
+#include "measurements.h"
 #include "measurement.h"
 
 /* tests for real monitoring assumed, that DB has the following state

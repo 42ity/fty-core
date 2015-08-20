@@ -24,14 +24,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_PERSIST_ASSETCRUD_H_
 #define SRC_PERSIST_ASSETCRUD_H_
 
+#include <tntdb/connect.h>
+
 #include "dbtypes.h"
 #include "defs.h"
 #include "dbhelpers.h"
-#include <tntdb/connect.h>
 #include "asset_types.h"
-#include "calc_power.h"
-
-
 
 
 // ===============================================================
