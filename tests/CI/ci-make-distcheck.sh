@@ -52,6 +52,7 @@ isCheckRequired() {
         CHANGED_LOCAL="`git status -s | egrep -v '^\?\? '`"
         if [ $? = 0 ] && [ -n "$CHANGED_LOCAL" ]; then
             logmsg_warn "Uncommitted local changes detected, so requesting the distcheck"
+            echo "$CHANGED_LOCAL"
             REQUIRE_DISTCHECK=yes
             return 0
         fi
@@ -116,14 +117,20 @@ isCheckRequired() {
         else
             CHANGED_FILENAMES_SET=""
             CHANGED_FILENAMES="`git diff ${OLD_COMMIT} | egrep '^diff '`" && \
-            CHANGED_FILENAMES_SET="`echo "$CHANGED_FILENAMES" | egrep '/Makefile.am|/configure.ac|/autogen.sh|/tools/(builder.sh|git_details.sh)'`"
-            if [ $? = 0 -a -n "$CHANGED_FILENAMES_SET" ] ; then
+            { CHANGED_FILENAMES_SET="`echo "$CHANGED_FILENAMES" | egrep '/Makefile.am|/configure.ac|/autogen.sh|/tools/(builder.sh|git_details.sh)'`"
+              if [ $? = 0 -a -n "$CHANGED_FILENAMES_SET" ] ; then
                 logmsg_info "Some central project files were changed since the last Git commit, so requesting a distcheck"
                 logmsg_echo "$CHANGED_FILENAMES_SET"
                 REQUIRE_DISTCHECK=yes
-            fi
-            # TODO: It may be possible to detect renames here as well (detect
-            # comparison of different filenames under ./a and ./b virtpaths)?
+              fi
+              # TODO: It may be possible to detect renames here as well (detect
+              # comparison of different filenames under ./a and ./b virtpaths)?
+              CHANGED_FILENAMES_SET="`echo "$CHANGED_FILENAMES" | egrep '\.(h|hpp|c|cc|cpp|ecpp|sh|py|sym|[ctu]sv|txt|m4|in)$'`"
+              if [ $? = 0 -a -n "$CHANGED_FILENAMES_SET" ] ; then
+                logmsg_info "Some project source-code, templates or test data files were changed since the last Git commit, so requesting a distcheck"
+                logmsg_echo "$CHANGED_FILENAMES_SET"
+                REQUIRE_DISTCHECK=yes
+              fi ; }
         fi
     else
         logmsg_warn "Could not verify content of recent Git changes, so requesting a distcheck"
