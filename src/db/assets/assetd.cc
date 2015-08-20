@@ -16,35 +16,15 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 */
 
-/*! \file   assetd.cc
-    \brief  Pure DB API for delete for different tables
-    \author Alena Chernikava <AlenaChernikava@Eaton.com>
-*/
-
-#include <tntdb/connect.h>
-#include <tntdb/row.h>
-#include <tntdb/result.h>
-#include <tntdb/error.h>
-#include <tntdb/transaction.h>
+#include "assets/assetd.h"
 
 #include "log.h"
 #include "defs.h"
-#include "assetcrud.h"
-#include "monitor.h"
-#include "persist_error.h"
-
-// ATTENTION: there is no easy way of getting last deleted id,
-// and there is no requirements to do this.
-// Then for every succesfull delete statement
-// 0 would be return as rowid
-
-/////////////////////// DELETE ///////////////////////////////////////////
-//=============================================================================
-// ATTENTION: in theory there could exist more than one link 
-// between two devices
 
 namespace persist {
 
+// ATTENTION: in theory there could exist more than one link 
+// between two devices
 db_reply_t
     delete_asset_link
         (tntdb::Connection &conn, 
@@ -163,8 +143,6 @@ db_reply_t
     delete_asset_links_to
         (tntdb::Connection &conn, 
          a_elmnt_id_t asset_device_id)
-// ATTENTION: asset_device_id is from t_bios_asset_device
-// and it is NOT from t_bios_asset_element;
 {
     LOG_START;
     log_debug ("  asset_device_id = %" PRIu32, asset_device_id);
@@ -214,8 +192,6 @@ db_reply_t
     delete_asset_links_from
         (tntdb::Connection &conn, 
          a_elmnt_id_t asset_device_id)
-// ATTENTION: asset_device_id is from t_bios_asset_device
-// and it is NOT from t_bios_asset_element;
 {
     LOG_START;
     log_debug ("  asset_device_id = %" PRIu32, asset_device_id);
@@ -709,6 +685,34 @@ db_reply_t
         ret.msg        = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
+    }
+}
+
+int
+    delete_disc_device(
+        tntdb::Connection &conn,
+        m_dvc_id_t         device_id,
+        m_dvc_id_t        &affected_rows)
+{
+    LOG_START;
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " DELETE FROM "
+            "   t_bios_discovered_device "
+            " WHERE "
+            "   id_discovered_device = :id "
+        );
+
+        affected_rows = st.set("id", device_id).
+                           execute();
+        log_debug ("[t_bios_discovered_device]: was deleted %" PRIu32 " rows",
+                        affected_rows);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return 1;
     }
 }
 

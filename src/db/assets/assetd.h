@@ -24,15 +24,12 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef SRC_DB_ASSETS_ASSETD_H_
 #define SRC_DB_ASSETS_ASSETD_H_
 
-#include "dbtypes.h"
-#include "defs.h"
-#include "dbhelpers.h"
 #include <tntdb/connect.h>
-#include "asset_types.h"
-#include "calc_power.h"
+
+#include "dbtypes.h"
+#include "dbhelpers.h"
 
 namespace persist {
-////////////////// DELETE
 
 db_reply_t
     delete_asset_link
@@ -96,6 +93,12 @@ db_reply_t
     delete_monitor_asset_relation_by_a
         (tntdb::Connection &conn,
          a_elmnt_id_t id);
+
+int
+    delete_disc_device(
+        tntdb::Connection &conn,
+        m_dvc_id_t         device_id,
+        m_dvc_id_t        &affected_rows);
 
 } // end namespace
 #endif // SRC_DB_ASSETS_ASSETD_H_

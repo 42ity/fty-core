@@ -397,40 +397,6 @@ common_msg_t* insert_disc_device(const char* url, m_dvc_tp_id_t device_type_id,
     }
 }
 
-common_msg_t* delete_disc_device (const char* url, m_dvc_id_t device_id)
-{
-    log_info ("start");
-    m_dvc_id_t n = 0;
-    try{
-        tntdb::Connection conn = tntdb::connectCached(url);
-   
-        tntdb::Statement st = conn.prepareCached(
-            " DELETE FROM"
-            " v_bios_discovered_device "
-            " WHERE id = :id"
-        );
-
-        // TODO set
-        n  = st.set("id", device_id).
-                execute();
-        log_debug ("was %" PRIu32 " rows deleted", n);
-    }
-    catch (const std::exception &e) {
-        log_warning ("end: abnormal with '%s'", e.what());
-        return generate_db_fail (DB_ERROR_INTERNAL, e.what(), NULL);
-    }
-    if ( n == 1 )
-    {
-        log_info ("end: normal");
-        return generate_ok (device_id, NULL);
-    }
-    else
-    {
-        log_info ("end: badinput");
-        return generate_db_fail (DB_ERROR_BADINPUT, 
-                                        "nothing was deleted", NULL);
-    }
-}
 
 common_msg_t* update_device (UNUSED_PARAM const char* url,
                              UNUSED_PARAM common_msg_t** new_device)
@@ -657,55 +623,6 @@ common_msg_t* insert_disc_device(const char* url, const char* device_type_name,
         }
     }
 }
-
-/*
-db_reply_t 
-    insert_into_monitor_device
-        (tntdb::Connection &conn,
-         const char* device_type_name,
-         const char* device_name)
-{
-    LOG_START;
-
-    db_reply_t ret = db_reply_new();
-
-    if ( !is_ok_name (device_name) )
-    {
-        ret.status     = 0;
-        ret.errtype    = DB_ERR;
-        ret.errsubtype = DB_ERROR_BADINPUT;
-        ret.msg        = "device name length is not in range [1, MAX_NAME_LENGTH]";
-        log_warning (ret.msg);
-        return ret;
-    }
-    
-    // find devicetype_id
-    common_msg_t* device_type = select_device_type(url.c_str(), device_type_name);
-    assert ( device_type );
-    int msgid = common_msg_id (device_type);
-
-    switch (msgid){
-        case COMMON_MSG_FAIL:
-        {
-            ret.status     = 0;
-            ret.errtype    = DB_ERR;
-            ret.errsubtype = DB_ERROR_BADINPUT;
-            ret.msg        = "device type name is unknown";
-            common_msg_destroy (&device_type);
-            log_warning (ret.msg);
-            return ret;
-        }
-        case COMMON_MSG_RETURN_DEVTYPE:
-        {   
-            m_dvc_tp_id_t rowid = common_msg_rowid (device_type);
-            ret = insert_into_monitor_device(conn, rowid, device_name);
-            LOG_END;
-            return ret;
-        }
-    }
-
-    return ret; //make gcc happy
-}*/
 
 ////////////////////////////////////////////////////////////////////////
 /////////////////           MEASUREMENT              ///////////////////
