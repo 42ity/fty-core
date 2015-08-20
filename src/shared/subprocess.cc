@@ -172,7 +172,7 @@ int SubProcess::wait(bool no_hangup)
 
     int options = no_hangup ? WNOHANG : 0;
 
-    if (! isRunning()) {
+    if (_state != SubProcessState::RUNNING) {
         return _return_code;
     }
 
