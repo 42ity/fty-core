@@ -26,7 +26,7 @@ std::string nil;
 // Make sure we have data that works
 command = "ls /augeas/files/etc/network/interfaces/error\n";
 write(augtool.getStdin(), command.c_str(), command.length());
-nil = real_out(wait_read_all(augtool.getStdout()));
+nil = augtool_out(wait_read_all(augtool.getStdout()));
 if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/network/interfaces config file" }
@@ -35,7 +35,7 @@ if(!nil.empty()) {
 }
 command = "ls /augeas/files/etc/resolv.conf/error\n";
 write(augtool.getStdin(), command.c_str(), command.length());
-nil = real_out(wait_read_all(augtool.getStdout()));
+nil = augtool_out(wait_read_all(augtool.getStdout()));
 if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/resolv.conf config file" }
@@ -49,7 +49,7 @@ if(rex_ncfg.match(request.getUrl())) {
     std::string in;
     command = "match /files/etc/network/interfaces/iface[*]\n";
     write(augtool.getStdin(), command.c_str(), command.length());
-    in = real_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+    in = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"");
     if(in.empty()) {
 </%cpp>
 { "error": "No configurable interfaces found" }
@@ -76,7 +76,7 @@ if(!rex_anum.match(iface)) {
 std::string address;
 command = "match /files/etc/network/interfaces/iface[*] " + iface + "\n";
 write(augtool.getStdin(), command.c_str(), command.length());
-address = real_out(wait_read_all(augtool.getStdout()), false);
+address = augtool_out(wait_read_all(augtool.getStdout()), false);
 if(address.empty()) {
 </%cpp>
 { "error": "No configuration for interface <$ iface $> found" }
@@ -87,7 +87,7 @@ if(address.empty()) {
 #define AUG_GET(NAME, VAL) \
     command = "get " + address + "/" NAME "\n"; \
     write(augtool.getStdin(), command.c_str(), command.length()); \
-    VAL = real_out(wait_read_all(augtool.getStdout()));
+    VAL = augtool_out(wait_read_all(augtool.getStdout()));
 
 std::string method;
 AUG_GET("method", method);
@@ -194,7 +194,7 @@ if(request.getMethod() == "PUT") {
     // Make sure we have data that works
     command = "ls /augeas/files/etc/network/interfaces/error\n";
     write(augtool.getStdin(), command.c_str(), command.length());
-    nil = real_out(wait_read_all(augtool.getStdout()));
+    nil = augtool_out(wait_read_all(augtool.getStdout()));
     if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/network/interfaces config file" }
@@ -203,7 +203,7 @@ if(request.getMethod() == "PUT") {
     }
     command = "ls /augeas/files/etc/resolv.conf/error\n";
     write(augtool.getStdin(), command.c_str(), command.length());
-    nil = real_out(wait_read_all(augtool.getStdout()));
+    nil = augtool_out(wait_read_all(augtool.getStdout()));
     if(!nil.empty()) {
 </%cpp>
 { "error": "Syntax error in /etc/resolv.conf config file" }
@@ -220,7 +220,7 @@ AUG_GET("netmask", netmask);
 AUG_GET("gateway", gateway);
 command = "match /files/etc/resolv.conf/nameserver\n";
 write(augtool.getStdin(), command.c_str(), command.length()); \
-dns = real_out(wait_read_all(augtool.getStdout()), true, "\", \"");
+dns = augtool_out(wait_read_all(augtool.getStdout()), true, "\", \"");
 
 </%cpp>
 { "<$ iface $>":

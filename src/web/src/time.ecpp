@@ -81,7 +81,7 @@ SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
     strftime(buff, 32, "%FT%TZ", &tm_s);
 	command = "get /files/etc/ntp.conf/server[1]\n";
     write(augtool.getStdin(), command.c_str(), command.length());
-    std::string ntp = real_out(wait_read_all(augtool.getStdout()));
+    std::string ntp = augtool_out(wait_read_all(augtool.getStdout()));
 </%cpp>
 { "time" : "<$ buff $>",
   "ntp"  : "<$ ntp $>" }

@@ -3,7 +3,7 @@
 #include <cxxtools/split.h>
 
 // Helper function to parse output of augtool
-std::string real_out(const std::string in, bool key_value = true, std::string sep = "") {
+std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "") {
     std::vector<std::string> spl;
     bool not_first = false;
     std::string out;
