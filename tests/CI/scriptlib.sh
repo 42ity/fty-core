@@ -345,7 +345,7 @@ sut_run() {
         logmsg_info "$CI_DEBUGLEVEL_RUN" \
             "sut_run()::ssh(${SUT_HOST}:${SUT_SSH_PORT}): $@" >&2
         SSH_TERMINAL_REQUEST=""
-        [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t -o RequestTTY=true"
+        [ "$1" = "-t" ] && shift && SSH_TERMINAL_REQUEST="-t -t" #" -o RequestTTY=true"
         [ "$CI_DEBUG" -gt 0 ] 2>/dev/null && \
             REMCMD="sh -x -c \"$@\"" ||
             REMCMD="sh -c \"$@\""
