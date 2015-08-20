@@ -666,7 +666,7 @@ test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/msg \
 			-I$(abs_top_srcdir)/tests/include
 
-test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}  -ltntdb
 
 check_PROGRAMS += 	test-agents
 
@@ -769,6 +769,7 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
 			libpriv-db-assets.la \
+			libpriv-db-measurements.la \
 			libpriv-db.la \
 			libpriv-log.la \
 			libpriv-cidr.la \
@@ -879,6 +880,7 @@ test_db_asset_crud_SOURCES = \
 test_db_asset_crud_LDADD = \
 			libpriv-db.la \
 			libpriv-db-assets.la \
+			libpriv-db-measurements.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -903,6 +905,7 @@ test_db_alert_SOURCES = \
 
 test_db_alert_LDADD = \
 			libpriv-db.la \
+			libpriv-db-measurements.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -1117,6 +1120,7 @@ bios_csv_CPPFLAGS = \
 						  -I $(abs_top_srcdir)/src/share/
 bios_csv_LDADD = \
 						 libpriv-db-assets.la \
+						 libpriv-db-measurements.la \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
