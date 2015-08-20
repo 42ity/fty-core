@@ -285,7 +285,9 @@ libpriv_utils_plusplus_la_SOURCES = \
 				src/shared/utils++.cc \
 				src/shared/utils++.h \
 				src/shared/filesystem.h \
-				src/shared/filesystem.cc
+				src/shared/filesystem.cc \
+				src/shared/augtool.h \
+				src/shared/augtool.cc
 
 noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
@@ -1337,7 +1339,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
                       src/web/src/uptime.cpp src/web/src/iface.cpp       \
                       src/web/src/license.cpp src/web/src/asset_export.cpp \
-                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp
+                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
+		      src/web/src/augtool.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
