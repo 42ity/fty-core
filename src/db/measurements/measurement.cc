@@ -149,8 +149,6 @@ select_measurements_averages (
     assert (source);
     assert (type);
     assert (step);
-    assert (is_average_step_supported (step));
-    assert (is_average_type_supported (type));
 
     reply_t ret;
     std::string topic;    
@@ -569,6 +567,45 @@ db_reply_t
     }
     LOG_END;
     return ret;
+}
+
+
+int
+    select_for_element_topics_all(
+            tntdb::Connection& conn,
+            a_elmnt_id_t element_id,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id"
+            " FROM "
+            "   t_bios_measurement_topic t "
+            " JOIN "
+            "   t_bios_monitor_asset_relation t1 "
+            " ON "
+            "   ( t.device_id = t1.id_discovered_device ) AND "
+            "     t1.id_asset_element = :idelement "
+        );
+
+        tntdb::Result res = st.set("idelement", element_id).
+                               select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
 }
 
 
