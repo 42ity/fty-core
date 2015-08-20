@@ -374,7 +374,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/calc_power.cc \
 			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
-			src/persist/dbhelpers.h \
+			src/db/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
