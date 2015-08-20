@@ -150,6 +150,13 @@
       </args>
     </mapping>
 
+    <!-- UI/properties -->
+    <mapping>
+      <target>ui_properties@bios_web</target>
+      <method>(GET|PUT)</method>
+      <url>^/api/v1/ui/properties.*$</url>
+    </mapping>
+
     <!-- License management -->
     <mapping>
       <target>license@bios_web</target>
@@ -199,14 +206,6 @@
     <mapping>
       <target>uptime@bios_web</target>
       <url>^/api/v1/metric/computed/uptime.*$</url>
-    </mapping>
-
-
-    <!-- UI/properties -->
-    <mapping>
-      <target>ui_properties@bios_web</target>
-      <method>(GET|PUT)</method>
-      <url>^/api/v1/ui/properties.*$</url>
     </mapping>
 
     <!-- Make sure we have malamute connection -->
