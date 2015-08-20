@@ -59,8 +59,6 @@ print_result $?
 
 test_it "Not authorized 5"
 simple_post_code '/admin/systemctl/disable' '{ "service_name" : "mysql" }' received HTTP_CODE
-echo "$HTTP_CODE" > ./http_code_x
-echo "$received" > ./received_x
 [ $HTTP_CODE -eq 401 ]
 print_result $?
 
