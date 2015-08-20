@@ -159,7 +159,7 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
 
             auto it = selectBest( configs );
             if( it == configs.end() ) {
-                log_error("nut-scanner failed, no suitable configuration found");
+                log_error("nut-scanner failed for device \"%s\", no suitable configuration found", name.c_str() );
                 return false; // try again later
             }
             std::string deviceDir = NUT_PART_STORE;
