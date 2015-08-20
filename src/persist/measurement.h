@@ -72,15 +72,6 @@ db_reply_t
         const char        *units,
         const char        *device_name);
 
-db_reply<std::vector<db_msrmnt_t>>
-    select_from_measurement_by_topic(
-        tntdb::Connection &conn,
-        const char        *topic);
-
-db_reply_t
-    delete_from_measurement_by_id(
-        tntdb::Connection &conn,
-        m_msrmnt_id_t      id);
 
 
 } //namespace persist

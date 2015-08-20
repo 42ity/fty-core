@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <czmq.h>
 #include <vector>
+#include <tuple>
 #include <string>
 #include "dbtypes.h"
 
@@ -130,6 +131,48 @@ struct db_alert_t {
     std::string         subtype_name;
     std::vector<m_dvc_id_t> device_ids;
 };
+
+/**
+ * \brief A type for storing basic information about device.
+ *
+ * First  -- id
+ *              asset element id of the device in database.
+ * Second -- device_name
+ *              asset element name of the device in database.
+ * Third  -- device_type_name
+ *              name of the device type in database.
+ * Forth  -- device_type_id
+ *              id of the device type in database.
+ */
+typedef std::tuple< uint32_t, std::string, std::string, uint32_t > device_info_t;
+
+inline uint32_t device_info_id(const device_info_t& d) {
+    return std::get<0>(d);
+}
+inline uint32_t device_info_type_id(const device_info_t& d) {
+    return std::get<3>(d);
+}
+inline std::string device_info_name(const device_info_t& d) {
+    return std::get<1>(d);
+}
+inline std::string device_info_type_name(const device_info_t& d) {
+    return std::get<2>(d);
+}
+
+
+/**
+ * \brief A type for storing basic information about powerlink.
+ *
+ * First  -- src_id
+ *              asset element id of the source device.
+ * Second -- src_out
+ *              output port on the source device.
+ * Third  -- dest_id
+ *              asset element id of the destination device.
+ * Forth  -- dest_in
+ *              input port on the destination device.
+ */
+typedef std::tuple< a_elmnt_id_t, std::string, a_elmnt_id_t, std::string > powerlink_info_t;
 
 
 /**

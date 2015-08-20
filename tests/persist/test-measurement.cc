@@ -1,19 +1,14 @@
 #include <catch.hpp>
 #include <tntdb/connection.h>
-#include <tntdb/connect.h>
 #include <tntdb/value.h>
 
 #include <vector>
-#include <cxxtools/serializationinfo.h>
-#include <cxxtools/jsondeserializer.h>
-#include <errno.h>
 
-#include "measurement.h"
+#include "measurements.h"
+#include "dbhelpers.h"
 #include "dbpath.h"
 #include "log.h"
-#include "bios_agent.h"
 #include "persistencelogic.h"
-#include "utils.h"
 #include "cleanup.h"
 
 using namespace persist;
