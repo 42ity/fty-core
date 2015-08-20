@@ -417,6 +417,8 @@ generate_getrestapi_strings() {
 
 generate_getrestapi_strings_sources() {
     # This is a read-only operation
+    local NUM_STRINGS
+    NUM_STRINGS=0
 
     # 1. Get asset element identifiers
     element_ids=$(get_elements)
@@ -460,16 +462,23 @@ generate_getrestapi_strings_sources() {
                 for sstep in $STEPS; do
                     # TODO: change this to api_get with related checks?
                     echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                    NUM_STRINGS=$(($NUM_STRINGS+1))
                     # TODO: Does it make sense to check for 404/500? What can we do?
                 done
             done
         done
     done
+
+    logmsg_info "Successfully generated $NUM_STRINGS URLs for power sources" >&2
+    return 0
 }
 
 generate_getrestapi_strings_temphum() {
     # This is a read-only operation
     # Generate temperature and humidity averages for 4*TH ports of this box
+    local NUM_STRINGS
+    NUM_STRINGS=0
+
     stype="$TYPE_AVG"
     sstep="24h"
     hostname=$(hostname | tr [:lower:] [:upper:])
@@ -479,12 +488,14 @@ generate_getrestapi_strings_temphum() {
              for thi in $(seq 1 4); do
                 s=${source}${thi}
                 echo "$FETCHER '$BASE_URL/metric/computed/average?start_ts=${START_TIMESTAMP}&end_ts=${END_TIMESTAMP}&type=${stype}&step=${sstep}&element_id=${i}&source=$s'"
+                NUM_STRINGS=$(($NUM_STRINGS+1))
             done
         done
     else
         logmsg_error "Could not select id_asset_element for host name '${hostname}', skipping T&H"
     fi
 
+    logmsg_info "Successfully generated $NUM_STRINGS URLs for temperature and humidity sensors" >&2
     return 0
 }
 
@@ -613,7 +624,7 @@ case "$ACTION" in
     request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
         [ -z "$FETCHER" ] && \
-                die "No usable FETCHER was detected on tis system"
+                die "No usable FETCHER was detected on this system"
         run_getrestapi_strings "$@"
         exit $?
         ;;
@@ -621,7 +632,7 @@ case "$ACTION" in
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         [ -z "$FETCHER" ] && \
-                die "No usable FETCHER was detected on tis system"
+                die "No usable FETCHER was detected on this system"
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
