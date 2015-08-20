@@ -441,6 +441,12 @@ PKG_CHECK_MODULES([LIBSODIUM], [libsodium >= 0.7.0], [], [AC_MSG_ERROR([cannot f
 PKG_CHECK_MODULES([LIBSASL2], [libsasl2 >= 2.1.0], [], [AC_MSG_ERROR([cannot find sasl 2 library >= 2.1.0])])
 PKG_CHECK_MODULES([LIBMLM], [libmlm >= 0.1.0], [], [AC_MSG_ERROR([cannot find malamute library >= 0.1.0])])
 
+AC_MSG_CHECKING([presence of augtool])
+AS_IF([which augtool >/dev/null 2>&1], [AC_MSG_RESULT([yes])], [
+	AC_MSG_RESULT([no])
+	AC_MSG_WARN([some CI tests (inspection and modification of OS configuration) can fail on this host due to lack of augeas-tools; but this is not fatal for compilation itself])
+])
+
 dnl ------ it was suggested by autoscan
 dnl TODO  I am not sure whether we need this. TODO MVY Please look at this.
 dnl Checks for libraries.

@@ -624,7 +624,7 @@ case "$ACTION" in
     request-verbose) # production run with verbose output
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=5
         [ -z "$FETCHER" ] && \
-                die "No usable FETCHER was detected on tis system"
+                die "No usable FETCHER was detected on this system"
         run_getrestapi_strings "$@"
         exit $?
         ;;
@@ -632,7 +632,7 @@ case "$ACTION" in
         # If user did not ask for debug shut it:
         [ x"$CI_DEBUG_CALLER" = x ] && CI_DEBUG=0
         [ -z "$FETCHER" ] && \
-                die "No usable FETCHER was detected on tis system"
+                die "No usable FETCHER was detected on this system"
         run_getrestapi_strings "$@" >/dev/null
         exit $?
         ;;
