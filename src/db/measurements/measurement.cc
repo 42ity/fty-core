@@ -448,7 +448,7 @@ int
         affected_rows = st.set("topicid", topic_id).
                            execute();
         log_debug ("[t_bios_measurement_topic]: was deleted %"
-                                PRIu64 " rows", affected_rows);
+                                PRIu16 " rows", affected_rows);
         LOG_END;
         return 0;
     }
