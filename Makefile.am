@@ -285,7 +285,9 @@ libpriv_utils_plusplus_la_SOURCES = \
 				src/shared/utils++.cc \
 				src/shared/utils++.h \
 				src/shared/filesystem.h \
-				src/shared/filesystem.cc
+				src/shared/filesystem.cc \
+				src/shared/augtool.h \
+				src/shared/augtool.cc
 
 noinst_LTLIBRARIES += 		libpriv-utils-ymsg.la
 
@@ -372,7 +374,7 @@ libpriv_db_la_SOURCES = \
 			src/persist/calc_power.cc \
 			src/persist/calc_power.h \
 			src/persist/dbhelpers.cc \
-			src/persist/dbhelpers.h \
+			src/db/dbhelpers.h \
 			src/persist/measurement.h \
 			src/persist/measurement.cc \
 			src/persist/ymsg-asset.h \
@@ -399,12 +401,12 @@ libpriv_db_la_CPPFLAGS = $(AM_CPPFLAGS) \
 			-I$(abs_top_builddir)/src/persist
 
 libpriv_db_la_LIBADD =	libbiosapi.la \
-						libpriv-log.la \
-						libpriv-csv.la \
-						libpriv-db-assets.la \
-						libpriv-topic-cache.la
+			libpriv-log.la \
+			libpriv-csv.la \
+			libpriv-db-assets.la \
+			libpriv-topic-cache.la
 
-noinst_LTLIBRARIES += 		libpriv-db-measurements.la
+noinst_LTLIBRARIES += 	libpriv-db-measurements.la
 
 libpriv_db_measurements_la_SOURCES = \
 			src/db/measurements/measurement.cc \
@@ -420,7 +422,7 @@ libpriv_db_measurements_la_CPPFLAGS = $(AM_CPPFLAGS) \
 
 #libpriv_db_measurements_la_LIBADD =	libpriv-utils.la
 
-noinst_LTLIBRARIES +=		libpriv-db-calculations.la
+noinst_LTLIBRARIES +=	libpriv-db-calculations.la
 
 libpriv_db_calculations_la_SOURCES = \
 			src/db/calculation.h \
@@ -445,7 +447,7 @@ libpriv_db_calculations_la_CPPFLAGS = $(AM_CPPFLAGS) \
 #libpriv_db_alerts_la_LIBADD =	libbiosapi.la \
 #			libpriv-log.la libpriv-csv.la
 
-noinst_LTLIBRARIES += 		libpriv-db-assets.la
+noinst_LTLIBRARIES += 	libpriv-db-assets.la
 
 HEADERS_ASSETS = \
 			src/db/assets.h \
@@ -666,7 +668,7 @@ test_csv_CPPFLAGS =		$(AM_CPPFLAGS) \
 			-I$(abs_top_srcdir)/src/msg \
 			-I$(abs_top_srcdir)/tests/include
 
-test_csv_LDFLAGS =		${CXXTOOLS_LIBS}
+test_csv_LDFLAGS =		${CXXTOOLS_LIBS}  -ltntdb
 
 check_PROGRAMS += 	test-agents
 
@@ -769,6 +771,7 @@ test_loadcsv_SOURCES = 	tests/persist/test-loadcsv.cc
 
 test_loadcsv_LDADD = \
 			libpriv-db-assets.la \
+			libpriv-db-measurements.la \
 			libpriv-db.la \
 			libpriv-log.la \
 			libpriv-cidr.la \
@@ -879,6 +882,7 @@ test_db_asset_crud_SOURCES = \
 test_db_asset_crud_LDADD = \
 			libpriv-db.la \
 			libpriv-db-assets.la \
+			libpriv-db-measurements.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -903,6 +907,7 @@ test_db_alert_SOURCES = \
 
 test_db_alert_LDADD = \
 			libpriv-db.la \
+			libpriv-db-measurements.la \
 			libpriv-proto.la \
 			libpriv-test-run.la \
 			libpriv-log.la
@@ -1117,6 +1122,7 @@ bios_csv_CPPFLAGS = \
 						  -I $(abs_top_srcdir)/src/share/
 bios_csv_LDADD = \
 						 libpriv-db-assets.la \
+						 libpriv-db-measurements.la \
 						 libpriv-db.la \
 						 libpriv-proto.la \
 						 libpriv-log.la \
@@ -1337,7 +1343,8 @@ BUILT_SOURCES_bios_web_la = \
                       src/web/src/alerts.cpp src/web/src/netcfg.cpp      \
                       src/web/src/uptime.cpp src/web/src/iface.cpp       \
                       src/web/src/license.cpp src/web/src/asset_export.cpp \
-                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp
+                      src/web/src/admin_passwd.cpp src/web/src/systemctl.cpp \
+		      src/web/src/augtool.cpp
 
 bios_web_la_SOURCES = $(BUILT_SOURCES_bios_web_la)                       \
                       src/web/src/location_helpers.cc                    \
