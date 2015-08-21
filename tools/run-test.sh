@@ -22,8 +22,8 @@
 
 #!
 # \file run-test.sh
-# \author Michal Vyskocil
-# \author Alena Chernikava
+# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+# \author Alena Chernikava <AlenaChernikava@Eaton.com>
 # \brief Not yet documented file
 
 #!/bin/bash

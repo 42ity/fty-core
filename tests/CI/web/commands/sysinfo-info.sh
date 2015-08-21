@@ -20,8 +20,8 @@
 
 #!
 # \file sysinfo-info.sh
-# \author Jim Klimov
-# \author Michal Vyskocil
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
+# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 # \brief Not yet documented file
 
 ###############################################################
