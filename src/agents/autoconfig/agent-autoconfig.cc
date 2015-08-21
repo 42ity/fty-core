@@ -124,16 +124,31 @@ void Autoconfig::onPoll( )
     bool save = false;
     
     for( auto &it : _configurableDevices) {
-        // check not configured devices with extended attributes
-        if( ! it.second.configured && ! it.second.attributes.empty() ) {
-            if( ConfigFactory().configureAsset( it.first, it.second ) ) {
-                it.second.configured = true;
-                save = true;
+        // check not configured devices
+        if( ! it.second.configured ) {
+            // we don't need extended attributes for deleting configuration
+            // but we need them for update/insert
+            if(
+                ! it.second.attributes.empty() ||
+                it.second.operation == asset_operation::DELETE ||
+                it.second.operation == asset_operation::RETIRE
+            )
+            {
+                if( ConfigFactory().configureAsset( it.first, it.second ) ) {
+                    it.second.configured = true;
+                    save = true;
+                }
+                it.second.date = time(NULL);
             }
-            it.second.date = time(NULL);
         }
         // get extended attributes for not configured device
-        if( ! it.second.configured && it.second.attributes.empty() ) {
+        if(
+            ! it.second.configured &&
+            it.second.attributes.empty() &&
+            ( it.second.operation == asset_operation::INSERT ||
+              it.second.operation == asset_operation::UPDATE )
+        )
+        {
             requestExtendedAttributes( it.first.c_str() );
         }
     }
