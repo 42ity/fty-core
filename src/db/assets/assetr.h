@@ -226,5 +226,12 @@ db_reply_t
     select_monitor_device_type_id
         (tntdb::Connection &conn,
          const char *device_type_name);
+
+int
+    convert_asset_to_monitor(
+        tntdb::Connection &conn,
+        a_elmnt_id_t       asset_element_id,
+        m_dvc_id_t        &monitor_element_id);
+
 } //namespace end
 #endif // SRC_DB_ASSETS_ASSETR_H

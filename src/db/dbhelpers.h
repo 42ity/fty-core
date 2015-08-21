@@ -197,11 +197,11 @@ typedef std::tuple< a_elmnt_id_t, std::string, a_elmnt_id_t, std::string > power
  * \return device_discovered_id - of the device connected with the 
  *                                asset_element.
  */
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
+m_dvc_id_t convert_asset_to_monitor_old(const char* url, 
                 a_elmnt_id_t asset_element_id);
 
 // the same as previos. but c-style error handling
-int convert_asset_to_monitor_safe(const char* url, 
+int convert_asset_to_monitor_safe_old(const char* url, 
                 a_elmnt_id_t asset_element_id, m_dvc_id_t *device_id);
 
 

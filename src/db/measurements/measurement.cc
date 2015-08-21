@@ -583,7 +583,7 @@ int
     try{
         tntdb::Statement st = conn.prepareCached(
             " SELECT"
-            "   v.id"
+            "   t.id"
             " FROM "
             "   t_bios_measurement_topic t "
             " JOIN "
@@ -608,6 +608,140 @@ int
     }
 }
 
+
+int
+    insert_into_measurement_topic
+        (tntdb::Connection &conn,
+         m_dvc_id_t         monitor_element_id,
+         const std::string &topic,
+         const std::string &units,
+         m_msrmnt_tpc_id_t &rowid)
+{
+    LOG_START;
+    log_debug ("  monitor_element_id = %" PRIu32, monitor_element_id);
+    log_debug ("  topic = '%s'", topic.c_str());
+    log_debug ("  units = '%s'", units.c_str());
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " INSERT INTO "
+            "   t_bios_measurement_topic "
+            "     (topic, units, device_id) "
+            " VALUE "
+            "     (:topic, :units, :device) "
+            " ON DUPLICATE KEY "
+            "   UPDATE "
+            "      id = LAST_INSERT_ID(id) "
+        );
+
+        auto affected_rows = st.set("topic", topic).
+                                set("units", units).
+                                set("device", monitor_element_id).
+                                execute();
+        rowid = conn.lastInsertId();
+        log_debug("[t_bios_measurement_topic]: inserted %" PRIu32
+                        " rows, topic = '%s', device_id = %" PRIu32,
+                        affected_rows, topic.c_str(), monitor_element_id);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        rowid = 0;
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+// TODO need to refactor insert_into_measurement functionality to
+// be more reliable, and rename function to follow conventions
+int
+    insert_into_measurement_pure(
+        tntdb::Connection &conn,
+        m_msrmnt_value_t   value,
+        m_msrmnt_scale_t   scale,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            time,
+        m_msrmnt_id_t     &rowid)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " INSERT INTO "
+            "   t_bios_measurement "
+            "       (timestamp, value, scale, topic_id) "
+            " VALUE "
+            "   (:time, :value, :scale, :topicid) "
+        );
+        uint64_t n = st.set("topicid", topic_id).
+                        set("time",  time).
+                        set("value", value).
+                        set("scale", scale).
+                        execute();
+
+        rowid = conn.lastInsertId();
+        log_debug("[t_bios_measurement]: inserted %" PRIu64 " rows "
+                   "value:%" PRIi32 " * 10^%" PRIi16
+                   "topic_id = %" PRIu32 " time = %" PRIi64,
+                   n, value, scale, topic_id, time);
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        rowid = 0;
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
+
+// this function is intended to be used in tests
+int
+    select_measurements_by_topic_id (
+        tntdb::Connection &conn,
+        m_msrmnt_tpc_id_t  topic_id,
+        int64_t            start_timestamp,
+        int64_t            end_timestamp,
+        bool               left_interval_closed,
+        bool               right_interval_closed,
+        std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+    try {
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT "
+            "   topic, value, scale, timestamp"
+            " FROM "
+            "   v_bios_measurement"
+            " WHERE "
+            "   topic_id = :topic_id AND "
+            "   timestamp > :time_left AND "
+            "   timestamp < :time_right"
+        );
+
+        log_debug ("Interval: %s %" PRIi64 ", %" PRIi64 "%s; Topic_id: %" PRIi16,
+               (left_interval_closed ? "<" : "("), start_timestamp, end_timestamp,
+               (right_interval_closed ? ">" : ")"), topic_id);
+        tntdb::Result result = st.
+                    set("topic_id", topic_id).
+                    set("time_left",  (left_interval_closed ?
+                                       start_timestamp - 1 : start_timestamp)).
+                    set("time_right", (right_interval_closed ?
+                                       end_timestamp + 1 : end_timestamp)).
+                    select();
+
+        for (const auto &row: result) {
+            cb(row);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
+}
 
 } // namespace persist
 

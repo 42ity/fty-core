@@ -35,7 +35,7 @@ int convert_asset_to_monitor_safe(const char* url,
         return -5;
     try
     {
-        *device_id = convert_asset_to_monitor(url, asset_element_id);
+        *device_id = convert_asset_to_monitor_old(url, asset_element_id);
         return 0;
     }
     catch (const bios::NotFound &e){
@@ -53,7 +53,7 @@ int convert_asset_to_monitor_safe(const char* url,
 }
 
 
-m_dvc_id_t convert_asset_to_monitor(const char* url, 
+m_dvc_id_t convert_asset_to_monitor_old(const char* url, 
                 a_elmnt_id_t asset_element_id)
 {
     assert ( asset_element_id );

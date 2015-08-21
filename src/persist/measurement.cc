@@ -32,6 +32,7 @@
 #include "log.h"
 #include "measurement.h"
 #include "dbpath.h"
+#include "defs.h"
 
 namespace persist {
 
