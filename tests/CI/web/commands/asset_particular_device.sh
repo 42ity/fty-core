@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file asset_particular_device.sh
-# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file asset_particular_device.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 RES=0

@@ -18,10 +18,9 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-#!
-# \file license_add.sh
-# \author Michal Hrusecky
-# \brief Not yet documented file
+#! \file license_add.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \brief Not yet documented file
 
 BASEDIR="$1"
 [ -n "$BASEDIR" ] || BASEDIR="`pwd`"
@@ -42,7 +41,7 @@ add_license() {
             SDD="#!"
             MDD="#"
             ;;
-        *.cc|*.h|*.c)
+        *.cc|*.h|*.c|*.cc.in|*.h.in|*.c.in)
             SD="/*"
             MD=" *"
             ED=" */"
@@ -50,7 +49,7 @@ add_license() {
             MDD=" *"
             EDD=" */"
             ;;
-        *.ecpp)
+        *.ecpp|*.ecpp.in)
             SD="<#"
             MD=" #"
             ED=" #>"
@@ -87,10 +86,9 @@ $MD 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 $MD
 $ED
 
-$SDD
-$MDD \\file `basename $1`
-`git blame -c "$1" | sed 's|.*(\([^\t]*\)\t.*|\1|' | sort | uniq -c | sort -nr | sed "s|^[[:blank:]]*[0-9]\\+[[:blank:]]\\(.*\)\+[[:blank:]]\\(.*\\)|$MDD\\ \\\\\\\\author\\ \\1 \\2 <\\1\\2@Eaton.com>|"`
-$MDD \\brief Not yet documented file
+$SDD \\file   `basename $1`
+`git blame -c "$1" | sed 's|.*(\([^\t]*\)\t.*|\1|' | sort | uniq -c | sort -nr | sed "s|^[[:blank:]]*[0-9]\\+[[:blank:]]\\(.*\)\+[[:blank:]]\\(.*\\)|$MDD\\  \\\\\\\\author\\ \\1 \\2 <\\1\\2@Eaton.com>|"`
+$MDD \\brief  TODO: Not yet documented file
 $EDD
 EOF
         cat "$FILE" > "$fl"
@@ -99,6 +97,7 @@ EOF
 
 find "$BASEDIR" -name '*.sh' -o -name '*.sh.in' -o \
     -name '*.cc' -o -name '*.h' -o -name '*.c' -o -name '*.ecpp' \
+    -name '*.cc.in' -o -name '*.h.in' -o -name '*.c.in' -o -name '*.ecpp.in' \
 | while read fl; do
     add_license "$fl"
 done

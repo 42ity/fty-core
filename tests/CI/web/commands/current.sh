@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file current.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-# \brief Not yet documented file
+#! \file current.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \brief Not yet documented file
 
 test_it dev=6
 api_get_json '/metric/current?dev=6' >&5
