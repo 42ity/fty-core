@@ -18,10 +18,9 @@
 #
 
 
-#!
-# \file alerts.sh
-# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-# \brief Not yet documented file
+#! \file alerts.sh
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /alerts >&5

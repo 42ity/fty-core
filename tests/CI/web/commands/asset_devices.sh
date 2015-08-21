@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file asset_devices.sh
-# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file asset_devices.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /asset/devices >&5
