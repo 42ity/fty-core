@@ -16,17 +16,16 @@
  # with this program; if not, write to the Free Software Foundation, Inc.,
  # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  #
- #>
-
-<#\n/*!
+ #><#
+/*!
  * \file rack_total.ecpp
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
- */\n#>
-<%pre>
+ */
+ #><%pre>
 #include "cleanup.h"
 #include <czmq.h>
 #include <cxxtools/split.h>
