@@ -22,7 +22,7 @@
 
 #!
 # \file check_setup.sh
-# \author Karol Hrdina
+# \author Karol Hrdina <KarolHrdina@Eaton.com>
 # \brief Not yet documented file
 
 #!/bin/bash
