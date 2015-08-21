@@ -20,10 +20,10 @@
 
 /*!
  * \file test-alert.cc
- * \author Alena Chernikava
- * \author Jim Klimov
- * \author Tomas Halman
- * \author Michal Vyskocil
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

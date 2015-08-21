@@ -20,9 +20,9 @@
 
 /*!
  * \file tokens.h
- * \author Michal Hrusecky
- * \author Alena Chernikava
- * \author Jim Klimov
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 /**

@@ -20,7 +20,7 @@
 
 /*!
  * \file test-dc-power.cc
- * \author Alena Chernikava
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

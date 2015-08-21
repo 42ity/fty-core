@@ -20,7 +20,7 @@
 
 /*!
  * \file preproc.h
- * \author Karol Hrdina
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_INCLUDE_PREPROC_H__

@@ -20,8 +20,8 @@
 
 /*!
  * \file location_helpers.h
- * \author Karol Hrdina
- * \author Michal Hrusecky
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_WEB_INCLUDE_LOCATION_HELPERS

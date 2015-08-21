@@ -20,8 +20,8 @@
 
 /*!
  * \file sasl.h
- * \author Alena Chernikava
- * \author Michal Hrusecky
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_WEB_INCLUDE_SASL_H

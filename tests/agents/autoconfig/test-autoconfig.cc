@@ -20,7 +20,7 @@
 
 /*!
  * \file test-autoconfig.cc
- * \author Tomas Halman
+ * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
 /*

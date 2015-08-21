@@ -20,11 +20,11 @@
 
 /*!
  * \file test-measurement.cc
- * \author Michal Vyskocil
- * \author Alena Chernikava
- * \author Karol Hrdina
- * \author Michal Hrusecky
- * \author Jim Klimov
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

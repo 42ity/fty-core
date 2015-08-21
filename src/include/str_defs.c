@@ -20,8 +20,8 @@
 
 /*!
  * \file str_defs.c
- * \author Karol Hrdina
- * \author Jim Klimov
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include "str_defs.h"

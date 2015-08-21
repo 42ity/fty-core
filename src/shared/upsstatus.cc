@@ -20,8 +20,8 @@
 
 /*!
  * \file upsstatus.cc
- * \author Tomas Halman
- * \author Karol Hrdina
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include "upsstatus.h"

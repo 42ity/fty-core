@@ -20,7 +20,7 @@
 
 /*!
  * \file server-agent.cc
- * \author Michal Hrusecky
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include "sample_agent.h"

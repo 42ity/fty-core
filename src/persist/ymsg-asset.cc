@@ -20,9 +20,9 @@
 
 /*!
  * \file ymsg-asset.cc
- * \author Alena Chernikava
- * \author Tomas Halman
- * \author Michal Vyskocil
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #include <string>

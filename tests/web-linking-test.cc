@@ -20,8 +20,8 @@
 
 /*!
  * \file web-linking-test.cc
- * \author Michal Hrusecky
- * \author Jim Klimov
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include <tnt/tntnet.h>

@@ -20,10 +20,10 @@
 
 /*!
  * \file defs.h
- * \author Michal Hrusecky
- * \author Karol Hrdina
- * \author Alena Chernikava
- * \author Michal Vyskocil
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_INCLUDE_DEFS_H__

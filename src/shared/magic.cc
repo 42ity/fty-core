@@ -20,7 +20,7 @@
 
 /*!
  * \file magic.cc
- * \author Michal Vyskocil
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #include <stdexcept>

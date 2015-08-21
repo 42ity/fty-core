@@ -20,7 +20,7 @@
 
 /*!
  * \file test-run.cc
- * \author Alena Chernikava
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #define CATCH_CONFIG_MAIN  

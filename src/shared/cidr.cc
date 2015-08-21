@@ -20,9 +20,9 @@
 
 /*!
  * \file cidr.cc
- * \author Tomas Halman
- * \author Alena Chernikava
- * \author Karol Hrdina
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include "cidr.h"

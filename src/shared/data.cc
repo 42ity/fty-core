@@ -20,12 +20,12 @@
 
 /*!
  * \file data.cc
- * \author Alena Chernikava
- * \author Michal Vyskocil
- * \author Michal Hrusecky
- * \author Karol Hrdina
- * \author Tomas Halman
- * \author Jim Klimov
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include <zmq.h>

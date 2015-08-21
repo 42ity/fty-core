@@ -20,7 +20,7 @@
 
 /*!
  * \file alert-model.cc
- * \author Tomas Halman
+ * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
 #include "alert-model.h"

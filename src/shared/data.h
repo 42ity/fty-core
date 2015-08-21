@@ -20,9 +20,9 @@
 
 /*!
  * \file data.h
- * \author Michal Hrusecky
- * \author Alena Chernikava
- * \author Michal Vyskocil
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_SHARED_DATA_H

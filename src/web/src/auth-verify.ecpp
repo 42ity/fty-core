@@ -20,8 +20,8 @@
 
 <#\n/*!
  * \file auth-verify.ecpp
- * \author Jim Klimov
- * \author Michal Hrusecky
+ * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */\n#>
 <%pre>

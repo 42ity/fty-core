@@ -20,8 +20,8 @@
 
 /*!
  * \file tp-unit.cc
- * \author Tomas Halman
- * \author Alena Chernikava
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include <ctime>

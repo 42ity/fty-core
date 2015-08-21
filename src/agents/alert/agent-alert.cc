@@ -20,9 +20,9 @@
 
 /*!
  * \file agent-alert.cc
- * \author Tomas Halman
- * \author Karol Hrdina
- * \author Jim Klimov
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include "agent-alert.h"

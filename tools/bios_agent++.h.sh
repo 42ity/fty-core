@@ -22,8 +22,8 @@
 
 #!
 # \file bios_agent++.h.sh
-# \author Tomas Halman
-# \author Arnaud Quette
+# \author Tomas Halman <TomasHalman@Eaton.com>
+# \author Arnaud Quette <ArnaudQuette@Eaton.com>
 # \brief Not yet documented file
 
 #!/bin/bash

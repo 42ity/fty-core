@@ -20,8 +20,8 @@
 
 /*!
  * \file alert-entity.cc
- * \author Tomas Halman
- * \author Alena Chernikava
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include "alert-entity.h"

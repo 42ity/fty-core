@@ -20,9 +20,9 @@
 
 /*!
  * \file location_helpers.cc
- * \author Michal Hrusecky
- * \author Karol Hrdina
- * \author Jim Klimov
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <JimKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include <cstdio>
