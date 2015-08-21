@@ -16,15 +16,14 @@
  # with this program; if not, write to the Free Software Foundation, Inc.,
  # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  #
- #>
-
-<#\n/*!
+ #><#
+/*!
  * \file license.ecpp
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
- * \brief Not yet documented file
- */\n#>
-<%pre>
+ * \brief Validates and manages license acceptance
+ */
+ #><%pre>
 #include <unistd.h>
 #include <iostream>
 #include <stdio.h>
