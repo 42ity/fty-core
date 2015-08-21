@@ -1,5 +1,4 @@
 #!/bin/sh
-#!/bin/sh
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,13 +19,10 @@
 #
 
 
-#!
-# \file run-test-doc.sh.in
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Alena Chernikava <AlenaChernikava@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/sh
+#! \file   run-test-doc.sh(.in)
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \brief Not yet documented file
 
 DOXYLOG="@myDOXDIR@/@mydoxylog@"
 HAVE_DOXYGEN="@HAVE_DOXYGEN@"

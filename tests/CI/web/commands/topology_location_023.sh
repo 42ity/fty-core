@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file topology_location_023.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file   topology_location_023.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /topology/location?from=7025\&recursive=yes >&5

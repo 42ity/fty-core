@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file time.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \brief Not yet documented file
+#! \file time.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \brief Not yet documented file
 
 [ -z "${JSONSH-}" ] && \
     for F in "$CHECKOUTDIR/tools/JSON.sh" "$SCRIPTDIR/JSON.sh"; do
