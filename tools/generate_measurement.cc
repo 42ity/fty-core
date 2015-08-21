@@ -18,10 +18,9 @@
  *
  */
 
-/*!
- * \file generate_measurement.cc
- * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
- * \brief Not yet documented file
+/*! \file generate_measurement.cc
+ *  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ *  \brief Not yet documented file
  */
 #include "cleanup.h"
 #include "bios_agent.h"

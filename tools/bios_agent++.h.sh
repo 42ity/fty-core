@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,13 +19,10 @@
 #
 
 
-#!
-# \file bios_agent++.h.sh
-# \author Tomas Halman <TomasHalman@Eaton.com>
-# \author Arnaud Quette <ArnaudQuette@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/bash
+#! \file   bios_agent++.h.sh
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \author Arnaud Quette <ArnaudQuette@Eaton.com>
+#  \brief  This script compiles bios_agent++.h.in into bios_agent++.h
 
 DIR=$(dirname $0)
 DIR=$(realpath $DIR)

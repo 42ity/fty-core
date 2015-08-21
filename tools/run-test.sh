@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,13 +19,11 @@
 #
 
 
-#!
-# \file run-test.sh
-# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-# \author Alena Chernikava <AlenaChernikava@Eaton.com>
-# \brief Not yet documented file
+#! \file run-test.sh
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \brief Not yet documented file
 
-#!/bin/bash
 NEWARGS="${@:1:$#-1}"
 NEWPROGRAM="${@:$#:$#}"
 declare -r HARD_ERROR=99

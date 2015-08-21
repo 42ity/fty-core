@@ -173,6 +173,7 @@ bool NUTConfigurator::configure( const std::string &name, const AutoConfiguratio
             return true;
         }
     case asset_operation::DELETE:
+    case asset_operation::RETIRE:
         {
             log_info("removing configuration file %s/%s", NUT_PART_STORE, name.c_str() );
             std::string fileName = std::string(NUT_PART_STORE)
