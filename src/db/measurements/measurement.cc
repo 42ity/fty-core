@@ -20,10 +20,10 @@
 
 /*!
  * \file measurement.cc
- * \author Karol Hrdina
- * \author Alena Chernikava
- * \author Michal Vyskocil
- * \author Michal Hrusecky
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include <tntdb.h>

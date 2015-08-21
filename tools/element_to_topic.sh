@@ -22,8 +22,8 @@
 
 #!
 # \file element_to_topic.sh
-# \author Jim Klimov
-# \author Karol Hrdina
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
+# \author Karol Hrdina <KarolHrdina@Eaton.com>
 # \brief Not yet documented file
 
 #!/bin/bash

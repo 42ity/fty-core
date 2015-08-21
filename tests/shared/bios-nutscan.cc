@@ -20,8 +20,8 @@
 
 /*!
  * \file bios-nutscan.cc
- * \author Michal Vyskocil
- * \author Tomas Halman
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
 

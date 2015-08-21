@@ -20,7 +20,7 @@
 
 <#\n/*!
  * \file asset_export.ecpp
- * \author Michal Vyskocil
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */\n#>
 <%pre>

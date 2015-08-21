@@ -20,8 +20,8 @@
 
 #!
 # \file topology_power_014.sh
-# \author Karol Hrdina
-# \author Jim Klimov
+# \author Karol Hrdina <KarolHrdina@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 test_it

@@ -20,8 +20,8 @@
 
 /*!
  * \file libth.h
- * \author Michal Hrusecky
- * \author Alena Chernikava
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include <sys/types.h>

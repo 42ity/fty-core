@@ -20,7 +20,7 @@
 
 /*!
  * \file topic_cache.cc
- * \author Alena Chernikava
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include "topic_cache.h"

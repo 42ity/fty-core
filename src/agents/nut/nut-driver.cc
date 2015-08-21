@@ -20,10 +20,10 @@
 
 /*!
  * \file nut-driver.cc
- * \author Tomas Halman
- * \author Gerald Guillaume
- * \author Karol Hrdina
- * \author Alena Chernikava
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include "nut-driver.h"

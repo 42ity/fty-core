@@ -20,11 +20,11 @@
 
 /*!
  * \file bios_agent.c
- * \author Karol Hrdina
- * \author Michal Hrusecky
- * \author Michal Vyskocil
- * \author Alena Chernikava
- * \author Tomas Halman
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
 #include <zmq.h>

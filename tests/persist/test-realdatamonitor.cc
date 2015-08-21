@@ -20,10 +20,10 @@
 
 /*!
  * \file test-realdatamonitor.cc
- * \author Alena Chernikava
- * \author Michal Vyskocil
- * \author Karol Hrdina
- * \author    unknown
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author    unknown <  unknown@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

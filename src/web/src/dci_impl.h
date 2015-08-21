@@ -20,8 +20,8 @@
 
 /*!
  * \file dci_impl.h
- * \author Michal Vyskocil
- * \author Alena Chernikava
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_WEB_SRC_DCI_IMPL_H

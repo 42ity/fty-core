@@ -20,7 +20,7 @@
 
 /*!
  * \file generate_measurement.cc
- * \author Michal Hrusecky
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include "cleanup.h"

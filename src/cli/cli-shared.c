@@ -20,10 +20,10 @@
 
 /*!
  * \file cli-shared.c
- * \author Karol Hrdina
- * \author Michal Vyskocil
- * \author Michal Hrusecky
- * \author Alena Chernikava
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 // TODO MVY (?): Missing license etc..

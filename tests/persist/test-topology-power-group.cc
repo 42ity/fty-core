@@ -20,9 +20,9 @@
 
 /*!
  * \file test-topology-power-group.cc
- * \author Alena Chernikava
- * \author Karol Hrdina
- * \author Michal Hrusecky
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

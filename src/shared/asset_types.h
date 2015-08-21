@@ -20,9 +20,9 @@
 
 /*!
  * \file asset_types.h
- * \author Tomas Halman
- * \author Alena Chernikava
- * \author Michal Hrusecky
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_SHARED_ASSET_TYPES_H

@@ -20,9 +20,9 @@
 
 /*!
  * \file alert-measurement.cc
- * \author Tomas Halman
- * \author Michal Vyskocil
- * \author Karol Hrdina
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include "alert-measurement.h"

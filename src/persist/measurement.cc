@@ -20,10 +20,10 @@
 
 /*!
  * \file measurement.cc
- * \author Michal Vyskocil
- * \author Alena Chernikava
- * \author Tomas Halman
- * \author Michal Hrusecky
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include <inttypes.h>

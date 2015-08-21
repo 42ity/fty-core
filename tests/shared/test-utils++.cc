@@ -20,8 +20,8 @@
 
 /*!
  * \file test-utils++.cc
- * \author Karol Hrdina
- * \author Michal Vyskocil
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>
