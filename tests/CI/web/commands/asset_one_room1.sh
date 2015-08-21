@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file asset_one_room1.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Alena Chernikava <AlenaChernikava@Eaton.com>
-# \brief Not yet documented file
+#! \file asset_one_room1.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 curlfail_push_expect_404
