@@ -87,7 +87,7 @@ $MD
 $ED
 
 $SDD \\file   `basename $1`
-`git blame -c "$1" | sed 's|.*(\([^\t]*\)\t.*|\1|' | sort | uniq -c | sort -nr | sed "s|^[[:blank:]]*[0-9]\\+[[:blank:]]\\(.*\)\+[[:blank:]]\\(.*\\)|$MDD\\  \\\\\\\\author\\ \\1 \\2 <\\1\\2@Eaton.com>|"`
+`git blame -c "$1" | sed 's|.*(\([^\t]*\)\t.*|\1|' | sort | uniq -c | sort -nr | sed "s|^[[:blank:]]*[0-9]\\+[[:blank:]]\\(.*\)\+[[:blank:]]\\(.*\\)|$MDD\\  \\\\\\\\author\\ \\1 \\2 <\\1\\2@Eaton.com>|" | sed "s,JimKlimov@Eaton.com,EvgenyKlimov@Eaton.com,"`
 $MDD \\brief  TODO: Not yet documented file
 $EDD
 EOF
