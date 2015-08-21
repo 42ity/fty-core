@@ -57,7 +57,8 @@ enum asset_operation {
     INSERT = 1,
     DELETE,
     UPDATE,
-    GET
+    GET,
+    RETIRE
 };
 
 };
