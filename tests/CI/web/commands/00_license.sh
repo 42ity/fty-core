@@ -20,8 +20,8 @@
 
 #!
 # \file 00_license.sh
-# \author Michal Hrusecky
-# \author Jim Klimov
+# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 sut_run "rm -f /var/lib/bios/license $CHECKOUTDIR/var/bios/license" || true

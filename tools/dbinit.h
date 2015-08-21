@@ -20,8 +20,8 @@
 
 /*!
  * \file dbinit.h
- * \author Alena Chernikava
- * \author Karol Hrdina
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef DBINIT_H_
