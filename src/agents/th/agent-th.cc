@@ -22,7 +22,7 @@
  * \file agent-th.cc
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \author Tomas Halman <TomasHalman@Eaton.com>
- * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include "sample_agent.h"

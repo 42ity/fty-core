@@ -22,7 +22,7 @@
 
 #!
 # \file dshell.sh
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \author Karol Hrdina <KarolHrdina@Eaton.com>
 # \author Michal Vyskocil <MichalVyskocil@Eaton.com>
 # \brief Not yet documented file

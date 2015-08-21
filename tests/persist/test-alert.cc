@@ -21,7 +21,7 @@
 /*!
  * \file test-alert.cc
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
- * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file

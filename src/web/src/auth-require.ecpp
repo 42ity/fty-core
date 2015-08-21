@@ -20,7 +20,7 @@
 
 <#\n/*!
  * \file auth-require.ecpp
- * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */\n#>
 <%pre>

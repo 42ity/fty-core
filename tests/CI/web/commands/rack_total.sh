@@ -20,7 +20,7 @@
 
 #!
 # \file rack_total.sh
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \author Tomas Halman <TomasHalman@Eaton.com>
 # \brief Not yet documented file
 

@@ -21,7 +21,7 @@
 /*!
  * \file agent-cm.cc
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
- * \author Jim Klimov <JimKlimov@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include <cstdlib>

@@ -20,7 +20,7 @@
 
 #!
 # \file time.sh
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 # \brief Not yet documented file
 
