@@ -20,8 +20,8 @@
 
 #!
 # \file time.sh
-# \author Jim Klimov
-# \author Michal Hrusecky
+# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 # \brief Not yet documented file
 
 [ -z "${JSONSH-}" ] && \
