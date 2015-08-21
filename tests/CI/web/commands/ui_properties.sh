@@ -21,7 +21,7 @@
 #!
 # \file ui_properties.sh
 # \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
 # \brief Not yet documented file
 

@@ -21,7 +21,7 @@
 #!
 # \file metric_computed_average__expected_failures.sh
 # \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 curlfail_push_expect_400

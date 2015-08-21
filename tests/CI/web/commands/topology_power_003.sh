@@ -21,7 +21,7 @@
 #!
 # \file topology_power_003.sh
 # \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 test_it
