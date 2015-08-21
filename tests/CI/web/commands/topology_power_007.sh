@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file topology_power_007.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file   topology_power_007.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /topology/power?from=5040 >&5

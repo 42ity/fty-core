@@ -18,10 +18,9 @@
 #
 
 
-#!
-# \file systemctl.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \brief Not yet documented file
+#! \file systemctl.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \brief Not yet documented file
 
 read -r -d '' SERVICE_OUT <<'EOF-TMPL'
 {"##SERVICE_NAME##":{"ActiveState":"##ACTIVE_STATE##","SubState":"##SUB_STATE##","LoadState":"##LOAD_STATE##","UnitFileState":"##UNIT_FILE_STATE##"}}
