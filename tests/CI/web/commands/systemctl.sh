@@ -20,11 +20,21 @@
 
 #! \file systemctl.sh
 #  \author Karol Hrdina <KarolHrdina@Eaton.com>
-#  \brief Not yet documented file
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Runs a number of scenarios for systemctl valid and invalid calls
 
-read -r -d '' SERVICE_OUT <<'EOF-TMPL'
-{"##SERVICE_NAME##":{"ActiveState":"##ACTIVE_STATE##","SubState":"##SUB_STATE##","LoadState":"##LOAD_STATE##","UnitFileState":"##UNIT_FILE_STATE##"}}
-EOF-TMPL
+[ -n "$CMPJSON_SH" ] && [ -x "$CMPJSON_SH" ] || \
+    logmsg_error "CMPJSON_SH not defined properly!"
+
+expected() {
+    # print 'systemctl show' in format of REST API call to help comparing
+    # $1 = systemd service name
+    echo "{\"$1\": {"
+    sudo systemctl show "$1" \
+        -p ActiveState -p SubState -p LoadState -p UnitFileState \
+    | awk -F= 'NR>1 {print ", "}{print "\""$1"\" : \""$2"\""}'
+    echo "} }"
+}
 
 # Not used right now
 read -r -d '' LIST_OUT <<'EOF-TMPL'
@@ -34,28 +44,6 @@ read -r -d '' LIST_OUT <<'EOF-TMPL'
     ]
 }
 EOF-TMPL
-
-expected () {
-    local expected=
-    # $1 valid service name
-    expected="$SERVICE_OUT"
-    expected=${expected/\#\#SERVICE_NAME\#\#/${1}}
-
-    tmp=`sudo systemctl show ${1} -p ActiveState | sed -re 's/\s*ActiveState\s*=//'`
-    expected=${expected/\#\#ACTIVE_STATE\#\#/$tmp}
-
-    tmp=`sudo systemctl show ${1} -p SubState | sed -re 's/\s*SubState\s*=//'`
-    expected=${expected/\#\#SUB_STATE\#\#/$tmp}
-
-    tmp=`sudo systemctl show ${1} -p LoadState | sed -re 's/\s*LoadState\s*=//'`
-    expected=${expected/\#\#LOAD_STATE\#\#/$tmp}
-    
-    tmp=`sudo systemctl show ${1} -p UnitFileState | sed -re 's/\s*UnitFileState\s*=//'`
-    expected=${expected/\#\#UNIT_FILE_STATE\#\#/$tmp}
-
-    echo "${expected}"
-    unset expected
-}
 
 received=
 HTTP_CODE=
@@ -92,7 +80,7 @@ api_auth_post /license
 test_it "Authorized status"
 simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
 tmp="`expected mysql`"
-[ "$received" == "$tmp" ]
+"$CMPJSON_SH" -s "$received" "$tmp"
 print_result $?
 
 test_it "Stop mysql"
@@ -102,7 +90,7 @@ print_result $?
 test_it "Authorized status 2"
 simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
 tmp="`expected mysql`"
-[ "$received" == "$tmp" ]
+"$CMPJSON_SH" -s "$received" "$tmp"
 print_result $?
 
 test_it "Enable mysql"
@@ -112,7 +100,7 @@ print_result $?
 test_it "Authorized status 3"
 simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
 tmp="`expected mysql`"
-[ "$received" == "$tmp" ]
+"$CMPJSON_SH" -s "$received" "$tmp"
 print_result $?
 
 test_it "Disable mysql"
@@ -122,7 +110,7 @@ print_result $?
 test_it "Authorized status 4"
 simple_auth_get_code "/admin/systemctl/status/mysql" received HTTP_CODE
 tmp="`expected mysql`"
-[ "$received" == "$tmp" ]
+"$CMPJSON_SH" -s "$received" "$tmp"
 print_result $?
 
 test_it "Start mysql"
@@ -132,7 +120,7 @@ print_result $?
 test_it "Authorized status 5"
 simple_auth_get_code '/admin/systemctl/status/mysql' received HTTP_CODE
 tmp="`expected mysql`"
-[ "$received" == "$tmp" ]
+"$CMPJSON_SH" -s "$received" "$tmp"
 print_result $?
 
 # Now that /status/<service_name> is properly tested, we'll use it for further testing
@@ -149,7 +137,7 @@ print_result $?
 #print_result $?
 #
 #test_it "Systemctl post 1 - string compare"
-#[ "$received" == "$tmp" ]
+#"$CMPJSON_SH" -s "$received" "$tmp"
 #print_result $?
 
 
