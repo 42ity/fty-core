@@ -1,5 +1,4 @@
 #!/bin/sh
-#!/bin/sh
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,16 +19,11 @@
 #
 
 
-#!
-# \file dshell.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Michal Vyskocil <MichalVyskocil@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/sh
-
-# dshell binary wrapper 
+#! \file   dshell.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+#  \brief  dshell binary wrapper 
 
 # TODO
 # - usage

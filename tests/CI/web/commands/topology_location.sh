@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file topology_location.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \brief Not yet documented file
+#! \file topology_location.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \brief Not yet documented file
 
 curlfail_push_expect_400
 

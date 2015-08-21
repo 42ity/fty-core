@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,12 +19,9 @@
 #
 
 
-#!
-# \file check_setup.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/bash
+#! \file   check_setup.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \brief  Not yet documented file
 
 echo "Check requirements of environment for BIOS when cloning & building:"
 
