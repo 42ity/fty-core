@@ -20,7 +20,7 @@
 
 #!
 # \file sysinfo-loginTypes.sh
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 ###############################################################
