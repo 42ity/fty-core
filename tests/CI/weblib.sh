@@ -415,8 +415,8 @@ simple_get_json_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N`"
 
     local __resultcode=$3
     local __resultout=$2
@@ -447,8 +447,8 @@ simple_get_json_code_sed() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|' )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'`"
     local __resultcode=$3
     local __resultout=$2
     eval $__resultcode="'$__code'"
@@ -472,8 +472,8 @@ simple_post_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N`"
 
     local __resultcode=$4
     local __resultout=$3
@@ -580,8 +580,8 @@ simple_auth_post_code () {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N`"
 
     local __resultcode=$4
     local __resultout=$3
@@ -673,8 +673,8 @@ simple_auth_put () {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N`"
 
     local __resultcode=$4
     local __resultout=$3
@@ -697,8 +697,8 @@ simple_auth_get_code() {
     if [ $? -ne 0 ]; then
         return 1
     fi
-    local __code=$( echo "$__out" | grep -E '<\s+HTTP' | sed -r -e "s/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/" )
-    __out=$( echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N )
+    local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{\s\[[0-9]+).*' | $JSONSH -N`"
 
     local __resultcode=$3
     local __resultout=$2
