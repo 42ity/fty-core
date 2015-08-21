@@ -418,11 +418,14 @@ simple_get_json_code() {
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
     __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
     __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -450,10 +453,14 @@ simple_get_json_code_sed() {
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
     __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | tr \\n \  | sed -e 's|[[:blank:]]\+||g' -e 's|$|\n|'`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -474,12 +481,16 @@ simple_post_code() {
         return 1
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | $JSONSH -N`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -582,14 +593,17 @@ simple_auth_post_code () {
         return 1
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | $JSONSH -N`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
-
 }
 
 # POST the file to the server with Content-Type multipart/form-data according
@@ -675,12 +689,16 @@ simple_auth_put () {
         return 1
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | $JSONSH -N`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
 
     local __resultcode=$4
     local __resultout=$3
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
@@ -699,12 +717,13 @@ simple_auth_get_code() {
         return 1
     fi
     local __code="`echo "$__out" | grep -E '<\s+HTTP' | sed -r -e 's/<\s+HTTP\/[1-9]+[.][0-9]+\s+([1-9]{1}[0-9]{2}).*/\1/'`"
-    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*' | $JSONSH -N`"
+    __out="`echo "$__out" | grep -vE '^([<>*]|\{ *\[data not shown\]|\{\s\[[0-9]+).*'`"
+    __out="`echo "$__out" | $JSONSH -N`"
 
     local __resultcode=$3
     local __resultout=$2
-    eval $__resultcode="'$__code'"
-    eval $__resultout="'$__out'"
+    eval $__resultcode='"$__code"'
+    eval $__resultout='"$__out"'
     return 0
 }
 
