@@ -26,12 +26,16 @@
 
 DIR=$(dirname $0)
 DIR=$(realpath $DIR)
-INCLUDE=$DIR/../include/bios_agent.h
-TEMPLATE=$DIR/bios_agent++.h.in
-OUTPUT=$DIR/../include/bios_agent++.h
+[ -z "${abs_top_srcdir-}" ] && abs_top_srcdir="$DIR/.."
+[ -z "${abs_top_builddir-}" ] && abs_top_builddir="$abs_top_srcdir"
+
+INCLUDE="$abs_top_srcdir/include/bios_agent.h"
+TEMPLATE="$abs_top_srcdir/tools/bios_agent++.h.in"
+OUTPUT="$abs_top_builddir/include/bios_agent++.h"
+mkdir -p "`dirname "$OUTPUT"`" || exit $?
 
 extract_bios_h(){
-awk '
+nawk '
 BEGIN{
     FS="[ \t,()]+";
     IGNORE["bios_agent_new"] = 1;
@@ -46,8 +50,8 @@ BEGIN{
     gsub(/^[[:space:]]+/,"",type);
     gsub(/[[:space:]]+$/,"",type);
 }
-/^[[:space:]]+bios_agent_.+) *;/{
-    /* printf("%s %s\n", type, $0 ); */
+/^[\t\ ]+bios_agent_.+\) *;/{
+    # printf("%s %s\n", type, $0 );
     funcName=$2;
     if( funcName in IGNORE ) next;
     funcNameObj=substr($2,12)
