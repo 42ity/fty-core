@@ -1,9 +1,29 @@
 #!/bin/sh
 
-# Copyright (C) 2015 by Eaton, GPLv2+; based on Debian 8 scripts
-# Author(s): Jim Klimov <EvgenyKlimov@eaton.com>
 #
-# /etc/ifplugd/action.d/ifupdown-force "$IFACE" "$NEWSTATE"
+# Copyright (C) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
+#! \file   element_to_topic.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Based on Debian 8 packaged init-scripts
+#  \brief  Stronger replacement for system ifupdown script
+#  \detailed /etc/ifplugd/action.d/ifupdown-force "$IFACE" "$NEWSTATE"
 # Enhanced for more reliable "down" actions compared to Debian8 default
 # /etc/ifplugd/action.d/ifupdown and does not conflict on success nor fail
 

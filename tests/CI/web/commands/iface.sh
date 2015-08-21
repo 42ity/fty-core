@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file iface.sh
-# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \brief Not yet documented file
+#! \file iface.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \brief Not yet documented file
 
 do_test_match "ifaces_get" api_get_json '/admin/ifaces' '.*ifaces.*lo.*'
 print_result $?
