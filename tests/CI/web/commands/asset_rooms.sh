@@ -21,7 +21,7 @@
 #!
 # \file asset_rooms.sh
 # \author Alena Chernikava <AlenaChernikava@Eaton.com>
-# \author Jim Klimov <JimKlimov@Eaton.com>
+# \author Jim Klimov <EvgenyKlimov@Eaton.com>
 # \brief Not yet documented file
 
 test_it
