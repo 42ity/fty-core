@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file asset_one_room3.sh
-# \author Alena Chernikava <AlenaChernikava@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file asset_one_room3.sh
+#  \author Alena Chernikava <AlenaChernikava@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /asset/room/13 >&5

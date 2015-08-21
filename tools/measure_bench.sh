@@ -1,5 +1,4 @@
 #!/bin/sh
-#!/bin/sh
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,12 +19,9 @@
 #
 
 
-#!
-# \file measure_bench.sh
-# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/sh
+#! \file measure_bench.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \brief Not yet documented file
 
 HOST="bios-rc-seed6"
 MYSQL="mysql -h $HOST -P 3306 -u root"
