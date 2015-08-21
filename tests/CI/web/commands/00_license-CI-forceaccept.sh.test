@@ -1,5 +1,29 @@
-# Some REST API scripts just need to get THEIR job done, so here is
-# a way to force-accept the license and toggle a password change
+#
+# Copyright (C) 2015 Eaton
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+
+
+#! \file 00_license.sh
+#  \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief  Enforce acceptance of license (if needed) and change of password
+#          in REST API, and try an authenticated sysinfo request
+#  \detailed Some REST API scripts just need to get THEIR job done, so here
+#            is a way to force-accept the license and toggle a password change
 
 ### Command-line usage example for a VTE/RC3 remote host:
 ###   ${CHECKOUTDIR}/tests/CI/test_web.sh -q --host bios-rc-seedX --port 80 00_license-CI-forceaccept.sh.test

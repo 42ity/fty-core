@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file datacenter_indicators.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Tomas Halman <TomasHalman@Eaton.com>
-# \brief Not yet documented file
+#! \file datacenter_indicators.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Tomas Halman <TomasHalman@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 RES=0

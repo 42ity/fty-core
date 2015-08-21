@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 #
 # Copyright (C) 2015 Eaton
@@ -20,15 +19,10 @@
 #
 
 
-#!
-# \file element_to_topic.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \brief Not yet documented file
-
-#!/bin/bash
-
-# TODO: Eaton header
+#! \file   element_to_topic.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \brief  Not yet documented file
 
 usage() {
         echo "Usage:

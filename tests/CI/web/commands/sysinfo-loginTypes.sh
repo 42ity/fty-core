@@ -18,10 +18,9 @@
 #
 
 
-#!
-# \file sysinfo-loginTypes.sh
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file sysinfo-loginTypes.sh
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 ###############################################################
 [ -z "${JSONSH-}" ] && \

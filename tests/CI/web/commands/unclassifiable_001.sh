@@ -18,11 +18,10 @@
 #
 
 
-#!
-# \file unclassifiable_001.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file   unclassifiable_001.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /topology/location?from=21 >&5
