@@ -70,7 +70,6 @@ struct db_web_element_t{
     std::map <std::string, std::pair<std::string, bool> > ext;
 };
 
-typedef std::function<void(const tntdb::Row&)> row_cb_f ;
 
 namespace persist{
 

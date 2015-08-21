@@ -19,21 +19,41 @@
  */
 
 /*!
- * \file location_helpers.h
- * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \file augtool.cc
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
-#ifndef SRC_WEB_INCLUDE_LOCATION_HELPERS
-#define SRC_WEB_INCLUDE_LOCATION_HELPERS
-
+#include <vector>
 #include <string>
-#include <czmq.h>
-#include "asset_msg.h"
+#include <cxxtools/split.h>
 
-int element_id (const std::string& from, int& element_id);
-int asset (const std::string& from);
-int asset_location_r(asset_msg_t** asset_msg, std::string& json);
-
-#endif // SRC_WEB_INCLUDE_LOCATION_HELPERS
+// Helper function to parse output of augtool
+std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "") {
+    std::vector<std::string> spl;
+    bool not_first = false;
+    std::string out;
+    cxxtools::split("\n", in, std::back_inserter(spl));
+    if(spl.size() >= 3) {
+        spl.erase(spl.begin());
+        spl.pop_back();
+    } else {
+        return out;
+    }
+    for(auto i : spl) {
+        auto pos = i.find_first_of("=");
+        if(pos == std::string::npos) {
+            if(key_value)
+                continue;
+            if(not_first)
+                out += sep;
+            out += i;
+        } else {
+            if(not_first)
+                out += sep;
+            out += i.substr(pos+2);
+        }
+        not_first = true;
+    }
+    return out;
+}
 

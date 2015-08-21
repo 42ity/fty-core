@@ -17,8 +17,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include "db/assets.h"
-#include "log.h"
+
 #include <tntdb/transaction.h>
+
+#include "log.h"
+#include "measurements.h"
 
 namespace persist {
 
@@ -412,10 +415,62 @@ db_reply_t
         log_info ("end: error occured during removing from groups");
         return reply_delete2;
     }
-    
+
+
+    { // need to delete all measurements
+        
+        // select all topic_id for the element
+        std::set <a_elmnt_id_t> out{};
+        row_cb_f foo = \
+                       [&out](const tntdb::Row& r)
+                       {
+                           a_elmnt_id_t id = 0;
+                           r["id"].get(id);
+                           out.insert(id);
+                       };
+
+
+        int rv = select_for_element_topics_all(
+                conn, element_id, foo);
+        if ( rv != 0 )
+        {
+            db_reply_t ret = db_reply_new();
+            ret.status = 0;
+            ret.errtype = rv;
+            ret.errsubtype = rv;
+            log_error ("some error during topics selecting");
+            return ret;
+        }
+        // delete all measurements for topic and topic itself
+        m_msrmnt_id_t affected_rows = 0;
+        m_msrmnt_tp_id_t affected_rows1 = 0;
+        for ( auto topic_id : out )
+        {
+            log_debug ("  topic_id = %" PRIu32 , topic_id);
+            rv = delete_measurements(conn, topic_id, affected_rows);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("some error during measurements deleting");
+                return ret;
+            }
+            rv = delete_measurement_topic(conn, topic_id, affected_rows1);
+            if ( rv != 0 )
+            {
+                db_reply_t ret = db_reply_new();
+                ret.status = 0;
+                ret.errtype = rv;
+                ret.errsubtype = rv;
+                log_error ("some error during topic deleting");
+                return ret;
+            }
+        }
+    }
+    // delete alerts
     // delete discovered device
-    // delete topics
-    // delete measurements
 
     auto reply_delete3 = delete_monitor_asset_relation_by_a
                                                 (conn, element_id);

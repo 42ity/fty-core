@@ -118,10 +118,7 @@ class SubProcess {
         int getStderr() const { return _errpair[0]; }
 
         //! \brief returns last checked status of the process 
-        //
-        //  Checks the status field only, so wait/poll function calls are necessary
-        //  in order to see the real state of a process
-        bool isRunning() const { return _state == SubProcessState::RUNNING; }
+        bool isRunning() { poll(); return _state == SubProcessState::RUNNING; }
 
         //! \brief get the return code, \see wait for meaning
         int getReturnCode() const { return _return_code; }

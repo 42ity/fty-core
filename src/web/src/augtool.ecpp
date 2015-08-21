@@ -1,0 +1,72 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #>
+
+<#\n/*!
+ * \file augtool.ecpp
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \brief Not yet documented file
+ */\n#>
+<%pre>
+#include <cxxtools/split.h>
+#include <cxxtools/jsondeserializer.h>
+#include <cxxtools/regex.h>
+#include <vector>
+#include <string>
+#include <string.h>
+
+#include "subprocess.h"
+#include "cidr.h"
+
+using namespace shared;
+
+</%pre>
+<%thread scope="global">
+// TODO: Figure out how to make it work without -e
+Argv exe = { "sudo", "augtool", "-e" };
+SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
+</%thread>
+<%cpp>
+std::string command;
+std::string nil;
+
+// Initialization of augtool subprocess if needed
+if(!augtool.isRunning()) {
+    augtool.run();
+    command = "help\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    nil = wait_read_all(augtool.getStdout());
+    if(!augtool.isRunning() || nil.find("match") == nil.npos) {
+</%cpp>
+{ "error": "Can't start augtool" }
+<%cpp>
+        return HTTP_INTERNAL_SERVER_ERROR;
+    }
+}
+
+// Make sure we have clear state and fresh data
+command = "\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = wait_read_all(augtool.getStdout());
+command = "load\n";
+write(augtool.getStdin(), command.c_str(), command.length());
+nil = wait_read_all(augtool.getStdout());
+
+return DECLINED;
+</%cpp>

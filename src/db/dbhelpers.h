@@ -23,7 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #ifndef SRC_PERSIST_DBHELPERS_H_
 #define SRC_PERSIST_DBHELPERS_H_
-
+#include <functional>
+#include <tntdb/row.h>
 #include <czmq.h>
 #include <vector>
 #include <tuple>
@@ -47,6 +48,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #define MAX_FULLHOSTNAME_LENGTH 45
 
 #define MAX_DESCRIPTION_LENGTH  255
+
+typedef std::function<void(const tntdb::Row&)> row_cb_f ;
 
 template <typename T>
 struct db_reply{

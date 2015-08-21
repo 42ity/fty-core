@@ -19,26 +19,12 @@
  */
 
 /*!
- * \file web-linking-test.cc
+ * \file augtool.h
  * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
- * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
-#include <tnt/tntnet.h>
+#include <string>
 
-//int main(int argc, char* argv[])
-int main()
-{
-  try
-  {
-    tnt::Tntnet app;
-    app.listen(8000);
-    app.mapUrl("^/", "bios_web");
-    app.run();
-  }
-  catch (const std::exception& e)
-  {
-    std::cerr << e.what() << std::endl;
-  }
-  exit(0);
-}
+// Helper function to parse output of augtool
+std::string augtool_out(const std::string in, bool key_value = true, std::string sep = "");
+

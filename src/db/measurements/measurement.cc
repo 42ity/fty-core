@@ -1,3 +1,31 @@
+/*
+ *
+ * Copyright (C) 2015 Eaton
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
+/*!
+ * \file measurement.cc
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \brief Not yet documented file
+ */
 #include <tntdb.h>
 
 #include "log.h"
@@ -121,8 +149,6 @@ select_measurements_averages (
     assert (source);
     assert (type);
     assert (step);
-    assert (is_average_step_supported (step));
-    assert (is_average_type_supported (type));
 
     reply_t ret;
     std::string topic;    
@@ -541,6 +567,45 @@ db_reply_t
     }
     LOG_END;
     return ret;
+}
+
+
+int
+    select_for_element_topics_all(
+            tntdb::Connection& conn,
+            a_elmnt_id_t element_id,
+            std::function<void(
+                const tntdb::Row&
+                )>& cb)
+{
+    LOG_START;
+
+    try{
+        tntdb::Statement st = conn.prepareCached(
+            " SELECT"
+            "   v.id"
+            " FROM "
+            "   t_bios_measurement_topic t "
+            " JOIN "
+            "   t_bios_monitor_asset_relation t1 "
+            " ON "
+            "   ( t.device_id = t1.id_discovered_device ) AND "
+            "     t1.id_asset_element = :idelement "
+        );
+
+        tntdb::Result res = st.set("idelement", element_id).
+                               select();
+
+        for (const auto& r: res) {
+            cb(r);
+        }
+        LOG_END;
+        return 0;
+    }
+    catch (const std::exception &e) {
+        LOG_END_ABNORMAL(e);
+        return -1;
+    }
 }
 
 

@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*! \file   utils_app.h
-    \brief  TODO
+    \brief  Not yet documented file
     \author Tomas Halman <TomasHalman@Eaton.com>
 */
 

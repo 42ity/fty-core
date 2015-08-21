@@ -1,3 +1,31 @@
+/*
+ *
+ * Copyright (C) 2015 Eaton
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ */
+
+/*!
+ * \file test-alert.cc
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \brief Not yet documented file
+ */
 #include <catch.hpp>
 
 #include "dbpath.h"
@@ -330,7 +358,9 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #4","[db][CRUD][insert][delete][ale
     //delete ma
     delete_monitor_asset_relation (conn, rowid_ma);
     //delete device
-    delete_disc_device (url.c_str(), rowid_device);
+    m_dvc_id_t affected_rows = 0;
+    delete_disc_device (conn, rowid_device, affected_rows);
+    REQUIRE (affected_rows == 1 );
     //delete element
     delete_asset_element (conn, rowid_element);
 
@@ -437,8 +467,11 @@ TEST_CASE("t_bios_alert_device INSERT/DELETE #5","[db][CRUD][insert][alert][dele
     delete_monitor_asset_relation (conn, rowid_ma1);
     delete_monitor_asset_relation (conn, rowid_ma2);
     //delete device
-    delete_disc_device (url.c_str(), rowid_device1);
-    delete_disc_device (url.c_str(), rowid_device2);
+    m_dvc_id_t affected_rows = 0;
+    delete_disc_device (conn, rowid_device1, affected_rows);
+    REQUIRE ( affected_rows == 1 );
+    delete_disc_device (conn, rowid_device2, affected_rows);
+    REQUIRE ( affected_rows == 1 );
     //delete element
     delete_asset_element (conn, rowid_element1);
     delete_asset_element (conn, rowid_element2);

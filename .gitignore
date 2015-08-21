@@ -75,6 +75,8 @@ docs/doxygen/*.tmp
 docs/examples/sudoers.d/bios_00_base
 !docs/examples/sudoers.d/bios_00_base.in
 
+docker/resources/license
+
 .test.log
 .test.trs
 test-log.*
@@ -190,6 +192,7 @@ tools/bios-ssh-last-resort.service
 
 src/web/src/auth-verify.cpp
 src/web/src/auth-require.cpp
+src/web/src/augtool.cpp
 src/web/src/auth.cpp
 src/web/src/asset_import.cpp
 src/web/src/agent.cpp

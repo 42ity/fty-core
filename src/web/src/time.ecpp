@@ -1,10 +1,48 @@
+<#
+ #
+ # Copyright (C) 2015 Eaton
+ #
+ # This program is free software; you can redistribute it and/or modify
+ # it under the terms of the GNU General Public License as published by
+ # the Free Software Foundation; either version 2 of the License, or
+ # (at your option) any later version.
+ #
+ # This program is distributed in the hope that it will be useful,
+ # but WITHOUT ANY WARRANTY; without even the implied warranty of
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ # GNU General Public License for more details.
+ #
+ # You should have received a copy of the GNU General Public License along
+ # with this program; if not, write to the Free Software Foundation, Inc.,
+ # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ #
+ #>
+
+<#\n/*!
+ * \file time.ecpp
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \brief Not yet documented file
+ */\n#>
 <%pre>
 #include <iostream>
 #include <sstream>
 #include <cxxtools/regex.h>
 #include <cxxtools/jsondeserializer.h>
+
+#include "subprocess.h"
+#include "augtool.h"
+
+using namespace shared;
 </%pre>
+<%thread scope="global">
+// TODO: Figure out how to make it work without -e
+Argv exe = { "sudo", "augtool", "-e" };
+SubProcess augtool(exe, SubProcess::STDOUT_PIPE | SubProcess::STDIN_PIPE);
+</%thread>
 <%cpp>
+    std::string command;
+    std::string nil;
+
     if(!request.isMethodGET()) {
 </%cpp>
 <%cpp>
@@ -12,23 +50,52 @@
 		cxxtools::SerializationInfo si;
 		cxxtools::JsonDeserializer deserializer(input);
 		std::string time;
+		std::string ntp;
 		try {
 			deserializer.deserialize(si);
 			si.getMember("time") >>= time;
 		} catch (const std::exception& e) {
 			time = "";
 		}
+		try {
+			deserializer.deserialize(si);
+			si.getMember("ntp") >>= ntp;
+		} catch (const std::exception& e) {
+			ntp = "";
+		}
 
-	    static cxxtools::Regex regex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+	    static cxxtools::Regex t_rex("^[1-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]:[0-6][0-9]:[0-6][0-9]Z$");
+	    static cxxtools::Regex n_rex("^[0-9a-z_.-]*$");
 
-		printf("\n%s\n", time.c_str());
-
-	    if(!regex.match(time) ||
-	        system((std::string("sudo date -s ") + time).c_str()) != 0) {
+	    if(time.empty() && ntp.empty()) {
+</%cpp>
+{ "error":"You need to specify either time or ntp" }
+<%cpp>
+	        return HTTP_BAD_REQUEST;
+		}
+	    if(!time.empty()) {
+		    if((!t_rex.match(time) ||
+	            system((std::string("sudo date -s ") + time).c_str()) != 0)) {
 </%cpp>
 { "error":"invalid_format" }
 <%cpp>
-		    return HTTP_BAD_REQUEST;
+		        return HTTP_BAD_REQUEST;
+			}
+	    }
+	    if(!ntp.empty()) {
+		    if(!n_rex.match(ntp)) {
+</%cpp>
+{ "error":"invalid_format" }
+<%cpp>
+		    	return HTTP_BAD_REQUEST;
+			} else {
+				command = "set /files/etc/ntp.conf/server[1] " + ntp + "\n";
+    			write(augtool.getStdin(), command.c_str(), command.length());
+    			nil = wait_read_all(augtool.getStdout());
+				command = "save\n";
+    			write(augtool.getStdin(), command.c_str(), command.length());
+    			nil = wait_read_all(augtool.getStdout());
+			}
 	    }
     }
 
@@ -37,5 +104,9 @@
     gmtime_r(&tme, &tm_s);
     char buff[32];
     strftime(buff, 32, "%FT%TZ", &tm_s);
+	command = "get /files/etc/ntp.conf/server[1]\n";
+    write(augtool.getStdin(), command.c_str(), command.length());
+    std::string ntp = augtool_out(wait_read_all(augtool.getStdout()));
 </%cpp>
-{ "time" : "<$ buff $>" }
+{ "time" : "<$ buff $>",
+  "ntp"  : "<$ ntp $>" }

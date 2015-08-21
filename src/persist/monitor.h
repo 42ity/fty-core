@@ -250,20 +250,6 @@ common_msg_t* insert_disc_device(const char* url, m_dvc_tp_id_t device_type_id,
 
 
 /**
- * \brief Deletes from the table t_bios_discovered_device a row by id.
- *
- * In case of success it generates COMMON_MSG_OK message. 
- * In case of failure returns COMMON_MSG_FAIL message.
- *
- * \param url       - connection url to database.
- * \param device_id - id of the row to be deleted.
- *
- * \return - a COMMON_MSG_FAIL or COMMON_MSG_OK message.
- */
-common_msg_t* delete_disc_device (const char* url, m_dvc_id_t device_id);
-
-
-/**
  * \brief Updates in the table t_bios_discovered_device a row by id.
  *
  * \param newdevice - message with new information.
