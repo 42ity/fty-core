@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*! \file   test-agents.cc
-    \brief  TODO
+    \brief  Not yet documented file
     \author Michal Vyskocil <MichalVyskocil@Eaton.com>
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
     \author Michal Hrusecky <MichalHrusecky@Eaton.com>

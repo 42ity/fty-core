@@ -17,7 +17,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 /*! \file   agents.h
-    \brief  TODO
+    \brief  Not yet documented file
     \author Karol Hrdina <KarolHrdina@Eaton.com>
 */
 
