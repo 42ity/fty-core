@@ -22,7 +22,7 @@
 
 #!
 # \file measure_bench.sh
-# \author Michal Hrusecky
+# \author Michal Hrusecky <MichalHrusecky@Eaton.com>
 # \brief Not yet documented file
 
 #!/bin/sh

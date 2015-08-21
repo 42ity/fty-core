@@ -20,9 +20,9 @@
 
 /*!
  * \file test-log.cc
- * \author Michal Vyskocil
- * \author Arnaud Quette
- * \author Karol Hrdina
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Arnaud Quette <ArnaudQuette@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

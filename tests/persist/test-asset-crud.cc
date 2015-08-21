@@ -20,10 +20,10 @@
 
 /*!
  * \file test-asset-crud.cc
- * \author Alena Chernikava
- * \author Michal Vyskocil
- * \author Karol Hrdina
- * \author Gerald Guillaume
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Gerald Guillaume <GeraldGuillaume@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

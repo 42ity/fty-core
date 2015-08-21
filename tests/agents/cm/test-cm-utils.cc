@@ -20,8 +20,8 @@
 
 /*!
  * \file test-cm-utils.cc
- * \author Karol Hrdina
- * \author Tomas Halman
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

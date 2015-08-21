@@ -20,7 +20,7 @@
 
 /*!
  * \file test-examples.cc
- * \author Alena Chernikava
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include "catch.hpp"    //include catch as a first line

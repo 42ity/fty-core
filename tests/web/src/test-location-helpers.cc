@@ -20,7 +20,7 @@
 
 /*!
  * \file test-location-helpers.cc
- * \author Karol Hrdina
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

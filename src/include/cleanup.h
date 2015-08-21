@@ -20,7 +20,7 @@
 
 /*!
  * \file cleanup.h
- * \author Karol Hrdina
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_INCLUDE_CLEANUP_H__

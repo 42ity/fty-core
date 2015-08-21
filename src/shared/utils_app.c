@@ -20,9 +20,9 @@
 
 /*!
  * \file utils_app.c
- * \author Tomas Halman
- * \author Jim Klimov
- * \author Karol Hrdina
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include "utils_app.h"

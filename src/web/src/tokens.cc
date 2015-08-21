@@ -20,8 +20,8 @@
 
 /*!
  * \file tokens.cc
- * \author Michal Hrusecky
- * \author Jim Klimov
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
 #include <stdio.h>

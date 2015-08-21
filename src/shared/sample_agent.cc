@@ -20,7 +20,7 @@
 
 /*!
  * \file sample_agent.cc
- * \author Michal Hrusecky
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 #include "cleanup.h"

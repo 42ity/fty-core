@@ -20,9 +20,9 @@
 
 /*!
  * \file test-loadcsv.cc
- * \author Michal Vyskocil
- * \author Tomas Halman
- * \author Alena Chernikava
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Tomas Halman <TomasHalman@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

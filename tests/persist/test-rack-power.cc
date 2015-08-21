@@ -20,9 +20,9 @@
 
 /*!
  * \file test-rack-power.cc
- * \author Alena Chernikava
- * \author Michal Vyskocil
- * \author Karol Hrdina
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include <catch.hpp>

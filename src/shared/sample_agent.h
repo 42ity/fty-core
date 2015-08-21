@@ -20,8 +20,8 @@
 
 /*!
  * \file sample_agent.h
- * \author Michal Hrusecky
- * \author Alena Chernikava
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \brief Not yet documented file
  */
 #ifndef SRC_SHARED_SAMPLE_AGENT_H

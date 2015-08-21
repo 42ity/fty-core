@@ -20,8 +20,8 @@
 
 /*!
  * \file test-subprocess.cc
- * \author Michal Vyskocil
- * \author Karol Hrdina
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
  */
 #include "catch.hpp"    //include catch as a first line

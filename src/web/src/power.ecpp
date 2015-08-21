@@ -20,11 +20,11 @@
 
 <#\n/*!
  * \file power.ecpp
- * \author Karol Hrdina
- * \author Jim Klimov
- * \author Michal Hrusecky
- * \author Alena Chernikava
- * \author Michal Vyskocil
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Jim Klimov <EvgenyKlimov@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
+ * \author Alena Chernikava <AlenaChernikava@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
  */\n#>
 <%pre>
