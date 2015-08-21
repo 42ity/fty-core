@@ -16,17 +16,16 @@
  # with this program; if not, write to the Free Software Foundation, Inc.,
  # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  #
- #>
-
-<#\n/*!
+ #><#
+/*!
  * \file alerts.ecpp
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Tomas Halman <TomasHalman@Eaton.com>
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \brief Not yet documented file
- */\n#>
-<%pre>
+ */
+ #><%pre>
 #include <string>
 #include <vector>
 #include <tntdb/connection.h>

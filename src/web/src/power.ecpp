@@ -16,9 +16,8 @@
  # with this program; if not, write to the Free Software Foundation, Inc.,
  # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  #
- #>
-
-<#\n/*!
+ #><#
+/*!
  * \file power.ecpp
  * \author Karol Hrdina <KarolHrdina@Eaton.com>
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
@@ -26,8 +25,8 @@
  * \author Alena Chernikava <AlenaChernikava@Eaton.com>
  * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
  * \brief Not yet documented file
- */\n#>
-<%pre>
+ */
+ #><%pre>
 #include "cleanup.h"
 #include <cstdlib>
 #include <string>
