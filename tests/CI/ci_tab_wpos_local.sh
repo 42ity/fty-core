@@ -17,7 +17,7 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 #! \file   ci_tab_wpos_local.sh
-#  \brief  TODO
+#  \brief  Not yet documented file
 #  \author Radomir Vrajik <RadomirVrajik@Eaton.com>
 
 SUT_HOST="127.0.0.1"
