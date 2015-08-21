@@ -20,9 +20,9 @@
 
 /*!
  * \file dshell.cc
- * \author Karol Hrdina
- * \author Michal Vyskocil
- * \author Michal Hrusecky
+ * \author Karol Hrdina <KarolHrdina@Eaton.com>
+ * \author Michal Vyskocil <MichalVyskocil@Eaton.com>
+ * \author Michal Hrusecky <MichalHrusecky@Eaton.com>
  * \brief Not yet documented file
  */
 /*    
