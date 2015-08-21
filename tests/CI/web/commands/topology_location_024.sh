@@ -17,12 +17,10 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-
-#!
-# \file topology_location_024.sh
-# \author Karol Hrdina <KarolHrdina@Eaton.com>
-# \author Jim Klimov <EvgenyKlimov@Eaton.com>
-# \brief Not yet documented file
+#! \file   topology_location_024.sh
+#  \author Karol Hrdina <KarolHrdina@Eaton.com>
+#  \author Jim Klimov <EvgenyKlimov@Eaton.com>
+#  \brief Not yet documented file
 
 test_it
 api_get_json /topology/location?from=7000\&recursive=yes\&filter=groups >&5
