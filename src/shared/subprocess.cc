@@ -200,6 +200,21 @@ int SubProcess::wait(bool no_hangup)
     return _return_code;
 }
 
+int SubProcess::wait(unsigned int timeout)
+{
+    while( true ) {
+        wait( true );
+        if (_state != SubProcessState::RUNNING) {
+            return _return_code;
+        }
+        if( ! timeout ) {
+            return _return_code;
+        }
+        sleep(1);
+        --timeout;
+    }
+}
+
 int SubProcess::kill(int signal) {
     auto ret = ::kill(getPid(), signal);
     poll();
@@ -467,23 +482,37 @@ int call(const Argv& args) {
     return p.wait();
 }
 
-int output(const Argv& args, std::string& o, std::string& e) {
+int output(const Argv& args, std::string& o, std::string& e, unsigned int timeout) {
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE);
     p.run();
-    int ret = p.wait();
+
+    int ret;
+    if( timeout ) {
+        ret = p.wait(timeout);
+        if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
+    } else {
+        ret= p.wait();
+    }
 
     o.assign(read_all(p.getStdout()));
     e.assign(read_all(p.getStderr()));
     return ret;
 }
 
-int output(const Argv& args, std::string& o, std::string& e, const std::string& i) {
+int output(const Argv& args, std::string& o, std::string& e, const std::string& i, unsigned int timeout) {
     SubProcess p(args, SubProcess::STDOUT_PIPE | SubProcess::STDERR_PIPE| SubProcess::STDIN_PIPE);
     p.run();
     ::write(p.getStdin(), i.c_str(), i.size());
     ::fsync(p.getStdin());
     ::close(p.getStdin());
-    int ret = p.wait();
+
+    int ret;
+    if( timeout ) {
+        ret = p.wait(timeout);
+        if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
+    } else {
+        ret= p.wait();
+    }
 
     o.assign(read_all(p.getStdout()));
     e.assign(read_all(p.getStderr()));
