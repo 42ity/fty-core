@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014-2015 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -29,7 +29,7 @@ namespace persist {
 
 //=============================================================================
 db_reply_t
-    insert_into_alert 
+    insert_into_alert
         (tntdb::Connection  &conn,
          const char         *rule_name,
          a_elmnt_pr_t        priority,
@@ -50,14 +50,14 @@ db_reply_t
 
     db_reply_t ret = db_reply_new();
 
-    // input parameters control 
+    // input parameters control
     if ( !is_ok_rule_name (rule_name) )
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "rule name is invalid";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_priority (priority) )
@@ -66,7 +66,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unsupported value of priority";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_alert_state (alert_state) )
@@ -75,14 +75,14 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "alert state is invalid";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     // description can be even NULL
     // notification can be any number. It is treated as a bit-vector
     // ATTENTION: no control for time
     log_debug ("input parameters are correct");
-    
+
     try{
         tntdb::Statement st = conn.prepareCached(
             " INSERT INTO"
@@ -324,7 +324,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     if ( device_names.size() == 0 )
@@ -351,7 +351,7 @@ db_reply_t
             ret.errtype = reply_internal.errtype;
         if ( ret.errsubtype == 0 )
             ret.errsubtype = reply_internal.errsubtype;
-        if ( ret.msg == NULL )
+        if ( ret.msg.empty() )
             ret.msg = reply_internal.msg;
     }
     LOG_END;
@@ -378,7 +378,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of alert_id is not allowed";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_name(device_name) )
@@ -387,7 +387,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "value of device_name is invalid";
-        log_error ("end: ignore insert '%s'", ret.msg);
+        log_error ("end: ignore insert '%s'", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -584,7 +584,7 @@ db_reply_t
         reply_t r = select_dc_of_asset_element (conn, rep.item.id, dc_id);
         if ( r.rv != 0 )
         {
-            db_reply_t ret;
+            db_reply_t ret = db_reply_new();
             ret.status = 0;
             ret.errsubtype = r.rv;
             log_debug ("problems with selecting DC");
@@ -816,7 +816,7 @@ db_reply <db_alert_t>
         );
         tntdb::Row res = st.set("rule", rule_name).
                             selectRow();
-        
+
         log_debug ("[t_bios_alert]: was %u rows selected", 1);
         res[0].get(m.id);
         res[1].get(m.rule_name);
@@ -826,7 +826,7 @@ db_reply <db_alert_t>
         res[5].get(m.notification);
         res[6].get(m.date_from);
         res[7].get(m.date_till);
-            
+
         auto reply_internal = select_alert_devices (conn, m.id);
         if ( reply_internal.status == 0 )
         {
@@ -834,7 +834,7 @@ db_reply <db_alert_t>
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
             ret.msg        = "error in device selecting";
-            log_error ("end: %s, %s", "ignore select", ret.msg);
+            log_error ("end: %s, %s", "ignore select", ret.msg.c_str());
             return ret;
         }
         m.device_ids = reply_internal.item;
@@ -842,7 +842,7 @@ db_reply <db_alert_t>
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch(const tntdb::NotFound &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
@@ -867,9 +867,9 @@ db_reply <db_alert_t>
         (tntdb::Connection &conn,
          const char *rule_name,
          int64_t     date_from)
-{   
+{
     LOG_START;
-    std::vector<m_dvc_id_t> dvc_ids{}; 
+    std::vector<m_dvc_id_t> dvc_ids{};
     db_alert_t m = {0, "", 0, 0, "", 0 , 0, 0,"","", dvc_ids};
 
     db_reply<db_alert_t> ret = db_reply_new(m);
@@ -888,7 +888,7 @@ db_reply <db_alert_t>
         tntdb::Row res = st.set("rule", rule_name).
                             set("date", date_from).
                             selectRow();
-        
+
         log_debug ("[t_bios_alert]: was %u rows selected", 1);
 
         res[0].get(m.id);
@@ -899,7 +899,7 @@ db_reply <db_alert_t>
         res[5].get(m.notification);
         res[6].get(m.date_from);
         res[7].get(m.date_till);
-            
+
         auto reply_internal = select_alert_devices (conn, m.id);
         if ( reply_internal.status == 0 )
         {
@@ -907,7 +907,7 @@ db_reply <db_alert_t>
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT; // TODO ERROR
             ret.msg        = "error in device selecting";
-            log_error ("end: %s, %s", "ignore select", ret.msg);
+            log_error ("end: %s, %s", "ignore select", ret.msg.c_str());
             return ret;
         }
         m.device_ids = reply_internal.item;
@@ -915,7 +915,7 @@ db_reply <db_alert_t>
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch(const tntdb::NotFound &e) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;

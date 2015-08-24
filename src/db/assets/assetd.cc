@@ -37,14 +37,14 @@ db_reply_t
 
     db_reply_t ret = db_reply_new();
 
-    // input parameters control 
+    // input parameters control
     if ( asset_element_id_src == 0 )
     {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id_src is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     if ( asset_element_id_src == 0 )
@@ -53,7 +53,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id_src is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -105,7 +105,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -156,7 +156,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_device_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -205,7 +205,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_device_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -254,7 +254,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_group_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -305,7 +305,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "unexpected value of keytag";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     if ( asset_element_id == 0 )
@@ -314,7 +314,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -345,7 +345,7 @@ db_reply_t
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_DELETEFAIL;
             ret.msg        = "unexpected number of rows was deleted";
-            log_error ("end: %s", ret.msg);
+            log_error ("end: %s", ret.msg.c_str());
             return ret;
         }
     }
@@ -377,7 +377,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -426,7 +426,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -455,7 +455,7 @@ db_reply_t
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_DELETEFAIL;
             ret.msg        = "unexpected number of rows was deleted";
-            log_error ("end: %s", ret.msg);
+            log_error ("end: %s", ret.msg.c_str());
             return ret;
         }
     }
@@ -487,7 +487,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -538,7 +538,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     if ( asset_group_id == 0 )
@@ -547,7 +547,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_group_id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -578,7 +578,7 @@ db_reply_t
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_DELETEFAIL;
             ret.msg        = "unexpected number of rows was deleted";
-            log_error ("end: %s", ret.msg);
+            log_error ("end: %s", ret.msg.c_str());
             return ret;
         }
     } 
@@ -609,7 +609,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -657,7 +657,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of id is not allowed";
-        log_error ("end: %s, %s", "ignore delete", ret.msg);
+        log_error ("end: %s, %s", "ignore delete", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
