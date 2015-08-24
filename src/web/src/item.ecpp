@@ -30,6 +30,8 @@
 
 #include "log.h"
 #include "data.h"
+#include "configure_inform.h"
+#include "asset_types.h"
 
 </%pre>
 <%thread scope="global">
@@ -41,48 +43,99 @@ asset_manager asset_mgr;
     // Check URL validity
     std::string typeNameArg = request.getArg("type");
     std::string id = request.getArg("id");
+    std::string method = request.getMethod(); // for delete there is no isMethodDELETE
     if ( id.empty() ) {
 </%cpp>
         { "error":"invalid_url" }
 <%cpp>
         return HTTP_BAD_REQUEST;
     }
-    // Get data
-    auto tmp = asset_mgr.get_item1(id);
-    if ( tmp.status == 0 )
+
+    if ( method == "DELETE" )
     {
-        switch ( tmp.errsubtype )
+        db_a_elmnt_t row;
+        auto ret = asset_mgr.delete_item(id, row);
+        if ( ret.status == 0 )
         {
-            case DB_ERROR_NOTFOUND:
+            log_debug (" in msg: '%s'", ret.msg);
+</%cpp>
+{   "errors": [
+        {
+            "message" : "<$$ ret.msg$>",
+            "code" : 57
+        }
+    ]
+}
+<%cpp>
+            if ( ret.errsubtype == DB_ERROR_NOTFOUND )
+                return HTTP_NOT_FOUND;
+            else
+                return HTTP_INTERNAL_SERVER_ERROR;
+        }
+        // here we are -> delete was successful
+        // ATTENTION:  1. sending messages is "hidden functionality" from user
+        //             2. if any error would occur during the sending message,
+        //                user will never know what was actually imported or not
+        // TODO: add a randomization of the name
+        std::string agent_name("TEMP_CONFIGURE_INFORM_AGENT");
+        try{
+            send_configure (row, asset_type::asset_operation::DELETE, agent_name);
+</%cpp>
+        {}
+<%cpp>
+            return HTTP_OK;
+        }
+        catch (const std::runtime_error &e) {
+</%cpp>
+{   "errors": [
+        {
+            "message" : "<$$ e.what()$>",
+            "code" : 57
+        }
+    ]
+}
+<%cpp>
+            return HTTP_INTERNAL_SERVER_ERROR;
+        }
+    }
+
+    if ( request.isMethodGET() )
+    {
+        auto tmp = asset_mgr.get_item1(id);
+        if ( tmp.status == 0 )
+        {
+            switch ( tmp.errsubtype )
+            {
+                case DB_ERROR_NOTFOUND:
 </%cpp>
                 { "error":"item_not_found" }
 <%cpp>
-                return HTTP_NOT_FOUND;
-            case DB_ERROR_BADINPUT:
+                    return HTTP_NOT_FOUND;
+                case DB_ERROR_BADINPUT:
 </%cpp>
                 { "error":"bad_input" }
 <%cpp>
-                return HTTP_BAD_REQUEST;
-            case DB_ERROR_INTERNAL:
+                    return HTTP_BAD_REQUEST;
+                case DB_ERROR_INTERNAL:
 </%cpp>
                 { "error":"internal_error" }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;
-            default:
+                    return HTTP_INTERNAL_SERVER_ERROR;
+                default:
 </%cpp>
                 { "error":"unknown error" }
 <%cpp>
-                return HTTP_INTERNAL_SERVER_ERROR;
+                    return HTTP_INTERNAL_SERVER_ERROR;
+            }
         }
-    } 
-    if ( !typeNameArg.empty() && 
-         (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
-    {
+        if ( !typeNameArg.empty() &&
+            (tmp.item.basic.type_id != asset_mgr.type_to_byte(typeNameArg) ) )
+        {
 </%cpp>
                 { "error":"item_not_found" }
 <%cpp>
-        return HTTP_NOT_FOUND;
-    }
+            return HTTP_NOT_FOUND;
+        }
 
     // Prepare the reply
 </%cpp>
@@ -90,108 +143,35 @@ asset_manager asset_mgr;
       "id": "<$$ tmp.item.basic.id $>"
     , "name": "<$$ tmp.item.basic.name $>"
     , "status": "<$$ tmp.item.basic.status $>"
-%   if ( tmp.item.basic.bc == 0 )
-%   {
+%       if ( tmp.item.basic.bc == 0 )
+%       {
     , "business_critical": "no"
-%   }
-%   else
-%   {
+%       }
+%       else
+%       {
     , "business_critical": "yes"
-%   }
+%       }
     , "priority": "P<$$ tmp.item.basic.priority $>"
 <%cpp>
-    // if element is located, then show the location
-    if ( tmp.item.basic.parent_id != 0 )
-    {
+        // if element is located, then show the location
+        if ( tmp.item.basic.parent_id != 0 )
+        {
 </%cpp>
     , "location_uri":"<$$ "/api/v1/asset/" +
                    asset_mgr.byte_to_type(tmp.item.basic.parent_type_id) + "/" +
                    std::to_string (tmp.item.basic.parent_id) $>"
-%   }
+%       }
     , "groups": [
 <%cpp>
-    // every element (except groups) can be placed in some group
-    if ( !tmp.item.groups.empty() )
-    {
-        uint32_t group_count = tmp.item.groups.size();
-        uint32_t i = 1;
-        for ( auto &oneGroup : tmp.item.groups )
+        // every element (except groups) can be placed in some group
+        if ( !tmp.item.groups.empty() )
         {
-</%cpp>
-        "/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
-<%cpp>
-            i++;
-        }   
-    }
-</%cpp>
-    ]
-<%cpp>
-    // Device is special element with more attributes
-    if ( tmp.item.basic.type_id == asset_type::DEVICE )
-    {
-</%cpp>
-    , "type": "<$$ tmp.item.basic.subtype_name $>"
-<%cpp>
-        // from csv import ip.1, ip.2 ... can appear, but for now deal with one
-        auto it = tmp.item.ext.find("ip.1");
-        if ( it != tmp.item.ext.end() )
-        {
-</%cpp>
-    , "ip":"<$$ it->second.first $>"
-<%cpp>
-            tmp.item.ext.erase(it);
-        }
-        
-        it = tmp.item.ext.find("hostname.1");
-        if ( it != tmp.item.ext.end() )
-        {
-</%cpp>
-    , "hostname":"<$$ it->second.first $>"
-<%cpp>
-            tmp.item.ext.erase(it);
-        }
-        
-        it = tmp.item.ext.find("fdqn.1");
-        if ( it != tmp.item.ext.end() )
-        {
-</%cpp>
-    , "fdqn":"<$$ it->second.first $>"
-<%cpp>
-            tmp.item.ext.erase(it);
-        }
-
-        it = tmp.item.ext.find("mac.1");
-        if ( it != tmp.item.ext.end() )
-        {
-</%cpp>
-    , "mac":"<$$ it->second.first $>"
-<%cpp>
-            tmp.item.ext.erase(it);
-        }
-</%cpp>
-    , "powers": [
-<%cpp>
-        if ( !tmp.item.powers.empty() )
-        {
-            uint32_t power_count = tmp.item.powers.size();
+            uint32_t group_count = tmp.item.groups.size();
             uint32_t i = 1;
-            for ( auto &oneLink : tmp.item.powers )
+            for ( auto &oneGroup : tmp.item.groups )
             {
 </%cpp>
-        {"src_uri":"/api/v1/asset/device/<$$ oneLink.src_id $>"
-<%cpp>
-                if ( !oneLink.src_socket.empty() )
-                {
-</%cpp>
-        ,"src_socket":"<$$ oneLink.src_socket $>"
-<%cpp>
-                }
-                if ( !oneLink.dest_socket.empty() )
-                {
-</%cpp>
-        ,"dest_socket":"<$$ oneLink.dest_socket $>"
-%               }
-        }<? i != power_count ? "," ?>
+        "/api/v1/asset/group/<$$ oneGroup $>"<? i != group_count ? "," ?>
 <%cpp>
                 i++;
             }
@@ -199,41 +179,115 @@ asset_manager asset_mgr;
 </%cpp>
     ]
 <%cpp>
-    }
-
-    if ( tmp.item.basic.type_id == asset_type::GROUP )
-    {
-        auto it = tmp.item.ext.find("type");
-        if ( it != tmp.item.ext.end() )
+        // Device is special element with more attributes
+        if ( tmp.item.basic.type_id == asset_type::DEVICE )
         {
+</%cpp>
+    , "type": "<$$ tmp.item.basic.subtype_name $>"
+<%cpp>
+            // from csv import ip.1, ip.2 ... can appear, but for now deal with one
+            auto it = tmp.item.ext.find("ip.1");
+            if ( it != tmp.item.ext.end() )
+            {
+</%cpp>
+    , "ip":"<$$ it->second.first $>"
+<%cpp>
+                tmp.item.ext.erase(it);
+            }
+
+            it = tmp.item.ext.find("hostname.1");
+            if ( it != tmp.item.ext.end() )
+            {
+</%cpp>
+    , "hostname":"<$$ it->second.first $>"
+<%cpp>
+                tmp.item.ext.erase(it);
+            }
+
+            it = tmp.item.ext.find("fdqn.1");
+            if ( it != tmp.item.ext.end() )
+            {
+</%cpp>
+    , "fdqn":"<$$ it->second.first $>"
+<%cpp>
+                tmp.item.ext.erase(it);
+            }
+
+            it = tmp.item.ext.find("mac.1");
+            if ( it != tmp.item.ext.end() )
+            {
+</%cpp>
+    , "mac":"<$$ it->second.first $>"
+<%cpp>
+                tmp.item.ext.erase(it);
+            }
+</%cpp>
+    , "powers": [
+<%cpp>
+            if ( !tmp.item.powers.empty() )
+            {
+                uint32_t power_count = tmp.item.powers.size();
+                uint32_t i = 1;
+                for ( auto &oneLink : tmp.item.powers )
+                {
+</%cpp>
+        {"src_uri":"/api/v1/asset/device/<$$ oneLink.src_id $>"
+<%cpp>
+                    if ( !oneLink.src_socket.empty() )
+                    {
+</%cpp>
+        ,"src_socket":"<$$ oneLink.src_socket $>"
+<%cpp>
+                    }
+                    if ( !oneLink.dest_socket.empty() )
+                    {
+</%cpp>
+        ,"dest_socket":"<$$ oneLink.dest_socket $>"
+%                   }
+        }<? i != power_count ? "," ?>
+<%cpp>
+                    i++;
+                }
+            }
+</%cpp>
+    ]
+<%cpp>
+        }
+
+        if ( tmp.item.basic.type_id == asset_type::GROUP )
+        {
+            auto it = tmp.item.ext.find("type");
+            if ( it != tmp.item.ext.end() )
+            {
 </%cpp>
     , "type":"<$$ it->second.first $>"
 <%cpp>
-            tmp.item.ext.erase(it);
+                tmp.item.ext.erase(it);
+            }
         }
-    }
 </%cpp>
     , "ext" : [
-% // ACE: to be consistent with RFC-11 this was put here
+%       // ACE: to be consistent with RFC-11 this was put here
         {"asset_tag": "<$$ tmp.item.basic.asset_tag $>", "read_only": true }
 <%cpp>
-    if ( !tmp.item.ext.empty() )
-    {
-        // this , is in JSON!!!!
+        if ( !tmp.item.ext.empty() )
+        {
+            // this , is in JSON!!!!
 </%cpp>
     ,
 <%cpp>
-        uint32_t ext_count = tmp.item.ext.size();
-        uint32_t i = 1;
-        for ( auto &oneExt : tmp.item.ext )
-        {
+            uint32_t ext_count = tmp.item.ext.size();
+            uint32_t i = 1;
+            for ( auto &oneExt : tmp.item.ext )
+            {
 </%cpp>
         {"<$$ oneExt.first $>":"<$$ oneExt.second.first $>","read_only": <$$ oneExt.second.second? "true":"false" $> }<? i != ext_count ? "," ?>
 <%cpp>
-            i++;
+                i++;
+            }
         }
-    }
 </%cpp>
     ]
 }
-% }
+%   }
+%}

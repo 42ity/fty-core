@@ -24,7 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 */
 
 #include <string>
-#include <string>
+#include <vector>
 
 #include "dbhelpers.h"
 #include "log.h"
@@ -32,5 +32,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 void
     send_configure (
         std::vector<db_a_elmnt_t> rows,
+        uint8_t action_type,
+        const std::string &agent_name);
+
+void
+    send_configure (
+        db_a_elmnt_t row,
         uint8_t action_type,
         const std::string &agent_name);

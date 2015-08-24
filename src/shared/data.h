@@ -31,8 +31,6 @@
 #include <czmq.h>
 #include <string>
 
-#include "defs.h"
-#include "asset_types.h"
 #include "dbhelpers.h"
 #include "common_msg.h"
 #include "db/assets.h"
@@ -48,9 +46,15 @@ class asset_manager {
         // new functionality
         db_reply <db_web_element_t>  get_item1(const std::string &id);
         db_reply <std::map <uint32_t, std::string> > get_items1(const std::string &typeName);
-        
+
         // to support old style
         db_reply <db_web_element_t>  get_item1(const std::string &id, const std::string &type);
+
+        db_reply_t
+            delete_item(
+                const std::string &id,
+                db_a_elmnt_t &element_info);
+
 
         static byte type_to_byte(std::string type);
         static std::string byte_to_type(byte type);
