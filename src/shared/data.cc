@@ -257,7 +257,7 @@ db_reply <db_web_element_t>
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "cannot convert an id";
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
     log_debug ("id converted successfully");
@@ -272,25 +272,25 @@ db_reply <db_web_element_t>
         if ( basic_ret.status == 0 )
         {
             ret.status        = basic_ret.status;
-            ret.errtype       = basic_ret.errtype; 
+            ret.errtype       = basic_ret.errtype;
             ret.errsubtype    = basic_ret.errsubtype;
             ret.msg           = basic_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
         log_debug (" and there were no errors");
         ret.item.basic = basic_ret.item;
-        
+
         auto ext_ret = persist::select_ext_attributes(conn, real_id);
         log_debug ("ext select is done");
 
         if ( ext_ret.status == 0 )
         {
             ret.status        = ext_ret.status;
-            ret.errtype       = ext_ret.errtype; 
+            ret.errtype       = ext_ret.errtype;
             ret.errsubtype    = ext_ret.errsubtype;
             ret.msg           = ext_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
         log_debug (" and there were no errors");
@@ -302,10 +302,10 @@ db_reply <db_web_element_t>
         if ( group_ret.status == 0 )
         {
             ret.status        = group_ret.status;
-            ret.errtype       = group_ret.errtype; 
+            ret.errtype       = group_ret.errtype;
             ret.errsubtype    = group_ret.errsubtype;
             ret.msg           = group_ret.msg;
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
         log_debug (" and there were no errors");
@@ -319,10 +319,10 @@ db_reply <db_web_element_t>
             if ( powers.status == 0 )
             {
                 ret.status        = powers.status;
-                ret.errtype       = powers.errtype; 
+                ret.errtype       = powers.errtype;
                 ret.errsubtype    = powers.errsubtype;
                 ret.msg           = powers.msg;
-                log_warning (ret.msg);
+                log_warning (ret.msg.c_str());
                 return ret;
             }
             log_debug (" and there were no errors");
@@ -339,7 +339,7 @@ db_reply <db_web_element_t>
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 db_reply <std::map <uint32_t, std::string> >
@@ -347,14 +347,14 @@ db_reply <std::map <uint32_t, std::string> >
         (const std::string &typeName)
 {
     db_reply <std::map <uint32_t, std::string> > ret;
-    
+
     byte type_id = asset_manager::type_to_byte(typeName);
     if ( type_id == (byte)asset_type::UNKNOWN ) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_INTERNAL;
         ret.msg           = "Unsupported type of the elemtns";
-        log_error (ret.msg);
+        log_error (ret.msg.c_str());
         return ret;
     }
 
@@ -372,7 +372,7 @@ db_reply <std::map <uint32_t, std::string> >
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 
@@ -382,7 +382,7 @@ db_reply_t
         db_a_elmnt_t &element_info)
 {
     db_reply_t ret = db_reply_new();
-    
+
     // TODO add better converter
     uint32_t real_id = atoi(id.c_str());
     if ( real_id == 0 )
@@ -391,29 +391,29 @@ db_reply_t
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_NOTFOUND;
         ret.msg           = "cannot convert an id";
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
     log_debug ("id converted successfully");
 
     // As different types should be deleted in differenct way ->
     // find out the type of the element.
-    // Even if in old-style the type is already placed in URL, 
+    // Even if in old-style the type is already placed in URL,
     // we will ignore it and discover it by ourselves
 
     try{
         tntdb::Connection conn = tntdb::connectCached(url);
-        
+
         db_reply <db_web_basic_element_t> basic_info =
             persist::select_asset_element_web_byId(conn, real_id);
-        
+
         if ( basic_info.status == 0 )
         {
             ret.status        = 0;
             ret.errtype       = basic_info.errsubtype;
             ret.errsubtype    = DB_ERROR_NOTFOUND;
             ret.msg           = "problem with selecting basic info";
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
         // here we are only if everything was ok
@@ -446,7 +446,7 @@ db_reply_t
                 ret.errtype       = basic_info.errsubtype;
                 ret.errsubtype    = DB_ERROR_INTERNAL;
                 ret.msg           = "unknown type";
-                log_warning (ret.msg);
+                log_warning (ret.msg.c_str());
             }
         }
         LOG_END;
@@ -459,5 +459,5 @@ db_reply_t
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }

@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2014 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -292,7 +292,7 @@ db_reply <db_a_elmnt_t>
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "name is not valid";
-        log_error ("end: %s", ret.msg);
+        log_error ("end: %s", ret.msg.c_str());
         return ret;
     }
 
@@ -307,7 +307,7 @@ db_reply <db_a_elmnt_t>
 
         tntdb::Row row = st.set("name", element_name).
                             selectRow();
-        
+
         row[0].get(ret.item.name);
         assert ( !ret.item.name.empty() );  // database is corrupted
 
@@ -317,11 +317,11 @@ db_reply <db_a_elmnt_t>
         row[4].get(ret.item.bc);
         row[5].get(ret.item.id);
         row[6].get(ret.item.type_id);
-        
+
         ret.status = 1;
         LOG_END;
         return ret;
-    } 
+    }
     catch (const tntdb::NotFound &e) {
         ret.status        = 0;
         ret.errtype       = DB_ERR;
@@ -337,7 +337,7 @@ db_reply <db_a_elmnt_t>
         ret.msg           = e.what();
         LOG_END_ABNORMAL(e);
         return ret;
-    } 
+    }
 }
 
 db_reply <std::vector<db_a_elmnt_t>>
@@ -349,7 +349,7 @@ db_reply <std::vector<db_a_elmnt_t>>
 
     std::vector<db_a_elmnt_t> item{};
     db_reply <std::vector<db_a_elmnt_t>> ret = db_reply_new(item);
-    
+
     try{
         // Can return more than one row.
         tntdb::Statement st = conn.prepareCached(
@@ -359,7 +359,7 @@ db_reply <std::vector<db_a_elmnt_t>>
             "   v_bios_asset_element v"
             " WHERE v.id_type = :typeid"
         );
-    
+
         tntdb::Result result = st.set("typeid", type_id).
                                   select();
         log_debug("[v_bios_asset_element]: were selected %" PRIu32 " rows",
@@ -369,7 +369,7 @@ db_reply <std::vector<db_a_elmnt_t>>
         for ( auto &row: result )
         {
             db_a_elmnt_t m{0,"","",0,5,0,0,0,""};
-            
+
             row[0].get(m.name);
             assert ( !m.name.empty() );  // database is corrupted
 

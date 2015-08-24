@@ -1,6 +1,6 @@
 /*
 Copyright (C) 2015 Eaton
- 
+
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation; either version 2 of the License, or
@@ -206,7 +206,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
         ret.msg        = "there is no containers of requested type";
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_NOTFOUND;
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
 
@@ -219,7 +219,7 @@ static db_reply <std::map<std::string, std::vector<std::string> > >
 
         // here would be placed names of devices to summ up
         std::vector<std::string> result(0);
-        
+
         if ( container_devices_set.status == 0 )
         {
             log_warning ("'%s': problems appeared in selecting devices",

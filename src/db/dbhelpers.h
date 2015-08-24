@@ -21,9 +21,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
     \author Alena Chernikava <AlenaChernikava@Eaton.com>
 */
 
-#ifndef SRC_PERSIST_DBHELPERS_H_
-#define SRC_PERSIST_DBHELPERS_H_
+#ifndef SRC_DB_DBHELPERS_H_
+#define SRC_DB_DBHELPERS_H_
 #include <functional>
+#include <string>
 #include <tntdb/row.h>
 #include <czmq.h>
 #include <vector>
@@ -58,7 +59,7 @@ struct db_reply{
     int errsubtype;
     uint64_t rowid;  // insert/update
     uint64_t affected_rows; // for update/insert/delete
-    const char *msg;
+    std::string msg;
     zhash_t *addinfo;
     T item;
 };
@@ -72,7 +73,7 @@ inline db_reply_t db_reply_new() {
         .errsubtype = 0,
         .rowid = 0,
         .affected_rows = 0,
-        .msg = NULL,
+        .msg = "",
         .addinfo = NULL,
         .item = 0};
 }
@@ -375,4 +376,4 @@ bool is_ok_priority (a_elmnt_pr_t priority);
  */
 bool is_ok_alert_state (UNUSED_PARAM m_alrt_state_t state);
 
-#endif // SRC_PERSIST_DBHELPERS_H_
+#endif // SRC_DB_DBHELPERS_H_

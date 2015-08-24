@@ -488,7 +488,7 @@ db_reply <std::vector<db_msrmnt_t>>
     select_from_measurement_by_topic(
         tntdb::Connection &conn,
         const char        *topic)
-{   
+{
     LOG_START;
     std::vector<db_msrmnt_t> item{};
     db_reply<std::vector<db_msrmnt_t>> ret = db_reply_new(item);
@@ -498,10 +498,10 @@ db_reply <std::vector<db_msrmnt_t>>
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg = "NULL value of topic is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     try {
         tntdb::Statement st = conn.prepareCached(
                 " SELECT id, timestamp, value, scale, device_id, units, topic"
@@ -509,7 +509,7 @@ db_reply <std::vector<db_msrmnt_t>>
                 " WHERE topic LIKE :topic");
         tntdb::Result res = st.set("topic", topic)
                               .select();
-        
+
         log_debug ("was %u rows selected", res.size());
 
         for ( auto &r : res ) {

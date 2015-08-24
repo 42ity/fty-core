@@ -57,7 +57,6 @@ asset_manager asset_mgr;
         auto ret = asset_mgr.delete_item(id, row);
         if ( ret.status == 0 )
         {
-            log_debug (" in msg: '%s'", ret.msg);
 </%cpp>
 {   "errors": [
         {
