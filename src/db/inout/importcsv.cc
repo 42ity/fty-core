@@ -316,6 +316,10 @@ static db_a_elmnt_t
     bool in_rack = true;
     if ( ( subtype == "epdu" ) || ( subtype == "pdu" ) )
     {
+        if ( unused_columns.count("location_w_pos") == 0 )
+            throw std::invalid_argument
+                                ("Need to specify attribute location_w_pos "
+                                 "for epdu/pdu");
         // find a number of pdu/epdu in the rack
         int ret = get_pdu_epdu_info_location_w_pos (conn, parent_id, pdu_epdu_count, last_position, last_position_element_id);
         if ( ret == 1 )
