@@ -56,26 +56,26 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of units is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     if ( !topic ) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of topic is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
-    
+
     // ATTENTION: now name is taken from t_bios_discovered_device
     if ( !device_name ) {
         ret.status     = 0;
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "NULL value of device name is not allowed";
-        log_error("end: %s", ret.msg);
+        log_error("end: %s", ret.msg.c_str());
         return ret;
     }
 

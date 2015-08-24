@@ -99,7 +99,7 @@ db_reply <db_web_basic_element_t>
         ret.errtype       = DB_ERR;
         ret.errsubtype    = DB_ERROR_NOTFOUND;
         ret.msg           = "element with spesified id was not found";
-        log_info ("end: %s", ret.msg);
+        log_info ("end: %s", ret.msg.c_str());
         return ret;
     }
     catch (const std::exception &e) {
@@ -333,7 +333,7 @@ db_reply <std::map <uint32_t, std::string> >
             ret.errtype       = DB_ERR;
             ret.errsubtype    = DB_ERROR_INTERNAL;
             ret.msg           = "elements were not found";
-            log_warning (ret.msg);
+            log_warning (ret.msg.c_str());
             return ret;
         }
         ret.status = 1;

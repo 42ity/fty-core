@@ -292,7 +292,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( group_id == 0 )
@@ -301,7 +301,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of group_id is not allowed";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -375,7 +375,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "destination device is not specified";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( asset_element_src_id == 0 )
@@ -384,7 +384,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "source device is not specified";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_link_type (link_type_id) )
@@ -393,7 +393,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "wrong link type";
-        log_error ("end: %s, %s","ignore insert", ret.msg);
+        log_error ("end: %s, %s","ignore insert", ret.msg.c_str());
         return ret;
     }
     // src_out and dest_in can take any value from available range
@@ -651,7 +651,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "name is not valid";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( !is_ok_element_type (element_type_id) )
@@ -660,7 +660,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_type_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     // ASSUMPTION: all datacenters are unlockated elements
@@ -671,7 +671,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "Datacenters should be unlockated elements";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     // TODO:should we add more checks here???
@@ -806,7 +806,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "not all links were inserted";
-        log_error ("end: %s", ret.msg);
+        log_error ("end: %s", ret.msg.c_str());
         return ret;
     }
 }
@@ -846,7 +846,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of asset_element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( groups.empty() )
@@ -883,7 +883,7 @@ db_reply_t
             ret.errtype    = DB_ERR;
             ret.errsubtype = DB_ERROR_BADINPUT;
             ret.msg        = "not all links were inserted";
-            log_error ("end: %s", ret.msg);
+            log_error ("end: %s", ret.msg.c_str());
         }
         return ret;
     }
@@ -918,7 +918,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of element_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     if ( monitor_id == 0 )
@@ -927,7 +927,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "0 value of monitor_id is not allowed";
-        log_error ("end: %s, %s", "ignore insert", ret.msg);
+        log_error ("end: %s, %s", "ignore insert", ret.msg.c_str());
         return ret;
     }
     log_debug ("input parameters are correct");
@@ -977,7 +977,7 @@ db_reply_t
         ret.errtype    = DB_ERR;
         ret.errsubtype = DB_ERROR_BADINPUT;
         ret.msg        = "device name length is not in range [1, MAX_NAME_LENGTH]";
-        log_warning (ret.msg);
+        log_warning (ret.msg.c_str());
         return ret;
     }
 
