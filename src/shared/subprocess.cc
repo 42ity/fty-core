@@ -203,7 +203,7 @@ int SubProcess::wait(bool no_hangup)
 int SubProcess::wait(unsigned int timeout)
 {
     while( true ) {
-        wait( true );
+        poll();
         if (_state != SubProcessState::RUNNING) {
             return _return_code;
         }
