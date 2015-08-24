@@ -28,31 +28,21 @@
  * \author Jim Klimov <EvgenyKlimov@Eaton.com>
  * \brief Not yet documented file
  */
-#include <zmq.h>
-#include <czmq.h>
 #include <tnt/http.h>
 #include <algorithm>
-#include <string>
 #include <map>
 #include <limits.h>
 
+#include "data.h"
+
 #include "log.h"
 #include "asset_types.h"
-#include "common_msg.h"
 #include "dbpath.h"
 #include "monitor.h"
 #include "upsstatus.h"
-#include "persistencelogic.h"
 #include "defs.h"
 
-#include "cleanup.h"
-#include "defs.h"
-#include "data.h"
-#include "asset_types.h"
-#include "common_msg.h"
-#include "dbpath.h"
-#include "monitor.h"
-#include "upsstatus.h"
+#include "asset_general.h"
 #include "utils.h"
 
 #include "db/agentstate.h"
@@ -372,6 +362,93 @@ db_reply <std::map <uint32_t, std::string> >
         tntdb::Connection conn = tntdb::connectCached(url);
         log_debug ("connection was successful");
         ret = persist::select_short_elements(conn, type_id);
+        LOG_END;
+        return ret;
+    }
+    catch (const std::exception &e) {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_INTERNAL;
+        ret.msg           = e.what();
+        LOG_END_ABNORMAL(e);
+        return ret;
+    } 
+}
+
+
+db_reply_t
+    asset_manager::delete_item(
+        const std::string &id,
+        db_a_elmnt_t &element_info)
+{
+    db_reply_t ret = db_reply_new();
+    
+    // TODO add better converter
+    uint32_t real_id = atoi(id.c_str());
+    if ( real_id == 0 )
+    {
+        ret.status        = 0;
+        ret.errtype       = DB_ERR;
+        ret.errsubtype    = DB_ERROR_NOTFOUND;
+        ret.msg           = "cannot convert an id";
+        log_warning (ret.msg);
+        return ret;
+    }
+    log_debug ("id converted successfully");
+
+    // As different types should be deleted in differenct way ->
+    // find out the type of the element.
+    // Even if in old-style the type is already placed in URL, 
+    // we will ignore it and discover it by ourselves
+
+    try{
+        tntdb::Connection conn = tntdb::connectCached(url);
+        
+        db_reply <db_web_basic_element_t> basic_info =
+            persist::select_asset_element_web_byId(conn, real_id);
+        
+        if ( basic_info.status == 0 )
+        {
+            ret.status        = 0;
+            ret.errtype       = basic_info.errsubtype;
+            ret.errsubtype    = DB_ERROR_NOTFOUND;
+            ret.msg           = "problem with selecting basic info";
+            log_warning (ret.msg);
+            return ret;
+        }
+        // here we are only if everything was ok
+        element_info.type_id = basic_info.item.type_id;
+        element_info.subtype_id = basic_info.item.subtype_id;
+        element_info.name = basic_info.item.name;
+
+        switch ( basic_info.item.type_id ) {
+            case asset_type::DATACENTER:
+            case asset_type::ROW:
+            case asset_type::ROOM:
+            case asset_type::RACK:
+            {
+                ret = persist::delete_dc_room_row_rack(conn, real_id);
+                break;
+            }
+            case asset_type::GROUP:
+            {
+                ret = persist::delete_group(conn, real_id);
+                break;
+            }
+            case asset_type::DEVICE:
+            {
+                ret = persist::delete_device(conn, real_id);
+                break;
+            }
+            default:
+            {
+                ret.status        = 0;
+                ret.errtype       = basic_info.errsubtype;
+                ret.errsubtype    = DB_ERROR_INTERNAL;
+                ret.msg           = "unknown type";
+                log_warning (ret.msg);
+            }
+        }
         LOG_END;
         return ret;
     }

@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cleanup.h"
 #include "str_defs.h"
 #include "agents.h"
+
 void
     send_configure (
         std::vector<db_a_elmnt_t> rows,
@@ -54,4 +55,13 @@ void
         }
     }
     bios_agent_destroy (&agent);
+}
+
+void
+    send_configure (
+        db_a_elmnt_t row,
+        uint8_t action_type,
+        const std::string &agent_name)
+{
+    send_configure(std::vector<db_a_elmnt_t>{row},action_type, agent_name);
 }
