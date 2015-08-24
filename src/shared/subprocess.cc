@@ -491,7 +491,7 @@ int output(const Argv& args, std::string& o, std::string& e, unsigned int timeou
         ret = p.wait(timeout);
         if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
     } else {
-        ret= p.wait();
+        ret = p.wait();
     }
 
     o.assign(read_all(p.getStdout()));
@@ -511,7 +511,7 @@ int output(const Argv& args, std::string& o, std::string& e, const std::string& 
         ret = p.wait(timeout);
         if( p.isRunning() ) { p.terminate(); ret = p.wait(); }
     } else {
-        ret= p.wait();
+        ret = p.wait();
     }
 
     o.assign(read_all(p.getStdout()));
